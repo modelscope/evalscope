@@ -171,6 +171,13 @@ class Report(BaseModel):
             return 0
         return sum(s.num for c in first.categories for s in c.subsets if not s.is_aggregate)
 
+    @property
+    def primary_metric(self) -> Optional[Metric]:
+        """Return the explicit overall metric when available, otherwise the first metric."""
+        if not self.metrics:
+            return None
+        return next((metric for metric in self.metrics if metric.name.lower() == 'overall'), self.metrics[0])
+
     def to_dict(self) -> Dict[str, Any]:
         # model_dump includes computed_field 'num' automatically
         return self.model_dump()

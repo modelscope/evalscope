@@ -69,7 +69,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
 @register_benchmark(
     BenchmarkMeta(
         name='kimi_verifier',
-        pretty_name='Kimi-Vendor-Verifier (Param Compliance)',
+        pretty_name='Kimi-Vendor-Verifier',
         description=KIMI_VERIFIER_DESCRIPTION,
         tags=[Tags.FUNCTION_CALLING, Tags.AGENT],
         dataset_id='kimi_verifier',  # synthetic; placeholder

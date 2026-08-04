@@ -4,6 +4,7 @@ from typing import Any, ClassVar, List, Optional
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.benchmark.statistics import SampleExample
 from evalscope.api.dataset import DataLoader, DatasetDict, MemoryDataset, Sample
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeStrategy
 
@@ -49,7 +50,9 @@ class DummyLLMJudgeAdapter(DefaultDataAdapter):
         return Sample(input=str(record), target='')
 
 
-def make_adapter(repeats: int = 3, limit: Optional[int] = None) -> DummyReformatAdapter:
+def make_adapter(
+    repeats: int = 3, limit: Optional[int] = None, system_prompt: Optional[str] = None
+) -> DummyReformatAdapter:
     task_config = TaskConfig(datasets=['dummy'], repeats=repeats, limit=limit)
     benchmark_meta = BenchmarkMeta(
         name='dummy',
@@ -57,6 +60,8 @@ def make_adapter(repeats: int = 3, limit: Optional[int] = None) -> DummyReformat
         subset_list=['subset-a'],
         default_subset='default',
         eval_split='test',
+        prompt_template='{question}',
+        system_prompt=system_prompt,
     )
     return DummyReformatAdapter(benchmark_meta=benchmark_meta, task_config=task_config)
 
@@ -99,3 +104,31 @@ def test_sample_example_detects_parameterized_truncation_marker() -> None:
     sample_example = SampleExample.from_sample(sample=sample)
 
     assert sample_example.truncated is True
+
+
+def test_empty_system_prompt_is_added_to_string_input() -> None:
+    adapter = make_adapter(system_prompt='')
+
+    messages = adapter.process_sample_str_input(Sample(input='question', target='answer'), subset='subset-a')
+
+    assert [message.role for message in messages] == ['system', 'user']
+    assert messages[0].content == ''
+
+
+def test_empty_system_prompt_is_added_once_to_message_input() -> None:
+    adapter = make_adapter(system_prompt='')
+    existing_system = ChatMessageSystem(content='existing')
+
+    messages = adapter.process_sample_messages_input(
+        Sample(input=[ChatMessageUser(content='question')], target='answer'), subset='subset-a'
+    )
+    existing_messages = adapter.process_sample_messages_input(
+        Sample(input=[existing_system, ChatMessageUser(content='question')], target='answer'), subset='subset-a'
+    )
+
+    assert [message.role for message in messages] == ['system', 'user']
+    assert messages[0].content == ''
+    assert [message.role for message in existing_messages] == ['system', 'user']
+    assert len(existing_messages) == 2
+    assert existing_messages[0] is existing_system
+    assert existing_messages[0].content == 'existing'

@@ -71,11 +71,12 @@ class OCRBenchAdapter(VisionLanguageAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
 
         input_text = self.prompt_template.format(question=record['question'])
-        content_list: List[Content] = [ContentText(text=input_text)]
+        content_list: List[Content] = []
         image = record.get('image')
         if image:
             image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)
             content_list.append(ContentImage(image=image_base64))
+        content_list.append(ContentText(text=input_text))
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=json.dumps(record.get('answer'), ensure_ascii=False),  # answers is a list
@@ -95,7 +96,7 @@ class OCRBenchAdapter(VisionLanguageAdapter):
             prediction=original_prediction,
         )
 
-        pred = filtered_prediction.lower().strip()
+        pred = filtered_prediction.strip()
         gt_ans = json.loads(reference)
         dataset_name = task_state.metadata['dataset']
 

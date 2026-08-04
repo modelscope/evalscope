@@ -25,6 +25,15 @@ Commits failing `make lint` are rejected on `main`.
 
 Benchmark detail pages (`docs/{zh,en}/benchmarks/<name>.md`) and meta cache (`evalscope/benchmarks/_meta/<name>.json`) are **auto-generated** from each adapter's `BenchmarkMeta.description` + dataset statistics. Do not hand-edit those files.
 
+Every `BenchmarkMeta.description` must be English Markdown with these sections in this order:
+
+1. `## Overview`: benchmark purpose and scope.
+2. `## Task Description`: bullet fields for `Task Type`, `Input`, `Output`, and `Domain` (use a more precise fourth field such as `Modalities` or `Grading` only when `Domain` does not apply).
+3. `## Key Features`: dataset scale/source, evaluated capabilities, and version-specific behavior.
+4. `## Evaluation Notes`: metrics, scoring procedure, runtime/dependency requirements, and compatibility limits.
+
+Do not replace these required headings with benchmark-specific headings. Add extra sections only when the four required sections are insufficient.
+
 When you add a benchmark or change its `BenchmarkMeta.description`, run:
 
 ```bash
@@ -111,9 +120,11 @@ Don't try to learn the architecture from this file — read these and grep:
 
 1. Create `evalscope/benchmarks/<name>/<name>_adapter.py`.
 2. Extend `DefaultDataAdapter`, override `record_to_sample()` (and optionally `sample_to_fewshot()`, `extract_answer()`).
-3. Decorate with `@register_benchmark(BenchmarkMeta(name=..., ...))`.
-4. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`.
-5. Add a smoke test.
+3. Reuse the standard dataset flow (`load_subset()` and existing `DataLoader` implementations) for shuffle, limit, repeats, filtering, conversion, and indexing. Override the full `load()` flow only when the standard loaders cannot represent the source format, and keep custom loading limited to benchmark-specific parsing or validation.
+4. Use `download_dataset_file()` or `download_dataset_snapshot()` for benchmark media and raw files; do not duplicate hub resolution, cache, path-safety, or download state inside an adapter.
+5. Decorate with `@register_benchmark(BenchmarkMeta(name=..., ...))`.
+6. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`.
+7. Add a smoke test.
 
 ## Conventions & gotchas
 

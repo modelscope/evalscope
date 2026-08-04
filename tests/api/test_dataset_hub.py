@@ -1,6 +1,8 @@
 import pytest
 import sys
 import types
+from pathlib import Path
+from typing import Any
 
 from evalscope.api.dataset import DatasetHub, download_dataset_file, download_dataset_snapshot
 from evalscope.constants import HubType
@@ -83,3 +85,33 @@ def test_download_file_keeps_local_path_traversal_protection(tmp_path) -> None:
 
     with pytest.raises(ValueError):
         download_dataset_file(str(dataset_dir), '../secret.jsonl', data_source=HubType.LOCAL)
+
+
+def test_download_file_modelscope_uses_single_file_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    image_path = tmp_path / 'images' / 'page_[1].png'
+    image_path.parent.mkdir(parents=True)
+    image_path.write_bytes(b'image')
+    fake_modelscope = types.ModuleType('modelscope')
+
+    def fake_download(dataset_id: str, file_path: str, **kwargs: Any) -> str:
+        calls.append((dataset_id, file_path, kwargs))
+        if kwargs.get('local_files_only'):
+            raise ValueError('cache miss')
+        return str(image_path)
+
+    fake_modelscope.dataset_file_download = fake_download
+    monkeypatch.setitem(sys.modules, 'modelscope', fake_modelscope)
+
+    result = download_dataset_file(
+        'remote-dataset',
+        'images/page_[1].png',
+        data_source=HubType.MODELSCOPE,
+        revision='v1',
+    )
+
+    assert result == str(image_path)
+    assert calls == [
+        ('remote-dataset', 'images/page_[1].png', {'revision': 'v1', 'local_files_only': True}),
+        ('remote-dataset', 'images/page_[1].png', {'revision': 'v1'}),
+    ]

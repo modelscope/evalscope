@@ -158,18 +158,19 @@ def download_dataset_file(
         )
 
     if data_source == HubType.MODELSCOPE:
-        from modelscope import dataset_snapshot_download
+        from modelscope import dataset_file_download
 
-        download_kwargs = {'allow_file_pattern': file_path}
+        download_kwargs = {}
         if revision:
             download_kwargs['revision'] = revision
         if cache_dir:
             download_kwargs['cache_dir'] = cache_dir
-        snapshot_dir = dataset_snapshot_download(data_id_or_path, **download_kwargs)
-        resolved_path = os.path.join(snapshot_dir, file_path)
-        if not os.path.exists(resolved_path):
-            raise FileNotFoundError(f'Dataset file {file_path} was not found in {snapshot_dir}.')
-        return resolved_path
+        if not force_redownload:
+            try:
+                return dataset_file_download(data_id_or_path, file_path, local_files_only=True, **download_kwargs)
+            except ValueError:
+                pass
+        return dataset_file_download(data_id_or_path, file_path, **download_kwargs)
 
     raise ValueError(f'Unsupported dataset hub: {data_source}')
 
