@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import glob
 import inspect
 import os
 from dataclasses import dataclass
@@ -160,7 +161,7 @@ def download_dataset_file(
     if data_source == HubType.MODELSCOPE:
         from modelscope import dataset_snapshot_download
 
-        download_kwargs = {'allow_file_pattern': file_path}
+        download_kwargs = {'allow_file_pattern': glob.escape(file_path)}
         if revision:
             download_kwargs['revision'] = revision
         if cache_dir:

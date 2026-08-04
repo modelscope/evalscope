@@ -83,7 +83,7 @@ def test_omnidoc_bench_versions_are_registered_separately() -> None:
     assert legacy.eval_split == 'train'
     assert current.dataset_id == 'OpenDataLab/OmniDocBench'
     assert current.eval_split == 'test'
-    assert current.sandbox_config == v16.REQUIRED_SANDBOX_CONFIG
+    assert current.sandbox_config == v16.DEFAULT_SANDBOX_CONFIG
 
 
 def test_v16_local_load_validates_and_selects_before_reading_images(tmp_path: Path, monkeypatch) -> None:
@@ -172,15 +172,15 @@ def test_v16_rejects_invalid_subset_counts_and_missing_selected_image(tmp_path: 
 def test_v16_remote_loader_pins_modelscope_revision(tmp_path: Path) -> None:
     annotation_path = tmp_path / 'OmniDocBench.json'
     annotation_path.write_text('[]', encoding='utf-8')
-    source_hub = patch('evalscope.benchmarks.omnidoc_bench.v1_6.omnidoc_bench_v1_6_adapter.DatasetHub')
-    with source_hub as hub_cls:
-        hub_cls.return_value.download_file.return_value = str(annotation_path)
+    with patch.object(v16, 'download_dataset_file', return_value=str(annotation_path)) as download_file:
         adapter = make_adapter()
-        resolved = adapter._resolve_annotation_path()
+        with patch.object(adapter, '_load_and_validate_annotation', return_value=[]):
+            dataset = adapter.load_subset('default', v16.DictDataLoader)
 
-    assert resolved == annotation_path
-    assert hub_cls.call_args.kwargs['data_id_or_path'] == 'OpenDataLab/OmniDocBench'
-    assert hub_cls.call_args.kwargs['revision'] == v16.DATASET_REVISION
+    assert len(dataset) == 0
+    assert download_file.call_args.kwargs['data_id_or_path'] == 'OpenDataLab/OmniDocBench'
+    assert download_file.call_args.kwargs['file_path'] == 'OmniDocBench.json'
+    assert download_file.call_args.kwargs['revision'] == v16.DATASET_REVISION
 
 
 def test_v16_scores_each_page_with_one_sandbox_call() -> None:
@@ -283,13 +283,6 @@ def test_v16_omits_overall_when_a_component_is_missing() -> None:
     aggregate = adapter.aggregate_scores(scores)
 
     assert [score.metric_name for score in aggregate] == ['text_block_Edit_dist']
-
-
-def test_v16_rejects_non_docker_or_conflicting_sandbox() -> None:
-    with pytest.raises(ValueError, match='Docker engine'):
-        make_adapter(sandbox={'enabled': True, 'engine': 'volcengine'})
-    with pytest.raises(ValueError, match='cannot be overridden'):
-        make_adapter(sandbox={'enabled': True, 'default_config': {'image': 'other:latest'}})
 
 
 def test_v16_mock_end_to_end_writes_review_and_report(tmp_path: Path, monkeypatch) -> None:

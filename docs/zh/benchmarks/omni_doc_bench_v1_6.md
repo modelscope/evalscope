@@ -3,25 +3,32 @@
 
 ## 概述
 
-OmniDocBench v1.6 评估端到端的文档解析能力，涵盖文本、公式、表格、版面布局和阅读顺序。此适配器严格限定于官方 v1.6 数据及评分协议。
+OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、公式、表格、版面布局和阅读顺序。此适配器严格限定使用官方 v1.6 数据及评分协议。
 
-## 版本与数据来源
+## 任务描述
 
-- **基准测试**: `omni_doc_bench_v1_6`
-- **数据集**: `OpenDataLab/OmniDocBench`，固定至 ModelScope 版本 `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
-- **规模**: 共 1,651 页，包含 1,355 页的 v1.5 数据集以及 296 页公式、版面和表格相关的困难样本
-- **兼容性**: 不支持其他 OmniDocBench 版本及旧版 TSV 集成
+- **任务类型**：端到端文档解析
+- **输入**：完整的文档页面图像
+- **输出**：包含页面文本、公式、表格和阅读顺序的 Markdown 格式内容
+- **领域**：多语言学术、金融、教科书、报纸、杂志和演示文稿类文档
 
-## 评估方式
+## 主要特性
 
-每页由官方 v1.6 评估器在 ms-enclave Docker 沙箱中独立评分。沙箱复用固定的官方镜像，并运行 MGAM `quick_match`、公式 CDM、表格 TEDS/TEDS-S、编辑距离和阅读顺序评估。EvalScope 对官方页面指标取平均值，并在所有页面聚合完成后计算 Overall 分数。
+- 使用固定版本的 `OpenDataLab/OmniDocBench`（ModelScope 提交 ID：`297ee5063d6ecc36fe14f3eb4f456607cc895f4a`）
+- 包含 1,651 页：在 v1.5 的 1,355 页基础上，新增 100 页公式复杂、99 页版面复杂和 97 页表格复杂的页面
+- 仅接受经验证的 v1.6 标注数据，拒绝其他版本及旧版 TSV 格式
+- 在可复用的 ms-enclave Docker 沙箱中，使用官方 v1.6 评估器对每页独立评分
 
-- 编辑距离指标使用 0-1 尺度。
-- CDM、TEDS、TEDS-S 和 Overall 使用 0-100 尺度。
-- 需要支持 amd64 的 Docker 环境及 `evalscope[sandbox]`。
-- 沙箱池默认使用一个容器；仅在内存充足时才应增加 `sandbox.pool_size`。
-- 官方镜像体积较大；评估前请确保磁盘和内存空间充足。
-- 评分结果不可直接与旧版 `omni_doc_bench` v1.5 集成进行比较。
+## 评估说明
+
+- 使用 MGAM `quick_match`、公式 CDM、表格 TEDS/TEDS-S、编辑距离和阅读顺序评估方法。
+- EvalScope 对各页指标取平均值，并仅基于聚合后的文本、公式和表格组件计算 Overall 分数。
+- 编辑距离指标采用 0-1 量表。
+- CDM、TEDS、TEDS-S 和 Overall 采用 0-100 量表。
+- 需要支持 amd64 架构的 Docker 环境以及 `evalscope[sandbox]` 依赖。
+- 沙箱池默认使用一个容器；仅当内存充足时才建议增加 `sandbox.pool_size`。
+- 官方镜像体积较大，请确保评估前有充足的磁盘空间和内存。
+- 评分结果不可直接与旧版 `omni_doc_bench` v1.5 集成结果进行比较。
 
 ## 属性
 
@@ -41,10 +48,10 @@ OmniDocBench v1.6 评估端到端的文档解析能力，涵盖文本、公式�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 1,651 |
-| 提示词长度（平均） | 1408 字符 |
+| 提示词长度（均值） | 1408 字符 |
 | 提示词长度（最小/最大） | 1408 / 1408 字符 |
 
-**图像统计:**
+**图像统计信息：**
 
 | 指标 | 值 |
 |--------|-------|
@@ -290,7 +297,7 @@ OmniDocBench v1.6 评估端到端的文档解析能力，涵盖文本、公式�
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
  You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
 

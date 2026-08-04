@@ -5,17 +5,24 @@
 
 OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tables, layout, and reading order. This adapter is intentionally restricted to the official v1.6 data and scoring contract.
 
-## Version and Data Source
+## Task Description
 
-- **Benchmark**: `omni_doc_bench_v1_6`
-- **Dataset**: `OpenDataLab/OmniDocBench`, pinned to ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
-- **Scale**: 1,651 pages, including the 1,355-page v1.5 set and 296 equation, layout, and table hard pages
-- **Compatibility**: other OmniDocBench releases and the legacy TSV integration are rejected
+- **Task Type**: End-to-end document parsing
+- **Input**: A complete document page image
+- **Output**: Markdown containing the page text, formulas, tables, and reading order
+- **Domain**: Multilingual academic, financial, textbook, newspaper, magazine, and presentation documents
 
-## Evaluation
+## Key Features
 
-Each page is scored independently by the official v1.6 evaluator inside an ms-enclave Docker sandbox. The sandbox reuses the pinned official image and runs MGAM `quick_match`, formula CDM, table TEDS/TEDS-S, edit distance, and reading-order evaluation. EvalScope averages the official page metrics and computes Overall only after all pages are aggregated.
+- Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
+- Contains 1,651 pages: the 1,355-page v1.5 set plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
+- Accepts only the verified v1.6 annotation and rejects other releases and the legacy TSV format
+- Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
 
+## Evaluation Notes
+
+- Uses MGAM `quick_match`, formula CDM, table TEDS/TEDS-S, edit distance, and reading-order evaluation.
+- EvalScope averages page metrics and computes Overall only from the aggregated text, formula, and table components.
 - Edit-distance metrics use the 0-1 scale.
 - CDM, TEDS, TEDS-S, and Overall use the 0-100 scale.
 - Docker with amd64 support and `evalscope[sandbox]` are required.

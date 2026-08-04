@@ -1,24 +1,19 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import copy
-import glob
 import hashlib
 import json
-import os
-import random
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Type
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
+from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, download_dataset_file
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
-from evalscope.api.sandbox import SandboxEngine, resolve_engine
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from ..v1_5.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
@@ -39,7 +34,7 @@ EXPECTED_SUBSET_COUNTS = {
     'table_hard': 97,
 }
 REVIEW_TIMEOUT = 900
-REQUIRED_SANDBOX_CONFIG = {
+DEFAULT_SANDBOX_CONFIG = {
     'image': OFFICIAL_IMAGE,
     'entrypoint': [],
     'command': ['sleep', 'infinity'],
@@ -56,17 +51,24 @@ DESCRIPTION = """
 
 OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tables, layout, and reading order. This adapter is intentionally restricted to the official v1.6 data and scoring contract.
 
-## Version and Data Source
+## Task Description
 
-- **Benchmark**: `omni_doc_bench_v1_6`
-- **Dataset**: `OpenDataLab/OmniDocBench`, pinned to ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
-- **Scale**: 1,651 pages, including the 1,355-page v1.5 set and 296 equation, layout, and table hard pages
-- **Compatibility**: other OmniDocBench releases and the legacy TSV integration are rejected
+- **Task Type**: End-to-end document parsing
+- **Input**: A complete document page image
+- **Output**: Markdown containing the page text, formulas, tables, and reading order
+- **Domain**: Multilingual academic, financial, textbook, newspaper, magazine, and presentation documents
 
-## Evaluation
+## Key Features
 
-Each page is scored independently by the official v1.6 evaluator inside an ms-enclave Docker sandbox. The sandbox reuses the pinned official image and runs MGAM `quick_match`, formula CDM, table TEDS/TEDS-S, edit distance, and reading-order evaluation. EvalScope averages the official page metrics and computes Overall only after all pages are aggregated.
+- Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
+- Contains 1,651 pages: the 1,355-page v1.5 set plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
+- Accepts only the verified v1.6 annotation and rejects other releases and the legacy TSV format
+- Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
 
+## Evaluation Notes
+
+- Uses MGAM `quick_match`, formula CDM, table TEDS/TEDS-S, edit distance, and reading-order evaluation.
+- EvalScope averages page metrics and computes Overall only from the aggregated text, formula, and table components.
 - Edit-distance metrics use the 0-1 scale.
 - CDM, TEDS, TEDS-S, and Overall use the 0-100 scale.
 - Docker with amd64 support and `evalscope[sandbox]` are required.
@@ -88,7 +90,7 @@ Each page is scored independently by the official v1.6 evaluator inside an ms-en
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         review_timeout=REVIEW_TIMEOUT,
-        sandbox_config=REQUIRED_SANDBOX_CONFIG,
+        sandbox_config=DEFAULT_SANDBOX_CONFIG,
     )
 )
 class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
@@ -98,80 +100,30 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         super().__init__(**kwargs)
         self.add_aggregation_name = False
         self.add_overall_metric = False
-        self._source_hub: Optional[DatasetHub] = None
-        self._local_root: Optional[Path] = None
-        self._validate_sandbox_settings()
 
-    def _validate_sandbox_settings(self) -> None:
-        meta_conflicts = [
-            key for key, value in REQUIRED_SANDBOX_CONFIG.items() if self.sandbox_config.get(key) != value
-        ]
-        if meta_conflicts:
-            raise ValueError(
-                'OmniDocBench v1.6 uses a pinned official sandbox configuration; '
-                f'the following fields cannot be overridden: {", ".join(sorted(meta_conflicts))}.'
+    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
+        """Validate v1.6 records, then delegate selection and conversion to the standard loader."""
+        annotation_path = Path(
+            download_dataset_file(
+                data_id_or_path=self.dataset_id,
+                file_path='OmniDocBench.json',
+                data_source=self.dataset_hub,
+                revision=DATASET_REVISION,
+                force_redownload=self.force_redownload,
+                cache_dir=self.dataset_dir,
             )
-
-        sandbox = self._task_config.sandbox if self._task_config else None
-        if sandbox is None or not sandbox.enabled:
-            return
-        if resolve_engine(sandbox.engine) is not SandboxEngine.DOCKER:
-            raise ValueError('OmniDocBench v1.6 requires the ms-enclave Docker engine.')
-        user_config = dict(sandbox.default_config or {})
-        conflicts = [
-            key for key, value in REQUIRED_SANDBOX_CONFIG.items() if key in user_config and user_config[key] != value
-        ]
-        if conflicts:
-            raise ValueError(
-                'OmniDocBench v1.6 uses a pinned official sandbox configuration; '
-                f'the following fields cannot be overridden: {", ".join(sorted(conflicts))}.'
-            )
-
-    def load(self) -> Tuple[DatasetDict, None]:
-        """Load and validate the complete v1.6 annotation before selecting images."""
-        annotation_path = self._resolve_annotation_path()
+        )
         records = self._load_and_validate_annotation(annotation_path)
-        selected_records = self._select_records(records)
-        self._prepare_selected_remote_images(selected_records)
-        samples = [self.record_to_sample(record) for record in selected_records]
-        if self.repeats > 1:
-            samples = [copy.deepcopy(sample) for sample in samples for _ in range(self.repeats)]
-        dataset = MemoryDataset(
-            samples=samples,
-            name='default',
-            location=str(annotation_path),
-            shuffled=self.shuffle,
-        )
-        dataset.reindex(group_size=self.repeats if self.repeats > 0 else 1)
-        return DatasetDict({'default': dataset}), None
-
-    def _resolve_annotation_path(self) -> Path:
-        dataset_path = Path(self.dataset_id).expanduser()
-        if dataset_path.exists():
-            if dataset_path.is_file():
-                self._local_root = dataset_path.resolve().parent
-                return dataset_path.resolve()
-            self._local_root = dataset_path.resolve()
-            return self._resolve_local_file('OmniDocBench.json')
-
-        if self.dataset_hub != HubType.MODELSCOPE:
-            raise ValueError(
-                'OmniDocBench v1.6 remote loading only supports the pinned ModelScope dataset; '
-                'use local_path for an offline copy.'
-            )
-        if self.dataset_id != 'OpenDataLab/OmniDocBench':
-            raise ValueError(
-                'OmniDocBench v1.6 remote loading requires dataset_id `OpenDataLab/OmniDocBench`; '
-                f'got `{self.dataset_id}`.'
-            )
-        self._source_hub = DatasetHub(
-            data_id_or_path=self.dataset_id,
-            data_source=HubType.MODELSCOPE,
-            revision=DATASET_REVISION,
-            force_redownload=self.force_redownload,
-            cache_dir=self.dataset_dir,
-        )
-        return Path(self._source_hub.download_file('OmniDocBench.json'))
+        return DictDataLoader(
+            dict_list=records,
+            sample_fields=self.record_to_sample,
+            filter_func=self.sample_filter,
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+            shuffle_choices=self.shuffle_choices,
+            seed=self.seed,
+        ).load()
 
     def _load_and_validate_annotation(self, annotation_path: Path) -> List[Dict[str, Any]]:
         annotation_bytes = annotation_path.read_bytes()
@@ -215,51 +167,23 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             )
         return records
 
-    def _select_records(self, records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        selected_records = list(records)
-        if self.shuffle:
-            random.Random(self.seed).shuffle(selected_records)
-
-        if self.limit is None:
-            return selected_records
-        limit = self.limit
-        if isinstance(limit, float):
-            if not 0.0 <= limit <= 1.0:
-                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            limit = int(len(selected_records) * limit)
-        elif isinstance(limit, int) and limit < 0:
-            raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-        return selected_records[:limit]
-
-    def _prepare_selected_remote_images(self, records: List[Dict[str, Any]]) -> None:
-        if self._source_hub is None or not records:
-            return
-        image_paths = [glob.escape(f'images/{record["page_info"]["image_path"]}') for record in records]
-        self._local_root = Path(self._source_hub.download_snapshot(allow_file_pattern=image_paths))
-
-    def _resolve_local_file(self, relative_path: str) -> Path:
-        if self._local_root is None:
-            raise RuntimeError('Local OmniDocBench root has not been initialized.')
-        root = self._local_root.resolve()
-        resolved_path = (root / relative_path).resolve()
-        if os.path.commonpath([str(root), str(resolved_path)]) != str(root):
-            raise ValueError(f'Invalid OmniDocBench dataset path: {relative_path}')
-        if not resolved_path.is_file():
-            raise FileNotFoundError(f'OmniDocBench dataset file was not found: {resolved_path}')
-        return resolved_path
-
     @staticmethod
     def _validate_image_name(image_name: str) -> None:
         if not image_name or image_name in ('.', '..') or '/' in image_name or '\\' in image_name:
             raise ValueError(f'Invalid OmniDocBench v1.6 image path: {image_name}')
 
-    def _resolve_image_path(self, image_name: str) -> Path:
-        self._validate_image_name(image_name)
-        return self._resolve_local_file(f'images/{image_name}')
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         image_name = record['page_info']['image_path']
-        image_path = self._resolve_image_path(image_name)
+        image_path = Path(
+            download_dataset_file(
+                data_id_or_path=self.dataset_id,
+                file_path=f'images/{image_name}',
+                data_source=self.dataset_hub,
+                revision=DATASET_REVISION,
+                force_redownload=self.force_redownload,
+                cache_dir=self.dataset_dir,
+            )
+        )
         image_format = image_path.suffix.lower().lstrip('.') or 'png'
         image_uri = self._image_bytes_to_base64(image_path.read_bytes(), default_format=image_format)
         content: List[Content] = [
