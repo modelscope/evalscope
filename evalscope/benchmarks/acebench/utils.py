@@ -49,9 +49,7 @@ ACE_DATA_CATEGORY = {
 ACEBENCH_SPLITS = ('normal', 'special', 'agent')
 ACEBENCH_LANGUAGES = ('en', 'zh')
 
-ACE_DATA_CATEGORY['test_all'] = [
-    category for split in ACEBENCH_SPLITS for category in ACE_DATA_CATEGORY[split]
-]
+ACE_DATA_CATEGORY['test_all'] = [category for split in ACEBENCH_SPLITS for category in ACE_DATA_CATEGORY[split]]
 
 # Fine-grained category -> data family, which is also the split it is stored in.
 ACEBENCH_CATEGORIES = {category: category.split('_')[0] for category in ACE_DATA_CATEGORY['test_all']}
@@ -81,7 +79,7 @@ def resolve_categories(names: List[str]) -> List[str]:
     return resolved
 
 
-def test_category_of(record: Dict[str, Any]) -> str:
+def category_of_record(record: Dict[str, Any]) -> str:
     """Determine the fine-grained category of a record."""
     sub_category = str(record.get('sub_category') or '')
     if sub_category:
@@ -158,8 +156,10 @@ def extract_outermost_bracket_content(text: str) -> Optional[str]:
 
 def _normalize_json_schema(value: Any) -> Any:
     if isinstance(value, dict):
-        return {key: 'object' if key == 'type' and item == 'dict' else _normalize_json_schema(item)
-                for key, item in value.items()}
+        return {
+            key: 'object' if key == 'type' and item == 'dict' else _normalize_json_schema(item)
+            for key, item in value.items()
+        }
     if isinstance(value, list):
         return [_normalize_json_schema(item) for item in value]
     return value

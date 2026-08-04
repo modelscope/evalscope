@@ -10,6 +10,7 @@ repos:
                 tests/|
                 evalscope/utils/utils.py|
                 evalscope/third_party/|
+                evalscope/benchmarks/acebench/scenarios/|
                 evalscope/backend/rag_eval/clip_benchmark/tasks|
                 evalscope/backend/rag_eval/cmteb/tasks|
                 evalscope/metrics/vision/t2v_metrics
@@ -29,6 +30,7 @@ repos:
                 tests/|
                 evalscope/utils/utils.py|
                 evalscope/third_party/|
+                evalscope/benchmarks/acebench/scenarios/|
                 evalscope/backend/rag_eval/clip_benchmark/tasks|
                 evalscope/backend/rag_eval/cmteb/tasks
             )
@@ -36,17 +38,17 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
       - id: check-yaml
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/|examples|.*\.json
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/|.*\.json
       - id: requirements-txt-fixer
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
       - id: double-quote-string-fixer
-        exclude: thirdparty/|docs/|examples|.*\.json|cl_bench_adapter.py
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/|.*\.json|cl_bench_adapter.py
       - id: check-merge-conflict
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
       - id: mixed-line-ending
-        exclude: thirdparty/|docs/|examples
+        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
         args: ["--fix=lf"]

@@ -1,14 +1,16 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
+import os
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Dataset, DatasetDict, Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.model import ChatCompletionChoice, GenerateConfig, Model, ModelOutput, get_model
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import EvalType, Tags
 from evalscope.report import Category, Report, Subset, unweighted_average_from_subsets
 from evalscope.utils.logger import get_logger
 from .checker import check_agent_end_state, check_normal_answer, check_special_answer, milestone_accuracy
@@ -20,12 +22,12 @@ from .utils import (
     ACEBENCH_LANGUAGES,
     ACEBENCH_SPLITS,
     build_tool_infos,
+    category_of_record,
     decode_maybe_json,
     dialogue_id_of,
     extract_bracket_blocks,
     resolve_categories,
     split_of_category,
-    test_category_of,
 )
 
 logger = get_logger()
@@ -119,7 +121,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         },
     )
 )
-class AceBenchAdapter(DefaultDataAdapter):
+class AceBenchAdapter(AgentAdapter):
     """ACEBench adapter following the official prompt, decoding and scoring protocol."""
 
     def __init__(self, **kwargs: Any) -> None:
@@ -138,10 +140,20 @@ class AceBenchAdapter(DefaultDataAdapter):
         self.default_subset = self.language
 
         self.is_fc_model = bool(self.extra_params.get('is_fc_model', False))
-        self.user_model = str(self.extra_params.get('user_model') or '')
+        self.user_model_id = str(self.extra_params.get('user_model') or '')
         self.max_dialog_turns = int(self.extra_params.get('max_dialog_turns', 40))
+        self._user_model: Optional[Model] = None
 
         self.subset_list = resolve_categories(self.subset_list)
+        if 'agent_multi_turn' in self.subset_list and not self.user_model_id:
+            # Those rollouts need a model to play the user. Scoring them zero would understate the
+            # model under evaluation, so they are dropped instead.
+            logger.warning(
+                'Skipping the agent_multi_turn category: it needs a user simulator. Set '
+                "dataset_args={'acebench': {'extra_params': {'user_model': '<model-id>'}}} to "
+                'evaluate it (the official runner uses gpt-4o).'
+            )
+            self.subset_list = [category for category in self.subset_list if category != 'agent_multi_turn']
 
     # #########################
     # DATASET LOADING
@@ -171,7 +183,7 @@ class AceBenchAdapter(DefaultDataAdapter):
         functions = decode_maybe_json(record.get('function'), [])
         rubric = decode_maybe_json(record.get('rubric'), {})
         record_id = record.get('id') or ''
-        test_category = test_category_of(record)
+        test_category = category_of_record(record)
 
         record = {**record, 'function': functions}
         system_prompt, user_prompt = build_single_turn_prompts(record, test_category, self.language)
@@ -183,7 +195,10 @@ class AceBenchAdapter(DefaultDataAdapter):
                 ChatMessageSystem(content=system_prompt),
                 ChatMessageUser(content=user_prompt),
             ],
-            target=json.dumps({'ground_truth': ground_truth, 'mile_stone': milestones}, ensure_ascii=False),
+            target=json.dumps({
+                'ground_truth': ground_truth,
+                'mile_stone': milestones
+            }, ensure_ascii=False),
             subset_key=test_category,
             # Native tool schemas are only attached in the (non-official) function-calling mode.
             tools=build_tool_infos(functions) if self.is_fc_model else [],
@@ -202,6 +217,54 @@ class AceBenchAdapter(DefaultDataAdapter):
                 'profile': record.get('profile', ''),
             },
         )
+
+    # #########################
+    # INFERENCE
+    # #########################
+
+    def _on_inference(self, model: Model, sample: Sample):
+        """Run the agent rollout for agent samples, and a single generation otherwise."""
+        test_category = (sample.metadata or {}).get('test_category', '')
+        if 'agent' not in test_category:
+            return model.generate(input=sample.input, tools=sample.tools)
+
+        from .rollout import run_rollout
+
+        try:
+            result = run_rollout(
+                model=model,
+                metadata=sample.metadata,
+                max_steps=self.max_dialog_turns,
+                user_model=self._get_user_model() if 'multi_turn' in test_category else None,
+            )
+        except Exception as error:  # noqa: BLE001 - a failed rollout must not abort the run
+            logger.error(f'ACEBench rollout failed for {sample.metadata.get("id")}: {error}')
+            sample.metadata['rollout_error'] = str(error)
+            return ModelOutput.from_content(model=model.name, content='')
+
+        # match_score grades the recorded state, not the text, so both are carried on the metadata.
+        sample.metadata['process'] = result.process
+        sample.metadata['end_state'] = result.end_state
+        output = ModelOutput(
+            model=model.name,
+            choices=[ChatCompletionChoice.from_content('\n'.join(result.process))],
+            usage=result.usage,
+        )
+        return InferenceResult(output=output, messages=result.messages)
+
+    def _get_user_model(self) -> Optional[Model]:
+        """Build the model that plays the user in ``agent_multi_turn`` rollouts."""
+        if not self.user_model_id:
+            return None
+        if self._user_model is None:
+            self._user_model = get_model(
+                model=self.user_model_id,
+                eval_type=EvalType.OPENAI_API,
+                base_url=self.extra_params.get('user_model_api_url') or os.environ.get('MODELSCOPE_API_BASE'),
+                api_key=self.extra_params.get('user_model_api_key') or os.environ.get('MODELSCOPE_SDK_TOKEN'),
+                config=GenerateConfig(temperature=0.001, top_p=1, max_tokens=1000),
+            )
+        return self._user_model
 
     # #########################
     # SCORING
@@ -336,7 +399,8 @@ class AceBenchAdapter(DefaultDataAdapter):
 
             subset_dict: Dict[str, Subset] = {
                 subset.name: subset
-                for category in metric.categories for subset in category.subsets
+                for category in metric.categories
+                for subset in category.subsets
             }
 
             group_subsets = {}

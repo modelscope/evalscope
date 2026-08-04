@@ -64,6 +64,11 @@ def _invalid(error: Any, error_type: str) -> CheckResult:
     return {'valid': False, 'error': error if isinstance(error, list) else [error], 'error_type': error_type}
 
 
+def _value_error(param: str, func_name: str, expected: Any, actual: Any) -> str:
+    """Render a value mismatch for the review file."""
+    return f'wrong value for parameter ({param}) of api ({func_name}): [expected: {expected}, real: {actual}]'
+
+
 def _possible_answer_type(possible_answer: Any) -> Optional[type]:
     """Port of ``get_possible_answer_type``: an empty string marks an optional parameter."""
     if possible_answer != '':
@@ -134,11 +139,7 @@ def type_checker(
             if flag:
                 return {'valid': True, 'error': [], 'is_variable': is_variable}
         result['valid'] = False
-        result['error'] = [
-            f'Nested type checking failed for parameter {repr(param)}. Expected outer type '
-            f'{expected_type_description} with inner type {str(nested_type_converted)}. '
-            f'Parameter value: {repr(value)}.'
-        ]
+        result['error'] = [f'wrong inner type for parameter ({param}) of api ({func_name})']
         result['error_type'] = 'type_error'
 
     possible_answer_type = _possible_answer_type(possible_answer)
@@ -149,29 +150,26 @@ def type_checker(
 
     result['valid'] = False
     result['error'] = [
-        f'wrong type for parameter ({param}) of api ({func_name}):'
-        f'[excepted: {expected_type_converted}, real: {type(value)}]'
+        f'wrong type for parameter ({param}) of api ({func_name}): '
+        f'[expected: {expected_type_converted}, real: {type(value)}]'
     ]
     result['error_type'] = 'type_error'
     return result
 
 
-def string_checker(param: str, model_output: str, possible_answer: str, func_name: str,
-                   test_category: str) -> CheckResult:
+def string_checker(
+    param: str, model_output: str, possible_answer: str, func_name: str, test_category: str
+) -> CheckResult:
     """Compare strings: exact match for agent data, substring match otherwise."""
     normalized_output = standardize_string(model_output)
     normalized_answer = standardize_string(possible_answer)
 
     mismatch = (
-        normalized_output != normalized_answer if 'agent' in test_category else
-        normalized_answer not in normalized_output
+        normalized_output != normalized_answer
+        if 'agent' in test_category else normalized_answer not in normalized_output
     )
     if mismatch:
-        return _invalid(
-            f'wrong value for parameter ({param}) of api ({func_name}): '
-            f'[excepted: {possible_answer}, real: [{model_output}]]',
-            'value_error:string',
-        )
+        return _invalid(_value_error(param, func_name, possible_answer, model_output), 'value_error:string')
     return _valid()
 
 
@@ -181,28 +179,16 @@ def list_checker(param: str, model_output: list, possible_answer: list, func_nam
     normalized_answer = [standardize_string(item) if isinstance(item, str) else item for item in possible_answer]
 
     if normalized_output != normalized_answer:
-        return _invalid(
-            f'wrong value for parameter ({repr(param)}) of api ({func_name}): '
-            f'[expected {possible_answer}, real: [{repr(model_output)}]]',
-            'value_error:list/tuple',
-        )
+        return _invalid(_value_error(param, func_name, possible_answer, model_output), 'value_error:list/tuple')
     return _valid()
 
 
 def dict_checker(param: str, model_output: Any, possible_answer: Any, func_name: str) -> CheckResult:
     """Compare dicts by key count, then per key with a substring test on the stringified value."""
+    value_error = _invalid(_value_error(param, func_name, possible_answer, model_output), 'value_error')
     if not isinstance(model_output, dict):
-        return _invalid(
-            f'wrong type for parameter ({param}) of api ({func_name}): '
-            f'[excepted: {possible_answer}, real: [{model_output}]]',
-            'value_error',
-        )
+        return value_error
 
-    value_error = _invalid(
-        f'wrong value for parameter ({param}) of api ({func_name}): '
-        f'[excepted: {possible_answer}, real: [{model_output}]]',
-        'value_error',
-    )
     if len(model_output.keys()) != len(possible_answer.keys()):
         return value_error
 
@@ -230,11 +216,7 @@ def dict_checker(param: str, model_output: Any, possible_answer: Any, func_name:
 def list_dict_checker(param: str, model_output: list, possible_answers: list, func_name: str) -> CheckResult:
     """Compare a list of dicts element-wise."""
     if len(model_output) != len(possible_answers):
-        return _invalid(
-            f'wrong value for parameter ({param}) of api ({func_name}): '
-            f'[excepted: {possible_answers}, real: [{model_output}]]',
-            'value_error:list_dict_count',
-        )
+        return _invalid(_value_error(param, func_name, possible_answers, model_output), 'value_error:list_dict_count')
 
     for predicted_item, expected_item in zip(model_output, possible_answers):
         result = dict_checker(param, predicted_item, expected_item, func_name)
@@ -268,7 +250,12 @@ def simple_function_checker(
     func_name = func_description['name']
     if func_name not in model_output:
         return _invalid(
-            [{'wrong_function': {'expected': func_name, 'real': list(model_output.keys())[0]}}],
+            [{
+                'wrong_function': {
+                    'expected': func_name,
+                    'real': list(model_output.keys())[0]
+                }
+            }],
             'wrong_function_name',
         )
 
@@ -441,48 +428,21 @@ def check_special_answer(prediction: str, possible_answer: Any, test_category: s
 
     if 'incomplete' in test_category:
         for name, values in items:
+            missing = f'missing parameters ({values}) of ({name}) not pointed out'
             if 'Missing necessary parameters' not in prediction:
-                result = _invalid(
-                    f'The user\'s instruction is missing necessary parameters ({values}) for the ({name}), '
-                    'but the model failed to correctly point it out',
-                    'error_detection',
-                )
-            elif str(name) not in prediction:
-                result = _invalid(
-                    f'The user\'s instruction is missing necessary parameters ({values}) for the ({name}), '
-                    'but the model failed to correctly point it out',
-                    'error_correction',
-                )
-            else:
-                for value in values:
-                    if str(value) not in prediction:
-                        result = _invalid(
-                            f'The user\'s instruction is missing necessary parameters ({value}) for the ({name}), '
-                            'but the model failed to correctly point it out',
-                            'error_correction',
-                        )
+                result = _invalid(missing, 'error_detection')
+            elif str(name) not in prediction or any(str(value) not in prediction for value in values):
+                result = _invalid(missing, 'error_correction')
     elif 'error' in test_category:
         for name, values in items:
+            wrong = f'incorrect values ({values}) of ({name}) not pointed out'
             if 'There is incorrect value' not in prediction:
-                result = _invalid(
-                    f'The user\'s instruction contains incorrect values ({values}) of the parameters ({name}), '
-                    'but the model failed to correctly point it out',
-                    'error_detection',
-                )
-            else:
-                for value in values:
-                    if str(value) not in prediction:
-                        result = _invalid(
-                            f'The user\'s instruction contains incorrect values ({values}) of the parameters '
-                            f'({name}), but the model failed to correctly point it out',
-                            'error_correction',
-                        )
+                result = _invalid(wrong, 'error_detection')
+            elif any(str(value) not in prediction for value in values):
+                result = _invalid(wrong, 'error_correction')
     elif 'irrelevant' in test_category:
         if 'the limitations of the function' not in prediction:
-            result = _invalid(
-                'The model cannot solve this problem, due to the limitations of the function',
-                'error_detection',
-            )
+            result = _invalid('request outside the function scope not pointed out', 'error_detection')
     else:
         result = _invalid(f'Unknown special ACEBench category: {test_category}', 'unknown_category')
 
@@ -506,22 +466,16 @@ def agent_state_checker(model_state: Dict[str, Any], possible_answer: Dict[str, 
         expected_value = expected_attributes[attribute]
         if isinstance(expected_value, dict):
             for key, value in expected_value.items():
-                if key not in model_value:
+                if key not in model_value or value != model_value[key]:
                     result['valid'] = False
                     result['error'].append(
-                        f'class({scenario_name}) attributes({attribute}) wrong, '
-                        f'[expected: {expected_value}, real: {model_value}]'
-                    )
-                elif value != model_value[key]:
-                    result['valid'] = False
-                    result['error'].append(
-                        f'class({scenario_name}) attributes({attribute}.{key}) wrong, '
-                        f'[expected: {value}, real: {model_value[key]}]'
+                        f'class({scenario_name}) attribute({attribute}.{key}) wrong, '
+                        f'[expected: {value}, real: {model_value.get(key)}]'
                     )
         elif expected_value != model_value:
             result['valid'] = False
             result['error'].append(
-                f'class({scenario_name}) attributes({attribute}) wrong, '
+                f'class({scenario_name}) attribute({attribute}) wrong, '
                 f'[expected: {expected_value}, real: {model_value}]'
             )
 

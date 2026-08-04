@@ -14,7 +14,6 @@ import ast
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.model import ModelOutput
-
 from .utils import extract_outermost_bracket_content
 
 CallList = List[Dict[str, Dict[str, Any]]]
@@ -43,12 +42,31 @@ def decode_calls(raw_output: str, test_category: str) -> CallList:
     return calls
 
 
+def decode_execution_calls(message: str) -> CallList:
+    """Decode an agent message so its calls can be executed during a rollout.
+
+    Mirrors ``EXECUTION.decode_function_list``, which is more forgiving than the scoring decoder:
+    brackets are added when missing and stripped before parsing, so a bare ``api(x=1)`` also runs.
+    A nested argument call resolves to its source text here, matching the executor upstream.
+    """
+    text = message[1:] if message.startswith(' ') else message
+    if not text.startswith('['):
+        text = '[' + text
+    if not text.endswith(']'):
+        text = text + ']'
+
+    body = ast.parse(text.strip("[]'"), mode='eval').body
+    elements = body.elts if isinstance(body, (ast.Tuple, ast.List)) else [body]
+    return [_resolve_call(element, nested_call_as_source=True) for element in elements if isinstance(element, ast.Call)]
+
+
 def decode_tool_calls(model_output: Optional[ModelOutput]) -> CallList:
     """Decode native tool calls into ACEBench's ``[{name: {arg: value}}]`` representation."""
     if model_output is None or model_output.empty:
         return []
-    return [{tool_call.function.name: tool_call.function.arguments or {}}
-            for tool_call in model_output.message.tool_calls or []]
+    return [{
+        tool_call.function.name: tool_call.function.arguments or {}
+    } for tool_call in model_output.message.tool_calls or []]
 
 
 def _preprocess(raw_output: Any, test_category: str) -> str:
@@ -86,9 +104,13 @@ def _ast_parse(text: str) -> CallList:
     return calls
 
 
-def _resolve_call(node: ast.Call) -> Dict[str, Dict[str, Any]]:
+def _resolve_call(node: ast.Call, nested_call_as_source: bool = False) -> Dict[str, Dict[str, Any]]:
     """Resolve a call node into ``{name: {arg: value}}``."""
-    arguments = {keyword.arg: _resolve_value(keyword.value) for keyword in node.keywords if keyword.arg is not None}
+    arguments = {
+        keyword.arg: _resolve_value(keyword.value, nested_call_as_source)
+        for keyword in node.keywords
+        if keyword.arg is not None
+    }
     return {_resolve_name(node.func): arguments}
 
 
@@ -104,28 +126,33 @@ def _resolve_name(node: ast.AST) -> str:
     return '.'.join(reversed(parts))
 
 
-def _resolve_value(node: ast.AST) -> Any:
-    """Resolve an argument node into a Python value, mirroring ``resolve_ast_by_type``."""
+def _resolve_value(node: ast.AST, nested_call_as_source: bool = False) -> Any:
+    """Resolve an argument node into a Python value, mirroring ``resolve_ast_by_type``.
+
+    ``nested_call_as_source`` selects between the two upstream variants for an argument that is
+    itself a call without keywords: the scorer keeps ``{name: {}}``, the executor keeps its source.
+    """
     if isinstance(node, ast.Constant):
         return '...' if node.value is Ellipsis else node.value
     if isinstance(node, ast.UnaryOp):
-        operand = _resolve_value(node.operand)
+        operand = _resolve_value(node.operand, nested_call_as_source)
         return -operand if isinstance(operand, (int, float)) and isinstance(node.op, ast.USub) else operand
     if isinstance(node, ast.List):
-        return [_resolve_value(item) for item in node.elts]
+        return [_resolve_value(item, nested_call_as_source) for item in node.elts]
     if isinstance(node, ast.Tuple):
-        return tuple(_resolve_value(item) for item in node.elts)
+        return tuple(_resolve_value(item, nested_call_as_source) for item in node.elts)
     if isinstance(node, ast.Dict):
-        return {_resolve_value(key): _resolve_value(value) for key, value in zip(node.keys, node.values)}
+        return {
+            _resolve_value(key, nested_call_as_source): _resolve_value(value, nested_call_as_source)
+            for key, value in zip(node.keys, node.values)
+        }
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Call):
-        return {_resolve_name(node.func): {}} if not node.keywords else _resolve_call(node)
-    return _resolve_literal_or_source(node)
-
-
-def _resolve_literal_or_source(node: ast.AST) -> Any:
-    """Resolve nodes upstream would ``eval()`` without executing model-authored code."""
+        if node.keywords:
+            return _resolve_call(node, nested_call_as_source)
+        return ast.unparse(node) if nested_call_as_source else {_resolve_name(node.func): {}}
+    # Nodes upstream would ``eval()``; resolved without executing model-authored code.
     try:
         return ast.literal_eval(node)
     except (ValueError, SyntaxError, TypeError):
