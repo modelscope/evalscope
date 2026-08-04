@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -17,10 +16,9 @@ from evalscope.constants import Tags
 from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
-# v1.6-only pins: the ModelScope revision and annotation digest identify the supported dataset;
-# the image digest identifies the official runtime used for every page.
+# v1.6-only pins: the ModelScope revision identifies the default dataset and the image digest identifies the
+# official runtime used for every page.
 DATASET_REVISION = '297ee5063d6ecc36fe14f3eb4f456607cc895f4a'
-ANNOTATION_SHA256 = 'a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496'
 OFFICIAL_IMAGE = (
     'ghcr.io/zeng-weijun/omnidocbench-eval'
     '@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617'
@@ -54,7 +52,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 
 - Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
 - Contains 1,651 pages: 1,355 base pages plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
-- Accepts only the verified v1.6 annotation and rejects other releases and the legacy TSV format
+- Uses the official v1.6 data format; other releases and the legacy TSV format are not supported
 - Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
 
 ## Evaluation Notes
@@ -106,7 +104,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                 cache_dir=self.dataset_dir,
             )
         )
-        records = self._load_annotation(annotation_path)
+        records = json.loads(annotation_path.read_text(encoding='utf-8'))
         return DictDataLoader(
             dict_list=records,
             sample_fields=self.record_to_sample,
@@ -117,20 +115,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             shuffle_choices=self.shuffle_choices,
             seed=self.seed,
         ).load()
-
-    def _load_annotation(self, annotation_path: Path) -> List[Dict[str, Any]]:
-        annotation_bytes = annotation_path.read_bytes()
-        digest = hashlib.sha256(annotation_bytes).hexdigest()
-        if digest != ANNOTATION_SHA256:
-            raise ValueError(
-                'Unsupported OmniDocBench annotation: EvalScope supports v1.6 only. '
-                f'Expected SHA-256 {ANNOTATION_SHA256}, got {digest}.'
-            )
-
-        records = json.loads(annotation_bytes)
-        if not isinstance(records, list):
-            raise ValueError('Invalid OmniDocBench v1.6 annotation: expected a list of page records.')
-        return records
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         image_name = record['page_info']['image_path']

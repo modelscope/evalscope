@@ -16,7 +16,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 
 - Uses `OpenDataLab/OmniDocBench` at the pinned ModelScope revision `297ee5063d6ecc36fe14f3eb4f456607cc895f4a`
 - Contains 1,651 pages: 1,355 base pages plus 100 equation-hard, 99 layout-hard, and 97 table-hard pages
-- Accepts only the verified v1.6 annotation and rejects other releases and the legacy TSV format
+- Uses the official v1.6 data format; other releases and the legacy TSV format are not supported
 - Scores each page independently with the official v1.6 evaluator in a reusable ms-enclave Docker sandbox
 
 ## Evaluation Notes
@@ -71,7 +71,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 {
   "input": [
     {
-      "id": "d1436bbb",
+      "id": "a93e81da",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~433.3KB]"
