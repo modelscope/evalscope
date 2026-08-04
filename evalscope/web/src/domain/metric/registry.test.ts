@@ -33,6 +33,10 @@ describe('resolveMetricKey', () => {
     expect(resolveMetricKey('overall_f1')).toBe('f1')
     expect(resolveMetricKey('Avg Latency')).toBe('latency')
     expect(resolveMetricKey('Time to First Token')).toBe('ttft')
+    expect(resolveMetricKey('text_block_Edit_dist')).toBe('mean_error_rate')
+    expect(resolveMetricKey('display_formula_CDM')).toBe('accuracy')
+    expect(resolveMetricKey('table_TEDS_structure_only')).toBe('accuracy')
+    expect(resolveMetricKey('overall')).toBe('accuracy')
   })
 
   it('returns the normalized key for unknown metrics', () => {
@@ -108,6 +112,9 @@ describe('getBoundedMetricRatio', () => {
     expect(getBoundedMetricRatio('accuracy', 0.815)).toBe(0.815)
     expect(getBoundedMetricRatio('WeightedScorePercent', 81.5)).toBe(0.815)
     expect(getBoundedMetricRatio('mean_success_rate', 1)).toBe(1)
+    expect(getBoundedMetricRatio('text_block_Edit_dist', 0.0328)).toBeCloseTo(0.9672)
+    expect(getBoundedMetricRatio('display_formula_CDM', 0.974)).toBe(0.974)
+    expect(getBoundedMetricRatio('overall', 0.9651)).toBe(0.9651)
     expect(getBoundedMetricRatio('AverageOutputTps', 512)).toBeNull()
     expect(getBoundedMetricRatio('unknown_metric', 0.5)).toBeNull()
   })

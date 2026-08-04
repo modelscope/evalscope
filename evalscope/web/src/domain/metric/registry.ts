@@ -307,6 +307,14 @@ const METRIC_ALIASES: Record<string, string> = {
   success: 'success_rate',
   weighted_score_percent: 'score_percent',
   weightedscorepercent: 'score_percent',
+  text_block_edit_dist: 'mean_error_rate',
+  display_formula_edit_dist: 'mean_error_rate',
+  table_edit_dist: 'mean_error_rate',
+  reading_order_edit_dist: 'mean_error_rate',
+  display_formula_cdm: 'accuracy',
+  table_teds: 'accuracy',
+  table_teds_structure_only: 'accuracy',
+  overall: 'accuracy',
 }
 
 /**
@@ -382,7 +390,7 @@ export function formatMetricByKey(
   return formatMetric(value, spec, t)
 }
 
-/** Return a clamped 0-1 ratio only when the metric contract is bounded. */
+/** Return a quality-oriented 0-1 ratio only when the metric contract is bounded. */
 export function getBoundedMetricRatio(key: string, value: number | null | undefined): number | null {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return null
@@ -391,8 +399,8 @@ export function getBoundedMetricRatio(key: string, value: number | null | undefi
   if (spec.boundedness !== 'bounded') {
     return null
   }
-  const ratio = spec.storedAsHundred ? value / 100 : value
-  return Math.max(0, Math.min(1, ratio))
+  const ratio = Math.max(0, Math.min(1, spec.storedAsHundred ? value / 100 : value))
+  return spec.direction === 'lower-is-better' ? 1 - ratio : ratio
 }
 
 /**
