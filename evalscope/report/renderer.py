@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.report.combinator import get_report_list
-from evalscope.report.report import Report, ReportKey
+from evalscope.report.report import Metric, Report, ReportKey
 from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
@@ -138,22 +138,23 @@ def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
     return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
 
 
+def _primary_metric(report: Report) -> Metric:
+    """Prefer an explicit Overall metric, otherwise preserve the first-metric behavior."""
+    return next((metric for metric in report.metrics if metric.name.lower() == 'overall'), report.metrics[0])
+
+
 def _subset_chart_div(
     ds: str,
     model: str,
-    pretty: str,
-    metric_name: str,
-    subset_labels: List[str],
-    subset_scores: List[float],
-    multi_model: bool,
+    subset_rows: List[dict],
 ) -> str:
     """Return a Plotly HTML div for a per-dataset subset bar chart, or empty string."""
-    if not subset_labels:
+    if not subset_rows:
         return ''
     subset_df = pd.DataFrame({
-        ReportKey.subset_name: subset_labels,
-        ReportKey.metric_name: [metric_name] * len(subset_labels),
-        ReportKey.score: subset_scores,
+        ReportKey.subset_name: [row['subset'] for row in subset_rows],
+        ReportKey.metric_name: [row['metric'] for row in subset_rows],
+        ReportKey.score: [row['score'] for row in subset_rows],
     })
     fig = plot_single_dataset_scores(subset_df)
     if fig is None:
@@ -227,13 +228,16 @@ def gen_html_report_file(
             rpt: Optional[Report] = info['model_reports'].get(model)
             if rpt is None:
                 continue
-            main_metric_name = rpt.metrics[0].name if rpt.metrics else 'N/A'
-            num = sum(cat.num for cat in rpt.metrics[0].categories) if rpt.metrics else 0
-            summary_rows.append(dict(dataset=pretty, model=model, metric=main_metric_name, score=rpt.score, num=num))
+            primary_metric = _primary_metric(rpt) if rpt.metrics else None
+            metric_name = primary_metric.name if primary_metric else 'N/A'
+            score = primary_metric.score if primary_metric else 0.0
+            num = primary_metric.num if primary_metric else 0
+            summary_rows.append(dict(dataset=pretty, model=model, metric=metric_name, score=score, num=num))
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
-        if first is not None:
+        if first is not None and first.metrics:
+            primary_metric = _primary_metric(first)
             overview_labels.append(pretty)
-            overview_scores.append(first.score)
+            overview_scores.append(primary_metric.score)
 
     overview_chart_div = _overview_chart_div(overview_labels, overview_scores)
     sunburst_chart_div = _sunburst_chart_div(report_list)
@@ -253,7 +257,7 @@ def gen_html_report_file(
             rpt = info['model_reports'].get(model)
             if rpt is None:
                 continue
-            overall_score = rpt.score
+            overall_score = _primary_metric(rpt).score if rpt.metrics else 0.0
 
             if not rpt.metrics:
                 model_sections.append(
@@ -261,39 +265,31 @@ def gen_html_report_file(
                 )
                 continue
 
-            main_metric = rpt.metrics[0]
             subset_rows: List[dict] = []
-            subset_labels: List[str] = []
-            subset_scores: List[float] = []
 
-            for cat in main_metric.categories:
-                # Category name is stored as a tuple; join for display
-                cat_display = ' / '.join(cat.name) if cat.name else ''
-                for sub in cat.subsets:
-                    if sub.name == ReportKey.overall_score:
-                        continue
-                    subset_rows.append(
-                        dict(
-                            subset=sub.name,
-                            category=cat_display,
-                            metric=main_metric.name,
-                            score=sub.score,
-                            num=sub.num,
+            for metric in rpt.metrics:
+                for cat in metric.categories:
+                    # Category name is stored as a tuple; join for display
+                    cat_display = ' / '.join(cat.name) if cat.name else ''
+                    for sub in cat.subsets:
+                        if sub.name == ReportKey.overall_score:
+                            continue
+                        subset_rows.append(
+                            dict(
+                                subset=sub.name,
+                                category=cat_display,
+                                metric=metric.name,
+                                score=sub.score,
+                                num=sub.num,
+                            )
                         )
-                    )
-                    subset_labels.append(sub.name)
-                    subset_scores.append(sub.score)
 
             show_category = True
 
             chart_div = _subset_chart_div(
                 ds=ds,
                 model=model,
-                pretty=pretty,
-                metric_name=main_metric.name,
-                subset_labels=subset_labels,
-                subset_scores=subset_scores,
-                multi_model=multi_model,
+                subset_rows=subset_rows,
             )
             analysis_raw = rpt.analysis if rpt.analysis and rpt.analysis.strip() not in ('', 'N/A') else ''
             analysis_html = _md_to_html(analysis_raw) if analysis_raw else ''

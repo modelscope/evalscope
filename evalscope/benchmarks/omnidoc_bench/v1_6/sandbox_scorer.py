@@ -16,11 +16,6 @@ PAGE_METRICS = (
     'table_Edit_dist',
     'reading_order_Edit_dist',
 )
-PERCENT_METRICS = {
-    'display_formula_CDM',
-    'table_TEDS',
-    'table_TEDS_structure_only',
-}
 
 
 def build_scoring_program(annotation: Dict[str, Any], image_name: str, prediction: str) -> str:
@@ -90,14 +85,14 @@ try:
     result_path = work_dir / "result" / "predictions_quick_match_metric_result.json"
     result = json.loads(result_path.read_text(encoding="utf-8"))
 
-    def read_metric(*path, scale=1.0):
+    def read_metric(*path):
         value = result
         for key in path:
             if not isinstance(value, dict) or key not in value:
                 return None
             value = value[key]
         try:
-            value = float(value) * scale
+            value = float(value)
         except (TypeError, ValueError):
             return None
         return value if math.isfinite(value) else None
@@ -105,11 +100,9 @@ try:
     metrics = {{
         "text_block_Edit_dist": read_metric("text_block", "all", "Edit_dist", "ALL_page_avg"),
         "display_formula_Edit_dist": read_metric("display_formula", "all", "Edit_dist", "ALL_page_avg"),
-        "display_formula_CDM": read_metric("display_formula", "page", "CDM", "ALL", scale=100.0),
-        "table_TEDS": read_metric("table", "page", "TEDS", "ALL", scale=100.0),
-        "table_TEDS_structure_only": read_metric(
-            "table", "page", "TEDS_structure_only", "ALL", scale=100.0
-        ),
+        "display_formula_CDM": read_metric("display_formula", "page", "CDM", "ALL"),
+        "table_TEDS": read_metric("table", "page", "TEDS", "ALL"),
+        "table_TEDS_structure_only": read_metric("table", "page", "TEDS_structure_only", "ALL"),
         "table_Edit_dist": read_metric("table", "all", "Edit_dist", "ALL_page_avg"),
         "reading_order_Edit_dist": read_metric("reading_order", "all", "Edit_dist", "ALL_page_avg"),
     }}
@@ -157,10 +150,7 @@ def parse_scoring_result(result: Dict[str, Any]) -> Dict[str, float]:
             raise RuntimeError(f'Official OmniDocBench v1.6 metric {name} is not numeric.') from error
         if not math.isfinite(resolved):
             raise RuntimeError(f'Official OmniDocBench v1.6 metric {name} is not finite.')
-        upper_bound = 100.0 if name in PERCENT_METRICS else 1.0
-        if not 0.0 <= resolved <= upper_bound:
-            raise RuntimeError(
-                f'Official OmniDocBench v1.6 metric {name} is outside the expected 0-{upper_bound:g} range.'
-            )
+        if not 0.0 <= resolved <= 1.0:
+            raise RuntimeError(f'Official OmniDocBench v1.6 metric {name} is outside the expected 0-1 range.')
         metrics[name] = resolved
     return metrics

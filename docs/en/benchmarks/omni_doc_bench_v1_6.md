@@ -23,8 +23,8 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 
 - Uses MGAM `quick_match`, formula CDM, table TEDS/TEDS-S, edit distance, and reading-order evaluation.
 - EvalScope averages page metrics and computes Overall only from the aggregated text, formula, and table components.
-- Edit-distance metrics use the 0-1 scale.
-- CDM, TEDS, TEDS-S, and Overall use the 0-100 scale.
+- All metrics use the 0-1 scale required by EvalScope reports. The official percentage presentation can be obtained by multiplying scores by 100.
+- Lower Edit-distance scores are better; higher CDM, TEDS, TEDS-S, and Overall scores are better.
 - Docker with amd64 support and `evalscope[sandbox]` are required.
 - The default image is pinned; custom image overrides are allowed, but incompatible images fail during scoring.
 - The sandbox pool defaults to one container; increase `sandbox.pool_size` only when sufficient memory is available.
@@ -71,7 +71,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 {
   "input": [
     {
-      "id": "480ca5a4",
+      "id": "a818b9af",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~433.3KB]"
