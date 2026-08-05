@@ -5,8 +5,6 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.tool import ToolInfo
-
 # Official category groups, see ACEBench/category.py
 ACE_DATA_CATEGORY = {
     'normal': [
@@ -111,22 +109,6 @@ def decode_maybe_json(value: Any, default: Any) -> Any:
     return value
 
 
-def normalize_tool_schema(tool: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize ACEBench tool schemas to EvalScope ToolInfo-compatible JSON schema."""
-    normalized = deepcopy(tool)
-    parameters = _normalize_json_schema(normalized.get('parameters') or {})
-    parameters['type'] = 'object'
-    parameters.setdefault('properties', {})
-    parameters.setdefault('required', [])
-    normalized['parameters'] = parameters
-    return normalized
-
-
-def build_tool_infos(functions: List[Dict[str, Any]]) -> List[ToolInfo]:
-    """Build EvalScope ToolInfo objects from ACEBench function specs."""
-    return [ToolInfo.model_validate(normalize_tool_schema(function)) for function in functions]
-
-
 def extract_bracket_blocks(text: Any) -> List[str]:
     """Return every balanced top-level ``[...]`` block from text, in order."""
     if not isinstance(text, str):
@@ -152,14 +134,3 @@ def extract_outermost_bracket_content(text: str) -> Optional[str]:
     """Return the first balanced ``[...]`` block from text."""
     blocks = extract_bracket_blocks(text)
     return blocks[0] if blocks else None
-
-
-def _normalize_json_schema(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {
-            key: 'object' if key == 'type' and item == 'dict' else _normalize_json_schema(item)
-            for key, item in value.items()
-        }
-    if isinstance(value, list):
-        return [_normalize_json_schema(item) for item in value]
-    return value

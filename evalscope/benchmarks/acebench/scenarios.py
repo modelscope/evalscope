@@ -1,22 +1,19 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-"""Simulated APIs used by ACEBench agent tasks.
+"""Instantiation and state capture for the ACEBench agent scenarios.
 
-The modules under ``en/`` and ``zh/`` are vendored verbatim from the official ACEBench repository
-(https://github.com/ACEBench/ACEBench, MIT License), ``model_inference/multi_step/scenarios{en,zh}``,
-with only the ``BaseApi`` import rewritten to be relative. ACEBench is not published as a package,
-and the agent categories are graded on the state these classes end up in, so they have to be
-executed as-is for the scores to mean the same thing.
-
-The classes are plain in-memory state machines: they touch no files, network or subprocesses, which
-is why the rollout executes them in-process instead of inside a code sandbox. Model output never
-reaches ``eval``; see :mod:`evalscope.benchmarks.acebench.rollout` for the dispatch.
+The simulated API classes themselves are vendored under
+:mod:`evalscope.third_party.acebench`; this module owns the EvalScope-side glue that upstream keeps
+in ``multi_step_utils``: picking the classes a sample involves, applying its initial state, and
+capturing the attributes the checker grades.
 """
 import importlib
 import json
 from copy import deepcopy
 from typing import Any, Dict, List
 
-# Class name -> module holding it, relative to this package.
+VENDORED_PACKAGE = 'evalscope.third_party.acebench'
+
+# Class name -> module holding it, relative to the vendored package.
 CLASS_MODULE_MAPPING = {
     'BaseApi': 'base_api',
     'MessageApi': 'message',
@@ -55,7 +52,7 @@ def load_scenario_instances(
         module_name = CLASS_MODULE_MAPPING.get(class_name)
         if module_name is None:
             raise ValueError(f'Unknown ACEBench scenario class: {class_name}')
-        module = importlib.import_module(f'{__name__}.{language}.{module_name}')
+        module = importlib.import_module(f'{VENDORED_PACKAGE}.{language}.{module_name}')
         instance = getattr(module, class_name)()
         # Upstream applies the class-specific config and then the BaseApi config on top.
         instance._load_scenario(deepcopy(initial_config.get(class_name, {})), long_context=False)

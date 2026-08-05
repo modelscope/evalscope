@@ -1,8 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Prompt templates copied verbatim from the official ACEBench repository.
 
-Source: https://github.com/ACEBench/ACEBench (MIT License), ``model_inference/prompt_{en,zh}.py``,
+Source: https://github.com/ACEBench/ACEBench, ``model_inference/prompt_{en,zh}.py``,
 ``multi_step/APIModel_agent.py``, ``multi_turn/APIModel_agent.py`` and ``APIModel_user.py``.
+Redistributed under the upstream MIT license, reproduced in
+``evalscope/third_party/acebench/LICENSE``.
 
 The wording is reproduced unchanged because ACEBench scores string-level diagnostics and a strict
 ``[ApiName(key='value')]`` output format, so any rewording moves the reported numbers away from the

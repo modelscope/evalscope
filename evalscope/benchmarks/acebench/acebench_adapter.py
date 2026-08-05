@@ -13,19 +13,23 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
 from evalscope.report import Category, Report, Subset, unweighted_average_from_subsets
 from evalscope.utils.logger import get_logger
-from .checker import check_agent_end_state, check_normal_answer, check_special_answer, milestone_accuracy
-from .parser import CallFormatError, decode_calls, decode_tool_calls
+from .checker import (
+    check_agent_end_state,
+    check_normal_answer,
+    check_special_answer,
+    milestone_accuracy,
+    multi_turn_accuracy,
+)
+from .parser import CallFormatError, decode_calls
 from .prompts import build_single_turn_prompts
 from .utils import (
     ACE_DATA_CATEGORY,
     ACEBENCH_CATEGORIES,
     ACEBENCH_LANGUAGES,
     ACEBENCH_SPLITS,
-    build_tool_infos,
     category_of_record,
     decode_maybe_json,
     dialogue_id_of,
-    extract_bracket_blocks,
     resolve_categories,
     split_of_category,
 )
@@ -85,10 +89,8 @@ multi-step agent tasks against a simulated environment. Data is split into three
   and an OVERALL score weighted `normal` 0.578 / `special` 0.2676 / `agent` 0.1545. Weights are
   renormalized over the groups actually evaluated, so a partial run stays interpretable.
 - `agent_multi_turn` additionally needs a user simulator; set `extra_params.user_model` to the model
-  that should play the user (the official runner uses `gpt-4o`). Without it those samples are
-  skipped rather than silently scored.
-- Set `extra_params.is_fc_model=true` to evaluate through native tool calling. This deviates from
-  the official prompt-only protocol, so such numbers are not directly comparable to the leaderboard.
+  that should play the user (the official runner uses `gpt-4o`). Without it those rollouts fail and
+  score zero, so configure it before reading an OVERALL number.
 """,
         dataset_id='evalscope/acebench',
         subset_list=list(ACEBENCH_CATEGORIES),
@@ -101,16 +103,10 @@ multi-step agent tasks against a simulated environment. Data is split into three
                 'description': 'Dataset language to evaluate, either `en` or `zh`.',
                 'value': 'en',
             },
-            'is_fc_model': {
-                'type': 'bool',
-                'description': 'Evaluate through native tool calling instead of the official '
-                'prompt-only protocol. Not comparable with the official leaderboard.',
-                'value': False,
-            },
             'user_model': {
                 'type': 'str',
                 'description': 'Model that plays the user in `agent_multi_turn` rollouts, '
-                'e.g. `gpt-4o`. The category is skipped when unset.',
+                'e.g. `gpt-4o`. Those rollouts fail and score zero when unset.',
                 'value': '',
             },
             'user_model_api_url': {
@@ -149,12 +145,19 @@ class AceBenchAdapter(AgentAdapter):
         # The hub dataset keeps one configuration per language and one split per data family.
         self.default_subset = self.language
 
-        self.is_fc_model = bool(self.extra_params.get('is_fc_model', False))
         self.user_model_id = str(self.extra_params.get('user_model') or '')
         self.max_dialog_turns = int(self.extra_params.get('max_dialog_turns', 40))
         self._user_model: Optional[Model] = None
 
         self.subset_list = resolve_categories(self.subset_list)
+        if 'agent_multi_turn' in self.subset_list and not self.user_model_id:
+            # Warn once here rather than per sample: those rollouts need a second model to play the
+            # user, and without one they fail and score zero, which drags the AGENT group down.
+            logger.warning(
+                'The agent_multi_turn category needs a user simulator and will score zero without '
+                "one. Set dataset_args={'acebench': {'extra_params': {'user_model': '<model-id>'}}} "
+                'to evaluate it (the official runner uses gpt-4o).'
+            )
 
     # #########################
     # DATASET LOADING
@@ -162,10 +165,9 @@ class AceBenchAdapter(AgentAdapter):
 
     def load_subsets(self, load_func, is_fewshot: bool = False) -> DatasetDict:
         """Load the ACEBench splits and re-bucket their samples into fine-grained categories."""
-        wanted = self._evaluable_categories()
         dataset_dicts = []
         for split in ACEBENCH_SPLITS:
-            categories = [category for category in wanted if split_of_category(category) == split]
+            categories = [category for category in self.subset_list if split_of_category(category) == split]
             if not categories:
                 continue
             with self._temporary_attribute('current_subset_name', split):
@@ -179,20 +181,6 @@ class AceBenchAdapter(AgentAdapter):
                 )
             )
         return DatasetDict.from_dataset_dicts(dataset_dicts)
-
-    def _evaluable_categories(self) -> List[str]:
-        """Return the requested categories that can actually be evaluated in this configuration."""
-        if 'agent_multi_turn' not in self.subset_list or self.user_model_id:
-            return self.subset_list
-
-        # Those rollouts need a model to play the user. Scoring them zero would understate the model
-        # under evaluation, so the category is left out instead.
-        logger.warning(
-            'Skipping the agent_multi_turn category: it needs a user simulator. Set '
-            "dataset_args={'acebench': {'extra_params': {'user_model': '<model-id>'}}} to evaluate "
-            'it (the official runner uses gpt-4o).'
-        )
-        return [category for category in self.subset_list if category != 'agent_multi_turn']
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert an ACEBench record into a Sample carrying the official prompt pair."""
@@ -216,8 +204,6 @@ class AceBenchAdapter(AgentAdapter):
                 'mile_stone': milestones
             }, ensure_ascii=False),
             subset_key=test_category,
-            # Native tool schemas are only attached in the (non-official) function-calling mode.
-            tools=build_tool_infos(functions) if self.is_fc_model else [],
             metadata={
                 'id': record_id,
                 'test_category': test_category,
@@ -242,7 +228,9 @@ class AceBenchAdapter(AgentAdapter):
         """Run the agent rollout for agent samples, and a single generation otherwise."""
         test_category = (sample.metadata or {}).get('test_category', '')
         if 'agent' not in test_category:
-            return model.generate(input=sample.input, tools=sample.tools)
+            # ACEBench is a prompt-only protocol: the API specs live in the system prompt and the
+            # answer must be a ``[ApiName(...)]`` list, so no native tool schemas are attached.
+            return model.generate(input=sample.input)
 
         from .rollout import run_rollout
 
@@ -266,7 +254,7 @@ class AceBenchAdapter(AgentAdapter):
             choices=[ChatCompletionChoice.from_content('\n'.join(result.process))],
             usage=result.usage,
         )
-        return InferenceResult(output=output, messages=result.messages)
+        return InferenceResult(output=output, messages=result.messages, trace=result.trace)
 
     def _get_user_model(self) -> Optional[Model]:
         """Build the model that plays the user in ``agent_multi_turn`` rollouts."""
@@ -300,9 +288,9 @@ class AceBenchAdapter(AgentAdapter):
         if 'special' in test_category:
             result = self._score_special(filtered_prediction, metadata, test_category)
         elif 'agent' in test_category:
-            result = self._score_agent(filtered_prediction, metadata)
+            result = self._score_agent(metadata)
         else:
-            result = self._score_normal(filtered_prediction, metadata, test_category, task_state)
+            result = self._score_normal(filtered_prediction, metadata, test_category)
 
         score.value = {key: value for key, value in result.items() if key in {'acc', 'process_acc'}}
         score.main_score_name = 'acc'
@@ -316,19 +304,10 @@ class AceBenchAdapter(AgentAdapter):
         }
         return score
 
-    def _score_normal(
-        self,
-        prediction: str,
-        metadata: Dict[str, Any],
-        test_category: str,
-        task_state: TaskState,
-    ) -> Dict[str, Any]:
+    def _score_normal(self, prediction: str, metadata: Dict[str, Any], test_category: str) -> Dict[str, Any]:
         """Decode the answer and check it against the ground truth."""
         try:
-            if self.is_fc_model:
-                predicted_calls = decode_tool_calls(task_state.output)
-            else:
-                predicted_calls = decode_calls(prediction, test_category)
+            predicted_calls = decode_calls(prediction, test_category)
         except CallFormatError as error:
             return {'valid': False, 'acc': 0.0, 'error': [str(error)], 'error_type': 'wrong_output_format'}
 
@@ -345,13 +324,11 @@ class AceBenchAdapter(AgentAdapter):
         result = check_special_answer(prediction, metadata.get('ground_truth'), test_category)
         return {**result, 'acc': 1.0 if result['valid'] else 0.0}
 
-    def _score_agent(self, prediction: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def _score_agent(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Score an agent sample on its end state, and report milestone progress alongside."""
-        process_trace = metadata.get('process')
-        if process_trace is None:
-            # No rollout was performed: fall back to the call blocks present in the raw answer.
-            process_trace = extract_bracket_blocks(prediction)
-        process_acc = milestone_accuracy(process_trace, metadata.get('mile_stone'))
+        # ``process`` is absent only when the rollout itself failed, in which case nothing was
+        # executed and no milestone can have been reached.
+        process_acc = milestone_accuracy(metadata.get('process') or [], metadata.get('mile_stone'))
 
         end_state = metadata.get('end_state')
         if end_state is None:
@@ -385,9 +362,9 @@ class AceBenchAdapter(AgentAdapter):
 
         end_scores, process_scores = [], []
         for steps in dialogues.values():
-            correct = [step.score.value.get('acc', 0.0) == 1.0 for step in steps]
-            end_scores.append(0.0 if False in correct else 1.0)
-            process_scores.append(round(correct.count(True) / len(correct), 3))
+            end_score, process_score = multi_turn_accuracy([step.score.value.get('acc', 0.0) == 1.0 for step in steps])
+            end_scores.append(end_score)
+            process_scores.append(process_score)
 
         ids = [sample_score.sample_id for sample_score in sample_scores]
         return [

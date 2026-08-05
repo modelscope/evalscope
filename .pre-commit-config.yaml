@@ -10,7 +10,6 @@ repos:
                 tests/|
                 evalscope/utils/utils.py|
                 evalscope/third_party/|
-                evalscope/benchmarks/acebench/scenarios/|
                 evalscope/backend/rag_eval/clip_benchmark/tasks|
                 evalscope/backend/rag_eval/cmteb/tasks|
                 evalscope/metrics/vision/t2v_metrics
@@ -30,7 +29,6 @@ repos:
                 tests/|
                 evalscope/utils/utils.py|
                 evalscope/third_party/|
-                evalscope/benchmarks/acebench/scenarios/|
                 evalscope/backend/rag_eval/clip_benchmark/tasks|
                 evalscope/backend/rag_eval/cmteb/tasks
             )
@@ -38,17 +36,17 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
+        exclude: evalscope/third_party/|docs/|examples
       - id: check-yaml
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
+        exclude: evalscope/third_party/|docs/|examples
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/|.*\.json
+        exclude: evalscope/third_party/|docs/|examples|.*\.json
       - id: requirements-txt-fixer
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
+        exclude: evalscope/third_party/|docs/|examples
       - id: double-quote-string-fixer
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/|.*\.json|cl_bench_adapter.py
+        exclude: evalscope/third_party/|docs/|examples|.*\.json|cl_bench_adapter.py
       - id: check-merge-conflict
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
+        exclude: evalscope/third_party/|docs/|examples
       - id: mixed-line-ending
-        exclude: thirdparty/|docs/|examples|evalscope/benchmarks/acebench/scenarios/
+        exclude: evalscope/third_party/|docs/|examples
         args: ["--fix=lf"]

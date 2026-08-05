@@ -11,9 +11,8 @@ Deviation from upstream: the official ``resolve_ast_by_type`` calls ``eval()`` o
 No ACEBench sample carries such an argument, so scores are unaffected.
 """
 import ast
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from evalscope.api.model import ModelOutput
 from .utils import extract_outermost_bracket_content
 
 CallList = List[Dict[str, Dict[str, Any]]]
@@ -58,15 +57,6 @@ def decode_execution_calls(message: str) -> CallList:
     body = ast.parse(text.strip("[]'"), mode='eval').body
     elements = body.elts if isinstance(body, (ast.Tuple, ast.List)) else [body]
     return [_resolve_call(element, nested_call_as_source=True) for element in elements if isinstance(element, ast.Call)]
-
-
-def decode_tool_calls(model_output: Optional[ModelOutput]) -> CallList:
-    """Decode native tool calls into ACEBench's ``[{name: {arg: value}}]`` representation."""
-    if model_output is None or model_output.empty:
-        return []
-    return [{
-        tool_call.function.name: tool_call.function.arguments or {}
-    } for tool_call in model_output.message.tool_calls or []]
 
 
 def _preprocess(raw_output: Any, test_category: str) -> str:

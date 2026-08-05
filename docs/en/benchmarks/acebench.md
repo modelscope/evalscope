@@ -35,10 +35,8 @@ multi-step agent tasks against a simulated environment. Data is split into three
   and an OVERALL score weighted `normal` 0.578 / `special` 0.2676 / `agent` 0.1545. Weights are
   renormalized over the groups actually evaluated, so a partial run stays interpretable.
 - `agent_multi_turn` additionally needs a user simulator; set `extra_params.user_model` to the model
-  that should play the user (the official runner uses `gpt-4o`). Without it those samples are
-  skipped rather than silently scored.
-- Set `extra_params.is_fc_model=true` to evaluate through native tool calling. This deviates from
-  the official prompt-only protocol, so such numbers are not directly comparable to the leaderboard.
+  that should play the user (the official runner uses `gpt-4o`). Without it those rollouts fail and
+  score zero, so configure it before reading an OVERALL number.
 
 
 ## Properties
@@ -58,8 +56,8 @@ multi-step agent tasks against a simulated environment. Data is split into three
 
 | Metric | Value |
 |--------|-------|
-| Total Samples | 993 |
-| Prompt Length (Mean) | 6025.19 chars |
+| Total Samples | 1,023 |
+| Prompt Length (Mean) | 6032.98 chars |
 | Prompt Length (Min/Max) | 2295 / 11835 chars |
 
 **Per-Subset Statistics:**
@@ -82,6 +80,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 | `special_error_param` | 50 | 4499.78 | 3121 | 6090 |
 | `special_irrelevant` | 50 | 6011.94 | 3778 | 8492 |
 | `agent_multi_step` | 20 | 6407.9 | 6343 | 6472 |
+| `agent_multi_turn` | 30 | 6290.97 | 5505 | 6630 |
 
 ## Sample Example
 
@@ -91,18 +90,17 @@ multi-step agent tasks against a simulated environment. Data is split into three
 {
   "input": [
     {
-      "id": "38b15601",
+      "id": "9198db95",
       "content": "You are an AI assistant with the role name \"assistant.\" Based on the provided API specifications and conversation history from steps 1 to t, generate the API requests that the assistant should call in step t+1. The API requests should be outp ... [TRUNCATED 3788 chars] ... '}, 'effects': {'description': 'List of audio effects to apply.', 'type': 'array', 'items': {'type': 'string', 'enum': ['reverb', 'echo', 'distortion']}}}, 'required': ['frequency', 'gain']}}}, 'required': ['microphone', 'performanceTime']}}]"
     },
     {
-      "id": "d2f676f1",
+      "id": "61cfd720",
       "content": "Conversation history 1..t:\nuser: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n"
     }
   ],
   "target": "{\"ground_truth\": {\"NightSkyAnalysis_performEclipseAnalysis\": {\"dateRange\": {\"startDate\": \"2023-01-01\", \"endDate\": \"2028-01-01\"}, \"location\": {\"latitude\": 37.9838, \"longitude\": 23.7275}, \"eclipseType\": \"total\"}}, \"mile_stone\": []}",
   "id": 0,
   "group_id": 0,
-  "tools": [],
   "subset_key": "normal_single_turn_single_function",
   "metadata": {
     "id": "normal_single_turn_single_function_0",
@@ -302,8 +300,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `language` | `str` | `en` | Dataset language to evaluate, either `en` or `zh`. |
-| `is_fc_model` | `bool` | `False` | Evaluate through native tool calling instead of the official prompt-only protocol. Not comparable with the official leaderboard. |
-| `user_model` | `str` | `` | Model that plays the user in `agent_multi_turn` rollouts, e.g. `gpt-4o`. The category is skipped when unset. |
+| `user_model` | `str` | `` | Model that plays the user in `agent_multi_turn` rollouts, e.g. `gpt-4o`. Those rollouts fail and score zero when unset. |
 | `user_model_api_url` | `str` | `` | Base URL for `user_model`. Defaults to `MODELSCOPE_API_BASE`. |
 | `user_model_api_key` | `str` | `` | API key for `user_model`. Defaults to `MODELSCOPE_SDK_TOKEN`. |
 | `max_dialog_turns` | `int` | `40` | Maximum number of agent rollout steps. |

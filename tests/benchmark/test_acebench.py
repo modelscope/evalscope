@@ -382,6 +382,33 @@ def test_wifi_is_shared_across_the_phone_apis():
     assert state['BaseApi']['wifi'] is True
 
 
+def test_multi_step_transcript_hides_the_agents_own_turns():
+    """Upstream folds only user and execution lines into the multi-step transcript.
+
+    ``multi_step_inference`` calls ``get_inference_message`` solely in its agent branch, so the
+    agent never sees its own previous messages. This costs real accuracy -- a model that needs that
+    history repeats one call until the step budget runs out -- but it is what the official numbers
+    measure, so widening the transcript here would inflate scores above the leaderboard.
+    """
+    api = _ScriptedAPI(['[turn_on_wifi()]', '[get_earliest_message_id()]', 'finish conversation'])
+    run_rollout(Model(api=api, config=GenerateConfig()), phone_sample(), max_steps=10)
+
+    second_turn = api.prompts[1][-1].text
+    assert 'agent:' not in second_turn
+    assert 'execution result:' in second_turn
+    assert second_turn.count('user:') == 1
+
+
+def test_multi_turn_transcript_includes_every_turn():
+    """``multi_turn_inference`` calls ``get_inference_message`` in all three branches."""
+    agent = _ScriptedAPI(['Who should I message?', "[send_message(sender_name='Grace', receiver_name='F', message='x')]"])
+    user = scripted_model(['Please message Frank.', 'Message Frank saying hi.'])
+    run_rollout(Model(api=agent, config=GenerateConfig()), phone_sample('agent_multi_turn'), 20, user)
+
+    # The agent's own question is quoted back to it on a later turn, unlike multi_step.
+    assert any('agent:Who should I message?' in prompt[-1].text for prompt in agent.prompts)
+
+
 def test_multi_step_rollout_survives_a_non_call_answer():
     metadata = phone_sample()
     result = run_rollout(scripted_model(['I need more information.', 'finish conversation']), metadata, max_steps=8)
@@ -439,6 +466,131 @@ def test_unknown_api_reports_an_error_without_raising():
 
 
 # ---------------------------------------------------------------------------
+# Trace and perf plumbing consumed by the web dashboard
+# ---------------------------------------------------------------------------
+
+
+def _events_by_step(result) -> Dict[int, List[Any]]:
+    grouped: Dict[int, List[Any]] = {}
+    for event in result.trace.events:
+        grouped.setdefault(event.step, []).append(event)
+    return grouped
+
+
+def test_rollout_trace_groups_each_turn_with_the_calls_it_produced():
+    """The dashboard groups by ``step`` and resolves messages via ``message_id``.
+
+    A turn and the execution of its calls must therefore share a step, which the raw loop index
+    cannot express because upstream spends a separate iteration on the executor.
+    """
+    metadata = phone_sample()
+    script = ['[turn_on_wifi()]', "[send_message(sender_name='Grace', receiver_name='Frank', message='hi')]"]
+    result = run_rollout(scripted_model(script), metadata, max_steps=10)
+
+    by_step = _events_by_step(result)
+    message_ids = {message.id for message in result.messages}
+    by_id = {message.id: message for message in result.messages}
+
+    # Every referenced message must actually be in the transcript, or the view drops the group.
+    for events in by_step.values():
+        for event in events:
+            if event.message_id is not None:
+                assert event.message_id in message_ids
+
+    # Step 0 holds the first agent turn and the result of the call it made.
+    step0 = {event.type.value for event in by_step[0]}
+    assert step0 == {'model_generate', 'tool_call', 'tool_result'}
+    generate = next(e for e in by_step[0] if e.type.value == 'model_generate')
+    assert by_id[generate.message_id].role == 'assistant'
+    assert generate.latency_ms is not None
+
+    # tool_call and tool_result are paired through payload['id'], and the observation message
+    # carries the same id so the two render as one entry.
+    call = next(e for e in by_step[0] if e.type.value == 'tool_call')
+    outcome = next(e for e in by_step[0] if e.type.value == 'tool_result')
+    assert call.payload['name'] == 'turn_on_wifi'
+    assert call.payload['id'] == outcome.payload['id']
+    observation = by_id[outcome.message_id]
+    assert observation.role == 'tool'
+    assert observation.tool_call_id == call.payload['id']
+    assert observation.function == 'turn_on_wifi'
+
+
+def test_rollout_trace_records_the_framework_and_termination():
+    metadata = phone_sample()
+    result = run_rollout(scripted_model(['[turn_on_wifi()]', 'finish conversation']), metadata, max_steps=8)
+    assert result.trace.framework == 'acebench'
+    assert result.trace.strategy == 'agent_multi_step'
+    assert [e.type.value for e in result.trace.events][-1] == 'submit'
+
+
+def test_rollout_trace_records_running_out_of_steps():
+    metadata = phone_sample()
+    # Never emits the finish marker, so the budget is what stops the loop.
+    result = run_rollout(scripted_model(['[turn_on_wifi()]'] * 6), metadata, max_steps=4)
+    last = result.trace.events[-1]
+    assert last.type.value == 'error'
+    assert last.payload['message'] == 'max_steps_exceeded'
+
+
+def test_agent_messages_keep_the_perf_metrics_the_model_api_attached():
+    """PerfCollector reads ``perf_metrics`` off assistant messages, so they must not be rebuilt."""
+    from evalscope.api.messages import PerformanceMetrics
+
+    class _PerfAPI(_ScriptedAPI):
+
+        def generate(self, input, tools=None, tool_choice=None, config=None, **kwargs):  # noqa: A002
+            output = super().generate(input, tools, tool_choice, config, **kwargs)
+            output.message.perf_metrics = PerformanceMetrics(latency=1.5, input_tokens=11, output_tokens=7)
+            return output
+
+    model = Model(api=_PerfAPI(['[turn_on_wifi()]', 'finish conversation']), config=GenerateConfig())
+    result = run_rollout(model, phone_sample(), max_steps=8)
+
+    assistant = [m for m in result.messages if m.role == 'assistant']
+    assert assistant, 'the rollout must keep the model\'s own assistant messages'
+    assert all(m.perf_metrics is not None for m in assistant)
+    assert assistant[0].perf_metrics.input_tokens == 11
+
+
+def test_user_simulator_turns_are_traced_but_excluded_from_model_perf():
+    metadata = phone_sample('agent_multi_turn')
+    # The agent asks a question first, so the simulated user has to answer mid-conversation.
+    agent = scripted_model([
+        'Who should I message?',
+        "[send_message(sender_name='Grace', receiver_name='Frank', message='hi')]",
+    ])
+    user = scripted_model(['Please message Frank.', 'Message Frank saying hi.'])
+    result = run_rollout(agent, metadata, max_steps=20, user_model=user)
+
+    # The simulated user must not look like the evaluated model, or it would pollute the perf table.
+    assert all(m.role != 'assistant' for m in result.messages if m.text.startswith('user: '))
+    assert all(m.perf_metrics is None for m in result.messages if m.role != 'assistant')
+
+    # Mid-conversation user turns must be referenced by an event, otherwise the trace view drops them.
+    simulator_events = [e for e in result.trace.events if e.payload.get('source') == 'user_simulator']
+    referenced = {e.message_id for e in simulator_events}
+    assert referenced, 'user simulator turns need a trace event to stay visible'
+    assert referenced <= {m.id for m in result.messages}
+
+    # The opening turn precedes any agent turn and is intentionally event-free, so the dashboard
+    # renders it as the conversation preamble rather than inside a step group.
+    assert result.messages[0].text == 'user: Please message Frank.'
+    assert result.messages[0].id not in referenced
+
+    # A reply shares its step with the agent turn it answers, so that step holds two
+    # ``model_generate`` events. The dashboard reads the *first* one as the step's assistant perf
+    # header, so the agent's event has to come first.
+    by_id = {m.id: m for m in result.messages}
+    for events in _events_by_step(result).values():
+        generates = [e for e in events if e.type.value == 'model_generate']
+        if len(generates) < 2:
+            continue
+        assert by_id[generates[0].message_id].role == 'assistant'
+        assert generates[0].payload.get('source') != 'user_simulator'
+
+
+# ---------------------------------------------------------------------------
 # Adapter aggregation
 # ---------------------------------------------------------------------------
 
@@ -449,6 +601,18 @@ def adapter():
     from evalscope.config import TaskConfig
 
     return get_benchmark('acebench', config=TaskConfig(model='mock-llm', datasets=['acebench']))
+
+
+def test_all_categories_stay_loadable_without_a_user_simulator(adapter):
+    """Loading must not depend on extra_params.
+
+    Filtering categories out of the load path also hides them from the dataset statistics that
+    ``make docs-pipeline`` records, which silently desynchronised the generated docs from the
+    declared sample counts.
+    """
+    assert not adapter.user_model_id
+    assert 'agent_multi_turn' in adapter.subset_list
+    assert len(adapter.subset_list) == 17
 
 
 def test_multi_turn_subsets_aggregate_per_dialogue(adapter):
@@ -509,8 +673,8 @@ def test_overall_uses_the_official_weights(adapter):
         subset for category in report.metrics[0].categories
         for subset in category.subsets if subset.name == 'OVERALL'
     )
-    # agent_multi_turn is dropped without a user simulator, so agent still contributes with weight.
-    assert overall.score == pytest.approx(0.578 / (0.578 + 0.2676 + 0.1545), abs=1e-3)
+    # All three families are evaluated, so the weights are used as-is without renormalization.
+    assert overall.score == pytest.approx(0.578, abs=1e-3)
 
 
 # ---------------------------------------------------------------------------
