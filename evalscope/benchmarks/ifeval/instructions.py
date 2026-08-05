@@ -19,6 +19,7 @@ import logging
 import random
 import re
 import string
+from types import ModuleType
 from typing import Dict, Optional, Sequence, Union
 
 from . import instructions_util
@@ -101,6 +102,21 @@ _NUM_WORDS_LOWER_LIMIT = 100
 _NUM_WORDS_UPPER_LIMIT = 500
 
 
+def _import_langdetect() -> ModuleType:
+    """Import `langdetect` with a fixed detection seed.
+
+    `langdetect` samples randomly during inference, so the very same text can be
+    detected as different languages across calls. That makes language-related
+    checkers non-deterministic and produces different scores for identical
+    responses (e.g. when `repeats > 1`). Pinning the seed makes detection
+    reproducible. See https://github.com/Mimino666/langdetect/issues/3
+    """
+    import langdetect
+
+    langdetect.DetectorFactory.seed = 0
+    return langdetect
+
+
 class Instruction:
     """An instruction template."""
 
@@ -163,7 +179,7 @@ class ResponseLanguageChecker(Instruction):
           True if the language of `value` follows instruction; otherwise False.
         """
         assert isinstance(value, str)
-        import langdetect
+        langdetect = _import_langdetect()
         try:
             return langdetect.detect(value) == self._language
         except langdetect.LangDetectException as e:
@@ -1377,7 +1393,7 @@ class CapitalLettersEnglishChecker(Instruction):
     def check_following(self, value):
         """Checks that the response is in English and in all capital letters."""
         assert isinstance(value, str)
-        import langdetect
+        langdetect = _import_langdetect()
         try:
             return value.isupper() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:
@@ -1407,7 +1423,7 @@ class LowercaseLettersEnglishChecker(Instruction):
     def check_following(self, value):
         """Checks that the response is in English and in all lowercase letters."""
         assert isinstance(value, str)
-        import langdetect
+        langdetect = _import_langdetect()
         try:
             return value.islower() and langdetect.detect(value) == 'en'
         except langdetect.LangDetectException as e:

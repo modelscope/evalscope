@@ -26,6 +26,12 @@ from evalscope.utils import get_logger
 
 try:
     import langdetect
+
+    # `langdetect` samples randomly during inference, so the very same text can be
+    # detected as different languages across calls, which makes language-related
+    # checkers non-deterministic. Pinning the seed makes detection reproducible.
+    # See https://github.com/Mimino666/langdetect/issues/3
+    langdetect.DetectorFactory.seed = 0
 except ImportError:
     langdetect = None
 try:

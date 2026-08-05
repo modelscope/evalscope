@@ -118,4 +118,4 @@ See the upstream README for the full matrix: https://github.com/sierra-research/
 ## Metric Description
 
 - Pass^1: proportion of tasks completed on the first attempt (higher is better)
-- Aggregation: `mean_and_pass_hat_k` (supports `repeats > 1` for pass@k)
+- Aggregation: `mean_and_pass_hat_k` (set `repeats = k` to also report `pass^k`, the probability that *all* `k` attempts of a task succeed). Note this is **not** `pass@k`, which only requires at least one of `k` attempts to succeed; use `mean_and_pass_at_k` if you want that instead.

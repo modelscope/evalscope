@@ -46,7 +46,7 @@ logger = get_logger()
 - **User Model Configuration**: Requires setting up a user simulation model
 - Primary metric: **Accuracy** based on task completion reward
 - Supports **airline** and **retail** domains
-- Uses **pass@k** aggregation for robustness evaluation
+- Uses **pass^k** aggregation (`mean_and_pass_hat_k`) for robustness evaluation: the probability that *all* `k` attempts of a task succeed, as defined by the τ-bench paper. This is stricter than `pass@k`, which only requires at least one of `k` attempts to succeed. Set `repeats=k` to enable it.
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau_bench.html)
 """,  # noqa: E501
         dataset_id='https://github.com/sierra-research/tau-bench',

@@ -174,8 +174,11 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     # First check whether the string strictly ends with the expected answer
     # In this case, we're looking for a single line which contains the expected
     # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
+    # Note: the capture group must start with an alphanumeric character, otherwise a
+    # placeholder the model echoed from the prompt (e.g. `ANSWER: [LETTER]`) matches
+    # with a whitespace-only capture and shadows the real answer that follows.
     match = re.search(
-        r'(?i)^ANSWER\s*:\s*([A-Za-z\d ,]+)\s*(?:$|\n|\.)',
+        r'(?i)^ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
         state.output.completion,
         flags=re.MULTILINE,
     )
@@ -184,7 +187,7 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     # version for backward compatibility
     if match is None:
         match = re.search(
-            r'(?i)ANSWER\s*:\s*([A-Za-z\d ,]+)(?:[^\w]|\n|$|\.)',
+            r'(?i)ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
             state.output.completion,
         )
 

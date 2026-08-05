@@ -3,13 +3,13 @@
 
 ## 概述
 
-τ²-bench（Tau Squared Bench）是对原始 τ-bench 的扩展和增强，用于在特定领域场景中评估对话式 AI 智能体，并新增了对电信领域的支持。
+τ²-bench（Tau Squared Bench）是对原始 τ-bench 的扩展和增强版本，用于在特定领域场景中评估对话式 AI 代理，并新增了对电信领域的支持。
 
 ## 任务描述
 
-- **任务类型**：高级对话智能体评估
+- **任务类型**：高级对话代理评估
 - **输入**：包含复杂目标和多步骤需求的用户场景
-- **输出**：智能体根据策略指南通过 API 工具调用执行动作
+- **输出**：代理根据策略指南通过 API 工具调用执行操作
 - **领域**：航空、零售、电信
 
 ## 主要特性
@@ -26,9 +26,9 @@
 - **用户模型配置**：需设置用户模拟模型
 - 主要指标：基于任务完成奖励的 **准确率（Accuracy）**
 - 支持 **航空（airline）**、**零售（retail）** 和 **电信（telecom）** 领域
-- 使用 **pass@k** 聚合方法进行鲁棒性评估
+- 使用 **pass^k** 聚合方法（`mean_and_pass_hat_k`）进行鲁棒性评估：即 *所有* `k` 次任务尝试均成功的概率，该定义源自 τ-bench 论文。此标准比仅要求 `k` 次尝试中至少一次成功的 `pass@k` 更严格。设置 `repeats=k` 即可启用该评估方式。
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau2_bench.html)
-- 更新版本 **τ³-bench**（v1.0.0）已作为 `tau3_bench` 基准发布，新增 `banking_knowledge` 领域并修复 75+ 项任务。注意：两个版本不能在同一环境中同时安装。
+- 更新版本 **τ³-bench**（v1.0.0）已作为 `tau3_bench` 基准发布，新增 `banking_knowledge` 领域并修复了 75+ 项任务。注意：两个版本无法在同一环境中同时安装。
 
 ## 属性
 
@@ -41,7 +41,7 @@
 | **指标** | N/A |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `test` |
-| **聚合方式** | `mean_and_pass_hat_k` |
+| **聚合方法** | `mean_and_pass_hat_k` |
 
 
 ## 数据统计
@@ -144,7 +144,7 @@ task_cfg = TaskConfig(
     datasets=['tau2_bench'],
     dataset_args={
         'tau2_bench': {
-            # subset_list: ['airline', 'retail', 'telecom']  # 可选，用于评估特定子集
+            # subset_list: ['airline', 'retail', 'telecom']  # 可选，用于评估指定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

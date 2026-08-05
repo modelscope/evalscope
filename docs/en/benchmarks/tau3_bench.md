@@ -32,7 +32,7 @@
   - `*_reranker` → also needs `OPENAI_API_KEY`
   - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)
 - Primary metric: **Accuracy** based on task completion reward
-- Uses **pass@k** aggregation for robustness evaluation
+- Uses **pass^k** aggregation (`mean_and_pass_hat_k`) for robustness evaluation: the probability that *all* `k` attempts of a task succeed, as defined by the τ-bench paper. This is stricter than `pass@k`, which only requires at least one of `k` attempts to succeed. Set `repeats=k` to enable it.
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)
 
 

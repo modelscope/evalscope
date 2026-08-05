@@ -3,7 +3,7 @@
 
 ## 概述
 
-LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成模型在真实世界竞赛编程问题上的表现。它持续从编程平台收集新问题，以确保模型在训练期间未见过测试数据。
+LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成模型在真实世界竞赛编程问题上的表现。它持续从编程平台收集新问题，以确保模型在训练阶段未见过测试数据。
 
 ## 任务描述
 
@@ -18,12 +18,13 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 - 题目来自主流竞赛编程平台
 - 每道题包含多个测试用例，以进行全面评估
 - 支持基于日期的过滤，防止数据污染
-- 支持本地和沙箱环境中的代码执行
+- 支持本地和沙箱环境下的代码执行
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- **安全警告**：默认情况下，代码在本地环境中执行。我们建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- 提示词遵循官方 LiveCodeBench runner 格式：通用的“专家 Python 程序员”系统消息，加上 `### Question` / `### Format` 用户消息
+- **安全警告**：默认情况下，代码会在本地环境中执行。我们建议使用沙箱执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 使用 `start_date` 和 `end_date` 参数按日期筛选题目
 - 每个测试用例默认超时时间为 6 秒
 - 支持 `pass@k` 指标计算
@@ -37,8 +38,8 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `acc` |
-| **默认Shots** | 0-shot |
-| **评估划分** | `test` |
+| **默认 Shots** | 0-shot |
+| **评估分割** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
 ## 数据统计
@@ -75,6 +76,11 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 
 ## 提示模板
 
+**系统提示词：**
+```text
+You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.
+```
+
 **提示模板：**
 ```text
 ### Question:
@@ -89,8 +95,8 @@ LiveCodeBench 是一个无数据污染的基准测试，用于评估代码生成
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `start_date` | `str | null` | `None` | 筛选此日期（YYYY-MM-DD）之后的问题。设为 null 则保留所有问题。 |
-| `end_date` | `str | null` | `None` | 筛选此日期（YYYY-MM-DD）之前的问题。设为 null 则保留所有问题。 |
+| `start_date` | `str | null` | `None` | 从该日期（YYYY-MM-DD）开始筛选题目。设为 null 则保留所有题目。 |
+| `end_date` | `str | null` | `None` | 筛选截至该日期（YYYY-MM-DD）的题目。设为 null 则保留所有题目。 |
 | `debug` | `bool` | `False` | 启用详细调试日志并绕过某些安全检查。 |
 
 ## 沙箱配置
