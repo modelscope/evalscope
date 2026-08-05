@@ -690,6 +690,9 @@ def test_simulated_apis_match_upstream(official):
             upstream_state = [{
                 name: {key: value for key, value in vars(instance).items() if key in SAVED_ATTRIBUTES.get(name, [])}
             } for name, instance in upstream_instances.items()]
+            # Upstream writes this state to a result file and reads it back before grading, which
+            # turns integer dict keys into strings. snapshot_states reproduces that conversion.
+            upstream_state = json.loads(json.dumps(upstream_state, default=str))
 
             instances = load_scenario_instances(copy.deepcopy(initial_config), involved_classes, 'en')
             for message in sequence:

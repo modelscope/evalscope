@@ -12,6 +12,7 @@ is why the rollout executes them in-process instead of inside a code sandbox. Mo
 reaches ``eval``; see :mod:`evalscope.benchmarks.acebench.rollout` for the dispatch.
 """
 import importlib
+import json
 from copy import deepcopy
 from typing import Any, Dict, List
 
@@ -64,9 +65,14 @@ def load_scenario_instances(
 
 
 def snapshot_states(instances: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Capture the graded attributes of each instance as ``[{ClassName: {attr: value}}]``."""
+    """Capture the graded attributes of each instance as ``[{ClassName: {attr: value}}]``.
+
+    The snapshot is round-tripped through JSON because the official pipeline writes the recorded
+    state to a result file and reads it back before grading. That conversion matters: the message
+    inbox and reminder list are keyed by integers in memory but by strings in the expected answer.
+    """
     states = []
     for class_name, instance in instances.items():
         graded = SAVED_ATTRIBUTES.get(class_name, [])
         states.append({class_name: {name: value for name, value in vars(instance).items() if name in graded}})
-    return states
+    return json.loads(json.dumps(states, default=str))

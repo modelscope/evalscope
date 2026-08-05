@@ -4,6 +4,7 @@
 
 | 数据集名称 | 标准名称 | 任务类别 |
 |------------|----------|----------|
+| `acebench` | [ACEBench](../../benchmarks/acebench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `automation_bench` | [AutomationBench](../../benchmarks/automation_bench.md) | `Agent`, `FunctionCalling`, `MultiTurn` |
 | `bfcl_v3` | [BFCL-v3](../../benchmarks/bfcl_v3.md) | `Agent`, `FunctionCalling` |
 | `bfcl_v4` | [BFCL-v4](../../benchmarks/bfcl_v4.md) | `Agent`, `FunctionCalling` |
@@ -40,6 +41,7 @@
 :hidden:
 :maxdepth: 1
 
+../../benchmarks/acebench.md
 ../../benchmarks/automation_bench.md
 ../../benchmarks/bfcl_v3.md
 ../../benchmarks/bfcl_v4.md

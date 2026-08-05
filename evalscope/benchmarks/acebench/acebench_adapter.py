@@ -68,7 +68,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 
 ## Key Features
 
-- 1023 samples per language across English and Chinese, selectable through `extra_params.language`.
+- 1023 English and 1017 Chinese samples, selectable through `extra_params.language`.
 - Uses the official ACEBench prompts and the official `[ApiName(...)]` output contract, so an
   output that cannot be decoded scores zero instead of being rescued by lenient parsing.
 - `normal_multi_turn_*` categories are scored per dialogue: every step must be correct for the
@@ -110,7 +110,17 @@ multi-step agent tasks against a simulated environment. Data is split into three
             'user_model': {
                 'type': 'str',
                 'description': 'Model that plays the user in `agent_multi_turn` rollouts, '
-                'e.g. `gpt-4o`. Samples are skipped when unset.',
+                'e.g. `gpt-4o`. The category is skipped when unset.',
+                'value': '',
+            },
+            'user_model_api_url': {
+                'type': 'str',
+                'description': 'Base URL for `user_model`. Defaults to `MODELSCOPE_API_BASE`.',
+                'value': '',
+            },
+            'user_model_api_key': {
+                'type': 'str',
+                'description': 'API key for `user_model`. Defaults to `MODELSCOPE_SDK_TOKEN`.',
                 'value': '',
             },
             'max_dialog_turns': {
@@ -145,15 +155,6 @@ class AceBenchAdapter(AgentAdapter):
         self._user_model: Optional[Model] = None
 
         self.subset_list = resolve_categories(self.subset_list)
-        if 'agent_multi_turn' in self.subset_list and not self.user_model_id:
-            # Those rollouts need a model to play the user. Scoring them zero would understate the
-            # model under evaluation, so they are dropped instead.
-            logger.warning(
-                'Skipping the agent_multi_turn category: it needs a user simulator. Set '
-                "dataset_args={'acebench': {'extra_params': {'user_model': '<model-id>'}}} to "
-                'evaluate it (the official runner uses gpt-4o).'
-            )
-            self.subset_list = [category for category in self.subset_list if category != 'agent_multi_turn']
 
     # #########################
     # DATASET LOADING
@@ -161,9 +162,10 @@ class AceBenchAdapter(AgentAdapter):
 
     def load_subsets(self, load_func, is_fewshot: bool = False) -> DatasetDict:
         """Load the ACEBench splits and re-bucket their samples into fine-grained categories."""
+        wanted = self._evaluable_categories()
         dataset_dicts = []
         for split in ACEBENCH_SPLITS:
-            categories = [category for category in self.subset_list if split_of_category(category) == split]
+            categories = [category for category in wanted if split_of_category(category) == split]
             if not categories:
                 continue
             with self._temporary_attribute('current_subset_name', split):
@@ -177,6 +179,20 @@ class AceBenchAdapter(AgentAdapter):
                 )
             )
         return DatasetDict.from_dataset_dicts(dataset_dicts)
+
+    def _evaluable_categories(self) -> List[str]:
+        """Return the requested categories that can actually be evaluated in this configuration."""
+        if 'agent_multi_turn' not in self.subset_list or self.user_model_id:
+            return self.subset_list
+
+        # Those rollouts need a model to play the user. Scoring them zero would understate the model
+        # under evaluation, so the category is left out instead.
+        logger.warning(
+            'Skipping the agent_multi_turn category: it needs a user simulator. Set '
+            "dataset_args={'acebench': {'extra_params': {'user_model': '<model-id>'}}} to evaluate "
+            'it (the official runner uses gpt-4o).'
+        )
+        return [category for category in self.subset_list if category != 'agent_multi_turn']
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert an ACEBench record into a Sample carrying the official prompt pair."""
