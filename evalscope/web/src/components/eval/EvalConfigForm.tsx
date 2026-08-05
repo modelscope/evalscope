@@ -84,6 +84,11 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const [maxTokens, setMaxTokens] = useState('')
   const [topK, setTopK] = useState('')
   const [datasetArgs, setDatasetArgs] = useState('')
+  const [sandboxEnabled, setSandboxEnabled] = useState(false)
+  const [sandboxEngine, setSandboxEngine] = useState('docker')
+  const [sandboxUrl, setSandboxUrl] = useState('')
+  const [sandboxImage, setSandboxImage] = useState('')
+  const [sandboxPoolSize, setSandboxPoolSize] = useState('8')
 
   const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
 
@@ -206,10 +211,10 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     let parsedDatasetArgs: Record<string, unknown> | undefined
     if (datasetArgs.trim()) {
       const result = validateDatasetArgs(datasetArgs)
-      if (!result.ok) {
-        newErrors[IDS.datasetArgs] = result.messageKey
+      if (result.ok) {
+          parsedDatasetArgs = result.value
       } else {
-        parsedDatasetArgs = result.value
+          newErrors[IDS.datasetArgs] = (result as { messageKey: string }).messageKey
       }
     }
 
@@ -247,6 +252,19 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     if (topK) genConfig.top_k = Number(topK)
     if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
     if (parsedDatasetArgs) config.dataset_args = parsedDatasetArgs
+    if (sandboxEnabled) {
+      config.sandbox = {
+          enabled: true,
+          engine: sandboxEngine,
+          manager_config: {
+              base_url: sandboxUrl,
+          },
+          default_config: {
+              image: sandboxImage,
+          },
+          pool_size: Number(sandboxPoolSize),
+      }
+  }
     onSubmit(config)
   }
 
@@ -383,6 +401,93 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                 />
               )}
             </Field>
+            <hr className="md:col-span-3 my-2" />
+            <h3 className="md:col-span-3 font-semibold">
+                Sandbox
+            </h3>
+
+            <Field
+                id="sandbox_enabled"
+                name="sandbox_enabled"
+                labelKey="eval.sandboxEnable"
+            >
+                {() => (
+                    <input
+                        type="checkbox"
+                        checked={sandboxEnabled}
+                        onChange={(e) => setSandboxEnabled(e.target.checked)}
+                    />
+                )}
+            </Field>
+
+            {sandboxEnabled && (
+                <>
+                    {/* Engine */}
+                    <Field
+                        id="sandbox_engine"
+                        name="sandbox_engine"
+                        labelKey="eval.sandboxEngine"
+
+                    >
+                        {() => (
+                            <select
+                                value={sandboxEngine}
+                                onChange={(e) => setSandboxEngine(e.target.value)}
+                                className={inputClass()}
+                            >
+                                <option value="docker">docker</option>
+                                <option value="local">local</option>
+                            </select>
+                        )}
+                    </Field>
+
+                    {/* Manager URL */}
+                    <Field
+                        id="sandbox_url"
+                        name="sandbox_url"
+                        labelKey="eval.sandboxUrl"
+                    >
+                        {() => (
+                            <input
+                                value={sandboxUrl}
+                                onChange={(e) => setSandboxUrl(e.target.value)}
+                                className={inputClass()}
+                            />
+                        )}
+                    </Field>
+
+                    {/* Docker Image */}
+                    <Field
+                        id="sandbox_image"
+                        name="sandbox_image"
+                        labelKey="eval.sandboxImage"
+                    >
+                        {() => (
+                            <input
+                                value={sandboxImage}
+                                onChange={(e) => setSandboxImage(e.target.value)}
+                                className={inputClass()}
+                            />
+                        )}
+                    </Field>
+
+                    {/* Pool Size */}
+                    <Field
+                        id="sandbox_pool"
+                        name="sandbox_pool"
+                        labelKey="eval.sandboxPool"
+                    >
+                        {() => (
+                            <input
+                                type="number"
+                                value={sandboxPoolSize}
+                                onChange={(e) => setSandboxPoolSize(e.target.value)}
+                                className={inputClass()}
+                            />
+                        )}
+                    </Field>
+                </>
+            )}
           </div>
         </Card>
       )}

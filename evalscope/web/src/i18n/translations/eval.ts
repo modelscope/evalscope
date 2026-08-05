@@ -21,6 +21,12 @@ export const en: Dict = {
   modelName: 'Model Name',
   apiUrl: 'Model API URL',
   apiKey: 'Model API Key',
+  sandbox: "Sandbox",
+  sandboxEnable: "Enable Sandbox",
+  sandboxEngine: "Engine",
+  sandboxUrl: "Manager URL",
+  sandboxImage: "Docker Image",
+  sandboxPool: "Pool Size",
 }
 
 export const zh: Dict = {
@@ -44,4 +50,10 @@ export const zh: Dict = {
   modelName: '模型名称',
   apiUrl: '模型API URL',
   apiKey: '模型API Key',
+  sandbox: "Sandbox",
+  sandboxEnable: "启用 Sandbox",
+  sandboxEngine: "引擎 Engine",
+  sandboxUrl: "管理器 URL | Manager URL",
+  sandboxImage: "Docker 镜像 | Docker Image",
+  sandboxPool: "池规模 | Pool Size",
 }
