@@ -223,39 +223,105 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 })
 
     async def run(self) -> None:
-        # Two-phase dispatch: warmup conversations complete in full before any
-        # benchmark conversation starts.  ``_conv_index`` persists across
-        # phases so warmup and benchmark pull disjoint conversations from the
-        # dataset (first ``warmup_count`` vs. the rest).
+        # Two-phase dispatch. ``_conv_index`` carries over so each phase
+        # pulls disjoint conversations from the pool.
         if self._warmup_count > 0:
-            # Warmup ignores --duration (warmup must finish in full before
-            # the timed benchmark window begins, mirroring trie's model).
-            await self._run_phase(budget=self._warmup_count, is_warmup=True, deadline=None)
+            warmup_apply_ramp = (self._warmup_count > self.args.warmup_ramp_min_conversations)
+            if not warmup_apply_ramp and self.args.startup_ramp_seconds:
+                logger.info(
+                    f'Warmup count ({self._warmup_count}) <= '
+                    f'{self.args.warmup_ramp_min_conversations}: '
+                    'skipping startup ramp on warmup.'
+                )
+            await self._run_phase(
+                budget=self._warmup_count,
+                is_warmup=True,
+                deadline=None,
+                apply_startup_ramp=warmup_apply_ramp,
+            )
+        benchmark_apply_ramp = (self.args.parallel > self.args.benchmark_ramp_min_parallel)
+        if not benchmark_apply_ramp and self.args.startup_ramp_seconds:
+            logger.info(
+                f'Parallel ({self.args.parallel}) <= '
+                f'{self.args.benchmark_ramp_min_parallel}: '
+                'skipping startup ramp on benchmark.'
+            )
         await self._run_phase(
             budget=self.args.number,
             is_warmup=False,
             deadline=self._compute_deadline(self.args.duration),
+            apply_startup_ramp=benchmark_apply_ramp,
         )
 
-    async def _run_phase(self, budget: int, is_warmup: bool, deadline: Optional[float] = None) -> None:
+    async def _run_phase(
+        self,
+        budget: int,
+        is_warmup: bool,
+        deadline: Optional[float] = None,
+        apply_startup_ramp: bool = False,
+    ) -> None:
         """Spawn ``args.parallel`` workers and drain them within one phase.
 
-        When ``deadline`` is set, workers stop claiming new conversations once
-        wall-clock crosses it, but any conversation already in progress is
-        allowed to finish all its turns (trace-level soft exit, matches trie).
-        ``budget`` is still honoured as an upper bound on the number of
-        conversations claimed; whichever limit (count or wall-clock) is hit
-        first ends the phase.
+        Whichever of ``budget`` or ``deadline`` fires first ends the phase.
+        With a deadline, already-claimed conversations still run to
+        completion (trace-level soft exit, matches trie).
+        ``apply_startup_ramp`` enables a one-time Poisson spawn stagger
+        (see ``_spawn_workers``).
         """
         self._phase_counter = 0
         self._phase_budget = budget
         self._phase_is_warmup = is_warmup
         self._phase_deadline = deadline
-        workers = [asyncio.create_task(self._worker(worker_id=i)) for i in range(self.args.parallel)]
+        workers = await self._spawn_workers(apply_startup_ramp=apply_startup_ramp)
         try:
             await asyncio.gather(*workers)
         finally:
             for worker in workers:
                 if not worker.done():
                     worker.cancel()
-            await asyncio.gather(*workers, return_exceptions=True)
+            if workers:
+                await asyncio.gather(*workers, return_exceptions=True)
+
+    async def _spawn_workers(self, apply_startup_ramp: bool) -> List[asyncio.Task]:
+        """Spawn ``args.parallel`` workers, optionally staggered across
+        ``startup_ramp_seconds`` via a Poisson schedule (worker 0 immediate,
+        worker n-1 at exactly ``ramp_s``). Disabled ramp or ``parallel == 0``
+        falls back to instant legacy spawn. Returns tasks in spawn order;
+        partial lists on mid-ramp cancellation are cleaned up by the caller.
+        """
+        n = self.args.parallel
+        if n <= 0:
+            return []
+
+        ramp_s: Optional[float] = None
+        if apply_startup_ramp:
+            cfg = self.args.startup_ramp_seconds
+            if cfg is not None and cfg > 0:
+                ramp_s = float(cfg)
+
+        if ramp_s is None:
+            return [asyncio.create_task(self._worker(worker_id=i)) for i in range(n)]
+
+        # n-1 inter-arrival samples cumulated; rescale so the realised total
+        # spans exactly ramp_s (counteracts exponential-sample drift). Worker
+        # 0 fires at the anchor; the array starts at 0 by construction.
+        if n == 1:
+            target_times = np.array([time.perf_counter()])
+        else:
+            offsets = np.cumsum(np.random.exponential(ramp_s / (n - 1), size=n - 1))
+            if offsets[-1] > 0:
+                offsets *= ramp_s / offsets[-1]
+            target_times = np.concatenate(([0.0], offsets)) + time.perf_counter()
+
+        logger.info(f'Startup ramp enabled: staggering {n} worker spawns across '
+                    f'{ramp_s:.3f}s (Poisson).')
+
+        workers: List[asyncio.Task] = []
+        for i in range(n):
+            sleep_s = target_times[i] - time.perf_counter()
+            if self._phase_deadline is not None:  # don't oversleep past deadline
+                sleep_s = min(sleep_s, self._phase_deadline - time.perf_counter())
+            if sleep_s > 0:
+                await asyncio.sleep(sleep_s)
+            workers.append(asyncio.create_task(self._worker(worker_id=i)))
+        return workers
