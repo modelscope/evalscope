@@ -37,6 +37,7 @@ const IDS = {
   maxTokens: 'eval-maxTokens',
   topK: 'eval-topK',
   datasetArgs: 'eval-datasetArgs',
+  sandboxPool: "eval-sandboxPool",
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -54,6 +55,7 @@ const DOM_ORDER: string[] = [
   IDS.maxTokens,
   IDS.topK,
   IDS.datasetArgs,
+  IDS.sandboxPool,
 ]
 
 /** Fields that live inside the collapsible "More Parameters" section. */
@@ -206,6 +208,12 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       const err = validateNumeric(Number(check.value), check.min, check.max, check.step)
       if (err) newErrors[check.id] = err.messageKey
     }
+    if (sandboxEnabled) {
+      const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
+      if (err) {
+        newErrors[IDS.sandboxPool] = err.messageKey
+      }
+    }
 
     // Dataset_Args JSON validation without mutating the raw input.
     let parsedDatasetArgs: Record<string, unknown> | undefined
@@ -252,19 +260,19 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     if (topK) genConfig.top_k = Number(topK)
     if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
     if (parsedDatasetArgs) config.dataset_args = parsedDatasetArgs
-    if (sandboxEnabled) {
-      config.sandbox = {
+    if (sandboxEnabled) { 
+        config.sandbox = {
           enabled: true,
           engine: sandboxEngine,
           manager_config: {
-              base_url: sandboxUrl,
+            base_url: sandboxUrl,
           },
           default_config: {
-              image: sandboxImage,
+            image: sandboxImage,
           },
           pool_size: Number(sandboxPoolSize),
+        }
       }
-  }
     onSubmit(config)
   }
 
@@ -407,9 +415,10 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
             </h3>
 
             <Field
-                id="sandbox_enabled"
-                name="sandbox_enabled"
-                labelKey="eval.sandboxEnable"
+                id={IDS.sandboxPool}
+                name="sandbox_pool"
+                labelKey="eval.sandboxPool"
+                error={errMsg(IDS.sandboxPool)}
             >
                 {() => (
                     <input
@@ -436,7 +445,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                                 className={inputClass()}
                             >
                                 <option value="docker">docker</option>
-                                <option value="local">local</option>
+                                <option value="volcengine">volcengine</option>
                             </select>
                         )}
                     </Field>
@@ -480,6 +489,8 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         {() => (
                             <input
                                 type="number"
+                                min={1}
+                                step={1}
                                 value={sandboxPoolSize}
                                 onChange={(e) => setSandboxPoolSize(e.target.value)}
                                 className={inputClass()}
