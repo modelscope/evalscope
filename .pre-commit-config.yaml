@@ -36,17 +36,17 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: thirdparty/|docs/|examples
+        exclude: evalscope/third_party/|docs/|examples
       - id: check-yaml
-        exclude: thirdparty/|docs/|examples
+        exclude: evalscope/third_party/|docs/|examples
       - id: end-of-file-fixer
-        exclude: thirdparty/|docs/|examples|.*\.json
+        exclude: evalscope/third_party/|docs/|examples|.*\.json
       - id: requirements-txt-fixer
-        exclude: thirdparty/|docs/|examples
+        exclude: evalscope/third_party/|docs/|examples
       - id: double-quote-string-fixer
-        exclude: thirdparty/|docs/|examples|.*\.json|cl_bench_adapter.py
+        exclude: evalscope/third_party/|docs/|examples|.*\.json|cl_bench_adapter.py
       - id: check-merge-conflict
-        exclude: thirdparty/|docs/|examples
+        exclude: evalscope/third_party/|docs/|examples
       - id: mixed-line-ending
-        exclude: thirdparty/|docs/|examples
+        exclude: evalscope/third_party/|docs/|examples
         args: ["--fix=lf"]

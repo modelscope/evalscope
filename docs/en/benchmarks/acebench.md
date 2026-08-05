@@ -3,24 +3,40 @@
 
 ## Overview
 
-ACEBench is a tool-use benchmark for evaluating whether large language models can select APIs, fill
-arguments, handle abnormal requests, and complete realistic agent tasks.
+ACEBench evaluates whether large language models can use tools in realistic settings: picking the
+right API, filling its arguments, pushing back on requests that cannot be satisfied, and driving
+multi-step agent tasks against a simulated environment. Data is split into three families -
+`normal` (ordinary tool use), `special` (incomplete, incorrect or out-of-scope requests) and
+`agent` (multi-step and multi-turn interaction) - reported over 17 fine-grained categories.
 
 ## Task Description
 
 - **Task Type**: Function calling and agentic tool use
-- **Input**: Conversation history, API specifications, optional time/profile context, and agent task context
-- **Output**: Function calls or diagnostic text for special cases
-- **Subsets**: normal, special, and agent
+- **Input**: Conversation history, API specifications, and optional time or character-profile context
+- **Output**: A `[ApiName(key='value')]` call list, a diagnostic sentence, or a full agent trajectory
+- **Domain**: 8 domains and 68 sub-domains including technology, finance, health and society
+
+## Key Features
+
+- 1023 English and 1017 Chinese samples, selectable through `extra_params.language`.
+- Uses the official ACEBench prompts and the official `[ApiName(...)]` output contract, so an
+  output that cannot be decoded scores zero instead of being rescued by lenient parsing.
+- `normal_multi_turn_*` categories are scored per dialogue: every step must be correct for the
+  dialogue to count, matching the official turn-level aggregation.
+- `agent` categories run a real rollout against ACEBench's simulated phone, food-delivery and
+  travel APIs, and are graded on the resulting environment state.
 
 ## Evaluation Notes
 
-- The adapter passes ACEBench API specifications as EvalScope tools and also includes concise text
-  instructions for text-only models.
-- Normal samples are scored by matching function names and arguments.
-- Special samples are scored against ACEBench's diagnostic text contract.
-- Agent samples report `process_acc` against ACEBench milestones. If a model returns a final-state JSON object,
-  `end_state_acc` is also reported and used as `acc`; otherwise `acc` follows `process_acc`.
+- `acc` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
+  end-state accuracy. `process_acc` additionally reports milestone progress for `agent` samples and
+  per-step progress for `normal_multi_turn_*` samples.
+- The report adds the official groupings (ATOM, SINGLE_TURN, MULTI_TURN, NORMAL, SPECIAL, AGENT)
+  and an OVERALL score weighted `normal` 0.578 / `special` 0.2676 / `agent` 0.1545. Weights are
+  renormalized over the groups actually evaluated, so a partial run stays interpretable.
+- `agent_multi_turn` additionally needs a user simulator; set `extra_params.user_model` to the model
+  that should play the user (the official runner uses `gpt-4o`). Without it those rollouts fail and
+  score zero, so configure it before reading an OVERALL number.
 
 
 ## Properties
@@ -31,7 +47,7 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
 | **Dataset ID** | [evalscope/acebench](https://modelscope.cn/datasets/evalscope/acebench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |
-| **Metrics** | `acc`, `process_acc`, `end_state_acc` |
+| **Metrics** | `acc`, `process_acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `normal` |
 
@@ -41,196 +57,56 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
 | Metric | Value |
 |--------|-------|
 | Total Samples | 1,023 |
-| Prompt Length (Mean) | 4676.74 chars |
-| Prompt Length (Min/Max) | 1007 / 10555 chars |
+| Prompt Length (Mean) | 6032.98 chars |
+| Prompt Length (Min/Max) | 2295 / 11835 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
-| `normal` | 823 | 4859.68 | 1070 | 10555 |
-| `special` | 150 | 3449.69 | 1007 | 8692 |
-| `agent` | 50 | 5346.72 | 4454 | 5656 |
+| `normal_single_turn_single_function` | 100 | 5165.79 | 2461 | 9553 |
+| `normal_single_turn_parallel_function` | 100 | 5036.21 | 2295 | 9644 |
+| `normal_multi_turn_user_adjust` | 123 | 4658.51 | 3172 | 6976 |
+| `normal_multi_turn_user_switch` | 100 | 7546.46 | 3467 | 11835 |
+| `normal_similar_api` | 50 | 3511.84 | 2484 | 6209 |
+| `normal_preference` | 50 | 8637.66 | 7107 | 10381 |
+| `normal_atom_bool` | 50 | 7377.62 | 4762 | 9727 |
+| `normal_atom_enum` | 50 | 7676.94 | 4927 | 11337 |
+| `normal_atom_number` | 50 | 7481.46 | 4851 | 10278 |
+| `normal_atom_list` | 50 | 7524.06 | 4910 | 10514 |
+| `normal_atom_object_deep` | 50 | 6102.02 | 2873 | 9755 |
+| `normal_atom_object_short` | 50 | 5139.5 | 2343 | 8921 |
+| `special_incomplete` | 50 | 6177.34 | 3473 | 10806 |
+| `special_error_param` | 50 | 4499.78 | 3121 | 6090 |
+| `special_irrelevant` | 50 | 6011.94 | 3778 | 8492 |
+| `agent_multi_step` | 20 | 6407.9 | 6343 | 6472 |
+| `agent_multi_turn` | 30 | 6290.97 | 5505 | 6630 |
 
 ## Sample Example
 
-**Subset**: `normal`
+**Subset**: `normal_single_turn_single_function`
 
 ```json
 {
   "input": [
     {
-      "id": "134dd42a",
-      "content": "You are evaluating ACEBench tool-use tasks.\n\nUse the available tool schemas when native function calling is supported.\n\nFor text-only output, return API calls as [ApiName(key1='value1', key2=2)]. Return only the call list and no extra explana ... [TRUNCATED 2553 chars] ... \"}, \"effects\": {\"description\": \"List of audio effects to apply.\", \"type\": \"array\", \"items\": {\"type\": \"string\", \"enum\": [\"reverb\", \"echo\", \"distortion\"]}}}, \"required\": [\"frequency\", \"gain\"]}}}, \"required\": [\"microphone\", \"performanceTime\"]}}]"
+      "id": "9198db95",
+      "content": "You are an AI assistant with the role name \"assistant.\" Based on the provided API specifications and conversation history from steps 1 to t, generate the API requests that the assistant should call in step t+1. The API requests should be outp ... [TRUNCATED 3788 chars] ... '}, 'effects': {'description': 'List of audio effects to apply.', 'type': 'array', 'items': {'type': 'string', 'enum': ['reverb', 'echo', 'distortion']}}}, 'required': ['frequency', 'gain']}}}, 'required': ['microphone', 'performanceTime']}}]"
     },
     {
-      "id": "da9681d9",
-      "content": "I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.",
-      "role": "user"
+      "id": "61cfd720",
+      "content": "Conversation history 1..t:\nuser: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n"
     }
   ],
   "target": "{\"ground_truth\": {\"NightSkyAnalysis_performEclipseAnalysis\": {\"dateRange\": {\"startDate\": \"2023-01-01\", \"endDate\": \"2028-01-01\"}, \"location\": {\"latitude\": 37.9838, \"longitude\": 23.7275}, \"eclipseType\": \"total\"}}, \"mile_stone\": []}",
   "id": 0,
   "group_id": 0,
-  "tools": [
-    {
-      "name": "NightSkyAnalysis_performEclipseAnalysis",
-      "description": "Analyzes the occurrence of solar eclipses, categorizes them into types, and predicts future occurrences based on historical data and celestial mechanics.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "dateRange": {
-            "type": "object",
-            "description": "The range of dates for which to analyze solar eclipses.",
-            "properties": {
-              "startDate": {
-                "type": "string",
-                "description": "The starting date for the analysis in YYYY-MM-DD format."
-              },
-              "endDate": {
-                "type": "string",
-                "description": "The ending date for the analysis in YYYY-MM-DD format."
-              }
-            },
-            "required": [
-              "startDate",
-              "endDate"
-            ]
-          },
-          "location": {
-            "type": "object",
-            "description": "Geographical coordinates to focus the eclipse analysis.",
-            "properties": {
-              "latitude": {
-                "type": "number",
-                "description": "Latitude of the location."
-              },
-              "longitude": {
-                "type": "number",
-                "description": "Longitude of the location."
-              }
-            },
-            "required": [
-              "latitude",
-              "longitude"
-            ]
-          },
-          "eclipseType": {
-            "type": "string",
-            "description": "The type of solar eclipse to specifically analyze.",
-            "enum": [
-              "total",
-              "annular",
-              "partial"
-            ]
-          }
-        },
-        "required": [
-          "dateRange",
-          "location"
-        ]
-      }
-    },
-    {
-      "name": "AudioPerformanceOptimizer_optimizeMicrophoneSettings",
-      "description": "Optimizes microphone settings for live performances, focusing on dynamic microphones to enhance sound quality and reduce feedback.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "microphone": {
-            "type": "object",
-            "description": "Details of the microphone used.",
-            "properties": {
-              "type": {
-                "type": "string",
-                "description": "Type of the microphone.",
-                "enum": [
-                  "dynamic",
-                  "condenser",
-                  "ribbon"
-                ]
-              },
-              "model": {
-                "type": "string",
-                "description": "Model of the microphone."
-              }
-            },
-            "required": [
-              "type",
-              "model"
-            ]
-          },
-          "performanceTime": {
-            "type": "string",
-            "description": "Scheduled time for the performance.",
-            "enum": [
-              "morning",
-              "afternoon",
-              "evening",
-              "night"
-            ]
-          },
-          "environment": {
-            "type": "object",
-            "description": "Environmental conditions of the performance area.",
-            "properties": {
-              "humidity": {
-                "type": "integer",
-                "description": "Humidity level as a percentage."
-              },
-              "temperature": {
-                "type": "integer",
-                "description": "Temperature in Celsius."
-              }
-            }
-          },
-          "soundSettings": {
-            "type": "array",
-            "description": "Specific sound settings to apply.",
-            "items": {
-              "type": "object",
-              "properties": {
-                "frequency": {
-                  "type": "integer",
-                  "description": "Frequency adjustments in Hz."
-                },
-                "gain": {
-                  "type": "integer",
-                  "description": "Gain adjustments in dB."
-                },
-                "effects": {
-                  "type": "array",
-                  "description": "List of audio effects to apply.",
-                  "items": {
-                    "type": "string",
-                    "enum": [
-                      "reverb",
-                      "echo",
-                      "distortion"
-                    ]
-                  }
-                }
-              },
-              "required": [
-                "frequency",
-                "gain"
-              ]
-            }
-          }
-        },
-        "required": [
-          "microphone",
-          "performanceTime"
-        ]
-      }
-    }
-  ],
+  "subset_key": "normal_single_turn_single_function",
   "metadata": {
     "id": "normal_single_turn_single_function_0",
-    "sub_category": "data_normal_single_turn_single_function",
-    "question": "user: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n",
-    "time": "",
-    "profile": "",
+    "test_category": "normal_single_turn_single_function",
+    "dialogue_id": "normal_single_turn_single_function_0",
+    "language": "en",
     "functions": [
       {
         "name": "NightSkyAnalysis_performEclipseAnalysis",
@@ -405,14 +281,29 @@ arguments, handle abnormal requests, and complete realistic agent tasks.
     },
     "mile_stone": [],
     "initial_config": {},
-    "involved_classes": []
+    "involved_classes": [],
+    "question": "user: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n",
+    "time": "The current time is January 01, 2023, Sunday",
+    "profile": ""
   }
 }
 ```
 
+*Note: Some content was truncated for display.*
+
 ## Prompt Template
 
 *No prompt template defined.*
+
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `language` | `str` | `en` | Dataset language to evaluate, either `en` or `zh`. |
+| `user_model` | `str` | `` | Model that plays the user in `agent_multi_turn` rollouts, e.g. `gpt-4o`. Those rollouts fail and score zero when unset. |
+| `user_model_api_url` | `str` | `` | Base URL for `user_model`. Defaults to `MODELSCOPE_API_BASE`. |
+| `user_model_api_key` | `str` | `` | API key for `user_model`. Defaults to `MODELSCOPE_SDK_TOKEN`. |
+| `max_dialog_turns` | `int` | `40` | Maximum number of agent rollout steps. |
 
 ## Usage
 
@@ -440,7 +331,8 @@ task_cfg = TaskConfig(
     datasets=['acebench'],
     dataset_args={
         'acebench': {
-            # subset_list: ['normal', 'special', 'agent']  # optional, evaluate specific subsets
+            # subset_list: ['normal_single_turn_single_function', 'normal_single_turn_parallel_function', 'normal_multi_turn_user_adjust']  # optional, evaluate specific subsets
+            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation
