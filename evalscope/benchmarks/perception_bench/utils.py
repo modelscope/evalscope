@@ -7,6 +7,9 @@ https://github.com/MoonshotAI/PerceptionBench (``eval/judge_prompt.txt`` and ``e
 import re
 from typing import Tuple
 
+# The judge must answer with a standalone True/False inside its [judge] section.
+VERDICT_PATTERN = re.compile(r'\b(true|false)\b', re.IGNORECASE)
+
 JUDGE_TEMPLATE = """Please act as a professional teacher and grade the student's answer. Below are the question, the student's answer, and the reference answer. Based on the question and the reference answer, analyze the student's answer and judge whether it correctly answers the question. I will provide several examples to help you understand how to judge.
 
 ========== [Output Format] ==========
@@ -111,11 +114,15 @@ Now you may begin grading.
 
 
 def normalize_escape(text: str) -> str:
-    """Normalize backslash escapes before feeding text to the judge.
+    r"""Normalize backslash escapes before feeding text to the judge.
 
-    Mirrors ``normalize_escape`` in the official evaluator: collapses repeated
-    backslashes and turns literal ``\\n`` sequences into real newlines so that
-    LaTeX-flavored answers are rendered consistently.
+    Kept behaviourally identical to ``normalize_escape`` in the official evaluator so
+    that the judge sees exactly the official prompt: a run of backslashes followed by a
+    space, digit or hyphen collapses to two backslashes plus a space (the trailing
+    whitelisted character is intentionally dropped), any other backslash run collapses
+    to a single backslash, and a literal ``\n`` sequence becomes a real newline.  The
+    same transform is applied to question, reference and prediction alike, so the lossy
+    whitelist branch cannot bias grading.
     """
     whitelist = ' 0123456789-'
     text = re.sub(rf'\\+[{whitelist}]', r'\\\\' + ' ', text)
@@ -135,7 +142,9 @@ def parse_judge_verdict(judge_response: str) -> Tuple[float, str]:
 
     The judge is required to emit both a ``[reason]`` and a ``[judge]`` section;
     responses missing either section are counted as incorrect, as in the
-    official evaluator.
+    official evaluator.  Within the ``[judge]`` section only a standalone boolean
+    token is accepted, so prose such as ``'untrue'`` or a trailing remark cannot
+    flip the verdict; a section without any boolean token scores 0.
 
     Returns:
         Tuple[float, str]: The 0/1 score and the (truncated) reason.
@@ -145,4 +154,7 @@ def parse_judge_verdict(judge_response: str) -> Tuple[float, str]:
         return 0.0, 'No [reason] or [judge] in output'
     reason = response.split('[judge]')[0].split('[reason]')[-1].strip()
     verdict = response.split('[judge]')[-1].strip()
-    return (1.0 if 'true' in verdict.lower() else 0.0), reason[:200]
+    match = VERDICT_PATTERN.search(verdict)
+    if match is None:
+        return 0.0, reason[:200] or 'No boolean verdict in [judge] section'
+    return (1.0 if match.group(1).lower() == 'true' else 0.0), reason[:200]

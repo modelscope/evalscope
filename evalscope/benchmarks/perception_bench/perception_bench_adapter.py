@@ -103,8 +103,12 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
         text = problem
         image_map = {}
         for idx, image in enumerate(images, start=1):
+            image_b64 = self._data_uri_to_base64(image)
+            if image_b64 is None:
+                logger.warning(f'Record {record.get("index")} has an undecodable image, skipping.')
+                return None
             text = text.replace(f'<|image_{idx}|>', f'<image_{idx}>')
-            image_map[idx] = self._data_uri_to_base64(image)
+            image_map[idx] = image_b64
 
         content_list: List[Content] = self._parse_text_with_images(text=text, image_map=image_map)
         if not content_list:
@@ -130,14 +134,24 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
             },
         )
 
-    def _data_uri_to_base64(self, image: str) -> str:
-        """Re-encode a base64 data URI so the shared image size limit applies."""
+    def _data_uri_to_base64(self, image: str) -> Optional[str]:
+        """Re-encode a base64 data URI so the shared image size limit applies.
+
+        Returns:
+            Optional[str]: The re-encoded data URI, the original string when the value
+            is not a data URI, or ``None`` when the payload cannot be decoded so that
+            the caller can skip the record instead of aborting the dataset load.
+        """
         header, _, payload = image.partition(',')
         if not payload:
             # Not a data URI (e.g. a plain URL): pass through unchanged.
             return image
         image_format = header.split('/')[-1].split(';')[0] or 'jpeg'
-        return self._image_bytes_to_base64(base64.b64decode(payload), default_format=image_format)
+        try:
+            return self._image_bytes_to_base64(base64.b64decode(payload), default_format=image_format)
+        except Exception as e:
+            logger.warning(f'Failed to decode image data URI: {e}')
+            return None
 
     def llm_match_score(
         self,
