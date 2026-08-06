@@ -124,7 +124,7 @@ class CMMUAdapter(VisionLanguageAdapter):
         question_type = task_state.metadata['type']
         if question_type in [MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE]:
             is_multi_answer = question_type == MULTIPLE_RESPONSE_TYPE
-            answers = parse_answers_zh(task_state, multiple_correct=is_multi_answer)
+            answers = parse_answers_zh(task_state, multiple_correct=is_multi_answer, completion=prediction)
             multi_answer = ''.join(sorted(list(answers)))
             return multi_answer
         else:

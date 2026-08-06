@@ -82,7 +82,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
             MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT,
         ]:
             # For Chinese templates, use the Chinese-format extractor ('答案：...')
-            answers = parse_answers_zh(task_state, multiple_correct=self.multiple_correct)
+            answers = parse_answers_zh(task_state, multiple_correct=self.multiple_correct, completion=prediction)
         else:
-            answers = parse_answers(task_state, multiple_correct=self.multiple_correct)
+            answers = parse_answers(task_state, multiple_correct=self.multiple_correct, completion=prediction)
         return ''.join(sorted(list(answers)))

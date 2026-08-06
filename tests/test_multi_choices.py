@@ -1,9 +1,16 @@
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
-from evalscope.utils.multi_choices import parse_answers
+from evalscope.api.registry import get_benchmark
+from evalscope.config import TaskConfig
+from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
 
 CHOICES = ['first', 'second', 'third', 'fourth']
+
+THINKING_COMPLETION = (
+    'We need answer physics. The last line should be of the format ANSWER: [LETTER].\n\n'
+    'Energy conservation gives option B.\n\nNeed answer.</think>ANSWER: B'
+)
 
 
 def _make_state(completion: str) -> TaskState:
@@ -36,11 +43,7 @@ def test_parse_answers_ignores_echoed_prompt_placeholder() -> None:
     even when the answer is not at the start of a line (e.g. it directly follows
     an unpaired `</think>` tag emitted by reasoning models).
     """
-    completion = (
-        'We need answer physics. The last line should be of the format ANSWER: [LETTER].\n\n'
-        'Energy conservation gives option B.\n\nNeed answer.</think>ANSWER: B'
-    )
-    assert parse_answers(_make_state(completion)) == {'B'}
+    assert parse_answers(_make_state(THINKING_COMPLETION)) == {'B'}
 
 
 def test_parse_answers_bracketed_letter() -> None:
@@ -50,3 +53,42 @@ def test_parse_answers_bracketed_letter() -> None:
 def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
     completion = 'The last line of your response should be ANSWER: [LETTER] and nothing else.'
     assert parse_answers(_make_state(completion)).isdisjoint({'A', 'B', 'C', 'D'})
+
+
+def test_completion_argument_overrides_raw_model_output() -> None:
+    """An explicit `completion` must be parsed instead of the raw model output.
+
+    Reasoning models can leak a wrong letter into their chain of thought; callers
+    pass the filtered text so the discarded reasoning cannot win the match.
+    """
+    state = _make_state('If I answer ANSWER: A that is wrong.</think>ANSWER: B')
+    assert parse_answers(state) == set()
+    assert parse_answers(state, completion='ANSWER: B') == {'B'}
+
+    zh_state = _make_state('如果答案：A 就错了。</think>答案：B')
+    assert parse_answers_zh(zh_state) == {'A'}
+    assert parse_answers_zh(zh_state, completion='答案：B') == {'B'}
+
+
+def test_configured_filter_reaches_multi_choice_extraction() -> None:
+    """A configured filter must affect the extracted answer, not just be computed.
+
+    Regression test: `MultiChoiceAdapter.extract_answer` used to discard the filtered
+    prediction and re-read the raw completion, which silently disabled every filter
+    (e.g. `remove_until` for stripping reasoning) for all multi-choice benchmarks.
+    """
+    adapter = get_benchmark(
+        'gpqa_diamond',
+        TaskConfig(
+            datasets=['gpqa_diamond'],
+            dataset_args={'gpqa_diamond': {
+                'filters': {
+                    'remove_until': '</think>'
+                }
+            }},
+        ),
+    )
+    state = _make_state('If I answer ANSWER: A that is wrong.</think>ANSWER: B')
+
+    assert adapter.filter_ensemble is not None
+    assert adapter.filter_prediction(state.output.completion, state) == 'B'

@@ -163,7 +163,7 @@ class MMMUAdapter(VisionLanguageAdapter):
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         question_type = task_state.metadata['question_type']
         if question_type == MULTI_CHOICE_TYPE:
-            answers = parse_answers(task_state)
+            answers = parse_answers(task_state, completion=prediction)
             return ''.join(sorted(list(answers)))
         elif question_type == OPEN_TYPE:
             matches = re.findall(r'ANSWER:\s*(.*)', prediction)

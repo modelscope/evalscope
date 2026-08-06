@@ -160,7 +160,7 @@ def _fallback_parse_answer(completion: str) -> Optional[set[str]]:
     return None
 
 
-def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
+def parse_answers(state: TaskState, multiple_correct: bool = False, completion: Optional[str] = None) -> set[str]:
     """
     Convenience function for extracting answers from the state output.
 
@@ -170,7 +170,16 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
 
     However, if the answer isn't in the expected format the model has
     failed in the task so we'll ultimately just mark it as incorrect
+
+    Args:
+        state: The task state holding the model output and the available choices.
+        multiple_correct: Whether more than one choice may be correct.
+        completion: Text to parse answers from. Defaults to the raw model completion;
+            callers inside `extract_answer` should pass the filtered prediction so that
+            configured filters (e.g. `remove_until`) actually take effect.
     """
+    text = state.output.completion if completion is None else completion
+
     # First check whether the string strictly ends with the expected answer
     # In this case, we're looking for a single line which contains the expected
     # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
@@ -179,7 +188,7 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     # with a whitespace-only capture and shadows the real answer that follows.
     match = re.search(
         r'(?i)^ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
-        state.output.completion,
+        text,
         flags=re.MULTILINE,
     )
 
@@ -188,11 +197,11 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     if match is None:
         match = re.search(
             r'(?i)ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
-            state.output.completion,
+            text,
         )
 
     if match is None:
-        fallback_answer = _fallback_parse_answer(state.output.completion)
+        fallback_answer = _fallback_parse_answer(text)
         if fallback_answer:
             return fallback_answer
 
@@ -234,20 +243,29 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     return set()
 
 
-def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[str]:
+def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completion: Optional[str] = None) -> set[str]:
     """
     Convenience function for extracting answers from the state output in Chinese format.
 
     The generated response must be in the format '答案：选项',
     otherwise we can't extract what the model thinks is "true". We can be a
     bit flexible whether these are "AB" vs "A,B" vs "A B".
+
+    Args:
+        state: The task state holding the model output and the available choices.
+        multiple_correct: Whether more than one choice may be correct.
+        completion: Text to parse answers from. Defaults to the raw model completion;
+            callers inside `extract_answer` should pass the filtered prediction so that
+            configured filters (e.g. `remove_until`) actually take effect.
     """
+    text = state.output.completion if completion is None else completion
+
     # Simple pattern to capture answers with optional bold markdown
     pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
-    match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
+    match = re.search(pattern, text, flags=re.MULTILINE)
 
     if match is None:
-        fallback_answer = _fallback_parse_answer(state.output.completion)
+        fallback_answer = _fallback_parse_answer(text)
         if fallback_answer:
             return fallback_answer
 
