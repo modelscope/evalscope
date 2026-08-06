@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 
 import type { PerfDetailResponse } from '../../api/types'
-import type { FormattedMetric } from '../metric/metricFormat'
+import type { FormattedMetric, MetricSemantics } from '../metric'
 import {
   buildCompareModel,
   classifySampleSize,
@@ -25,6 +25,87 @@ import {
 } from './compareModel'
 
 /* ─── Property 21: symmetric config diff computation ──────────── */
+
+/**
+ * Semantics the backend attaches to a perf run response, keyed by field key.
+ *
+ * The compare model reads direction, unit and precision from here, so a fixture must carry them
+ * exactly like a real API response does.
+ */
+const FIXTURE_SEMANTICS: Record<string, MetricSemantics> = {
+  'Output throughput (tokens/s)': {
+    semantic_id: 'perf.throughput.tokens_per_second',
+    metric_name: 'Output Throughput',
+    role: 'primary',
+    direction: 'higher_is_better',
+    display_kind: 'number',
+    display_unit: 'tok/s',
+    display_precision: 2,
+    contract_version: 1,
+  },
+  'Average latency (s)': {
+    semantic_id: 'perf.latency.seconds',
+    metric_name: 'Latency',
+    role: 'primary',
+    direction: 'lower_is_better',
+    display_kind: 'number',
+    display_unit: 's',
+    display_precision: 3,
+    contract_version: 1,
+  },
+  rps: {
+    semantic_id: 'perf.throughput.requests_per_second',
+    metric_name: 'Request Throughput',
+    role: 'primary',
+    direction: 'higher_is_better',
+    display_kind: 'number',
+    display_unit: 'req/s',
+    display_precision: 2,
+    contract_version: 1,
+  },
+  latency: {
+    semantic_id: 'perf.latency.seconds',
+    metric_name: 'Latency',
+    role: 'primary',
+    direction: 'lower_is_better',
+    display_kind: 'number',
+    display_unit: 's',
+    display_precision: 2,
+    contract_version: 1,
+  },
+  success_rate: {
+    semantic_id: 'quality.accuracy.ratio',
+    metric_name: 'Success Rate',
+    role: 'auxiliary',
+    direction: 'higher_is_better',
+    value_range: { min: 0, max: 1 },
+    display_kind: 'percent',
+    display_multiplier: 100,
+    display_unit: '%',
+    display_precision: 1,
+    contract_version: 1,
+  },
+  RPS: {
+    semantic_id: 'perf.throughput.requests_per_second',
+    metric_name: 'Request Throughput',
+    role: 'primary',
+    direction: 'higher_is_better',
+    display_kind: 'number',
+    display_unit: 'req/s',
+    display_precision: 2,
+    contract_version: 1,
+  },
+  'Avg Lat.(s)': {
+    semantic_id: 'perf.latency.seconds',
+    metric_name: 'Latency',
+    role: 'primary',
+    direction: 'lower_is_better',
+    display_kind: 'number',
+    display_unit: 's',
+    display_precision: 2,
+    contract_version: 1,
+  },
+}
 
 describe('buildCompareModel — symmetric config diff (Property 21: symmetric config diff computation)', () => {
   /** How a single config key relates across the two runs. */
@@ -111,6 +192,7 @@ describe('buildCompareModel — symmetric config diff (Property 21: symmetric co
       num_runs: 1,
       is_embedding: false,
       has_html: true,
+      metric_semantics: FIXTURE_SEMANTICS,
     }
   }
 
@@ -170,6 +252,7 @@ describe('buildCompareModel default baseline (Property 17: default baseline is t
       num_runs: 1,
       is_embedding: false,
       has_html: false,
+      metric_semantics: FIXTURE_SEMANTICS,
     }
   }
 
@@ -256,6 +339,7 @@ describe('buildCompareModel verdict direction (Property 16: Delta sign matches t
       num_runs: 1,
       is_embedding: false,
       has_html: false,
+      metric_semantics: FIXTURE_SEMANTICS,
     }
   }
 
@@ -442,6 +526,7 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
       num_runs: fc.constant(1),
       is_embedding: fc.constant(false),
       has_html: fc.constant(true),
+      metric_semantics: fc.constant(FIXTURE_SEMANTICS),
     })
   }
 
@@ -474,6 +559,7 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
       num_runs: 1,
       is_embedding: false,
       has_html: true,
+      metric_semantics: FIXTURE_SEMANTICS,
     })
     const baseline = makeWideRun(
       'run-p1', '2026-07-15T15:37:19', 4,
@@ -494,7 +580,7 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
     expect(rps?.candidate.primary).toBe('1.93 req/s')
     expect(rps?.verdict).toBe('improvement')
     expect(latency?.verdict).toBe('regression')
-    expect(success?.absoluteDelta.primary).toBe('0.0 pp')
+    expect(success?.absoluteDelta.primary).toBe('0 pp')
     expect(model.configDiff).toEqual([{ key: 'Number of requests', baseline: '4', candidate: '6' }])
     expect(model.workloadMismatch).toBe(false)
   })
@@ -515,6 +601,7 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
       num_runs: 1,
       is_embedding: false,
       has_html: true,
+      metric_semantics: FIXTURE_SEMANTICS,
     })
     const baseline = makeRun('baseline', '2026-07-15T15:37:19', [
       ['1', 'INF', 10, 1],
@@ -527,8 +614,8 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
 
     const model = buildCompareModel([baseline, candidate], '')
     expect(model.workloadMismatch).toBe(false)
-    expect(model.deltas.find((delta) => delta.metricKey === 'rps')?.baseline.raw).toBe('10.00')
-    expect(model.deltas.find((delta) => delta.metricKey === 'latency')?.baseline.raw).toBe('1.00')
+    expect(model.deltas.find((delta) => delta.metricKey === 'rps')?.baseline.raw).toBe('10')
+    expect(model.deltas.find((delta) => delta.metricKey === 'latency')?.baseline.raw).toBe('1')
 
     const mismatched = makeRun('mismatch', '2026-07-15T15:40:04', [['8', 'INF', 80, 8]])
     const mismatchModel = buildCompareModel([baseline, mismatched], '')
@@ -706,6 +793,22 @@ describe('buildCompareModel — missing-data de-emphasis (Property 20: missing-d
       num_runs: 1,
       is_embedding: false,
       has_html: true,
+      // The metric names here are generated, so declare semantics for whatever this run
+      // reports: the model must find a direction for every field it is asked to compare.
+      metric_semantics: Object.fromEntries(
+        summaryRows.map(([name]) => [
+          String(name),
+          {
+            semantic_id: 'perf.throughput.requests_per_second',
+            metric_name: String(name),
+            role: 'primary' as const,
+            direction: 'higher_is_better' as const,
+            display_kind: 'number' as const,
+            display_precision: 2,
+            contract_version: 1,
+          },
+        ]),
+      ),
     }
   }
 

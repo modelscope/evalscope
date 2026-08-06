@@ -13,7 +13,8 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import SelectionTray from '@/components/reports/SelectionTray'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetric } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 import { formatFull } from '@/utils/perf'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/compareModel'
@@ -38,12 +39,15 @@ function PerfRunCard({
   onToggle,
   onClick,
   t,
+  perfSemantics,
 }: {
   run: PerfRunSummary
   selected: boolean
   onToggle: () => void
   onClick: () => void
   t: Translate
+  /** Field key -> semantics, provided by the perf run list API. */
+  perfSemantics?: Record<string, MetricSemantics | undefined>
 }) {
   const identity = resolveProvider(run)
   const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
@@ -96,13 +100,13 @@ function PerfRunCard({
             value rounds identically here, in the detail view and per-run
             tables. */}
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('rps', run.best_rps, t).primary}
+          {formatMetric(run.best_rps, perfSemantics?.best_rps).primary}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('latency', run.best_latency, t).primary}
+          {formatMetric(run.best_latency, perfSemantics?.best_latency).primary}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('success_rate', run.success_rate, t).primary}
+          {formatMetric(run.success_rate, perfSemantics?.success_rate).primary}
         </span>
         <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
       </button>
@@ -124,6 +128,7 @@ export default function PerfReportsPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [runs, setRuns] = useState<PerfRunSummary[]>([])
+  const [perfSemantics, setPerfSemantics] = useState<Record<string, MetricSemantics | undefined>>({})
   const [loading, setLoading] = useState(false)
   const [hasLoaded, setHasLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -224,6 +229,7 @@ export default function PerfReportsPage() {
         const res = await listPerfRuns(rootPath, controller.signal)
         if (!controller.signal.aborted) {
           setRuns(res.runs)
+          setPerfSemantics((res as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics ?? {})
           const nextScope = `${rootPath}\0${scanToken}`
           if (selectionScope.current !== nextScope) {
             selectionScope.current = nextScope
@@ -363,6 +369,7 @@ export default function PerfReportsPage() {
                     onToggle={() => toggleSelect(run.path)}
                     onClick={() => openRun(run)}
                     t={t}
+                    perfSemantics={perfSemantics}
                   />
                 ))}
               </div>

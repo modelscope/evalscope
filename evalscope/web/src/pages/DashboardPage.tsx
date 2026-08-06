@@ -16,8 +16,9 @@ import SearchInput from '@/components/ui/SearchInput'
 import Pagination from '@/components/ui/Pagination'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetric } from '@/domain/metric'
 import { formatFull } from '@/utils/perf'
+import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
 
 // Number of recent runs shown before the "view all" toggle.
 const RECENT_LIMIT = 15
@@ -78,10 +79,10 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
         {formatShort(item.ts)}
       </span>
       {isEval ? (
-        <ScoreBadge score={item.report.score} className="shrink-0 !text-xs !px-2" />
+        <ScoreBadge score={item.report.score} semantics={RATIO_PERCENT_SEMANTICS} className="shrink-0 !text-xs !px-2" />
       ) : (
         <span className="type-caption-mono text-[var(--text)] shrink-0">
-          {formatMetricByKey('rps', item.run.best_rps, t).primary}
+          {formatMetric(item.run.best_rps, undefined).primary}
         </span>
       )}
       <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />

@@ -73,6 +73,22 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
     num_runs: 1,
     is_embedding: false,
     has_html: false,
+    // The API attaches the semantics of every field it reports; without them a delta is
+    // 'incomputable' and would be de-emphasized for the wrong reason.
+    metric_semantics: Object.fromEntries(
+      rows.map(([name]) => [
+        String(name),
+        {
+          semantic_id: 'perf.latency.seconds',
+          metric_name: String(name),
+          role: 'primary' as const,
+          direction: 'lower_is_better' as const,
+          display_kind: 'number' as const,
+          display_precision: 2,
+          contract_version: 1,
+        },
+      ]),
+    ),
   }
   // `__sampleCount` is a test-only helper; strip it before returning.
   const merged = { ...base, ...overrides }

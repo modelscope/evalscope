@@ -30,7 +30,7 @@ describe('EvalResultPanel', () => {
 
     expect(screen.getByText('Extracted Answer')).toHaveClass('type-label-xs')
     expect(screen.getByText('Expected Answer')).toHaveClass('type-label-xs')
-    expect(screen.getByText('100.0%')).toHaveStyle({ color: 'var(--success)' })
+    expect(screen.getByText('100%')).toHaveStyle({ color: 'var(--success)' })
   })
 
   it('keeps verbose details collapsed and uses danger styling below the filter', () => {
@@ -38,6 +38,6 @@ describe('EvalResultPanel', () => {
 
     expect(screen.getByRole('button', { name: 'Score Detail' })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('"acc"')).not.toBeInTheDocument()
-    expect(screen.getByText('20.0%')).toHaveStyle({ color: 'var(--danger)' })
+    expect(screen.getByText('20%')).toHaveStyle({ color: 'var(--danger)' })
   })
 })

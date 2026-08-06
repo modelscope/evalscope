@@ -13,14 +13,43 @@
           "score": 0.92,
           "categories": [
             {
-              "name": ["default"],
+              "name": [
+                "default"
+              ],
               "num": 200,
               "score": 0.92,
-              "subsets": [{ "name": "main", "score": 0.92, "num": 200 }]
+              "subsets": [
+                {
+                  "name": "main",
+                  "score": 0.92,
+                  "num": 200
+                }
+              ]
             }
-          ]
+          ],
+          "semantic_id": "quality.accuracy.ratio",
+          "semantics": {
+            "semantic_id": "quality.accuracy.ratio",
+            "metric_name": "Accuracy",
+            "role": "primary",
+            "direction": "higher_is_better",
+            "raw_unit": null,
+            "value_range": {
+              "min": 0.0,
+              "max": 1.0
+            },
+            "display_kind": "percent",
+            "display_multiplier": 100.0,
+            "display_unit": "%",
+            "display_precision": 1,
+            "comparison_group": "quality.accuracy",
+            "aggregation_group": null,
+            "contract_version": 1
+          }
         }
-      ]
+      ],
+      "primary_metric_name": "AverageAccuracy",
+      "metric_schema_version": 1
     },
     {
       "name": "test-model-a_arc_challenge",
@@ -35,17 +64,48 @@
           "score": 81.5,
           "categories": [
             {
-              "name": ["reasoning"],
+              "name": [
+                "reasoning"
+              ],
               "num": 150,
               "score": 81.5,
               "subsets": [
-                { "name": "easy", "score": 88.0, "num": 90 },
-                { "name": "challenge", "score": 71.667, "num": 60 }
+                {
+                  "name": "easy",
+                  "score": 88.0,
+                  "num": 90
+                },
+                {
+                  "name": "challenge",
+                  "score": 71.667,
+                  "num": 60
+                }
               ]
             }
-          ]
+          ],
+          "semantic_id": "quality.score.points_100",
+          "semantics": {
+            "semantic_id": "quality.score.points_100",
+            "metric_name": "Score",
+            "role": "primary",
+            "direction": "higher_is_better",
+            "raw_unit": null,
+            "value_range": {
+              "min": 0.0,
+              "max": 100.0
+            },
+            "display_kind": "percent",
+            "display_multiplier": 1.0,
+            "display_unit": "%",
+            "display_precision": 1,
+            "comparison_group": "quality.score",
+            "aggregation_group": null,
+            "contract_version": 1
+          }
         }
-      ]
+      ],
+      "primary_metric_name": "WeightedScorePercent",
+      "metric_schema_version": 1
     },
     {
       "name": "test-model-a_throughput_suite",
@@ -60,22 +120,56 @@
           "score": 512.0,
           "categories": [
             {
-              "name": ["default"],
+              "name": [
+                "default"
+              ],
               "num": 100,
               "score": 512.0,
-              "subsets": [{ "name": "main", "score": 512.0, "num": 100 }]
+              "subsets": [
+                {
+                  "name": "main",
+                  "score": 512.0,
+                  "num": 100
+                }
+              ]
             }
-          ]
+          ],
+          "semantic_id": "perf.throughput.tokens_per_second",
+          "semantics": {
+            "semantic_id": "perf.throughput.tokens_per_second",
+            "metric_name": "Token Throughput",
+            "role": "primary",
+            "direction": "higher_is_better",
+            "raw_unit": "tok/s",
+            "value_range": null,
+            "display_kind": "number",
+            "display_multiplier": null,
+            "display_unit": "tok/s",
+            "display_precision": 2,
+            "comparison_group": "perf.throughput",
+            "aggregation_group": null,
+            "contract_version": 1
+          }
         }
-      ]
+      ],
+      "primary_metric_name": "AverageOutputTps",
+      "metric_schema_version": 1
     }
   ],
-  "datasets": ["gsm8k", "arc_challenge", "throughput_suite"],
+  "datasets": [
+    "gsm8k",
+    "arc_challenge",
+    "throughput_suite"
+  ],
   "task_config": {
     "model": "test-model-a",
     "api_url": "http://localhost:8000/v1",
     "api_key": "sk-***REDACTED***",
-    "datasets": ["gsm8k", "arc_challenge", "throughput_suite"],
+    "datasets": [
+      "gsm8k",
+      "arc_challenge",
+      "throughput_suite"
+    ],
     "eval_type": "openai_api"
   }
 }

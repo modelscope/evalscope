@@ -5,7 +5,12 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
+import {
+  distinctSemanticCount,
+  primaryMetricsOf,
+  summaryScoreDisplay,
+  summaryScoreRatio,
+} from '@/domain/report/primaryMetrics'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -23,9 +28,10 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
   const { t } = useLocale()
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
-  const metricName = report.metric_name ?? 'score'
-  const scoreValue = report.metric_name === '' ? null : report.score
-  const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
+  const metricRefs = primaryMetricsOf(report)
+  // Several primary metrics are shown as chips: they are never averaged into one number.
+  const scoreText = summaryScoreDisplay(report)
+  const scoreRatio = summaryScoreRatio(report)
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -85,15 +91,21 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </span>
         </span>
 
-        {/* Score badge */}
-        <span
-          className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
-          style={scoreRatio == null
-            ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
-            : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
-        >
-          {formatMetricByKey(metricName, scoreValue, t).primary}
-        </span>
+        {/* Score badge, or the per-dataset metric chips when they cannot be merged */}
+        {scoreText === null ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs shrink-0 bg-[var(--accent-dim)] text-[var(--text-muted)]">
+            {t('reports.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
+            style={scoreRatio == null
+              ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
+              : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
+          >
+            {scoreText}
+          </span>
+        )}
       </button>
 
       {/* Chevron — dedicated detail navigation button */}

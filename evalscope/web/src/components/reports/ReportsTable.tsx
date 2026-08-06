@@ -3,7 +3,14 @@ import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import type { ReportSummary } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
+import { formatMetric } from '@/domain/metric'
+import {
+  distinctSemanticCount,
+  metricLabel,
+  primaryMetricsOf,
+  summaryScoreDisplay,
+  summaryScoreRatio,
+} from '@/domain/report/primaryMetrics'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {
@@ -79,10 +86,12 @@ export default function ReportsTable({
             const parsed = buildDisplayLabel(report.name)
             const model = report.model_name || parsed.model || report.name
             const dataset = report.dataset_name || parsed.dataset
-            const metricName = report.metric_name ?? 'score'
-            const scoreValue = report.metric_name === '' ? null : report.score
-            const score = formatMetricByKey(metricName, scoreValue, t)
-            const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
+            const metricRefs = primaryMetricsOf(report)
+            // A run with several primary metrics is never collapsed into one number: the metrics
+            // are listed instead, since averaging heterogeneous metrics is meaningless.
+            const scoreText = summaryScoreDisplay(report)
+            const scoreRatio = summaryScoreRatio(report)
+            const metricChips = metricRefs.length > 1 ? metricRefs : []
             return (
               <tr
                 key={report.name}
@@ -115,14 +124,32 @@ export default function ReportsTable({
                   {report.num_samples}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span
-                    className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold"
-                    style={scoreRatio == null
-                      ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
-                      : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
-                  >
-                    {score.primary}
-                  </span>
+                  {scoreText === null ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {t('reports.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
+                      </span>
+                      <div className="flex flex-wrap justify-end gap-1">
+                        {metricChips.map((ref) => (
+                          <span
+                            key={ref.dataset_name + ref.metric_name}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono bg-[var(--accent-dim)] text-[var(--text)]"
+                          >
+                            {metricLabel(ref)} {formatMetric(ref.score, ref.semantics).primary}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <span
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold"
+                      style={scoreRatio == null
+                        ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
+                        : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
+                    >
+                      {scoreText}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)]">

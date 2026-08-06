@@ -2,29 +2,28 @@ import type { ReactNode } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { PerfMetrics, PercentileStats } from '@/api/types'
 import { cn } from '@/lib/utils'
-import { formatMetric } from '@/domain/metric/metricFormat'
-import { DEFAULT_METRIC_SPEC } from '@/domain/metric/MetricDisplaySpec'
-
-/** Translate function contract shared with `formatMetric`. */
-type Translate = (key: string) => string
+import { formatMetric } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 
 /**
- * Identity translate used for the percentile / token tables: their units are
- * appended in JSX (or are unit-less), so no locale unit lookup is needed. The
- * value still flows through the centralized `formatMetric` primitive so
- * precision and round-half-up stay consistent with every other surface,
- * eliminating direct domain `toFixed` calls.
+ * Format a raw performance value at a fixed precision through the shared `formatMetric`
+ * primitive, so precision and round-half-up match every other surface.
+ *
+ * Used for the percentile and token tables, whose units are appended in JSX (or are unit-less).
+ * Semantics are synthesized here as a plain unbounded number rather than looked up by name: the
+ * grouped panels below take their real semantics from the backend `metric_semantics` map.
  */
-const RAW_TRANSLATE: Translate = (key: string) => key
-
-/**
- * Format a raw performance value at a fixed precision through the shared
- * `formatMetric` primitive (unbounded, no percentage conversion, round half up).
- * This replaces scattered `value.toFixed(n)` calls with the single centralized
- * formatting entry point.
- */
-function fmtRaw(value: number | null | undefined, precision: number, t: Translate = RAW_TRANSLATE): string {
-  return formatMetric(value, { ...DEFAULT_METRIC_SPEC, rawPrecision: precision }, t).primary
+function fmtRaw(value: number | null | undefined, precision: number): string {
+  const numberSemantics: MetricSemantics = {
+    semantic_id: 'diagnostic.unspecified',
+    metric_name: '',
+    role: 'diagnostic',
+    direction: 'none',
+    display_kind: 'number',
+    display_precision: precision,
+    contract_version: 1,
+  }
+  return formatMetric(value, numberSemantics).primary
 }
 
 interface PerfMetricsPanelProps {
@@ -262,18 +261,18 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
     },
     {
       label: t('reportDetail.avgLatency'),
-      value: `${fmtRaw(latency.mean, 3, t)}s`,
+      value: `${fmtRaw(latency.mean, 3)}s`,
       color: C_LATENCY,
     },
     ...(ttft
-      ? [{ label: t('reportDetail.ttft'), value: `${fmtRaw(ttft.mean * 1000, 0, t)}ms`, color: C_TTFT }]
+      ? [{ label: t('reportDetail.ttft'), value: `${fmtRaw(ttft.mean * 1000, 0)}ms`, color: C_TTFT }]
       : []),
     ...(tpot
-      ? [{ label: t('reportDetail.tpot'), value: `${fmtRaw(tpot.mean * 1000, 0, t)}ms`, color: C_TPOT }]
+      ? [{ label: t('reportDetail.tpot'), value: `${fmtRaw(tpot.mean * 1000, 0)}ms`, color: C_TPOT }]
       : []),
     {
       label: t('reportDetail.outputTps'),
-      value: `${fmtRaw(throughput.avg_output_tps, 1, t)} tok/s`,
+      value: `${fmtRaw(throughput.avg_output_tps, 1)} tok/s`,
       color: 'var(--text)',
     },
     ...(usage.total_input_tokens !== undefined

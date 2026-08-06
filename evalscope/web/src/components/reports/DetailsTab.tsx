@@ -4,7 +4,9 @@ import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
+import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import { directionArrow } from '@/domain/report/primaryMetrics'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
@@ -17,10 +19,21 @@ interface Props {
   perfMetrics?: PerfMetrics | null
   onSubsetClick?: (subset: string) => void
   overallScore?: number
-  metricName?: string
+  /** Backend semantics of the primary metric, and of each metric by its final report name. */
+  semantics?: MetricSemantics | null
+  semanticsByMetric?: Record<string, MetricSemantics | null | undefined>
 }
 
-export default function DetailsTab({ reportName, datasetName, rootPath, perfMetrics, onSubsetClick, overallScore, metricName = 'score' }: Props) {
+export default function DetailsTab({
+  reportName,
+  datasetName,
+  rootPath,
+  perfMetrics,
+  onSubsetClick,
+  overallScore,
+  semantics,
+  semanticsByMetric = {},
+}: Props) {
   const { t } = useLocale()
   const [analysis, setAnalysis] = useState('')
   const [analysisLoading, setAnalysisLoading] = useState(false)
@@ -89,8 +102,9 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score ?? 0)
-        const rowMetricName = String(row.Metric ?? metricName)
-        const ratio = getBoundedMetricRatio(rowMetricName, score)
+        // Each row names its own metric, so a report mixing metrics formats each row correctly.
+        const rowSemantics = semanticsByMetric[String(row.Metric ?? '')] ?? semantics
+        const ratio = getBoundedQualityRatio(score, rowSemantics)
         // Inline score bar
         return (
           <div className="flex items-center gap-2">
@@ -103,7 +117,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
               </div>
             )}
             <span className="font-mono font-medium tabular-nums" style={{ color: ratio == null ? 'var(--text)' : scoreColor(ratio) }}>
-              {formatMetricByKey(rowMetricName, score, t).primary}
+              {formatMetric(score, rowSemantics).primary}
             </span>
           </div>
         )
@@ -119,7 +133,7 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
     },
   ]
 
-  const normOverall = getBoundedMetricRatio(metricName, overallScore)
+  const normOverall = getBoundedQualityRatio(overallScore, semantics)
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,13 +142,13 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         <div className="flex items-center gap-3 p-4 rounded-[var(--radius)] bg-[var(--bg-card2)] border border-[var(--border)]">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-              {t('reportDetail.overallScore')}
+              {semantics ? `${semantics.metric_name} ${directionArrow(semantics)}`.trim() : t('reportDetail.overallScore')}
             </span>
             <span
               className="text-3xl font-bold font-mono tabular-nums"
               style={{ color: normOverall == null ? 'var(--text)' : scoreColor(normOverall) }}
             >
-              {formatMetricByKey(metricName, overallScore, t).primary}
+              {formatMetric(overallScore, semantics).primary}
             </span>
           </div>
           {normOverall != null && (

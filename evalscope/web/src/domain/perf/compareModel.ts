@@ -21,11 +21,8 @@
  */
 
 import type { PerfDetailResponse } from '../../api/types'
-import type { FormattedMetric } from '../metric/metricFormat'
-import { formatMetric } from '../metric/metricFormat'
-import type { MetricDirection, MetricDisplaySpec } from '../metric/MetricDisplaySpec'
-import { DEFAULT_METRIC_SPEC } from '../metric/MetricDisplaySpec'
-import { getMetricSpec } from '../metric/registry'
+import { formatMetric, getComparisonVerdict } from '../metric'
+import type { FormattedMetric, MetricSemantics } from '../metric'
 
 /**
  * Direction-aware verdict for a single metric delta.
@@ -114,21 +111,28 @@ export function classifySampleSize(n: number): SampleTier {
   return 'ok'
 }
 
-/** Identity locale resolver used for internal formatting (labels are localized at the render layer). */
-const identityT = (key: string): string => key
-
-/** Display spec for a percent-delta value: a plain `%`-suffixed number, 2 decimals. */
-const PERCENT_DELTA_SPEC: MetricDisplaySpec = {
-  ...DEFAULT_METRIC_SPEC,
-  unit: '%',
-  rawPrecision: 2,
+/** Semantics of a percent-change value: a plain `%`-suffixed number, 2 decimals. */
+const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
+  semantic_id: 'diagnostic.unspecified',
+  metric_name: 'Change',
+  role: 'diagnostic',
+  direction: 'none',
+  display_kind: 'number',
+  display_unit: '%',
+  display_precision: 2,
+  contract_version: 1,
 }
 
-/** Absolute delta for a 0-100 success rate is expressed in percentage points. */
-const PERCENTAGE_POINT_SPEC: MetricDisplaySpec = {
-  ...DEFAULT_METRIC_SPEC,
-  unit: 'pp',
-  rawPrecision: 1,
+/** The absolute delta of a percent-rendered metric is expressed in percentage points. */
+const PERCENTAGE_POINT_SEMANTICS: MetricSemantics = {
+  semantic_id: 'diagnostic.unspecified',
+  metric_name: 'Change',
+  role: 'diagnostic',
+  direction: 'none',
+  display_kind: 'number',
+  display_unit: 'pp',
+  display_precision: 1,
+  contract_version: 1,
 }
 
 /**
@@ -239,30 +243,15 @@ function matchingWideRows(
   return null
 }
 
-/** Compute the direction-aware verdict for a metric. */
-function computeVerdict(
-  baseline: number | null,
-  candidate: number | null,
-  direction: MetricDirection,
-): DeltaVerdict {
-  if (baseline === null || candidate === null) return 'incomputable'
-  if (candidate === baseline) return 'neutral'
-  const candidateIsHigher = candidate > baseline
-  const higherIsBetter = direction === 'higher-is-better'
-  // improvement when the candidate moved in the "better" direction.
-  return candidateIsHigher === higherIsBetter ? 'improvement' : 'regression'
-}
-
 /** Build a single `MetricDelta` for one metric key across both runs. */
 function buildMetricDelta(
   metricKey: string,
   baselineValue: number | null,
   candidateValue: number | null,
+  semantics: MetricSemantics | null | undefined,
 ): MetricDelta {
-  const { spec } = getMetricSpec(metricKey)
-
-  const baseline = formatMetric(baselineValue, spec, identityT)
-  const candidate = formatMetric(candidateValue, spec, identityT)
+  const baseline = formatMetric(baselineValue, semantics)
+  const candidate = formatMetric(candidateValue, semantics)
 
   const computable = baselineValue !== null && candidateValue !== null
   const absoluteValue = computable ? candidateValue - baselineValue : null
@@ -270,13 +259,18 @@ function buildMetricDelta(
   const percentValue =
     computable && baselineValue !== 0 ? ((candidateValue - baselineValue) / Math.abs(baselineValue)) * 100 : null
 
+  // A delta of a percent-rendered metric is expressed in percentage points, not re-scaled.
   const absoluteDelta = formatMetric(
     absoluteValue,
-    metricKey === 'success_rate' ? PERCENTAGE_POINT_SPEC : spec,
-    identityT,
+    semantics?.display_kind === 'percent' ? PERCENTAGE_POINT_SEMANTICS : semantics,
   )
-  const percentDelta = formatMetric(percentValue, PERCENT_DELTA_SPEC, identityT)
-  const verdict = computeVerdict(baselineValue, candidateValue, spec.direction)
+  const percentDelta = formatMetric(percentValue, PERCENT_DELTA_SEMANTICS)
+  // Diagnostic fields (request counts, cache details, failures) return 'incomparable', which is
+  // what keeps them out of the winner decision.
+  const rawVerdict = computable ? getComparisonVerdict(candidateValue - baselineValue, semantics) : 'incomparable'
+  const verdict: DeltaVerdict = !computable || rawVerdict === 'incomparable'
+    ? 'incomputable'
+    : rawVerdict === 'equal' ? 'neutral' : rawVerdict === 'better' ? 'improvement' : 'regression'
 
   return { metricKey, baseline, candidate, absoluteDelta, percentDelta, verdict }
 }
@@ -427,6 +421,14 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   const others = runs.filter((run) => run !== baseline)
   const candidate = others.length > 0 ? pickNewest(others) : baseline
 
+  // Semantics come from the runs themselves: the API attaches a field key -> semantics map, so
+  // the direction, unit and precision of a perf field are never inferred from its name here.
+  const semanticsByField: Record<string, MetricSemantics | undefined> = {
+    ...(candidate as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics,
+    ...(baseline as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics,
+  }
+  const semanticsOf = (key: string): MetricSemantics | undefined => semanticsByField[key]
+
   const comparesWideRows = !isVerticalSummary(baseline) || !isVerticalSummary(candidate)
   const matchedRows = comparesWideRows ? matchingWideRows(baseline, candidate) : null
   const canCompare = !comparesWideRows || matchedRows !== null
@@ -440,7 +442,7 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   }
 
   const deltas = metricKeys.map((key) =>
-    buildMetricDelta(key, baselineMetrics.get(key) ?? null, candidateMetrics.get(key) ?? null),
+    buildMetricDelta(key, baselineMetrics.get(key) ?? null, candidateMetrics.get(key) ?? null, semanticsOf(key)),
   )
 
   const sampleCounts: Record<string, number> = {

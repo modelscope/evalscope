@@ -13,7 +13,6 @@ import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
 import DetailsTab from '@/components/reports/DetailsTab'
 import PredictionsTab from '@/components/reports/PredictionsTab'
-import { resolveMetricKey } from '@/domain/metric/registry'
 
 type TabKey = 'overview' | 'details' | 'predictions'
 
@@ -74,23 +73,47 @@ export default function ReportDetailPage() {
   const modelName = reportList[0]?.model_name ?? reportName
   const primaryDataset = reportList[0]?.dataset_name ?? ''
   const overallMetric = useMemo(() => {
-    if (reportList.length === 0) return { score: null, metricName: '' }
-    const metricNames = reportList.map((report) => report.metrics[0]?.name ?? 'score')
-    const firstKey = resolveMetricKey(metricNames[0])
-    if (!metricNames.every((name) => resolveMetricKey(name) === firstKey)) {
-      return { score: null, metricName: '' }
+    if (reportList.length === 0) return { score: null, semantics: null }
+    const primaries = reportList.map((report) => {
+      const named = report.primary_metric_name
+        ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
+        : undefined
+      return named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
+    })
+    const semanticIds = primaries.map((metric) => metric?.semantics?.semantic_id ?? null)
+    // Only average across datasets that report the same metric; otherwise show no header score.
+    if (!semanticIds.every((id) => id !== null && id === semanticIds[0])) {
+      return { score: null, semantics: null }
     }
+    const scores = primaries.map((metric) => metric?.score ?? 0)
     return {
-      score: reportList.reduce((sum, report) => sum + report.score, 0) / reportList.length,
-      metricName: metricNames[0],
+      score: scores.reduce((sum, score) => sum + score, 0) / scores.length,
+      semantics: primaries[0]?.semantics ?? null,
     }
   }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
-    return sum + (r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
+    const named = r.primary_metric_name ? r.metrics.find((metric) => metric.name === r.primary_metric_name) : undefined
+    const primary = named ?? r.metrics.find((metric) => metric.semantics?.role === 'primary')
+    return sum + (primary?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
   }, 0)
 
   const datasets = data?.datasets ?? []
   const htmlReportUrl = getHtmlReportUrl(rootPath, reportName)
+
+  // Semantics of the dataset currently shown in the details panel: its primary metric drives the
+  // headline number, and the per-metric map lets each row format itself.
+  const activeReport = useMemo(() => {
+    const report = reportList.find((r) => r.dataset_name === activeDataset)
+    if (!report) return undefined
+    const named = report.primary_metric_name
+      ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
+      : undefined
+    const primaryMetric = named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
+    const semanticsByMetric = Object.fromEntries(
+      report.metrics.map((metric) => [metric.name, metric.semantics ?? null]),
+    )
+    return { primaryMetric, semanticsByMetric }
+  }, [reportList, activeDataset])
 
   // Handler: switch dataset and auto-navigate to details tab
   const handleDatasetChange = (ds: string) => {
@@ -188,7 +211,7 @@ export default function ReportDetailPage() {
         datasetName={primaryDataset}
         datasets={datasets}
         score={overallMetric.score}
-        metricName={overallMetric.metricName}
+        semantics={overallMetric.semantics}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
         onDatasetClick={handleDatasetChange}
@@ -218,8 +241,9 @@ export default function ReportDetailPage() {
               datasetName={activeDataset}
               rootPath={rootPath}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
-              overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
-              metricName={reportList.find((r) => r.dataset_name === activeDataset)?.metrics[0]?.name}
+              overallScore={activeReport?.primaryMetric?.score}
+              semantics={activeReport?.primaryMetric?.semantics}
+              semanticsByMetric={activeReport?.semanticsByMetric}
               onSubsetClick={handleSubsetClick}
             />,
           ),

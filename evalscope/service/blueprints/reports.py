@@ -24,6 +24,7 @@ from evalscope.report.visualization import (
     plot_single_report_scores,
     plot_single_report_sunburst,
 )
+from evalscope.service.perf_archive import build_metric_semantics
 from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
@@ -222,6 +223,20 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     }
 
 
+#: Stable API paths of the perf data embedded in a report, used to key its semantics map.
+_IN_REPORT_PERF_FIELDS = (
+    'n_samples',
+    'latency',
+    'ttft',
+    'tpot',
+    'throughput.avg_output_tps',
+    'throughput.avg_req_ps',
+    'usage.input_tokens',
+    'usage.output_tokens',
+    'usage.total_tokens',
+)
+
+
 def _report_to_service_dict(report: Report) -> dict:
     """Serialize a report, adding the resolved semantics next to the legacy fields.
 
@@ -239,6 +254,11 @@ def _report_to_service_dict(report: Report) -> dict:
     for metric_data in data.get('metrics', []):
         semantics = semantics_by_name.get(metric_data.get('name'))
         metric_data['semantics'] = semantics.model_dump(mode='json') if semantics else None
+
+    # In-report perf data is keyed by stable API paths, so its semantics map uses those keys.
+    perf_metrics = data.get('perf_metrics')
+    if isinstance(perf_metrics, dict):
+        perf_metrics['metric_semantics'] = build_metric_semantics(_IN_REPORT_PERF_FIELDS)
     return data
 
 

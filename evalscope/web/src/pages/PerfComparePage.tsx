@@ -6,7 +6,6 @@ import { getPerfCompareChartUrl, getPerfDetail } from '@/api/perf'
 import type { PerfDetailResponse } from '@/api/types'
 import { buildCompareModel, classifySampleSize } from '@/domain/perf/compareModel'
 import type { DeltaVerdict, PerfCompareModel, SampleTier } from '@/domain/perf/compareModel'
-import { getMetricSpec } from '@/domain/metric/registry'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
@@ -315,10 +314,9 @@ export default function PerfComparePage() {
                   </thead>
                   <tbody>
                     {model.deltas.map((delta) => {
-                      const resolvedMetric = getMetricSpec(delta.metricKey)
-                      const metricLabel = resolvedMetric.isFallback
-                        ? delta.metricKey
-                        : t(resolvedMetric.spec.labelKey)
+                      // The field key is the label: the backend already names the field in the
+                      // form the perf tables use, so no spec lookup is needed.
+                      const metricLabel = delta.metricKey
                       const level = percentileLevel(delta.metricKey)
                       const lowSample = level !== null && percentileDeEmphasized(sampleTier, level)
                       const incomputable = delta.verdict === 'incomputable'
@@ -336,11 +334,6 @@ export default function PerfComparePage() {
                             <span className="block font-medium">{metricLabel}</span>
                             {metricLabel !== delta.metricKey && (
                               <span className="block type-caption-mono text-[var(--text-muted)]">{delta.metricKey}</span>
-                            )}
-                            {resolvedMetric.isFallback && (
-                              <span className="block type-caption text-[var(--warning)]">
-                                {t('metrics.undefined_display')}
-                              </span>
                             )}
                           </td>
                           <td

@@ -1,12 +1,13 @@
 // Cross-surface metric display consistency.
 //
-// The same metric must render identically wherever it appears. Both the card
-// view (`ReportCard`, narrow screens) and the desktop table (`ReportsTable`)
-// funnel their score through the centralized `formatMetricByKey` entry point, so
-// a single score value must produce byte-for-byte identical display text on both
-// surfaces. This test renders both components against the same
-// `ReportSummary` and asserts the rendered score text matches, and matches the
-// value the centralized formatter produces.
+// The same metric must render identically wherever it appears. Both the card view (`ReportCard`,
+// narrow screens) and the desktop table (`ReportsTable`) derive their score from the backend's
+// `primary_metrics` through one shared helper, so a single report must produce byte-for-byte
+// identical display text on both surfaces — including the "cannot be merged" case, where neither
+// surface may invent a single number.
+//
+// Feature: metric-semantics-governance, Property 41 (frontend side): every view shows the same
+// metric name, direction and formatted value.
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'
@@ -14,25 +15,58 @@ import { cleanup, render } from '@testing-library/react'
 import ReportCard from './ReportCard'
 import ReportsTable from './ReportsTable'
 import { LocaleProvider } from '@/contexts/LocaleContext'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetric } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 import type { ReportSummary } from '@/api/types'
 
 afterEach(cleanup)
 
-/** Identity translate used only to compute the expected display value. */
-const identity = (key: string): string => key
+/** Accuracy as the backend declares it: a bounded ratio rendered as a percentage. */
+const ACCURACY: MetricSemantics = {
+  semantic_id: 'quality.accuracy.ratio',
+  metric_name: 'Accuracy',
+  role: 'primary',
+  direction: 'higher_is_better',
+  value_range: { min: 0, max: 1 },
+  display_kind: 'percent',
+  display_multiplier: 100,
+  display_unit: '%',
+  display_precision: 1,
+  contract_version: 1,
+}
 
-/** Build a representative report summary with the given score. */
-function makeReport(score: number, metricName?: string): ReportSummary {
+/** WER: a bounded ratio where lower is better. */
+const WER: MetricSemantics = { ...ACCURACY, semantic_id: 'quality.wer.ratio', metric_name: 'WER', direction: 'lower_is_better' }
+
+/** Build a report summary carrying one primary metric. */
+function makeReport(score: number, semantics: MetricSemantics = ACCURACY): ReportSummary {
   return {
     name: 'Qwen2.5-0.5B_gsm8k_20260701_120000',
     model_name: 'Qwen2.5-0.5B',
     dataset_name: 'gsm8k',
     score,
-    metric_name: metricName,
+    metric_name: semantics.metric_name,
     num_samples: 128,
     timestamp: '2026-07-01T12:00:00',
-  }
+    primary_metrics: [{ dataset_name: 'gsm8k', metric_name: 'mean_acc', score, semantics }],
+    summary_status: 'single_metric',
+    summary_score: score,
+    summary_semantics: semantics,
+  } as ReportSummary
+}
+
+/** Build a report whose datasets report different metrics, so no single score exists. */
+function makeMixedReport(): ReportSummary {
+  return {
+    ...makeReport(0.5),
+    primary_metrics: [
+      { dataset_name: 'gsm8k', metric_name: 'mean_acc', score: 0.9, semantics: ACCURACY },
+      { dataset_name: 'librispeech', metric_name: 'mean_wer', score: 0.07, semantics: WER },
+    ],
+    summary_status: 'mixed_metrics',
+    summary_score: null,
+    summary_semantics: null,
+  } as ReportSummary
 }
 
 /** Render the card surface and return its displayed score text. */
@@ -42,13 +76,12 @@ function cardScoreText(report: ReportSummary): string {
       <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />
     </LocaleProvider>,
   )
-  // The score badge is the only font-mono semibold pill in the card.
   const badge = container.querySelector('span.font-mono.font-semibold')
   expect(badge).not.toBeNull()
   return badge!.textContent ?? ''
 }
 
-/** Render the table surface and return its displayed score cell text. */
+/** Render the table surface and return its displayed score text. */
 function tableScoreText(report: ReportSummary): string {
   const { container } = render(
     <LocaleProvider>
@@ -62,44 +95,59 @@ function tableScoreText(report: ReportSummary): string {
       />
     </LocaleProvider>,
   )
-  // The score cell is the only font-mono semibold pill in the table body.
-  const badge = container.querySelector('tbody span.font-mono.font-semibold')
+  const badge = container.querySelector('span.font-mono.font-semibold')
   expect(badge).not.toBeNull()
   return badge!.textContent ?? ''
 }
 
 describe('metric display consistency across surfaces', () => {
-  // A score whose 4-decimal round-half-up representation is stable and
-  // unambiguous, plus a legitimate zero and a rounding boundary.
-  const scores = [0.8567, 0.92005, 0, 0.123456, 1]
+  it('renders the same formatted score in the card and the table', () => {
+    for (const score of [0, 0.0721, 0.5, 0.8567, 1]) {
+      const report = makeReport(score)
+      const expected = formatMetric(score, ACCURACY).primary
 
-  it.each(scores)('renders score %s identically in card and table', (score) => {
-    const report = makeReport(score)
-
-    const cardText = cardScoreText(report)
-    cleanup()
-    const tableText = tableScoreText(report)
-
-    // Both surfaces must show the same text ...
-    expect(cardText).toBe(tableText)
-    // ... and it must be exactly what the centralized formatter produces.
-    const expected = formatMetricByKey('score', score, identity).primary
-    expect(cardText).toBe(expected)
+      expect(cardScoreText(report).trim()).toBe(expected)
+      cleanup()
+      expect(tableScoreText(report).trim()).toBe(expected)
+      cleanup()
+    }
   })
 
-  it('preserves an unbounded metric unit in both report-list surfaces', () => {
-    const report = makeReport(512, 'AverageOutputTps')
+  it('honours a lower-is-better metric identically on both surfaces', () => {
+    const report = makeReport(0.0721, WER)
+    const expected = formatMetric(0.0721, WER).primary
 
-    expect(cardScoreText(report)).toBe('512.00 tokens/s')
+    expect(cardScoreText(report).trim()).toBe(expected)
     cleanup()
-    expect(tableScoreText(report)).toBe('512.00 tokens/s')
+    expect(tableScoreText(report).trim()).toBe(expected)
   })
 
-  it('does not display a meaningless aggregate for mixed metrics', () => {
-    const report = makeReport(256.5, '')
+  it('shows no single score on either surface when the metrics cannot be merged', () => {
+    const report = makeMixedReport()
 
-    expect(cardScoreText(report)).toBe('—')
+    const { container: cardContainer } = render(
+      <LocaleProvider>
+        <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />
+      </LocaleProvider>,
+    )
+    expect(cardContainer.querySelector('span.font-mono.font-semibold')).toBeNull()
     cleanup()
-    expect(tableScoreText(report)).toBe('—')
+
+    const { container: tableContainer } = render(
+      <LocaleProvider>
+        <ReportsTable
+          reports={[report]}
+          selected={[]}
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          onToggleSelect={() => {}}
+          onRowClick={() => {}}
+        />
+      </LocaleProvider>,
+    )
+    expect(tableContainer.querySelector('span.font-mono.font-semibold')).toBeNull()
+    // The table lists the individual metrics instead of collapsing them.
+    expect(tableContainer.textContent).toContain('Accuracy')
+    expect(tableContainer.textContent).toContain('WER')
   })
 })

@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatScore, getBoundedMetricRatio, resolveMetricKey } from '@/domain/metric/registry'
+import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 
 interface Props {
   reports: ReportData[]
@@ -37,26 +38,39 @@ export default function ReportSummaryStats({ reports }: Props) {
   const stats = useMemo(() => {
     if (!reports.length) return null
 
-    const entries = reports.map((report) => ({
-      name: report.dataset_name,
-      score: report.score,
-      metricName: report.metrics[0]?.name ?? 'score',
-    }))
-    const metricKey = resolveMetricKey(entries[0].metricName)
-    const comparable = entries.every((entry) => resolveMetricKey(entry.metricName) === metricKey)
-    const scores = entries.map((entry) => entry.score)
+    const entries = reports.map((report) => {
+      const named = report.primary_metric_name
+        ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
+        : undefined
+      const primary = named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
+      return {
+        name: report.dataset_name,
+        score: primary?.score ?? null,
+        semantics: primary?.semantics ?? null,
+        num: primary?.categories?.reduce((sum, category) => sum + category.num, 0) ?? 0,
+      }
+    })
+
+    // Averaging, best and worst are only meaningful across one and the same metric: a set mixing
+    // an accuracy with a WER has no best dataset, so those cards are omitted instead of ranking
+    // incomparable numbers.
+    const semanticIds = entries.map((entry) => entry.semantics?.semantic_id ?? null)
+    const comparable = semanticIds.every((id) => id !== null && id === semanticIds[0])
+      && entries.every((entry) => entry.score !== null)
+    const scores = entries.map((entry) => entry.score ?? 0)
     const avg = comparable ? scores.reduce((s, v) => s + v, 0) / scores.length : null
 
-    const bestIdx = scores.indexOf(Math.max(...scores))
-    const worstIdx = scores.indexOf(Math.min(...scores))
+    const lowerIsBetter = entries[0].semantics?.direction === 'lower_is_better'
+    const bestValue = lowerIsBetter ? Math.min(...scores) : Math.max(...scores)
+    const worstValue = lowerIsBetter ? Math.max(...scores) : Math.min(...scores)
+    const bestIdx = scores.indexOf(bestValue)
+    const worstIdx = scores.indexOf(worstValue)
 
-    const totalSamples = reports.reduce((sum, r) => {
-      return sum + (r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
-    }, 0)
+    const totalSamples = entries.reduce((sum, entry) => sum + entry.num, 0)
 
     return {
       avg,
-      metricName: entries[0].metricName,
+      semantics: entries[0].semantics as MetricSemantics | null,
       best: comparable ? { name: entries[bestIdx].name, score: scores[bestIdx] } : null,
       worst: comparable ? { name: entries[worstIdx].name, score: scores[worstIdx] } : null,
       totalSamples,
@@ -71,8 +85,8 @@ export default function ReportSummaryStats({ reports }: Props) {
     { label: t('reportDetail.worstDataset'), value: stats.worst.score, sub: stats.worst.name },
   ].map((card) => ({
     ...card,
-    norm: getBoundedMetricRatio(stats.metricName, card.value),
-    display: formatScore(stats.metricName, card.value, t),
+    norm: getBoundedQualityRatio(card.value, stats.semantics),
+    display: formatMetric(card.value, stats.semantics).primary,
   }))
 
   return (

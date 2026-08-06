@@ -13,6 +13,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ScoreBadge from '@/components/ui/ScoreBadge'
 import JsonViewer from '@/components/common/JsonViewer'
+import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
 
 /* ─── CollapsibleJson ──────────────────────────────────────── */
 
@@ -140,7 +141,7 @@ export function EvalResultPanel({
             {t('prediction.score')}
           </div>
           <div className="flex flex-col gap-1">
-            <ScoreBadge score={nScore} threshold={threshold} className="self-start" />
+            <ScoreBadge score={nScore} semantics={RATIO_PERCENT_SEMANTICS} threshold={threshold} className="self-start" />
             <span className="type-body-xs text-[var(--text-muted)]">
               {nScore >= threshold ? t('prediction.aboveFilter') : t('prediction.belowFilter')} · {threshold}
             </span>

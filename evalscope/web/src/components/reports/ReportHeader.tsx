@@ -4,14 +4,17 @@ import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
+import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import { directionArrow, directionHintKey } from '@/domain/report/primaryMetrics'
 
 interface Props {
   modelName: string
   datasetName: string
   datasets?: string[]
   score: number | null
-  metricName?: string
+  /** Backend semantics of the primary metric shown in the header. */
+  semantics?: MetricSemantics | null
   totalSamples: number
   htmlReportUrl: string
   onDatasetClick?: (dataset: string) => void
@@ -22,7 +25,7 @@ export default function ReportHeader({
   datasetName,
   datasets,
   score,
-  metricName = 'score',
+  semantics,
   totalSamples,
   htmlReportUrl,
   onDatasetClick,
@@ -30,10 +33,12 @@ export default function ReportHeader({
   const { t } = useLocale()
   const navigate = useNavigate()
 
-  const normalizedScore = getBoundedMetricRatio(metricName, score)
+  const normalizedScore = getBoundedQualityRatio(score, semantics)
   const variant = normalizedScore == null
     ? 'default'
     : normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
+  const hintKey = directionHintKey(semantics)
+  const directionHint = hintKey ? t(hintKey) : undefined
 
   return (
     <div
@@ -72,8 +77,13 @@ export default function ReportHeader({
           </div>
           <div className="flex items-center gap-3">
             <Badge variant={variant} className="font-mono text-sm px-3 py-1">
-              <span style={{ color: normalizedScore == null ? undefined : scoreColor(normalizedScore) }}>
-                {formatMetricByKey(metricName, score, t).primary}
+              <span
+                style={{ color: normalizedScore == null ? undefined : scoreColor(normalizedScore) }}
+                title={directionHint}
+                aria-label={semantics ? `${semantics.metric_name}${directionHint ? `, ${directionHint}` : ''}` : undefined}
+              >
+                {semantics ? `${semantics.metric_name} ${directionArrow(semantics)} ` : ''}
+                {formatMetric(score, semantics).primary}
               </span>
             </Badge>
             <span className="text-sm text-[var(--text-muted)]">

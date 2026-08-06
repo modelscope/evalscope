@@ -227,7 +227,10 @@ def list_perf_runs():
             return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
 
         runs = perf_archive.list_run_summaries(root)
-        return jsonify({'runs': runs, 'total': len(runs)}), 200
+        # The run list exposes its numbers under stable API paths, so the semantics map is keyed
+        # by those paths. The run objects themselves are unchanged.
+        semantics = perf_archive.build_metric_semantics(('best_rps', 'best_latency', 'success_rate'))
+        return jsonify({'runs': runs, 'total': len(runs), 'metric_semantics': semantics}), 200
     except Exception as e:
         logger.error(f'Failed to list perf runs: {e}')
         return jsonify({'error': str(e)}), 500

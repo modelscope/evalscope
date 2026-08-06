@@ -18,7 +18,7 @@ shape, and no numeric value is touched.
 
 from typing import Dict
 
-from evalscope.api.metric.semantics import MetricEntry
+from evalscope.api.metric.semantics import MetricEntry, MetricRole
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 PERF_FIELD_SEMANTICS: Dict[str, MetricEntry] = {
@@ -190,4 +190,33 @@ PERF_FIELD_SEMANTICS: Dict[str, MetricEntry] = {
 }
 """Perf field key -> catalog entry. Keys come from the perf name constants."""
 
-__all__ = ['PERF_FIELD_SEMANTICS']
+PERF_API_PATH_SEMANTICS: Dict[str, MetricEntry] = {
+    # In-report `perf_metrics` and the perf run list use stable API paths rather than the display
+    # names of the archive tables, so they need their own key set. Both wire shapes stay as they
+    # are; only the semantics map is added next to them.
+    'latency': MetricEntry(baseline='perf.latency.seconds', metric_name='Latency'),
+    'best_latency': MetricEntry(baseline='perf.latency.seconds', metric_name='Best Latency'),
+    'ttft': MetricEntry(baseline='perf.latency.seconds', metric_name='TTFT'),
+    'tpot': MetricEntry(baseline='perf.latency.seconds', metric_name='TPOT'),
+    'throughput.avg_output_tps': MetricEntry(
+        baseline='perf.throughput.tokens_per_second',
+        metric_name='Output Throughput',
+    ),
+    'throughput.avg_req_ps': MetricEntry(
+        baseline='perf.throughput.requests_per_second',
+        metric_name='Request Throughput',
+    ),
+    'best_rps': MetricEntry(baseline='perf.throughput.requests_per_second', metric_name='Best RPS'),
+    'success_rate': MetricEntry(
+        baseline='quality.accuracy.ratio',
+        metric_name='Success Rate',
+        role=MetricRole.AUXILIARY,
+    ),
+    'usage.input_tokens': MetricEntry(baseline='diagnostic.count.items', metric_name='Input Tokens'),
+    'usage.output_tokens': MetricEntry(baseline='diagnostic.count.items', metric_name='Output Tokens'),
+    'usage.total_tokens': MetricEntry(baseline='diagnostic.count.items', metric_name='Total Tokens'),
+    'n_samples': MetricEntry(baseline='diagnostic.count.items', metric_name='Samples'),
+}
+"""Stable API path -> catalog entry, for perf data exposed under paths instead of display names."""
+
+__all__ = ['PERF_API_PATH_SEMANTICS', 'PERF_FIELD_SEMANTICS']

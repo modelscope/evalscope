@@ -1,0 +1,95 @@
+/**
+ * Static constraints on the metric domain.
+ *
+ * Feature: metric-semantics-governance, Property 42: the frontend contains no metric-name
+ * inference. These assertions read the source tree rather than exercising behaviour, because the
+ * property being protected is the *absence* of a mechanism: once a name table or a `metrics[0]`
+ * shortcut reappears anywhere, metric semantics silently have two sources of truth again.
+ */
+
+import { describe, expect, it } from 'vitest'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
+
+import * as metricDomain from './index'
+
+const SRC_ROOT = join(__dirname, '..', '..')
+
+/** Files that legitimately mention the forbidden patterns: the tests describing them. */
+const ALLOWED_SUFFIXES = ['.test.ts', '.test.tsx', '__arbitraries__.ts']
+
+function sourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir)
+  const files: string[] = []
+  for (const entry of entries) {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) {
+      if (entry === 'node_modules' || entry === 'test') continue
+      files.push(...sourceFiles(full))
+      continue
+    }
+    if (!/\.tsx?$/.test(entry)) continue
+    if (ALLOWED_SUFFIXES.some((suffix) => entry.endsWith(suffix))) continue
+    files.push(full)
+  }
+  return files
+}
+
+describe('metric domain public surface', () => {
+  it('exports exactly the four primitives', () => {
+    expect(Object.keys(metricDomain).sort()).toEqual([
+      'MISSING_PLACEHOLDER',
+      'formatMetric',
+      'getBoundedQualityRatio',
+      'getComparisonVerdict',
+      'roundHalfUp',
+    ])
+  })
+
+  it('has no metric name resolution helper', () => {
+    for (const forbidden of ['resolveMetricKey', 'getMetricSpec', 'formatMetricByKey', 'formatScore']) {
+      expect(metricDomain).not.toHaveProperty(forbidden)
+    }
+  })
+})
+
+describe('Property 42: no metric name inference in the frontend', () => {
+  const files = sourceFiles(SRC_ROOT)
+
+  it('finds source files to scan', () => {
+    expect(files.length).toBeGreaterThan(20)
+  })
+
+  it('contains no metric alias table or name-keyed registry', () => {
+    const offenders: string[] = []
+    for (const file of files) {
+      const text = readFileSync(file, 'utf-8')
+      if (/METRIC_ALIASES|METRIC_REGISTRY|EVALUATION_METRIC_SPECS|PERFORMANCE_METRIC_SPECS/.test(text)) {
+        offenders.push(relative(SRC_ROOT, file))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('never reads metrics[0] to pick a metric', () => {
+    const offenders: string[] = []
+    for (const file of files) {
+      const text = readFileSync(file, 'utf-8')
+      if (/metrics\[0\]/.test(text)) {
+        offenders.push(relative(SRC_ROOT, file))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('no longer imports the deleted registry or display spec modules', () => {
+    const offenders: string[] = []
+    for (const file of files) {
+      const text = readFileSync(file, 'utf-8')
+      if (/domain\/metric\/(registry|MetricDisplaySpec)/.test(text)) {
+        offenders.push(relative(SRC_ROOT, file))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})

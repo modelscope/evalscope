@@ -492,14 +492,18 @@ class SemanticsResolver:
         )
 
     def _perf_field_entries(self) -> Mapping[str, MetricEntry]:
-        """Return the perf field table, imported lazily and tolerating its absence."""
+        """Return the perf tables, imported lazily and tolerating their absence.
+
+        Both key sets are merged: the archive tables are keyed by the display names of the perf
+        constants, while in-report perf data and the run list are keyed by stable API paths.
+        """
         if self._perf_fields is not None:
             return self._perf_fields
         try:
-            from evalscope.metrics.semantics.perf import PERF_FIELD_SEMANTICS
+            from evalscope.metrics.semantics.perf import PERF_API_PATH_SEMANTICS, PERF_FIELD_SEMANTICS
         except ImportError:
             return {}
-        return PERF_FIELD_SEMANTICS
+        return {**PERF_FIELD_SEMANTICS, **PERF_API_PATH_SEMANTICS}
 
 
 @lru_cache(maxsize=1)

@@ -1,6 +1,7 @@
 import { Table } from 'lucide-react'
 import DataTable from '@/components/common/DataTable'
 import { useLocale } from '@/contexts/LocaleContext'
+import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
 
 /**
  * Authoritative data-table representation of a chart's underlying data.
@@ -41,7 +42,7 @@ export default function DataTableFallback({ model, className }: DataTableFallbac
         <span className="type-label-xs">{t('charts.fallbackTitle')}</span>
       </div>
       <p className="mb-2 text-xs text-[var(--text-muted)]">{t('charts.fallbackHint')}</p>
-      <DataTable columns={model.columns} data={model.rows} scoreColumns={model.scoreColumns} />
+      <DataTable columns={model.columns} data={model.rows} scoreColumns={model.scoreColumns} semantics={RATIO_PERCENT_SEMANTICS} />
     </div>
   )
 }

@@ -18,7 +18,7 @@ import re
 import shutil
 from datetime import datetime
 from types import SimpleNamespace
-from typing import List, Optional
+from typing import Dict, Iterable, List, Optional
 from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
@@ -355,12 +355,40 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'basic_info': basic_info,
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
+        'metric_semantics': build_metric_semantics(summary_columns),
         'best_config': dict(build_best_config(runs)),
         'recommendations': build_recommendations(runs),
         'num_runs': len(runs),
         'is_embedding': is_emb,
         'has_html': os.path.isfile(os.path.join(run_dir, 'perf_report.html')),
     }
+
+
+def build_metric_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
+    """Resolve the semantics of the perf fields a response is about to return.
+
+    Attaching the map at the API boundary keeps every perf file on disk untouched: the numbers,
+    the field names and the structure of ``benchmark_summary.json`` and friends do not change.
+    A field of the public perf contract that has no declaration is reported and skipped rather
+    than shipped with invented semantics; a vendor extension field degrades to a diagnostic.
+
+    Args:
+        field_keys: Field keys present in the response, e.g. the summary table columns.
+
+    Returns:
+        Field key -> serialized ``MetricSemantics``, for the fields that resolve.
+    """
+    from evalscope.metrics.semantics import get_semantics_resolver
+
+    resolver = get_semantics_resolver()
+    semantics: Dict[str, dict] = {}
+    for field_key in field_keys:
+        resolved = resolver.resolve_perf_field(field_key)
+        if resolved.blocks_standard_semantics:
+            resolved.log_audit_messages()
+            continue
+        semantics[field_key] = resolved.semantics.model_dump(mode='json')
+    return semantics
 
 
 def list_run_items(root: str, rel_path: str) -> List[dict]:

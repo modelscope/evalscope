@@ -10,7 +10,8 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreColor } from '@/utils/colorScale'
-import { formatScore } from '@/domain/metric/registry'
+import { formatMetric } from '@/domain/metric'
+import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -581,7 +582,7 @@ function ScoreTab({
                           {score != null ? (
                             <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-medium text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
                               {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                              {formatScore('score', score, t)}
+                              {formatMetric(score, RATIO_PERCENT_SEMANTICS).primary}
                             </div>
                           ) : (
                             // text-dim allowed: em-dash placeholder, decorative non-essential glyph (DESIGN.md §Text)
@@ -597,7 +598,7 @@ function ScoreTab({
                         <td className="px-1 py-1 border-l border-[var(--border)] w-[100px]">
                           <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-semibold text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
                             {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                            {formatScore('score', score, t)}
+                            {formatMetric(score, RATIO_PERCENT_SEMANTICS).primary}
                           </div>
                         </td>
                       )
@@ -837,7 +838,7 @@ function PredictionTab({
                 {/* Above-filter rate badge (informational, not a pass verdict) */}
                 {rate !== undefined && mergedPredictions.length > 0 && (
                   <Badge variant="default">
-                    {formatScore('pass_rate', rate, t)}
+                    {formatMetric(rate, RATIO_PERCENT_SEMANTICS).primary}
                   </Badge>
                 )}
               </div>
@@ -938,6 +939,7 @@ function PredictionTab({
                   */}
                   <ScoreBadge
                     score={modelRow.NScore}
+                    semantics={RATIO_PERCENT_SEMANTICS}
                     className="ml-2 shrink-0 !font-mono"
                   />
                 </div>

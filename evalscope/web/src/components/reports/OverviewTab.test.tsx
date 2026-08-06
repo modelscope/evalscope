@@ -36,16 +36,18 @@ describe('OverviewTab dataset score view', () => {
 
     expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
     expect(screen.getByRole('progressbar', { name: 'arc_challenge Score' })).toBeInTheDocument()
-    expect(screen.getByText('81.5%')).toBeInTheDocument()
-    expect(screen.queryByText('8150.0%')).not.toBeInTheDocument()
+    // The cell now carries the metric's display name and direction arrow next to the value.
+    expect(screen.getByText(/Score ↑\s*81\.5%/)).toBeInTheDocument()
+    expect(screen.queryByText(/8150/)).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
   it('keeps unbounded metrics in their native unit without a percentage bar', () => {
     renderOverview([multi[2]])
 
-    expect(screen.getAllByText('512.00 tokens/s')).not.toHaveLength(0)
-    expect(screen.queryByText('51200.0%')).not.toBeInTheDocument()
+    // An unbounded throughput keeps its native unit and is never rescaled to a percentage.
+    expect(screen.getAllByText(/Token Throughput ↑\s*512 tok\/s/)).not.toHaveLength(0)
+    expect(screen.queryByText(/51200/)).not.toBeInTheDocument()
     expect(screen.queryByRole('progressbar', { name: 'throughput_suite Score' })).not.toBeInTheDocument()
   })
 
