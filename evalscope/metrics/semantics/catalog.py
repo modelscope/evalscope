@@ -46,23 +46,63 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'accuracy': MetricEntry(baseline='quality.accuracy.ratio'),
     'multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'relaxed_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'schema_accuracy': MetricEntry(baseline='quality.accuracy.ratio'),
+    'process_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'task_averaged_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'correct_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'error_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_number_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_unit_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_Center_ACC': MetricEntry(baseline='quality.accuracy.ratio'),
+    # Grounding accuracy at a fixed IoU threshold (refcoco).
+    'mean_ACC@0.1': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_ACC@0.3': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_ACC@0.5': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_ACC@0.7': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_ACC@0.9': MetricEntry(baseline='quality.accuracy.ratio'),
+    # Puzzle accuracy per size / difficulty bucket (zebralogicbench).
+    'puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'cell_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'easy_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'medium_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'hard_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'small_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'large_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'xl_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    # Instruction following: strict / loose at prompt and instruction level.
+    'mean_prompt_level_strict': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_prompt_level_loose': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_inst_level_strict': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_inst_level_loose': MetricEntry(baseline='quality.accuracy.ratio'),
     # Graded-answer benchmarks (simple_qa, browsecomp, chinese_simple_qa) report the share of
     # correct answers as `is_correct`.
     'is_correct': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_is_correct': MetricEntry(baseline='quality.accuracy.ratio'),
     # Agent style task completion ratio (miniwob, wide_search).
     'success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- exact match ---------------------------------------------------------------------
     'em': MetricEntry(baseline='quality.exact_match.ratio'),
+    'mean_em': MetricEntry(baseline='quality.exact_match.ratio'),
     'exact_match': MetricEntry(baseline='quality.exact_match.ratio'),
+    # Tool-use benchmarks score the action and the plan by exact match (tool_bench).
+    'mean_Act.EM': MetricEntry(baseline='quality.exact_match.ratio'),
+    'mean_Plan.EM': MetricEntry(baseline='quality.exact_match.ratio'),
     # --- pass ratios ---------------------------------------------------------------------
     'pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'mean_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'pass_at_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'mean_pass_at_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'pass_hat_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'mean_pass_hat_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'Pass@1': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'pass@1': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'strict_pass': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'mean_strict_pass': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'main_problem_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'subproblem_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     # --- F1 / precision / recall ---------------------------------------------------------
     'f1': MetricEntry(baseline='quality.f1.ratio'),
     'F1': MetricEntry(baseline='quality.f1.ratio'),
@@ -70,29 +110,104 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'f1_macro': MetricEntry(baseline='quality.f1.ratio'),
     'f1_micro': MetricEntry(baseline='quality.f1.ratio'),
     'f1_weighted': MetricEntry(baseline='quality.f1.ratio'),
+    'mean_f1': MetricEntry(baseline='quality.f1.ratio'),
+    'mean_F1': MetricEntry(baseline='quality.f1.ratio'),
+    'task_averaged_f1': MetricEntry(baseline='quality.f1.ratio'),
     'simple_f1_score': MetricEntry(baseline='quality.f1.ratio'),
     'tool_call_f1': MetricEntry(baseline='quality.f1.ratio'),
     'precision': MetricEntry(baseline='quality.precision.ratio'),
+    'mean_boundary_precision': MetricEntry(baseline='quality.precision.ratio'),
     'recall': MetricEntry(baseline='quality.recall.ratio'),
+    # --- text generation overlap and similarity ------------------------------------------
+    'Bleu_1': MetricEntry(baseline='quality.bleu.ratio'),
+    'Bleu_2': MetricEntry(baseline='quality.bleu.ratio'),
+    'Bleu_3': MetricEntry(baseline='quality.bleu.ratio'),
+    'Bleu_4': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_Bleu_1': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_Bleu_2': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_Bleu_3': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_Bleu_4': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_BLEU': MetricEntry(baseline='quality.bleu.ratio'),
+    'mean_bleu': MetricEntry(baseline='quality.bleu.ratio'),
+    'ROUGE_L': MetricEntry(baseline='quality.rouge.ratio'),
+    'mean_ROUGE_L': MetricEntry(baseline='quality.rouge.ratio'),
+    'mean_Rouge': MetricEntry(baseline='quality.rouge.ratio'),
+    'mean_Rouge-L': MetricEntry(baseline='quality.rouge.ratio'),
+    'METEOR': MetricEntry(baseline='quality.meteor.ratio'),
+    'mean_METEOR': MetricEntry(baseline='quality.meteor.ratio'),
+    'CIDEr': MetricEntry(baseline='quality.cider.unbounded'),
+    'mean_CIDEr': MetricEntry(baseline='quality.cider.unbounded'),
+    'bert_score': MetricEntry(baseline='quality.similarity.ratio'),
+    'mean_bert_score': MetricEntry(baseline='quality.similarity.ratio'),
+    'mean_comet': MetricEntry(baseline='quality.similarity.ratio'),
+    'sem_score': MetricEntry(baseline='quality.similarity.ratio'),
+    # ANLS is the normalized similarity between answer strings (docvqa, infovqa).
+    'anls': MetricEntry(baseline='quality.similarity.ratio'),
+    'Semantic Consistency': MetricEntry(baseline='quality.similarity.ratio'),
+    'Perceptual Similarity': MetricEntry(baseline='quality.similarity.ratio'),
+    # --- localization --------------------------------------------------------------------
+    'mean_IoU': MetricEntry(baseline='quality.iou.ratio'),
     # --- speech recognition error rates: lower is better ---------------------------------
     'wer': MetricEntry(baseline='quality.wer.ratio'),
     'mean_wer': MetricEntry(baseline='quality.wer.ratio'),
     'audio_wer': MetricEntry(baseline='quality.wer.ratio'),
+    'mean_audio_wer': MetricEntry(baseline='quality.wer.ratio'),
     'cer': MetricEntry(baseline='quality.cer.ratio'),
     'mean_cer': MetricEntry(baseline='quality.cer.ratio'),
+    'mean_mer': MetricEntry(baseline='quality.mer.ratio'),
+    # --- graded failure rates: lower is better -------------------------------------------
+    'mean_error_rate': MetricEntry(baseline='quality.error_rate.ratio'),
+    'mean_HalluRate': MetricEntry(baseline='quality.error_rate.ratio'),
+    'mean_distractor_leakage': MetricEntry(baseline='quality.error_rate.ratio'),
+    # --- bounded quality scores ----------------------------------------------------------
+    'score': MetricEntry(baseline='quality.score.ratio'),
+    'mean_score': MetricEntry(baseline='quality.score.ratio'),
+    'vqa_score': MetricEntry(baseline='quality.score.ratio'),
+    'overall': MetricEntry(baseline='quality.score.ratio'),
+    'overall_mrcr_score': MetricEntry(baseline='quality.score.ratio'),
+    'mean_partial_credit': MetricEntry(baseline='quality.score.ratio'),
+    'mean_submission_ready': MetricEntry(baseline='quality.score.ratio'),
+    'mean_required_coverage': MetricEntry(baseline='quality.coverage.ratio'),
+    'mean_coverage_score': MetricEntry(baseline='quality.coverage.ratio'),
+    # --- official 0-100 scales -----------------------------------------------------------
+    'mean_eq_bench_score': MetricEntry(baseline='quality.score.points_100'),
+    # --- win rates -----------------------------------------------------------------------
+    'winrate': MetricEntry(baseline='quality.win_rate.ratio'),
+    'mean_winrate': MetricEntry(baseline='quality.win_rate.ratio'),
+    'win_rate': MetricEntry(baseline='quality.win_rate.ratio'),
     # --- judge scores (unbounded) --------------------------------------------------------
     'gpt_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'mean_total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'mean_normalized_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'mean_avg_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'mean_net_match_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    # health_bench grades each answer along named rubric axes.
+    'communication_quality': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'completeness': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'context_awareness': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'instruction_following': MetricEntry(baseline='quality.judge_score.unbounded'),
+    # --- scoring model outputs -----------------------------------------------------------
+    'HPSv2.1Score': MetricEntry(baseline='quality.model_score.unbounded'),
+    'PickScore': MetricEntry(baseline='quality.model_score.unbounded'),
+    'VQAScore': MetricEntry(baseline='quality.model_score.unbounded'),
     # --- diagnostics: distribution shares and raw counts carry no direction --------------
     'error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'mean_is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'mean_is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'inference_error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'param_default_accept_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'param_immutable_reject_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'yes_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'maybe_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'no_answer_num': MetricEntry(baseline='diagnostic.count.items'),
     'count_successful_tool_call': MetricEntry(baseline='diagnostic.count.items'),
     'count_finish_reason_tool_call': MetricEntry(baseline='diagnostic.count.items'),
     'count_finish_reason_tool_calls': MetricEntry(baseline='diagnostic.count.items'),
+    # Average reasoning length: a behavioural observation, not a quality signal.
+    'avg_reason_lens': MetricEntry(baseline='diagnostic.count.items'),
     # --- legacy names: only produced by report files written before the semantics -------
     # contract. Safe to drop once no report of that vintage is expected to be opened again.
     'AverageAccuracy': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -106,6 +221,29 @@ Seeded from the metric names this repository actually emits. The audit driven co
 full ~131 names (task 5) fills the remaining default / custom aggregation names.
 """
 
+#: ``k`` values the runtime-sized ``pass@k`` / ``pass^k`` / ``vote@k`` families are declared for.
+#: Exact-key lookup cannot cover an unbounded family, so the common powers-of-two and decimal
+#: sample counts are declared explicitly; a ``k`` outside this tuple degrades to diagnostic with
+#: an audit message pointing here.
+DYNAMIC_K_VALUES: Tuple[int, ...] = (1, 2, 3, 4, 5, 8, 10, 16, 20, 32, 50, 64, 100)
+
+
+def _dynamic_pass_at_k_names() -> Dict[str, MetricEntry]:
+    """Build the ``mean_acc_pass@{k}`` style entries of the runtime-sized families.
+
+    Returns:
+        Final report metric name -> entry, one per template and declared ``k``.
+    """
+    templates = ('mean_acc_pass@{k}', 'mean_acc_pass^{k}', 'mean_acc_vote@{k}')
+    return {
+        template.format(k=k): MetricEntry(baseline='quality.pass_at_k.ratio')
+        for template in templates
+        for k in DYNAMIC_K_VALUES
+    }
+
+
+METRIC_NAME_SEMANTICS.update(_dynamic_pass_at_k_names())
+
 BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
     # job_bench, i.e. an intermediate judge value: reassign the collision to a diagnostic.
@@ -115,11 +253,33 @@ BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
 """``(benchmark_name, final_metric_name)`` -> entry, only for same-name / different-meaning
 collisions. Each entry carries the collision reason in a comment."""
 
-BENCHMARK_DYNAMIC_METRICS: Dict[str, Tuple[str, ...]] = {}
+BENCHMARK_DYNAMIC_METRICS: Dict[str, Tuple[str, ...]] = {
+    # Code benchmarks emit one ``mean_acc_pass@{k}`` per configured k next to ``mean_acc``.
+    **{
+        benchmark_name: tuple(f'mean_acc_pass@{k}' for k in DYNAMIC_K_VALUES)
+        for benchmark_name in (
+            'bigcodebench',
+            'bigcodebench_hard',
+            'humaneval',
+            'humaneval_plus',
+            'live_code_bench',
+            'mbpp',
+            'mbpp_plus',
+            'multi_pl_e',
+            'swe_bench',
+        )
+    },
+    #: ARC-AGI reports the pass^k family instead, which requires all k samples to be correct.
+    'arc_agi_2': tuple(f'mean_acc_pass^{k}' for k in DYNAMIC_K_VALUES),
+    #: hallusion_bench composes ``Overall_<metric>`` from the per-figure metric names.
+    'hallusion_bench': ('Overall_aAcc', 'Overall_fAcc', 'Overall_qAcc'),
+    #: openai_mrcr keys its score by the needle range, e.g. ``2-4_mrcr_score``.
+    'openai_mrcr': ('overall_mrcr_score', ),
+}
 """``benchmark_name`` -> allow-list of final report metric names generated at runtime.
 
-Populated by task 5.5 from the audit ``dynamic`` bucket (``pass@{k}`` families and f-string
-composed names)."""
+A name outside the allow-list is reported by the audit and degrades to diagnostic rather than
+being guessed."""
 
 
 def _validate_catalog() -> None:
