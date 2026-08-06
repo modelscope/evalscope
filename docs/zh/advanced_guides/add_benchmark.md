@@ -468,6 +468,48 @@ class MMLUProAdapter(MultiChoiceAdapter):
    - 通用文本推理：更注重推理过程的引导
    - 多项选择：专注于选择项的展示和答案格式
 
+### 指标语义与主指标
+
+报告不会猜测指标的含义。指标如何展示——名称、优化方向、单位、刻度与精度——统一来自
+`evalscope/metrics/semantics/catalog.py` 中的集中目录；每个 benchmark 则声明自己的哪个指标承载结论。
+
+**大多数新 benchmark 无需改动目录。** 复用已有指标名（`acc`、`f1_score`、`exact_match`、
+`pass_rate` 等）时，语义已经声明好了：
+
+```python
+metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
+```
+
+只有两种情况需要你添一行：
+
+1. **产出多个指标时**：声明哪个是主指标，填 `metric_list` 中的原始名。其余指标自动解析为
+   auxiliary，占比类、计数类指标解析为 diagnostic：
+
+   ```python
+   metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+   primary_metric='f1_score',   # metric_list 多于一个指标时必填
+   ```
+
+   这一点是强制的：多指标却不写 `primary_metric` 会在构造 `BenchmarkMeta` 时报错——否则每个报告
+   视图都只能任选一个指标当结论。
+
+2. **引入了新的指标名时**：在 `METRIC_NAME_SEMANTICS` 中加一行，引用描述它的基线：
+
+   ```python
+   # evalscope/metrics/semantics/catalog.py
+   'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
+   ```
+
+跑审计即可看到还缺什么，它会给出 benchmark 名、指标名与待改文件，无需人工猜测：
+
+```bash
+make metric-audit
+```
+
+仓库外的第三方 benchmark 不改目录也能跑：其未声明的指标降级为 diagnostic，原样显示数值，不伪造
+方向与单位。内置 benchmark 则不行——未声明的指标会让报告生成失败，否则目录的空洞就会表现为一个被
+静默错误渲染的分数。
+
 ## 4. 运行评测
 
 调试代码，看看是否能正常运行。

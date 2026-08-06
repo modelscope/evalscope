@@ -102,28 +102,28 @@ class MetricSemantics(BaseModel):
 
     @model_validator(mode='after')
     def _check_role_direction_display(self) -> Self:
-        # R1: scored roles must declare an optimization direction (requirement 1.3).
+        # R1: scored roles must declare an optimization direction.
         if self.role in (MetricRole.PRIMARY, MetricRole.AUXILIARY) and self.direction == MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
                 f"role='{self.role.value}' requires a direction other than 'none'"
             )
 
-        # R2: diagnostic metrics carry no optimization direction (requirement 1.4).
+        # R2: diagnostic metrics carry no optimization direction.
         if self.role == MetricRole.DIAGNOSTIC and self.direction != MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
                 f"role='diagnostic' requires direction='none', got '{self.direction.value}'"
             )
 
-        # R3: diagnostic metrics never join a comparison group (requirement 1.5).
+        # R3: diagnostic metrics never join a comparison group.
         if self.role == MetricRole.DIAGNOSTIC and self.comparison_group:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}': role='diagnostic' must not declare "
                 f"comparison_group, got '{self.comparison_group}'"
             )
 
-        # R4: percent display needs an explicit range and multiplier (requirement 1.6).
+        # R4: percent display needs an explicit range and multiplier.
         if self.display_kind == MetricDisplayKind.PERCENT:
             missing = [
                 name for name, value in (('value_range', self.value_range),
@@ -135,7 +135,7 @@ class MetricSemantics(BaseModel):
                     f"{' and '.join(missing)}"
                 )
 
-        # R5: reject non-positive scaling and negative precision (requirement 1.8).
+        # R5: reject non-positive scaling and negative precision.
         # value_range finiteness / min < max is already guaranteed by ValueRange, so it is
         # not re-checked here (that branch was unreachable).
         if self.display_multiplier is not None and (

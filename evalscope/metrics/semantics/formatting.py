@@ -3,7 +3,7 @@
 This module is the backend half of the formatting contract. The frontend primitive
 ``evalscope/web/src/domain/metric/metricFormat.ts`` implements the exact same rules, and both
 sides assert against the shared golden samples in ``golden_samples.json`` so the CLI, the HTML
-report, the reports API and the Web UI render one value identically (requirements 13.9, 20.2).
+report, the reports API and the Web UI render one value identically.
 
 Formatting rules
 ----------------

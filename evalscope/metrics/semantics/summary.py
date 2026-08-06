@@ -6,8 +6,7 @@ report collection is.
 
 Hard rule for v1: this helper never averages scores across benchmarks. A summary value is only
 produced when the collection contains exactly one primary metric with declared semantics. Any
-multi-dataset collection reports ``None`` for both ``summary_score`` and ``summary_semantics``
-(requirements 6.5, 6.6, 7.2, 7.3, 7.4).
+multi-dataset collection reports ``None`` for both ``summary_score`` and ``summary_semantics``.
 """
 
 from enum import Enum
@@ -82,7 +81,7 @@ def summarize_primary_metrics(refs: Sequence[PrimaryMetricRef]) -> MetricSummary
     declared = [ref for ref in primary_metrics if ref.semantics is not None]
     fully_declared = len(declared) == len(primary_metrics)
 
-    # Requirement 7.3: a single declared primary metric is the summary value itself.
+    # A single declared primary metric is the summary value itself.
     if fully_declared and len(primary_metrics) == 1:
         only = primary_metrics[0]
         return MetricSummary(
@@ -92,10 +91,10 @@ def summarize_primary_metrics(refs: Sequence[PrimaryMetricRef]) -> MetricSummary
             primary_metrics=primary_metrics,
         )
 
-    # Requirement 7.4: homogeneous semantics stay comparable but are never merged into one score.
+    # Homogeneous semantics stay comparable but are never merged into one score.
     semantic_ids = {ref.semantics.semantic_id for ref in declared}
     if fully_declared and len(primary_metrics) > 1 and len(semantic_ids) == 1:
         return MetricSummary(status=SummaryStatus.NO_AGGREGATE, primary_metrics=primary_metrics)
 
-    # Requirements 6.6, 7.4: heterogeneous, undeclared or empty collections have no summary value.
+    # Heterogeneous, undeclared or empty collections have no summary value.
     return MetricSummary(status=SummaryStatus.MIXED_METRICS, primary_metrics=primary_metrics)

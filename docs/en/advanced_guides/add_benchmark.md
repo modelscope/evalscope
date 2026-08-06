@@ -468,6 +468,54 @@ class MMLUProAdapter(MultiChoiceAdapter):
    - General Text Reasoning: Focuses more on guiding the reasoning process
    - Multiple Choice: Focuses on displaying choices and answer format
 
+### Metric Semantics and the Primary Metric
+
+Reports do not guess what a metric means. How a metric is displayed — its name, its optimization
+direction, its unit, its scale and its precision — comes from a central catalog at
+`evalscope/metrics/semantics/catalog.py`, and each benchmark states which of its metrics carries
+the conclusion.
+
+**Most new benchmarks need no catalog change at all.** Reusing an existing metric name (`acc`,
+`f1_score`, `exact_match`, `pass_rate`, ...) means the semantics are already declared:
+
+```python
+metric_list=['acc'],   # 'acc' is already in the catalog: nothing else to do
+```
+
+Two cases do need a line from you:
+
+1. **Your benchmark reports several metrics.** Declare which one is primary, using the raw name
+   as written in `metric_list`. The others resolve as auxiliary automatically, and answer-share
+   or count style metrics resolve as diagnostics:
+
+   ```python
+   metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+   primary_metric='f1_score',   # required once metric_list has more than one metric
+   ```
+
+   This is enforced: constructing a `BenchmarkMeta` with several metrics and no `primary_metric`
+   raises an error, because otherwise every report view would have to pick one arbitrarily.
+
+2. **Your benchmark introduces a new metric name.** Add one line to `METRIC_NAME_SEMANTICS`,
+   referencing the baseline that describes it:
+
+   ```python
+   # evalscope/metrics/semantics/catalog.py
+   'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
+   ```
+
+Run the audit to see exactly what is missing; it names the benchmark, the metric and the file to
+edit, so nothing has to be guessed:
+
+```bash
+make metric-audit
+```
+
+A third-party benchmark outside this repository can run without touching the catalog: its
+undeclared metrics degrade to diagnostics, which display the raw value without claiming a
+direction or a unit. A built-in benchmark cannot — an undeclared metric fails report generation,
+because a gap in the catalog would otherwise show up as a silently mis-rendered score.
+
 ## 4. Running Evaluation
 
 Debug the code to see if it can run normally.

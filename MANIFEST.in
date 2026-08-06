@@ -3,9 +3,6 @@ include README.md
 # Include all resources (code + other files) inside the package
 recursive-include evalscope *
 
-# Metric semantics golden samples: shared backend/frontend formatting contract
-include evalscope/metrics/semantics/golden_samples.json
-
 # Exclude cache/compiled artifacts
 global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store
 

@@ -67,7 +67,7 @@ EMPTY_METRIC_LIST_PATTERN = '<empty metric_list>'
 
 
 class MetricGroup(str, Enum):
-    """Bucket a final report metric name belongs to (requirement 10.7)."""
+    """Bucket a final report metric name belongs to."""
 
     DEFAULT_AGGREGATION = 'default_aggregation'
     """Produced by a registered aggregator over ``BenchmarkMeta.metric_list``."""
@@ -116,7 +116,7 @@ class AggregatorBehaviour(BaseModel):
     """Whether the aggregation name resolves through the aggregation registry."""
 
 
-#: Registered aggregation name -> the names it produces (requirement 10.3).
+#: Registered aggregation name -> the names it produces.
 DEFAULT_AGGREGATOR_BEHAVIOURS: Dict[str, AggregatorBehaviour] = {
     'mean': AggregatorBehaviour(aggregation_name='mean'),
     'mean_and_pass_at_k': AggregatorBehaviour(aggregation_name='mean', dynamic_metric_suffixes=('_pass@{k}', )),
@@ -226,7 +226,7 @@ class BenchmarkDeclaration(BaseModel):
     """Registered benchmark name, the catalog key."""
 
     declared_metric_names: List[str] = Field(default_factory=list)
-    """Metric names of ``BenchmarkMeta.metric_list`` (requirement 10.2)."""
+    """Metric names of ``BenchmarkMeta.metric_list``."""
 
     aggregation: str = Field(default='mean')
     """``BenchmarkMeta.aggregation``: the registered aggregator, or a custom function name."""
@@ -308,7 +308,7 @@ class MetricInventory(BaseModel):
     """Patterns and names that are only known at runtime."""
 
     perf_field_keys: List[PerfFieldRecord] = Field(default_factory=list)
-    """Public perf field keys (requirement 10.6)."""
+    """Public perf field keys."""
 
     coverage_base: List[str] = Field(default_factory=list)
     """Benchmark names the catalog must cover, from ``evalscope/benchmarks/_meta/``."""
@@ -509,7 +509,7 @@ def scan_adapter_sources(roots: Optional[Sequence[Path]] = None) -> Dict[Tuple[s
     """Statically scan the adapter sources for aggregation facts.
 
     Adapter classes are parsed instead of imported and instantiated, which keeps the audit
-    read-only and independent of optional third-party packages (requirement 10.1).
+    read-only and independent of optional third-party packages.
 
     Args:
         roots: Directories to search. Defaults to the bundled adapter directories, whose scan is
@@ -642,7 +642,7 @@ def collect_declared_metrics(
     scans: Optional[Mapping[Tuple[str, str], AdapterScan]] = None,
     benchmarks: Optional[Iterable[str]] = None,
 ) -> Dict[str, BenchmarkDeclaration]:
-    """Collect what every registered benchmark declares about its metrics (requirement 10.2).
+    """Collect what every registered benchmark declares about its metrics.
 
     Reads ``BenchmarkMeta.metric_list`` and ``BenchmarkMeta.aggregation`` from the registry and
     completes them with the two aggregation facts recovered from the adapter sources:
@@ -700,10 +700,10 @@ def collect_default_aggregation_names(
     declarations: Mapping[str, BenchmarkDeclaration],
     add_dynamic_families: bool = True,
 ) -> List[MetricRecord]:
-    """Derive the final report metric names of the default aggregation path (requirement 10.3).
+    """Derive the final report metric names of the default aggregation path.
 
     Composition goes through ``compose_final_metric_name()``, the single implementation of the
-    final report metric name spelling rule shared with ``ReportGenerator`` (requirement 2.4).
+    final report metric name spelling rule shared with ``ReportGenerator``.
 
     Args:
         declarations: Declarations from :func:`collect_declared_metrics`.
@@ -789,12 +789,12 @@ def collect_default_aggregation_names(
 
 
 def collect_custom_aggregation_names(declarations: Mapping[str, BenchmarkDeclaration]) -> List[MetricRecord]:
-    """Collect the names custom ``aggregate_scores()`` implementations spell out (req 10.4).
+    """Collect the names custom ``aggregate_scores()`` implementations spell out.
 
     Literal ``AggScore(metric_name=..., aggregation_name=...)`` arguments become
     ``custom_aggregation`` records. Anything the AST cannot evaluate -- an f-string, a variable, a
     delegation to a helper defined elsewhere -- becomes a ``dynamic`` pattern instead, which the
-    catalog covers through ``dynamic_metric_names`` (requirement 9.4).
+    catalog covers through ``dynamic_metric_names``.
 
     Args:
         declarations: Declarations from :func:`collect_declared_metrics`.
@@ -841,7 +841,7 @@ def collect_observed_metrics(
     observed_paths: Iterable[Union[str, Path]],
     benchmarks: Optional[Iterable[str]] = None,
 ) -> List[MetricRecord]:
-    """Collect final report metric names seen in report files under explicit paths (req 10.5).
+    """Collect final report metric names seen in report files under explicit paths.
 
     Only the paths passed in are read. A default audit passes none, so it never depends on the
     contents of the workspace ``outputs/`` directory; observing historical reports or test
@@ -923,7 +923,7 @@ def _read_report_metric_names(path: Path) -> List[Tuple[str, str]]:
 
 
 def collect_perf_field_keys() -> List[PerfFieldRecord]:
-    """Reflect the public perf field keys from the perf name constants (requirement 10.6).
+    """Reflect the public perf field keys from the perf name constants.
 
     Returns:
         One record per public string constant of ``Metrics`` and ``PercentileMetrics``, sorted by
@@ -963,7 +963,7 @@ def _relative_source(path: str) -> str:
 
 
 def group_metric_records(*record_lists: Iterable[MetricRecord]) -> Dict[MetricGroup, List[MetricRecord]]:
-    """Merge collector output into the three mutually exclusive buckets (requirement 10.7).
+    """Merge collector output into the three mutually exclusive buckets.
 
     Records of the same ``(benchmark, metric)`` pair are merged: the strongest group in
     :data:`GROUP_PRECEDENCE` wins and the provenance strings of every collector are kept, so a
@@ -1013,7 +1013,7 @@ def collect_metric_inventory(
     Args:
         benchmarks: Restrict the audit to these benchmark names. ``None`` audits all of them.
         observed_paths: Explicit report paths to observe. Empty by default, so a default audit
-            never reads the workspace ``outputs/`` directory (requirement 10.5).
+            never reads the workspace ``outputs/`` directory.
         registry: Benchmark registry override, for tests.
         scans: Adapter source scan override, for tests.
 
