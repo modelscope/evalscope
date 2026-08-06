@@ -503,3 +503,13 @@ class TestVLMBenchmark(TestBenchmark):
         """Test MeasureBench with mock LLM."""
         dataset_args = {'subset_list': ['real_world']}
         self._run_dataset_test('measure_bench', dataset_args=dataset_args, limit=5, use_mock=True)
+
+    def test_perception_bench(self):
+        """Test PerceptionBench atomic visual perception benchmark."""
+        dataset_args = {'subset_list': ['ocr_error']}
+        self._run_dataset_test('perception_bench', dataset_args=dataset_args, limit=5)
+
+    def test_perception_bench_mock(self):
+        """Test PerceptionBench with mock LLM."""
+        dataset_args = {'subset_list': ['ocr_error']}
+        self._run_dataset_test('perception_bench', dataset_args=dataset_args, limit=5, use_mock=True)
