@@ -20,6 +20,11 @@ Nothing in this package imports ``evalscope.report`` at module level.
 
 ``audit/`` is deliberately not re-exported: it is a maintenance entry point, not part of the
 runtime API, and importing it here would drag the audit dependencies into every report read.
+
+Only the two formatters the backend actually renders with are exported. ``formatting.py`` also
+holds the ``FormattedMetric`` mirror of the frontend primitive, which exists so the two sides can
+be asserted against the same golden samples; it is imported from that module directly rather than
+re-exported, so the package surface stays limited to what production calls.
 """
 
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
@@ -29,13 +34,7 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_NAME_SEMANTICS,
     lookup_metric_entry,
 )
-from evalscope.metrics.semantics.formatting import (
-    MISSING_PLACEHOLDER,
-    FormattedMetric,
-    format_metric,
-    format_metric_value,
-    format_raw_metric_value,
-)
+from evalscope.metrics.semantics.formatting import format_metric_value, format_raw_metric_value
 from evalscope.metrics.semantics.naming import compose_final_metric_name
 from evalscope.metrics.semantics.resolver import (
     AUDIT_MESSAGE_PREFIX,
@@ -88,9 +87,6 @@ __all__ = [
     'SummaryStatus',
     'summarize_primary_metrics',
     # formatting
-    'MISSING_PLACEHOLDER',
-    'FormattedMetric',
-    'format_metric',
     'format_metric_value',
     'format_raw_metric_value',
 ]

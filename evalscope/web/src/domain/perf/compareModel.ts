@@ -155,6 +155,8 @@ function toNumeric(value: unknown): number | null {
 interface WideMetricColumn {
   key: string
   columnIndex: number
+  /** Original column label, which is the key the backend declares semantics under. */
+  label: string
 }
 
 const WIDE_METRIC_KEYS: Record<string, string> = {
@@ -181,8 +183,27 @@ function isVerticalSummary(run: PerfDetailResponse): boolean {
 function getWideMetricColumns(run: PerfDetailResponse): WideMetricColumn[] {
   return run.summary_columns.flatMap((column, columnIndex) => {
     const key = WIDE_METRIC_KEYS[normalizeColumn(column)]
-    return key ? [{ key, columnIndex }] : []
+    return key ? [{ key, columnIndex, label: column }] : []
   })
+}
+
+/**
+ * Map each canonical metric key back to the label the backend keyed its semantics by.
+ *
+ * A wide summary table is canonicalized here (`Avg Lat.(s)` -> `latency`) so deltas have stable
+ * keys, but the API declares semantics under the label it returned. Without this mapping the
+ * lookup would silently miss and every perf metric would lose its direction and unit.
+ */
+function semanticsKeyByMetricKey(run: PerfDetailResponse): Record<string, string> {
+  if (isVerticalSummary(run)) {
+    // A vertical table is keyed by its row labels, which are already the semantics keys.
+    return {}
+  }
+  const mapping: Record<string, string> = {}
+  for (const { key, label } of getWideMetricColumns(run)) {
+    mapping[key] = label
+  }
+  return mapping
 }
 
 /**
@@ -424,10 +445,14 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   // Semantics come from the runs themselves: the API attaches a field key -> semantics map, so
   // the direction, unit and precision of a perf field are never inferred from its name here.
   const semanticsByField: Record<string, MetricSemantics | undefined> = {
-    ...(candidate as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics,
-    ...(baseline as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics,
+    ...candidate.metric_semantics,
+    ...baseline.metric_semantics,
   }
-  const semanticsOf = (key: string): MetricSemantics | undefined => semanticsByField[key]
+  // A wide table's metric keys are canonicalized locally, so translate back to the label the
+  // backend keyed its semantics by before looking one up.
+  const labelByKey = { ...semanticsKeyByMetricKey(candidate), ...semanticsKeyByMetricKey(baseline) }
+  const semanticsOf = (key: string): MetricSemantics | undefined =>
+    semanticsByField[key] ?? semanticsByField[labelByKey[key] ?? '']
 
   const comparesWideRows = !isVerticalSummary(baseline) || !isVerticalSummary(candidate)
   const matchedRows = comparesWideRows ? matchingWideRows(baseline, candidate) : null

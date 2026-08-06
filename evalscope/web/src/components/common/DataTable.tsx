@@ -1,6 +1,6 @@
 import { scoreBg } from '@/utils/colorScale'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
-import type { MetricDirection, MetricSemantics } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 
 interface Props {
   columns: string[]
@@ -8,19 +8,6 @@ interface Props {
   scoreColumns?: string[]
   /** Backend semantics of the score columns, used for formatting, colour scale and sorting. */
   semantics?: MetricSemantics | null
-}
-
-/**
- * Compare two values of the same metric so that the better one sorts first.
- *
- * `lower_is_better` metrics sort ascending, everything else descending, which makes "first row is
- * the best row" hold for latency and WER as well as for accuracy.
- */
-export function compareByDirection(a: number, b: number, direction: MetricDirection): number {
-  if (a === b) {
-    return 0
-  }
-  return direction === 'lower_is_better' ? a - b : b - a
 }
 
 export default function DataTable({ columns, data, scoreColumns = [], semantics }: Props) {

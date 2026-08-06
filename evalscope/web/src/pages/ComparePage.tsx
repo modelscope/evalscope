@@ -10,8 +10,9 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric } from '@/domain/metric'
+import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
 import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import type { MetricSemantics } from '@/domain/metric'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -145,15 +146,26 @@ export default function ComparePage() {
   // Score Tab Data                                                      //
   // ------------------------------------------------------------------ //
 
-  const { scoreTableData, scoreTableColumns, displayNames } = useMemo(() => {
+  const { scoreTableData, scoreTableColumns, displayNames, scoreSemantics, canAggregate } = useMemo(() => {
     const displayNames = getDisplayNames(reportNames)
-    if (!reports.length) return { scoreTableData: [], scoreTableColumns: [], displayNames }
+    if (!reports.length) {
+      return { scoreTableData: [], scoreTableColumns: [], displayNames, scoreSemantics: {}, canAggregate: false }
+    }
 
     const byReport: Record<string, Record<string, number>> = {}
+    //  Each dataset's primary metric decides how its row is formatted and which end is "best".
+    const semanticsByDataset: Record<string, MetricSemantics | undefined> = {}
     for (const r of reports) {
       const key = (r as ReportData & { _reportName?: string })._reportName ?? r.model_name
       if (!byReport[key]) byReport[key] = {}
       byReport[key][r.dataset_name] = r.score
+      const named = r.primary_metric_name
+        ? r.metrics.find((metric) => metric.name === r.primary_metric_name)
+        : undefined
+      const primary = named ?? r.metrics.find((metric) => metric.semantics?.role === 'primary')
+      if (primary?.semantics) {
+        semanticsByDataset[r.dataset_name] = primary.semantics
+      }
     }
 
     const reportKeys = reportNames.filter((n) => byReport[n])
@@ -166,24 +178,34 @@ export default function ComparePage() {
     const rows: Record<string, unknown>[] = common.map((ds) => {
       const row: Record<string, unknown> = { dataset: ds }
       const scores = reportKeys.map((k) => byReport[k][ds] ?? 0)
-      const maxScore = Math.max(...scores)
+      // "Best" follows the metric's direction: a low WER wins, a high accuracy wins.
+      const lowerIsBetter = semanticsByDataset[ds]?.direction === 'lower_is_better'
+      const bestScore = lowerIsBetter ? Math.min(...scores) : Math.max(...scores)
       reportKeys.forEach((k, i) => {
         row[k] = scores[i]
-        row[`${k}_best`] = scores[i] === maxScore && maxScore > 0
+        row[`${k}_best`] = scores[i] === bestScore && scores.length > 1
       })
       return row
     })
 
-    if (common.length > 0) {
+    // Averaging across datasets only means something when they all report the same metric on the
+    // same scale; mixing an accuracy with a WER or a 0-100 judge score would be a fake total.
+    const semanticIds = common.map((ds) => semanticsByDataset[ds]?.semantic_id ?? null)
+    const canAggregate = common.length > 0 && semanticIds.every((id) => id !== null && id === semanticIds[0])
+
+    if (canAggregate) {
       const avgRow: Record<string, unknown> = { dataset: t('compare.average') }
+      const lowerIsBetter = semanticsByDataset[common[0]]?.direction === 'lower_is_better'
       reportKeys.forEach((k) => {
         const scores = common.map((ds) => byReport[k][ds] ?? 0)
         avgRow[k] = scores.reduce((a, b) => a + b, 0) / scores.length
         avgRow[`${k}_best`] = false
       })
-      let bestAvg = -1
-      reportKeys.forEach((k) => { if ((avgRow[k] as number) > bestAvg) bestAvg = avgRow[k] as number })
-      reportKeys.forEach((k) => { if ((avgRow[k] as number) === bestAvg && bestAvg > 0) avgRow[`${k}_best`] = true })
+      const averages = reportKeys.map((k) => avgRow[k] as number)
+      const bestAvg = lowerIsBetter ? Math.min(...averages) : Math.max(...averages)
+      reportKeys.forEach((k) => {
+        if ((avgRow[k] as number) === bestAvg && reportKeys.length > 1) avgRow[`${k}_best`] = true
+      })
       rows.push(avgRow)
     }
 
@@ -192,7 +214,7 @@ export default function ComparePage() {
       ...reportKeys.map((k) => ({ key: k, label: displayNames[k] })),
     ]
 
-    return { scoreTableData: rows, scoreTableColumns: columns, displayNames }
+    return { scoreTableData: rows, scoreTableColumns: columns, displayNames, scoreSemantics: semanticsByDataset, canAggregate }
   }, [reports, reportNames, t])
 
   // ------------------------------------------------------------------ //
@@ -452,6 +474,8 @@ export default function ComparePage() {
               reportNames={reportNames}
               scoreTableColumns={scoreTableColumns}
               scoreTableData={scoreTableData}
+              scoreSemantics={scoreSemantics}
+              canAggregate={canAggregate}
               displayNames={displayNames}
               displayLabels={displayLabels}
               t={t}
@@ -505,6 +529,8 @@ function ScoreTab({
   reportNames,
   scoreTableColumns,
   scoreTableData,
+  scoreSemantics,
+  canAggregate,
   displayNames,
   displayLabels,
   t,
@@ -513,6 +539,10 @@ function ScoreTab({
   reportNames: string[]
   scoreTableColumns: { key: string; label: string }[]
   scoreTableData: Record<string, unknown>[]
+  /** Dataset name -> semantics of that dataset's primary metric. */
+  scoreSemantics: Record<string, MetricSemantics | undefined>
+  /** Whether every dataset reports the same metric, so an average is meaningful. */
+  canAggregate: boolean
   displayNames: Record<string, string>
   displayLabels: Record<string, string>
   t: (p: string) => string
@@ -530,6 +560,9 @@ function ScoreTab({
           columns: scoreTableColumns.map((column) => column.key),
           rows: scoreTableData,
           scoreColumns: reportKeys,
+          // Only meaningful when every dataset reports the same metric; otherwise the cells stay
+          // plain numbers rather than being scaled under a metric they do not belong to.
+          semantics: canAggregate ? scoreSemantics[datasetNames[0]] : undefined,
         }}
         height={450}
         title={t('multi.modelRadar')}
@@ -577,12 +610,21 @@ function ScoreTab({
                       const row = dataRows.find((r) => r.dataset === ds)
                       const score = row ? (row[rk] as number) : null
                       const isBest = row ? !!(row[`${rk}_best`]) : false
+                      const semantics = scoreSemantics[ds]
+                      // Only a bounded quality metric gets a colour; a latency or a judge score
+                      // would otherwise be tinted as if its raw magnitude were a grade.
+                      const ratio = getBoundedQualityRatio(score, semantics)
                       return (
                         <td key={ds} className="px-1 py-1 w-[100px]">
                           {score != null ? (
-                            <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-medium text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
-                              {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                              {formatMetric(score, RATIO_PERCENT_SEMANTICS).primary}
+                            <div
+                              className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-medium text-center"
+                              style={ratio == null
+                                ? { backgroundColor: 'var(--bg-deep)', color: 'var(--text)' }
+                                : { backgroundColor: scoreColor(ratio), color: '#fff' }}
+                            >
+                              {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1 align-middle opacity-80" />}
+                              {formatMetric(score, semantics).primary}
                             </div>
                           ) : (
                             // text-dim allowed: em-dash placeholder, decorative non-essential glyph (DESIGN.md §Text)
@@ -594,11 +636,19 @@ function ScoreTab({
                     {avgRow && (() => {
                       const score = avgRow[rk] as number
                       const isBest = !!(avgRow[`${rk}_best`])
+                      // Present only when every dataset shares one metric, so any of them is it.
+                      const semantics = scoreSemantics[datasetNames[0]]
+                      const ratio = getBoundedQualityRatio(score, semantics)
                       return (
                         <td className="px-1 py-1 border-l border-[var(--border)] w-[100px]">
-                          <div className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-semibold text-center text-white" style={{ backgroundColor: scoreColor(score) }}>
-                            {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1 align-middle opacity-80" />}
-                            {formatMetric(score, RATIO_PERCENT_SEMANTICS).primary}
+                          <div
+                            className="w-full py-1.5 px-2 rounded-[var(--radius-xs)] text-xs font-mono font-semibold text-center"
+                            style={ratio == null
+                              ? { backgroundColor: 'var(--bg-deep)', color: 'var(--text)' }
+                              : { backgroundColor: scoreColor(ratio), color: '#fff' }}
+                          >
+                            {isBest && <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mr-1 align-middle opacity-80" />}
+                            {formatMetric(score, semantics).primary}
                           </div>
                         </td>
                       )

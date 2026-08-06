@@ -152,7 +152,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
           // Heterogeneous primary metrics: the table lists them per dataset and no total is shown,
           // because averaging an accuracy with a WER or a judge score would be meaningless.
           <div className="mb-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 text-xs text-[var(--text-muted)]">
-            {t('reports.multiplePrimaryMetrics', { count: distinctSemantics })}
+            {t('metrics.multiplePrimaryMetrics', { count: distinctSemantics })}
           </div>
         )}
         {canShowRadar && (

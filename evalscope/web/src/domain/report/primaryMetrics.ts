@@ -55,8 +55,8 @@ export function directionArrow(semantics: MetricSemantics | null | undefined): s
  */
 export function directionHintKey(semantics: MetricSemantics | null | undefined): string | null {
   if (!semantics) return null
-  if (semantics.direction === 'higher_is_better') return 'metric.higherIsBetter'
-  if (semantics.direction === 'lower_is_better') return 'metric.lowerIsBetter'
+  if (semantics.direction === 'higher_is_better') return 'metrics.higherIsBetter'
+  if (semantics.direction === 'lower_is_better') return 'metrics.lowerIsBetter'
   return null
 }
 

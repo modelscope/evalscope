@@ -32,6 +32,17 @@ REQUIRED_EXPORTS: List[str] = [
     'format_metric_value',
 ]
 
+#: Names deliberately kept out of the package surface: they have no production consumer, so
+#: exporting them would widen the maintained API for nothing. Tests import them from
+#: ``formatting.py`` directly instead.
+UNEXPORTED_HELPERS: List[str] = [
+    'format_metric',
+    'FormattedMetric',
+    'get_unit_label',
+    'round_half_up',
+    'MISSING_PLACEHOLDER',
+]
+
 #: Maintenance scripts that are not imported by the package ``__init__``, so they may import the
 #: report layer without creating a cycle on the runtime read path.
 STANDALONE_ENTRY_POINTS = frozenset({'audit.py'})
@@ -81,6 +92,10 @@ class TestPublicSurface:
     def test_required_exports_are_present(self) -> None:
         missing = [name for name in REQUIRED_EXPORTS if name not in semantics.__all__]
         assert missing == []
+
+    def test_helpers_without_a_production_consumer_stay_unexported(self) -> None:
+        leaked = [name for name in UNEXPORTED_HELPERS if name in semantics.__all__]
+        assert leaked == []
 
     def test_star_import_exposes_exactly_all(self) -> None:
         namespace: dict = {}

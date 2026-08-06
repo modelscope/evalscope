@@ -202,21 +202,21 @@ class TestPerfSemanticsSurface:
     """The perf API attaches semantics without touching the numbers it reports."""
 
     def test_public_perf_fields_all_resolve(self) -> None:
+        from evalscope.metrics.semantics.perf import resolve_perf_semantics
         from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
-        from evalscope.service.perf_archive import build_metric_semantics
 
         keys = [Metrics.AVERAGE_LATENCY, Metrics.OUTPUT_TOKEN_THROUGHPUT, PercentileMetrics.TTFT]
-        semantics = build_metric_semantics(keys)
+        semantics = resolve_perf_semantics(keys)
 
         assert set(semantics) == set(keys)
         assert semantics[Metrics.AVERAGE_LATENCY]['direction'] == 'lower_is_better'
         assert semantics[Metrics.OUTPUT_TOKEN_THROUGHPUT]['direction'] == 'higher_is_better'
 
     def test_counts_are_diagnostics(self) -> None:
+        from evalscope.metrics.semantics.perf import resolve_perf_semantics
         from evalscope.perf.utils.perf_constants import Metrics
-        from evalscope.service.perf_archive import build_metric_semantics
 
-        semantics = build_metric_semantics([Metrics.FAILED_REQUESTS, Metrics.TOTAL_REQUESTS])
+        semantics = resolve_perf_semantics([Metrics.FAILED_REQUESTS, Metrics.TOTAL_REQUESTS])
 
         for field_key in (Metrics.FAILED_REQUESTS, Metrics.TOTAL_REQUESTS):
             assert semantics[field_key]['role'] == 'diagnostic'

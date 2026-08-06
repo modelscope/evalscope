@@ -94,7 +94,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         {/* Score badge, or the per-dataset metric chips when they cannot be merged */}
         {scoreText === null ? (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs shrink-0 bg-[var(--accent-dim)] text-[var(--text-muted)]">
-            {t('reports.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
+            {t('metrics.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
           </span>
         ) : (
           <span

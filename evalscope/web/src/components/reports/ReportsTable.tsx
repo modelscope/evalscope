@@ -127,7 +127,7 @@ export default function ReportsTable({
                   {scoreText === null ? (
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-xs text-[var(--text-muted)]">
-                        {t('reports.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
+                        {t('metrics.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
                       </span>
                       <div className="flex flex-wrap justify-end gap-1">
                         {metricChips.map((ref) => (

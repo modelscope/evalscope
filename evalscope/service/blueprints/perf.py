@@ -3,6 +3,7 @@ import os
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
+from evalscope.metrics.semantics.perf import resolve_perf_semantics
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
@@ -229,7 +230,7 @@ def list_perf_runs():
         runs = perf_archive.list_run_summaries(root)
         # The run list exposes its numbers under stable API paths, so the semantics map is keyed
         # by those paths. The run objects themselves are unchanged.
-        semantics = perf_archive.build_metric_semantics(('best_rps', 'best_latency', 'success_rate'))
+        semantics = resolve_perf_semantics(('best_rps', 'best_latency', 'success_rate'))
         return jsonify({'runs': runs, 'total': len(runs), 'metric_semantics': semantics}), 200
     except Exception as e:
         logger.error(f'Failed to list perf runs: {e}')

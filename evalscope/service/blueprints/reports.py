@@ -16,6 +16,7 @@ from typing import List
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef, summarize_primary_metrics
+from evalscope.metrics.semantics.perf import resolve_perf_semantics
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -24,7 +25,6 @@ from evalscope.report.visualization import (
     plot_single_report_scores,
     plot_single_report_sunburst,
 )
-from evalscope.service.perf_archive import build_metric_semantics
 from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
@@ -258,7 +258,7 @@ def _report_to_service_dict(report: Report) -> dict:
     # In-report perf data is keyed by stable API paths, so its semantics map uses those keys.
     perf_metrics = data.get('perf_metrics')
     if isinstance(perf_metrics, dict):
-        perf_metrics['metric_semantics'] = build_metric_semantics(_IN_REPORT_PERF_FIELDS)
+        perf_metrics['metric_semantics'] = resolve_perf_semantics(_IN_REPORT_PERF_FIELDS)
     return data
 
 

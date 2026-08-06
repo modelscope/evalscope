@@ -1,7 +1,7 @@
 import { Table } from 'lucide-react'
 import DataTable from '@/components/common/DataTable'
 import { useLocale } from '@/contexts/LocaleContext'
-import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import type { MetricSemantics } from '@/domain/metric'
 
 /**
  * Authoritative data-table representation of a chart's underlying data.
@@ -17,6 +17,13 @@ export interface DataTableModel {
   rows: Record<string, unknown>[]
   /** Columns that should be rendered with score styling/formatting. */
   scoreColumns?: string[]
+  /**
+   * Semantics shared by the score columns, when the table shows one and the same metric.
+   *
+   * Left out when the columns mix metrics: the values then render as plain numbers rather than
+   * being scaled or coloured under a metric they do not belong to.
+   */
+  semantics?: MetricSemantics | null
 }
 
 interface DataTableFallbackProps {
@@ -42,7 +49,7 @@ export default function DataTableFallback({ model, className }: DataTableFallbac
         <span className="type-label-xs">{t('charts.fallbackTitle')}</span>
       </div>
       <p className="mb-2 text-xs text-[var(--text-muted)]">{t('charts.fallbackHint')}</p>
-      <DataTable columns={model.columns} data={model.rows} scoreColumns={model.scoreColumns} semantics={RATIO_PERCENT_SEMANTICS} />
+      <DataTable columns={model.columns} data={model.rows} scoreColumns={model.scoreColumns} semantics={model.semantics} />
     </div>
   )
 }

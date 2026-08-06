@@ -8,9 +8,19 @@
  * Covers: PerfDetailResponse, ListPerfRunsResponse, PerfRunsListResponse.
  */
 import { z } from 'zod'
+import { metricSemanticsSchema } from './reports.schema'
 
 /** A row/table cell value used by perf summary and percentile tables. */
 const tableCellSchema = z.union([z.string(), z.number()])
+
+/**
+ * Field key -> semantics, attached by the API next to the numbers it describes.
+ *
+ * Declaring it here matters: zod strips keys a schema does not mention, so an undeclared
+ * `metric_semantics` would be silently dropped and every perf metric would lose its direction
+ * and unit. Optional, so a response from an older backend still parses.
+ */
+const metricSemanticsMapSchema = z.record(z.string(), metricSemanticsSchema).optional()
 
 // ------------------------------------------------------------------ //
 // Perf run archive (GET /api/v1/perf/list)                            //
@@ -42,6 +52,8 @@ export const perfRunSummarySchema = z.object({
 export const listPerfRunsResponseSchema = z.object({
   runs: z.array(perfRunSummarySchema),
   total: z.number(),
+  // Keyed by the stable API paths the run summaries expose (best_rps, best_latency, ...).
+  metric_semantics: metricSemanticsMapSchema,
 })
 
 // ------------------------------------------------------------------ //
@@ -63,6 +75,9 @@ export const perfDetailResponseSchema = z.object({
   num_runs: z.number(),
   is_embedding: z.boolean(),
   has_html: z.boolean(),
+  // Keyed by the identifiers the summary table exposes: its metric column labels for a wide
+  // table, or its row labels for a vertical one.
+  metric_semantics: metricSemanticsMapSchema,
 })
 
 // ------------------------------------------------------------------ //

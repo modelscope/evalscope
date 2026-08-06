@@ -10,7 +10,12 @@ import pytest
 from typing import Dict, FrozenSet
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole
-from evalscope.metrics.semantics.perf import PERF_FIELD_SEMANTICS
+from evalscope.metrics.semantics.perf import (
+    PERF_API_PATH_SEMANTICS,
+    PERF_FIELD_SEMANTICS,
+    PERF_SUMMARY_COLUMN_SEMANTICS,
+    resolve_perf_semantics,
+)
 from evalscope.metrics.semantics.resolver import SemanticsResolver, is_public_perf_field
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
@@ -143,3 +148,59 @@ class TestResolvePerfField:
 
         assert resolved.blocks_standard_semantics
         assert 'PERF_FIELD_SEMANTICS' in '\n'.join(resolved.audit_messages)
+
+
+class TestPerfKeySpaces:
+    """Perf numbers reach the API under three key spaces; each must resolve on its own terms.
+
+    A response declares semantics under the identifier it exposes the value by. Getting this wrong
+    is silent: the consumer looks a key up, misses, and the metric loses its direction and unit
+    without any error.
+    """
+
+    def test_the_three_key_spaces_do_not_collide(self) -> None:
+        constants = set(PERF_FIELD_SEMANTICS)
+        api_paths = set(PERF_API_PATH_SEMANTICS)
+        summary_labels = set(PERF_SUMMARY_COLUMN_SEMANTICS)
+
+        assert constants & summary_labels == set()
+        assert api_paths & summary_labels == set()
+
+    @pytest.mark.parametrize(
+        'field_key,expected_semantic_id',
+        [
+            # Perf constants, used by the percentile and summary JSON.
+            (Metrics.AVERAGE_LATENCY, 'perf.latency.seconds'),
+            # Stable API paths, used by in-report perf and the run list.
+            ('best_rps', 'perf.throughput.requests_per_second'),
+            # Archive summary table labels, used by the detail response.
+            ('Avg Lat.(s)', 'perf.latency.seconds'),
+            ('Gen. tok/s', 'perf.throughput.tokens_per_second'),
+            ('RPS', 'perf.throughput.requests_per_second'),
+        ],
+    )
+    def test_every_key_space_resolves(self, field_key: str, expected_semantic_id: str) -> None:
+        resolved = resolve_perf_semantics([field_key])
+
+        assert field_key in resolved, f'{field_key!r} did not resolve'
+        assert resolved[field_key]['semantic_id'] == expected_semantic_id
+
+    @pytest.mark.parametrize('field_key', ['Success Rate', 'success_rate'])
+    def test_success_rate_is_already_a_percentage(self, field_key: str) -> None:
+        # The perf pipeline formats it as `87.5%`, so scaling it again would render `8750%`.
+        semantics = resolve_perf_semantics([field_key])[field_key]
+
+        assert semantics['display_multiplier'] == 1.0
+        assert semantics['display_unit'] == '%'
+        assert semantics['value_range'] == {'min': 0.0, 'max': 100.0}
+
+    def test_summary_keys_follow_the_table_shape(self) -> None:
+        from evalscope.service.perf_archive import _summary_metric_keys
+
+        # A wide table exposes one column per metric.
+        assert _summary_metric_keys(['Conc.', 'RPS'], [['8', 10.0]]) == ['Conc.', 'RPS']
+        # A vertical table exposes its metrics as row labels.
+        assert _summary_metric_keys(
+            ['Metric', 'Value'],
+            [['Avg Latency (s)', '1.2'], ['Total Requests', '100']],
+        ) == ['Avg Latency (s)', 'Total Requests']

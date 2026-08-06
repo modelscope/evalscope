@@ -18,7 +18,7 @@ import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
 import { formatMetric } from '@/domain/metric'
 import { formatFull } from '@/utils/perf'
-import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import { primaryMetricsOf, summaryScoreDisplay } from '@/domain/report/primaryMetrics'
 
 // Number of recent runs shown before the "view all" toggle.
 const RECENT_LIMIT = 15
@@ -79,7 +79,12 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
         {formatShort(item.ts)}
       </span>
       {isEval ? (
-        <ScoreBadge score={item.report.score} semantics={RATIO_PERCENT_SEMANTICS} className="shrink-0 !text-xs !px-2" />
+        <ScoreBadge
+          score={item.report.score}
+          semantics={primaryMetricsOf(item.report)[0]?.semantics}
+          label={summaryScoreDisplay(item.report) ?? t('metrics.multipleMetrics')}
+          className="shrink-0 !text-xs !px-2"
+        />
       ) : (
         <span className="type-caption-mono text-[var(--text)] shrink-0">
           {formatMetric(item.run.best_rps, undefined).primary}
