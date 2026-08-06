@@ -82,6 +82,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         eval_split='full',
         prompt_template='{question}',
         metric_list=list(METRIC_NAMES),
+        primary_metric='success_rate',
         paper_url='https://arxiv.org/abs/2508.07999',
     )
 )

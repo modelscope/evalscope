@@ -52,6 +52,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
             'schema_accuracy',
             'tool_call_f1',
         ],
+        primary_metric='tool_call_f1',
         aggregation='f1',
         eval_split='test',
     )

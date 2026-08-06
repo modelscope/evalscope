@@ -98,6 +98,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
                 }
             },
         ],
+        primary_metric='text_block',
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         extra_params={

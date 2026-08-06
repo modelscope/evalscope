@@ -50,6 +50,7 @@ It supports OpenAI-compatible message format with flexible image/video input (lo
         tags=[Tags.QA, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vqa',
         metric_list=['BLEU', 'Rouge'],
+        primary_metric='Rouge',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

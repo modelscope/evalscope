@@ -53,6 +53,7 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
         subset_list=['mild', 'moderate', 'severe'],
         few_shot_num=0,
         metric_list=['cer', 'wer', 'sem_score'],
+        primary_metric='wer',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )

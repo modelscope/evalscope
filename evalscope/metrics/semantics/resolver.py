@@ -48,6 +48,7 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_NAME_SEMANTICS,
     METRIC_NAME_TABLE_LOCATION,
 )
+from evalscope.metrics.semantics.naming import match_primary_final_name
 from evalscope.utils import get_logger
 
 if TYPE_CHECKING:
@@ -260,8 +261,8 @@ def is_builtin_benchmark(benchmark_name: str) -> bool:
 
 
 @lru_cache(maxsize=None)
-def _meta_primary_metric(benchmark_name: str) -> Optional[str]:
-    """Return the raw ``primary_metric`` recorded in a benchmark's ``_meta`` file, if any.
+def _meta_primary_metric(benchmark_name: str) -> Optional[Tuple[str, str]]:
+    """Return the ``(primary_metric, aggregation)`` recorded in a benchmark's ``_meta`` file.
 
     Used to recover the primary metric of a legacy report that predates
     ``Report.primary_metric_name``. Reads only the bundled metadata, never imports the adapter.
@@ -270,7 +271,8 @@ def _meta_primary_metric(benchmark_name: str) -> Optional[str]:
         benchmark_name: Built-in benchmark name.
 
     Returns:
-        The raw metric name declared as primary, or ``None`` when unavailable.
+        The raw metric name declared as primary and the aggregation name, or ``None`` when
+        unavailable.
     """
     path = _BUILTIN_META_DIR / f'{benchmark_name}.json'
     if not path.is_file():
@@ -283,7 +285,10 @@ def _meta_primary_metric(benchmark_name: str) -> Optional[str]:
     if not isinstance(meta, dict):
         return None
     primary = meta.get('primary_metric')
-    return primary if isinstance(primary, str) and primary else None
+    if not isinstance(primary, str) or not primary:
+        return None
+    aggregation = meta.get('aggregation')
+    return primary, aggregation if isinstance(aggregation, str) else ''
 
 
 @lru_cache(maxsize=1)
@@ -516,26 +521,6 @@ def get_semantics_resolver() -> SemanticsResolver:
     return SemanticsResolver()
 
 
-def _resolve_primary_final_name(raw_primary: str, metric_names: Sequence[str]) -> Optional[str]:
-    """Match a raw ``primary_metric`` name against the report's final metric names.
-
-    The final name may carry an aggregation prefix (``mean_`` etc.); match the raw name exactly
-    or as the suffix of an aggregated name, without inventing a name that is not present.
-
-    Args:
-        raw_primary: Raw metric name from ``_meta.primary_metric``.
-        metric_names: Final report metric names present in the report.
-
-    Returns:
-        The matching final report metric name, or ``None`` when none matches.
-    """
-    if raw_primary in metric_names:
-        return raw_primary
-    suffix = f'_{raw_primary}'
-    candidates = [name for name in metric_names if name.endswith(suffix)]
-    return candidates[0] if len(candidates) == 1 else None
-
-
 def hydrate_report_semantics(report: 'Report') -> 'Report':
     """Fill in the metric semantics of a report read from disk.
 
@@ -566,9 +551,10 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
 
     primary_final_name = getattr(report, 'primary_metric_name', None)
     if not primary_final_name:
-        raw_primary = _meta_primary_metric(benchmark_name)
-        if raw_primary is not None:
-            primary_final_name = _resolve_primary_final_name(raw_primary, [metric.name for metric in metrics])
+        recovered = _meta_primary_metric(benchmark_name)
+        if recovered is not None:
+            raw_primary, aggregation = recovered
+            primary_final_name = match_primary_final_name(raw_primary, [metric.name for metric in metrics], aggregation)
 
     for metric in metrics:
         if getattr(metric, 'semantics', None) is not None:

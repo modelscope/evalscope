@@ -54,6 +54,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
         description=DESCRIPTION,
         dataset_id=DEEPSEARCHQA_DATASET_ID,
         metric_list=['f1_score', 'precision', 'recall'],
+        primary_metric='f1_score',
         few_shot_num=0,
         train_split=None,
         eval_split='eval',

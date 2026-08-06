@@ -71,6 +71,7 @@ RefCOCO is a dataset for training and evaluating models on Referring Expression 
             'IoU', 'ACC@0.1', 'ACC@0.3', 'ACC@0.5', 'ACC@0.7', 'ACC@0.9', 'Center_ACC', 'Bleu_1', 'Bleu_2', 'Bleu_3',
             'Bleu_4', 'METEOR', 'ROUGE_L', 'CIDEr'
         ],
+        primary_metric='IoU',
         subset_list=['test', 'val', 'testA', 'testB'],
         extra_params={
             'eval_mode': {

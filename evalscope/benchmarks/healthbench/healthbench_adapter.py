@@ -139,6 +139,7 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
             'context_awareness',
             'completeness',
         ],
+        primary_metric='accuracy',
         aggregation='clipped_mean',
         few_shot_num=0,
         train_split=None,

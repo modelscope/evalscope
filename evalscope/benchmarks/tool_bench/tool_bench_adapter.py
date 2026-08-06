@@ -49,6 +49,7 @@ ToolBench-Static is a benchmark for evaluating AI models' ability to use tools a
         dataset_id='AI-ModelScope/ToolBench-Static',
         subset_list=['in_domain', 'out_of_domain'],
         metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
+        primary_metric='Act.EM',
         eval_split='test',
     )
 )

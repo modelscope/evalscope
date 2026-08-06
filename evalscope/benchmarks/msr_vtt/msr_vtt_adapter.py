@@ -50,6 +50,7 @@ with multiple reference captions.
         'https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
+        primary_metric='CIDEr',
         eval_split='validation',
         prompt_template=DEFAULT_PROMPT,
         extra_params={

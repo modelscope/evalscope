@@ -63,6 +63,7 @@ ANSWER_FORMAT_SUFFIX = (
         paper_url='https://arxiv.org/abs/2510.26865',
         subset_list=['real_world', 'synthetic_test'],
         metric_list=['acc', 'number_acc', 'unit_acc'],
+        primary_metric='acc',
         eval_split='real_world',
     )
 )

@@ -49,6 +49,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 """,
         dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
+        primary_metric='accuracy',
         aggregation='f1',
         subset_list=['popular', 'adversarial', 'random'],
         default_subset='Full',

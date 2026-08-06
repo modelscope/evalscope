@@ -96,6 +96,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         subset_list=list(ACEBENCH_CATEGORIES),
         default_subset='en',
         metric_list=['acc', 'process_acc'],
+        primary_metric='acc',
         eval_split='normal',
         extra_params={
             'language': {

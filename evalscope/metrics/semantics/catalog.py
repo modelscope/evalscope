@@ -191,6 +191,10 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'HPSv2.1Score': MetricEntry(baseline='quality.model_score.unbounded'),
     'PickScore': MetricEntry(baseline='quality.model_score.unbounded'),
     'VQAScore': MetricEntry(baseline='quality.model_score.unbounded'),
+    # Vendor verification rates: a correctly deployed vendor reports 1.0 for both, so these
+    # grade the deployment rather than merely describing it.
+    'param_immutable_reject_rate': MetricEntry(baseline='quality.accuracy.ratio'),
+    'param_default_accept_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- diagnostics: distribution shares and raw counts carry no direction --------------
     'error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
@@ -198,8 +202,6 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'mean_is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'mean_is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'inference_error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'param_default_accept_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'param_immutable_reject_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'yes_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'maybe_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'no_answer_num': MetricEntry(baseline='diagnostic.count.items'),

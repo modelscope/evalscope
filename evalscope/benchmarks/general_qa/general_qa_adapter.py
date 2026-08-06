@@ -49,6 +49,7 @@ General-QA is a customizable question answering benchmark for evaluating languag
         tags=[Tags.QA, Tags.CUSTOM],
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],
+        primary_metric='Rouge',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

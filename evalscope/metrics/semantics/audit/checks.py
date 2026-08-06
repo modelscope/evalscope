@@ -29,6 +29,7 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_NAME_SEMANTICS,
     METRIC_NAME_TABLE_LOCATION,
 )
+from evalscope.metrics.semantics.naming import match_primary_final_name
 from evalscope.metrics.semantics.resolver import PERF_FIELD_TABLE_LOCATION, catalog_entry_location
 from evalscope.utils import get_logger
 from .collectors import AUDIT_LOG_PREFIX, GROUP_DISPLAY_ORDER, MetricInventory, MetricRecord, PerfFieldRecord
@@ -285,6 +286,7 @@ def _resolved_roles(
     benchmark_name: str,
     metric_names: Sequence[str],
     primary_metric: Optional[str],
+    aggregation: Optional[str],
     name_table: Mapping[str, MetricEntry],
     overrides: Mapping[Tuple[str, str], MetricEntry],
 ) -> Dict[str, MetricRole]:
@@ -297,13 +299,14 @@ def _resolved_roles(
         benchmark_name: Benchmark the names belong to.
         metric_names: Final report metric names the benchmark emits.
         primary_metric: Raw ``BenchmarkMeta.primary_metric``, or ``None``.
+        aggregation: ``BenchmarkMeta.aggregation`` of the benchmark.
         name_table: Metric name table.
         overrides: Collision overrides.
 
     Returns:
         Final report metric name -> resolved role, for the names that resolve.
     """
-    primary_final_name = _match_primary_final_name(primary_metric, metric_names)
+    primary_final_name = match_primary_final_name(primary_metric, metric_names, aggregation)
 
     roles: Dict[str, MetricRole] = {}
     for metric_name in metric_names:
@@ -321,28 +324,6 @@ def _resolved_roles(
             role = MetricRole.PRIMARY if metric_name == primary_final_name else MetricRole.AUXILIARY
         roles[metric_name] = role
     return roles
-
-
-def _match_primary_final_name(primary_metric: Optional[str], metric_names: Sequence[str]) -> Optional[str]:
-    """Match a raw ``primary_metric`` against the emitted final report metric names.
-
-    The final name may carry an aggregation prefix (``mean_`` and friends), so an exact match is
-    tried first and a unique ``_<raw>`` suffix match second. Ambiguity yields ``None``.
-
-    Args:
-        primary_metric: Raw metric name declared as primary, or ``None``.
-        metric_names: Final report metric names the benchmark emits.
-
-    Returns:
-        The matching final report metric name, or ``None``.
-    """
-    if primary_metric is None:
-        return None
-    if primary_metric in metric_names:
-        return primary_metric
-    suffix = f'_{primary_metric}'
-    candidates = [name for name in metric_names if name.endswith(suffix)]
-    return candidates[0] if len(candidates) == 1 else None
 
 
 def _literal_metric_names(inventory: MetricInventory, benchmark_name: str) -> List[str]:
@@ -384,7 +365,12 @@ def audit_primary_metric_counts(
             continue
 
         roles = _resolved_roles(
-            benchmark_name, metric_names, declaration.primary_metric, resolved_names, resolved_overrides
+            benchmark_name,
+            metric_names,
+            declaration.primary_metric,
+            declaration.aggregation,
+            resolved_names,
+            resolved_overrides,
         )
         primary_names = sorted(name for name, role in roles.items() if role is MetricRole.PRIMARY)
         if len(primary_names) == 1:
@@ -433,7 +419,7 @@ def audit_stale_primary_metric(inventory: MetricInventory) -> List[AuditError]:
         metric_names = _literal_metric_names(inventory, benchmark_name)
         if not metric_names:
             continue
-        if _match_primary_final_name(declaration.primary_metric, metric_names) is not None:
+        if match_primary_final_name(declaration.primary_metric, metric_names, declaration.aggregation) is not None:
             continue
 
         errors.append(

@@ -88,6 +88,7 @@ parallel execution, reporting, and dashboard trace review.
         tags=[Tags.AGENT, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
         metric_list=['avg_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],
+        primary_metric='avg_score',
         aggregation='mean',
         eval_split='test',
         subset_list=_DEFAULT_SPLITS,

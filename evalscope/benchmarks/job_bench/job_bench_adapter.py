@@ -80,6 +80,7 @@ Your final message may summarize what you produced, but files requested by the t
         eval_split='main',
         prompt_template='{question}',
         metric_list=['normalized_score', 'pass_rate', 'total_score'],
+        primary_metric='normalized_score',
     )
 )
 class JobBenchAdapter(AgentLoopAdapter):

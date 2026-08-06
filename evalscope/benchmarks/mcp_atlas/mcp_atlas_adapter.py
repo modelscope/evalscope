@@ -44,6 +44,7 @@ logger = get_logger()
         eval_split='train',
         prompt_template='{question}',
         metric_list=['coverage_score', 'pass'],
+        primary_metric='pass',
         extra_params=EXTRA_PARAMS,
         paper_url='https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf',
     )

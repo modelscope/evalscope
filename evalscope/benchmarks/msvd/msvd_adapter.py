@@ -47,6 +47,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
         paper_url='https://aclanthology.org/P11-1020/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
+        primary_metric='CIDEr',
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={

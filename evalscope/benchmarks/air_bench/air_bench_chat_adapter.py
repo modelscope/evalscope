@@ -107,6 +107,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
         metric_list=['gpt_score', 'win_rate'],
+        primary_metric='gpt_score',
         few_shot_num=0,
         train_split=None,
         prompt_template='{question}',

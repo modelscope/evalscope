@@ -158,25 +158,34 @@ class BenchmarkMeta:
         return names
 
     def _validate_primary_metric(self) -> None:
-        """Reject a ``primary_metric`` that is not one of the declared metrics.
+        """Require an unambiguous primary metric and reject one that is not declared.
+
+        A benchmark reporting several metrics must say which one carries the conclusion,
+        otherwise every consumer would have to guess. A single-metric benchmark may stay silent:
+        its only metric is implicitly primary.
 
         Only the two own fields ``metric_list`` and ``primary_metric`` are read: no
         ``task_config`` access and no dataset resolution, so instantiating an adapter without a
         task config (as the docs pipeline does) stays unaffected.
 
         Raises:
-            ValueError: If ``primary_metric`` is not part of ``metric_list``.
+            ValueError: If ``primary_metric`` is not part of ``metric_list``, or if it is missing
+                while ``metric_list`` declares more than one metric.
         """
-        # TODO(task 5.4): also require primary_metric when metric_list declares 2+ metrics,
-        # once every multi-metric benchmark declares one (enabling it earlier breaks their import).
-        if self.primary_metric is None:
+        names = self._metric_names()
+
+        if self.primary_metric is not None:
+            if self.primary_metric not in names:
+                raise ValueError(
+                    f"benchmark '{self.name}': primary_metric='{self.primary_metric}' is not in "
+                    f'metric_list {names}'
+                )
             return
 
-        names = self._metric_names()
-        if self.primary_metric not in names:
+        if len(names) >= 2:
             raise ValueError(
-                f"benchmark '{self.name}': primary_metric='{self.primary_metric}' is not in "
-                f'metric_list {names}'
+                f"benchmark '{self.name}': primary_metric is required when metric_list declares "
+                f'multiple metrics {names}'
             )
 
     def _is_spec_entry(self, entry: Any) -> bool:

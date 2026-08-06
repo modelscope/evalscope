@@ -51,6 +51,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
 """,  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
+        primary_metric='aAcc',
         aggregation='f1',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',

@@ -88,6 +88,7 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
         }, {
             'gpt_score': {}
         }],
+        primary_metric='gpt_score',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

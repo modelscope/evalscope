@@ -59,6 +59,7 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
         tags=[Tags.IMAGE_EDITING],
         subset_list=SUBSET_LIST,
         metric_list=['Semantic Consistency', 'Perceptual Similarity'],
+        primary_metric='Semantic Consistency',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
