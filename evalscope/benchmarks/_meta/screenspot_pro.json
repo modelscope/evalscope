@@ -1,0 +1,354 @@
+{
+  "meta": {
+    "pretty_name": "ScreenSpot-Pro",
+    "dataset_id": "lmms-lab/ScreenSpot-Pro",
+    "paper_url": "https://arxiv.org/abs/2504.07981",
+    "tags": [
+      "MultiModal",
+      "Grounding",
+      "Agent"
+    ],
+    "metrics": [
+      "acc",
+      "text_acc",
+      "icon_acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "CAD",
+      "Creative",
+      "Dev",
+      "OS",
+      "Office",
+      "Scientific"
+    ],
+    "description": "\n## Overview\n\nScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution screenshots of professional desktop software. Given a natural-language instruction, a model must locate the target UI element on the screen, which stresses fine-grained localization on large, densely populated displays.\n\n## Task Description\n\n- **Task Type**: GUI grounding (single click-point prediction)\n- **Input**: A full-resolution desktop screenshot + an English instruction describing the target UI element\n- **Output**: One click point `[x, y]` in normalized coordinates within [0, 1]\n- **Domain**: Professional desktop applications across CAD, Creative, Dev, Office, OS and Scientific software\n\n## Key Features\n\n- 1,581 expert-annotated instructions over 26 applications and 3 platforms (Windows, macOS, Linux)\n- Screenshots are genuinely high-resolution (up to 6016x3384), so target elements often occupy well under 0.1% of the image\n- Samples are grouped into six professional domains (`CAD`, `Creative`, `Dev`, `OS`, `Office`, `Scientific`), each exposed as a subset\n- Every element is labelled as `text` or `icon`, enabling separate reporting for textual versus iconographic targets\n- Ground-truth boxes are pixel coordinates paired with the original image size, and are normalized before scoring\n\n## Evaluation Notes\n\n- Primary metric: **acc** — a prediction is correct when the predicted point falls inside the ground-truth bounding box\n- Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`\n- Predictions are parsed from `[x, y]` points, `x=.., y=..` pairs or bounding boxes (reduced to their center), always taking the *last* match so that restated prompts and step-by-step reasoning do not shadow the final answer\n- Ground truth is normalized to [0, 1], and predictions are mapped into the same space according to `coordinate_space`. With the default `auto`, values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received. Pin `coordinate_space` explicitly when a model's convention is known, since the 1–1000 range is inherently ambiguous\n- The dataset ships a single `train` split, which is used as the evaluation split\n- Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent\n- [Paper](https://arxiv.org/abs/2504.07981) | [GitHub](https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "coordinate_space": {
+        "type": "str",
+        "description": "Coordinate convention used to interpret predicted click points. auto: infer from the magnitude of the coordinates; normalized: values already in [0, 1]; thousandths: values on a 0-1000 grid; pixel: pixels of the image sent to the model.",
+        "value": "auto",
+        "choices": [
+          "auto",
+          "normalized",
+          "thousandths",
+          "pixel"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 1581,
+    "subset_stats": [
+      {
+        "name": "CAD",
+        "sample_count": 261,
+        "prompt_length_mean": 193.18,
+        "prompt_length_min": 176,
+        "prompt_length_max": 224,
+        "prompt_length_std": 10.65,
+        "target_length_mean": 31.44,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 261,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2560x1440",
+              "3840x1080"
+            ],
+            "resolution_range": {
+              "min": "2560x1440",
+              "max": "3840x1080"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Creative",
+        "sample_count": 341,
+        "prompt_length_mean": 198.02,
+        "prompt_length_min": 176,
+        "prompt_length_max": 275,
+        "prompt_length_std": 14.62,
+        "target_length_mean": 31.51,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 341,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2560x1440",
+              "3456x2234",
+              "3840x2160",
+              "5120x1440"
+            ],
+            "resolution_range": {
+              "min": "2560x1440",
+              "max": "3840x2160"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Dev",
+        "sample_count": 299,
+        "prompt_length_mean": 209.79,
+        "prompt_length_min": 176,
+        "prompt_length_max": 272,
+        "prompt_length_std": 19.54,
+        "target_length_mean": 31.54,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 299,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1920x1080",
+              "2560x1440",
+              "2560x1600",
+              "2560x1664",
+              "2992x1870",
+              "3456x2234",
+              "3840x2160",
+              "5120x2880"
+            ],
+            "resolution_range": {
+              "min": "1920x1080",
+              "max": "5120x2880"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "OS",
+        "sample_count": 196,
+        "prompt_length_mean": 197.57,
+        "prompt_length_min": 177,
+        "prompt_length_max": 262,
+        "prompt_length_std": 11.11,
+        "target_length_mean": 31.62,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 196,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2560x1600",
+              "2992x1870",
+              "3456x2160",
+              "3456x2234",
+              "3840x2160",
+              "5120x1440",
+              "6016x3384"
+            ],
+            "resolution_range": {
+              "min": "2560x1600",
+              "max": "6016x3384"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Office",
+        "sample_count": 230,
+        "prompt_length_mean": 200.76,
+        "prompt_length_min": 176,
+        "prompt_length_max": 252,
+        "prompt_length_std": 13.56,
+        "target_length_mean": 31.34,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 230,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2560x1440",
+              "2880x1800",
+              "3456x2234",
+              "3840x2160"
+            ],
+            "resolution_range": {
+              "min": "2560x1440",
+              "max": "3840x2160"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Scientific",
+        "sample_count": 254,
+        "prompt_length_mean": 194.44,
+        "prompt_length_min": 175,
+        "prompt_length_max": 233,
+        "prompt_length_std": 10.78,
+        "target_length_mean": 31.56,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 254,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2160x1440",
+              "2560x1440",
+              "3840x2160"
+            ],
+            "resolution_range": {
+              "min": "2160x1440",
+              "max": "3840x2160"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 199.22,
+      "min": 175,
+      "max": 275,
+      "std": 15.14
+    },
+    "target_length_mean": 31.5,
+    "computed_at": "2026-08-06T15:33:54.557207",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1581,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1920x1080",
+          "2160x1440",
+          "2560x1440",
+          "2560x1600",
+          "2560x1664",
+          "2880x1800",
+          "2992x1870",
+          "3456x2160",
+          "3456x2234",
+          "3840x1080"
+        ],
+        "resolution_range": {
+          "min": "1920x1080",
+          "max": "6016x3384"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "83ef9e39",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: png, ~933.3KB]"
+            },
+            {
+              "text": "Identify the UI element for the instruction and output exactly one click point as [x, y] in normalized coordinates within [0, 1]. Do not output a bounding box.\nInstruction: Mark dimensions"
+            }
+          ]
+        }
+      ],
+      "target": "[0.1672, 0.0435, 0.1802, 0.1019]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "CAD",
+      "metadata": {
+        "id": "inventor_windows_0",
+        "sent_size": [
+          3840,
+          1080
+        ],
+        "bbox_norm": [
+          0.1671875,
+          0.04351851851851852,
+          0.18020833333333333,
+          0.10185185185185185
+        ],
+        "ui_type": "text",
+        "application": "inventor",
+        "platform": "windows"
+      }
+    },
+    "subset": "CAD",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ScreenSpot-Pro\n\n\n## Overview\n\nScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution screenshots of professional desktop software. Given a natural-language instruction, a model must locate the target UI element on the screen, which stresses fine-grained localization on large, densely populated displays.\n\n## Task Description\n\n- **Task Type**: GUI grounding (single click-point prediction)\n- **Input**: A full-resolution desktop screenshot + an English instruction describing the target UI element\n- **Output**: One click point `[x, y]` in normalized coordinates within [0, 1]\n- **Domain**: Professional desktop applications across CAD, Creative, Dev, Office, OS and Scientific software\n\n## Key Features\n\n- 1,581 expert-annotated instructions over 26 applications and 3 platforms (Windows, macOS, Linux)\n- Screenshots are genuinely high-resolution (up to 6016x3384), so target elements often occupy well under 0.1% of the image\n- Samples are grouped into six professional domains (`CAD`, `Creative`, `Dev`, `OS`, `Office`, `Scientific`), each exposed as a subset\n- Every element is labelled as `text` or `icon`, enabling separate reporting for textual versus iconographic targets\n- Ground-truth boxes are pixel coordinates paired with the original image size, and are normalized before scoring\n\n## Evaluation Notes\n\n- Primary metric: **acc** — a prediction is correct when the predicted point falls inside the ground-truth bounding box\n- Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`\n- Predictions are parsed from `[x, y]` points, `x=.., y=..` pairs or bounding boxes (reduced to their center), always taking the *last* match so that restated prompts and step-by-step reasoning do not shadow the final answer\n- Ground truth is normalized to [0, 1], and predictions are mapped into the same space according to `coordinate_space`. With the default `auto`, values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received. Pin `coordinate_space` explicitly when a model's convention is known, since the 1–1000 range is inherently ambiguous\n- The dataset ships a single `train` split, which is used as the evaluation split\n- Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent\n- [Paper](https://arxiv.org/abs/2504.07981) | [GitHub](https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `screenspot_pro` |\n| **Dataset ID** | [lmms-lab/ScreenSpot-Pro](https://modelscope.cn/datasets/lmms-lab/ScreenSpot-Pro/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2504.07981) |\n| **Tags** | `Agent`, `Grounding`, `MultiModal` |\n| **Metrics** | `acc`, `text_acc`, `icon_acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,581 |\n| Prompt Length (Mean) | 199.22 chars |\n| Prompt Length (Min/Max) | 175 / 275 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `CAD` | 261 | 193.18 | 176 | 224 |\n| `Creative` | 341 | 198.02 | 176 | 275 |\n| `Dev` | 299 | 209.79 | 176 | 272 |\n| `OS` | 196 | 197.57 | 177 | 262 |\n| `Office` | 230 | 200.76 | 176 | 252 |\n| `Scientific` | 254 | 194.44 | 175 | 233 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,581 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 1920x1080 - 6016x3384 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `CAD`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"83ef9e39\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~933.3KB]\"\n        },\n        {\n          \"text\": \"Identify the UI element for the instruction and output exactly one click point as [x, y] in normalized coordinates within [0, 1]. Do not output a bounding box.\\nInstruction: Mark dimensions\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[0.1672, 0.0435, 0.1802, 0.1019]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"CAD\",\n  \"metadata\": {\n    \"id\": \"inventor_windows_0\",\n    \"sent_size\": [\n      3840,\n      1080\n    ],\n    \"bbox_norm\": [\n      0.1671875,\n      0.04351851851851852,\n      0.18020833333333333,\n      0.10185185185185185\n    ],\n    \"ui_type\": \"text\",\n    \"application\": \"inventor\",\n    \"platform\": \"windows\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `coordinate_space` | `str` | `auto` | Coordinate convention used to interpret predicted click points. auto: infer from the magnitude of the coordinates; normalized: values already in [0, 1]; thousandths: values on a 0-1000 grid; pixel: pixels of the image sent to the model. Choices: ['auto', 'normalized', 'thousandths', 'pixel'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets screenspot_pro \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['screenspot_pro'],\n    dataset_args={\n        'screenspot_pro': {\n            # subset_list: ['CAD', 'Creative', 'Dev']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ScreenSpot-Pro\n\n\n## 概述\n\nScreenSpot-Pro 是一个 GUI 定位基准测试，基于专业桌面软件的真实高分辨率截图构建而成。给定一条自然语言指令，模型必须在屏幕上定位目标 UI 元素，这对在大型、密集布局的显示器上进行细粒度定位提出了挑战。\n\n## 任务描述\n\n- **任务类型**：GUI 定位（单击点预测）\n- **输入**：一张全分辨率桌面截图 + 一条描述目标 UI 元素的英文指令\n- **输出**：一个归一化坐标范围 [0, 1] 内的点击点 `[x, y]`\n- **领域**：涵盖 CAD、创意设计、开发、办公、操作系统和科学计算等专业桌面应用\n\n## 核心特性\n\n- 包含 1,581 条专家标注的指令，覆盖 26 款应用及 3 个平台（Windows、macOS、Linux）\n- 截图均为真实高分辨率（最高达 6016x3384），目标元素通常仅占图像面积的 0.1% 以下\n- 样本按六大专业领域分组（`CAD`、`Creative`、`Dev`、`OS`、`Office`、`Scientific`），每个领域作为一个子集提供\n- 每个元素均标注为 `text`（文本）或 `icon`（图标），便于分别报告文本与图标类目标的性能\n- 真值框以像素坐标形式提供，并与原始图像尺寸配对，在评分前会进行归一化处理\n\n## 评估说明\n\n- 主要指标：**acc** — 当预测点落在真值边界框内时视为正确\n- 次要指标：**text_acc** 和 **icon_acc**，分别对对应 `ui_type` 的样本取平均\n- 预测结果可从 `[x, y]` 点、`x=.., y=..` 对或边界框（取其中心点）中解析，始终采用*最后一个匹配项*，以避免重述提示或逐步推理干扰最终答案\n- 真值已归一化至 [0, 1] 范围，预测值会根据 `coordinate_space` 映射到相同空间。默认 `auto` 模式下：[0, 1] 范围内的值视为已归一化；≤1000 的值视为许多视觉语言模型（VLMs）常用的千分网格；更大数值则视为模型接收图像的像素坐标。若已知模型的坐标约定，请显式指定 `coordinate_space`，因为 1–1000 范围本身存在歧义\n- 数据集仅提供一个 `train` 划分，用作评估划分\n- 图像体积较大；可通过 `dataset_args` 中的 `max_image_bytes` 限制请求大小，像素空间的预测会根据实际发送图像的尺寸进行归一化\n- [论文](https://arxiv.org/abs/2504.07981) | [GitHub](https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `screenspot_pro` |\n| **数据集ID** | [lmms-lab/ScreenSpot-Pro](https://modelscope.cn/datasets/lmms-lab/ScreenSpot-Pro/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2504.07981) |\n| **标签** | `Agent`, `Grounding`, `MultiModal` |\n| **指标** | `acc`, `text_acc`, `icon_acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,581 |\n| 提示词长度（平均） | 199.22 字符 |\n| 提示词长度（最小/最大） | 175 / 275 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `CAD` | 261 | 193.18 | 176 | 224 |\n| `Creative` | 341 | 198.02 | 176 | 275 |\n| `Dev` | 299 | 209.79 | 176 | 272 |\n| `OS` | 196 | 197.57 | 177 | 262 |\n| `Office` | 230 | 200.76 | 176 | 252 |\n| `Scientific` | 254 | 194.44 | 175 | 233 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,581 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 1920x1080 - 6016x3384 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `CAD`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"83ef9e39\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~933.3KB]\"\n        },\n        {\n          \"text\": \"Identify the UI element for the instruction and output exactly one click point as [x, y] in normalized coordinates within [0, 1]. Do not output a bounding box.\\nInstruction: Mark dimensions\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[0.1672, 0.0435, 0.1802, 0.1019]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"CAD\",\n  \"metadata\": {\n    \"id\": \"inventor_windows_0\",\n    \"sent_size\": [\n      3840,\n      1080\n    ],\n    \"bbox_norm\": [\n      0.1671875,\n      0.04351851851851852,\n      0.18020833333333333,\n      0.10185185185185185\n    ],\n    \"ui_type\": \"text\",\n    \"application\": \"inventor\",\n    \"platform\": \"windows\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `coordinate_space` | `str` | `auto` | 用于解释预测点击点的坐标约定。auto: 根据坐标数值大小自动推断；normalized: 值已在 [0, 1] 范围内；thousandths: 值位于 0-1000 网格上；pixel: 模型接收图像的像素坐标。可选值: ['auto', 'normalized', 'thousandths', 'pixel'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets screenspot_pro \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['screenspot_pro'],\n    dataset_args={\n        'screenspot_pro': {\n            # subset_list: ['CAD', 'Creative', 'Dev']  # 可选，评估特定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b39b481983d07bfb2f9e47fb521d6735",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-06T15:34:06.228306",
+  "translation_updated_at": "2026-08-06T15:34:11"
+}
