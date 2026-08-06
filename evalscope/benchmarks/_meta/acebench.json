@@ -12,6 +12,7 @@
       "acc",
       "process_acc"
     ],
+    "primary_metric": "acc",
     "few_shot_num": 0,
     "eval_split": "normal",
     "train_split": "",
@@ -445,6 +446,6 @@
     "content_hash": "a644941062cccf9ca309cb246494ee87",
     "needs_translation": false
   },
-  "updated_at": "2026-08-05T14:52:56.257415",
+  "updated_at": "2026-08-06T23:03:27.704063",
   "translation_updated_at": "2026-08-05T14:52:58"
 }

@@ -14,6 +14,7 @@
       "precision",
       "recall"
     ],
+    "primary_metric": "f1_score",
     "few_shot_num": 0,
     "eval_split": "eval",
     "train_split": "",
@@ -62,6 +63,6 @@
     "content_hash": "2c4bbb4391c94edf01a50ff18466cdbf",
     "needs_translation": false
   },
-  "updated_at": "2026-07-21T16:49:54.577664",
+  "updated_at": "2026-08-06T23:03:31.096335",
   "translation_updated_at": "2026-07-21T16:49:56"
 }

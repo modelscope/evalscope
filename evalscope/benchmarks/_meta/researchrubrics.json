@@ -12,6 +12,7 @@
     "metrics": [
       "compliance_score"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -119,6 +120,6 @@
     "content_hash": "5d00cf9f9ee9689e26d2cc30cfb1eebb",
     "needs_translation": false
   },
-  "updated_at": "2026-07-29T23:46:22.699960",
+  "updated_at": "2026-08-06T23:03:30.446687",
   "translation_updated_at": "2026-07-29T23:46:24"
 }

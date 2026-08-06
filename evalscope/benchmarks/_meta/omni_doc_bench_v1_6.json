@@ -18,6 +18,7 @@
       "reading_order_Edit_dist",
       "overall"
     ],
+    "primary_metric": "overall",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -166,6 +167,6 @@
     "content_hash": "6c1a1a6cd1389e2ebc36968da8244a29",
     "needs_translation": false
   },
-  "updated_at": "2026-08-04T15:02:44.590442",
+  "updated_at": "2026-08-06T23:03:25.900991",
   "translation_updated_at": "2026-08-04T15:02:47"
 }

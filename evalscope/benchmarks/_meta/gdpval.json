@@ -11,6 +11,7 @@
     "metrics": [
       "submission_ready"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -35,11 +36,11 @@
       }
     },
     "sandbox_config": {},
+    "category": "agent",
     "agent_config": {
       "strategy": "function_calling",
       "max_steps": 250
-    },
-    "category": "agent"
+    }
   },
   "statistics": {
     "total_samples": 220,
@@ -151,6 +152,6 @@
     "content_hash": "ae1c469ab3b0e697411df92253ddba25",
     "needs_translation": false
   },
-  "updated_at": "2026-07-10T20:24:32.709243",
+  "updated_at": "2026-08-06T23:03:28.613240",
   "translation_updated_at": "2026-07-10T20:24:42"
 }

@@ -13,6 +13,7 @@
       "qAcc",
       "fAcc"
     ],
+    "primary_metric": "aAcc",
     "few_shot_num": 0,
     "eval_split": "image",
     "train_split": "",
@@ -152,6 +153,6 @@
     "content_hash": "c267299ae22f30d0cc53a5ee2ee2d05f",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.248015",
+  "updated_at": "2026-08-06T23:03:27.927818",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

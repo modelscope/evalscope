@@ -16,6 +16,7 @@
         }
       }
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "val",
     "train_split": "",
@@ -429,6 +430,6 @@
     "content_hash": "061c7fe07fdd81b47451f200214e6479",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.203937",
+  "updated_at": "2026-08-06T23:03:28.617179",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

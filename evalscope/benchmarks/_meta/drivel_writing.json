@@ -18,6 +18,7 @@
         "gpt_score": {}
       }
     ],
+    "primary_metric": "gpt_score",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -84,6 +85,6 @@
     "content_hash": "9415737e1713d22662a966e016b5f57a",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.225015",
+  "updated_at": "2026-08-06T23:03:28.244763",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

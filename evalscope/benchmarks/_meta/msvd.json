@@ -17,6 +17,7 @@
       "ROUGE_L",
       "CIDEr"
     ],
+    "primary_metric": "CIDEr",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -151,6 +152,6 @@
     "content_hash": "341c9c7da8d9d294aa042b5eba9f8f95",
     "needs_translation": false
   },
-  "updated_at": "2026-07-13T17:06:02.225184",
+  "updated_at": "2026-08-06T23:03:27.745949",
   "translation_updated_at": "2026-07-13T17:06:26"
 }

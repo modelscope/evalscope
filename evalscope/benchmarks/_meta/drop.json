@@ -10,6 +10,7 @@
       "em",
       "f1"
     ],
+    "primary_metric": "f1",
     "few_shot_num": 3,
     "eval_split": "validation",
     "train_split": "",
@@ -118,6 +119,6 @@
     "content_hash": "9a59d4fe8477d87751ed5b7064c4f2a6",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.227072",
+  "updated_at": "2026-08-06T23:03:30.412586",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

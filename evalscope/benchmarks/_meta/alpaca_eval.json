@@ -10,6 +10,7 @@
     "metrics": [
       "winrate"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "eval",
     "train_split": "",
@@ -72,6 +73,6 @@
     "content_hash": "cedc2883c8ad7e16eecfa0edc2809c0e",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.181393",
+  "updated_at": "2026-08-06T23:03:28.628330",
   "translation_updated_at": "2026-01-28T15:56:15Z"
 }

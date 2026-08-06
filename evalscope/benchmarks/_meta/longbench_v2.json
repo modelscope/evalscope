@@ -11,6 +11,7 @@
     "metrics": [
       "acc"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -104,6 +105,6 @@
     "content_hash": "97d3f69ad0002ead3fd81c7180a54ec6",
     "needs_translation": false
   },
-  "updated_at": "2026-03-18T16:52:16.189942",
+  "updated_at": "2026-08-06T23:03:32.619501",
   "translation_updated_at": "2026-03-18T16:53:33Z"
 }

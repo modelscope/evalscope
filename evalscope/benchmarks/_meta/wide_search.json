@@ -17,6 +17,7 @@
       "item_recall",
       "item_f1"
     ],
+    "primary_metric": "success_rate",
     "few_shot_num": 0,
     "eval_split": "full",
     "train_split": "",
@@ -189,6 +190,6 @@
     "content_hash": "8c8350ecbd9216b962060b62c92b9895",
     "needs_translation": false
   },
-  "updated_at": "2026-07-13T10:25:02.567932",
+  "updated_at": "2026-08-06T23:03:32.592912",
   "translation_updated_at": "2026-07-13T10:25:06"
 }

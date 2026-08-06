@@ -9,6 +9,7 @@
       "Agent"
     ],
     "metrics": [],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -137,6 +138,6 @@
     "content_hash": "96eb62d1445d955481de1ac2d20f52e7",
     "needs_translation": false
   },
-  "updated_at": "2026-08-05T22:06:14.584676",
+  "updated_at": "2026-08-06T23:03:28.184694",
   "translation_updated_at": "2026-08-05T22:08:22"
 }

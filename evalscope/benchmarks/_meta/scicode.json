@@ -10,6 +10,7 @@
       "main_problem_pass_rate",
       "subproblem_pass_rate"
     ],
+    "primary_metric": "main_problem_pass_rate",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -228,6 +229,6 @@
     "content_hash": "16d3c327c7bce6488da0943f385fc799",
     "needs_translation": false
   },
-  "updated_at": "2026-05-28T18:11:41.128926",
+  "updated_at": "2026-08-06T23:03:27.923483",
   "translation_updated_at": "2026-05-28T18:11:44"
 }

@@ -12,6 +12,7 @@
       "prompt_level_loose",
       "inst_level_loose"
     ],
+    "primary_metric": "prompt_level_strict",
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -123,6 +124,6 @@
     "content_hash": "a321fbb866de35ce0b3a3cc43e86c370",
     "needs_translation": false
   },
-  "updated_at": "2026-04-02T14:46:06.012381",
+  "updated_at": "2026-08-06T23:03:32.618534",
   "translation_updated_at": "2026-04-02T14:46:08Z"
 }

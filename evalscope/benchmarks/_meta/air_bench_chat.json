@@ -12,6 +12,7 @@
       "gpt_score",
       "win_rate"
     ],
+    "primary_metric": "gpt_score",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -332,6 +333,6 @@
     "content_hash": "8a9f17afdfbb2a77b2c1c74a160ac3a6",
     "needs_translation": false
   },
-  "updated_at": "2026-05-18T10:23:16.641619",
+  "updated_at": "2026-08-06T23:03:27.955442",
   "translation_updated_at": "2026-05-18T10:23:22"
 }

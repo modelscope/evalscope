@@ -214,6 +214,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'paper_url': getattr(meta, 'paper_url', None),
         'tags': list(getattr(meta, 'tags', [])) if getattr(meta, 'tags', None) else [],
         'metrics': list(getattr(meta, 'metric_list', [])) if getattr(meta, 'metric_list', None) else [],
+        'primary_metric': getattr(meta, 'primary_metric', None),
         'few_shot_num': getattr(meta, 'few_shot_num', 0),
         'eval_split': getattr(meta, 'eval_split', ''),
         'train_split': getattr(meta, 'train_split', '') or '',

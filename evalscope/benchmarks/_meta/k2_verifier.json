@@ -13,6 +13,7 @@
       "count_finish_reason_tool_calls",
       "count_successful_tool_call"
     ],
+    "primary_metric": "schema_accuracy",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -202,6 +203,6 @@
     "content_hash": "95a7fdbbac71e047e0c735fbe4cb1e6c",
     "needs_translation": false
   },
-  "updated_at": "2026-05-26T22:52:31.205423",
+  "updated_at": "2026-08-06T23:03:30.457608",
   "translation_updated_at": "2026-05-26T22:52:34"
 }

@@ -11,6 +11,7 @@
     "metrics": [
       "acc"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "validation",
     "train_split": "",
@@ -26,11 +27,11 @@
     "aggregation": "mean",
     "extra_params": {},
     "sandbox_config": {},
+    "category": "agent",
     "agent_config": {
       "strategy": "react",
       "max_steps": 50
-    },
-    "category": "agent"
+    }
   },
   "statistics": {
     "total_samples": 165,
@@ -128,6 +129,6 @@
     "content_hash": "fa1a747373905ae3236671850d639fe4",
     "needs_translation": false
   },
-  "updated_at": "2026-07-10T20:24:34.552553",
+  "updated_at": "2026-08-06T23:03:30.406966",
   "translation_updated_at": "2026-07-10T20:24:42"
 }

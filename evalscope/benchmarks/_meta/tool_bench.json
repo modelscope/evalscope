@@ -14,6 +14,7 @@
       "HalluRate",
       "Rouge-L"
     ],
+    "primary_metric": "Act.EM",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -140,6 +141,6 @@
     "content_hash": "2ac7e7595851e4daefd4ccfe2c5e6679",
     "needs_translation": false
   },
-  "updated_at": "2026-05-15T14:45:08.636496",
+  "updated_at": "2026-08-06T23:03:28.194727",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

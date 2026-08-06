@@ -12,6 +12,7 @@
       "is_correct",
       "is_incorrect"
     ],
+    "primary_metric": "is_correct",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -56,6 +57,6 @@
     "content_hash": "346f1a49bd0fd4d124615da5519916e4",
     "needs_translation": false
   },
-  "updated_at": "2026-06-17T22:07:18.747702",
+  "updated_at": "2026-08-06T23:03:30.841255",
   "translation_updated_at": "2026-06-17T22:07:21"
 }

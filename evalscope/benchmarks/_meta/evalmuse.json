@@ -9,6 +9,7 @@
     "metrics": [
       "FGA_BLIP2Score"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -96,6 +97,6 @@
     "content_hash": "6e7107f190a2d151250757254442a2a4",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.506303",
+  "updated_at": "2026-08-06T23:03:30.387803",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

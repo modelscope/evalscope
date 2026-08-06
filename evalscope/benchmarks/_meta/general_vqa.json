@@ -12,6 +12,7 @@
       "BLEU",
       "Rouge"
     ],
+    "primary_metric": "Rouge",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -46,6 +47,6 @@
     "content_hash": "79eb549a391b7baa851d11cac39349cb",
     "needs_translation": false
   },
-  "updated_at": "2026-05-18T10:23:18.721476",
+  "updated_at": "2026-08-06T23:03:32.600370",
   "translation_updated_at": "2026-05-18T10:23:22"
 }

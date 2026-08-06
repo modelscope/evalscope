@@ -13,6 +13,7 @@
       "number_acc",
       "unit_acc"
     ],
+    "primary_metric": "acc",
     "few_shot_num": 0,
     "eval_split": "real_world",
     "train_split": "",
@@ -195,6 +196,6 @@
     "content_hash": "18eea817090ab99000c150bbfe5c5fc6",
     "needs_translation": false
   },
-  "updated_at": "2026-07-06T18:48:45.603152",
+  "updated_at": "2026-08-06T23:03:30.391343",
   "translation_updated_at": "2026-07-06T18:49:04"
 }

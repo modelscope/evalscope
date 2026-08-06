@@ -9,6 +9,7 @@
     "metrics": [
       "acc"
     ],
+    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -48,11 +49,11 @@
       }
     },
     "sandbox_config": {},
+    "category": "agent",
     "agent_config": {
       "strategy": "swe_bench_toolcall",
       "max_steps": 250
-    },
-    "category": "agent"
+    }
   },
   "statistics": {
     "total_samples": 50,
@@ -148,6 +149,6 @@
     "content_hash": "4375dbd2aca9e3386377cb07ef1ae48a",
     "needs_translation": false
   },
-  "updated_at": "2026-07-10T20:24:34.532023",
+  "updated_at": "2026-08-06T23:03:30.378141",
   "translation_updated_at": "2026-07-10T20:24:42"
 }

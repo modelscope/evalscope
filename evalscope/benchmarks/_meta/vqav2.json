@@ -11,6 +11,7 @@
       "vqa_score",
       "exact_match"
     ],
+    "primary_metric": "vqa_score",
     "few_shot_num": 0,
     "eval_split": "validation",
     "train_split": "",
@@ -161,6 +162,6 @@
     "content_hash": "8ead10bba40ae0c976b63abbb4250fa3",
     "needs_translation": false
   },
-  "updated_at": "2026-06-09T16:32:40.951004",
+  "updated_at": "2026-08-06T23:03:30.409926",
   "translation_updated_at": "2026-06-09T16:32:53"
 }

@@ -13,6 +13,7 @@
       "f1_score",
       "yes_ratio"
     ],
+    "primary_metric": "accuracy",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -78,6 +79,6 @@
     "content_hash": "9b9395d2e75d24100725619f98f27061",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.222850",
+  "updated_at": "2026-08-06T23:03:28.241751",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }
