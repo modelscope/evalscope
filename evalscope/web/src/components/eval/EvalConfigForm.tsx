@@ -38,6 +38,7 @@ const IDS = {
   topK: 'eval-topK',
   datasetArgs: 'eval-datasetArgs',
   sandboxPool: "eval-sandboxPool",
+  sandboxEnable: 'eval-sandboxEnable',
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -67,6 +68,7 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.maxTokens,
   IDS.topK,
   IDS.datasetArgs,
+  IDS.sandboxPool,
 ]
 
 export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: Props) {
@@ -208,11 +210,11 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       const err = validateNumeric(Number(check.value), check.min, check.max, check.step)
       if (err) newErrors[check.id] = err.messageKey
     }
-    if (sandboxEnabled) {
-      const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
-      if (err) {
-        newErrors[IDS.sandboxPool] = err.messageKey
-      }
+    if (sandboxEnabled && sandboxPoolSize.trim() !== '') {
+        const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
+        if (err) {
+            newErrors[IDS.sandboxPool] = err.messageKey
+        }
     }
 
     // Dataset_Args JSON validation without mutating the raw input.
@@ -260,19 +262,30 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
     if (topK) genConfig.top_k = Number(topK)
     if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
     if (parsedDatasetArgs) config.dataset_args = parsedDatasetArgs
-    if (sandboxEnabled) { 
-        config.sandbox = {
-          enabled: true,
-          engine: sandboxEngine,
-          manager_config: {
-            base_url: sandboxUrl,
-          },
-          default_config: {
-            image: sandboxImage,
-          },
-          pool_size: Number(sandboxPoolSize),
+    if (sandboxEnabled) {
+      const sandbox: Record<string, unknown> = {
+        enabled: true,
+        engine: sandboxEngine,
+      }
+
+      if (sandboxUrl.trim()) {
+        sandbox.manager_config = {
+          base_url: sandboxUrl.trim(),
         }
       }
+
+      if (sandboxImage.trim()) {
+        sandbox.default_config = {
+          image: sandboxImage.trim(),
+        }
+      }
+
+      if (sandboxPoolSize.trim()) {
+        sandbox.pool_size = Number(sandboxPoolSize)
+      }
+
+      config.sandbox = sandbox
+    }
     onSubmit(config)
   }
 
@@ -411,20 +424,21 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
             </Field>
             <hr className="md:col-span-3 my-2" />
             <h3 className="md:col-span-3 font-semibold">
-                Sandbox
+                {t('eval.sandbox')}
             </h3>
 
             <Field
-                id={IDS.sandboxPool}
-                name="sandbox_pool"
-                labelKey="eval.sandboxPool"
-                error={errMsg(IDS.sandboxPool)}
+                id={IDS.sandboxEnable}
+                name="sandbox_enabled"
+                labelKey="eval.sandboxEnable"
             >
-                {() => (
+                {(aria) => (
                     <input
+                        {...aria}
                         type="checkbox"
                         checked={sandboxEnabled}
                         onChange={(e) => setSandboxEnabled(e.target.checked)}
+                        className="size-5 accent-[var(--accent)] cursor-pointer"
                     />
                 )}
             </Field>
@@ -438,8 +452,9 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         labelKey="eval.sandboxEngine"
 
                     >
-                        {() => (
+                        {(aria) => (
                             <select
+                                {...aria}
                                 value={sandboxEngine}
                                 onChange={(e) => setSandboxEngine(e.target.value)}
                                 className={inputClass()}
@@ -456,8 +471,9 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         name="sandbox_url"
                         labelKey="eval.sandboxUrl"
                     >
-                        {() => (
+                        {(aria) => (
                             <input
+                                {...aria}
                                 value={sandboxUrl}
                                 onChange={(e) => setSandboxUrl(e.target.value)}
                                 className={inputClass()}
@@ -471,8 +487,9 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         name="sandbox_image"
                         labelKey="eval.sandboxImage"
                     >
-                        {() => (
+                        {(aria) => (
                             <input
+                                {...aria}
                                 value={sandboxImage}
                                 onChange={(e) => setSandboxImage(e.target.value)}
                                 className={inputClass()}
@@ -485,15 +502,20 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         id="sandbox_pool"
                         name="sandbox_pool"
                         labelKey="eval.sandboxPool"
+                        error={errMsg(IDS.sandboxPool)}
                     >
-                        {() => (
+                        {(aria) => (
                             <input
+                                {...aria}
                                 type="number"
                                 min={1}
                                 step={1}
                                 value={sandboxPoolSize}
-                                onChange={(e) => setSandboxPoolSize(e.target.value)}
-                                className={inputClass()}
+                                onChange={(e) => {
+                                    setSandboxPoolSize(e.target.value)
+                                    clearErr(IDS.sandboxPool)
+                                }}
+                                className={inputClass(errMsg(IDS.sandboxPool))}
                             />
                         )}
                     </Field>
