@@ -19,6 +19,7 @@ import logging
 import random
 import re
 import string
+import threading
 from types import ModuleType
 from typing import Dict, Optional, Sequence, Union
 
@@ -101,20 +102,41 @@ _ALL_CAPITAL_WORD_FREQUENCY = 20
 _NUM_WORDS_LOWER_LIMIT = 100
 _NUM_WORDS_UPPER_LIMIT = 500
 
+_LANGDETECT_LOCK = threading.Lock()
+_langdetect_module: Optional[ModuleType] = None
+
 
 def _import_langdetect() -> ModuleType:
-    """Import `langdetect` with a fixed detection seed.
+    """Import `langdetect` with deterministic detection.
 
-    `langdetect` samples randomly during inference, so the very same text can be
-    detected as different languages across calls. That makes language-related
-    checkers non-deterministic and produces different scores for identical
-    responses (e.g. when `repeats > 1`). Pinning the seed makes detection
-    reproducible. See https://github.com/Mimino666/langdetect/issues/3
+    Two independent sources of non-determinism have to be neutralized, otherwise
+    identical responses can be scored differently (e.g. across `repeats`):
+
+    1. `langdetect` samples randomly while inferring, so the same text may be
+       detected as different languages across calls unless the seed is pinned.
+       See https://github.com/Mimino666/langdetect/issues/3
+    2. `langdetect.detect()` lazily builds a process-global detector factory
+       *without any lock*. Concurrent first calls therefore race: several threads
+       each build a factory while others already detect against one whose
+       language profiles are still half-loaded, which yields wrong results for
+       the first samples of a parallel evaluation. Building the factory once,
+       under a lock, before any detection removes that race.
     """
-    import langdetect
+    global _langdetect_module
 
-    langdetect.DetectorFactory.seed = 0
-    return langdetect
+    if _langdetect_module is not None:
+        return _langdetect_module
+
+    with _LANGDETECT_LOCK:
+        if _langdetect_module is None:
+            import langdetect
+            from langdetect.detector_factory import init_factory
+
+            langdetect.DetectorFactory.seed = 0
+            init_factory()
+            _langdetect_module = langdetect
+
+    return _langdetect_module
 
 
 class Instruction:
