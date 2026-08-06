@@ -96,11 +96,13 @@ def get_acc_report_df(report_list: List[Report]):
                     }
                     data_dict.append(item)
         else:
+            # Role driven: a report without a `role=primary` metric shows no score rather than
+            # borrowing the first metric's number.
             primary_metric = report.primary_metric
             item = {
                 ReportKey.model_name: report.model_name,
                 ReportKey.dataset_name: report.dataset_name,
-                ReportKey.score: primary_metric.score if primary_metric else report.score,
+                ReportKey.score: primary_metric.score if primary_metric else None,
                 ReportKey.num: primary_metric.num if primary_metric else 0,
             }
             data_dict.append(item)

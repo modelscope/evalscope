@@ -3,11 +3,14 @@ from pandas import DataFrame
 from typing import TYPE_CHECKING
 
 from evalscope.constants import DataCollection
+from evalscope.metrics.semantics import compose_final_metric_name, get_semantics_resolver
+from evalscope.metrics.semantics.naming import match_primary_final_name
 from evalscope.report.report import *
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
     from evalscope.api.metric import AggScore
+    from evalscope.api.metric.semantics import MetricSemantics
 
 
 class ReportGenerator:
@@ -108,6 +111,13 @@ class ReportGenerator:
                 f'Available columns: {list(df.columns)}'
             )
 
+        semantics_by_metric, primary_metric_name = ReportGenerator._resolve_semantics(
+            score_dict=score_dict,
+            dataset_name=dataset_name,
+            data_adapter=data_adapter,
+            add_aggregation_name=add_aggregation_name,
+        )
+
         metrics_list = []
         for metric_name, group_metric in df.groupby('metric_name', sort=False):
             categories = []
@@ -118,7 +128,16 @@ class ReportGenerator:
 
                 categories.append(Category(name=category_name, subsets=subsets))
 
-            metrics_list.append(Metric(name=metric_name, categories=categories))
+            semantics = semantics_by_metric.get(metric_name)
+            metric = Metric(
+                name=metric_name,
+                categories=categories,
+                semantic_id=semantics.semantic_id if semantics else None,
+            )
+            # Runtime-only: lets this run's CLI table, HTML report and API response use the
+            # semantics without re-resolving. Only `semantic_id` reaches the report file.
+            metric.semantics = semantics
+            metrics_list.append(metric)
 
         report = Report(
             name=report_name,
@@ -126,6 +145,64 @@ class ReportGenerator:
             dataset_name=dataset_name,
             model_name=model_name,
             dataset_description=data_adapter.description,
-            dataset_pretty_name=data_adapter.pretty_name
+            dataset_pretty_name=data_adapter.pretty_name,
+            primary_metric_name=primary_metric_name,
         )
         return report
+
+    @staticmethod
+    def _resolve_semantics(
+        score_dict: Dict[str, List['AggScore']],
+        dataset_name: str,
+        data_adapter: 'DataAdapter',
+        add_aggregation_name: bool,
+    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[str]]:
+        """Resolve the semantics of every metric this report will contain.
+
+        The resolved contract is also recorded in ``AggScore.metadata['metric_semantics']`` so a
+        cached review carries the same interpretation as the report. Scores are never touched.
+
+        An undeclared metric of a built-in benchmark is an error: the catalog has a gap and the
+        report must not claim a direction or unit it cannot justify. A third-party benchmark
+        degrades to a diagnostic instead so its evaluation still completes.
+
+        Args:
+            score_dict: Subset name -> aggregated scores, as passed to the report.
+            dataset_name: Benchmark name the scores belong to.
+            data_adapter: Adapter that produced the scores.
+            add_aggregation_name: Whether metric names carry the aggregation prefix.
+
+        Returns:
+            The final report metric name -> semantics mapping, and the final name of the primary
+            metric (``None`` when the benchmark declares none).
+
+        Raises:
+            UndeclaredMetricError: If a built-in benchmark emits an undeclared metric name.
+        """
+        resolver = get_semantics_resolver()
+
+        # Two passes: the role of a metric depends on which primary metric the benchmark
+        # declares, which is only known once every emitted name has been composed.
+        agg_score_by_name = {}
+        for agg_scores in score_dict.values():
+            for agg_score_item in agg_scores:
+                final_name = compose_final_metric_name(agg_score_item, add_aggregation_name)
+                agg_score_by_name[final_name] = agg_score_item
+
+        primary_metric_name = match_primary_final_name(
+            data_adapter.primary_metric,
+            list(agg_score_by_name),
+            data_adapter.aggregation if add_aggregation_name else None,
+        )
+
+        semantics_by_metric: Dict[str, 'MetricSemantics'] = {}
+        for final_name, agg_score_item in agg_score_by_name.items():
+            resolved = resolver.resolve(dataset_name, final_name, primary_metric_name=primary_metric_name)
+            resolved.log_audit_messages()
+            resolved.raise_if_blocked()
+            semantics_by_metric[final_name] = resolved.semantics
+            agg_score_item.metadata = {
+                **(agg_score_item.metadata or {}),
+                'metric_semantics': resolved.semantics.model_dump(mode='json'),
+            }
+        return semantics_by_metric, primary_metric_name

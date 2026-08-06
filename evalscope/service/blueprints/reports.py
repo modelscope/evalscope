@@ -15,6 +15,7 @@ from flask import Blueprint, jsonify, request, send_file
 from typing import List
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
+from evalscope.metrics.semantics import PrimaryMetricRef, summarize_primary_metrics
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -190,16 +191,31 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         score = primary_metric.score if primary_metric else r.score
         dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
 
+    summary = summarize_primary_metrics([
+        PrimaryMetricRef(
+            dataset_name=r.dataset_name,
+            metric_name=metric.name if metric else '',
+            score=metric.score if metric else None,
+            semantics=metric.semantics if metric else None,
+        ) for r, metric in zip(report_list, primary_metrics)
+    ])
+
     return {
         'name': report_name,
         'model_name': first.model_name,
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
+        # Deprecated: an average over possibly heterogeneous metrics. Kept for old clients;
+        # semantic consumers read `primary_metrics` and `summary_*` instead.
         'score': avg_score,
         'metric_name': metric_name,
         'dataset_scores': dataset_scores,
         'num_samples': total_num,
         'timestamp': timestamp,
+        'primary_metrics': [ref.model_dump(mode='json') for ref in summary.primary_metrics],
+        'summary_status': summary.status.value,
+        'summary_score': summary.summary_score,
+        'summary_semantics': summary.summary_semantics.model_dump(mode='json') if summary.summary_semantics else None,
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
         '_scores': [metric.score if metric else report.score for report, metric in zip(report_list, primary_metrics)],
@@ -207,10 +223,22 @@ def _build_report_meta(report_name: str, root: str) -> dict:
 
 
 def _report_to_service_dict(report: Report) -> dict:
-    """Serialize a report with the primary metric as its display score."""
+    """Serialize a report, adding the resolved semantics next to the legacy fields.
+
+    ``score`` and ``metric_name`` keep their existing behaviour for old clients. New clients
+    select the primary metric through ``primary_metric_name`` or the per-metric ``role``, never
+    through ``score`` or ``metrics[0]``.
+    """
     data = report.to_dict()
     if report.primary_metric:
         data['score'] = report.primary_metric.score
+
+    # `Metric.semantics` is excluded from serialization by design (only the anchor is stored),
+    # so attach the hydrated contract explicitly for the wire format.
+    semantics_by_name = {metric.name: metric.semantics for metric in report.metrics}
+    for metric_data in data.get('metrics', []):
+        semantics = semantics_by_name.get(metric_data.get('name'))
+        metric_data['semantics'] = semantics.model_dump(mode='json') if semantics else None
     return data
 
 

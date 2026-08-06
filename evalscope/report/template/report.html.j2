@@ -64,7 +64,7 @@
               <td><span class="tag">{{ row.dataset }}</span></td>
               <td>{{ row.model }}</td>
               <td><span class="metric-tag">{{ row.metric }}</span></td>
-              <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
+              <td class="score-cell">{{ row.score_display }}</td>
               <td class="num-cell">{{ row.num }}</td>
             </tr>
             {% endfor %}
@@ -179,7 +179,7 @@
                     {% endif %}
                     <td>{{ row.subset }}</td>
                     <td><span class="metric-tag">{{ row.metric }}</span></td>
-                    <td class="score-cell">{{ "%.4f" | format(row.score) }}</td>
+                    <td class="score-cell">{{ row.score_display }}</td>
                     <td class="num-cell">{{ row.num }}</td>
                   </tr>
                   {% endfor %}
@@ -187,6 +187,43 @@
               </table>
             </div>
           </div>
+          {% endif %}
+
+          {% if msec.diagnostic_rows %}
+          <details class="card" style="margin-bottom:1rem;">
+            <summary class="card-title">
+              <span data-i18n="card.diagnostics">Diagnostic metrics</span>
+              <span class="card-badge">{{ msec.diagnostic_rows | length }}</span>
+            </summary>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    {% if msec.show_category %}
+                    <th data-i18n="col.category">Category</th>
+                    {% endif %}
+                    <th data-i18n="col.subset">Subset</th>
+                    <th data-i18n="col.metric">Metric</th>
+                    <th data-i18n="col.value">Value</th>
+                    <th data-i18n="col.num">Num</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in msec.diagnostic_rows %}
+                  <tr>
+                    {% if msec.show_category %}
+                    <td><span class="tag">{{ row.category }}</span></td>
+                    {% endif %}
+                    <td>{{ row.subset }}</td>
+                    <td><span class="metric-tag">{{ row.metric }}</span></td>
+                    <td class="num-cell">{{ row.score_display }}</td>
+                    <td class="num-cell">{{ row.num }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
           {% endif %}
 
           {% if msec.chart_div %}

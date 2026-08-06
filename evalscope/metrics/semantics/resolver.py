@@ -360,19 +360,6 @@ def _with_primary_role(
         return semantics
 
 
-def _supports_field(obj: Any, field_name: str) -> bool:
-    """Whether an object exposes a writable field, tolerating models without it yet.
-
-    ``Metric.semantics`` and ``Report.primary_metric_name`` are added to the report models by a
-    later task. Until then hydration stays a no-op instead of injecting attributes the model
-    would drop on serialization.
-    """
-    model_fields = getattr(type(obj), 'model_fields', None)
-    if model_fields is not None:
-        return field_name in model_fields
-    return hasattr(obj, field_name)
-
-
 class SemanticsResolver:
     """Resolve final report metric names into ``MetricSemantics`` with a fixed priority chain.
 
@@ -542,8 +529,7 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
         The same report instance.
     """
     metrics = list(getattr(report, 'metrics', None) or [])
-    # TODO(task 7.1): drop this guard once Metric.semantics / Report.primary_metric_name exist.
-    if not metrics or not _supports_field(metrics[0], 'semantics'):
+    if not metrics:
         return report
 
     benchmark_name = getattr(report, 'dataset_name', '') or ''
@@ -569,14 +555,10 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
         resolved.log_audit_messages()
         metric.semantics = resolved.semantics
 
-    if _supports_field(report, 'primary_metric_name'):
-        primary = next(
-            (
-                metric for metric in metrics
-                if getattr(metric, 'semantics', None) is not None and metric.semantics.role is MetricRole.PRIMARY
-            ),
-            None,
-        )
-        report.primary_metric_name = primary.name if primary else None
+    primary = next(
+        (metric for metric in metrics if metric.semantics is not None and metric.semantics.role is MetricRole.PRIMARY),
+        None
+    )
+    report.primary_metric_name = primary.name if primary else None
 
     return report

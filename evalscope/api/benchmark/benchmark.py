@@ -185,6 +185,15 @@ class DataAdapter(LLMJudgeMixin, ABC):
         return self._benchmark_meta.metric_list
 
     @property
+    def primary_metric(self) -> Optional[str]:
+        """
+        Return the raw metric name declared as this benchmark's primary metric.
+
+        ``None`` for single-metric benchmarks, whose only metric is implicitly primary.
+        """
+        return self._benchmark_meta.primary_metric
+
+    @property
     def default_subset(self) -> str:
         """
         Return the default subset of the benchmark.

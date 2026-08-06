@@ -3,9 +3,11 @@ import pandas as pd
 import re
 from typing import Dict, List, Optional
 
+from evalscope.api.metric.semantics import MetricDirection, MetricRole
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
+from evalscope.metrics.semantics import format_metric_value
 from evalscope.report.combinator import get_report_list
-from evalscope.report.report import Report, ReportKey
+from evalscope.report.report import Metric, Report, ReportKey
 from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
@@ -23,6 +25,34 @@ _PLOTLY_CDN_CONFIG = {'responsive': True}
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+#: Arrow shown next to a metric name, so a reader sees at a glance which way is better.
+_DIRECTION_ARROWS = {
+    MetricDirection.HIGHER_IS_BETTER: '↑',
+    MetricDirection.LOWER_IS_BETTER: '↓',
+}
+
+
+def _metric_label(metric: Optional[Metric]) -> str:
+    """Render a metric as its display name plus its direction arrow.
+
+    Uses the resolved semantics when available (``Accuracy ↑``), and falls back to the raw final
+    report metric name otherwise, so a report whose semantics could not be resolved still shows
+    the metric it actually contains.
+
+    Args:
+        metric: Metric to label, or ``None`` when the report has no primary metric.
+
+    Returns:
+        The label to display.
+    """
+    if metric is None:
+        return 'N/A'
+    semantics = metric.semantics
+    if semantics is None:
+        return metric.name
+    arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
+    return f'{semantics.metric_name} {arrow}'.strip()
 
 
 def _process_readme_content(content: str) -> str:
@@ -224,15 +254,22 @@ def gen_html_report_file(
             if rpt is None:
                 continue
             primary_metric = rpt.primary_metric
-            metric_name = primary_metric.name if primary_metric else 'N/A'
-            score = primary_metric.score if primary_metric else 0.0
-            num = primary_metric.num if primary_metric else 0
-            summary_rows.append(dict(dataset=pretty, model=model, metric=metric_name, score=score, num=num))
+            semantics = primary_metric.semantics if primary_metric else None
+            score = primary_metric.score if primary_metric else None
+            summary_rows.append(
+                dict(
+                    dataset=pretty,
+                    model=model,
+                    metric=_metric_label(primary_metric),
+                    score=score if score is not None else 0.0,
+                    score_display=format_metric_value(score, semantics),
+                    num=primary_metric.num if primary_metric else 0,
+                )
+            )
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
-        if first is not None and first.metrics:
-            primary_metric = first.primary_metric
+        if first is not None and first.primary_metric is not None:
             overview_labels.append(pretty)
-            overview_scores.append(primary_metric.score)
+            overview_scores.append(first.primary_metric.score)
 
     overview_chart_div = _overview_chart_div(overview_labels, overview_scores)
     sunburst_chart_div = _sunburst_chart_div(report_list)
@@ -257,28 +294,39 @@ def gen_html_report_file(
 
             if not rpt.metrics:
                 model_sections.append(
-                    dict(model_name=model, subset_rows=[], show_category=False, chart_div='', analysis_html='')
+                    dict(
+                        model_name=model,
+                        subset_rows=[],
+                        diagnostic_rows=[],
+                        show_category=False,
+                        chart_div='',
+                        analysis_html=''
+                    )
                 )
                 continue
 
             subset_rows: List[dict] = []
+            diagnostic_rows: List[dict] = []
 
             for metric in rpt.metrics:
+                semantics = metric.semantics
+                is_diagnostic = semantics is not None and semantics.role is MetricRole.DIAGNOSTIC
                 for cat in metric.categories:
                     # Category name is stored as a tuple; join for display
                     cat_display = ' / '.join(cat.name) if cat.name else ''
                     for sub in cat.subsets:
                         if sub.name == ReportKey.overall_score:
                             continue
-                        subset_rows.append(
-                            dict(
-                                subset=sub.name,
-                                category=cat_display,
-                                metric=metric.name,
-                                score=sub.score,
-                                num=sub.num,
-                            )
+                        row = dict(
+                            subset=sub.name,
+                            category=cat_display,
+                            metric=_metric_label(metric),
+                            score=sub.score,
+                            score_display=format_metric_value(sub.score, semantics),
+                            num=sub.num,
                         )
+                        # Diagnostics are shown without a verdict, in their own collapsed panel.
+                        (diagnostic_rows if is_diagnostic else subset_rows).append(row)
 
             show_category = True
 
@@ -293,6 +341,7 @@ def gen_html_report_file(
                 dict(
                     model_name=model,
                     subset_rows=subset_rows,
+                    diagnostic_rows=diagnostic_rows,
                     show_category=show_category,
                     chart_div=chart_div,
                     analysis_html=analysis_html,

@@ -49,6 +49,10 @@ class TestGeneratorParity:
             pretty_name = 'Stub Benchmark'
             description = 'stub'
             category_map: Dict[str, List[str]] = {}
+            # A third-party benchmark: it declares no primary metric and its metric names are
+            # undeclared, so the generator degrades them to diagnostics instead of failing.
+            primary_metric = None
+            aggregation = 'mean'
 
         report = ReportGenerator.generate_report(
             score_dict=score_dict,

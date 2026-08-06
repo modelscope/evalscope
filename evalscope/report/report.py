@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, computed_field, field_serializer, field_v
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
+from evalscope.api.metric.semantics import METRIC_CONTRACT_VERSION, MetricRole, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -112,7 +113,21 @@ class Metric(BaseModel):
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
+    semantic_id: Optional[str] = None
+    """Persisted anchor into the semantics baseline table.
+
+    Only the identifier is stored: the full contract is rebuilt on read by
+    ``hydrate_report_semantics``, so a catalog correction applies to historical reports too and
+    the file does not carry a copy of the semantics per metric.
+    """
+
     categories: List[Category] = Field(default_factory=list)
+
+    semantics: Optional[MetricSemantics] = Field(default=None, exclude=True)
+    """Runtime-only resolved semantics, shared by every ``Category`` and ``Subset`` below.
+
+    Excluded from serialization: ``semantic_id`` is the persisted form.
+    """
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
@@ -123,6 +138,11 @@ class Metric(BaseModel):
         self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
+
+    @property
+    def role(self) -> Optional[MetricRole]:
+        """Display tier of this metric, or ``None`` while the semantics are not resolved."""
+        return self.semantics.role if self.semantics else None
 
 
 class ReportKey:
@@ -144,39 +164,70 @@ class Report(BaseModel):
     dataset_description: str = ''
     model_name: str = 'default_model'
     score: float = 0.0
+    """Deprecated: kept for backward compatible readers.
+
+    Retains its historical value (the first metric's score) and its non-null shape. Semantic
+    consumers use :attr:`primary_metric_name` and ``Metric.semantics`` instead; nothing derives
+    the primary metric from this number.
+    """
+
     metrics: List[Metric] = Field(default_factory=list)
     analysis: str = 'N/A'
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
+    metric_schema_version: int = METRIC_CONTRACT_VERSION
+    """Version of the metric semantics contract this report was written against."""
+
+    primary_metric_name: Optional[str] = None
+    """Final report metric name of the ``role=primary`` metric, ``None`` when there is none."""
 
     model_config = {'ignored_types': ()}
 
     @model_validator(mode='after')
     def _set_score(self) -> Self:
         if self.metrics:
-            self.score = self.metrics[0].score  # NOTE: only use the first metric by default
+            # Keep the historical number and shape of the deprecated `score` field.
+            self.score = self.metrics[0].score
+        primary = self._find_primary_metric()
+        if primary is not None:
+            self.primary_metric_name = primary.name
+        elif any(metric.semantics is not None for metric in self.metrics):
+            # Semantics are resolved and none of them is primary: say so instead of keeping a
+            # stale name from an earlier pass.
+            self.primary_metric_name = None
         return self
+
+    def _find_primary_metric(self) -> Optional[Metric]:
+        """Return the metric whose resolved semantics carry ``role=primary``."""
+        if self.primary_metric_name:
+            named = next((m for m in self.metrics if m.name == self.primary_metric_name), None)
+            if named is not None and named.role is MetricRole.PRIMARY:
+                return named
+        return next((m for m in self.metrics if m.role is MetricRole.PRIMARY), None)
 
     @computed_field
     @property
     def num(self) -> int:
-        """Total sample count derived from the first metric's subsets.
+        """Total sample count derived from the primary metric's subsets.
 
-        Using the first metric avoids double-counting datasets that have
-        multiple metrics over the same sample set (e.g. multi_if has 12
-        metrics all evaluated on the same 6 samples).
+        Using a single metric avoids double-counting datasets that evaluate several metrics over
+        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Falls
+        back to the first metric while no primary metric is resolved.
         """
-        first = self.metrics[0] if self.metrics else None
-        if first is None:
+        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        if metric is None:
             return 0
-        return sum(s.num for c in first.categories for s in c.subsets if not s.is_aggregate)
+        return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
 
     @property
     def primary_metric(self) -> Optional[Metric]:
-        """Return the explicit overall metric when available, otherwise the first metric."""
-        if not self.metrics:
-            return None
-        return next((metric for metric in self.metrics if metric.name.lower() == 'overall'), self.metrics[0])
+        """Metric carrying ``role=primary`` semantics, or ``None`` when the report has none.
+
+        Selection is driven purely by the resolved semantics: there is no ``overall`` name
+        convention and no fallback to ``metrics[0]``, so a report without a primary metric is
+        reported as such rather than silently promoting an arbitrary one.
+        """
+        return self._find_primary_metric()
 
     def to_dict(self) -> Dict[str, Any]:
         # model_dump includes computed_field 'num' automatically
@@ -195,7 +246,12 @@ class Report(BaseModel):
     @classmethod
     def from_dict(cls, data: dict):
         # Pydantic handles nested model construction automatically via model_validate
-        return cls.model_validate(data)
+        report = cls.model_validate(data)
+        # Resolve the semantics of every metric on the single read path, so the API, the HTML
+        # report, the CLI table and the DataFrame all see the same contract. Imported inside the
+        # function to keep `report` importable without pulling in the semantics catalog.
+        from evalscope.metrics.semantics import hydrate_report_semantics
+        return hydrate_report_semantics(report)
 
     @classmethod
     def from_json(cls, json_file: str):
