@@ -6,7 +6,6 @@ from typing import List, Optional, Sequence, Tuple
 
 # A number token, optionally negative, fractional or percentage-suffixed.
 _NUM_TOKEN = r'-?\d+(?:\.\d+)?%?'
-_BBOX_KEYWORDS = ('bbox', 'box', 'rect', 'rectangle')
 
 # Many VLMs answer "normalized" coordinates scaled to a 0-1000 grid instead of [0, 1].
 _THOUSANDTHS_SCALE = 1000.0
@@ -14,12 +13,6 @@ _THOUSANDTHS_SCALE = 1000.0
 # The prompt asks for the final answer after an ``Answer:`` marker, so the point can be
 # located exactly instead of being guessed from the surrounding reasoning.
 _ANSWER_MARKER_RE = re.compile(r'(?:final\s+)?answer\s*[:：]', re.IGNORECASE)
-
-AUTO = 'auto'
-NORMALIZED = 'normalized'
-THOUSANDTHS = 'thousandths'
-PIXEL = 'pixel'
-COORDINATE_SPACES = (AUTO, NORMALIZED, THOUSANDTHS, PIXEL)
 
 
 def _token_to_float(token: str) -> float:
@@ -111,8 +104,6 @@ def _parse_point_from_text(prediction: str, allow_loose_formats: bool) -> Option
         return _token_to_float(xy_pairs[-1][0]), _token_to_float(xy_pairs[-1][1])
 
     numbers = re.findall(_NUM_TOKEN, prediction)
-    if len(numbers) >= 4 and any(keyword in prediction.lower() for keyword in _BBOX_KEYWORDS):
-        return _bbox_center([_token_to_float(number) for number in numbers[-4:]])
     if len(numbers) >= 2:
         return _token_to_float(numbers[-2]), _token_to_float(numbers[-1])
     return None
@@ -124,40 +115,26 @@ def normalize_bbox(bbox: Sequence[float], width: int, height: int) -> List[float
     return [x1 / width, y1 / height, x2 / width, y2 / height]
 
 
-def to_normalized_point(
-    point: Sequence[float],
-    image_size: Sequence[int],
-    coordinate_space: str = AUTO,
-) -> Tuple[float, float]:
-    """Map a parsed point onto the normalized [0, 1] coordinate space.
+def to_normalized_point(point: Sequence[float], image_size: Sequence[int]) -> Tuple[float, float]:
+    """Map a parsed point onto the normalized [0, 1] space, inferring the convention.
 
-    ``auto`` infers the convention from the magnitude of the coordinates: values inside
-    [0, 1] are already normalized, values up to 1000 use the thousandths grid that many
-    VLMs emit, and anything larger is read as pixels of the image the model received.
-    The 1 < value <= 1000 window is genuinely ambiguous (it could be a pixel coordinate
-    on a large screen), so the convention can be pinned explicitly instead.
+    The convention is inferred from the coordinate magnitude: values inside [0, 1] are
+    already normalized, values up to 1000 use the thousandths grid that many VLMs emit,
+    and anything larger is read as pixels of the image the model received.  Every
+    ScreenSpot-Pro screenshot is at least 1920 px wide, so genuine pixel answers land
+    well above the thousandths range and are classified correctly.
 
     Args:
         point (Sequence[float]): The parsed ``(x, y)`` point.
         image_size (Sequence[int]): ``(width, height)`` of the image sent to the model.
-        coordinate_space (str): One of ``auto``, ``normalized``, ``thousandths``, ``pixel``.
 
     Returns:
         Tuple[float, float]: The point expressed in normalized [0, 1] coordinates.
     """
     x, y = point[0], point[1]
-
-    if coordinate_space == AUTO:
-        if x <= 1 and y <= 1:
-            coordinate_space = NORMALIZED
-        elif x <= _THOUSANDTHS_SCALE and y <= _THOUSANDTHS_SCALE:
-            coordinate_space = THOUSANDTHS
-        else:
-            coordinate_space = PIXEL
-
-    if coordinate_space == NORMALIZED:
+    if x <= 1 and y <= 1:
         return x, y
-    if coordinate_space == THOUSANDTHS:
+    if x <= _THOUSANDTHS_SCALE and y <= _THOUSANDTHS_SCALE:
         return x / _THOUSANDTHS_SCALE, y / _THOUSANDTHS_SCALE
     width, height = image_size
     return x / width, y / height

@@ -83,15 +83,14 @@ def test_parse_point_accepted_formats() -> None:
     assert parse_point('I am unable to locate this element.') is None
 
 
-def test_to_normalized_point_coordinate_spaces() -> None:
+def test_to_normalized_point_infers_convention_by_magnitude() -> None:
     size = (2880, 1800)
-    # auto: [0, 1] stays, <=1000 is the thousandths grid, larger is pixels
+    # values in [0, 1] are already normalized
     assert to_normalized_point((0.8, 0.4), size) == (0.8, 0.4)
+    # values up to 1000 are the thousandths grid
     assert to_normalized_point((805, 391), size) == (0.805, 0.391)
+    # larger values are pixels of the image sent
     assert to_normalized_point((2320, 704), size) == (2320 / 2880, 704 / 1800)
-    # explicit override wins over the heuristic
-    assert to_normalized_point((805, 391), size, 'pixel') == (805 / 2880, 391 / 1800)
-    assert to_normalized_point((805, 391), size, 'thousandths') == (0.805, 0.391)
 
 
 def test_point_in_bbox_is_strict() -> None:

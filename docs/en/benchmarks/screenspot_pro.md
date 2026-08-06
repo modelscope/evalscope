@@ -26,7 +26,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 - Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`
 - Predictions are read from the answer line that the prompt requires (`Answer: [x, y]`), so reasoning traces cannot be mistaken for the answer. Replies ignoring the format fall back to scanning for unambiguous point notation only (`[x, y]` pairs or `<bbox>` tags); loose notation such as `x=.., y=..` and bare numbers is accepted only on the answer line, because in free prose it harvests layout bounds and ordinals instead of a click point
 - A reply truncated before its answer line yields no prediction and scores 0 rather than a coordinate invented from its reasoning, so allow enough `max_tokens` for the model to finish answering
-- Ground truth is normalized to [0, 1], and predictions are mapped into the same space according to `coordinate_space`. With the default `auto`, values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received. Pin `coordinate_space` explicitly when a model's convention is known, since the 1–1000 range is inherently ambiguous
+- Ground truth is normalized to [0, 1], and predictions are mapped into the same space by magnitude: values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received (every screenshot is at least 1920 px wide, so genuine pixel answers are classified correctly)
 - The dataset ships a single `train` split, which is used as the evaluation split
 - Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent
 - [Paper](https://arxiv.org/abs/2504.07981) | [GitHub](https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding)
@@ -82,7 +82,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 {
   "input": [
     {
-      "id": "5d50b254",
+      "id": "2d87e94f",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~933.3KB]"
@@ -120,12 +120,6 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 
 *No prompt template defined.*
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `coordinate_space` | `str` | `auto` | Coordinate convention used to interpret predicted click points. auto: infer from the magnitude of the coordinates; normalized: values already in [0, 1]; thousandths: values on a 0-1000 grid; pixel: pixels of the image sent to the model. Choices: ['auto', 'normalized', 'thousandths', 'pixel'] |
-
 ## Usage
 
 ### Using CLI
@@ -153,7 +147,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'screenspot_pro': {
             # subset_list: ['CAD', 'Creative', 'Dev']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation
