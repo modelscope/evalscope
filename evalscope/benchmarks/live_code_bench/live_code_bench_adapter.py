@@ -11,6 +11,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import convert_normal_types
 from evalscope.utils.logger import get_logger
+from .prompts import CodeGenerationPromptConstants
 
 logger = get_logger()
 
@@ -43,6 +44,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
+- Prompts follow the official LiveCodeBench runner: a generic "expert Python programmer" system message plus the `### Question` / `### Format` user message
 - **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Use `start_date` and `end_date` parameters to filter problems by date
 - Default timeout is 6 seconds per test case
@@ -82,6 +84,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
         eval_split='test',
+        system_prompt=CodeGenerationPromptConstants.SYSTEM_MESSAGE_GENERIC,
         prompt_template=
         '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
         review_timeout=6,

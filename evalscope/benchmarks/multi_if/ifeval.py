@@ -26,6 +26,17 @@ from evalscope.utils import get_logger
 
 try:
     import langdetect
+    from langdetect.detector_factory import init_factory as _langdetect_init_factory
+
+    # `langdetect` samples randomly while inferring, so the same text can be detected
+    # as different languages across calls, which makes language-related checkers
+    # non-deterministic. Pinning the seed makes detection reproducible.
+    # See https://github.com/Mimino666/langdetect/issues/3
+    langdetect.DetectorFactory.seed = 0
+    # `langdetect.detect()` also builds its process-global detector factory lazily and
+    # without a lock, so concurrent first calls can detect against half-loaded language
+    # profiles. Build it here, at import time, while we are still single-threaded.
+    _langdetect_init_factory()
 except ImportError:
     langdetect = None
 try:

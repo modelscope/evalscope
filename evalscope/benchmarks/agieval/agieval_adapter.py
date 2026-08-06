@@ -148,9 +148,9 @@ class AGIEvalAdapter(MultiChoiceAdapter):
         # MCQ: use evalscope's built-in parsers
         multiple = is_multi_choice(subset)
         if is_chinese_qa(subset):
-            answers = parse_answers_zh(task_state, multiple_correct=multiple)
+            answers = parse_answers_zh(task_state, multiple_correct=multiple, completion=prediction)
         else:
-            answers = parse_answers(task_state, multiple_correct=multiple)
+            answers = parse_answers(task_state, multiple_correct=multiple, completion=prediction)
         return ''.join(sorted(list(answers)))
 
     def match_score(

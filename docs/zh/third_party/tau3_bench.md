@@ -117,4 +117,4 @@ run_task(task_cfg)
 ## 指标说明
 
 - Pass^1：首次尝试即完成任务的比例（越高越好）
-- Aggregation：`mean_and_pass_hat_k`（设置 `repeats > 1` 可计算 pass@k）
+- Aggregation：`mean_and_pass_hat_k`（设置 `repeats = k` 时会额外输出 `pass^k`，即同一任务 k 次尝试**全部**成功的概率）。注意这**不是** `pass@k`（k 次中至少一次成功即算通过）；若需要 `pass@k`，请改用 `mean_and_pass_at_k`。

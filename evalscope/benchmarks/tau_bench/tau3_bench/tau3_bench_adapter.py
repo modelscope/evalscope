@@ -55,7 +55,7 @@ logger = get_logger()
   - `*_reranker` → also needs `OPENAI_API_KEY`
   - `terminal_use` / `alltools*` → require Anthropic `sandbox-runtime` (npm) + ripgrep / bwrap / socat (see tau2 README)
 - Primary metric: **Accuracy** based on task completion reward
-- Uses **pass@k** aggregation for robustness evaluation
+- Uses **pass^k** aggregation (`mean_and_pass_hat_k`) for robustness evaluation: the probability that *all* `k` attempts of a task succeed, as defined by the τ-bench paper. This is stricter than `pass@k`, which only requires at least one of `k` attempts to succeed. Set `repeats=k` to enable it.
 - [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/tau3_bench.html)
 """,  # noqa: E501
         dataset_id='evalscope/tau3-bench-data',
@@ -111,7 +111,10 @@ class Tau3BenchAdapter(AgentAdapter):
         # Resolve dataset path and set TAU2_DATA_DIR BEFORE importing tau2.
         # tau2 v1.0.0 caches DATA_DIR at module import time; setting the env var
         # later has no effect.
-        self._prepare_data_dir()
+        # Skipped when there is no task config (e.g. metadata-only introspection such
+        # as the docs pipeline), since dataset resolution needs the task config.
+        if self._task_config is not None:
+            self._prepare_data_dir()
 
         check_import(
             'tau2',

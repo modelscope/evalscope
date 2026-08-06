@@ -60,11 +60,17 @@
 
 **Q: 如何移除模型输出中的“思考过程”（如 `<think>...</think>`）？**
 
-**A:** 对于`evalscope >= v1.0 `版本，默认自动处理`<think>...</think>`。如果需要自定义处理，可以使用 `--dataset-args` 参数为特定数据集添加 `filters`。例如，移除 ifeval 数据集评测时 `</think>` 之前的内容：
-```shell
---dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
-```
-如果您的模型使用不同的思考标签，如 `<|end_of_thinking|>`，只需替换即可。
+**A:** 对于`evalscope >= v1.0 `版本，会自动剥离**成对出现**的 `<think>...</think>`。
+
+需要注意：多数 thinking 模型（Qwen3、DeepSeek 系列等）的 chat template 会把 `<think>` 预填进 prompt，模型续写只吐出闭合的 `</think>`。这种**未配对**的情况不会被自动剥离，思考过程会残留在输出里，进而干扰答案提取。推荐按以下任一方式处理：
+
+1.  **在推理引擎侧开启 reasoning parser**（推荐）：SGLang / vLLM 启动时加 `--reasoning-parser`（具体取值见对应引擎文档）。此时思考内容会通过独立的 `reasoning_content` 字段返回，EvalScope 会自动识别，`prediction` 中不再包含思考过程。
+2.  **配置 `filters` 自行过滤**：用 `--dataset-args` 为特定数据集移除 `</think>` 之前的内容：
+    ```shell
+    --dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
+    ```
+    如果您的模型使用不同的思考标签，如 `<|end_of_thinking|>`，只需替换即可。
+3.  **用裁判模型兜底**：设置 `judge_strategy=JudgeStrategy.LLM_RECALL`，规则提取失败的样本会交给裁判模型重新判定，详见下文“结果异常与问题排查”。
 
 **Q: 如何使用本地模型作为裁判模型（Judge Model）？**
 
@@ -130,6 +136,18 @@ judge_model_args={
 }
 ```
 参考文档：[裁判模型参数](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge)。
+
+**Q: 选择题数据集（如 `gpqa_diamond`、`mmlu`）判题错误，`extracted_prediction` 为空或提取到错误选项？**
+
+**A:** 常见原因是模型输出中残留了思考过程，规则提取被思考过程里的内容干扰。例如模型先复述提示词要求的 `ANSWER: [LETTER]` 格式、或在推理中讨论了一个被否定的选项，都会影响提取。建议：
+1.  先按[上文方法](#评测配置与参数)剥离思考过程（推理引擎开 reasoning parser，或配置 `filters: {"remove_until": "</think>"}`）。
+2.  再配合裁判模型兜底，规则提取失败时自动召回：
+    ```python
+    # 在 TaskConfig 中设置
+    judge_strategy=JudgeStrategy.LLM_RECALL,
+    judge_model_args={'model_id': '...', 'api_url': '...', 'api_key': '...'}
+    ```
+    `llm_recall` 仅在规则得分不满分时才调用裁判模型，不会带来额外的全量开销。
 
 **Q: 评测 `alpaca_eval` 时报错 `Connection error`？**
 

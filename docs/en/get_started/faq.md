@@ -59,11 +59,17 @@ For details, please [refer to](https://github.com/modelscope/evalscope/pull/964)
 
 **Q: How to remove the "thinking process" (such as `<think>...</think>`) from model outputs?**
 
-**A:** For `evalscope >= v1.0` versions, the `<think>...</think>` is automatically handled by default. If you need custom handling, use the `--dataset-args` parameter to add `filters` for specific datasets. For example, to remove content before `</think>` when evaluating ifeval dataset:
-```shell
---dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
-```
-If your model uses different thinking tags like `<|end_of_thinking|>`, simply replace it accordingly.
+**A:** For `evalscope >= v1.0` versions, **paired** `<think>...</think>` blocks are stripped automatically.
+
+Note: most thinking models (Qwen3, DeepSeek series, etc.) prefill `<think>` into the prompt via their chat template, so the completion only contains the closing `</think>`. Such **unpaired** tags are not stripped automatically, the thinking process stays in the output and can interfere with answer extraction. Use any of the following:
+
+1.  **Enable a reasoning parser on the inference engine** (recommended): pass `--reasoning-parser` when starting SGLang / vLLM (see the engine docs for the accepted values). The thinking content is then returned in a separate `reasoning_content` field, which EvalScope picks up automatically, so `prediction` no longer contains it.
+2.  **Configure `filters` yourself**: use `--dataset-args` to remove everything before `</think>` for a specific dataset:
+    ```shell
+    --dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
+    ```
+    If your model uses different thinking tags like `<|end_of_thinking|>`, simply replace it accordingly.
+3.  **Fall back to a judge model**: set `judge_strategy=JudgeStrategy.LLM_RECALL` so samples that fail rule-based extraction are re-judged by the judge model. See "Abnormal Results & Troubleshooting" below.
 
 **Q: How to use a local model as a Judge Model?**
 
@@ -129,6 +135,18 @@ judge_model_args={
 }
 ```
 Reference documentation: [Judge Model Parameters](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge).
+
+**Q: Multiple-choice datasets (e.g. `gpqa_diamond`, `mmlu`) are graded incorrectly, with an empty or wrong `extracted_prediction`?**
+
+**A:** The usual cause is a thinking process left in the model output, which interferes with rule-based extraction. For example the model first restates the required `ANSWER: [LETTER]` format, or discusses an option it then rejects. Recommended:
+1.  Strip the thinking process first, as described [above](#evaluation-configuration--parameters) (enable a reasoning parser on the inference engine, or configure `filters: {"remove_until": "</think>"}`).
+2.  Then add a judge model as a fallback so failed rule-based extractions are recalled:
+    ```python
+    # Set in TaskConfig
+    judge_strategy=JudgeStrategy.LLM_RECALL,
+    judge_model_args={'model_id': '...', 'api_url': '...', 'api_key': '...'}
+    ```
+    `llm_recall` only calls the judge model when the rule-based score is not perfect, so it adds no across-the-board overhead.
 
 **Q: `Connection error` when evaluating `alpaca_eval`?**
 

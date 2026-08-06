@@ -9,7 +9,7 @@ from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import parse_answers, prompt
+from evalscope.utils.multi_choices import prompt
 
 logger = get_logger()
 
@@ -104,16 +104,11 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         pattern = r'ANSWER:\s*([A-E]+)'
         matches = re.findall(pattern, prediction)
-        if matches:
-            letters = matches[-1].strip().upper()
-            return ''.join(sorted(set(letters)))
-        else:
-            try:
-                answers = parse_answers(prediction)
-                return ''.join(sorted(list(answers)))
-            except Exception as e:
-                logger.warning(f'Could not extract answer from: {prediction}. Error: {e}')
-                return ''
+        if not matches:
+            logger.warning(f'Could not extract answer from: {prediction}')
+            return ''
+        letters = matches[-1].strip().upper()
+        return ''.join(sorted(set(letters)))
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState

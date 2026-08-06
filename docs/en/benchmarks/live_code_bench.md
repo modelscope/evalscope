@@ -23,6 +23,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
+- Prompts follow the official LiveCodeBench runner: a generic "expert Python programmer" system message plus the `### Question` / `### Format` user message
 - **Security Warning**: By default, code is executed in the local environment. We recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Use `start_date` and `end_date` parameters to filter problems by date
 - Default timeout is 6 seconds per test case
@@ -76,6 +77,11 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
 *Note: Some content was truncated for display.*
 
 ## Prompt Template
+
+**System Prompt:**
+```text
+You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program.
+```
 
 **Prompt Template:**
 ```text
