@@ -85,6 +85,14 @@ class BenchmarkMeta:
     aggregation: str = 'mean'
     """ Aggregation function for the metrics. Default is 'mean'. Can be 'mean', 'pass@<k>' or a custom function name."""
 
+    primary_metric: Optional[str] = None
+    """Raw ``metric_list`` name that is this benchmark's primary metric.
+
+    Optional for single-metric benchmarks (the only metric is implicitly primary); required for
+    multi-metric ones, so the report UI never has to guess which metric carries the conclusion.
+    Every other non-diagnostic metric of the benchmark is resolved as ``auxiliary``.
+    """
+
     shuffle: bool = False
     """Whether to shuffle the dataset before evaluation."""
 
@@ -126,6 +134,50 @@ class BenchmarkMeta:
         """Validate fields after initialization."""
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
+        self._validate_primary_metric()
+
+    def _metric_names(self) -> List[str]:
+        """Return the distinct raw metric names declared in ``metric_list``.
+
+        Mirrors how ``match_score()`` reads ``metric_list``: a plain string is the metric name,
+        a dict maps a single metric name to its options.
+
+        Returns:
+            Distinct raw metric names, in declaration order.
+        """
+        names: List[str] = []
+        for entry in self.metric_list or ():
+            if isinstance(entry, str):
+                name = entry
+            elif isinstance(entry, dict) and entry:
+                name = next(iter(entry))
+            else:
+                name = None
+            if name and name not in names:
+                names.append(name)
+        return names
+
+    def _validate_primary_metric(self) -> None:
+        """Reject a ``primary_metric`` that is not one of the declared metrics.
+
+        Only the two own fields ``metric_list`` and ``primary_metric`` are read: no
+        ``task_config`` access and no dataset resolution, so instantiating an adapter without a
+        task config (as the docs pipeline does) stays unaffected.
+
+        Raises:
+            ValueError: If ``primary_metric`` is not part of ``metric_list``.
+        """
+        # TODO(task 5.4): also require primary_metric when metric_list declares 2+ metrics,
+        # once every multi-metric benchmark declares one (enabling it earlier breaks their import).
+        if self.primary_metric is None:
+            return
+
+        names = self._metric_names()
+        if self.primary_metric not in names:
+            raise ValueError(
+                f"benchmark '{self.name}': primary_metric='{self.primary_metric}' is not in "
+                f'metric_list {names}'
+            )
 
     def _is_spec_entry(self, entry: Any) -> bool:
         """Return True if entry is a spec dict (new structured form)."""
