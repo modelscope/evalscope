@@ -11,6 +11,10 @@ _BBOX_KEYWORDS = ('bbox', 'box', 'rect', 'rectangle')
 # Many VLMs answer "normalized" coordinates scaled to a 0-1000 grid instead of [0, 1].
 _THOUSANDTHS_SCALE = 1000.0
 
+# The prompt asks for the final answer after an ``Answer:`` marker, so the point can be
+# located exactly instead of being guessed from the surrounding reasoning.
+_ANSWER_MARKER_RE = re.compile(r'(?:final\s+)?answer\s*[:：]', re.IGNORECASE)
+
 AUTO = 'auto'
 NORMALIZED = 'normalized'
 THOUSANDTHS = 'thousandths'
@@ -33,18 +37,54 @@ def _bbox_center(bbox: Sequence[float]) -> Tuple[float, float]:
 
 
 def parse_point(prediction: str) -> Optional[Tuple[float, float]]:
-    """Parse a single click point from a model response.
+    """Parse the predicted click point from a model response.
 
-    Accepted formats, in priority order: ``<bbox>...</bbox>`` tags (reduced to their
-    center), ``[x, y]`` / ``(x, y)`` points, ``x=.., y=..`` pairs, and finally bare
-    numbers (four of them are treated as a box when box keywords are present).
+    The prompt requires the final answer on its own last line after an ``Answer:`` marker,
+    so only that line is parsed first.  Restricting the scan to the answer line pins the
+    point exactly, so neither preceding reasoning (worked-out pixel arithmetic) nor
+    trailing prose (coordinate-system remarks such as "from (0, 0) to (1, 1)") can be
+    mistaken for the answer.
 
-    Every pattern matches on its *last* occurrence: models frequently restate the prompt
-    (which itself mentions the ``[0, 1]`` range) or reason step by step before answering,
-    so the final answer is the trailing match rather than the leading one.
+    Models that ignore the requested format fall back to scanning the whole response.
 
     Args:
         prediction (str): Raw or filtered model output.
+
+    Returns:
+        Optional[Tuple[float, float]]: The parsed point, or None if nothing matched.
+    """
+    marker_end = None
+    for match in _ANSWER_MARKER_RE.finditer(prediction):
+        marker_end = match.end()
+
+    if marker_end is not None:
+        # Skip blank lines so that both 'Answer: [x, y]' and 'Answer:\n[x, y]' work,
+        # then keep only the answer line itself.
+        answer_line = prediction[marker_end:].lstrip().split('\n', 1)[0]
+        point = _parse_point_from_text(answer_line, allow_loose_formats=True)
+        if point is not None:
+            return point
+
+    # Without the marker, only unambiguous point notation is trusted.  Loose scans read
+    # layout prose as an answer: 'x=175 to x=935, y=85' describes window bounds and 'the
+    # 5th or 6th icon from the left' is an ordinal, yet both yield a confident-looking
+    # click point from a truncated reasoning trace.
+    return _parse_point_from_text(prediction, allow_loose_formats=False)
+
+
+def _parse_point_from_text(prediction: str, allow_loose_formats: bool) -> Optional[Tuple[float, float]]:
+    """Parse a click point from an arbitrary text span.
+
+    Always accepted, since both unambiguously denote a point: ``<bbox>...</bbox>`` tags
+    (reduced to their center) and ``[x, y]`` / ``(x, y)`` pairs.  Accepted only when
+    ``allow_loose_formats`` is set: ``x=.., y=..`` pairs and bare numbers.  Each pattern
+    matches on its *last* occurrence, which is where the answer sits when a model reasons
+    before answering.
+
+    Args:
+        prediction (str): Text span to scan.
+        allow_loose_formats (bool): Accept formats that are only unambiguous in an
+            answer-shaped span.  Never enable this for a whole free-form response.
 
     Returns:
         Optional[Tuple[float, float]]: The parsed point, or None if nothing matched.
@@ -58,6 +98,9 @@ def parse_point(prediction: str) -> Optional[Tuple[float, float]]:
     points = re.findall(rf'[\[\(]\s*({_NUM_TOKEN})\s*(?:,|\s)\s*({_NUM_TOKEN})\s*[\]\)]', prediction)
     if points:
         return _token_to_float(points[-1][0]), _token_to_float(points[-1][1])
+
+    if not allow_loose_formats:
+        return None
 
     xy_pairs = re.findall(
         rf'[\'"]?x[\'"]?\s*[:=]\s*({_NUM_TOKEN})[^\d\-]*?[\'"]?y[\'"]?\s*[:=]\s*({_NUM_TOKEN})',

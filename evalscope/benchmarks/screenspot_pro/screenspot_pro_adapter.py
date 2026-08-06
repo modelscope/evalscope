@@ -24,7 +24,7 @@ UI element on the screen, which stresses fine-grained localization on large, den
 
 - **Task Type**: GUI grounding (single click-point prediction)
 - **Input**: A full-resolution desktop screenshot + an English instruction describing the target UI element
-- **Output**: One click point `[x, y]` in normalized coordinates within [0, 1]
+- **Output**: One click point `[x, y]` normalized to the range 0 to 1, given after an `Answer:` marker
 - **Domain**: Professional desktop applications across CAD, Creative, Dev, Office, OS and Scientific software
 
 ## Key Features
@@ -39,7 +39,8 @@ UI element on the screen, which stresses fine-grained localization on large, den
 
 - Primary metric: **acc** — a prediction is correct when the predicted point falls inside the ground-truth bounding box
 - Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`
-- Predictions are parsed from `[x, y]` points, `x=.., y=..` pairs or bounding boxes (reduced to their center), always taking the *last* match so that restated prompts and step-by-step reasoning do not shadow the final answer
+- Predictions are read from the answer line that the prompt requires (`Answer: [x, y]`), so reasoning traces cannot be mistaken for the answer. Replies ignoring the format fall back to scanning for unambiguous point notation only (`[x, y]` pairs or `<bbox>` tags); loose notation such as `x=.., y=..` and bare numbers is accepted only on the answer line, because in free prose it harvests layout bounds and ordinals instead of a click point
+- A reply truncated before its answer line yields no prediction and scores 0 rather than a coordinate invented from its reasoning, so allow enough `max_tokens` for the model to finish answering
 - Ground truth is normalized to [0, 1], and predictions are mapped into the same space according to `coordinate_space`. With the default `auto`, values in [0, 1] are taken as normalized, values up to 1000 as the thousandths grid many VLMs emit, and larger values as pixels of the image the model received. Pin `coordinate_space` explicitly when a model's convention is known, since the 1–1000 range is inherently ambiguous
 - The dataset ships a single `train` split, which is used as the evaluation split
 - Images are large; `max_image_bytes` in `dataset_args` can cap the request size, and pixel-space predictions are normalized with the size of the image actually sent
@@ -47,9 +48,11 @@ UI element on the screen, which stresses fine-grained localization on large, den
 """
 
 PROMPT_TEMPLATE = (
-    'Identify the UI element for the instruction and output exactly one click point as [x, y] '
-    'in normalized coordinates within [0, 1]. Do not output a bounding box.\n'
-    'Instruction: {instruction}'
+    'Identify the UI element for the instruction and give a single click point. '
+    'Coordinates must be normalized to the range 0 to 1 relative to the image size. '
+    'Do not output a bounding box.\n'
+    'Instruction: {instruction}\n'
+    'End your reply with the final answer on its own last line, formatted exactly as: Answer: [x, y]'
 )
 
 
