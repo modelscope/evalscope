@@ -10,6 +10,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from .utils import build_judge_prompt, parse_judge_verdict
 
 logger = get_logger()
 
@@ -161,14 +162,12 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
         task_state: TaskState,
     ) -> Score:
         """Score a prediction with the official PerceptionBench teacher-grading judge."""
-        from .utils import build_judge_prompt, parse_judge_verdict
-
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
 
-        if not (original_prediction or '').strip():
+        if not original_prediction.strip():
             # Mirrors the official evaluator: unanswered items score 0 without a judge call.
             score.value = {'acc': 0.0}
             score.explanation = 'failed to obtain answer'
