@@ -1,0 +1,148 @@
+# flake8: noqa: E501
+"""Utilities for the PerceptionBench judge protocol.
+
+Ports the official grading prompt and verdict parsing from
+https://github.com/MoonshotAI/PerceptionBench (``eval/judge_prompt.txt`` and ``eval/eval.py``).
+"""
+import re
+from typing import Tuple
+
+JUDGE_TEMPLATE = """Please act as a professional teacher and grade the student's answer. Below are the question, the student's answer, and the reference answer. Based on the question and the reference answer, analyze the student's answer and judge whether it correctly answers the question. I will provide several examples to help you understand how to judge.
+
+========== [Output Format] ==========
+Return your judgment in the following format. The first field [reason] gives the reason for your judgment; the second field [judge] gives your verdict as a single boolean, i.e., True or False. Make sure your output ends with True or False.
+[reason]
+<a brief justification of no more than 100 tokens>
+[judge]
+False
+
+========== [Notice] ==========
+0. You only need to compare the consistency between the reference answer and the student's answer, focusing especially on the content after summarizing phrases such as "Final answer:". The reference answer is absolutely correct; judge solely by whether the student's final result matches it, even if the solution process is correct.
+1. If the question contains multiple sub-questions, output the student's answer, the reference answer, and the consistency for each sub-question in [reason]; judge correct only when all sub-questions are consistent.
+2. For multiple-answer questions, the student's answer must contain all correct answers without any extra ones. Pay special attention when the reference answer contains "or": decide whether all answers must be given based on the specific question.
+3. If you believe the student's answer equals the reference answer after simplification, you must provide the complete simplification process in [reason] until the two are equal; otherwise it cannot be judged correct. You may not vaguely claim that "they can be made equal".
+4. For numerical answers, integers or values with at most 4 significant figures must match exactly; values with more than 4 significant figures must match within 4 significant figures. In [reason], convert both to standard scientific notation, first compare the order of magnitude, then compare the first 4 significant figures. If the units differ, convert to a common unit first.
+5. For English writing questions, if the student does not answer in English, judge it incorrect.
+6. For physics, chemistry, and biology questions, if the reference answer contains a technical term, the student's answer must contain that exact term; synonyms are not accepted.
+7. When the question asks to explain a term, redundant explanation is not penalized, but missing key points must be judged incorrect.
+8. For multiple-choice questions, judge incorrect whenever the student's selected option differs from the reference answer, regardless of the content.
+
+========== [Examples] ==========
+========== [Example 1.1] ==========
+Question: omitted    Student answer: 34    Reference answer: (1) 12; (2) 34
+[reason] The student answer 34 only addresses the second sub-question and leaves the first unanswered.
+[judge] False
+
+========== [Example 1.2] ==========
+Question: omitted    Student answer: 13; 34    Reference answer: (1) 12; (2) 34
+[reason] Sub-question 1: student 13 vs. reference 12, inconsistent. Sub-question 2: student 34 vs. reference 34, consistent. Overall, incorrect.
+[judge] False
+
+========== [Example 2.1] ==========
+Question: omitted    Student answer: A    Reference answer: ABC
+[reason] The student answer A is incomplete; the correct answer is ABC.
+[judge] False
+
+========== [Example 2.2] ==========
+Question: omitted    Student answer: ABC    Reference answer: AC
+[reason] The student answer ABC includes an extra B; the correct answer is AC.
+[judge] False
+
+========== [Example 3.1] ==========
+Question: omitted    Student answer: y''(0) = 13e^2 - e    Reference answer: y''(0) = 12e^2 - 1
+[reason] The student answer differs in form from the reference and cannot be made equal through simplification.
+[judge] False
+
+========== [Example 3.2] ==========
+Question: omitted    Student answer: y''(0) = 12e^2 - e    Reference answer: y''(0) = (12e - 1)e
+[reason] 12e^2 - e = (12e - 1)e, which is equivalent to the reference answer.
+[judge] True
+
+========== [Example 4.1] ==========
+Question: omitted    Student answer: 349    Reference answer: 342
+[reason] Integer answers must match exactly; 349 differs from 342.
+[judge] False
+
+========== [Example 4.2] ==========
+Question: omitted    Student answer: 0.325    Reference answer: 0.618
+[reason] In scientific notation, 0.325 = 3.250e-1 and 0.618 = 6.180e-1; the exponents match but the first significant figure differs.
+[judge] False
+
+========== [Example 4.3] ==========
+Question: omitted    Student answer: 48.67    Reference answer: 48.675
+[reason] 48.67 = 4.867e1 and 48.675 = 4.868e1 (to 4 significant figures); the exponents match but the 4th significant figure differs.
+[judge] False
+
+========== [Example 4.4] ==========
+Question: omitted    Student answer: 4.85e4    Reference answer: 485
+[reason] 4.85e4 vs. 485 = 4.85e2; the two differ in order of magnitude.
+[judge] False
+
+========== [Example 8.1] ==========
+Question: A. 11  B. 22  C. 33  D. 44    Reference answer: A. 11    Student answer: C. 11
+[reason] The student option C differs from the reference option A.
+[judge] False
+
+========== [Example 8.2] ==========
+Question: A. 11  B. 22  C. 33  D. 44    Reference answer: B    Student answer: C
+[reason] The student option C differs from the reference option B.
+[judge] False
+
+========== [Notice] ==========
+0. You only need to compare the consistency between the reference answer and the student's answer, focusing especially on the content after summarizing phrases such as "Final answer:". The reference answer is absolutely correct; judge solely by whether the student's final result matches it, even if the solution process is correct.
+1. If the question contains multiple sub-questions, output the student's answer, the reference answer, and the consistency for each sub-question in [reason]; judge correct only when all sub-questions are consistent.
+2. For multiple-answer questions, the student's answer must contain all correct answers without any extra ones. Pay special attention when the reference answer contains "or": decide whether all answers must be given based on the specific question.
+3. If you believe the student's answer equals the reference answer after simplification, you must provide the complete simplification process in [reason] until the two are equal; otherwise it cannot be judged correct. You may not vaguely claim that "they can be made equal".
+4. For numerical answers, integers or values with at most 4 significant figures must match exactly; values with more than 4 significant figures must match within 4 significant figures. In [reason], convert both to standard scientific notation, first compare the order of magnitude, then compare the first 4 significant figures. If the units differ, convert to a common unit first.
+5. For English writing questions, if the student does not answer in English, judge it incorrect.
+6. For physics, chemistry, and biology questions, if the reference answer contains a technical term, the student's answer must contain that exact term; synonyms are not accepted.
+7. When the question asks to explain a term, redundant explanation is not penalized, but missing key points must be judged incorrect.
+8. For multiple-choice questions, judge incorrect whenever the student's selected option differs from the reference answer, regardless of the content.
+
+Now you may begin grading.
+========== [Question] ==========
+{problem}
+========== [Student Answer] ==========
+{assistant_answer}
+========== [Reference Answer] ==========
+{reference_answer}
+========== [Your Judgment] ==========
+"""
+
+
+def normalize_escape(text: str) -> str:
+    """Normalize backslash escapes before feeding text to the judge.
+
+    Mirrors ``normalize_escape`` in the official evaluator: collapses repeated
+    backslashes and turns literal ``\\n`` sequences into real newlines so that
+    LaTeX-flavored answers are rendered consistently.
+    """
+    whitelist = ' 0123456789-'
+    text = re.sub(rf'\\+[{whitelist}]', r'\\\\' + ' ', text)
+    text = re.sub(rf'\\+(?![{whitelist}])', r'\\', text)
+    return re.sub(r'\\+n', '\n', text)
+
+
+def build_judge_prompt(question: str, prediction: str, reference: str) -> str:
+    """Build the official teacher-grading prompt for a single sample."""
+    prompt = JUDGE_TEMPLATE.replace('{problem}', normalize_escape(question).strip())
+    prompt = prompt.replace('{reference_answer}', normalize_escape(reference).strip())
+    return prompt.replace('{assistant_answer}', normalize_escape(prediction).strip())
+
+
+def parse_judge_verdict(judge_response: str) -> Tuple[float, str]:
+    """Parse the judge response into a strict 0/1 score plus its justification.
+
+    The judge is required to emit both a ``[reason]`` and a ``[judge]`` section;
+    responses missing either section are counted as incorrect, as in the
+    official evaluator.
+
+    Returns:
+        Tuple[float, str]: The 0/1 score and the (truncated) reason.
+    """
+    response = str(judge_response).strip()
+    if '[reason]' not in response or '[judge]' not in response:
+        return 0.0, 'No [reason] or [judge] in output'
+    reason = response.split('[judge]')[0].split('[reason]')[-1].strip()
+    verdict = response.split('[judge]')[-1].strip()
+    return (1.0 if 'true' in verdict.lower() else 0.0), reason[:200]
