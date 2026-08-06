@@ -104,6 +104,13 @@ class ScreenSpotProAdapter(VisionLanguageAdapter):
             logger.warning(f'Record {record.get("id")} has no usable image; skipping.')
             return None
 
+        # ``group`` drives the subset assignment; a missing one would fall back to
+        # ``default`` and be silently dropped since it is not in ``subset_list``.
+        group = record.get('group')
+        if not group:
+            logger.warning(f'Record {record.get("id")} has no group; skipping.')
+            return None
+
         width, height = record['img_size']
         bbox_norm = normalize_bbox(record['bbox'], width, height)
 
@@ -113,14 +120,18 @@ class ScreenSpotProAdapter(VisionLanguageAdapter):
             ContentText(text=PROMPT_TEMPLATE.format(instruction=record.get('instruction', ''))),
         ]
 
+        # ``sent_size`` only differs from the recorded screenshot size when
+        # ``max_image_bytes`` actually downscaled the image; otherwise avoid decoding
+        # every (large) screenshot with PIL during dataset load.
+        sent_size = list(base64_image_size(image_b64)) if self._max_image_bytes is not None else [width, height]
+
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=str([round(coord, 4) for coord in bbox_norm]),
-            subset_key=record.get('group', ''),
+            subset_key=group,
             metadata={
                 'id': record.get('id', ''),
-                # Size of the image actually sent, which max_image_bytes may have shrunk
-                'sent_size': list(base64_image_size(image_b64)),
+                'sent_size': sent_size,
                 'bbox_norm': bbox_norm,
                 'ui_type': record.get('ui_type', ''),
                 'application': record.get('application', ''),
