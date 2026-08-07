@@ -55,6 +55,10 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'error_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_number_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_unit_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    # Accuracy over one kind of UI target, reported alongside the overall accuracy
+    # (screenspot_pro).
+    'mean_text_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_icon_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_Center_ACC': MetricEntry(baseline='quality.accuracy.ratio'),
     # Grounding accuracy at a fixed IoU threshold (refcoco).
     'mean_ACC@0.1': MetricEntry(baseline='quality.accuracy.ratio'),

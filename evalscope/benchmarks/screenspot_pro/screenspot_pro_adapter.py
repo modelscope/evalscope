@@ -65,6 +65,7 @@ PROMPT_TEMPLATE = (
         paper_url='https://arxiv.org/abs/2504.07981',
         subset_list=['CAD', 'Creative', 'Dev', 'OS', 'Office', 'Scientific'],
         metric_list=['acc', 'text_acc', 'icon_acc'],
+        primary_metric='acc',
         eval_split='train',
     )
 )

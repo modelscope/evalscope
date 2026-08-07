@@ -13,6 +13,7 @@
       "text_acc",
       "icon_acc"
     ],
+    "primary_metric": "acc",
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -337,6 +338,6 @@
     "content_hash": "afdcd08055a173e386e8da390ac47309",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T17:42:19.797394",
+  "updated_at": "2026-08-07T14:36:11.564704",
   "translation_updated_at": "2026-08-06T17:42:26"
 }
