@@ -37,7 +37,10 @@ const IDS = {
   maxTokens: 'eval-maxTokens',
   topK: 'eval-topK',
   datasetArgs: 'eval-datasetArgs',
-  sandboxPool: "eval-sandboxPool",
+  sandboxEngine: 'eval-sandboxEngine',
+  sandboxUrl: 'eval-sandboxUrl',
+  sandboxImage: 'eval-sandboxImage',
+  sandboxPool: 'eval-sandboxPool',
   sandboxEnable: 'eval-sandboxEnable',
 } as const
 
@@ -211,20 +214,20 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
       if (err) newErrors[check.id] = err.messageKey
     }
     if (sandboxEnabled && sandboxPoolSize.trim() !== '') {
-        const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
-        if (err) {
-            newErrors[IDS.sandboxPool] = err.messageKey
-        }
+      const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
+      if (err) {
+        newErrors[IDS.sandboxPool] = err.messageKey
+      }
     }
 
     // Dataset_Args JSON validation without mutating the raw input.
     let parsedDatasetArgs: Record<string, unknown> | undefined
     if (datasetArgs.trim()) {
       const result = validateDatasetArgs(datasetArgs)
-      if (result.ok) {
-          parsedDatasetArgs = result.value
+      if (!result.ok) {
+        newErrors[IDS.datasetArgs] = result.messageKey
       } else {
-          newErrors[IDS.datasetArgs] = (result as { messageKey: string }).messageKey
+        parsedDatasetArgs = result.value
       }
     }
 
@@ -438,7 +441,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                         type="checkbox"
                         checked={sandboxEnabled}
                         onChange={(e) => setSandboxEnabled(e.target.checked)}
-                        className="size-5 accent-[var(--accent)] cursor-pointer"
+                        className="size-11 accent-[var(--accent)] cursor-pointer"
                     />
                 )}
             </Field>
@@ -447,10 +450,9 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
                 <>
                     {/* Engine */}
                     <Field
-                        id="sandbox_engine"
+                        id={IDS.sandboxEngine}
                         name="sandbox_engine"
                         labelKey="eval.sandboxEngine"
-
                     >
                         {(aria) => (
                             <select
@@ -467,7 +469,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
 
                     {/* Manager URL */}
                     <Field
-                        id="sandbox_url"
+                        id={IDS.sandboxUrl}
                         name="sandbox_url"
                         labelKey="eval.sandboxUrl"
                     >
@@ -483,7 +485,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
 
                     {/* Docker Image */}
                     <Field
-                        id="sandbox_image"
+                        id={IDS.sandboxImage}
                         name="sandbox_image"
                         labelKey="eval.sandboxImage"
                     >
@@ -499,7 +501,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
 
                     {/* Pool Size */}
                     <Field
-                        id="sandbox_pool"
+                        id={IDS.sandboxPool}
                         name="sandbox_pool"
                         labelKey="eval.sandboxPool"
                         error={errMsg(IDS.sandboxPool)}

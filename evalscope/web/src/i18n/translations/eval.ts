@@ -52,8 +52,8 @@ export const zh: Dict = {
   apiKey: '模型API Key',
   sandbox: 'Sandbox',
   sandboxEnable: '启用 Sandbox',
-  sandboxEngine: '引擎 Engine',
-  sandboxUrl: '管理器 URL | Manager URL',
-  sandboxImage: 'Docker 镜像 | Docker Image',
-  sandboxPool: '池规模 | Pool Size',
+  sandboxEngine: '引擎',
+  sandboxUrl: '管理器 URL',
+  sandboxImage: 'Docker 镜像',
+  sandboxPool: '池大小',
 }
