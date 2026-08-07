@@ -938,6 +938,34 @@ class TestNativeBenchmark(TestBenchmark):
             'perspective_gap_prompt_writing', limit=5, model='qwen-plus', generation_config=generation_config
         )
 
+    def test_plawbench_mock(self):
+        """Test PLawBench with a mock model and a mock judge."""
+        self._run_dataset_test(
+            'plawbench',
+            limit=2,
+            use_mock=True,
+            judge_model_args={
+                'model_id': 'mock-judge',
+                'eval_type': EvalType.MOCK_LLM
+            },
+        )
+
+    def test_plawbench(self):
+        """Test PLawBench rubric-based legal practice benchmark with real API."""
+        judge_model_args = {
+            'model_id': 'qwen3-max',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {
+                'temperature': 0.0,
+                'max_tokens': 8192,
+                'extra_body': {
+                    'enable_thinking': False
+                }
+            }
+        }
+        self._run_dataset_test('plawbench', limit=2, judge_model_args=judge_model_args)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

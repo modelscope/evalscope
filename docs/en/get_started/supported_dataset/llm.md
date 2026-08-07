@@ -103,6 +103,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `perspective_gap_prompt_writing` | [PerspectiveGap Prompt Writing](../../benchmarks/perspective_gap_prompt_writing.md) | `Agent`, `InstructionFollowing` |
 | `perspective_gap_role_assignment` | [PerspectiveGap Role Assignment](../../benchmarks/perspective_gap_role_assignment.md) | `Agent`, `InstructionFollowing` |
 | `piqa` | [PIQA](../../benchmarks/piqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
+| `plawbench` | [PLawBench](../../benchmarks/plawbench.md) | `Chinese`, `Knowledge`, `QA`, `Reasoning` |
 | `poly_math` | [PolyMath](../../benchmarks/poly_math.md) | `Math`, `MultiLingual`, `Reasoning` |
 | `process_bench` | [ProcessBench](../../benchmarks/process_bench.md) | `Math`, `Reasoning` |
 | `pubmedqa` | [PubMedQA](../../benchmarks/pubmedqa.md) | `Knowledge`, `Yes/No` |
@@ -231,6 +232,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/perspective_gap_prompt_writing.md
 ../../benchmarks/perspective_gap_role_assignment.md
 ../../benchmarks/piqa.md
+../../benchmarks/plawbench.md
 ../../benchmarks/poly_math.md
 ../../benchmarks/process_bench.md
 ../../benchmarks/pubmedqa.md
