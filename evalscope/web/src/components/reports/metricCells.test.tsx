@@ -10,7 +10,8 @@
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { DatasetLines, MetricLines, ScoreLines, uniformMetricLabel } from './metricCells'
+import { DatasetLines, MetricLines, ScoreLines } from './metricCells'
+import { uniformMetricLabel } from '@/domain/report/primaryMetrics'
 import type { PrimaryMetricRef } from '@/domain/report/primaryMetrics'
 import type { MetricSemantics } from '@/domain/metric'
 

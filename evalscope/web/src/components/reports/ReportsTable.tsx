@@ -1,10 +1,10 @@
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
-import { DatasetLines, MetricLines, ScoreLines, uniformMetricLabel } from '@/components/reports/metricCells'
+import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
 import { formatMetric } from '@/domain/metric'
-import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { primaryMetricsOf, uniformMetricLabel } from '@/domain/report/primaryMetrics'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {

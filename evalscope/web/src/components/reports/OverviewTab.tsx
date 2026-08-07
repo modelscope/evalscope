@@ -58,8 +58,11 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
     && primaries[0]?.semantics?.direction !== 'none'
 
   const tableData = useMemo(() => {
-    return reports.map((r, index) => {
-      const primary = primaries[index]
+    // `primaries` is recomputed here rather than closed over: it is a fresh array on every render, so
+    // listing it as a dependency would defeat the memo, and omitting it is what the exhaustive-deps
+    // rule warns about. Deriving it inside keeps `reports` the only real input.
+    return reports.map((r) => {
+      const primary = primaryMetricOf(r)
       return {
         Dataset: r.dataset_name,
         Score: primary?.score ?? null,
@@ -67,7 +70,6 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         Samples: primary?.num ?? 0,
       }
     })
-    // `primaries` is derived from `reports` in the same render, so the dependency is equivalent.
   }, [reports])
 
   const columns = [
