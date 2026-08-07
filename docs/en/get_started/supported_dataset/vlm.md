@@ -47,9 +47,11 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `omni_bench` | [OmniBench](../../benchmarks/omni_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `omni_doc_bench` | [OmniDocBench](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `omni_doc_bench_v1_6` | [OmniDocBench-v1.6](../../benchmarks/omni_doc_bench_v1_6.md) | `Knowledge`, `MultiModal`, `QA` |
+| `perception_bench` | [PerceptionBench](../../benchmarks/perception_bench.md) | `MultiModal`, `QA` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `screenspot_pro` | [ScreenSpot-Pro](../../benchmarks/screenspot_pro.md) | `Agent`, `Grounding`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
@@ -110,9 +112,11 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/omni_bench.md
 ../../benchmarks/omni_doc_bench.md
 ../../benchmarks/omni_doc_bench_v1_6.md
+../../benchmarks/perception_bench.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
 ../../benchmarks/science_qa.md
+../../benchmarks/screenspot_pro.md
 ../../benchmarks/seed_bench_2_plus.md
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/tir_bench.md
