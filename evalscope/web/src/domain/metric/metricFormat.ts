@@ -159,15 +159,47 @@ export function formatMetric(
  * Normalize a bounded quality metric into `[0, 1]` for colour scales and progress bars, so that
  * "fuller is better" always holds.
  *
+ * This is the *quality* of a value, so it drives colour, not length. A `lower_is_better` metric is
+ * inverted here, which is exactly why it must not size a bar -- see {@link getValuePosition}.
+ *
  * Returns `null` — meaning "do not render a scale" — for a diagnostic metric, a metric without a
- * `value_range`, or one with `direction === 'none'`. A `lower_is_better` metric is inverted, so a
- * low WER fills the bar just like a high accuracy does.
+ * `value_range`, or one with `direction === 'none'`.
  *
  * @param value Raw metric value.
  * @param semantics Backend semantics of the metric.
  * @returns The ratio in `[0, 1]`, or `null` when a scale would be meaningless.
  */
 export function getBoundedQualityRatio(
+  value: number | null | undefined,
+  semantics: MetricSemantics | null | undefined,
+): number | null {
+  const position = getValuePosition(value, semantics)
+  if (position == null) {
+    return null
+  }
+  return semantics!.direction === 'lower_is_better' ? 1 - position : position
+}
+
+/**
+ * Where a value sits within its own range, as a ratio in `[0, 1]`.
+ *
+ * This is the magnitude of the value, never its quality: it is *not* inverted for a
+ * `lower_is_better` metric. Use it to size anything whose length stands for "how much" -- a bar, a
+ * track, a donut -- and use {@link getBoundedQualityRatio} for the colour that says "how good".
+ *
+ * Keeping the two apart matters. Sizing a bar by quality makes `WER 4.3%` draw a 95.7% full bar,
+ * which sits next to `F1 91.2%` looking almost identical while describing a completely different
+ * number. Sized by position instead, a low error rate is a short bar that is coloured green: the
+ * length reads as "little error" and the colour reads as "good".
+ *
+ * Returns `null` -- meaning "do not render a scale" -- for a diagnostic metric, a metric without a
+ * `value_range`, or one with `direction === 'none'`.
+ *
+ * @param value Raw metric value.
+ * @param semantics Backend semantics of the metric.
+ * @returns The ratio in `[0, 1]`, or `null` when no scale applies.
+ */
+export function getValuePosition(
   value: number | null | undefined,
   semantics: MetricSemantics | null | undefined,
 ): number | null {
@@ -183,8 +215,7 @@ export function getBoundedQualityRatio(
   }
 
   const normalized = ((value as number) - range.min) / (range.max - range.min)
-  const clamped = Math.min(1, Math.max(0, normalized))
-  return semantics.direction === 'lower_is_better' ? 1 - clamped : clamped
+  return Math.min(1, Math.max(0, normalized))
 }
 
 /** Outcome of comparing two values of the same metric. */

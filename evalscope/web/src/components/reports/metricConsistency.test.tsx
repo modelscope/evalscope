@@ -76,7 +76,7 @@ function cardScoreText(report: ReportSummary): string {
       <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />
     </LocaleProvider>,
   )
-  const badge = container.querySelector('span.font-mono.font-semibold')
+  const badge = container.querySelector('.font-mono.font-semibold')
   expect(badge).not.toBeNull()
   return badge!.textContent ?? ''
 }
@@ -95,7 +95,7 @@ function tableScoreText(report: ReportSummary): string {
       />
     </LocaleProvider>,
   )
-  const badge = container.querySelector('span.font-mono.font-semibold')
+  const badge = container.querySelector('.font-mono.font-semibold')
   expect(badge).not.toBeNull()
   return badge!.textContent ?? ''
 }

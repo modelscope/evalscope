@@ -14,4 +14,11 @@ export type {
 } from './MetricSemantics'
 
 export type { ComparisonVerdict, FormattedMetric } from './metricFormat'
-export { formatMetric, getBoundedQualityRatio, getComparisonVerdict, MISSING_PLACEHOLDER, roundHalfUp } from './metricFormat'
+export {
+  formatMetric,
+  getBoundedQualityRatio,
+  getComparisonVerdict,
+  getValuePosition,
+  MISSING_PLACEHOLDER,
+  roundHalfUp,
+} from './metricFormat'

@@ -130,13 +130,13 @@ export default function ReportFiltersBar({
   if (filters.scoreMin > 0)
     activeFilters.push({
       key: 'scoreMin',
-      label: `score≥${filters.scoreMin}`,
+      label: `${t('reports.filters.score')}≥${filters.scoreMin}`,
       onRemove: () => update({ scoreMin: 0 }),
     })
   if (filters.scoreMax < 1)
     activeFilters.push({
       key: 'scoreMax',
-      label: `score≤${filters.scoreMax}`,
+      label: `${t('reports.filters.score')}≤${filters.scoreMax}`,
       onRemove: () => update({ scoreMax: 1 }),
     })
 

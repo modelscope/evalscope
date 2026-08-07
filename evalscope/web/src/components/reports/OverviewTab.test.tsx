@@ -26,29 +26,42 @@ describe('OverviewTab dataset score view', () => {
   it('renders a single dataset in the score table without a duplicate visualization', () => {
     renderOverview(multi.slice(0, 1))
 
-    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
+    expect(screen.getAllByText('gsm8k').length).toBeGreaterThan(0)
     expect(screen.queryByText('Dataset Score Visualization')).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('keeps two datasets in one sortable table', () => {
+  it('keeps two datasets in one table, each with its own metric column', () => {
+    // The rows of this table are different datasets, so no bar is drawn: a bar length would imply
+    // a shared axis that an accuracy and a WER do not have. The metric moved to its own column.
     renderOverview(multi.slice(0, 2))
 
-    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'arc_challenge Score' })).toBeInTheDocument()
-    // The cell now carries the metric's display name and direction arrow next to the value.
-    expect(screen.getByText(/Score ↑\s*81\.5%/)).toBeInTheDocument()
+    expect(screen.getAllByText('gsm8k').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('arc_challenge').length).toBeGreaterThan(0)
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0)
+    expect(screen.getAllByText('81.5%').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/^Score ↑$/).length).toBeGreaterThan(0)
     expect(screen.queryByText(/8150/)).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('keeps unbounded metrics in their native unit without a percentage bar', () => {
+  it('keeps an unbounded metric in its native unit', () => {
     renderOverview([multi[2]])
 
     // An unbounded throughput keeps its native unit and is never rescaled to a percentage.
-    expect(screen.getAllByText(/Token Throughput ↑\s*512 tok\/s/)).not.toHaveLength(0)
+    expect(screen.getAllByText(/^Token Throughput ↑$/)).not.toHaveLength(0)
+    expect(screen.getAllByText('512 tok/s').length).toBeGreaterThan(0)
     expect(screen.queryByText(/51200/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('progressbar', { name: 'throughput_suite Score' })).not.toBeInTheDocument()
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0)
+  })
+
+  it('never states that metrics could not be merged', () => {
+    // Two benchmarks simply have two results; that is not a condition to warn about, and a note
+    // in place of the numbers hides what the run actually produced.
+    renderOverview(multi.slice(0, 2))
+
+    expect(screen.queryByText(/cannot be merged/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/primary metrics/i)).not.toBeInTheDocument()
   })
 
   it('offers radar only for three or more comparable bounded metrics', () => {

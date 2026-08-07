@@ -4,7 +4,7 @@ import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import { directionArrow } from '@/domain/report/primaryMetrics'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
@@ -92,9 +92,19 @@ export default function DetailsTab({
       key: 'Metric',
       label: t('reportDetail.metric'),
       sortable: true,
-      render: (row: Record<string, unknown>) => (
-        <span className="text-[var(--text-muted)] text-xs font-mono">{String(row.Metric ?? '')}</span>
-      ),
+      render: (row: Record<string, unknown>) => {
+        const metricName = String(row.Metric ?? '')
+        const rowSemantics = semanticsByMetric[metricName] ?? null
+        // The metric's display name and direction, the same label the header card and every other
+        // surface uses. The raw name stays reachable through the tooltip.
+        return (
+          <span className="text-xs text-[var(--text-muted)]" title={metricName}>
+            {rowSemantics
+              ? `${rowSemantics.metric_name} ${directionArrow(rowSemantics)}`.trimEnd()
+              : metricName}
+          </span>
+        )
+      },
     }] : []),
     {
       key: 'Score',
@@ -104,19 +114,25 @@ export default function DetailsTab({
         const score = Number(row.Score ?? 0)
         // Each row names its own metric, so a report mixing metrics formats each row correctly.
         const rowSemantics = semanticsByMetric[String(row.Metric ?? '')] ?? semantics
-        const ratio = getBoundedQualityRatio(score, rowSemantics)
-        // Inline score bar
+        // Subsets of one dataset share a metric, so a bar is comparable across these rows. Its
+        // length is the value's own position in its range and is never inverted; the colour is
+        // what says whether that value is good. A low error rate is therefore a short green bar.
+        const position = getValuePosition(score, rowSemantics)
+        const quality = getBoundedQualityRatio(score, rowSemantics)
         return (
           <div className="flex items-center gap-2">
-            {ratio != null && (
+            {position != null && (
               <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${ratio * 100}%`, background: scoreColor(ratio) }}
+                  style={{ width: `${position * 100}%`, background: scoreColor(quality ?? position) }}
                 />
               </div>
             )}
-            <span className="font-mono font-medium tabular-nums" style={{ color: ratio == null ? 'var(--text)' : scoreColor(ratio) }}>
+            <span
+              className="font-mono font-medium tabular-nums"
+              style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
+            >
               {formatMetric(score, rowSemantics).primary}
             </span>
           </div>
@@ -133,7 +149,10 @@ export default function DetailsTab({
     },
   ]
 
-  const normOverall = getBoundedQualityRatio(overallScore, semantics)
+  // The arc length is the value's own position in its range; the colour says how good it is. A
+  // 4.3% WER therefore draws a small green arc, rather than a near-full one.
+  const overallPosition = getValuePosition(overallScore, semantics)
+  const overallQuality = getBoundedQualityRatio(overallScore, semantics)
 
   return (
     <div className="flex flex-col gap-6">
@@ -146,20 +165,20 @@ export default function DetailsTab({
             </span>
             <span
               className="text-3xl font-bold font-mono tabular-nums"
-              style={{ color: normOverall == null ? 'var(--text)' : scoreColor(normOverall) }}
+              style={{ color: overallQuality == null ? 'var(--text)' : scoreColor(overallQuality) }}
             >
               {formatMetric(overallScore, semantics).primary}
             </span>
           </div>
-          {normOverall != null && (
+          {overallPosition != null && (
             <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
               <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border)" strokeWidth="6" />
               <circle
                 cx="24" cy="24" r="19" fill="none"
-                stroke={scoreColor(normOverall)}
+                stroke={scoreColor(overallQuality ?? overallPosition)}
                 strokeWidth="6"
                 strokeDasharray={`${2 * Math.PI * 19}`}
-                strokeDashoffset={`${2 * Math.PI * 19 * (1 - normOverall)}`}
+                strokeDashoffset={`${2 * Math.PI * 19 * (1 - overallPosition)}`}
                 strokeLinecap="round"
               />
             </svg>

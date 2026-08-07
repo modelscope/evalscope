@@ -1,6 +1,7 @@
 import type { Dict } from './types'
 
 export const en: Dict = {
+  bestRps: 'Best RPS',
   title: 'Performance Testing',
   config: 'Performance Config',
   apiType: 'API Type',
@@ -20,6 +21,7 @@ export const en: Dict = {
 }
 
 export const zh: Dict = {
+  bestRps: '最佳 RPS',
   title: '性能测试',
   config: '性能测试配置',
   apiType: 'API类型',

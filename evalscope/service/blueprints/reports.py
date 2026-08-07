@@ -17,6 +17,7 @@ from typing import List
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef, summarize_primary_metrics
 from evalscope.metrics.semantics.perf import resolve_perf_semantics
+from evalscope.metrics.semantics.ranking import bounded_quality_ratio, mean_quality_ratio
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -218,6 +219,12 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'num_samples': total_num,
         'timestamp': timestamp,
         'primary_metrics': [ref.model_dump(mode='json') for ref in summary.primary_metrics],
+        # Ranking and filtering key only, never rendered: a direction-aware 0-1 quality ratio, so
+        # a low WER ranks as well as a high accuracy and a 0-100 scale is not treated as 100x
+        # better than a ratio. `None` means the run's metrics admit no such scale.
+        'quality_ratio': mean_quality_ratio(
+            bounded_quality_ratio(metric.score, metric.semantics) for metric in primary_metrics if metric
+        ),
         'summary_status': summary.status.value,
         'summary_score': summary.summary_score,
         'summary_semantics': summary.summary_semantics.model_dump(mode='json') if summary.summary_semantics else None,
@@ -336,12 +343,16 @@ def list_reports():
             ds_set = {d.strip().lower() for d in datasets_filter.split(';') if d.strip()}
             items = [it for it in items if any(d.lower() in ds_set for d in it['_datasets'])]
 
+        # The range is expressed as a 0-1 quality ratio, not as a raw score. Filtering raw values
+        # against a fixed 0-1 window silently dropped every benchmark on an official 0-100 scale:
+        # arena_hard reporting 87.25 could never satisfy `score <= 1`. A run whose metrics are not
+        # rankable has no ratio and is never excluded, since the filter cannot judge it.
         score_min = request.args.get('score_min', type=float)
         score_max = request.args.get('score_max', type=float)
         if score_min is not None:
-            items = [it for it in items if it['score'] >= score_min]
+            items = [it for it in items if it['quality_ratio'] is None or it['quality_ratio'] >= score_min]
         if score_max is not None:
-            items = [it for it in items if it['score'] <= score_max]
+            items = [it for it in items if it['quality_ratio'] is None or it['quality_ratio'] <= score_max]
 
         # --- Sort ---
         sort_by = request.args.get('sort_by', 'time')
@@ -349,7 +360,9 @@ def list_reports():
         reverse = sort_order == 'desc'
 
         sort_key_map = {
-            'score': lambda x: x['score'],
+            # Rank by quality, so a lower-is-better metric is not sorted backwards and metrics on
+            # different scales are comparable. Unrankable runs sort last in either direction.
+            'score': lambda x: (x['quality_ratio'] is not None, x['quality_ratio'] or 0.0),
             'model': lambda x: x['model_name'].lower(),
             'dataset': lambda x: x['dataset_name'].lower(),
             'time': lambda x: x['timestamp'],

@@ -17,6 +17,8 @@ import Pagination from '@/components/ui/Pagination'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
 import { formatMetric } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import { directionArrow } from '@/domain/report/primaryMetrics'
 import { formatFull } from '@/utils/perf'
 import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
@@ -35,7 +37,7 @@ function formatShort(ts: string): string {
 // Unified recent-run item across eval + perf.
 type RunItem =
   | { kind: 'eval'; ts: string; report: ReportSummary }
-  | { kind: 'perf'; ts: string; run: PerfRunSummary }
+  | { kind: 'perf'; ts: string; run: PerfRunSummary; semantics?: MetricSemantics }
 
 // ------------------------------------------------------------------ //
 // Recent run row                                                      //
@@ -87,8 +89,15 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
           className="shrink-0"
         />
       ) : (
-        <span className="type-caption-mono text-[var(--text)] shrink-0">
-          {formatMetric(item.run.best_rps, undefined).primary}
+        // A perf run's headline is its best throughput. Labelled and given its unit by the same
+        // semantics contract as an eval metric, so `0.1225` reads as `Best RPS ↑ 0.1225 req/s`.
+        <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+          <span className="type-caption text-[var(--text-muted)]">
+            {item.semantics ? `${item.semantics.metric_name} ${directionArrow(item.semantics)}`.trimEnd() : t('perf.bestRps')}
+          </span>
+          <span className="type-caption-mono font-semibold text-[var(--text)]">
+            {formatMetric(item.run.best_rps, item.semantics).primary}
+          </span>
         </span>
       )}
       <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
@@ -108,6 +117,7 @@ export default function DashboardPage() {
   const [scanned, setScanned] = useState(false)
   const [reports, setReports] = useState<ReportSummary[]>([])
   const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
+  const [perfSemantics, setPerfSemantics] = useState<Record<string, MetricSemantics>>({})
   const [loadError, setLoadError] = useState('')
 
   // Recent-runs feed controls.
@@ -128,7 +138,10 @@ export default function DashboardPage() {
       ])
       if (controller.signal.aborted) return
       if (evalRes.status === 'fulfilled') setReports(evalRes.value.reports)
-      if (perfRes.status === 'fulfilled') setPerfRuns(perfRes.value.runs)
+      if (perfRes.status === 'fulfilled') {
+        setPerfRuns(perfRes.value.runs)
+        setPerfSemantics(perfRes.value.metric_semantics ?? {})
+      }
       if (evalRes.status === 'rejected' || perfRes.status === 'rejected') {
         const reason = evalRes.status === 'rejected' ? evalRes.reason : perfRes.status === 'rejected' ? perfRes.reason : null
         setLoadError(reason instanceof Error ? reason.message : t('common.loadError'))
@@ -146,10 +159,12 @@ export default function DashboardPage() {
   const allItems = useMemo<RunItem[]>(() => {
     const items: RunItem[] = [
       ...reports.map((r): RunItem => ({ kind: 'eval', ts: r.timestamp || '', report: r })),
-      ...perfRuns.map((r): RunItem => ({ kind: 'perf', ts: r.timestamp || '', run: r })),
+      ...perfRuns.map((r): RunItem => ({
+        kind: 'perf', ts: r.timestamp || '', run: r, semantics: perfSemantics.best_rps,
+      })),
     ]
     return items.sort((a, b) => b.ts.localeCompare(a.ts))
-  }, [reports, perfRuns])
+  }, [reports, perfRuns, perfSemantics])
 
   // Apply the type filter + keyword search.
   const filteredItems = useMemo<RunItem[]>(() => {

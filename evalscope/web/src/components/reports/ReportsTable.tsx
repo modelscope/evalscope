@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
-import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
+import { DatasetLines, MetricLines, ScoreLines, uniformMetricLabel } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
 import { formatMetric } from '@/domain/metric'
 import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
@@ -45,6 +45,11 @@ export default function ReportsTable({
   const { t } = useLocale()
   const selectedSet = new Set(selected)
 
+  // When every row measures the same metric the label belongs in the header, not repeated down
+  // each row, and the Metric column is dropped entirely.
+  const refsByReport = reports.map((report) => primaryMetricsOf(report))
+  const sharedMetric = uniformMetricLabel(refsByReport)
+
   return (
     <div className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
       <table className="w-full border-collapse text-sm">
@@ -60,14 +65,22 @@ export default function ReportsTable({
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.dataset')}
             </th>
+            {sharedMetric === null && (
+              <th scope="col" className="hidden px-4 py-3 text-xs font-semibold text-[var(--text-muted)] xl:table-cell">
+                {t('reportDetail.metric')}
+              </th>
+            )}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.time')}
             </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right">
               {t('reports.columns.samples')}
             </th>
-            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right">
+            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right whitespace-nowrap">
               {t('reports.columns.score')}
+              {sharedMetric !== null && (
+                <span className="ml-1.5 font-normal text-[var(--text-dim)]">({sharedMetric})</span>
+              )}
             </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.status')}
@@ -103,9 +116,14 @@ export default function ReportsTable({
                 <td className="px-4 py-3 font-semibold text-[var(--text)] break-words min-w-0">
                   {model}
                 </td>
-                <td className="px-4 py-3 text-[var(--text-muted)] break-words min-w-0">
-                  {dataset}
+                <td className="px-4 py-3 text-[var(--text-muted)] min-w-0">
+                  <DatasetLines refs={metricRefs} fallback={dataset} />
                 </td>
+                {sharedMetric === null && (
+                  <td className="hidden px-4 py-3 text-[var(--text-muted)] text-xs min-w-0 xl:table-cell">
+                    <MetricLines refs={metricRefs} inferredHint={t('metrics.inferredPrimary')} />
+                  </td>
+                )}
                 <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
                   {report.timestamp ? formatTimestamp(report.timestamp) : '—'}
                 </td>
@@ -114,10 +132,10 @@ export default function ReportsTable({
                 </td>
                 <td className="px-4 py-3 text-right">
                   {metricRefs.length > 0 ? (
-                    <PrimaryMetricResult
+                    <ScoreLines
                       refs={metricRefs}
                       emptyLabel={t('metrics.noPrimaryMetric')}
-                      inferredHint={t('metrics.inferredPrimary')}
+                      inlineMetricClass={sharedMetric === null ? 'xl:hidden' : undefined}
                     />
                   ) : (
                     // Response from a backend without semantics: show the raw legacy number

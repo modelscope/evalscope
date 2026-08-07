@@ -6,6 +6,7 @@ import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
 import { directionArrow } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
@@ -55,7 +56,6 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
     && sameSemantics
     && primaries[0]?.semantics?.value_range != null
     && primaries[0]?.semantics?.direction !== 'none'
-  const distinctSemantics = new Set(semanticIds.map((id, index) => id ?? `unresolved:${index}`)).size
 
   const tableData = useMemo(() => {
     return reports.map((r, index) => {
@@ -99,6 +99,23 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       },
     },
     {
+      key: 'Metric',
+      label: t('reportDetail.metric'),
+      sortable: true,
+      render: (row: Record<string, unknown>) => {
+        const metricName = String(row.Metric ?? '')
+        const semantics = primaries.find((primary) => primary?.name === metricName)?.semantics
+        return (
+          <span
+            className="truncate text-xs text-[var(--text-muted)] sm:text-sm"
+            title={metricName}
+          >
+            {semantics ? `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd() : metricName}
+          </span>
+        )
+      },
+    },
+    {
       key: 'Score',
       label: 'Score',
       sortable: true,
@@ -106,27 +123,18 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         const score = row.Score == null ? null : Number(row.Score)
         const metricName = String(row.Metric ?? '')
         const semantics = primaries.find((primary) => primary?.name === metricName)?.semantics
-        const ratio = getBoundedQualityRatio(score, semantics)
+        // No bar here on purpose: the rows of this table are different datasets measured by
+        // different metrics, so there is no shared axis for a bar length to mean anything. An
+        // F1 of 91.2% and a WER of 4.3% are simply not points on one scale. Colour still says
+        // how good the value is, and the arrow in the metric column says which way is better.
+        const quality = getBoundedQualityRatio(score, semantics)
         return (
-          <div className="flex min-w-[92px] items-center justify-end gap-1.5 sm:min-w-[240px] sm:gap-3">
-            {ratio != null && (
-              <div className="h-2 min-w-9 flex-1 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--bg-deep)] sm:h-2.5">
-                <div
-                  role="progressbar"
-                  aria-label={`${String(row.Dataset)} ${t('prediction.score')}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(ratio * 100)}
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${ratio * 100}%`, background: 'var(--accent)' }}
-                />
-              </div>
-            )}
-            <span className="min-w-12 text-right font-mono text-xs font-semibold tabular-nums text-[var(--text)] sm:text-sm">
-              {semantics ? `${semantics.metric_name} ${directionArrow(semantics)} `.trimEnd() : ''}
-              {formatMetric(score, semantics).primary}
-            </span>
-          </div>
+          <span
+            className="block text-right font-mono text-xs font-semibold tabular-nums sm:text-sm"
+            style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
+          >
+            {formatMetric(score, semantics).primary}
+          </span>
         )
       },
     },
@@ -148,13 +156,6 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       <ReportSummaryStats reports={reports} />
 
       <Card title={t('single.datasetScores')}>
-        {distinctSemantics > 1 && (
-          // Heterogeneous primary metrics: the table lists them per dataset and no total is shown,
-          // because averaging an accuracy with a WER or a judge score would be meaningless.
-          <div className="mb-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 text-xs text-[var(--text-muted)]">
-            {t('metrics.multiplePrimaryMetrics', { count: distinctSemantics })}
-          </div>
-        )}
         {canShowRadar && (
           <div className="mb-4 flex justify-end">
             <div className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] p-1">

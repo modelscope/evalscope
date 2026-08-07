@@ -36,12 +36,16 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('metric domain public surface', () => {
-  it('exports exactly the four primitives', () => {
+  it('exports exactly the expected primitives', () => {
+    // `getValuePosition` and `getBoundedQualityRatio` are deliberately separate: position sizes a
+    // bar (never inverted), quality colours it (inverted for lower-is-better). Collapsing them is
+    // what made a 4.3% WER draw a 95.7% full bar.
     expect(Object.keys(metricDomain).sort()).toEqual([
       'MISSING_PLACEHOLDER',
       'formatMetric',
       'getBoundedQualityRatio',
       'getComparisonVerdict',
+      'getValuePosition',
       'roundHalfUp',
     ])
   })
@@ -87,6 +91,22 @@ describe('Property 42: no metric name inference in the frontend', () => {
     for (const file of files) {
       const text = readFileSync(file, 'utf-8')
       if (/domain\/metric\/(registry|MetricDisplaySpec)/.test(text)) {
+        offenders.push(relative(SRC_ROOT, file))
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('i18n dictionaries are not mixed up', () => {
+  it('does not use the generated HTML report keys in the React app', () => {
+    // `col.*` and `card.*` belong to evalscope/report/template/js/i18n_eval.js, the dictionary of
+    // the standalone HTML report. Using one here renders the raw key on screen, which is silent:
+    // nothing throws, the header simply reads `col.metric`.
+    const offenders: string[] = []
+    for (const file of sourceFiles(SRC_ROOT)) {
+      const content = readFileSync(file, 'utf8')
+      if (/\bt\(\s*['"](col|card)\./.test(content)) {
         offenders.push(relative(SRC_ROOT, file))
       }
     }
