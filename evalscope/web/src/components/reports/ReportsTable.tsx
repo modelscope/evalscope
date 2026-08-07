@@ -58,7 +58,9 @@ export default function ReportsTable({
             <th scope="col" className="w-10 px-4 py-3">
               <SelectionCheckbox checked={allSelected} label={t('reports.selectAll')} onClick={onToggleSelectAll} />
             </th>
-            {/* Fixed, ordered columns: model, dataset, time, samples, score, status */}
+            {/* Fixed, ordered columns: model, dataset, metric, score, samples, status, time.
+                The result reads left to right as "what was measured, then how it did"; the
+                timestamp is bookkeeping and sits last. */}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.model')}
             </th>
@@ -70,20 +72,20 @@ export default function ReportsTable({
                 {t('reportDetail.metric')}
               </th>
             )}
-            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
-              {t('reports.columns.time')}
-            </th>
-            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right">
-              {t('reports.columns.samples')}
-            </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right whitespace-nowrap">
               {t('reports.columns.score')}
               {sharedMetric !== null && (
                 <span className="ml-1.5 font-normal text-[var(--text-dim)]">({sharedMetric})</span>
               )}
             </th>
+            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right">
+              {t('reports.columns.samples')}
+            </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.status')}
+            </th>
+            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
+              {t('reports.columns.time')}
             </th>
           </tr>
         </thead>
@@ -124,12 +126,6 @@ export default function ReportsTable({
                     <MetricLines refs={metricRefs} inferredHint={t('metrics.inferredPrimary')} />
                   </td>
                 )}
-                <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
-                  {report.timestamp ? formatTimestamp(report.timestamp) : '—'}
-                </td>
-                <td className="px-4 py-3 text-[var(--text-muted)] text-right tabular-nums">
-                  {report.num_samples}
-                </td>
                 <td className="px-4 py-3 text-right">
                   {metricRefs.length > 0 ? (
                     <ScoreLines
@@ -145,10 +141,16 @@ export default function ReportsTable({
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-[var(--text-muted)] text-right tabular-nums">
+                  {report.num_samples}
+                </td>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--success-bg)] text-[var(--success)]">
                     {t('reports.status.completed')}
                   </span>
+                </td>
+                <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
+                  {report.timestamp ? formatTimestamp(report.timestamp) : '—'}
                 </td>
               </tr>
             )

@@ -32,13 +32,13 @@ describe('OverviewTab dataset score view', () => {
   })
 
   it('keeps two datasets in one table, each with its own metric column', () => {
-    // The rows of this table are different datasets, so no bar is drawn: a bar length would imply
-    // a shared axis that an accuracy and a WER do not have. The metric moved to its own column.
+    // The metric has its own column now, and each row's bar is sized by that value's position in
+    // its own range rather than by quality, so two different metrics never draw the same length.
     renderOverview(multi.slice(0, 2))
 
     expect(screen.getAllByText('gsm8k').length).toBeGreaterThan(0)
     expect(screen.getAllByText('arc_challenge').length).toBeGreaterThan(0)
-    expect(screen.queryAllByRole('progressbar')).toHaveLength(0)
+    expect(screen.getAllByRole('progressbar')).toHaveLength(2)
     expect(screen.getAllByText('81.5%').length).toBeGreaterThan(0)
     expect(screen.getAllByText(/^Score ↑$/).length).toBeGreaterThan(0)
     expect(screen.queryByText(/8150/)).not.toBeInTheDocument()
@@ -52,6 +52,7 @@ describe('OverviewTab dataset score view', () => {
     expect(screen.getAllByText(/^Token Throughput ↑$/)).not.toHaveLength(0)
     expect(screen.getAllByText('512 tok/s').length).toBeGreaterThan(0)
     expect(screen.queryByText(/51200/)).not.toBeInTheDocument()
+    // An unbounded metric has no range to place the value in, so it gets no bar.
     expect(screen.queryAllByRole('progressbar')).toHaveLength(0)
   })
 

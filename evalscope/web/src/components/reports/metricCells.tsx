@@ -106,12 +106,15 @@ export function MetricLines({ refs, inferredHint, className }: LinesProps & { in
 /**
  * One value per line, right-aligned and coloured by its own metric's quality scale.
  *
- * `inlineMetricClass` renders the metric label next to each value. Pass the class that hides it at
- * the width where a separate Metric column is shown, so exactly one of the two is ever visible and
- * a narrow viewport does not need an extra column to explain its numbers.
+ * `inlineMetricClass` and `inlineDatasetClass` add the metric label and the dataset name to each
+ * line. Both default to off, because in a table those facts have their own columns and repeating
+ * them there is what made the cell collide with its neighbour. Pass a class to hide the inline
+ * copy at the width where the column exists, or an empty string to always show it -- which is what
+ * a layout with no such column, like the mobile card, needs in order to stay unambiguous.
  */
 export function ScoreLines(
-  { refs, emptyLabel, inlineMetricClass, className }: LinesProps & { emptyLabel: string; inlineMetricClass?: string },
+  { refs, emptyLabel, inlineMetricClass, inlineDatasetClass, className }:
+    LinesProps & { emptyLabel: string; inlineMetricClass?: string; inlineDatasetClass?: string },
 ) {
   if (refs.length === 0) {
     return <span className={`text-xs text-[var(--text-muted)] ${className ?? ''}`}>{emptyLabel}</span>
@@ -125,9 +128,15 @@ export function ScoreLines(
         const quality = getBoundedQualityRatio(ref.score, ref.semantics)
         return (
           <div key={keyOf(ref)} className={`${LINE} justify-end gap-1.5`}>
-            {inlineMetricClass && (
+            {inlineDatasetClass !== undefined && (
+              <span className={`text-[11px] text-[var(--text-dim)] ${inlineDatasetClass}`}>
+                {ref.dataset_name}
+              </span>
+            )}
+            {inlineMetricClass !== undefined && (
               <span className={`text-[11px] font-normal text-[var(--text-muted)] ${inlineMetricClass}`}>
                 {metricLabel(ref)}
+                {ref.inferred && <span className="ml-0.5 opacity-60">*</span>}
               </span>
             )}
             <span

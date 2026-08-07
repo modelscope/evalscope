@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
-import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
+import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { formatMetric } from '@/domain/metric'
@@ -86,11 +86,11 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
 
         {/* Every dataset's metric and score, so the card never hides the run's numbers. */}
         {metricRefs.length > 0 ? (
-          <PrimaryMetricResult
+          <ScoreLines
             refs={metricRefs}
-            variant="inline"
             emptyLabel={t('metrics.noPrimaryMetric')}
-            inferredHint={t('metrics.inferredPrimary')}
+            inlineMetricClass=""
+            inlineDatasetClass={metricRefs.length > 1 ? '' : undefined}
             className="shrink-0"
           />
         ) : (

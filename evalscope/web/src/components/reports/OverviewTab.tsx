@@ -5,7 +5,7 @@ import type { ReportData } from '@/api/types'
 import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
-import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
 import { directionArrow } from '@/domain/report/primaryMetrics'
@@ -123,18 +123,36 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         const score = row.Score == null ? null : Number(row.Score)
         const metricName = String(row.Metric ?? '')
         const semantics = primaries.find((primary) => primary?.name === metricName)?.semantics
-        // No bar here on purpose: the rows of this table are different datasets measured by
-        // different metrics, so there is no shared axis for a bar length to mean anything. An
-        // F1 of 91.2% and a WER of 4.3% are simply not points on one scale. Colour still says
-        // how good the value is, and the arrow in the metric column says which way is better.
+        // The bar length is the value's own position in its own range, so two different metrics
+        // never draw the same length: an F1 of 91.2% is long, a WER of 4.3% is short. The colour
+        // carries the quality, so that short WER bar is green. Sizing by quality instead is what
+        // used to make those two bars look identical.
+        const position = getValuePosition(score, semantics)
         const quality = getBoundedQualityRatio(score, semantics)
         return (
-          <span
-            className="block text-right font-mono text-xs font-semibold tabular-nums sm:text-sm"
-            style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
-          >
-            {formatMetric(score, semantics).primary}
-          </span>
+          <div className="flex items-center justify-end gap-3">
+            {position != null && (
+              // The track grows to fill the column instead of leaving a gap beside a fixed-width
+              // bar, which also makes the length difference between two rows easier to read.
+              <div className="hidden h-1.5 min-w-9 flex-1 overflow-hidden rounded-full bg-[var(--border)] sm:block">
+                <div
+                  role="progressbar"
+                  aria-label={`${String(row.Dataset)} ${metricName}`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(position * 100)}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${position * 100}%`, background: scoreColor(quality ?? position) }}
+                />
+              </div>
+            )}
+            <span
+              className="min-w-14 shrink-0 text-right font-mono text-xs font-semibold tabular-nums sm:text-sm"
+              style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
+            >
+              {formatMetric(score, semantics).primary}
+            </span>
+          </div>
         )
       },
     },

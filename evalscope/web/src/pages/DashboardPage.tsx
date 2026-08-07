@@ -9,16 +9,14 @@ import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
-import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
+import { DatasetLines, ScoreLines } from '@/components/reports/metricCells'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
 import Pagination from '@/components/ui/Pagination'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
-import { formatMetric } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { directionArrow } from '@/domain/report/primaryMetrics'
 import { formatFull } from '@/utils/perf'
 import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
@@ -54,7 +52,7 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="grid min-h-14 w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] md:gap-x-3"
+      className="grid min-h-14 w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[3rem_minmax(7rem,0.9fr)_minmax(9rem,1.1fr)_7rem_minmax(12rem,auto)_1rem] md:gap-x-3"
     >
       <span
         aria-label={t(`dashboard.filter_${item.kind}`)}
@@ -74,31 +72,44 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
         <span className="type-caption-mono mt-0.5 text-[var(--text-dim)] md:hidden">{formatShort(item.ts)}</span>
       </div>
       <div className="hidden min-w-0 flex-col md:flex">
-        <span className="type-body-sm break-words text-[var(--text)]">{dataset}</span>
+        {isEval ? (
+          <DatasetLines
+            refs={primaryMetricsOf(item.report)}
+            fallback={dataset}
+            className="type-body-sm text-[var(--text)]"
+          />
+        ) : (
+          <span className="type-body-sm break-words text-[var(--text)]">{dataset}</span>
+        )}
         <span className="type-caption-mono text-[var(--text-muted)]">{meta}</span>
       </div>
       <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] md:block">
         {formatShort(item.ts)}
       </span>
       {isEval ? (
-        <PrimaryMetricResult
+        // One line per dataset, aligned with the Dataset column above. The metric label rides
+        // with each value, since this compact widget has no room for a Metric column.
+        <ScoreLines
           refs={primaryMetricsOf(item.report)}
-          variant="inline"
           emptyLabel={t('metrics.noPrimaryMetric')}
-          inferredHint={t('metrics.inferredPrimary')}
-          className="shrink-0"
+          inlineMetricClass=""
+          className="min-w-0"
         />
       ) : (
-        // A perf run's headline is its best throughput. Labelled and given its unit by the same
-        // semantics contract as an eval metric, so `0.1225` reads as `Best RPS ↑ 0.1225 req/s`.
-        <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
-          <span className="type-caption text-[var(--text-muted)]">
-            {item.semantics ? `${item.semantics.metric_name} ${directionArrow(item.semantics)}`.trimEnd() : t('perf.bestRps')}
-          </span>
-          <span className="type-caption-mono font-semibold text-[var(--text)]">
-            {formatMetric(item.run.best_rps, item.semantics).primary}
-          </span>
-        </span>
+        // A perf run's headline is its best throughput, rendered through the same component as an
+        // eval metric so the two kinds of row are typographically identical: `0.1225` reads as
+        // `Best RPS ↑ 0.1225 req/s`, at the same size and weight as `Accuracy ↑ 60%`.
+        <ScoreLines
+          refs={[{
+            dataset_name: dataset,
+            metric_name: item.semantics?.metric_name ?? t('perf.bestRps'),
+            score: item.run.best_rps ?? null,
+            semantics: item.semantics ?? null,
+          }]}
+          emptyLabel={t('metrics.noPrimaryMetric')}
+          inlineMetricClass=""
+          className="min-w-0"
+        />
       )}
       <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
     </button>
@@ -307,7 +318,7 @@ export default function DashboardPage() {
 
           {visibleItems.length > 0 ? (
             <div className="divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-sm)]">
-              <div className="hidden grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
+              <div className="hidden grid-cols-[3rem_minmax(7rem,0.9fr)_minmax(9rem,1.1fr)_7rem_minmax(12rem,auto)_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
                 <span />
                 <span>{t('dashboard.model')}</span>
                 <span>{t('dashboard.dataset')}</span>
