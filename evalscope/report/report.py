@@ -188,22 +188,62 @@ class Report(BaseModel):
         if self.metrics:
             # Keep the historical number and shape of the deprecated `score` field.
             self.score = self.metrics[0].score
-        primary = self._find_primary_metric()
-        if primary is not None:
-            self.primary_metric_name = primary.name
-        elif any(metric.semantics is not None for metric in self.metrics):
-            # Semantics are resolved and none of them is primary: say so instead of keeping a
-            # stale name from an earlier pass.
-            self.primary_metric_name = None
+        declared = self._declared_primary_metric()
+        if declared is not None:
+            self.primary_metric_name = declared.name
         return self
 
-    def _find_primary_metric(self) -> Optional[Metric]:
-        """Return the metric whose resolved semantics carry ``role=primary``."""
+    def _declared_primary_metric(self) -> Optional[Metric]:
+        """Return the metric the benchmark *declared* as primary, if any.
+
+        Kept separate from :meth:`_find_primary_metric` because ``primary_metric_name`` is not a
+        display detail: ``hydrate_report_semantics`` reads it to decide which metric to promote to
+        ``role=primary``. Writing an inferred choice there would make the inference decide the
+        semantics, so only a declared metric is ever persisted under that name.
+        """
         if self.primary_metric_name:
             named = next((m for m in self.metrics if m.name == self.primary_metric_name), None)
             if named is not None and named.role is MetricRole.PRIMARY:
                 return named
         return next((m for m in self.metrics if m.role is MetricRole.PRIMARY), None)
+
+    def _find_primary_metric(self) -> Optional[Metric]:
+        """Return the metric that carries this report's conclusion.
+
+        Resolution order, most to least authoritative:
+
+        1. the metric declared primary, via :meth:`_declared_primary_metric`;
+        2. the metric named by ``primary_metric_name``, which the benchmark declared through
+           ``BenchmarkMeta.primary_metric`` and the report persisted, even if its resolved role
+           disagrees;
+        3. the first metric that is not a diagnostic;
+        4. the first metric.
+
+        Steps 3 and 4 are inferences, reported by :meth:`primary_metric_is_inferred`. They exist
+        so every report presents a headline number: a report that shows nothing is less useful
+        than one that shows its first real metric and says the choice was inferred. This is a read
+        only: it never writes ``primary_metric_name``, and it never invents semantics -- an
+        inferred metric is still formatted, coloured and compared strictly by its own contract.
+        """
+        declared = self._declared_primary_metric()
+        if declared is not None:
+            return declared
+        if self.primary_metric_name:
+            named = next((m for m in self.metrics if m.name == self.primary_metric_name), None)
+            if named is not None:
+                return named
+        graded = next((m for m in self.metrics if m.role is not MetricRole.DIAGNOSTIC), None)
+        return graded or (self.metrics[0] if self.metrics else None)
+
+    def primary_metric_is_inferred(self) -> bool:
+        """Whether the primary metric was inferred rather than declared.
+
+        A consumer can mark an inferred headline as such, so "this benchmark says this is the
+        conclusion" is never confused with "we picked something to show".
+        """
+        if not self.metrics:
+            return False
+        return self._declared_primary_metric() is None
 
     @computed_field
     @property
@@ -214,7 +254,7 @@ class Report(BaseModel):
         the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Falls
         back to the first metric while no primary metric is resolved.
         """
-        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        metric = self._find_primary_metric()
         if metric is None:
             return 0
         return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)

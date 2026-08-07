@@ -100,6 +100,9 @@ def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -
         eval_split='train',
         prompt_template='{question}',
         metric_list=['coverage_score', 'pass'],
+        # Mirrors the adapter: a benchmark reporting several metrics must say which one carries
+        # the conclusion, so the fixture has to declare it too.
+        primary_metric='pass',
         extra_params=base_extra_params,
     )
     dataset_args = {'extra_params': extra_params}

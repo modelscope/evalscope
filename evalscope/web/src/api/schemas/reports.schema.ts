@@ -148,6 +148,9 @@ export const primaryMetricRefSchema = z.object({
   metric_name: z.string(),
   score: z.number().nullable(),
   semantics: metricSemanticsSchema.nullable().optional(),
+  // Whether the benchmark declared this metric as primary, or one was inferred so the run still
+  // shows a value. Optional, so a response from an older backend still parses.
+  inferred: z.boolean().optional(),
 })
 
 /** Runtime contract for one report-list item. */

@@ -9,7 +9,7 @@ import Card from '@/components/ui/Card'
 import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
-import ScoreBadge from '@/components/ui/ScoreBadge'
+import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
@@ -18,7 +18,7 @@ import ErrorAlert from '@/components/ui/ErrorAlert'
 import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
 import { formatMetric } from '@/domain/metric'
 import { formatFull } from '@/utils/perf'
-import { primaryMetricsOf, summaryScoreDisplay } from '@/domain/report/primaryMetrics'
+import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
 // Number of recent runs shown before the "view all" toggle.
 const RECENT_LIMIT = 15
@@ -79,11 +79,12 @@ function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
         {formatShort(item.ts)}
       </span>
       {isEval ? (
-        <ScoreBadge
-          score={item.report.score}
-          semantics={primaryMetricsOf(item.report)[0]?.semantics}
-          label={summaryScoreDisplay(item.report) ?? t('metrics.multipleMetrics')}
-          className="shrink-0 !text-xs !px-2"
+        <PrimaryMetricResult
+          refs={primaryMetricsOf(item.report)}
+          variant="inline"
+          emptyLabel={t('metrics.noPrimaryMetric')}
+          inferredHint={t('metrics.inferredPrimary')}
+          className="shrink-0"
         />
       ) : (
         <span className="type-caption-mono text-[var(--text)] shrink-0">

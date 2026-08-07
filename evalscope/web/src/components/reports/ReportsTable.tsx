@@ -1,16 +1,10 @@
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
 import type { ReportSummary } from '@/api/types'
-import { scoreColor } from '@/utils/colorScale'
 import { formatMetric } from '@/domain/metric'
-import {
-  distinctSemanticCount,
-  metricLabel,
-  primaryMetricsOf,
-  summaryScoreDisplay,
-  summaryScoreRatio,
-} from '@/domain/report/primaryMetrics'
+import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {
@@ -87,11 +81,6 @@ export default function ReportsTable({
             const model = report.model_name || parsed.model || report.name
             const dataset = report.dataset_name || parsed.dataset
             const metricRefs = primaryMetricsOf(report)
-            // A run with several primary metrics is never collapsed into one number: the metrics
-            // are listed instead, since averaging heterogeneous metrics is meaningless.
-            const scoreText = summaryScoreDisplay(report)
-            const scoreRatio = summaryScoreRatio(report)
-            const metricChips = metricRefs.length > 1 ? metricRefs : []
             return (
               <tr
                 key={report.name}
@@ -124,30 +113,17 @@ export default function ReportsTable({
                   {report.num_samples}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {scoreText === null ? (
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs text-[var(--text-muted)]">
-                        {t('metrics.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
-                      </span>
-                      <div className="flex flex-wrap justify-end gap-1">
-                        {metricChips.map((ref) => (
-                          <span
-                            key={ref.dataset_name + ref.metric_name}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono bg-[var(--accent-dim)] text-[var(--text)]"
-                          >
-                            {metricLabel(ref)} {formatMetric(ref.score, ref.semantics).primary}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  {metricRefs.length > 0 ? (
+                    <PrimaryMetricResult
+                      refs={metricRefs}
+                      emptyLabel={t('metrics.noPrimaryMetric')}
+                      inferredHint={t('metrics.inferredPrimary')}
+                    />
                   ) : (
-                    <span
-                      className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold"
-                      style={scoreRatio == null
-                        ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
-                        : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
-                    >
-                      {scoreText}
+                    // Response from a backend without semantics: show the raw legacy number
+                    // rather than scaling it under a unit it never declared.
+                    <span className="text-sm font-mono tabular-nums text-[var(--text)]">
+                      {formatMetric(report.score, undefined).primary}
                     </span>
                   )}
                 </td>

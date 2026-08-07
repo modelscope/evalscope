@@ -25,13 +25,16 @@ class PrimaryMetricRef(BaseModel):
     """Name of the dataset the primary metric belongs to."""
 
     metric_name: str
-    """Final report metric name. Empty when the report has no ``role=primary`` metric."""
+    """Final report metric name."""
 
     score: Optional[float] = Field(default=None)
     """Score of the primary metric in its native scale. ``None`` when unavailable."""
 
     semantics: Optional[MetricSemantics] = Field(default=None)
     """Semantics of the primary metric. ``None`` when the report carries no declaration."""
+
+    inferred: bool = Field(default=False)
+    """Whether the benchmark declared this metric as primary, or it was inferred to show a value."""
 
 
 class SummaryStatus(str, Enum):

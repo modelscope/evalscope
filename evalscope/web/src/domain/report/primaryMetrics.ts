@@ -7,7 +7,6 @@
  * the components.
  */
 
-import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import type { ReportSummary } from '@/api/types'
 
@@ -17,6 +16,8 @@ export interface PrimaryMetricRef {
   metric_name: string
   score: number | null
   semantics?: MetricSemantics | null
+  /** Whether the benchmark declared this metric as primary, or one was inferred to show a value. */
+  inferred?: boolean
 }
 
 /**
@@ -76,45 +77,6 @@ export function primaryMetricsOf(report: ReportSummary): PrimaryMetricRef[] {
 /** Summary status of a run; `undefined` on an older backend response. */
 export function summaryStatusOf(report: ReportSummary): string | undefined {
   return (report as { summary_status?: string }).summary_status
-}
-
-/**
- * Whether a single number may represent this run.
- *
- * Only a run with exactly one semantic primary metric has one. Several datasets are never
- * averaged, even when they share a metric: `no_aggregate` and `mixed_metrics` both mean
- * "show the metrics individually".
- */
-export function hasSingleScore(report: ReportSummary): boolean {
-  const status = summaryStatusOf(report)
-  return status === undefined ? true : status === 'single_metric'
-}
-
-/** Display text of a run's score, or `null` when the run has no single representative score. */
-export function summaryScoreDisplay(report: ReportSummary): string | null {
-  if (!hasSingleScore(report)) {
-    return null
-  }
-  const refs = primaryMetricsOf(report)
-  if (refs.length === 1) {
-    return formatMetric(refs[0].score, refs[0].semantics).primary
-  }
-  // Older backend: fall back to the legacy score, which was already a single number.
-  return formatMetric(report.score, null).primary
-}
-
-/** Colour-scale ratio of a run's score, or `null` when a scale would be meaningless. */
-export function summaryScoreRatio(report: ReportSummary): number | null {
-  const refs = primaryMetricsOf(report)
-  if (!hasSingleScore(report) || refs.length !== 1) {
-    return null
-  }
-  return getBoundedQualityRatio(refs[0].score, refs[0].semantics)
-}
-
-/** Number of distinct semantic identifiers among a run's primary metrics. */
-export function distinctSemanticCount(refs: PrimaryMetricRef[]): number {
-  return new Set(refs.map((ref) => ref.semantics?.semantic_id ?? ref.metric_name)).size
 }
 
 /**

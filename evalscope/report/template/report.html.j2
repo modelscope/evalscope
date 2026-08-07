@@ -190,38 +190,45 @@
           {% endif %}
 
           {% if msec.diagnostic_rows %}
-          <details class="card" style="margin-bottom:1rem;">
-            <summary class="card-title">
+          <details class="inner-toggle">
+            <summary>
+              <span class="inner-arrow">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </span>
               <span data-i18n="card.diagnostics">Diagnostic metrics</span>
               <span class="card-badge">{{ msec.diagnostic_rows | length }}</span>
             </summary>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    {% if msec.show_category %}
-                    <th data-i18n="col.category">Category</th>
-                    {% endif %}
-                    <th data-i18n="col.subset">Subset</th>
-                    <th data-i18n="col.metric">Metric</th>
-                    <th data-i18n="col.value">Value</th>
-                    <th data-i18n="col.num">Num</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for row in msec.diagnostic_rows %}
-                  <tr>
-                    {% if msec.show_category %}
-                    <td><span class="tag">{{ row.category }}</span></td>
-                    {% endif %}
-                    <td>{{ row.subset }}</td>
-                    <td><span class="metric-tag">{{ row.metric }}</span></td>
-                    <td class="num-cell">{{ row.score_display }}</td>
-                    <td class="num-cell">{{ row.num }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+            <div class="card" style="margin-top:0.6rem;">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      {% if msec.show_category %}
+                      <th data-i18n="col.category">Category</th>
+                      {% endif %}
+                      <th data-i18n="col.subset">Subset</th>
+                      <th data-i18n="col.metric">Metric</th>
+                      <th data-i18n="col.value">Value</th>
+                      <th data-i18n="col.num">Num</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in msec.diagnostic_rows %}
+                    <tr>
+                      {% if msec.show_category %}
+                      <td><span class="tag">{{ row.category }}</span></td>
+                      {% endif %}
+                      <td>{{ row.subset }}</td>
+                      <td><span class="metric-tag">{{ row.metric }}</span></td>
+                      <td class="num-cell">{{ row.score_display }}</td>
+                      <td class="num-cell">{{ row.num }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </details>
           {% endif %}

@@ -2,15 +2,11 @@ import { ChevronRight } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import PrimaryMetricResult from '@/components/reports/PrimaryMetricResult'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
-import { scoreColor } from '@/utils/colorScale'
-import {
-  distinctSemanticCount,
-  primaryMetricsOf,
-  summaryScoreDisplay,
-  summaryScoreRatio,
-} from '@/domain/report/primaryMetrics'
+import { formatMetric } from '@/domain/metric'
+import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -29,9 +25,6 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
 
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
   const metricRefs = primaryMetricsOf(report)
-  // Several primary metrics are shown as chips: they are never averaged into one number.
-  const scoreText = summaryScoreDisplay(report)
-  const scoreRatio = summaryScoreRatio(report)
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
@@ -91,19 +84,19 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </span>
         </span>
 
-        {/* Score badge, or the per-dataset metric chips when they cannot be merged */}
-        {scoreText === null ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs shrink-0 bg-[var(--accent-dim)] text-[var(--text-muted)]">
-            {t('metrics.multiplePrimaryMetrics', { count: distinctSemanticCount(metricRefs) })}
-          </span>
+        {/* Every dataset's metric and score, so the card never hides the run's numbers. */}
+        {metricRefs.length > 0 ? (
+          <PrimaryMetricResult
+            refs={metricRefs}
+            variant="inline"
+            emptyLabel={t('metrics.noPrimaryMetric')}
+            inferredHint={t('metrics.inferredPrimary')}
+            className="shrink-0"
+          />
         ) : (
-          <span
-            className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
-            style={scoreRatio == null
-              ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
-              : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
-          >
-            {scoreText}
+          // Response from a backend without semantics: the raw legacy number, unscaled.
+          <span className="text-sm font-mono tabular-nums text-[var(--text)] shrink-0">
+            {formatMetric(report.score, undefined).primary}
           </span>
         )}
       </button>

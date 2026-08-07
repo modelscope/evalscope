@@ -40,6 +40,10 @@ def _metric_label(metric: Optional[Metric]) -> str:
     report metric name otherwise, so a report whose semantics could not be resolved still shows
     the metric it actually contains.
 
+    A diagnostic is labelled by its raw name. Diagnostic baselines are deliberately generic, so
+    several unrelated observations share one display name -- labelling by semantics would turn
+    ``no_answer_num`` and ``total_tokens`` into two indistinguishable ``Count`` rows.
+
     Args:
         metric: Metric to label, or ``None`` when the report has no primary metric.
 
@@ -49,7 +53,7 @@ def _metric_label(metric: Optional[Metric]) -> str:
     if metric is None:
         return 'N/A'
     semantics = metric.semantics
-    if semantics is None:
+    if semantics is None or semantics.role is MetricRole.DIAGNOSTIC:
         return metric.name
     arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
     return f'{semantics.metric_name} {arrow}'.strip()

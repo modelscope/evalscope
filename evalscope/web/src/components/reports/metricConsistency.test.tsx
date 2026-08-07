@@ -122,32 +122,45 @@ describe('metric display consistency across surfaces', () => {
     expect(tableScoreText(report).trim()).toBe(expected)
   })
 
-  it('shows no single score on either surface when the metrics cannot be merged', () => {
+  it('shows every dataset as metric and score when the metrics cannot be merged', () => {
+    // Averaging an accuracy with a WER would be a fake total, but hiding both numbers behind a
+    // note is worse: each dataset is listed with its own metric, formatted by its own semantics.
     const report = makeMixedReport()
+    const expectedAccuracy = formatMetric(0.9, ACCURACY).primary
+    const expectedWer = formatMetric(0.07, WER).primary
 
-    const { container: cardContainer } = render(
-      <LocaleProvider>
-        <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />
-      </LocaleProvider>,
-    )
-    expect(cardContainer.querySelector('span.font-mono.font-semibold')).toBeNull()
-    cleanup()
+    for (const [surface, render_] of [
+      ['card', () => (
+        <LocaleProvider>
+          <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />
+        </LocaleProvider>
+      )],
+      ['table', () => (
+        <LocaleProvider>
+          <ReportsTable
+            reports={[report]}
+            selected={[]}
+            allSelected={false}
+            onToggleSelectAll={() => {}}
+            onToggleSelect={() => {}}
+            onRowClick={() => {}}
+          />
+        </LocaleProvider>
+      )],
+    ] as const) {
+      const { container } = render(render_())
+      const text = container.textContent ?? ''
 
-    const { container: tableContainer } = render(
-      <LocaleProvider>
-        <ReportsTable
-          reports={[report]}
-          selected={[]}
-          allSelected={false}
-          onToggleSelectAll={() => {}}
-          onToggleSelect={() => {}}
-          onRowClick={() => {}}
-        />
-      </LocaleProvider>,
-    )
-    expect(tableContainer.querySelector('span.font-mono.font-semibold')).toBeNull()
-    // The table lists the individual metrics instead of collapsing them.
-    expect(tableContainer.textContent).toContain('Accuracy')
-    expect(tableContainer.textContent).toContain('WER')
+      // Dataset, metric and value, for both datasets.
+      expect(text, surface).toContain('gsm8k')
+      expect(text, surface).toContain('Accuracy')
+      expect(text, surface).toContain(expectedAccuracy)
+      expect(text, surface).toContain('librispeech')
+      expect(text, surface).toContain('WER')
+      expect(text, surface).toContain(expectedWer)
+      // No merged total, and no placeholder standing in for the numbers.
+      expect(text, surface).not.toContain('cannot be merged')
+      cleanup()
+    }
   })
 })

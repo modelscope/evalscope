@@ -216,6 +216,44 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'WeightedAverageAccuracy': MetricEntry(baseline='quality.accuracy.ratio'),
     'WeightedScorePercent': MetricEntry(baseline='quality.score.points_100'),
     'AverageOutputTps': MetricEntry(baseline='perf.throughput.tokens_per_second'),
+    # Names emitted by earlier revisions of adapters that have since renamed their metrics.
+    # Kept so an archived report still renders with the right direction and unit instead of
+    # degrading to a bare number.
+    'mean_precision': MetricEntry(baseline='quality.precision.ratio'),
+    'mean_recall': MetricEntry(baseline='quality.recall.ratio'),
+    'mean_f1_score': MetricEntry(baseline='quality.f1.ratio'),
+    'official_mean_precision': MetricEntry(baseline='quality.precision.ratio'),
+    'official_mean_recall': MetricEntry(baseline='quality.recall.ratio'),
+    'official_mean_f1_score': MetricEntry(baseline='quality.f1.ratio'),
+    'official_mean_all_answers_correct': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_simple_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
+    'mean_simple_partial_credit': MetricEntry(baseline='quality.score.ratio'),
+    'mean_simple_error_rate': MetricEntry(baseline='quality.error_rate.ratio'),
+    'mean_compliance_score': MetricEntry(baseline='quality.score.ratio'),
+    'mean_max_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    # Document parsing: TEDS and CDM are similarity scores, edit distances are error rates.
+    'overall_CH': MetricEntry(baseline='quality.score.ratio'),
+    'overall_EN': MetricEntry(baseline='quality.score.ratio'),
+    'table_TEDS': MetricEntry(baseline='quality.similarity.ratio'),
+    'table_TEDS_structure_only': MetricEntry(baseline='quality.similarity.ratio'),
+    'display_formula_CDM': MetricEntry(baseline='quality.similarity.ratio'),
+    'text_block_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
+    'display_formula_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
+    'table_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
+    'reading_order_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
+    # Response and rater failure shares, and run cost breakdowns: observations, not grades.
+    'rate_empty_model_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'rate_empty_auto_rater_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'rate_invalid_auto_rater_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'official_mean_fully_incorrect_items': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'official_mean_correct_with_excessive_answers': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'mean_total_tokens': MetricEntry(baseline='diagnostic.count.items'),
+    'mean_total_model_input_tokens': MetricEntry(baseline='diagnostic.count.items'),
+    'mean_total_model_output_tokens': MetricEntry(baseline='diagnostic.count.items'),
+    'mean_total_wall_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'mean_total_model_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'mean_total_tool_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'mean_total_other_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
 }
 """Final report metric name -> catalog entry, reused by every benchmark.
 

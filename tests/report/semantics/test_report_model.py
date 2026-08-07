@@ -47,14 +47,21 @@ def _ner_score_dict() -> Dict[str, List[AggScore]]:
 
 
 class TestPrimaryMetricByRole:
-    """Feature: metric-semantics-governance, Property 17: the primary metric is the single one
-    whose semantics carry role=primary, whatever the order or the names."""
+    """Feature: metric-semantics-governance: the primary metric is the one whose semantics carry
+    role=primary, whatever the order or the names. When no metric declares that role, one is
+    inferred so the report still shows a value, and the inference is reported as such."""
 
     def test_overall_name_does_not_win(self) -> None:
-        report = Report(dataset_name='conll2003', metrics=[_metric('overall'), _metric('f1_score')])
+        # `overall` is listed second. With no semantics resolved it holds no privileged position,
+        # so the inference falls back to order and picks the first metric, not the name.
+        report = Report(dataset_name='conll2003', metrics=[_metric('f1_score'), _metric('overall')])
 
-        # No semantics resolved yet: nothing is primary, and `overall` gets no special treatment.
-        assert report.primary_metric is None
+        assert report.primary_metric is not None
+        assert report.primary_metric.name == 'f1_score'
+        assert report.primary_metric_is_inferred()
+        # An inference is never persisted: the resolver reads this field to decide the role, so
+        # writing a guess into it would let the guess define the semantics.
+        assert report.primary_metric_name is None
 
     def test_primary_is_selected_by_role(self) -> None:
         report = Report.from_dict({
@@ -68,15 +75,34 @@ class TestPrimaryMetricByRole:
         assert report.primary_metric is not None
         assert report.primary_metric.name == 'f1_score'
         assert report.primary_metric.semantics.role is MetricRole.PRIMARY
+        assert not report.primary_metric_is_inferred()
 
-    def test_no_primary_yields_none_not_first_metric(self) -> None:
+    def test_undeclared_metric_still_yields_a_headline_marked_as_inferred(self) -> None:
+        # A third-party metric degrades to diagnostic, which used to leave the report with no
+        # headline at all. Showing its only number is more useful than showing nothing, as long as
+        # the report says the choice was inferred rather than declared.
         report = Report.from_dict({
             'dataset_name': 'unknown_third_party_benchmark',
             'metrics': [{'name': 'mystery_metric', 'categories': []}],
         })
 
-        assert report.primary_metric is None
+        assert report.primary_metric is not None
+        assert report.primary_metric.name == 'mystery_metric'
+        assert report.primary_metric_is_inferred()
         assert report.primary_metric_name is None
+
+    def test_a_graded_metric_is_preferred_over_a_diagnostic_when_inferring(self) -> None:
+        report = Report.from_dict({
+            'dataset_name': 'unknown_third_party_benchmark',
+            'metrics': [
+                {'name': 'no_answer_num', 'categories': [], 'semantic_id': 'diagnostic.count.items'},
+                {'name': 'cer', 'categories': [], 'semantic_id': 'quality.cer.ratio'},
+            ],
+        })
+
+        # The count comes first but describes the run rather than grading it.
+        assert report.primary_metric is not None
+        assert report.primary_metric.name == 'cer'
 
 
 class TestSerializationContract:

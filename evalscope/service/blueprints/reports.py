@@ -192,13 +192,17 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         score = primary_metric.score if primary_metric else r.score
         dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
 
+    # Every dataset contributes a reference so each one can be shown as
+    # `dataset -> metric -> score`. A report always resolves a primary metric when it has any
+    # metric at all, inferring one if the benchmark declared none.
     summary = summarize_primary_metrics([
         PrimaryMetricRef(
             dataset_name=r.dataset_name,
-            metric_name=metric.name if metric else '',
-            score=metric.score if metric else None,
-            semantics=metric.semantics if metric else None,
-        ) for r, metric in zip(report_list, primary_metrics)
+            metric_name=metric.name,
+            score=metric.score,
+            semantics=metric.semantics,
+            inferred=r.primary_metric_is_inferred(),
+        ) for r, metric in zip(report_list, primary_metrics) if metric
     ])
 
     return {
