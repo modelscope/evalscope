@@ -504,6 +504,16 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {'subset_list': ['real_world']}
         self._run_dataset_test('measure_bench', dataset_args=dataset_args, limit=5, use_mock=True)
 
+    def test_screenspot_pro(self):
+        """Test ScreenSpot-Pro GUI grounding benchmark."""
+        dataset_args = {'subset_list': ['CAD'], 'max_image_bytes': '5mb'}
+        self._run_dataset_test('screenspot_pro', dataset_args=dataset_args, limit=5)
+
+    def test_screenspot_pro_mock(self):
+        """Test ScreenSpot-Pro with mock LLM."""
+        dataset_args = {'subset_list': ['CAD']}
+        self._run_dataset_test('screenspot_pro', dataset_args=dataset_args, limit=5, use_mock=True)
+
     def test_perception_bench(self):
         """Test PerceptionBench atomic visual perception benchmark."""
         dataset_args = {'subset_list': ['ocr_error']}
