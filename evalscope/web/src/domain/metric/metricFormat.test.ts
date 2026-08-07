@@ -11,13 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import goldenSamples from '../../../../metrics/semantics/golden_samples.json'
-import {
-  formatMetric,
-  getBoundedQualityRatio,
-  getComparisonVerdict,
-  MISSING_PLACEHOLDER,
-  roundHalfUp,
-} from './metricFormat'
+import { MISSING_PLACEHOLDER, formatDifference, formatMetric, getBoundedQualityRatio, getComparisonVerdict, roundHalfUp } from './metricFormat'
 import type { MetricSemantics } from './MetricSemantics'
 import { arbSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
 
@@ -159,6 +153,62 @@ describe('getBoundedQualityRatio', () => {
   })
 })
 
+describe('formatDifference', () => {
+  const ACCURACY_RATIO: MetricSemantics = {
+    semantic_id: 'quality.accuracy.ratio',
+    metric_name: 'Accuracy',
+    role: 'primary',
+    direction: 'higher_is_better',
+    value_range: { min: 0, max: 1 },
+    display_kind: 'percent',
+    display_multiplier: 100,
+    display_unit: '%',
+    display_precision: 1,
+    contract_version: 1,
+  }
+
+  it('scales a native-ratio difference into percentage points', () => {
+    // A swing from 0 to 1 on a ratio metric is 100 points. Formatting it through semantics whose
+    // multiplier is ignored -- which happens outside the `percent` branch -- yields "1 pp", which
+    // understates a full-range swing by a factor of a hundred.
+    expect(formatDifference(1, ACCURACY_RATIO).primary).toBe('100 pp')
+    expect(formatDifference(0.5, ACCURACY_RATIO).primary).toBe('50 pp')
+    expect(formatDifference(0.408, ACCURACY_RATIO).primary).toBe('40.8 pp')
+  })
+
+  it('leaves a value already in display scale alone', () => {
+    // Perf summary cells arrive pre-scaled, and their semantics say so with a multiplier of 1.
+    const preScaled: MetricSemantics = { ...ACCURACY_RATIO, display_multiplier: 1 }
+
+    expect(formatDifference(7.5, preScaled).primary).toBe('7.5 pp')
+  })
+
+  it('keeps the unit of a non-percent metric', () => {
+    const seconds: MetricSemantics = {
+      semantic_id: 'perf.latency.seconds',
+      metric_name: 'Latency',
+      role: 'primary',
+      direction: 'lower_is_better',
+      display_kind: 'number',
+      display_unit: 's',
+      display_precision: 3,
+      contract_version: 1,
+    }
+
+    // A difference of seconds is seconds, so nothing is converted.
+    expect(formatDifference(0.25, seconds).primary).toBe('0.25 s')
+  })
+
+  it('carries no quality, so callers cannot colour or rank it', () => {
+    // A spread has a size but not a direction: 100 pp is neither good nor bad on its own.
+    expect(formatDifference(0.5, ACCURACY_RATIO).isDiagnosticFallback).toBe(true)
+  })
+
+  it('reports a missing difference as missing', () => {
+    expect(formatDifference(null, ACCURACY_RATIO).isMissing).toBe(true)
+    expect(formatDifference(Number.NaN, ACCURACY_RATIO).isMissing).toBe(true)
+  })
+})
 describe('getComparisonVerdict', () => {
   it('follows higher_is_better', () => {
     expect(getComparisonVerdict(0.1, ratioSemantics())).toBe('better')

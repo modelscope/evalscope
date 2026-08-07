@@ -218,6 +218,46 @@ export function getValuePosition(
   return Math.min(1, Math.max(0, normalized))
 }
 
+/**
+ * Format a *difference* between two values of a metric.
+ *
+ * A difference is not the same kind of quantity as the values it came from. Subtracting two
+ * percentages gives percentage points, so rendering `0.5` through the original percent semantics
+ * would claim "50%" where the truth is "50 pp" -- the gap between 50% and 100% is not itself half of
+ * anything. Every other display kind keeps its own unit, since a difference of seconds is seconds.
+ *
+ * This takes the value rather than only transforming the semantics, because the scaling has to
+ * happen here. `display_multiplier` is applied by the `percent` branch of {@link formatMetric}
+ * alone, so a synthesized "percent kind with a `pp` unit" would be needed to keep the multiplier --
+ * and that combination is unsafe: the backend formatter derives the unit separator from the display
+ * kind while this one derives it from the unit string, so such semantics would render `100pp` there
+ * and `100 pp` here. Scaling the value up front and formatting it as a plain number keeps both
+ * sides in agreement.
+ *
+ * @param value Difference in the metric's native scale, e.g. `0.5` for a gap of 50 points.
+ * @param semantics Semantics of the metric the difference was taken from.
+ * @returns Formatted difference; diagnostic, so callers apply no colour scale or verdict to it.
+ */
+export function formatDifference(
+  value: number | null | undefined,
+  semantics: MetricSemantics | null | undefined,
+): FormattedMetric {
+  if (!semantics || semantics.display_kind !== 'percent') {
+    return formatMetric(value, semantics)
+  }
+  const scaled = isMissingValue(value) ? value : (value as number) * (semantics.display_multiplier ?? 1)
+  return formatMetric(scaled, {
+    ...semantics,
+    metric_name: 'Change',
+    role: 'diagnostic',
+    direction: 'none',
+    display_kind: 'number',
+    display_unit: 'pp',
+    display_multiplier: 1,
+    value_range: null,
+  })
+}
+
 /** Outcome of comparing two values of the same metric. */
 export type ComparisonVerdict = 'better' | 'worse' | 'equal' | 'incomparable'
 

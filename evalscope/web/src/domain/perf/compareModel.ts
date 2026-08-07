@@ -21,7 +21,7 @@
  */
 
 import type { PerfDetailResponse } from '../../api/types'
-import { formatMetric, getComparisonVerdict } from '../metric'
+import { formatDifference, formatMetric, getComparisonVerdict } from '../metric'
 import type { FormattedMetric, MetricSemantics } from '../metric'
 
 /**
@@ -120,18 +120,6 @@ const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
   display_kind: 'number',
   display_unit: '%',
   display_precision: 2,
-  contract_version: 1,
-}
-
-/** The absolute delta of a percent-rendered metric is expressed in percentage points. */
-const PERCENTAGE_POINT_SEMANTICS: MetricSemantics = {
-  semantic_id: 'diagnostic.unspecified',
-  metric_name: 'Change',
-  role: 'diagnostic',
-  direction: 'none',
-  display_kind: 'number',
-  display_unit: 'pp',
-  display_precision: 1,
   contract_version: 1,
 }
 
@@ -281,10 +269,7 @@ function buildMetricDelta(
     computable && baselineValue !== 0 ? ((candidateValue - baselineValue) / Math.abs(baselineValue)) * 100 : null
 
   // A delta of a percent-rendered metric is expressed in percentage points, not re-scaled.
-  const absoluteDelta = formatMetric(
-    absoluteValue,
-    semantics?.display_kind === 'percent' ? PERCENTAGE_POINT_SEMANTICS : semantics,
-  )
+  const absoluteDelta = formatDifference(absoluteValue, semantics)
   const percentDelta = formatMetric(percentValue, PERCENT_DELTA_SEMANTICS)
   // Diagnostic fields (request counts, cache details, failures) return 'incomparable', which is
   // what keeps them out of the winner decision.

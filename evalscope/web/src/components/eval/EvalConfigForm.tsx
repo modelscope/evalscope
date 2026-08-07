@@ -19,6 +19,13 @@ interface Props {
   onSubmit: (config: Record<string, unknown>) => void
   disabled?: boolean
   initialDataset?: string
+  /**
+   * Model to prefill, so a past run can be repeated without retyping it.
+   *
+   * Only non-secret fields are prefillable this way: the value arrives through the URL, and an API
+   * key in a URL ends up in history and in server logs.
+   */
+  initialModel?: string
 }
 
 /** Stable field ids, reused as label/error association targets and focus targets. */
@@ -67,9 +74,9 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.datasetArgs,
 ]
 
-export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: Props) {
+export default function EvalConfigForm({ onSubmit, disabled, initialDataset, initialModel }: Props) {
   const { t } = useLocale()
-  const [model, setModel] = useState('')
+  const [model, setModel] = useState(initialModel ?? '')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [datasets, setDatasets] = useState(initialDataset ?? '')
@@ -98,9 +105,10 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   useEffect(() => {
     const applyInitial = () => {
       if (initialDataset) setDatasets(initialDataset)
+      if (initialModel) setModel(initialModel)
     }
     applyInitial()
-  }, [initialDataset])
+  }, [initialDataset, initialModel])
 
   useEffect(() => {
     const controller = new AbortController()

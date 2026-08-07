@@ -8,6 +8,9 @@ export default function EvalTaskPage() {
   const { t } = useLocale()
   const queryParams = useQueryParams()
   const initialDataset = queryParams.get('dataset')
+  // Lets the dashboard hand over a past run's model and datasets so it can be repeated. Secrets are
+  // never carried this way -- the API key stays a field the user fills in.
+  const initialModel = queryParams.get('model')
 
   return (
     <TaskRunnerPage
@@ -22,7 +25,12 @@ export default function EvalTaskPage() {
       getLog={getEvalLog}
       getReportUrl={getEvalReportUrl}
       renderForm={({ onSubmit, disabled }) => (
-        <EvalConfigForm onSubmit={onSubmit} disabled={disabled} initialDataset={initialDataset} />
+        <EvalConfigForm
+          onSubmit={onSubmit}
+          disabled={disabled}
+          initialDataset={initialDataset}
+          initialModel={initialModel}
+        />
       )}
     />
   )

@@ -18,6 +18,7 @@ export {
   formatMetric,
   getBoundedQualityRatio,
   getComparisonVerdict,
+  formatDifference,
   getValuePosition,
   MISSING_PLACEHOLDER,
   roundHalfUp,
