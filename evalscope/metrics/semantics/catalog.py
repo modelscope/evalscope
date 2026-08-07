@@ -322,8 +322,8 @@ BENCHMARK_DYNAMIC_METRICS: Dict[str, Tuple[str, ...]] = {
 }
 """``benchmark_name`` -> allow-list of final report metric names generated at runtime.
 
-A name outside the allow-list is reported by the audit and degrades to diagnostic rather than
-being guessed."""
+A name outside the allow-list degrades to diagnostic rather than being guessed, and the audit
+message names the allow-list it fell outside of."""
 
 
 def _validate_catalog() -> None:

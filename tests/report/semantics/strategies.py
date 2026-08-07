@@ -17,14 +17,7 @@ import string
 from hypothesis import strategies as st
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.metric.semantics import (
-    MetricDirection,
-    MetricDisplayKind,
-    MetricEntry,
-    MetricRole,
-    MetricSemantics,
-    ValueRange,
-)
+from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricEntry, MetricRole, ValueRange
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, METRIC_NAME_SEMANTICS
 
@@ -64,11 +57,6 @@ def identifiers(min_size: int = 1, max_size: int = 12) -> st.SearchStrategy[str]
 def metric_roles() -> st.SearchStrategy[MetricRole]:
     """Generate any member of the closed ``MetricRole`` domain."""
     return st.sampled_from(list(MetricRole))
-
-
-def scored_roles() -> st.SearchStrategy[MetricRole]:
-    """Generate roles that must declare an optimization direction."""
-    return st.sampled_from(list(SCORED_ROLES))
 
 
 def metric_directions() -> st.SearchStrategy[MetricDirection]:
@@ -191,14 +179,6 @@ def valid_semantics_kwargs(
     return kwargs
 
 
-def valid_semantics(
-    roles: Optional[st.SearchStrategy[MetricRole]] = None,
-    display_kinds: Optional[st.SearchStrategy[MetricDisplayKind]] = None,
-) -> st.SearchStrategy[MetricSemantics]:
-    """Generate valid ``MetricSemantics`` instances."""
-    return valid_semantics_kwargs(roles=roles, display_kinds=display_kinds).map(lambda kw: MetricSemantics(**kw))
-
-
 @st.composite
 def role_direction_kwargs(draw: st.DrawFn) -> Dict[str, Any]:
     """Generate kwargs whose only possibly invalid aspect is the ``role`` / ``direction`` pair.
@@ -269,14 +249,6 @@ def final_metric_names() -> st.SearchStrategy[str]:
     return identifiers(min_size=1, max_size=20)
 
 
-@st.composite
-def metric_name_tables(draw: st.DrawFn, max_metrics: int = 4) -> Dict[str, MetricEntry]:
-    """Generate a ``METRIC_NAME_SEMANTICS`` style table of resolvable entries."""
-    names = draw(st.lists(final_metric_names(), min_size=1, max_size=max_metrics, unique=True))
-    roles = st.sampled_from([MetricRole.PRIMARY, MetricRole.AUXILIARY, MetricRole.DIAGNOSTIC])
-    return {name: draw(full_override_metric_entries(roles=roles)) for name in names}
-
-
 # ---------------------------------------------------------------------------------------------
 # Resolver level generators: benchmark names and baseline keys.
 # ---------------------------------------------------------------------------------------------
@@ -287,7 +259,7 @@ BASELINE_IDS: Tuple[str, ...] = tuple(sorted(SEMANTIC_BASELINES))
 #: Metric names declared by the shipped catalog, i.e. names the name level may resolve.
 DECLARED_METRIC_NAMES: Tuple[str, ...] = tuple(
     sorted(set(METRIC_NAME_SEMANTICS) | {metric_name
-                                        for _, metric_name in BENCHMARK_METRIC_OVERRIDES})
+                                         for _, metric_name in BENCHMARK_METRIC_OVERRIDES})
 )
 
 #: Benchmark names carrying a benchmark level collision override.
@@ -307,29 +279,6 @@ UNDECLARED_METRIC_PREFIX: str = 'undeclared_'
 def baseline_ids() -> st.SearchStrategy[str]:
     """Generate keys of the shipped baseline table."""
     return st.sampled_from(list(BASELINE_IDS))
-
-
-def baseline_metric_entries() -> st.SearchStrategy[MetricEntry]:
-    """Generate ``MetricEntry`` instances that only reference a baseline."""
-    return baseline_ids().map(lambda baseline: MetricEntry(baseline=baseline))
-
-
-@st.composite
-def baseline_override_metric_entries(draw: st.DrawFn) -> MetricEntry:
-    """Generate baseline references that also override at least one display field.
-
-    Only fields that cannot invalidate the merged declaration are overridden, so the entry
-    always resolves and the referenced baseline keeps deciding the role and the direction.
-    """
-    overrides: Dict[str, Any] = {
-        'metric_name': draw(st.none() | metric_names()),
-        'display_precision': draw(st.none() | display_precisions()),
-        'raw_unit': draw(st.none() | st.sampled_from(list(RAW_UNITS))),
-    }
-    declared = {name: value for name, value in overrides.items() if value is not None}
-    if not declared:
-        declared = {'display_precision': draw(display_precisions())}
-    return MetricEntry(baseline=draw(baseline_ids()), **declared)
 
 
 def synthetic_benchmark_names() -> st.SearchStrategy[str]:
@@ -382,31 +331,3 @@ def name_variants(declared_name: str) -> st.SearchStrategy[str]:
 def metric_scores() -> st.SearchStrategy[float]:
     """Generate finite metric scores as stored in a report."""
     return st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False)
-
-
-def metric_values() -> st.SearchStrategy[Optional[float]]:
-    """Generate metric values for formatting, including the missing and non-finite paths."""
-    return st.none() | st.just(float('nan')) | metric_scores()
-
-
-@st.composite
-def report_specs(draw: st.DrawFn, max_metrics: int = 4) -> Tuple[str, List[Tuple[str, float]]]:
-    """Generate the content of one report: a benchmark name and its ``(metric, score)`` pairs.
-
-    Args:
-        draw: Hypothesis draw function.
-        max_metrics: Upper bound on the number of metrics in the report.
-
-    Returns:
-        The benchmark name and the ``(final_metric_name, score)`` pairs, names unique and in
-        report order.
-    """
-    benchmark_name = draw(benchmark_names())
-    metric_names = draw(
-        st.lists(st.one_of(declared_metric_names(), undeclared_metric_names()),
-                 min_size=1,
-                 max_size=max_metrics,
-                 unique=True)
-    )
-    scores = draw(st.lists(metric_scores(), min_size=len(metric_names), max_size=len(metric_names)))
-    return benchmark_name, list(zip(metric_names, scores))

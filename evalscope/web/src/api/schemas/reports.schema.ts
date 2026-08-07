@@ -51,7 +51,6 @@ export const metricSemanticsSchema = z.object({
   display_unit: z.string().nullable().optional(),
   display_precision: z.number(),
   comparison_group: z.string().nullable().optional(),
-  aggregation_group: z.string().nullable().optional(),
   contract_version: z.number(),
 })
 
@@ -159,16 +158,13 @@ export const reportSummarySchema = z.object({
   model_name: z.string(),
   dataset_name: z.string(),
   // Deprecated: an average across possibly heterogeneous metrics. Kept non-null for old
-  // clients; new consumers read `primary_metrics` and `summary_*`.
+  // clients; new consumers read `primary_metrics`.
   score: z.number(),
   metric_name: z.string().optional(),
   dataset_scores: z.record(z.string(), z.number()).optional(),
   num_samples: z.number(),
   timestamp: z.string(),
   primary_metrics: z.array(primaryMetricRefSchema).optional(),
-  summary_status: z.enum(['single_metric', 'no_aggregate', 'mixed_metrics']).optional(),
-  summary_score: z.number().nullable().optional(),
-  summary_semantics: metricSemanticsSchema.nullable().optional(),
 })
 
 /** Runtime contract for a paginated report list. */

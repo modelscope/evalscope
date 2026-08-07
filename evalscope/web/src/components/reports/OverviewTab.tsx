@@ -8,7 +8,7 @@ import Table from '@/components/ui/Table'
 import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
-import { directionArrow } from '@/domain/report/primaryMetrics'
+import { directionArrow, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
@@ -22,17 +22,11 @@ interface Props {
 }
 
 /**
- * Primary metric of one dataset report, selected by role rather than by position.
- *
- * `primary_metric_name` names it explicitly; otherwise the metric whose semantics say
- * `role === 'primary'` is used. A report with neither yields `null`, which the UI shows as an
- * absent score instead of borrowing another metric's number.
+ * Headline figures of one dataset report: the primary metric's name, score, sample count and
+ * semantics. `null` when the report declares no primary metric.
  */
-function primaryMetricOf(report: ReportData): { name: string; score: number; num: number; semantics?: MetricSemantics | null } | null {
-  const named = report.primary_metric_name
-    ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
-    : undefined
-  const metric = named ?? report.metrics.find((candidate) => candidate.semantics?.role === 'primary')
+function primarySummaryOf(report: ReportData): { name: string; score: number; num: number; semantics?: MetricSemantics | null } | null {
+  const metric = primaryMetricOf(report)
   if (!metric) {
     return null
   }
@@ -62,7 +56,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
     // listing it as a dependency would defeat the memo, and omitting it is what the exhaustive-deps
     // rule warns about. Deriving it inside keeps `reports` the only real input.
     return reports.map((r) => {
-      const primary = primaryMetricOf(r)
+      const primary = primarySummaryOf(r)
       return {
         Dataset: r.dataset_name,
         Score: primary?.score ?? null,

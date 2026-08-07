@@ -227,13 +227,6 @@ export function compareByInstability(a: AggregatedRow, b: AggregatedRow): number
   return byModel !== 0 ? byModel : a.cell.benchmark.localeCompare(b.cell.benchmark)
 }
 
-/** Order rows by most recent run first. */
-export function compareByRecency(a: AggregatedRow, b: AggregatedRow): number {
-  const at = a.cell.history[a.cell.history.length - 1]?.timestamp ?? ''
-  const bt = b.cell.history[b.cell.history.length - 1]?.timestamp ?? ''
-  return bt.localeCompare(at)
-}
-
 /** Vertical extent a trend is drawn against, in the metric's native scale. */
 export interface TrendBounds {
   low: number
@@ -292,25 +285,4 @@ export function trendBounds(
 export function trendPosition(score: number, bounds: TrendBounds): number {
   const ratio = (score - bounds.low) / (bounds.high - bounds.low)
   return Math.min(1, Math.max(0, ratio))
-}
-
-/** Counts shown next to the results heading. */
-export interface AggregateTotals {
-  models: number
-  benchmarks: number
-  cells: number
-  runs: number
-}
-
-/** Summarize the shape of an aggregation for the section heading. */
-export function totalsOf(rows: AggregatedRow[]): AggregateTotals {
-  const models = new Set<string>()
-  const benchmarks = new Set<string>()
-  let runs = 0
-  for (const { cell, stats } of rows) {
-    models.add(cell.model)
-    benchmarks.add(cell.benchmark)
-    runs += stats.runs
-  }
-  return { models: models.size, benchmarks: benchmarks.size, cells: rows.length, runs }
 }

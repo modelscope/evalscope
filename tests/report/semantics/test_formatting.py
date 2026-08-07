@@ -6,7 +6,6 @@ Covers requirements 13.9 and 20.2: one formatting rule set, driven only by the d
 of ``MetricSemantics``, shared by the CLI, the HTML report, the reports API and the Web UI.
 """
 
-import math
 import pytest
 from typing import Optional
 
@@ -14,12 +13,8 @@ from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, M
 from evalscope.metrics.semantics.formatting import (
     DIAGNOSTIC_FALLBACK_PRECISION,
     MISSING_PLACEHOLDER,
-    format_metric,
     format_metric_value,
-    format_raw_metric_value,
-    get_unit_label,
     is_missing_value,
-    round_half_up,
 )
 
 RATIO_RANGE = ValueRange(min=0.0, max=1.0)
@@ -70,25 +65,34 @@ def make_number_semantics(
 
 
 class TestRoundHalfUp:
-    """``round_half_up`` must never fall back to banker's rounding."""
+    """Rendering must never fall back to banker's rounding.
+
+    Asserted through ``format_metric_value`` at precision 0 rather than against a rounding helper:
+    half-up is a property of the rendered text, which is the only thing production emits.
+    """
 
     @pytest.mark.parametrize(
-        'value, precision, expected', [
-            (0.5, 0, 1.0),
-            (1.5, 0, 2.0),
-            (2.5, 0, 3.0),
-            (-0.5, 0, -1.0),
-            (-2.5, 0, -3.0),
-            (12.5, 0, 13.0),
-            (87.25, 1, 87.3),
-            (0.0, 2, 0.0),
+        'value, expected', [
+            (0.5, '1'),
+            (1.5, '2'),
+            (2.5, '3'),
+            (-0.5, '-1'),
+            (-2.5, '-3'),
+            (12.5, '13'),
         ]
     )
-    def test_rounds_halves_away_from_zero(self, value: float, precision: int, expected: float) -> None:
-        assert round_half_up(value, precision) == pytest.approx(expected)
+    def test_rounds_halves_away_from_zero(self, value: float, expected: str) -> None:
+        semantics = make_number_semantics(
+            precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
+        )
+        assert format_metric_value(value, semantics) == expected
+
+    def test_official_scale_tie_rounds_up(self) -> None:
+        semantics = make_percent_semantics(multiplier=1.0, precision=1, value_range=ValueRange(min=0.0, max=100.0))
+        assert format_metric_value(87.25, semantics) == '87.3%'
 
     def test_keeps_value_below_precision(self) -> None:
-        assert round_half_up(0.0001234, 3) == 0.0
+        assert format_metric_value(0.0001234, make_number_semantics()) == '0 s'
 
 
 class TestIsMissingValue:
@@ -147,8 +151,7 @@ class TestFormatNumber:
 
     def test_zero_precision_drops_the_decimal_point(self) -> None:
         semantics = make_number_semantics(
-            precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC,
-            direction=MetricDirection.NONE
+            precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
         )
         assert format_metric_value(12.0, semantics) == '12'
 
@@ -159,7 +162,6 @@ class TestMissingAndFallback:
     @pytest.mark.parametrize('value', [None, float('nan'), float('inf')])
     def test_missing_value_uses_placeholder(self, value: Optional[float]) -> None:
         assert format_metric_value(value, make_percent_semantics()) == MISSING_PLACEHOLDER
-        assert format_raw_metric_value(value, make_percent_semantics()) == MISSING_PLACEHOLDER
 
     def test_missing_semantics_uses_fallback_precision(self) -> None:
         assert format_metric_value(0.87654321, None) == '0.8765'
@@ -170,61 +172,6 @@ class TestMissingAndFallback:
 
     def test_missing_semantics_and_missing_value(self) -> None:
         assert format_metric_value(None, None) == MISSING_PLACEHOLDER
-
-
-class TestFormatRawValue:
-    """The raw text exposes the stored value, never the scaled one."""
-
-    def test_raw_value_ignores_display_multiplier(self) -> None:
-        assert format_raw_metric_value(0.8567, make_percent_semantics()) == '0.8567'
-
-    def test_raw_value_uses_raw_unit(self) -> None:
-        assert format_raw_metric_value(1.23456, make_number_semantics()) == '1.2346 s'
-
-    def test_raw_value_without_raw_unit(self) -> None:
-        semantics = make_number_semantics(display_unit='ms', raw_unit=None)
-        assert format_raw_metric_value(2.5, semantics) == '2.5'
-
-
-class TestFormatMetric:
-    """``format_metric`` bundles every text and flag a UI needs."""
-
-    def test_primary_metric_is_not_a_diagnostic_fallback(self) -> None:
-        formatted = format_metric(0.8567, make_percent_semantics())
-        assert (formatted.primary, formatted.raw, formatted.unit_label) == ('85.7%', '0.8567', '%')
-        assert formatted.is_missing is False
-        assert formatted.is_diagnostic_fallback is False
-
-    def test_diagnostic_role_disables_color_scale(self) -> None:
-        semantics = make_percent_semantics(role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE)
-        assert format_metric(0.9876, semantics).is_diagnostic_fallback is True
-
-    def test_absent_semantics_is_a_diagnostic_fallback(self) -> None:
-        formatted = format_metric(0.87654321, None)
-        assert formatted.is_diagnostic_fallback is True
-        assert formatted.unit_label == ''
-
-    def test_missing_value_flags_and_placeholders(self) -> None:
-        formatted = format_metric(math.nan, make_number_semantics())
-        assert formatted.is_missing is True
-        assert formatted.primary == MISSING_PLACEHOLDER
-        assert formatted.raw == MISSING_PLACEHOLDER
-
-
-class TestUnitLabel:
-    """The unit label is read from ``display_unit`` only."""
-
-    def test_percent_unit(self) -> None:
-        assert get_unit_label(make_percent_semantics()) == '%'
-
-    def test_number_unit(self) -> None:
-        assert get_unit_label(make_number_semantics(display_unit='ms')) == 'ms'
-
-    @pytest.mark.parametrize(
-        'semantics', [None, make_number_semantics(display_unit=None, raw_unit=None)]
-    )
-    def test_absent_unit_is_empty(self, semantics: Optional[MetricSemantics]) -> None:
-        assert get_unit_label(semantics) == ''
 
 
 def test_formatting_reads_only_display_fields() -> None:

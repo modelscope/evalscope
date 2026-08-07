@@ -140,11 +140,11 @@ export default function PerfReportsPage() {
   const [sortBy, setSortBy] = useState<SortKey>('time')
 
   // Multi-select for cross-run comparison (page-local; independent of eval Compare).
+  // Unbounded: the perf compare view overlays any number of runs, and the same
+  // selection drives batch delete.
   const [selected, setSelected] = useState<string[]>([])
-  const [capNotice, setCapNotice] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const selectionScope = useRef('')
 
   const toggleSelect = (path: string) => {
@@ -152,14 +152,7 @@ export default function PerfReportsPage() {
       setSelected(selected.filter((p) => p !== path))
       return
     }
-    const { next, rejected } = addToSelection(selected, path)
-    if (rejected) {
-      setCapNotice(true)
-      clearTimeout(capTimer.current)
-      capTimer.current = setTimeout(() => setCapNotice(false), 3000)
-      return
-    }
-    setSelected(next)
+    setSelected(addToSelection(selected, path))
   }
 
   const compareSelected = () => {
@@ -169,7 +162,7 @@ export default function PerfReportsPage() {
     const first = runs.find((r) => r.path === selected[0])
     const embedding = first?.is_embedding ? '1' : '0'
     navigate(
-      `/perf-compare?paths=${encodeURIComponent(selected.slice(0, 3).join(';'))}`
+      `/perf-compare?paths=${encodeURIComponent(selected.join(';'))}`
         + `&embedding=${embedding}&root_path=${encodeURIComponent(rootPath)}`,
     )
   }
@@ -216,8 +209,6 @@ export default function PerfReportsPage() {
       }),
     [selected, runs],
   )
-
-  useEffect(() => () => clearTimeout(capTimer.current), [])
 
   useEffect(() => {
     if (!rootPath) return
@@ -384,7 +375,6 @@ export default function PerfReportsPage() {
 
           <SelectionTray
             count={orderedSelection.length}
-            capNotice={capNotice}
             canViewHtml={orderedSelection.length === 1 && !!selectedRun?.has_html}
             onViewHtml={viewSelectedHtml}
             onCompare={compareSelected}

@@ -247,9 +247,8 @@ class TestPrimaryRoleAttribution:
         names = ['f1_score', 'precision', 'recall', 'accuracy', 'no_answer_num']
 
         primaries = [
-            name for name in names
-            if resolver.resolve(BUILTIN_BENCHMARK, name, primary_metric_name='accuracy').semantics.role
-            is MetricRole.PRIMARY
+            name for name in names if resolver.resolve(BUILTIN_BENCHMARK, name, primary_metric_name='accuracy'
+                                                       ).semantics.role is MetricRole.PRIMARY
         ]
 
         assert primaries == ['accuracy']

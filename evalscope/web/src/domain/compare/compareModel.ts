@@ -57,38 +57,34 @@ export function buildDisplayLabel(runName: string): RunDisplayLabel {
   return { model: trimmedModel, dataset, label }
 }
 
-/** Maximum number of runs that can be selected for a single comparison. */
-export const MAX_COMPARE_SELECTION = 5
-
-/** Result of attempting to add a run to the current compare selection. */
-export interface AddToSelectionResult {
-  /** The resulting selection (unchanged when the addition was rejected). */
-  next: string[]
-  /** `true` when the selection is already at capacity and the run was rejected. */
-  rejected: boolean
-}
+/**
+ * Number of runs the evaluation compare view can render side by side.
+ *
+ * DESIGN.md §Compare Slots defines exactly three brand-color slots, so the
+ * `MODEL_PALETTE` in `ComparePage.tsx` must have this many entries. Selection
+ * itself is unbounded: extra runs are simply not carried into the comparison,
+ * which lets the list surfaces select (and delete) any number of runs.
+ */
+export const MAX_COMPARE_SLOTS = 3
 
 /**
- * Add a run to the compare selection, enforcing the selection cap and de-duping.
+ * Add a run to the compare selection, de-duping.
  *
- * When the selection is already at `MAX_COMPARE_SELECTION`, the addition is
- * rejected and the selection is returned unchanged. Otherwise the run
- * is appended unless it is already selected (de-dup), and the resulting size
- * never exceeds the cap.
+ * The selection is a set with a stable insertion order and is not capped: the
+ * same selection also drives batch deletion, so bounding it here would limit
+ * unrelated actions. Surfaces that can only render a fixed number of runs clamp
+ * at navigation time instead (see `MAX_COMPARE_SLOTS`).
  *
  * @param state Current selection of run ids.
  * @param runId Run id to add.
- * @returns The next selection and whether the addition was rejected.
+ * @returns The next selection, unchanged when the run is already selected.
  */
-export function addToSelection(state: string[], runId: string): AddToSelectionResult {
-  if (state.length >= MAX_COMPARE_SELECTION) {
-    return { next: state, rejected: true }
-  }
+export function addToSelection(state: string[], runId: string): string[] {
   if (state.includes(runId)) {
     // Already selected: de-duplicate by leaving the selection unchanged.
-    return { next: state, rejected: false }
+    return state
   }
-  return { next: [...state, runId], rejected: false }
+  return [...state, runId]
 }
 
 /**

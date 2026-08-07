@@ -8,7 +8,7 @@
  * and a catalog fix reaches the UI without a frontend change.
  */
 
-import type { MetricDirection, MetricSemantics } from './MetricSemantics'
+import type { MetricDirection, MetricDisplayKind, MetricSemantics } from './MetricSemantics'
 
 /**
  * Placeholder shown for a missing metric value. Intentionally distinct from a legitimate `0` or
@@ -84,12 +84,18 @@ function formatNumber(value: number, precision: number): string {
   return String(rounded === 0 ? 0 : rounded)
 }
 
-/** Join a numeric string with its unit. `%` is attached directly, other units after a space. */
-function joinUnit(text: string, unit: string): string {
+/**
+ * Join a numeric string with its unit, using the same rule as the backend `_join_unit`: a
+ * `percent` value is glued to its unit (`85.7%`), any other kind gets one space (`1.235 s`).
+ *
+ * The separator is derived from `displayKind`, never from the unit string, so the two
+ * implementations cannot drift for an unusual combination such as `percent` + `pp`.
+ */
+function joinUnit(text: string, unit: string, displayKind: MetricDisplayKind): string {
   if (unit.length === 0) {
     return text
   }
-  return unit === '%' ? `${text}${unit}` : `${text} ${unit}`
+  return displayKind === 'percent' ? `${text}${unit}` : `${text} ${unit}`
 }
 
 function isMissingValue(value: number | null | undefined): boolean {
@@ -133,12 +139,12 @@ export function formatMetric(
   }
 
   const unitLabel = semantics.display_unit ?? ''
-  const raw = joinUnit(formatNumber(numeric, RAW_VALUE_PRECISION), semantics.raw_unit ?? '')
+  const raw = joinUnit(formatNumber(numeric, RAW_VALUE_PRECISION), semantics.raw_unit ?? '', 'number')
 
   if (semantics.display_kind === 'percent') {
     const scaled = numeric * (semantics.display_multiplier ?? 1)
     return {
-      primary: joinUnit(formatNumber(scaled, semantics.display_precision), unitLabel),
+      primary: joinUnit(formatNumber(scaled, semantics.display_precision), unitLabel, 'percent'),
       raw,
       unitLabel,
       isMissing: false,
@@ -147,7 +153,7 @@ export function formatMetric(
   }
 
   return {
-    primary: joinUnit(formatNumber(numeric, semantics.display_precision), unitLabel),
+    primary: joinUnit(formatNumber(numeric, semantics.display_precision), unitLabel, 'number'),
     raw,
     unitLabel,
     isMissing: false,
@@ -226,13 +232,8 @@ export function getValuePosition(
  * would claim "50%" where the truth is "50 pp" -- the gap between 50% and 100% is not itself half of
  * anything. Every other display kind keeps its own unit, since a difference of seconds is seconds.
  *
- * This takes the value rather than only transforming the semantics, because the scaling has to
- * happen here. `display_multiplier` is applied by the `percent` branch of {@link formatMetric}
- * alone, so a synthesized "percent kind with a `pp` unit" would be needed to keep the multiplier --
- * and that combination is unsafe: the backend formatter derives the unit separator from the display
- * kind while this one derives it from the unit string, so such semantics would render `100pp` there
- * and `100 pp` here. Scaling the value up front and formatting it as a plain number keeps both
- * sides in agreement.
+ * The value is scaled here rather than left to `formatMetric`, because `display_multiplier` is only
+ * applied by its `percent` branch and the result must render as a plain `pp` number.
  *
  * @param value Difference in the metric's native scale, e.g. `0.5` for a gap of 50 points.
  * @param semantics Semantics of the metric the difference was taken from.

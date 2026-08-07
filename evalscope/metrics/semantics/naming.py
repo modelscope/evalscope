@@ -1,8 +1,8 @@
 """Final report metric name composition.
 
 The *final report metric name* is the string that ``ReportGenerator.generate_report()``
-writes into ``Metric.name``. It is the key used by the semantics catalog, the legacy
-mapping table and the audit script, so the spelling rule must live in exactly one place.
+writes into ``Metric.name``. It is the key the semantics catalog and the metric audit are keyed
+by, so the spelling rule must live in exactly one place.
 
 Any consumer that needs to know the final report metric name of an ``AggScore``
 (report generation, catalog lookups, audits) MUST use

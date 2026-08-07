@@ -159,12 +159,10 @@ class ReportGenerator:
     ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[str]]:
         """Resolve the semantics of every metric this report will contain.
 
-        The resolved contract is also recorded in ``AggScore.metadata['metric_semantics']`` so a
-        cached review carries the same interpretation as the report. Scores are never touched.
-
         An undeclared metric of a built-in benchmark is an error: the catalog has a gap and the
         report must not claim a direction or unit it cannot justify. A third-party benchmark
-        degrades to a diagnostic instead so its evaluation still completes.
+        degrades to a diagnostic instead so its evaluation still completes. Scores are never
+        touched.
 
         Args:
             score_dict: Subset name -> aggregated scores, as passed to the report.
@@ -182,27 +180,25 @@ class ReportGenerator:
         resolver = get_semantics_resolver()
 
         # Two passes: the role of a metric depends on which primary metric the benchmark
-        # declares, which is only known once every emitted name has been composed.
-        agg_score_by_name = {}
+        # declares, which is only known once every emitted name has been composed. Names repeat
+        # across subsets, so this collapses to one entry per distinct final metric name.
+        final_metric_names = []
         for agg_scores in score_dict.values():
             for agg_score_item in agg_scores:
                 final_name = compose_final_metric_name(agg_score_item, add_aggregation_name)
-                agg_score_by_name[final_name] = agg_score_item
+                if final_name not in final_metric_names:
+                    final_metric_names.append(final_name)
 
         primary_metric_name = match_primary_final_name(
             data_adapter.primary_metric,
-            list(agg_score_by_name),
+            final_metric_names,
             data_adapter.aggregation if add_aggregation_name else None,
         )
 
         semantics_by_metric: Dict[str, 'MetricSemantics'] = {}
-        for final_name, agg_score_item in agg_score_by_name.items():
+        for final_name in final_metric_names:
             resolved = resolver.resolve(dataset_name, final_name, primary_metric_name=primary_metric_name)
             resolved.log_audit_messages()
             resolved.raise_if_blocked()
             semantics_by_metric[final_name] = resolved.semantics
-            agg_score_item.metadata = {
-                **(agg_score_item.metadata or {}),
-                'metric_semantics': resolved.semantics.model_dump(mode='json'),
-            }
         return semantics_by_metric, primary_metric_name

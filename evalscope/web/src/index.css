@@ -129,12 +129,6 @@
   --chart-tpot: #a78bfa;
   --chart-token: #94a3b8;
 
-  /* KPI card gradients */
-  --kpi-grad-0: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --kpi-grad-1: linear-gradient(135deg, #10b981, #06b6d4);
-  --kpi-grad-2: linear-gradient(135deg, #f59e0b, #f97316);
-  --kpi-grad-3: linear-gradient(135deg, #ec4899, #8b5cf6);
-
   /* Chat bubble tokens */
   --bubble-user-bg: rgba(99, 102, 241, 0.12);
   --bubble-user-bg-hl: rgba(99, 102, 241, 0.22);
@@ -284,12 +278,6 @@
   --chart-ttft: #047857;
   --chart-tpot: #5b48e0;
   --chart-token: #5a6378;
-
-  /* KPI card gradients — saturated enough to work on both themes */
-  --kpi-grad-0: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --kpi-grad-1: linear-gradient(135deg, #10b981, #06b6d4);
-  --kpi-grad-2: linear-gradient(135deg, #f59e0b, #f97316);
-  --kpi-grad-3: linear-gradient(135deg, #ec4899, #8b5cf6);
 
   /* Chat bubble tokens */
   --bubble-user-bg: rgba(108, 87, 232, 0.10);

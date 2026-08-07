@@ -31,7 +31,9 @@ class _StubAdapter:
 
 def _metric(name: str, score: float = 0.5, num: int = 4) -> Metric:
     """Build a metric with one subset carrying ``score``."""
-    return Metric(name=name, categories=[Category(name=('default', ), subsets=[Subset(name='main', score=score, num=num)])])
+    return Metric(
+        name=name, categories=[Category(name=('default', ), subsets=[Subset(name='main', score=score, num=num)])]
+    )
 
 
 def _ner_score_dict() -> Dict[str, List[AggScore]]:
@@ -67,8 +69,16 @@ class TestPrimaryMetricByRole:
         report = Report.from_dict({
             'dataset_name': 'conll2003',
             'metrics': [
-                {'name': 'precision', 'categories': [], 'semantic_id': 'quality.precision.ratio'},
-                {'name': 'f1_score', 'categories': [], 'semantic_id': 'quality.f1.ratio'},
+                {
+                    'name': 'precision',
+                    'categories': [],
+                    'semantic_id': 'quality.precision.ratio'
+                },
+                {
+                    'name': 'f1_score',
+                    'categories': [],
+                    'semantic_id': 'quality.f1.ratio'
+                },
             ],
         })
 
@@ -83,7 +93,10 @@ class TestPrimaryMetricByRole:
         # the report says the choice was inferred rather than declared.
         report = Report.from_dict({
             'dataset_name': 'unknown_third_party_benchmark',
-            'metrics': [{'name': 'mystery_metric', 'categories': []}],
+            'metrics': [{
+                'name': 'mystery_metric',
+                'categories': []
+            }],
         })
 
         assert report.primary_metric is not None
@@ -95,8 +108,16 @@ class TestPrimaryMetricByRole:
         report = Report.from_dict({
             'dataset_name': 'unknown_third_party_benchmark',
             'metrics': [
-                {'name': 'no_answer_num', 'categories': [], 'semantic_id': 'diagnostic.count.items'},
-                {'name': 'cer', 'categories': [], 'semantic_id': 'quality.cer.ratio'},
+                {
+                    'name': 'no_answer_num',
+                    'categories': [],
+                    'semantic_id': 'diagnostic.count.items'
+                },
+                {
+                    'name': 'cer',
+                    'categories': [],
+                    'semantic_id': 'quality.cer.ratio'
+                },
             ],
         })
 
@@ -191,19 +212,6 @@ class TestGeneratorBinding:
         for metric in report.metrics:
             assert metric.score == pytest.approx(expected[metric.name])
 
-    def test_agg_score_metadata_records_the_semantics(self) -> None:
-        score_dict = _ner_score_dict()
-
-        ReportGenerator.generate_report(
-            score_dict=score_dict,
-            model_name='m',
-            data_adapter=_StubAdapter('conll2003', primary_metric='f1_score'),
-            add_aggregation_name=False,
-        )
-
-        for agg in score_dict['default']:
-            assert agg.metadata['metric_semantics']['metric_name']
-
     def test_third_party_undeclared_metric_degrades(self) -> None:
         score_dict = {'default': [AggScore(score=0.5, metric_name='mystery', aggregation_name='', num=2)]}
 
@@ -247,7 +255,11 @@ class TestLegacyReports:
                 'num': 10,
                 'categories': [{
                     'name': ['default'],
-                    'subsets': [{'name': 'main', 'score': 0.8, 'num': 10}],
+                    'subsets': [{
+                        'name': 'main',
+                        'score': 0.8,
+                        'num': 10
+                    }],
                 }],
             },
             {
@@ -256,7 +268,11 @@ class TestLegacyReports:
                 'num': 10,
                 'categories': [{
                     'name': ['default'],
-                    'subsets': [{'name': 'main', 'score': 0.75, 'num': 10}],
+                    'subsets': [{
+                        'name': 'main',
+                        'score': 0.75,
+                        'num': 10
+                    }],
                 }],
             },
         ],
@@ -290,8 +306,8 @@ class TestLegacyReports:
         assert legacy_semantics.semantic_id == fresh_semantics.semantic_id
         assert legacy_semantics.direction == fresh_semantics.direction
         assert legacy_semantics.display_kind == fresh_semantics.display_kind
-        assert format_metric_value(legacy.primary_metric.score,
-                                   legacy_semantics) == format_metric_value(fresh.primary_metric.score, fresh_semantics)
+        assert format_metric_value(legacy.primary_metric.score, legacy_semantics
+                                   ) == format_metric_value(fresh.primary_metric.score, fresh_semantics)
 
     def test_legacy_report_has_exactly_one_primary(self) -> None:
         report = Report.from_dict(dict(self.LEGACY_PAYLOAD))

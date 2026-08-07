@@ -504,17 +504,11 @@ Two cases do need a line from you:
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
-Run the audit to see exactly what is missing; it names the benchmark, the metric and the file to
-edit, so nothing has to be guessed:
-
-```bash
-make metric-audit
-```
-
 A third-party benchmark outside this repository can run without touching the catalog: its
 undeclared metrics degrade to diagnostics, which display the raw value without claiming a
-direction or a unit. A built-in benchmark cannot — an undeclared metric fails report generation,
-because a gap in the catalog would otherwise show up as a silently mis-rendered score.
+direction or a unit. A built-in benchmark cannot — an undeclared metric fails report generation
+with `UndeclaredMetricError`, naming the metric and the catalog entry to add, because a gap in the
+catalog would otherwise show up as a silently mis-rendered score.
 
 ## 4. Running Evaluation
 

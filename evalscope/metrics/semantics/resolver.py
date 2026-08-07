@@ -28,7 +28,7 @@ Blocking versus degrading
 Resolution never raises: it always returns a ``ResolvedSemantics``. The *caller* decides what a
 degradation means, driven by ``ResolvedSemantics.blocks_standard_semantics`` -- true when a
 governed name (a built-in benchmark or a public perf field) degraded, in which case the caller
-must not emit standard semantics. ``is_builtin_benchmark`` uses the bundled
+must not emit standard semantics. ``SemanticsResolver.is_strict`` uses the bundled
 ``evalscope/benchmarks/_meta/`` entries, not ``BENCHMARK_REGISTRY`` (third-party adapters
 register through the very same decorator, so registry membership cannot separate them).
 """
@@ -48,6 +48,7 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_NAME_SEMANTICS,
     METRIC_NAME_TABLE_LOCATION,
 )
+from evalscope.metrics.semantics.formatting import DIAGNOSTIC_FALLBACK_PRECISION
 from evalscope.metrics.semantics.naming import match_primary_final_name
 from evalscope.utils import get_logger
 
@@ -61,9 +62,6 @@ AUDIT_MESSAGE_PREFIX = '[metric-semantics]'
 
 #: ``semantic_id`` used when no source of the priority chain matched.
 DIAGNOSTIC_FALLBACK_SEMANTIC_ID = 'diagnostic.unspecified'
-
-#: Decimals of a diagnostic fallback value: the raw value is shown as stored.
-DIAGNOSTIC_FALLBACK_PRECISION = 4
 
 #: Where perf field semantics are declared, used in audit messages.
 PERF_FIELD_TABLE_LOCATION = 'evalscope/metrics/semantics/perf.py::PERF_FIELD_SEMANTICS'
@@ -85,7 +83,6 @@ __all__ = [
     'diagnostic_fallback',
     'get_semantics_resolver',
     'hydrate_report_semantics',
-    'is_builtin_benchmark',
     'is_public_perf_field',
 ]
 
@@ -233,8 +230,9 @@ def _undeclared_perf_field_message(field_key: str) -> str:
 def builtin_benchmark_names() -> FrozenSet[str]:
     """Names of the benchmarks bundled with EvalScope.
 
-    Read from the ``evalscope/benchmarks/_meta/`` files, the same coverage base the audit script
-    uses. The result is cached: the bundled files do not change at runtime.
+    Read from the ``evalscope/benchmarks/_meta/`` files rather than ``BENCHMARK_REGISTRY``, so a
+    third-party adapter registering through the same decorator is not mistaken for a built-in one.
+    The result is cached: the bundled files do not change at runtime.
 
     Returns:
         Benchmark names, empty when the metadata directory is unavailable.
@@ -242,22 +240,6 @@ def builtin_benchmark_names() -> FrozenSet[str]:
     if not _BUILTIN_META_DIR.is_dir():
         return frozenset()
     return frozenset(path.stem for path in _BUILTIN_META_DIR.glob('*.json'))
-
-
-def is_builtin_benchmark(benchmark_name: str) -> bool:
-    """Whether a benchmark is governed by the catalog and must declare all its metrics.
-
-    A benchmark counts as governed when it is bundled with EvalScope, which means an unresolved
-    metric name is a gap in the catalog and must block standard semantics output; any other
-    benchmark is treated as third-party and degrades instead.
-
-    Args:
-        benchmark_name: Name of the benchmark that produced the metric.
-
-    Returns:
-        ``True`` for built-in benchmarks.
-    """
-    return benchmark_name in builtin_benchmark_names()
 
 
 @lru_cache(maxsize=None)
@@ -394,7 +376,11 @@ class SemanticsResolver:
         self._builtin_benchmarks = builtin_benchmarks
 
     def is_strict(self, benchmark_name: str) -> bool:
-        """Whether a degradation of this benchmark must block standard semantics output."""
+        """Whether a degradation of this benchmark must block standard semantics output.
+
+        A benchmark is governed when it is bundled with EvalScope: an unresolved metric name is
+        then a gap in the catalog. Any other benchmark is treated as third-party and degrades.
+        """
         if self._builtin_benchmarks is not None:
             return benchmark_name in self._builtin_benchmarks
         return benchmark_name in builtin_benchmark_names()

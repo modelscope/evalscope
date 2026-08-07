@@ -140,24 +140,6 @@ package-check:
 	$(PYTHON) -m twine check "$(DIST_DIR)"/*
 
 # ============================================================================
-# Metric semantics audit
-# ============================================================================
-#
-# Read-only audit of the final report metric names EvalScope can emit and of their coverage in
-# the metric semantics catalog. Exits non-zero when an audit error is found.
-#
-# PARAMETERS:
-#   AUDIT_ARGS  Extra flags forwarded to the audit entry point, e.g.
-#               AUDIT_ARGS="--json", AUDIT_ARGS="--benchmark gsm8k --benchmark mmlu",
-#               AUDIT_ARGS="--observed-path outputs/20240101_000000/reports"
-
-AUDIT_ARGS ?=
-
-.PHONY: metric-audit
-metric-audit:
-	$(PYTHON) -m evalscope.metrics.semantics.audit $(AUDIT_ARGS)
-
-# ============================================================================
 # Development
 # ============================================================================
 

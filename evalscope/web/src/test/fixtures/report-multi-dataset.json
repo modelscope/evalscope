@@ -43,7 +43,6 @@
             "display_unit": "%",
             "display_precision": 1,
             "comparison_group": "quality.accuracy",
-            "aggregation_group": null,
             "contract_version": 1
           }
         }
@@ -99,7 +98,6 @@
             "display_unit": "%",
             "display_precision": 1,
             "comparison_group": "quality.score",
-            "aggregation_group": null,
             "contract_version": 1
           }
         }
@@ -147,7 +145,6 @@
             "display_unit": "tok/s",
             "display_precision": 2,
             "comparison_group": "perf.throughput",
-            "aggregation_group": null,
             "contract_version": 1
           }
         }

@@ -9,7 +9,7 @@ Conventions enforced here:
 - Keys equal the ``semantic_id`` of the declaration, named ``{domain}.{concept}.{unit}``.
 - ``comparison_group`` mirrors the ``{domain}.{concept}`` prefix of ``semantic_id``. It only
   means "may sit in the same comparison matrix" and never implies that the members can be
-  averaged; averaging requires an explicit ``aggregation_group``.
+  averaged: nothing in the contract aggregates across benchmarks.
 - Diagnostic baselines always use ``direction=none`` and ``comparison_group=None``.
 - Quality baselines default to ``role=primary``. A benchmark that reports several of them
   (F1 plus Precision / Recall, WER plus CER) downgrades the extra ones to ``auxiliary`` in its

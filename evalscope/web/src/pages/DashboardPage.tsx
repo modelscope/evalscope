@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText } from 'lucide-react'
+import { Clock, Cpu, FileText, Gauge } from 'lucide-react'
 import { useReports } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
@@ -8,27 +8,22 @@ import { listPerfRuns } from '@/api/perf'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import type { MetricSemantics } from '@/domain/metric'
 import Skeleton from '@/components/ui/Skeleton'
+import KpiCard from '@/components/ui/KpiCard'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import QuickActions from '@/components/dashboard/QuickActions'
 import AggregatedResults from '@/components/dashboard/AggregatedResults'
-import ActivityStrip from '@/components/dashboard/ActivityStrip'
-import { aggregateRuns, totalsOf } from '@/domain/report/runAggregation'
+import { aggregateRuns } from '@/domain/report/runAggregation'
 import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
+import { formatFull } from '@/utils/perf'
 
 /**
- * Landing page: what to do next, then how the benchmarks are holding up.
+ * Landing page: how much has been recorded here, then how the benchmarks are holding up.
  *
- * This page used to open with four counters and a weaker copy of the Evaluations list -- same feed,
- * but with a filter, a search box and a pagination control that the dedicated list pages already
- * provide with sorting and comparison selection on top. Two of the counters existed only to link to
- * those pages, and a fourth put a timestamp where a comparable quantity belongs.
- *
- * What is left is the part no other page can do. Results are aggregated by what they measure rather
- * than by when they ran, because re-running a benchmark is the normal workflow here and a flat feed
- * renders those repeats as many identical-looking rows. Anything the list pages do better is not
- * duplicated: there is no filter, no search and no pagination, only a link across to them.
+ * Four counters open the page, and below them the part no other page can do: results aggregated by
+ * what they measure rather than by when they ran, because re-running a benchmark is the normal
+ * workflow here and a flat feed renders those repeats as many identical-looking rows. Anything the
+ * list pages do better is not duplicated -- no filter, no search, no pagination.
  */
 export default function DashboardPage() {
   const { t } = useLocale()
@@ -72,12 +67,28 @@ export default function DashboardPage() {
     }
   }, [rootPath, scanToken, t])
 
-  // The whole page is driven by this: every score ever recorded, grouped by what it measures.
+  // The table is driven by this: every score ever recorded, grouped by what it measures.
   const rows = useMemo(
     () => aggregateRuns(reports, perfRuns, perfSemantics),
     [reports, perfRuns, perfSemantics],
   )
-  const totals = useMemo(() => totalsOf(rows), [rows])
+
+  const kpi = useMemo(() => {
+    const models = new Set<string>()
+    reports.forEach((report) => report.model_name && models.add(report.model_name))
+    perfRuns.forEach((run) => run.model && models.add(run.model))
+    const timestamps = [
+      ...reports.map((report) => report.timestamp || ''),
+      ...perfRuns.map((run) => run.timestamp || ''),
+    ].filter(Boolean)
+    const latest = timestamps.length > 0 ? timestamps.reduce((a, b) => (a > b ? a : b)) : ''
+    return {
+      evals: reports.length,
+      perfs: perfRuns.length,
+      models: models.size,
+      latest: latest ? formatFull(latest) : t('dashboard.neverText'),
+    }
+  }, [reports, perfRuns, t])
 
   const openRun = (row: AggregatedRow, point: CellPoint) => {
     const root = encodeURIComponent(rootPath)
@@ -90,46 +101,59 @@ export default function DashboardPage() {
 
   const hasData = scanned && rows.length > 0
 
-  if (loading && !scanned) {
-    return (
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <Skeleton lines={2} height={32} />
-        </div>
-        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <Skeleton lines={8} height={14} />
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-col gap-4">
       {loadError && <ErrorAlert className="rounded-[var(--radius-sm)]">{loadError}</ErrorAlert>}
 
-      {scanned && <QuickActions reports={reports} perfRuns={perfRuns} />}
-
-      {hasData ? (
-        <>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="type-body text-[var(--text)]">{t('dashboard.resultsTitle')}</h2>
-            {/* Replaces the four counter cards: the same facts, in one line instead of 120px. */}
-            <span className="type-caption text-[var(--text-muted)]">
-              {t('dashboard.totalsSummary', {
-                models: totals.models,
-                benchmarks: totals.benchmarks,
-                cells: totals.cells,
-                runs: totals.runs,
-              })}
-            </span>
-          </div>
-          <AggregatedResults rows={rows} onOpenRun={openRun} />
-          <ActivityStrip
-            reports={reports}
-            perfRuns={perfRuns}
-            perfSemantics={perfSemantics}
-            rootPath={rootPath}
+      {loading && !scanned ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
+              <Skeleton width={40} height={40} className="mb-3" />
+              <Skeleton width={60} height={28} className="mb-1" />
+              <Skeleton width={100} height={14} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiCard
+            icon={<FileText size={18} strokeWidth={2} />}
+            value={String(kpi.evals)}
+            label={t('dashboard.totalEvaluations')}
+            delay={0}
+            onClick={() => navigate('/reports')}
           />
+          <KpiCard
+            icon={<Gauge size={18} strokeWidth={2} />}
+            value={String(kpi.perfs)}
+            label={t('dashboard.totalPerfRuns')}
+            delay={60}
+            onClick={() => navigate('/performance')}
+          />
+          <KpiCard
+            icon={<Cpu size={18} strokeWidth={2} />}
+            value={String(kpi.models)}
+            label={t('dashboard.modelsEvaluated')}
+            delay={120}
+          />
+          <KpiCard
+            icon={<Clock size={18} strokeWidth={2} />}
+            value={kpi.latest}
+            label={t('dashboard.latestRun')}
+            delay={180}
+          />
+        </div>
+      )}
+
+      {loading && !scanned ? (
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
+          <Skeleton lines={8} height={14} />
+        </div>
+      ) : hasData ? (
+        <>
+          <h2 className="type-body text-[var(--text)]">{t('dashboard.resultsTitle')}</h2>
+          <AggregatedResults rows={rows} onOpenRun={openRun} />
         </>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">

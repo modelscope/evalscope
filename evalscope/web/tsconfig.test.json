@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    /* Vitest globals (`test.globals` is enabled) plus Node APIs used by fixtures. */
+    "types": ["vite/client", "node", "vitest/globals"]
+  },
+  /* The app project excludes tests; this one covers them together with the code
+     under test so that editors resolve the `@/*` alias and the jest-dom
+     matchers registered in `src/test/setup.ts`. */
+  "include": ["src"],
+  "exclude": []
+}

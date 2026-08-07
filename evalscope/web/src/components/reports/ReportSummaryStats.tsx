@@ -4,6 +4,7 @@ import type { ReportData } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
+import { primaryMetricOf } from '@/domain/report/primaryMetrics'
 
 interface Props {
   reports: ReportData[]
@@ -39,10 +40,7 @@ export default function ReportSummaryStats({ reports }: Props) {
     if (!reports.length) return null
 
     const entries = reports.map((report) => {
-      const named = report.primary_metric_name
-        ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
-        : undefined
-      const primary = named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
+      const primary = primaryMetricOf(report)
       return {
         name: report.dataset_name,
         score: primary?.score ?? null,

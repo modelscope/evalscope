@@ -42,7 +42,6 @@ export interface MetricSemantics {
   display_precision: number
   /** Metrics that may sit in the same comparison matrix; never implies averaging. */
   comparison_group?: string | null
-  /** Opt-in switch for cross-benchmark aggregation; unused in v1. */
-  aggregation_group?: string | null
+  /** Version of the backend contract this declaration follows. */
   contract_version: number
 }

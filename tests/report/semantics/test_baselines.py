@@ -103,10 +103,6 @@ class TestComparisonGroupNaming:
         assert semantics.comparison_group == f'{domain}.{concept}'
         assert semantics.semantic_id.startswith(f'{semantics.comparison_group}.')
 
-    @pytest.mark.parametrize('baseline_id', BASELINE_IDS)
-    def test_comparison_group_never_implies_aggregation(self, baseline_id: str) -> None:
-        assert SEMANTIC_BASELINES[baseline_id].aggregation_group is None
-
 
 class TestDisplayDeclarations:
 
@@ -143,12 +139,8 @@ class TestDisplayDeclarations:
     def test_perf_directions_follow_latency_and_throughput(self) -> None:
         assert SEMANTIC_BASELINES['perf.latency.seconds'].direction == MetricDirection.LOWER_IS_BETTER
         assert SEMANTIC_BASELINES['perf.latency.milliseconds'].direction == MetricDirection.LOWER_IS_BETTER
-        assert (
-            SEMANTIC_BASELINES['perf.throughput.tokens_per_second'].direction == MetricDirection.HIGHER_IS_BETTER
-        )
-        assert (
-            SEMANTIC_BASELINES['perf.throughput.requests_per_second'].direction == MetricDirection.HIGHER_IS_BETTER
-        )
+        assert (SEMANTIC_BASELINES['perf.throughput.tokens_per_second'].direction == MetricDirection.HIGHER_IS_BETTER)
+        assert (SEMANTIC_BASELINES['perf.throughput.requests_per_second'].direction == MetricDirection.HIGHER_IS_BETTER)
 
     def test_unbounded_judge_score_stays_a_plain_number(self) -> None:
         semantics = SEMANTIC_BASELINES['quality.judge_score.unbounded']

@@ -2,30 +2,66 @@
 
 Feature: metric-semantics-governance
 
-``evalscope/metrics/semantics/golden_samples.json`` is read by this module and by the vitest
-suite ``evalscope/web/src/domain/metric/goldenSamples.test.ts``, so both implementations of the
-formatting rules are pinned to the same expected strings (requirements 13.9, 20.2).
+``evalscope/metrics/semantics/golden_samples.json`` is read by this module and by the vitest suite
+``evalscope/web/src/domain/metric/metricFormat.test.ts``, so both implementations of the formatting
+rules are pinned to the same expected strings (requirements 13.9, 20.2).
+
+The sample model and its loader live here rather than in the shipped package: they are test
+scaffolding, and the only production consumer of the contract is ``format_metric_value``.
+``expected_raw`` pins the frontend's ``FormattedMetric.raw`` (it backs the value tooltips); no
+backend function produces the unscaled text, so this module does not assert it.
 """
 
 import json
 import pytest
-from typing import Any, Dict, List
+from pathlib import Path
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Dict, List, Optional
 
+import evalscope.metrics.semantics.formatting as formatting
 from evalscope.api.metric.semantics import MetricDisplayKind, MetricSemantics
-from evalscope.metrics.semantics.formatting import (
-    GOLDEN_SAMPLES_PATH,
-    MISSING_PLACEHOLDER,
-    GoldenSample,
-    format_metric_value,
-    format_raw_metric_value,
-    load_golden_samples,
-)
+from evalscope.metrics.semantics.formatting import MISSING_PLACEHOLDER, format_metric_value
+
+#: Location of the golden samples shared with the frontend formatting tests.
+GOLDEN_SAMPLES_PATH = Path(formatting.__file__).with_name('golden_samples.json')
 
 #: Keys that form the assertion contract shared with the frontend.
 CONTRACT_KEYS = frozenset({'semantics', 'value', 'expected_primary', 'expected_raw'})
 
 #: Metadata keys consumers may ignore.
 METADATA_KEYS = frozenset({'id', 'description'})
+
+
+class GoldenSample(BaseModel):
+    """One entry of ``golden_samples.json``, the backend/frontend formatting contract."""
+
+    model_config = ConfigDict(frozen=True, extra='forbid')
+
+    id: str
+    """Stable identifier, unique inside the file."""
+
+    description: str = Field(default='')
+    """Human readable note. Not part of the assertion contract."""
+
+    semantics: Optional[MetricSemantics] = Field(default=None)
+    """Semantics payload, or ``None`` to exercise the diagnostic fallback."""
+
+    value: Optional[float] = Field(default=None)
+    """Stored metric value, or ``None`` to exercise the missing value path."""
+
+    expected_primary: str
+    """Expected ``format_metric_value`` output."""
+
+    expected_raw: str
+    """Expected ``FormattedMetric.raw`` of the frontend primitive."""
+
+
+def load_golden_samples() -> List[GoldenSample]:
+    """Load and validate the shared formatting golden samples, in file order."""
+    with open(GOLDEN_SAMPLES_PATH, 'r', encoding='utf-8') as stream:
+        payload = json.load(stream)
+    return [GoldenSample(**sample) for sample in payload]
+
 
 SAMPLES: List[GoldenSample] = load_golden_samples()
 
@@ -44,7 +80,7 @@ def sample_ids() -> List[str]:
 class TestGoldenSampleFile:
     """The file itself must stay a consumable, self-describing contract."""
 
-    def test_file_is_packaged_next_to_the_formatter(self) -> None:
+    def test_file_sits_next_to_the_formatter(self) -> None:
         assert GOLDEN_SAMPLES_PATH.name == 'golden_samples.json'
         assert GOLDEN_SAMPLES_PATH.is_file()
 
@@ -108,11 +144,5 @@ class TestGoldenSampleCoverage:
 
 @pytest.mark.parametrize('sample', SAMPLES, ids=sample_ids())
 def test_backend_matches_golden_primary_text(sample: GoldenSample) -> None:
-    """Requirements 13.9, 20.2: the backend primary text equals the shared expectation."""
+    """Requirements 13.9, 20.2: the backend display text equals the shared expectation."""
     assert format_metric_value(sample.value, sample.semantics) == sample.expected_primary
-
-
-@pytest.mark.parametrize('sample', SAMPLES, ids=sample_ids())
-def test_backend_matches_golden_raw_text(sample: GoldenSample) -> None:
-    """Requirements 13.9, 20.2: the backend raw text equals the shared expectation."""
-    assert format_raw_metric_value(sample.value, sample.semantics) == sample.expected_raw

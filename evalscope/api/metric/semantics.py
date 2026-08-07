@@ -94,9 +94,6 @@ class MetricSemantics(BaseModel):
     """Group of metrics that may sit in the same comparison matrix. Never implies averaging.
     Must be empty for diagnostic metrics."""
 
-    aggregation_group: Optional[str] = Field(default=None)
-    """Opt-in switch for cross-benchmark aggregation. Unused in v1."""
-
     contract_version: int = Field(default=METRIC_CONTRACT_VERSION)
     """Version of the contract this declaration follows."""
 
@@ -155,28 +152,6 @@ class MetricSemantics(BaseModel):
         return self
 
 
-class AggregationMethod(str, Enum):
-    """Aggregation method of an explicit cross-benchmark aggregation group."""
-
-    MACRO_MEAN = 'macro_mean'
-    WEIGHTED_MEAN = 'weighted_mean'
-
-
-class AggregationSpec(BaseModel):
-    """Explicit opt-in for cross-benchmark aggregation. Unused in v1."""
-
-    model_config = ConfigDict(frozen=True, extra='forbid')
-
-    group: str
-    """Name of the aggregation group this benchmark contributes to."""
-
-    method: AggregationMethod
-    """How member metrics are combined."""
-
-    target_semantic_id: str
-    """Semantic identifier of the aggregated value."""
-
-
 #: Location the baseline table is declared at, used in error messages.
 BASELINE_TABLE_LOCATION = 'evalscope/metrics/semantics/baselines.py::SEMANTIC_BASELINES'
 
@@ -232,7 +207,6 @@ class MetricEntry(BaseModel):
     display_unit: Optional[str] = Field(default=None)
     display_precision: Optional[int] = Field(default=None)
     comparison_group: Optional[str] = Field(default=None)
-    aggregation_group: Optional[str] = Field(default=None)
 
     @model_validator(mode='after')
     def _check_full_override_is_complete(self) -> Self:

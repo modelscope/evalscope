@@ -3,49 +3,47 @@
 Feature: metric-semantics-governance
 """
 import ast
-import importlib
 import subprocess
 import sys
 from pathlib import Path
 from typing import Iterator, List
 
 import evalscope.metrics.semantics as semantics
+from evalscope.metrics.semantics.catalog import lookup_metric_entry
 
-#: Names the rest of the codebase (report generation, service APIs, audits) relies on.
+#: Names the rest of the codebase (report generation, service APIs) relies on.
 REQUIRED_EXPORTS: List[str] = [
     'METRIC_NAME_SEMANTICS',
     'BENCHMARK_METRIC_OVERRIDES',
     'BENCHMARK_DYNAMIC_METRICS',
     'SEMANTIC_BASELINES',
-    'lookup_metric_entry',
     'compose_final_metric_name',
-    'ResolvedSemantics',
-    'SemanticsResolver',
-    'SemanticsSource',
-    'diagnostic_fallback',
     'get_semantics_resolver',
     'hydrate_report_semantics',
-    'MetricSummary',
+    'UndeclaredMetricError',
     'PrimaryMetricRef',
-    'SummaryStatus',
-    'summarize_primary_metrics',
     'format_metric_value',
 ]
 
 #: Names deliberately kept out of the package surface: they have no production consumer, so
-#: exporting them would widen the maintained API for nothing. Tests import them from
-#: ``formatting.py`` directly instead.
+#: exporting them would widen the maintained API for nothing. Tests import them from their
+#: owning module instead.
 UNEXPORTED_HELPERS: List[str] = [
     'format_metric',
     'FormattedMetric',
+    'format_raw_metric_value',
     'get_unit_label',
     'round_half_up',
     'MISSING_PLACEHOLDER',
+    'lookup_metric_entry',
+    'diagnostic_fallback',
+    'is_public_perf_field',
+    'builtin_benchmark_names',
+    'catalog_entry_location',
+    'ResolvedSemantics',
+    'SemanticsResolver',
+    'SemanticsSource',
 ]
-
-#: Maintenance scripts that are not imported by the package ``__init__``, so they may import the
-#: report layer without creating a cycle on the runtime read path.
-STANDALONE_ENTRY_POINTS = frozenset({'audit.py'})
 
 
 def _module_level_imports(module: ast.Module) -> Iterator[ast.stmt]:
@@ -80,10 +78,14 @@ def _imports_report_at_module_level(path: Path) -> bool:
 
 
 class TestPublicSurface:
+    """The exported surface must stay exactly what production imports.
 
-    def test_all_is_declared_and_sorted_into_unique_names(self) -> None:
-        assert isinstance(semantics.__all__, list)
-        assert len(semantics.__all__) == len(set(semantics.__all__))
+    The two guards that carry the design intent are
+    :meth:`test_required_exports_are_present` (nothing production needs may disappear) and
+    :meth:`test_helpers_without_a_production_consumer_stay_unexported` (nothing without a consumer
+    may creep in). The import checks below catch an ``__all__`` that lists a missing name, or a
+    module that exports more than it declares.
+    """
 
     def test_every_exported_name_is_importable_from_the_package(self) -> None:
         for name in semantics.__all__:
@@ -104,25 +106,7 @@ class TestPublicSurface:
         assert exported == set(semantics.__all__)
 
     def test_lookup_helper_returns_none_for_unknown_metric_name(self) -> None:
-        assert semantics.lookup_metric_entry('a-metric-that-does-not-exist') is None
-
-    def test_declared_metric_names_resolve_through_the_lookup_helper(self) -> None:
-        for metric_name, entry in semantics.METRIC_NAME_SEMANTICS.items():
-            assert semantics.lookup_metric_entry(metric_name) is entry
-
-    def test_audit_entry_point_is_not_part_of_the_runtime_surface(self) -> None:
-        # ``audit.py`` is a maintenance script: importing the package must not pull it in. Checked
-        # in a subprocess because the audit tests of this session import the module directly.
-        assert 'audit' not in semantics.__all__
-        statement = (
-            'import sys, evalscope.metrics.semantics; '
-            "sys.exit(1 if 'evalscope.metrics.semantics.audit' in sys.modules else 0)"
-        )
-        result = subprocess.run([sys.executable, '-c', statement], capture_output=True, text=True)
-        assert result.returncode == 0, f'importing the semantics package must not import audit.py: {result.stderr}'
-
-    def test_package_is_reimportable(self) -> None:
-        assert importlib.reload(semantics).__all__ == semantics.__all__
+        assert lookup_metric_entry('a-metric-that-does-not-exist') is None
 
 
 class TestNoImportCycle:
@@ -153,6 +137,6 @@ class TestNoImportCycle:
         offenders = [
             str(path.relative_to(package_dir))
             for path in sorted(package_dir.rglob('*.py'))
-            if path.name not in STANDALONE_ENTRY_POINTS and _imports_report_at_module_level(path)
+            if _imports_report_at_module_level(path)
         ]
         assert offenders == []

@@ -15,7 +15,7 @@ from flask import Blueprint, jsonify, request, send_file
 from typing import List
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
-from evalscope.metrics.semantics import PrimaryMetricRef, summarize_primary_metrics
+from evalscope.metrics.semantics import PrimaryMetricRef
 from evalscope.metrics.semantics.perf import resolve_perf_semantics
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio, mean_quality_ratio
 from evalscope.report import ReportKey, get_data_frame
@@ -194,9 +194,10 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
 
     # Every dataset contributes a reference so each one can be shown as
-    # `dataset -> metric -> score`. A report always resolves a primary metric when it has any
+    # `dataset -> metric -> score`, each in its own native scale. They are never collapsed into a
+    # single cross-benchmark number. A report always resolves a primary metric when it has any
     # metric at all, inferring one if the benchmark declared none.
-    summary = summarize_primary_metrics([
+    primary_metric_refs = [
         PrimaryMetricRef(
             dataset_name=r.dataset_name,
             metric_name=metric.name,
@@ -204,7 +205,7 @@ def _build_report_meta(report_name: str, root: str) -> dict:
             semantics=metric.semantics,
             inferred=r.primary_metric_is_inferred(),
         ) for r, metric in zip(report_list, primary_metrics) if metric
-    ])
+    ]
 
     return {
         'name': report_name,
@@ -218,16 +219,13 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'dataset_scores': dataset_scores,
         'num_samples': total_num,
         'timestamp': timestamp,
-        'primary_metrics': [ref.model_dump(mode='json') for ref in summary.primary_metrics],
+        'primary_metrics': [ref.model_dump(mode='json') for ref in primary_metric_refs],
         # Ranking and filtering key only, never rendered: a direction-aware 0-1 quality ratio, so
         # a low WER ranks as well as a high accuracy and a 0-100 scale is not treated as 100x
         # better than a ratio. `None` means the run's metrics admit no such scale.
         'quality_ratio': mean_quality_ratio(
             bounded_quality_ratio(metric.score, metric.semantics) for metric in primary_metrics if metric
         ),
-        'summary_status': summary.status.value,
-        'summary_score': summary.summary_score,
-        'summary_semantics': summary.summary_semantics.model_dump(mode='json') if summary.summary_semantics else None,
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
         '_scores': [metric.score if metric else report.score for report, metric in zip(report_list, primary_metrics)],

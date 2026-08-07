@@ -90,19 +90,6 @@ class TestBaselineReferences:
             assert baseline_id in SEMANTIC_BASELINES
 
 
-class TestNoAggregationGroups:
-    """Feature: metric-semantics-governance, Property 19: v1 declares no aggregation group, so
-    no cross-benchmark total is ever produced."""
-
-    def test_catalog_declares_no_aggregation_group(self) -> None:
-        declared = {
-            metric_name
-            for metric_name, entry in _all_entries().items() if entry.resolve(metric_name).aggregation_group is not None
-        }
-
-        assert declared == set()
-
-
 class TestImportTimeValidation:
     """An illegal entry or a dangling baseline must abort the catalog validation."""
 

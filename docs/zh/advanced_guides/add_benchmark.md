@@ -500,15 +500,9 @@ metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
-跑审计即可看到还缺什么，它会给出 benchmark 名、指标名与待改文件，无需人工猜测：
-
-```bash
-make metric-audit
-```
-
 仓库外的第三方 benchmark 不改目录也能跑：其未声明的指标降级为 diagnostic，原样显示数值，不伪造
-方向与单位。内置 benchmark 则不行——未声明的指标会让报告生成失败，否则目录的空洞就会表现为一个被
-静默错误渲染的分数。
+方向与单位。内置 benchmark 则不行——未声明的指标会让报告生成抛出 `UndeclaredMetricError`，并给出指标名
+与待补充的目录条目；否则目录的空洞就会表现为一个被静默错误渲染的分数。
 
 ## 4. 运行评测
 

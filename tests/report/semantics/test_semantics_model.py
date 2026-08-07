@@ -42,7 +42,6 @@ class TestMetricSemanticsValid:
         semantics = MetricSemantics(**_accuracy_kwargs())
 
         assert semantics.contract_version == METRIC_CONTRACT_VERSION == 1
-        assert semantics.aggregation_group is None
         assert semantics.raw_unit is None
 
     def test_diagnostic_metric_without_direction_is_accepted(self) -> None:

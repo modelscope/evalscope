@@ -34,9 +34,10 @@ def bounded_quality_ratio(value: Optional[float], semantics: Optional[MetricSema
     if semantics.role is MetricRole.DIAGNOSTIC or semantics.direction is MetricDirection.NONE:
         return None
     value_range = semantics.value_range
-    if value_range is None or not value_range.max > value_range.min:
+    if value_range is None:
         return None
 
+    # ValueRange already guarantees finite bounds with min < max, so the span is safe to divide by.
     span = value_range.max - value_range.min
     clamped = min(1.0, max(0.0, (float(value) - value_range.min) / span))
     return 1.0 - clamped if semantics.direction is MetricDirection.LOWER_IS_BETTER else clamped

@@ -8,13 +8,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.accuracy",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.8567,
@@ -30,13 +32,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 0,
       "comparison_group": "quality.accuracy",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.125,
@@ -52,13 +56,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.accuracy",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.0,
@@ -74,13 +80,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.accuracy",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 1.0,
@@ -96,13 +104,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.f1",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.9,
@@ -118,13 +128,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 100.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 100.0
+      },
       "display_kind": "percent",
       "display_multiplier": 1.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.score",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 87.25,
@@ -140,13 +152,15 @@
       "role": "primary",
       "direction": "lower_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.wer",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.0432,
@@ -162,13 +176,15 @@
       "role": "diagnostic",
       "direction": "none",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": null,
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.9876,
@@ -190,7 +206,6 @@
       "display_unit": "s",
       "display_precision": 3,
       "comparison_group": "perf.latency",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 1.23456,
@@ -212,7 +227,6 @@
       "display_unit": "s",
       "display_precision": 3,
       "comparison_group": "perf.latency",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 0.0001234,
@@ -234,7 +248,6 @@
       "display_unit": "ms",
       "display_precision": 2,
       "comparison_group": "perf.latency",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 250.0,
@@ -256,7 +269,6 @@
       "display_unit": "tok/s",
       "display_precision": 2,
       "comparison_group": "perf.throughput",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 1234.5678,
@@ -278,7 +290,6 @@
       "display_unit": null,
       "display_precision": 2,
       "comparison_group": "quality.judge_score",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 7.5,
@@ -300,7 +311,6 @@
       "display_unit": null,
       "display_precision": 2,
       "comparison_group": "quality.judge_score",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": -3.456,
@@ -322,7 +332,6 @@
       "display_unit": null,
       "display_precision": 0,
       "comparison_group": null,
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": 12.0,
@@ -338,13 +347,15 @@
       "role": "primary",
       "direction": "higher_is_better",
       "raw_unit": null,
-      "value_range": {"min": 0.0, "max": 1.0},
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
       "comparison_group": "quality.accuracy",
-      "aggregation_group": null,
       "contract_version": 1
     },
     "value": null,
@@ -374,5 +385,50 @@
     "value": null,
     "expected_primary": "—",
     "expected_raw": "—"
+  },
+  {
+    "id": "percent_kind_with_non_percent_unit",
+    "description": "percent display_kind glues its unit even when that unit is not '%': the separator comes from display_kind on both sides, never from the unit string.",
+    "semantics": {
+      "semantic_id": "quality.score.ratio",
+      "metric_name": "Change",
+      "role": "auxiliary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "pp",
+      "display_precision": 1,
+      "comparison_group": "quality.score",
+      "contract_version": 1
+    },
+    "value": 0.5,
+    "expected_primary": "50pp",
+    "expected_raw": "0.5"
+  },
+  {
+    "id": "number_kind_with_percent_unit",
+    "description": "number display_kind separates its unit with one space even when the unit is '%': an already-0-100 value that is not declared percent must not lose the space.",
+    "semantics": {
+      "semantic_id": "diagnostic.unspecified",
+      "metric_name": "Cache Hit Rate",
+      "role": "diagnostic",
+      "direction": "none",
+      "raw_unit": "%",
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": null,
+      "display_unit": "%",
+      "display_precision": 2,
+      "comparison_group": null,
+      "contract_version": 1
+    },
+    "value": 12.345,
+    "expected_primary": "12.35 %",
+    "expected_raw": "12.345 %"
   }
 ]

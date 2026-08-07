@@ -5,13 +5,13 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPredictions, getChartUrl } from '@/api/reports'
 import type { ReportData, PredictionRow } from '@/api/types'
 import { getDisplayNames, parseReportName } from '@/utils/reportParser'
-import { buildDisplayLabel, compatibilityReason } from '@/domain/compare/compareModel'
+import { buildDisplayLabel, compatibilityReason, MAX_COMPARE_SLOTS } from '@/domain/compare/compareModel'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreColor } from '@/utils/colorScale'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
-import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import { RATIO_PERCENT_SEMANTICS, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import type { MetricSemantics } from '@/domain/metric'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
@@ -40,7 +40,7 @@ interface MergedPrediction {
 
 type PerModelFilter = 'any' | 'above' | 'below'
 
-// Distinct accent color palette for each model column (up to 3)
+// Distinct accent color palette for each model column (up to MAX_COMPARE_SLOTS)
 // DESIGN.md §Compare Slots: only 3 brand-color slots exist.
 // Do NOT add a 4th entry to this palette — extra models must collapse to a
 // numbered legend instead. Iteration paths use `MODEL_PALETTE[idx] ?? MODEL_PALETTE[0]`
@@ -65,7 +65,6 @@ const MODEL_PALETTE = [
     headerBg: 'var(--compare-2-bg-header)',
   },
 ]
-const MAX_COMPARE_SLOTS = MODEL_PALETTE.length
 
 // ------------------------------------------------------------------ //
 // Main Component                                                      //
@@ -159,10 +158,7 @@ export default function ComparePage() {
       const key = (r as ReportData & { _reportName?: string })._reportName ?? r.model_name
       if (!byReport[key]) byReport[key] = {}
       byReport[key][r.dataset_name] = r.score
-      const named = r.primary_metric_name
-        ? r.metrics.find((metric) => metric.name === r.primary_metric_name)
-        : undefined
-      const primary = named ?? r.metrics.find((metric) => metric.semantics?.role === 'primary')
+      const primary = primaryMetricOf(r)
       if (primary?.semantics) {
         semanticsByDataset[r.dataset_name] = primary.semantics
       }

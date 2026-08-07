@@ -8,7 +8,27 @@
  */
 
 import type { MetricSemantics } from '@/domain/metric'
-import type { ReportSummary } from '@/api/types'
+import type { ReportData, ReportSummary } from '@/api/types'
+
+/** One metric of a dataset report, as returned by the API. */
+export type ReportMetric = ReportData['metrics'][number]
+
+/**
+ * The metric that represents one dataset report, selected by role rather than by position.
+ *
+ * `primary_metric_name` names it explicitly; otherwise the metric whose semantics say
+ * `role === 'primary'` is used. A report with neither yields `null`, which the UI shows as an
+ * absent score instead of borrowing another metric's number.
+ *
+ * Every surface that needs "the score of this run" must go through here, so the report list, the
+ * detail page, the overview tab and the compare page can never disagree about which metric that is.
+ */
+export function primaryMetricOf(report: ReportData): ReportMetric | null {
+  const named = report.primary_metric_name
+    ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
+    : undefined
+  return named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary') ?? null
+}
 
 /** One dataset's primary metric as reported by the API. */
 export interface PrimaryMetricRef {
@@ -72,34 +92,6 @@ export function metricLabel(ref: PrimaryMetricRef | null | undefined): string {
 /** Primary metrics of a run, falling back to an empty list on an older backend response. */
 export function primaryMetricsOf(report: ReportSummary): PrimaryMetricRef[] {
   return (report as { primary_metrics?: PrimaryMetricRef[] }).primary_metrics ?? []
-}
-
-/** Summary status of a run; `undefined` on an older backend response. */
-export function summaryStatusOf(report: ReportSummary): string | undefined {
-  return (report as { summary_status?: string }).summary_status
-}
-
-/**
- * Whether a set of runs may be sorted or compared by score.
- *
- * Allowed only when every run exposes exactly one primary metric and all of them share a
- * `semantic_id`: comparing an accuracy against a WER, or against a judge score on an unknown
- * scale, would rank incomparable numbers.
- */
-export function isScoreComparable(reports: ReportSummary[]): boolean {
-  const ids = new Set<string>()
-  for (const report of reports) {
-    const refs = primaryMetricsOf(report)
-    if (refs.length === 0) {
-      // Older backend response: no semantics to disagree about.
-      continue
-    }
-    if (refs.length > 1) {
-      return false
-    }
-    ids.add(refs[0].semantics?.semantic_id ?? refs[0].metric_name)
-  }
-  return ids.size <= 1
 }
 
 /**

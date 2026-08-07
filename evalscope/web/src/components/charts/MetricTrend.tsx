@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { getBoundedQualityRatio, formatMetric } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
@@ -15,6 +16,11 @@ import type { CellPoint } from '@/domain/report/runAggregation'
  * Bar height is magnitude, never quality. A `lower_is_better` series is not flipped, so a falling
  * error rate draws falling bars, while the colour says those low values are good. Sizing by quality
  * instead is what once made a 4.3% WER draw a 95.7% full bar.
+ *
+ * The `detail` variant reads out the pointed-at run in a fixed line above the bars instead of a
+ * `title` tooltip. A native tooltip only appears after the browser's own hover delay -- around a
+ * second, not adjustable from CSS or JS -- which is far too slow for scrubbing across a row of
+ * thirty bars looking for the odd one out.
  */
 
 interface MetricTrendProps {
@@ -22,7 +28,7 @@ interface MetricTrendProps {
   history: CellPoint[]
   /** Metric contract; supplies the extent and the colour scale. */
   semantics: MetricSemantics | null | undefined
-  /** `inline` fits a table cell; `detail` is the expanded view with an axis and clickable bars. */
+  /** `inline` fits a table cell; `detail` is the expanded view with a readout and clickable bars. */
   variant?: 'inline' | 'detail'
   /** Called with the point a user clicks, in the `detail` variant. */
   onSelect?: (point: CellPoint) => void
@@ -58,6 +64,10 @@ export default function MetricTrend({
   label,
   className,
 }: MetricTrendProps) {
+  // Index of the bar being pointed at, in the `shown` slice. `null` falls back to the latest run,
+  // so the readout is never blank and never needs a "hover a bar" instruction.
+  const [hovered, setHovered] = useState<number | null>(null)
+
   const points = history.filter((point) => Number.isFinite(point.score))
   if (points.length === 0) {
     return null
@@ -74,11 +84,26 @@ export default function MetricTrend({
   const offScale = semantics?.value_range != null && !bounds.declared
   const extentSemantics = offScale ? null : semantics
 
+  const readoutIndex = hovered != null && hovered < shown.length ? hovered : shown.length - 1
+  const readout = shown[readoutIndex]
+
   return (
     <div className={className}>
+      {isDetail && (
+        // Fixed position, so scrubbing the bars changes the text without anything moving or
+        // covering the chart.
+        <div className="mb-1.5 flex items-baseline gap-2 type-caption-mono">
+          <span className="font-semibold tabular-nums text-[var(--text)]">
+            {formatMetric(readout.score, extentSemantics).primary}
+          </span>
+          <span className="text-[var(--text-muted)]">{formatShortTime(readout.timestamp)}</span>
+        </div>
+      )}
+
       <div
         role="img"
         aria-label={label}
+        onMouseLeave={isDetail ? () => setHovered(null) : undefined}
         className={`flex ${trackHeight} items-end gap-px ${isDetail ? 'gap-0.5' : ''}`}
       >
         {shown.map((point, index) => {
@@ -86,7 +111,7 @@ export default function MetricTrend({
           const quality = getBoundedQualityRatio(point.score, semantics)
           const color = quality == null ? 'var(--text-muted)' : scoreColor(quality)
           const isLatest = index === shown.length - 1
-          const title = `${formatShortTime(point.timestamp)}  ${formatMetric(point.score, extentSemantics).primary}`
+          const description = `${formatShortTime(point.timestamp)}  ${formatMetric(point.score, extentSemantics).primary}`
           const bar = (
             <span
               className="block w-full rounded-sm transition-[height] duration-300"
@@ -94,8 +119,9 @@ export default function MetricTrend({
                 height: `calc(${MIN_BAR_HEIGHT}px + ${position * 100}% * ${(100 - MIN_BAR_HEIGHT) / 100})`,
                 background: color,
                 // The latest value is the one the adjacent number column shows; the earlier ones are
-                // context, so they recede.
-                opacity: isLatest ? 1 : 0.45,
+                // context, so they recede. The pointed-at bar comes forward to say which one the
+                // readout above is describing.
+                opacity: index === readoutIndex || isLatest ? 1 : 0.45,
               }}
             />
           )
@@ -104,8 +130,9 @@ export default function MetricTrend({
               key={`${point.timestamp}-${index}`}
               type="button"
               onClick={() => onSelect(point)}
-              title={title}
-              aria-label={title}
+              onMouseEnter={() => setHovered(index)}
+              onFocus={() => setHovered(index)}
+              aria-label={description}
               className={`flex h-full min-w-[6px] flex-1 ${DETAIL_MAX_BAR_WIDTH} items-end rounded-sm focus-visible:outline-2 focus-visible:outline-[var(--accent)] hover:opacity-80`}
             >
               {bar}
@@ -113,7 +140,9 @@ export default function MetricTrend({
           ) : (
             <span
               key={`${point.timestamp}-${index}`}
-              title={title}
+              // The inline sparkline has no room for a readout line, so it keeps the native tooltip.
+              title={isDetail ? undefined : description}
+              onMouseEnter={isDetail ? () => setHovered(index) : undefined}
               className={`flex h-full items-end ${isDetail ? `min-w-[6px] flex-1 ${DETAIL_MAX_BAR_WIDTH}` : 'w-[4px]'}`}
             >
               {bar}

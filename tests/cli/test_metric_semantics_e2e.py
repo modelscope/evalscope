@@ -173,10 +173,12 @@ class TestDirectionsSurviveTheRoundTrip:
     """A low-is-better metric must not be presented as if higher were better."""
 
     def test_wer_is_lower_is_better_everywhere(self) -> None:
-        report = _build_report('torgo', 'wer', [
-            AggScore(score=0.0432, metric_name='wer', aggregation_name='', num=50),
-            AggScore(score=0.0321, metric_name='cer', aggregation_name='', num=50),
-        ])
+        report = _build_report(
+            'torgo', 'wer', [
+                AggScore(score=0.0432, metric_name='wer', aggregation_name='', num=50),
+                AggScore(score=0.0321, metric_name='cer', aggregation_name='', num=50),
+            ]
+        )
 
         assert report.primary_metric.semantics.direction.value == 'lower_is_better'
         # The supporting error rate stays comparable but is not the conclusion.
@@ -185,11 +187,15 @@ class TestDirectionsSurviveTheRoundTrip:
         assert cer.semantics.direction.value == 'lower_is_better'
 
     def test_diagnostics_never_become_the_conclusion(self) -> None:
-        report = _build_report('miniwob', 'success_rate', [
-            AggScore(score=0.62, metric_name='success_rate', aggregation_name='mean', num=80),
-            # Emitted without an aggregation prefix, as the adapters that report counts do.
-            AggScore(score=0.5, metric_name='no_answer_num', aggregation_name='', num=80),
-        ])
+        report = _build_report(
+            'miniwob',
+            'success_rate',
+            [
+                AggScore(score=0.62, metric_name='success_rate', aggregation_name='mean', num=80),
+                # Emitted without an aggregation prefix, as the adapters that report counts do.
+                AggScore(score=0.5, metric_name='no_answer_num', aggregation_name='', num=80),
+            ]
+        )
 
         diagnostic = next(metric for metric in report.metrics if metric.name == 'no_answer_num')
         assert diagnostic.semantics.role is MetricRole.DIAGNOSTIC

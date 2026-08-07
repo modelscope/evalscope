@@ -27,7 +27,7 @@ export const en: Dict = {
   any: 'Any',
   maxThreeHint: 'Up to 3 models can be compared.',
   sample: 'Sample',
-  maxThreeSelected: 'Only the first 3 will be compared.',
+  compareFirstN: 'Only the first ${n} will be compared.',
 }
 
 export const zh: Dict = {
@@ -57,5 +57,5 @@ export const zh: Dict = {
   any: '不限',
   maxThreeHint: '最多支持对比 3 个模型。',
   sample: '样本',
-  maxThreeSelected: '仅对比前 3 个。',
+  compareFirstN: '仅对比前 ${n} 个。',
 }

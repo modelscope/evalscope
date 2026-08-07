@@ -14,7 +14,6 @@ import {
   cellKey,
   compareByInstability,
   computeCellStats,
-  totalsOf,
   trendBounds,
   trendPosition,
 } from './runAggregation'
@@ -321,26 +320,5 @@ describe('trendBounds', () => {
 
     expect(trendPosition(1.5, bounds)).toBe(1)
     expect(trendPosition(-0.2, bounds)).toBe(0)
-  })
-})
-
-describe('totalsOf', () => {
-  it('counts distinct models and benchmarks, and every run behind them', () => {
-    const rows = aggregateRuns(
-      [
-        report({ name: 'a', model_name: 'qwen-plus', timestamp: '2026-08-07T08:00:00' }),
-        report({ name: 'b', model_name: 'qwen-plus', timestamp: '2026-08-07T09:00:00' }),
-        report({ name: 'c', model_name: 'qwen3-max', timestamp: '2026-08-07T09:30:00' }),
-      ],
-      [perfRun()],
-      { best_rps: RPS },
-    )
-
-    const totals = totalsOf(rows)
-    expect(totals.models).toBe(2)
-    expect(totals.benchmarks).toEqual(2)
-    expect(totals.cells).toBe(3)
-    // Four runs behind three cells: qwen-plus/iquiz was measured twice.
-    expect(totals.runs).toBe(4)
   })
 })

@@ -176,7 +176,12 @@ class Report(BaseModel):
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
     metric_schema_version: int = METRIC_CONTRACT_VERSION
-    """Version of the metric semantics contract this report was written against."""
+    """Contract version this report's ``Metric.semantic_id`` anchors were written against.
+
+    Nothing reads it today: it is stamped so that a future contract change can tell an old report
+    from a new one at read time and migrate the anchors, which is impossible to reconstruct after
+    the fact. Bump :data:`METRIC_CONTRACT_VERSION`, never this field.
+    """
 
     primary_metric_name: Optional[str] = None
     """Final report metric name of the ``role=primary`` metric, ``None`` when there is none."""
@@ -200,11 +205,11 @@ class Report(BaseModel):
         display detail: ``hydrate_report_semantics`` reads it to decide which metric to promote to
         ``role=primary``. Writing an inferred choice there would make the inference decide the
         semantics, so only a declared metric is ever persisted under that name.
+
+        A declared metric is one whose resolved semantics carry ``role=primary``; the resolver
+        enforces at most one such metric per report, so scanning for it also covers the metric
+        named by ``primary_metric_name``.
         """
-        if self.primary_metric_name:
-            named = next((m for m in self.metrics if m.name == self.primary_metric_name), None)
-            if named is not None and named.role is MetricRole.PRIMARY:
-                return named
         return next((m for m in self.metrics if m.role is MetricRole.PRIMARY), None)
 
     def _find_primary_metric(self) -> Optional[Metric]:
@@ -261,11 +266,13 @@ class Report(BaseModel):
 
     @property
     def primary_metric(self) -> Optional[Metric]:
-        """Metric carrying ``role=primary`` semantics, or ``None`` when the report has none.
+        """The metric carrying this report's conclusion, or ``None`` when it has no metric.
 
-        Selection is driven purely by the resolved semantics: there is no ``overall`` name
-        convention and no fallback to ``metrics[0]``, so a report without a primary metric is
-        reported as such rather than silently promoting an arbitrary one.
+        Prefers the metric whose resolved semantics say ``role=primary``. When the benchmark
+        declared none, a metric is *inferred* so the report still shows a headline number -- the
+        first non-diagnostic metric, else the first one. There is no ``overall`` name convention.
+        Call :meth:`primary_metric_is_inferred` to tell a declared conclusion from a chosen one;
+        see :meth:`_find_primary_metric` for the full order.
         """
         return self._find_primary_metric()
 

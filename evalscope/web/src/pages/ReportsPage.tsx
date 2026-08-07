@@ -20,6 +20,7 @@ import SelectionTray from '@/components/reports/SelectionTray'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   addToSelection,
+  MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
 } from '@/domain/compare/compareModel'
 
@@ -61,9 +62,6 @@ export default function ReportsPage() {
   const [hasLoaded, setHasLoaded] = useState(false)
   // Bumped to re-trigger the fetch effect when the user retries from an empty state.
   const [reloadToken, setReloadToken] = useState(0)
-  // Transient notice shown when the compare-selection cap is reached.
-  const [capNotice, setCapNotice] = useState(false)
-  const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -154,29 +152,17 @@ export default function ReportsPage() {
     [selectedForCompare, currentPageNames],
   )
 
-  // Surface the selection-cap notice briefly, then let it fade.
-  const flagCapReached = useCallback(() => {
-    setCapNotice(true)
-    clearTimeout(capTimer.current)
-    capTimer.current = setTimeout(() => setCapNotice(false), 3000)
-  }, [])
-
-  // Cap-aware toggle: removing is always allowed; adding is rejected once the
-  // selection is at the domain cap.
+  // Selection is unbounded: it also drives batch delete, and the compare view
+  // clamps to its own slot count on navigation.
   const handleToggleSelect = useCallback(
     (name: string) => {
       if (selectedForCompare.includes(name)) {
         setCompareSelection(selectedForCompare.filter((n) => n !== name))
         return
       }
-      const { next, rejected } = addToSelection(selectedForCompare, name)
-      if (rejected) {
-        flagCapReached()
-        return
-      }
-      setCompareSelection(next)
+      setCompareSelection(addToSelection(selectedForCompare, name))
     },
-    [selectedForCompare, setCompareSelection, flagCapReached],
+    [selectedForCompare, setCompareSelection],
   )
 
   const handleSelectAll = useCallback(() => {
@@ -184,22 +170,8 @@ export default function ReportsPage() {
       setCompareSelection(selectedForCompare.filter((n) => !currentPageNames.includes(n)))
       return
     }
-    // Add current-page runs one at a time so the cap is enforced.
-    let nextSel = selectedForCompare
-    let hitCap = false
-    for (const name of currentPageNames) {
-      const { next, rejected } = addToSelection(nextSel, name)
-      if (rejected) {
-        hitCap = true
-        break
-      }
-      nextSel = next
-    }
-    if (hitCap) flagCapReached()
-    setCompareSelection(nextSel)
-  }, [allSelected, selectedForCompare, currentPageNames, setCompareSelection, flagCapReached])
-
-  useEffect(() => () => clearTimeout(capTimer.current), [])
+    setCompareSelection(currentPageNames.reduce(addToSelection, selectedForCompare))
+  }, [allSelected, selectedForCompare, currentPageNames, setCompareSelection])
 
   const handleCardClick = useCallback(
     (name: string) => {
@@ -210,7 +182,10 @@ export default function ReportsPage() {
 
   const handleCompare = useCallback(() => {
     if (selectedForCompare.length >= 2) {
-      navigate(`/compare?reports=${selectedForCompare.slice(0, 3).join(';')}&root_path=${encodeURIComponent(rootPath)}`)
+      // The compare view only has `MAX_COMPARE_SLOTS` model slots; the tray warns
+      // the user that any runs beyond them are dropped here.
+      const reports = selectedForCompare.slice(0, MAX_COMPARE_SLOTS).join(';')
+      navigate(`/compare?reports=${reports}&root_path=${encodeURIComponent(rootPath)}`)
     }
   }, [selectedForCompare, navigate, rootPath])
 
@@ -364,7 +339,7 @@ export default function ReportsPage() {
 
       <SelectionTray
         count={orderedSelection.length}
-        capNotice={capNotice}
+        compareLimit={MAX_COMPARE_SLOTS}
         canViewHtml={orderedSelection.length === 1}
         onViewHtml={handleViewHtml}
         onCompare={handleCompare}

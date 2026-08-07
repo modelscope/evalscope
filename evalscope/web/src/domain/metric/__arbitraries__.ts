@@ -87,7 +87,6 @@ export function arbSemantics(): fc.Arbitrary<MetricSemantics> {
       display_unit: isPercent ? '%' : unit,
       display_precision: precision,
       comparison_group: 'quality.generated',
-      aggregation_group: null,
       contract_version: 1,
     }
   })

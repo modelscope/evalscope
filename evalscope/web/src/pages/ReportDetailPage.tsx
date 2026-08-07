@@ -4,6 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import { isDomainError } from '@/api/errors'
 import type { LoadReportResponse, ReportData } from '@/api/types'
+import { primaryMetricOf } from '@/domain/report/primaryMetrics'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
@@ -74,12 +75,7 @@ export default function ReportDetailPage() {
   const primaryDataset = reportList[0]?.dataset_name ?? ''
   const overallMetric = useMemo(() => {
     if (reportList.length === 0) return { score: null, semantics: null }
-    const primaries = reportList.map((report) => {
-      const named = report.primary_metric_name
-        ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
-        : undefined
-      return named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
-    })
+    const primaries = reportList.map(primaryMetricOf)
     const semanticIds = primaries.map((metric) => metric?.semantics?.semantic_id ?? null)
     // Only average across datasets that report the same metric; otherwise show no header score.
     if (!semanticIds.every((id) => id !== null && id === semanticIds[0])) {
@@ -92,8 +88,7 @@ export default function ReportDetailPage() {
     }
   }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
-    const named = r.primary_metric_name ? r.metrics.find((metric) => metric.name === r.primary_metric_name) : undefined
-    const primary = named ?? r.metrics.find((metric) => metric.semantics?.role === 'primary')
+    const primary = primaryMetricOf(r)
     return sum + (primary?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
   }, 0)
 
@@ -105,10 +100,7 @@ export default function ReportDetailPage() {
   const activeReport = useMemo(() => {
     const report = reportList.find((r) => r.dataset_name === activeDataset)
     if (!report) return undefined
-    const named = report.primary_metric_name
-      ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
-      : undefined
-    const primaryMetric = named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary')
+    const primaryMetric = primaryMetricOf(report)
     const semanticsByMetric = Object.fromEntries(
       report.metrics.map((metric) => [metric.name, metric.semantics ?? null]),
     )

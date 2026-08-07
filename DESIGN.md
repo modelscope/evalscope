@@ -190,10 +190,6 @@ gradients:
   brand: "linear-gradient(135deg, #816DF8 0%, #a78bfa 100%)"
   accent: "linear-gradient(135deg, #0F9C7E 0%, #06b6d4 100%)"
   surface: "linear-gradient(135deg, rgba(129,109,248,0.08) 0%, rgba(167,139,250,0.05) 100%)"
-  kpi-0: "linear-gradient(135deg, #6366f1, #8b5cf6)"
-  kpi-1: "linear-gradient(135deg, #10b981, #06b6d4)"
-  kpi-2: "linear-gradient(135deg, #f59e0b, #f97316)"
-  kpi-3: "linear-gradient(135deg, #ec4899, #8b5cf6)"
   nav-hairline: "linear-gradient(90deg, transparent 0%, #816DF8 50%, transparent 100%)"
 transition:
   fast: "150ms cubic-bezier(0.4, 0, 0.2, 1)"
@@ -238,7 +234,7 @@ Type is the second decisive voice and is **theme-agnostic**. The brand uses cros
 - Every card section title, form label, and table header is at least 12 px, `font-semibold`, **UPPERCASE**, `tracking-wider`, and uses the AA-safe muted color. Body and titles stay sentence-case. The contrast between these two voices does most of the hierarchy work.
 - A dynamic HSL **score chip** (`hsl(score × 120, 70%, 45%)`) is the second-most-recognizable component after the brand violet — it is how the product communicates pass/fail. Identical formula on both themes; the chip's saturation works over cream and over near-black.
 - **Light theme uses solid hex hairlines, not translucent violet.** This is the most important light-theme rule, and the one most often broken on first attempt: a violet alpha overlay disappears into a near-white page, so light surfaces require concrete warm-grey edges (`#e6dfd8` / `#d6cdbe` / `#c1b6a3`) to keep their boundaries.
-- A complete domain token set exists for **chat bubbles** (5 semantic roles: user / bot / tool / reasoning / system), **compare slots** (3 per-model accent colors), and **KPI gradients** (4 named gradient pairs) — these are first-class brand tokens, not ad-hoc colors.
+- A complete domain token set exists for **chat bubbles** (5 semantic roles: user / bot / tool / reasoning / system) and **compare slots** (3 per-model accent colors) — these are first-class brand tokens, not ad-hoc colors.
 - A glassmorphic sticky top-nav (52 px, 12 px backdrop-blur, 1-px violet-to-transparent gradient hairline along the top edge) is the only "marketing-y" flourish the product allows itself. Dark uses translucent indigo glass; light uses translucent cream glass.
 
 ## Design Tokens {#tokens}
@@ -330,20 +326,15 @@ Five semantic roles, each with a complete 7-token set (`bg`, `bg-hl`, `border`, 
 
 Bubble containers are `{rounded.md}` with the role's tint background and border; hover/highlight states use the `*-hl` variants.
 
-#### KPI Gradients
+#### KPI Icon Tile
 
-Four named linear gradients for the four hero KPI tiles on the dashboard:
+The four hero KPI tiles on the dashboard share one hue: the 40 × 40 `{rounded.md}` icon tile is filled with `{colors.accent-dim}` and its glyph inked in `{colors.accent}`, on both themes.
 
-- **Indigo→Violet** (`{gradients.kpi-0}` — `linear-gradient(135deg, #6366f1, #8b5cf6)`)
-- **Emerald→Teal** (`{gradients.kpi-1}` — `linear-gradient(135deg, #10b981, #06b6d4)`)
-- **Amber→Orange** (`{gradients.kpi-2}` — `linear-gradient(135deg, #f59e0b, #f97316)`)
-- **Pink→Violet** (`{gradients.kpi-3}` — `linear-gradient(135deg, #ec4899, #8b5cf6)`)
-
-Always applied to the 40 × 40 `{rounded.md}` icon tile inside a `{components.kpi-card}`. **Same gradient values on both themes** — they're saturated enough to work over either canvas.
+**Do not introduce a per-KPI hue.** The four counters are the same kind of quantity, so distinct hues would assert a distinction that does not exist, and would put the loudest colour in the app on its least specific numbers. A hue is reserved for values that carry a meaning, such as `{chart.*}` for perf-metric series or the score scale.
 
 #### Chart Palette (Perf Metrics)
 
-Four hue tokens used to mark perf-metric series (latency / TTFT / TPOT / token-usage) across the KPI strip, the chart series legends, and the percentile-table accent headers in `<PerfMetricsPanel>`. **The two themes use different RGB values for the same hue** — unlike the KPI gradients, these aren't shared across themes:
+Four hue tokens used to mark perf-metric series (latency / TTFT / TPOT / token-usage) across the KPI strip, the chart series legends, and the percentile-table accent headers in `<PerfMetricsPanel>`. **The two themes use different RGB values for the same hue:**
 
 - **Latency** (`{chart.latency}` — `#60a5fa` dark / `#2563eb` light)
 - **TTFT** (`{chart.ttft}` — `#34d399` dark / `#047857` light)
@@ -508,7 +499,7 @@ The *visual* chrome may be smaller than the *hit area*, and only the hit area is
 
 - **Brand mark**: Hand-drawn SVG triangle with an amber check; rendered inline at 28 × 25 px with `currentColor` so it follows theme.
 - **Lucide icons**: 14 px in dense lists, 16 px in nav, 18 px in form controls, 28 px in empty-state hero tiles. Stroke width 1.5–2.
-- **KPI icon tile**: 40 × 40, `{rounded.md}`, filled with one of `{gradients.kpi-0..3}`, white icon centered.
+- **KPI icon tile**: 40 × 40, `{rounded.md}`, filled with `{colors.accent-dim}`, `{colors.accent}` icon centered.
 - **Chart**: Plotly canvas, no rounded corners; sits inside a `{rounded.md}` card frame.
 
 ## Components {#components}
@@ -544,7 +535,7 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 - Adds `-2 px translateY` on hover, upgrades shadow to `{shadows.lg}` (L4), strengthens border to `{colors.border-strong}`. All transitions in `{tokens.transition}`.
 
 **`{components.kpi-card}`** — the dashboard hero metric tile.
-- Same chrome as `{components.card}` but layered with `{gradients.surface}` (subtle violet wash, 5-8 % alpha) via `::before`. Hosts a 40 × 40 `{rounded.md}` icon tile filled with `{gradients.kpi-0..3}`. Hover lifts `-3 px` and ramps to L4 shadow. Stagger-animated on first paint (60 ms steps).
+- Same chrome as `{components.card}` but layered with `{gradients.surface}` (subtle violet wash, 5-8 % alpha) via `::before`. Hosts a 40 × 40 `{rounded.md}` icon tile filled with `{colors.accent-dim}` and inked in `{colors.accent}`. Hover lifts `-3 px` and ramps to L4 shadow. Stagger-animated on first paint (60 ms steps).
 
 **`{components.card-glass}`** — the glassmorphic surface used by the top-nav.
 - `{colors.surface-glass}` background + 12-px backdrop-blur. Always combined with a 1-px hairline border. Reserve for sticky-positioned surfaces — diffuse blur is performance-sensitive.
@@ -686,7 +677,7 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
   - **Tablet 768–1023:** 2-up grid retained; tiles full-width of their column.
   - **Desktop 1024–1279 & Wide ≥ 1280:** 4-up grid (`lg:grid-cols-4`). Each tile keeps `{rounded.md}` and 20-px padding at every breakpoint; the value uses `tabular-nums` and wraps per R-WRAP rather than truncating.
 - **State contract:**
-  - **default:** `{components.card}` chrome + `{gradients.surface}` wash; 40 × 40 gradient icon tile.
+  - **default:** `{components.card}` chrome + `{gradients.surface}` wash; 40 × 40 accent icon tile.
   - **hover:** lifts −3 px, ramps to L4 shadow.
   - **focus:** per R-FOCUS when the tile is interactive; *n/a* for display-only tiles.
   - **active:** *n/a* unless linked, then follows the clickable-card active contract.
@@ -778,8 +769,8 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
 
 > These `ex-*` surfaces mirror the brand-native primitives for downstream consumers (kits, mockups, Stitch generation). Each references existing components so a re-skin re-skins all surfaces consistently.
 
-**`ex-metric-tile`** — Dashboard KPI tile. Re-uses `{components.kpi-card}` with gradient icon tile + tabular value + uppercase label.
-- Properties: `backgroundColor`, `iconGradient`, `rounded`, `padding`, `valueTypography`, `labelTypography`.
+**`ex-metric-tile`** — Dashboard KPI tile. Re-uses `{components.kpi-card}` with accent icon tile + tabular value + uppercase label.
+- Properties: `backgroundColor`, `iconTint`, `rounded`, `padding`, `valueTypography`, `labelTypography`.
 
 **`ex-eval-run-row`** — A row in the eval timeline. Re-uses `{components.eval-run-card}` chrome.
 - Properties: `backgroundColor`, `borderColor`, `rounded`, `padding`, `scoreColor`, `chipColor`.
