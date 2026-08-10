@@ -8,6 +8,7 @@ import io
 import zipfile
 from typing import Dict
 
+from evalscope.api.dataset import Sample
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.pmc_vqa.pmc_vqa_adapter import strip_choice_prefix
 
@@ -36,13 +37,15 @@ def test_strip_choice_prefix() -> None:
     assert strip_choice_prefix('No prefix at all', 'B') == 'No prefix at all'
 
 
-def _build_sample():
+def _build_sample() -> Sample:
+    """Build a sample the way load() does: the archive stays open only while reading."""
     adapter = get_benchmark('pmc_vqa')
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, 'w') as archive:
         archive.writestr(f'images/{RECORD["Figure_path"]}', JPEG_BYTES)
-    adapter._image_archive = zipfile.ZipFile(buffer)
-    return adapter.record_to_sample(RECORD)
+    with zipfile.ZipFile(buffer) as archive:
+        adapter._image_archive = archive
+        return adapter.record_to_sample(RECORD)
 
 
 def test_record_to_sample_builds_multimodal_mcq() -> None:
