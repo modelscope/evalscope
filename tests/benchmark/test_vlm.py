@@ -531,3 +531,11 @@ class TestVLMBenchmark(TestBenchmark):
     def test_logic_vista_mock(self):
         """Test LogicVista with mock LLM."""
         self._run_dataset_test('logic_vista', limit=5, use_mock=True)
+
+    def test_pmc_vqa(self):
+        """Test PMC-VQA medical visual question answering benchmark."""
+        self._run_dataset_test('pmc_vqa', limit=5)
+
+    def test_pmc_vqa_mock(self):
+        """Test PMC-VQA with mock LLM."""
+        self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
