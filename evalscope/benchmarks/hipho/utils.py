@@ -163,10 +163,13 @@ def parse_judge_correct(response: str) -> bool:
 
 
 def extract_boxed_answers(text: str) -> List[str]:
-    """Extract the contents of every ``\\boxed{...}`` in order of appearance.
+    """Extract the contents of every complete ``\\boxed{...}`` in order of appearance.
 
     Brace matching is used so nested braces inside a boxed expression (e.g.
-    ``\\boxed{\\frac{1}{2}}``) are captured correctly.
+    ``\\boxed{\\frac{1}{2}}``) are captured correctly. A trailing unbalanced
+    ``\\boxed{`` is ignored rather than reported as a partial answer: it means the
+    reply was truncated mid-answer, and emitting the fragment would both invent an
+    answer and shift the ordered alignment that answer-level scoring relies on.
     """
     answers: List[str] = []
     idx = 0
@@ -194,6 +197,9 @@ def extract_boxed_answers(text: str) -> List[str]:
                     break
             content.append(char)
             i += 1
+        if depth != 0:
+            # Unterminated brace: the rest of the reply is truncated, so stop here.
+            break
         answers.append(''.join(content).strip())
         idx = i + 1
     return answers

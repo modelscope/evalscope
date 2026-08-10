@@ -4,7 +4,12 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import Sample, build_dataset_dict_from_record_map, resolve_snapshot_or_local_path
+from evalscope.api.dataset import (
+    DatasetDict,
+    Sample,
+    build_dataset_dict_from_record_map,
+    resolve_snapshot_or_local_path,
+)
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
@@ -112,12 +117,12 @@ class HiPhOAdapter(VisionLanguageAdapter):
 
     llm_judge_default = True
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         # Set during load(); used by record_to_sample to resolve figure paths.
         self.data_root: Optional[str] = None
 
-    def load(self):
+    def load(self) -> Tuple[DatasetDict, None]:
         """Read the per-exam JSON files and their figures from the snapshot."""
         snapshot_dir = resolve_snapshot_or_local_path(self)
         self.data_root = os.path.join(snapshot_dir, 'data')
@@ -184,8 +189,18 @@ class HiPhOAdapter(VisionLanguageAdapter):
         )
 
     def _load_figure(self, image_ref: str) -> Optional[str]:
-        """Read a figure referenced by a problem and return a base64 data URI."""
-        path = os.path.join(self.data_root, image_ref)
+        """Read a figure referenced by a problem and return a base64 data URI.
+
+        ``image_ref`` comes from the dataset record, so it is confined to the
+        snapshot directory: a record must not be able to read arbitrary files off
+        disk. The reference itself is validated rather than its resolved target,
+        because the HuggingFace hub cache legitimately symlinks snapshot files to a
+        sibling ``blobs`` directory outside the snapshot.
+        """
+        normalized_ref = os.path.normpath(image_ref)
+        if os.path.isabs(normalized_ref) or normalized_ref.split(os.sep)[0] == os.pardir:
+            raise ValueError(f'HiPhO figure path escapes the dataset directory: {image_ref}')
+        path = os.path.join(self.data_root, normalized_ref)
         if not os.path.exists(path):
             logger.warning(f'HiPhO figure not found: {path}')
             return None
