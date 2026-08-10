@@ -49,15 +49,18 @@ def _extract(completion: str, target: str = 'C') -> str:
     return adapter.extract_answer(prediction=completion, task_state=state)
 
 
-def test_prompt_contains_nothing_the_answer_parser_can_match() -> None:
+def test_instruction_contains_nothing_the_answer_parser_can_match() -> None:
     """A model echoing the format instruction must not have that echo scored as a valid label.
 
     `parse_answers` falls back to the last upper-case character when no `ANSWER:` line is
-    present, so the guarantee is that the echo yields nothing inside the label alphabet.
+    present, so the instruction added here must not spell out a label sequence. The fallback
+    still reads the question text, which some items label explicitly (e.g. 'What choice
+    (A, B, C, or D) ...'), so an answerless reply that only restates the question is scored as
+    a lenient guess; that leniency belongs to the shared parser rather than this benchmark.
     """
-    prompt = PROMPT_TEMPLATE.format(question='Which figure completes the pattern?')
-    assert 'ANSWER: [LETTER]' in prompt
-    assert _extract(prompt) not in OPTION_LABELS
+    instruction = PROMPT_TEMPLATE.format(question='')
+    assert 'ANSWER: [LETTER]' in instruction
+    assert _extract(instruction) not in OPTION_LABELS
 
 
 def test_single_label_is_extracted() -> None:
