@@ -59,7 +59,7 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `top_logprobs` | `int` | Return the top N tokens and their probabilities (range 0~20) | OpenAI-compatible, HuggingFace |
 | `parallel_tool_calls` | `bool` | Whether to support parallel tool calls | OpenAI, Groq |
 | `response_schema` | `dict` | Request structured output (JSON Schema); the output still needs to be validated | OpenAI, Google, Mistral |
-| `reasoning_effort` | `str` | Reasoning effort level. One of `low` / `medium` (default) / `high` | OpenAI o1 series |
+| `reasoning_effort` | `str` | Reasoning effort level, passed through to the server as-is (e.g. `none` / `minimal` / `low` / `medium` / `high` / `xhigh` / `max`); the accepted values are decided by the model and the server | OpenAI-compatible |
 | `reasoning_tokens` | `int` | Maximum tokens budget for reasoning (thinking budget) | Anthropic Claude |
 | `reasoning_summary` | `str` | Reasoning summary verbosity. One of `concise` / `detailed` / `auto` | OpenAI reasoning series |
 | `reasoning_history` | `str` | How to encode prior-turn assistant `reasoning_content` in multi-turn requests. One of `reasoning_field` (default; pass as independent top-level field, works for DeepSeek V4 thinking, Qwen3 thinking), `think_tag` (embed as `<think>...</think>` in content string, legacy Together/Groq compatible), `none` (strip entirely; **required for DeepSeek R1 legacy** which forbids `reasoning_content` in requests) | OpenAI-compatible |

@@ -24,6 +24,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `general_vqa` | [General-VQA](../../benchmarks/general_vqa.md) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](../../benchmarks/gsm8k_v.md) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](../../benchmarks/hallusion_bench.md) | `Hallucination`, `MultiModal`, `Yes/No` |
+| `hipho` | [HiPhO](../../benchmarks/hipho.md) | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | `infovqa` | [InfoVQA](../../benchmarks/infovqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `librispeech` | [LibriSpeech](../../benchmarks/librispeech.md) | `Audio`, `SpeechRecognition` |
 | `logic_vista` | [LogicVista](../../benchmarks/logic_vista.md) | `MCQ`, `MultiModal`, `Reasoning` |
@@ -91,6 +92,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/general_vqa.md
 ../../benchmarks/gsm8k_v.md
 ../../benchmarks/hallusion_bench.md
+../../benchmarks/hipho.md
 ../../benchmarks/infovqa.md
 ../../benchmarks/librispeech.md
 ../../benchmarks/logic_vista.md
