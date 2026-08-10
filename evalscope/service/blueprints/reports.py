@@ -30,6 +30,8 @@ from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
     get_model_prediction,
+    get_quality_metric_df,
+    get_quality_report_df,
     get_report_analysis,
     load_multi_report,
     load_single_report,
@@ -679,8 +681,8 @@ def get_chart():
                 else:
                     return jsonify({'error': 'report_names or report_name is required for radar'}), 400
             report_list = load_multi_report(root, names)
-            acc_df, _ = get_acc_report_df(report_list)
-            fig = plot_multi_report_radar(acc_df)
+            quality_df = get_quality_report_df(report_list)
+            fig = plot_multi_report_radar(quality_df)
         elif chart_type == 'grouped_bar':
             # Grouped bar chart for multi-model comparison
             names_raw = request.args.get('report_names', '')
@@ -688,27 +690,35 @@ def get_chart():
             if not names:
                 return jsonify({'error': 'report_names is required for grouped_bar'}), 400
             report_list = load_multi_report(root, names)
-            acc_df, _ = get_acc_report_df(report_list)
-            color_seq = ['#816DF8', '#0F9C7E', '#fbbf24', '#a78bfa', '#63b3ed']
-            fig = px.bar(
-                acc_df,
-                x=ReportKey.model_name,
-                y=ReportKey.score,
-                color=ReportKey.dataset_name,
-                barmode='group',
-                text=ReportKey.score,
-                color_discrete_sequence=color_seq,
-            )
-            fig.update_traces(texttemplate='%{text:.2f}', textposition='outside')
-            fig.update_layout(
-                template=PLOTLY_THEME,
-                uniformtext_minsize=12,
-                uniformtext_mode='hide',
-                yaxis=dict(range=[0, 1]),
-                margin=dict(t=20, l=20, r=20, b=20),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-            )
+            quality_df = get_quality_report_df(report_list)
+            if not quality_df.empty:
+                color_seq = ['#816DF8', '#0F9C7E', '#fbbf24', '#a78bfa', '#63b3ed']
+                fig = px.bar(
+                    quality_df,
+                    x=ReportKey.model_name,
+                    y=ReportKey.score,
+                    color=ReportKey.dataset_name,
+                    barmode='group',
+                    text=ReportKey.display_score,
+                    custom_data=[ReportKey.metric_name, ReportKey.raw_score],
+                    color_discrete_sequence=color_seq,
+                )
+                fig.update_traces(
+                    textposition='outside',
+                    hovertemplate=(
+                        '%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}'
+                        '<extra>%{fullData.name}</extra>'
+                    ),
+                )
+                fig.update_layout(
+                    template=PLOTLY_THEME,
+                    uniformtext_minsize=12,
+                    uniformtext_mode='hide',
+                    yaxis=dict(range=[0, 1]),
+                    margin=dict(t=20, l=20, r=20, b=20),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                )
         elif chart_type == 'histogram':
             # Score distribution histogram from prediction NScore values
             report_name = request.args.get('report_name')
@@ -739,8 +749,6 @@ def get_chart():
             if not report_name:
                 return jsonify({'error': 'report_name is required'}), 400
             report_list, datasets, _ = load_single_report(root, report_name)
-            acc_df, _ = get_acc_report_df(report_list)
-
             if chart_type == 'sunburst':
                 fig = plot_single_report_sunburst(report_list)
             elif chart_type == 'dataset_scores':
@@ -750,9 +758,9 @@ def get_chart():
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
                 from evalscope.utils.data_utils import get_single_dataset_df
                 ds_df, _ = get_single_dataset_df(report_df, dataset_name)
-                fig = plot_single_dataset_scores(ds_df)
+                fig = plot_single_dataset_scores(get_quality_metric_df(report_list, ds_df))
             else:
-                fig = plot_single_report_scores(acc_df)
+                fig = plot_single_report_scores(get_quality_report_df(report_list))
 
         if fig is None:
             return '<html><body style="background:#0f172a;color:#94a3b8;display:flex;align-items:center;' \

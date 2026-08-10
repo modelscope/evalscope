@@ -93,20 +93,3 @@ export function metricLabel(ref: PrimaryMetricRef | null | undefined): string {
 export function primaryMetricsOf(report: ReportSummary): PrimaryMetricRef[] {
   return (report as { primary_metrics?: PrimaryMetricRef[] }).primary_metrics ?? []
 }
-
-/**
- * The metric label shared by every ref, or `null` when they differ.
- *
- * When a whole table measures one metric — by far the common case — the label belongs in the
- * column header rather than repeated down every row, and the Metric column can disappear
- * entirely. Returns `null` for an empty input, since there is nothing to hoist.
- */
-export function uniformMetricLabel(refGroups: PrimaryMetricRef[][]): string | null {
-  const labels = new Set<string>()
-  for (const refs of refGroups) {
-    for (const ref of refs) {
-      labels.add(metricLabel(ref))
-    }
-  }
-  return labels.size === 1 ? [...labels][0] : null
-}

@@ -23,8 +23,8 @@
     "expected_raw": "0.8567"
   },
   {
-    "id": "percent-ratio-half-up-tie",
-    "description": "Exact .5 tie at precision 0 must round half up (13, not banker's 12).",
+    "id": "percent-ratio-positive-tie",
+    "description": "Exact .5 tie at precision 0 must round toward positive infinity (13, not banker's 12).",
     "semantics": {
       "semantic_id": "quality.accuracy.ratio",
       "metric_name": "Accuracy",
@@ -244,6 +244,26 @@
     "expected_raw": "250 ms"
   },
   {
+    "id": "number-seconds-displayed-as-milliseconds",
+    "description": "A number display multiplier converts stored seconds to displayed milliseconds.",
+    "semantics": {
+      "semantic_id": "perf.latency.seconds",
+      "metric_name": "TTFT",
+      "role": "primary",
+      "direction": "lower_is_better",
+      "raw_unit": "s",
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": 1000.0,
+      "display_unit": "ms",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "value": 0.700828,
+    "expected_primary": "700.8 ms",
+    "expected_raw": "0.7008 s"
+  },
+  {
     "id": "number-throughput-tokens-per-second",
     "description": "Composite unit label is appended verbatim after one space.",
     "semantics": {
@@ -285,7 +305,7 @@
   },
   {
     "id": "number-negative-without-unit",
-    "description": "Negative values keep their sign and round half up away from zero.",
+    "description": "Negative non-ties keep their sign and round to the nearest value.",
     "semantics": {
       "semantic_id": "quality.judge_score.unbounded",
       "metric_name": "Judge Score",
@@ -361,6 +381,46 @@
     "value": 42.0,
     "expected_primary": "42",
     "expected_raw": "42"
+  },
+  {
+    "id": "number-decimal-tie",
+    "description": "A decimal tie is preserved across languages instead of inheriting binary floating-point drift.",
+    "semantics": {
+      "semantic_id": "diagnostic.unspecified",
+      "metric_name": "Value",
+      "role": "diagnostic",
+      "direction": "none",
+      "raw_unit": null,
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": null,
+      "display_unit": null,
+      "display_precision": 2,
+      "contract_version": 1
+    },
+    "value": 1.005,
+    "expected_primary": "1.01",
+    "expected_raw": "1.005"
+  },
+  {
+    "id": "number-negative-half-tie",
+    "description": "Negative half ties round toward positive infinity on both the backend and frontend.",
+    "semantics": {
+      "semantic_id": "diagnostic.unspecified",
+      "metric_name": "Value",
+      "role": "diagnostic",
+      "direction": "none",
+      "raw_unit": null,
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": null,
+      "display_unit": null,
+      "display_precision": 0,
+      "contract_version": 1
+    },
+    "value": -0.5,
+    "expected_primary": "0",
+    "expected_raw": "-0.5"
   },
   {
     "id": "diagnostic-fallback-missing-value",

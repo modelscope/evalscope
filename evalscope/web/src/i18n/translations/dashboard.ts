@@ -15,7 +15,9 @@ export const en: Dict = {
   neverText: '—',
 
   // Zone 2 — results aggregated by what they measure
-  resultsTitle: 'Results',
+  tabAll: 'All',
+  tabEval: 'Eval',
+  tabPerf: 'Perf',
   model: 'Model',
   benchmark: 'Benchmark',
   latest: 'Latest',
@@ -53,7 +55,9 @@ export const zh: Dict = {
   latestRun: '最近运行',
   neverText: '—',
 
-  resultsTitle: '结果总览',
+  tabAll: '全部',
+  tabEval: '评测',
+  tabPerf: '压测',
   model: '模型',
   benchmark: 'Benchmark',
   latest: '最新',

@@ -45,9 +45,9 @@ export interface FormattedMetric {
 }
 
 /**
- * Round `value` to `precision` decimal places using round-half-up semantics: a tie (`.5`) always
- * rounds toward positive infinity (`0.5 → 1`, `-0.5 → 0`, `2.5 → 3`). This differs from the
- * binary floating point drift of `toFixed`, which can misround values such as `1.005`.
+ * Round `value` to `precision` decimal places with ties toward positive infinity
+ * (`0.5 → 1`, `-0.5 → 0`, `2.5 → 3`). Decimal-point shifting avoids the binary drift of
+ * `toFixed` at values such as `1.005`.
  *
  * The implementation shifts the decimal point through exponential-notation string parsing
  * (`"1.005e2"` parses to the nearest double of `100.5`, avoiding the `1.005 * 100 = 100.4999…`
@@ -110,7 +110,8 @@ function isMissingValue(value: number | null | undefined): boolean {
  *   no unit and no percentage conversion, `isDiagnosticFallback = true`.
  * - `display_kind === 'percent'` → `value * (display_multiplier ?? 1)` at `display_precision`,
  *   followed by `display_unit` with no separator.
- * - `display_kind === 'number'` → the value at `display_precision`, then a space and the unit.
+ * - `display_kind === 'number'` → `value * (display_multiplier ?? 1)` at `display_precision`,
+ *   then a space and the unit.
  *
  * @param value Raw metric value as stored in the report.
  * @param semantics Backend semantics of the metric; `null` triggers the diagnostic fallback.
@@ -140,9 +141,9 @@ export function formatMetric(
 
   const unitLabel = semantics.display_unit ?? ''
   const raw = joinUnit(formatNumber(numeric, RAW_VALUE_PRECISION), semantics.raw_unit ?? '', 'number')
+  const scaled = numeric * (semantics.display_multiplier ?? 1)
 
   if (semantics.display_kind === 'percent') {
-    const scaled = numeric * (semantics.display_multiplier ?? 1)
     return {
       primary: joinUnit(formatNumber(scaled, semantics.display_precision), unitLabel, 'percent'),
       raw,
@@ -153,7 +154,7 @@ export function formatMetric(
   }
 
   return {
-    primary: joinUnit(formatNumber(numeric, semantics.display_precision), unitLabel, 'number'),
+    primary: joinUnit(formatNumber(scaled, semantics.display_precision), unitLabel, 'number'),
     raw,
     unitLabel,
     isMissing: false,
@@ -232,8 +233,8 @@ export function getValuePosition(
  * would claim "50%" where the truth is "50 pp" -- the gap between 50% and 100% is not itself half of
  * anything. Every other display kind keeps its own unit, since a difference of seconds is seconds.
  *
- * The value is scaled here rather than left to `formatMetric`, because `display_multiplier` is only
- * applied by its `percent` branch and the result must render as a plain `pp` number.
+ * The value is pre-scaled and the derived semantics reset the multiplier to 1 because the result
+ * renders as a plain `pp` number rather than as a percent.
  *
  * @param value Difference in the metric's native scale, e.g. `0.5` for a gap of 50 points.
  * @param semantics Semantics of the metric the difference was taken from.

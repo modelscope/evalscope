@@ -13,6 +13,7 @@
       "pass_rate",
       "total_score"
     ],
+    "primary_metric": "normalized_score",
     "few_shot_num": 0,
     "eval_split": "main",
     "train_split": "",
@@ -124,6 +125,6 @@
     "content_hash": "f4b6eb26760810f544eb8754db85c162",
     "needs_translation": false
   },
-  "updated_at": "2026-07-23T16:40:07.724714",
+  "updated_at": "2026-08-10T14:50:31.855013",
   "translation_updated_at": "2026-07-23T16:40:09"
 }

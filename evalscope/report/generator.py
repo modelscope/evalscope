@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import compose_final_metric_name, get_semantics_resolver
 from evalscope.metrics.semantics.naming import match_primary_final_name
+from evalscope.metrics.semantics.resolver import apply_primary_metric_roles
 from evalscope.report.report import *
 
 if TYPE_CHECKING:
@@ -198,4 +199,5 @@ class ReportGenerator:
             resolved = resolver.resolve(dataset_name, final_name, primary_metric_name=primary_metric_name)
             resolved.log_audit_messages()
             semantics_by_metric[final_name] = resolved.semantics
+        semantics_by_metric = apply_primary_metric_roles(semantics_by_metric, primary_metric_name)
         return semantics_by_metric, primary_metric_name

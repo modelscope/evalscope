@@ -4,7 +4,7 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
 import { formatMetric } from '@/domain/metric'
-import { primaryMetricsOf, uniformMetricLabel } from '@/domain/report/primaryMetrics'
+import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {
@@ -45,11 +45,6 @@ export default function ReportsTable({
   const { t } = useLocale()
   const selectedSet = new Set(selected)
 
-  // When every row measures the same metric the label belongs in the header, not repeated down
-  // each row, and the Metric column is dropped entirely.
-  const refsByReport = reports.map((report) => primaryMetricsOf(report))
-  const sharedMetric = uniformMetricLabel(refsByReport)
-
   return (
     <div className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
       <table className="w-full border-collapse text-sm">
@@ -60,23 +55,20 @@ export default function ReportsTable({
             </th>
             {/* Fixed, ordered columns: model, dataset, metric, score, samples, status, time.
                 The result reads left to right as "what was measured, then how it did"; the
-                timestamp is bookkeeping and sits last. */}
+                timestamp is bookkeeping and sits last. Metric is a column of its own at every
+                width -- naming it in the Score header instead only worked while every row shared
+                one metric, and made the header change as the list was filtered or paged. */}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.model')}
             </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.dataset')}
             </th>
-            {sharedMetric === null && (
-              <th scope="col" className="hidden px-4 py-3 text-xs font-semibold text-[var(--text-muted)] xl:table-cell">
-                {t('reportDetail.metric')}
-              </th>
-            )}
+            <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
+              {t('reportDetail.metric')}
+            </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right whitespace-nowrap">
               {t('reports.columns.score')}
-              {sharedMetric !== null && (
-                <span className="ml-1.5 font-normal text-[var(--text-dim)]">({sharedMetric})</span>
-              )}
             </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)] text-right">
               {t('reports.columns.samples')}
@@ -121,18 +113,12 @@ export default function ReportsTable({
                 <td className="px-4 py-3 text-[var(--text-muted)] min-w-0">
                   <DatasetLines refs={metricRefs} fallback={dataset} />
                 </td>
-                {sharedMetric === null && (
-                  <td className="hidden px-4 py-3 text-[var(--text-muted)] text-xs min-w-0 xl:table-cell">
-                    <MetricLines refs={metricRefs} inferredHint={t('metrics.inferredPrimary')} />
-                  </td>
-                )}
+                <td className="px-4 py-3 text-[var(--text-muted)] text-xs min-w-0">
+                  <MetricLines refs={metricRefs} inferredHint={t('metrics.inferredPrimary')} />
+                </td>
                 <td className="px-4 py-3 text-right">
                   {metricRefs.length > 0 ? (
-                    <ScoreLines
-                      refs={metricRefs}
-                      emptyLabel={t('metrics.noPrimaryMetric')}
-                      inlineMetricClass={sharedMetric === null ? 'xl:hidden' : undefined}
-                    />
+                    <ScoreLines refs={metricRefs} emptyLabel={t('metrics.noPrimaryMetric')} />
                   ) : (
                     // Response from a backend without semantics: show the raw legacy number
                     // rather than scaling it under a unit it never declared.

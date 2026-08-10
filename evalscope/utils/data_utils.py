@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Union
 
 from evalscope.api.evaluator import CacheManager, ReviewResult
 from evalscope.constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, DataCollection
+from evalscope.metrics.semantics import format_metric_value
+from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
@@ -111,6 +113,71 @@ def get_acc_report_df(report_list: List[Report]):
 
     styler = style_df(df, columns=[ReportKey.score])
     return df, styler
+
+
+def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
+    """Build chart rows on a comparable 0-1 quality axis.
+
+    Unbounded and diagnostic metrics are omitted because no honest normalization exists for them.
+    Their native score is never replaced in the report itself; the formatted value travels next
+    to the quality ratio for chart labels and tooltips.
+    """
+    rows = []
+    for report in report_list:
+        metric = report.primary_metric
+        if metric is None or metric.semantics is None:
+            continue
+        quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
+        if quality_ratio is None:
+            continue
+        rows.append({
+            ReportKey.model_name: report.model_name,
+            ReportKey.dataset_name: report.dataset_name,
+            ReportKey.metric_name: metric.name,
+            ReportKey.score: quality_ratio,
+            ReportKey.raw_score: metric.score,
+            ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
+            ReportKey.num: metric.num,
+        })
+    return pd.DataFrame.from_records(
+        rows,
+        columns=[
+            ReportKey.model_name,
+            ReportKey.dataset_name,
+            ReportKey.metric_name,
+            ReportKey.score,
+            ReportKey.raw_score,
+            ReportKey.display_score,
+            ReportKey.num,
+        ],
+    )
+
+
+def get_quality_metric_df(report_list: List[Report], metric_df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize metric rows for charts while retaining their native display value."""
+    semantics_by_metric = {(report.model_name, report.dataset_name, metric.name): metric.semantics
+                           for report in report_list
+                           for metric in report.metrics}
+    rows = []
+    for _, row in metric_df.iterrows():
+        semantics = semantics_by_metric.get(
+            (row[ReportKey.model_name], row[ReportKey.dataset_name], row[ReportKey.metric_name])
+        )
+        raw_score = row[ReportKey.score]
+        quality_ratio = bounded_quality_ratio(raw_score, semantics)
+        if quality_ratio is None:
+            continue
+        item = row.to_dict()
+        item[ReportKey.raw_score] = raw_score
+        item[ReportKey.display_score] = format_metric_value(raw_score, semantics)
+        item[ReportKey.score] = quality_ratio
+        rows.append(item)
+
+    columns = list(metric_df.columns)
+    for column in (ReportKey.raw_score, ReportKey.display_score):
+        if column not in columns:
+            columns.append(column)
+    return pd.DataFrame.from_records(rows, columns=columns)
 
 
 def style_df(df: pd.DataFrame, columns: List[str] = None):

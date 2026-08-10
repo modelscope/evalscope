@@ -177,6 +177,29 @@ describe('aggregateRuns', () => {
     expect(rows[0].cell.history.map((p) => p.runId)).toEqual(['a', 'b', 'c'])
   })
 
+  it('keeps semantics from the newest run when input is out of order', () => {
+    const newestSemantics = { ...ACCURACY, display_precision: 3 }
+    const rows = aggregateRuns(
+      [
+        report({ name: 'old', timestamp: '2026-08-07T08:00:00' }),
+        report({
+          name: 'new',
+          timestamp: '2026-08-07T10:00:00',
+          primary_metrics: [{
+            dataset_name: 'iquiz',
+            metric_name: 'mean_acc',
+            score: 0.7,
+            semantics: newestSemantics,
+          }],
+        }),
+        report({ name: 'middle', timestamp: '2026-08-07T09:00:00' }),
+      ],
+      [],
+    )
+
+    expect(rows[0].cell.semantics?.display_precision).toBe(3)
+  })
+
   it('splits a multi-dataset run into one cell per dataset', () => {
     const rows = aggregateRuns(
       [

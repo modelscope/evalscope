@@ -22,6 +22,7 @@ describe('roundHalfUp', () => {
     expect(roundHalfUp(0.5, 0)).toBe(1)
     expect(roundHalfUp(-0.5, 0)).toBe(0)
     expect(roundHalfUp(2.5, 0)).toBe(3)
+    expect(roundHalfUp(-2.5, 0)).toBe(-2)
   })
 
   it('avoids binary floating point drift', () => {

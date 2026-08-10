@@ -7,11 +7,10 @@ display rules of the same metric.
 
 Priority chain, first hit wins:
 
-1. ``REPORT_ANCHOR`` -- the report already stores a ``semantic_id`` anchor. Materialized from
-   :data:`SEMANTIC_BASELINES` and returned without consulting the name table. A ``semantic_id``
-   absent from the baseline table (renamed during catalog evolution) falls through.
-2. ``BENCHMARK_OVERRIDE`` -- ``(benchmark_name, final_metric_name)`` has a collision override.
-3. ``METRIC_NAME`` -- the final report metric name is declared in :data:`METRIC_NAME_SEMANTICS`.
+1. ``BENCHMARK_OVERRIDE`` -- ``(benchmark_name, final_metric_name)`` has a collision override.
+2. ``METRIC_NAME`` -- the final report metric name is declared in :data:`METRIC_NAME_SEMANTICS`.
+3. ``REPORT_ANCHOR`` -- the report stores a ``semantic_id`` anchor and the current catalog has no
+   declaration for its name. The baseline keeps renamed or removed catalog entries readable.
 4. ``DIAGNOSTIC_FALLBACK`` -- nothing matched: ``diagnostic.unspecified``, the raw value is kept
    as is and an audit message records where to add the missing entry.
 
@@ -77,6 +76,7 @@ __all__ = [
     'ResolvedSemantics',
     'SemanticsResolver',
     'SemanticsSource',
+    'apply_primary_metric_roles',
     'catalog_entry_location',
     'diagnostic_fallback',
     'get_semantics_resolver',
@@ -248,6 +248,38 @@ def _with_primary_role(
         return semantics
 
 
+def apply_primary_metric_roles(
+    semantics_by_metric: Mapping[str, MetricSemantics],
+    primary_metric_name: Optional[str],
+) -> Dict[str, MetricSemantics]:
+    """Attribute report-level roles after every emitted metric name is known.
+
+    A single metric is implicitly primary. For a multi-metric report, an explicit declaration
+    promotes exactly one graded metric and demotes the rest; without one, every graded metric is
+    auxiliary so the report can choose a headline while marking that choice as inferred.
+
+    Args:
+        semantics_by_metric: Final report metric name -> resolved semantics.
+        primary_metric_name: Explicit final primary name, or ``None``.
+
+    Returns:
+        A new mapping with report-level roles applied.
+    """
+    if primary_metric_name is None and len(semantics_by_metric) <= 1:
+        return dict(semantics_by_metric)
+
+    attributed: Dict[str, MetricSemantics] = {}
+    for name, semantics in semantics_by_metric.items():
+        if primary_metric_name is not None:
+            attributed[name] = _with_primary_role(semantics, name, primary_metric_name)
+            continue
+        if semantics.role is MetricRole.DIAGNOSTIC or semantics.role is MetricRole.AUXILIARY:
+            attributed[name] = semantics
+            continue
+        attributed[name] = MetricSemantics(**{**semantics.model_dump(), 'role': MetricRole.AUXILIARY})
+    return attributed
+
+
 class SemanticsResolver:
     """Resolve final report metric names into ``MetricSemantics`` with a fixed priority chain.
 
@@ -287,9 +319,8 @@ class SemanticsResolver:
             benchmark_name: Benchmark (dataset) the metric belongs to.
             final_metric_name: Final report metric name, composed by
                 ``compose_final_metric_name()``.
-            embedded_semantic_id: ``semantic_id`` anchor stored in the report. When it exists in
-                the baseline table the result is materialized from it (``REPORT_ANCHOR``);
-                otherwise the resolver falls back to resolving by name.
+            embedded_semantic_id: ``semantic_id`` anchor stored in the report. It is used when the
+                current catalog has no declaration for ``final_metric_name``.
             primary_metric_name: The benchmark's primary metric as a final report name. Promotes
                 the matching metric to ``primary`` and demotes other non-diagnostic metrics.
 
@@ -297,24 +328,24 @@ class SemanticsResolver:
             The resolution, never ``None`` and never raising. An undeclared name degrades to the
             diagnostic fallback and carries the audit messages naming where to declare it.
         """
-        # 1. Report anchor: materialize directly from the baseline table.
-        if embedded_semantic_id is not None:
-            baseline = SEMANTIC_BASELINES.get(embedded_semantic_id)
-            if baseline is not None:
-                semantics = _with_primary_role(baseline, final_metric_name, primary_metric_name)
-                return ResolvedSemantics(semantics=semantics, source=SemanticsSource.REPORT_ANCHOR)
-
-        # 2. Benchmark level collision override.
+        # 1. Benchmark level collision override.
         entry = self._overrides.get((benchmark_name, final_metric_name))
         if entry is not None:
             semantics = _with_primary_role(entry.resolve(final_metric_name), final_metric_name, primary_metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.BENCHMARK_OVERRIDE)
 
-        # 3. Metric name table.
+        # 2. Metric name table.
         entry = self._names.get(final_metric_name)
         if entry is not None:
             semantics = _with_primary_role(entry.resolve(final_metric_name), final_metric_name, primary_metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.METRIC_NAME)
+
+        # 3. Report anchor: retain a historical declaration whose name is no longer catalogued.
+        if embedded_semantic_id is not None:
+            baseline = SEMANTIC_BASELINES.get(embedded_semantic_id)
+            if baseline is not None:
+                semantics = _with_primary_role(baseline, final_metric_name, primary_metric_name)
+                return ResolvedSemantics(semantics=semantics, source=SemanticsSource.REPORT_ANCHOR)
 
         # 4. Diagnostic fallback: the value is shown as stored and the gap is logged.
         return ResolvedSemantics(
@@ -373,11 +404,9 @@ def get_semantics_resolver() -> SemanticsResolver:
 def hydrate_report_semantics(report: 'Report') -> 'Report':
     """Fill in the metric semantics of a report read from disk.
 
-    Metrics that already carry a runtime ``semantics`` (freshly generated in this process) are
-    left untouched; everything else is resolved. A persisted ``semantic_id`` anchor is used as
-    the ``REPORT_ANCHOR``; a legacy report without one is resolved by ``(dataset_name, name)``,
-    which is what makes a legacy report render exactly like a fresh one. An undeclared metric
-    degrades to diagnostic and logs where to declare it.
+    Metrics that already carry runtime ``semantics`` keep their resolved contract; everything else
+    is resolved. The current catalog takes precedence so corrections apply to historical reports;
+    a persisted ``semantic_id`` anchor is a fallback for a name no longer in that catalog.
 
     The benchmark's primary metric is taken from ``Report.primary_metric_name`` (new reports) or
     from ``_meta.primary_metric`` (legacy reports), which is what keeps exactly one
@@ -403,22 +432,32 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
             raw_primary, aggregation = recovered
             primary_final_name = match_primary_final_name(raw_primary, [metric.name for metric in metrics], aggregation)
 
+    semantics_by_metric: Dict[str, MetricSemantics] = {}
     for metric in metrics:
-        if getattr(metric, 'semantics', None) is not None:
-            continue
-        resolved = resolver.resolve(
-            benchmark_name,
-            metric.name,
-            embedded_semantic_id=getattr(metric, 'semantic_id', None),
-            primary_metric_name=primary_final_name,
-        )
-        resolved.log_audit_messages()
-        metric.semantics = resolved.semantics
+        semantics = getattr(metric, 'semantics', None)
+        if semantics is None:
+            resolved = resolver.resolve(
+                benchmark_name,
+                metric.name,
+                embedded_semantic_id=getattr(metric, 'semantic_id', None),
+                primary_metric_name=primary_final_name,
+            )
+            resolved.log_audit_messages()
+            semantics = resolved.semantics
+        semantics_by_metric[metric.name] = semantics
+
+    semantics_by_metric = apply_primary_metric_roles(semantics_by_metric, primary_final_name)
+    for metric in metrics:
+        metric.semantics = semantics_by_metric[metric.name]
+        metric.semantic_id = metric.semantics.semantic_id
 
     primary = next(
         (metric for metric in metrics if metric.semantics is not None and metric.semantics.role is MetricRole.PRIMARY),
         None
     )
-    report.primary_metric_name = primary.name if primary else None
+    if primary_final_name and any(metric.name == primary_final_name for metric in metrics):
+        report.primary_metric_name = primary_final_name
+    else:
+        report.primary_metric_name = primary.name if primary else None
 
     return report

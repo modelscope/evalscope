@@ -62,11 +62,11 @@ def make_number_semantics(
     )
 
 
-class TestRoundHalfUp:
+class TestRoundTiesPositive:
     """Rendering must never fall back to banker's rounding.
 
     Asserted through ``format_metric_value`` at precision 0 rather than against a rounding helper:
-    half-up is a property of the rendered text, which is the only thing production emits.
+    Tie-breaking is a property of the rendered text, which is the only thing production emits.
     """
 
     @pytest.mark.parametrize(
@@ -74,12 +74,12 @@ class TestRoundHalfUp:
             (0.5, '1'),
             (1.5, '2'),
             (2.5, '3'),
-            (-0.5, '-1'),
-            (-2.5, '-3'),
+            (-0.5, '0'),
+            (-2.5, '-2'),
             (12.5, '13'),
         ]
     )
-    def test_rounds_halves_away_from_zero(self, value: float, expected: str) -> None:
+    def test_rounds_halves_toward_positive_infinity(self, value: float, expected: str) -> None:
         semantics = make_number_semantics(
             precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
         )
@@ -123,12 +123,12 @@ class TestFormatPercent:
         assert format_metric_value(1.0, make_percent_semantics()) == '100%'
         assert format_metric_value(0.0, make_percent_semantics()) == '0%'
 
-    def test_tie_rounds_half_up(self) -> None:
+    def test_tie_rounds_toward_positive_infinity(self) -> None:
         assert format_metric_value(0.125, make_percent_semantics(precision=0)) == '13%'
 
 
 class TestFormatNumber:
-    """Number rendering keeps the raw magnitude and separates the unit with one space."""
+    """Number rendering applies declared scaling and separates the unit with one space."""
 
     def test_unit_follows_a_single_space(self) -> None:
         assert format_metric_value(1.23456, make_number_semantics()) == '1.235 s'
@@ -137,7 +137,7 @@ class TestFormatNumber:
         semantics = make_number_semantics(precision=2, display_unit=None, raw_unit=None)
         assert format_metric_value(7.5, semantics) == '7.5'
 
-    def test_negative_value_rounds_away_from_zero(self) -> None:
+    def test_negative_value_rounds_to_nearest(self) -> None:
         semantics = make_number_semantics(precision=2, display_unit=None, raw_unit=None)
         assert format_metric_value(-3.456, semantics) == '-3.46'
 

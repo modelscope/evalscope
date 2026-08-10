@@ -9,13 +9,29 @@ import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import type { MetricSemantics } from '@/domain/metric'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiCard from '@/components/ui/KpiCard'
+import Tabs from '@/components/ui/Tabs'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import AggregatedResults from '@/components/dashboard/AggregatedResults'
 import { aggregateRuns } from '@/domain/report/runAggregation'
-import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
+import type { AggregatedRow, CellKind, CellPoint } from '@/domain/report/runAggregation'
 import { formatFull } from '@/utils/perf'
+
+/**
+ * Which kinds of run the table shows.
+ *
+ * `all` is not a kind, it is the absence of the filter, so it is kept out of `CellKind` rather than
+ * added to it -- nothing produces a cell of kind "all".
+ */
+type KindFilter = CellKind | 'all'
+
+/** Tab order, and the panel each one drives. */
+const KIND_TABS: { key: KindFilter; labelKey: string; panelId: string }[] = [
+  { key: 'all', labelKey: 'dashboard.tabAll', panelId: 'dashboard-results-all' },
+  { key: 'eval', labelKey: 'dashboard.tabEval', panelId: 'dashboard-results-eval' },
+  { key: 'perf', labelKey: 'dashboard.tabPerf', panelId: 'dashboard-results-perf' },
+]
 
 /**
  * Landing page: how much has been recorded here, then how the benchmarks are holding up.
@@ -36,6 +52,7 @@ export default function DashboardPage() {
   const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
   const [perfSemantics, setPerfSemantics] = useState<Record<string, MetricSemantics>>({})
   const [loadError, setLoadError] = useState('')
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all')
 
   // Fetch eval + perf whenever the global scan token or root changes.
   useEffect(() => {
@@ -73,6 +90,13 @@ export default function DashboardPage() {
     [reports, perfRuns, perfSemantics],
   )
 
+  // What the active tab admits. Filtering here rather than inside the table keeps the table a
+  // renderer of whatever rows it is handed.
+  const visibleRows = useMemo(
+    () => (kindFilter === 'all' ? rows : rows.filter((row) => row.cell.kind === kindFilter)),
+    [rows, kindFilter],
+  )
+
   const kpi = useMemo(() => {
     const models = new Set<string>()
     reports.forEach((report) => report.model_name && models.add(report.model_name))
@@ -100,6 +124,15 @@ export default function DashboardPage() {
   }
 
   const hasData = scanned && rows.length > 0
+
+  // One node, handed to whichever panel is selected: the tab decides the rows, not the markup.
+  const resultsPanel = visibleRows.length > 0 ? (
+    <AggregatedResults rows={visibleRows} onOpenRun={openRun} />
+  ) : (
+    <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+      <EmptyStateSystem reason="no-match" context={{ view: 'dashboard' }} />
+    </div>
+  )
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-col gap-4">
@@ -151,10 +184,15 @@ export default function DashboardPage() {
           <Skeleton lines={8} height={14} />
         </div>
       ) : hasData ? (
-        <>
-          <h2 className="type-body text-[var(--text)]">{t('dashboard.resultsTitle')}</h2>
-          <AggregatedResults rows={rows} onOpenRun={openRun} />
-        </>
+        <div className="flex min-w-0 flex-col gap-3">
+          <Tabs
+            tabs={KIND_TABS}
+            activeKey={kindFilter}
+            onChange={(key) => setKindFilter(key as KindFilter)}
+            panels={Object.fromEntries(KIND_TABS.map((tab) => [tab.panelId, resultsPanel]))}
+            className="self-start"
+          />
+        </div>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
           <EmptyStateSystem reason="no-data" context={{ view: 'dashboard' }} hint={t('dashboard.noReportsHint')} />

@@ -154,6 +154,8 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     score = 'Score'
+    raw_score = 'Raw Score'
+    display_score = 'Display Score'
     overall_score = 'OVERALL'
 
 
@@ -240,7 +242,7 @@ class Report(BaseModel):
         """
         if not self.metrics:
             return False
-        return self._declared_primary_metric() is None
+        return self._declared_primary_metric() is None and self.primary_metric_name is None
 
     @computed_field
     @property

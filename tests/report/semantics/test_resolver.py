@@ -22,6 +22,7 @@ from evalscope.metrics.semantics.resolver import (
     ResolvedSemantics,
     SemanticsResolver,
     SemanticsSource,
+    apply_primary_metric_roles,
     diagnostic_fallback,
     get_semantics_resolver,
 )
@@ -47,9 +48,9 @@ def _resolver(
 
 class TestPriorityChain:
     """Feature: metric-semantics-governance, Property 9: resolution returns the semantics of the
-    highest priority available source; a report anchor wins over every catalog table."""
+    highest priority available source; current catalog declarations correct historical anchors."""
 
-    def test_report_anchor_wins_over_tables(self) -> None:
+    def test_override_wins_over_report_anchor(self) -> None:
         resolver = _resolver(
             names={'metric': MetricEntry(baseline='quality.f1.ratio')},
             overrides={(BUILTIN_BENCHMARK, 'metric'): MetricEntry(baseline='quality.recall.ratio')},
@@ -57,8 +58,16 @@ class TestPriorityChain:
 
         resolved = resolver.resolve(BUILTIN_BENCHMARK, 'metric', embedded_semantic_id='quality.accuracy.ratio')
 
-        assert resolved.source is SemanticsSource.REPORT_ANCHOR
-        assert resolved.semantics.semantic_id == 'quality.accuracy.ratio'
+        assert resolved.source is SemanticsSource.BENCHMARK_OVERRIDE
+        assert resolved.semantics.semantic_id == 'quality.recall.ratio'
+
+    def test_name_table_wins_over_report_anchor(self) -> None:
+        resolver = _resolver(names={'metric': MetricEntry(baseline='quality.f1.ratio')})
+
+        resolved = resolver.resolve(BUILTIN_BENCHMARK, 'metric', embedded_semantic_id='quality.accuracy.ratio')
+
+        assert resolved.source is SemanticsSource.METRIC_NAME
+        assert resolved.semantics.semantic_id == 'quality.f1.ratio'
 
     def test_override_wins_over_name_table(self) -> None:
         resolver = _resolver(
@@ -256,6 +265,19 @@ class TestPrimaryRoleAttribution:
         resolver = self._ner_resolver()
 
         assert resolver.resolve(BUILTIN_BENCHMARK, 'precision').semantics.role is MetricRole.PRIMARY
+
+    def test_multi_metric_report_without_declaration_has_no_primary_role(self) -> None:
+        resolver = self._ner_resolver()
+        resolved = {
+            name: resolver.resolve(BUILTIN_BENCHMARK, name).semantics
+            for name in ('precision', 'recall', 'no_answer_num')
+        }
+
+        attributed = apply_primary_metric_roles(resolved, None)
+
+        assert attributed['precision'].role is MetricRole.AUXILIARY
+        assert attributed['recall'].role is MetricRole.AUXILIARY
+        assert attributed['no_answer_num'].role is MetricRole.DIAGNOSTIC
 
     def test_diagnostic_metric_is_never_promoted(self) -> None:
         resolver = self._ner_resolver()

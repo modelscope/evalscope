@@ -7,11 +7,9 @@ import type { MetricSemantics } from '@/domain/metric'
 
 /**
  * Format a raw performance value at a fixed precision through the shared `formatMetric`
- * primitive, so precision and round-half-up match every other surface.
+ * primitive, so precision and tie-breaking match every other surface.
  *
- * Used for the percentile and token tables, whose units are appended in JSX (or are unit-less).
- * Semantics are synthesized here as a plain unbounded number rather than looked up by name: the
- * grouped panels below take their real semantics from the backend `metric_semantics` map.
+ * Used only as a compatibility fallback for older backends without `metric_semantics`.
  */
 function fmtRaw(value: number | null | undefined, precision: number): string {
   const numberSemantics: MetricSemantics = {
@@ -24,6 +22,20 @@ function fmtRaw(value: number | null | undefined, precision: number): string {
     contract_version: 1,
   }
   return formatMetric(value, numberSemantics).primary
+}
+
+function formatPerfValue(
+  value: number | null | undefined,
+  semantics: MetricSemantics | undefined,
+  fallbackPrecision: number,
+  fallbackUnit = '',
+  fallbackScale = 1,
+): string {
+  if (semantics) {
+    return formatMetric(value, semantics).primary
+  }
+  const text = fmtRaw(value == null ? value : value * fallbackScale, fallbackPrecision)
+  return value == null ? text : `${text}${fallbackUnit}`
 }
 
 interface PerfMetricsPanelProps {
@@ -40,14 +52,26 @@ const C_TOKEN   = 'var(--chart-token)'
 
 interface PercTableProps {
   stats: PercentileStats
-  unit: string
+  semantics?: MetricSemantics
+  fallbackUnit: string
   accentCol?: string
-  /** multiply values before display (e.g. ×1000 for ms) */
-  scale?: number
+  fallbackScale?: number
 }
 
-function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: PercTableProps) {
-  const fmt = (v: number | null) => fmtRaw(v === null ? null : v * scale, scale === 1000 ? 1 : 3)
+function PercTable({
+  stats,
+  semantics,
+  fallbackUnit,
+  accentCol = 'var(--accent)',
+  fallbackScale = 1,
+}: PercTableProps) {
+  const fmt = (value: number | null) => formatPerfValue(
+    value,
+    semantics,
+    fallbackScale === 1000 ? 1 : 3,
+    fallbackUnit,
+    fallbackScale,
+  )
 
   const cols: { label: string; key: keyof PercentileStats; accent?: boolean }[] = [
     { label: 'Mean', key: 'mean', accent: true },
@@ -85,7 +109,7 @@ function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: Perc
                 c.accent ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]',
               )}
             >
-              {fmt(stats[c.key])}{stats[c.key] === null ? '' : unit}
+              {fmt(stats[c.key])}
             </td>
           ))}
         </tr>
@@ -139,13 +163,14 @@ interface TokenTableProps {
     total_tokens_count?: number
   }
   labels: { input: string; output: string; total: string; totalCount: string }
+  semantics: Record<string, MetricSemantics>
 }
 
-function TokenTable({ usage, labels }: TokenTableProps) {
+function TokenTable({ usage, labels, semantics }: TokenTableProps) {
   const rows = [
-    { label: labels.input,  stats: usage.input_tokens,  count: usage.total_input_tokens },
-    { label: labels.output, stats: usage.output_tokens, count: usage.total_output_tokens },
-    { label: labels.total,  stats: usage.total_tokens,  count: usage.total_tokens_count },
+    { key: 'usage.input_tokens', label: labels.input,  stats: usage.input_tokens,  count: usage.total_input_tokens },
+    { key: 'usage.output_tokens', label: labels.output, stats: usage.output_tokens, count: usage.total_output_tokens },
+    { key: 'usage.total_tokens', label: labels.total,  stats: usage.total_tokens,  count: usage.total_tokens_count },
   ]
 
   // whether any total counts are available (new-format reports only)
@@ -183,26 +208,26 @@ function TokenTable({ usage, labels }: TokenTableProps) {
               {row.label}
             </td>
             <td className={cn(cellBase, 'text-[var(--text)] font-medium')}>
-              {fmtRaw(row.stats.mean, 0)}
+              {formatPerfValue(row.stats.mean, semantics[row.key], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {fmtRaw(row.stats.std, 0)}
+              {formatPerfValue(row.stats.std, semantics[row.key], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {fmtRaw(row.stats['50%'], 0)}
+              {formatPerfValue(row.stats['50%'], semantics[row.key], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {fmtRaw(row.stats['99%'], 0)}
+              {formatPerfValue(row.stats['99%'], semantics[row.key], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {fmtRaw(row.stats.min, 0)}
+              {formatPerfValue(row.stats.min, semantics[row.key], 0)}
             </td>
             <td className={cn(cellBase, 'text-[var(--text-muted)]')}>
-              {fmtRaw(row.stats.max, 0)}
+              {formatPerfValue(row.stats.max, semantics[row.key], 0)}
             </td>
             {hasCount && (
               <td className={cn(cellBase, 'text-[var(--text)] font-semibold')}>
-                {row.count !== undefined ? row.count.toLocaleString() : '—'}
+                {row.count !== undefined ? formatPerfValue(row.count, semantics[row.key], 0) : '—'}
               </td>
             )}
           </tr>
@@ -252,34 +277,35 @@ function Sep() {
 export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps) {
   const { t } = useLocale()
   const { n_samples, latency, throughput, usage, ttft, tpot } = perfMetrics.summary
+  const semantics = perfMetrics.metric_semantics ?? {}
 
   const kpis = [
     {
       label: t('reportDetail.samples'),
-      value: String(n_samples),
+      value: formatPerfValue(n_samples, semantics.n_samples, 0),
       color: 'var(--text)',
     },
     {
       label: t('reportDetail.avgLatency'),
-      value: `${fmtRaw(latency.mean, 3)}s`,
+      value: formatPerfValue(latency.mean, semantics.latency, 3, 's'),
       color: C_LATENCY,
     },
     ...(ttft
-      ? [{ label: t('reportDetail.ttft'), value: `${fmtRaw(ttft.mean * 1000, 0)}ms`, color: C_TTFT }]
+      ? [{ label: t('reportDetail.ttft'), value: formatPerfValue(ttft.mean, semantics.ttft, 0, 'ms', 1000), color: C_TTFT }]
       : []),
     ...(tpot
-      ? [{ label: t('reportDetail.tpot'), value: `${fmtRaw(tpot.mean * 1000, 0)}ms`, color: C_TPOT }]
+      ? [{ label: t('reportDetail.tpot'), value: formatPerfValue(tpot.mean, semantics.tpot, 0, 'ms', 1000), color: C_TPOT }]
       : []),
     {
       label: t('reportDetail.outputTps'),
-      value: `${fmtRaw(throughput.avg_output_tps, 1)} tok/s`,
+      value: formatPerfValue(throughput.avg_output_tps, semantics['throughput.avg_output_tps'], 1, ' tok/s'),
       color: 'var(--text)',
     },
     ...(usage.total_input_tokens !== undefined
-      ? [{ label: t('reportDetail.totalInputTokens'), value: usage.total_input_tokens.toLocaleString(), color: 'var(--text)' }]
+      ? [{ label: t('reportDetail.totalInputTokens'), value: formatPerfValue(usage.total_input_tokens, semantics['usage.input_tokens'], 0), color: 'var(--text)' }]
       : []),
     ...(usage.total_output_tokens !== undefined
-      ? [{ label: t('reportDetail.totalOutputTokens'), value: usage.total_output_tokens.toLocaleString(), color: 'var(--text)' }]
+      ? [{ label: t('reportDetail.totalOutputTokens'), value: formatPerfValue(usage.total_output_tokens, semantics['usage.output_tokens'], 0), color: 'var(--text)' }]
       : []),
   ]
 
@@ -294,7 +320,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
       {/* Latency distribution */}
       <MetricSection color={C_LATENCY} label={t('reportDetail.latencyDist')} sublabel="(s)">
         <div className="overflow-x-auto">
-          <PercTable stats={latency} unit="s" accentCol={C_LATENCY} />
+          <PercTable stats={latency} semantics={semantics.latency} fallbackUnit="s" accentCol={C_LATENCY} />
         </div>
       </MetricSection>
 
@@ -308,7 +334,13 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
             sublabel={`${t('reportDetail.ttftDesc')} (ms)`}
           >
             <div className="overflow-x-auto">
-              <PercTable stats={ttft} unit="ms" accentCol={C_TTFT} scale={1000} />
+              <PercTable
+                stats={ttft}
+                semantics={semantics.ttft}
+                fallbackUnit="ms"
+                accentCol={C_TTFT}
+                fallbackScale={1000}
+              />
             </div>
           </MetricSection>
         </>
@@ -324,7 +356,13 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
             sublabel={`${t('reportDetail.tpotDesc')} (ms)`}
           >
             <div className="overflow-x-auto">
-              <PercTable stats={tpot} unit="ms" accentCol={C_TPOT} scale={1000} />
+              <PercTable
+                stats={tpot}
+                semantics={semantics.tpot}
+                fallbackUnit="ms"
+                accentCol={C_TPOT}
+                fallbackScale={1000}
+              />
             </div>
           </MetricSection>
         </>
@@ -337,6 +375,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
         <div className="overflow-x-auto">
           <TokenTable
             usage={usage}
+            semantics={semantics}
             labels={{
               input:  t('reportDetail.tokenInput'),
               output: t('reportDetail.tokenOutput'),

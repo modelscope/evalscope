@@ -45,35 +45,48 @@ const DESCENDING_FIRST: Record<SortKey, boolean> = {
 }
 
 /**
- * Widths for the columns that hold a number.
+ * Width of every column that carries one field.
  *
- * `w-[1%]` plus `whitespace-nowrap` makes a table cell shrink to its content, which hands all the
- * slack to Model and Benchmark -- the two columns holding text of unpredictable length. Without it
- * the leftover width is shared out proportionally and opens a gulf between the metric name and its
- * value, leaving the numbers stranded at opposite ends of the row.
+ * `w-[1%]` plus `whitespace-nowrap` makes a cell shrink to its content, so no field is stretched
+ * and none of them drift apart from each other. Nothing is truncated: an unusually long model or
+ * benchmark name widens its column and the card scrolls sideways, which keeps the name readable
+ * where wrapping it would instead break `qwen-vl-plus` across two lines and make one row taller
+ * than the rest.
  */
-const NUMERIC_COLUMN = 'w-[1%] whitespace-nowrap'
-
-/** Keeps the value column off the sparkline that follows it. */
-const TREND_GUTTER = 'pl-5'
+const FIELD_COLUMN = 'w-[1%] whitespace-nowrap'
 
 /**
- * The one column that absorbs the table's leftover width.
+ * Horizontal padding shared by every cell, which is what makes the gutters even.
  *
- * With nothing claiming the slack it is shared between Model and Benchmark, which opens a void after
- * each of them. Parked on Benchmark instead, the identifying text stays tight on the left, the
- * figures stay tight on the right, and the empty space collects in one place between the two.
+ * Every column carries the same padding, so the gutter between two columns is twice this -- 40px --
+ * and the same everywhere. That is as even as a table gets: a column is as wide as its *widest*
+ * cell, so a row whose text is shorter than that shows the column's leftover on top of the gutter --
+ * with `omni_doc_bench` setting the Benchmark column's width, the `iquiz` row reads about 80px wider
+ * there than the rest. Closing that would mean capping the column and wrapping the long name, which
+ * costs a taller row. This is the one knob for how airy the row reads.
  */
-const FLEXIBLE_COLUMN = 'w-full'
+const CELL_PADDING = 'px-5'
 
 /**
- * Floor width for the Model column.
+ * Type of a field value, applied to all seven of them.
  *
- * Once Benchmark claims the slack, an unconstrained Model column shrinks to its *narrowest* word
- * fragment, which breaks `qwen-plus` across two lines and `qwen-vl-plus` across three. A floor keeps
- * ordinary names on one line while leaving `break-words` free to wrap a genuinely long one.
+ * One size for the whole row: the identifying text and the figures are all things the reader came
+ * for, so ranking them by size only made the row look unsettled. The numeric columns add
+ * `font-mono tabular-nums` on top of this so digits stay column-aligned down the table -- the same
+ * pairing the statistics panel below already uses.
  */
-const MODEL_COLUMN = 'min-w-[8rem]'
+const FIELD_TYPE = 'type-body-sm'
+
+/**
+ * The trailing column that absorbs the table's leftover width.
+ *
+ * Something has to take the ~400px a wide card leaves over. Parked on Benchmark it opened a void
+ * mid-row, separating each benchmark from its own score; left unclaimed, the browser shares it out
+ * in proportion to content width, which reopens that void in miniature between every pair of
+ * columns. Collected at the end, the fields keep one even gutter and the slack sits past the last
+ * of them, where nothing has to be read across it.
+ */
+const SPACER_COLUMN = 'w-full'
 
 interface AggregatedResultsProps {
   rows: AggregatedRow[]
@@ -158,20 +171,22 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
       <table className="w-full">
         <thead>
           <tr className="border-b border-[var(--border)] text-left type-body-xs text-[var(--text-muted)]">
-            <th scope="col" className="w-8 px-2 py-2.5" />
-            {header('model', t('dashboard.model'), `px-2 py-2.5 ${MODEL_COLUMN}`)}
-            {header('benchmark', t('dashboard.benchmark'), `px-2 py-2.5 ${FLEXIBLE_COLUMN}`)}
-            <th scope="col" className={`hidden px-2 py-2.5 font-semibold xl:table-cell ${NUMERIC_COLUMN}`}>
+            <th scope="col" className={`w-8 ${CELL_PADDING} py-2.5`} />
+            {header('model', t('dashboard.model'), `${CELL_PADDING} py-2.5 ${FIELD_COLUMN}`)}
+            {header('benchmark', t('dashboard.benchmark'), `${CELL_PADDING} py-2.5 ${FIELD_COLUMN}`)}
+            <th scope="col" className={`${CELL_PADDING} py-2.5 font-semibold ${FIELD_COLUMN}`}>
               {t('reportDetail.metric')}
             </th>
-            <th scope="col" className={`px-2 py-2.5 text-right font-semibold ${NUMERIC_COLUMN}`}>
+            <th scope="col" className={`${CELL_PADDING} py-2.5 text-right font-semibold ${FIELD_COLUMN}`}>
               {t('dashboard.latest')}
             </th>
-            <th scope="col" className={`hidden px-2 py-2.5 font-semibold sm:table-cell ${NUMERIC_COLUMN} ${TREND_GUTTER}`}>
+            <th scope="col" className={`hidden ${CELL_PADDING} py-2.5 font-semibold sm:table-cell ${FIELD_COLUMN}`}>
               {t('dashboard.trend')}
             </th>
-            {header('runs', t('dashboard.runsCol'), `hidden px-2 py-2.5 text-right md:table-cell ${NUMERIC_COLUMN}`)}
-            {header('lastRun', t('dashboard.lastRun'), `hidden px-2 py-2.5 text-right lg:table-cell ${NUMERIC_COLUMN}`)}
+            {header('runs', t('dashboard.runsCol'), `hidden ${CELL_PADDING} py-2.5 text-right md:table-cell ${FIELD_COLUMN}`)}
+            {header('lastRun', t('dashboard.lastRun'), `hidden ${CELL_PADDING} py-2.5 text-right lg:table-cell ${FIELD_COLUMN}`)}
+            {/* Holds the leftover width, so the fields keep an even gutter instead of one void. */}
+            <th scope="col" aria-hidden="true" className={SPACER_COLUMN} />
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
@@ -198,7 +213,7 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
                     isOpen ? 'bg-[var(--bg-card2)]' : 'hover:bg-[var(--bg-card2)]',
                   ].join(' ')}
                 >
-                  <td className="px-2 py-2">
+                  <td className={`${CELL_PADDING} py-2`}>
                     <button
                       type="button"
                       onClick={(event) => {
@@ -213,47 +228,45 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
                       {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                     </button>
                   </td>
-                  <td className={`px-2 py-2 ${MODEL_COLUMN}`}>
+                  <td className={`${CELL_PADDING} py-2 ${FIELD_COLUMN}`}>
                     <span className="flex items-center gap-1.5">
                       <span className="shrink-0 text-[var(--text-dim)]" title={t(`dashboard.filter_${cell.kind}`)}>
                         {cell.kind === 'eval' ? <FileText size={13} /> : <Gauge size={13} />}
                       </span>
-                      <span className="type-body-sm break-words text-[var(--text)]">{cell.model}</span>
+                      <span className={`${FIELD_TYPE} text-[var(--text)]`}>{cell.model}</span>
                     </span>
                   </td>
-                  <td className={`px-2 py-2 ${FLEXIBLE_COLUMN}`}>
-                    <span className="type-body-sm break-words text-[var(--text)]">{cell.benchmark}</span>
-                    {/* Below the width where the metric has a column, it rides with the benchmark so
-                        the value is never shown without saying what it measures. */}
-                    <span className="block type-caption text-[var(--text-muted)] xl:hidden">{label}</span>
+                  <td className={`${CELL_PADDING} py-2 ${FIELD_COLUMN}`}>
+                    <span className={`${FIELD_TYPE} text-[var(--text)]`}>{cell.benchmark}</span>
                   </td>
-                  <td className={`hidden px-2 py-2 type-caption text-[var(--text-muted)] xl:table-cell ${NUMERIC_COLUMN}`}>
+                  <td className={`${CELL_PADDING} py-2 ${FIELD_TYPE} text-[var(--text-muted)] ${FIELD_COLUMN}`}>
                     <span title={cell.metricName}>{label}</span>
                   </td>
                   <td
-                    className={`px-2 py-2 text-right type-caption-mono font-semibold tabular-nums ${NUMERIC_COLUMN}`}
+                    className={`${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono font-semibold tabular-nums ${FIELD_COLUMN}`}
                     style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
                   >
                     {latest.primary}
                   </td>
-                  <td className={`hidden px-2 py-2 sm:table-cell ${NUMERIC_COLUMN} ${TREND_GUTTER}`}>
+                  <td className={`hidden ${CELL_PADDING} py-2 sm:table-cell ${FIELD_COLUMN}`}>
                     <MetricTrend
                       history={cell.history}
                       semantics={cell.semantics}
                       label={t('dashboard.trendLabel', { metric: label, runs: stats.runs })}
                     />
                   </td>
-                  <td className={`hidden px-2 py-2 text-right type-caption-mono tabular-nums text-[var(--text-muted)] md:table-cell ${NUMERIC_COLUMN}`}>
+                  <td className={`hidden ${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono tabular-nums text-[var(--text-muted)] md:table-cell ${FIELD_COLUMN}`}>
                     {stats.runs}
                   </td>
-                  <td className={`hidden px-2 py-2 text-right type-caption-mono tabular-nums text-[var(--text-dim)] lg:table-cell ${NUMERIC_COLUMN}`}>
+                  <td className={`hidden ${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono tabular-nums text-[var(--text-dim)] lg:table-cell ${FIELD_COLUMN}`}>
                     {formatShortTime(lastRunAt(row))}
                   </td>
+                  <td className={SPACER_COLUMN} />
                 </tr>
 
                 {isOpen && (
                   <tr className="bg-[var(--bg-card2)]">
-                    <td colSpan={8} className="px-4 pb-4 pt-1">
+                    <td colSpan={9} className="px-4 pb-4 pt-1">
                       <StatsPanel row={row} onOpenRun={onOpenRun} />
                     </td>
                   </tr>
@@ -332,7 +345,7 @@ function StatsPanel({
         <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
           {figures.map((figure) => (
             <div key={figure.label} className="flex flex-col gap-0.5">
-              <dt className="type-caption text-[var(--text-muted)]">{figure.label}</dt>
+              <dt className="type-body-xs text-[var(--text-muted)]">{figure.label}</dt>
               <dd className="type-body-sm font-mono tabular-nums text-[var(--text)]">{figure.text}</dd>
             </div>
           ))}

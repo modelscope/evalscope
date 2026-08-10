@@ -220,7 +220,7 @@ export default function PerfComparePage() {
                 <div className="type-body-sm text-[var(--text)] break-all" data-testid="baseline-label">
                   {runLabel(baselineRun)}
                 </div>
-                <div className="type-caption text-[var(--text-muted)] tabular-nums">
+                <div className="type-body-xs text-[var(--text-muted)] tabular-nums">
                   {t('performance.sampleCount', { n: model.sampleCounts[model.baselineId] ?? 0 })}
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function PerfComparePage() {
                 <div className="type-body-sm text-[var(--text)] break-all" data-testid="candidate-label">
                   {runLabel(candidateRun)}
                 </div>
-                <div className="type-caption text-[var(--text-muted)] tabular-nums">
+                <div className="type-body-xs text-[var(--text-muted)] tabular-nums">
                   {t('performance.sampleCount', { n: model.sampleCounts[model.candidateId] ?? 0 })}
                 </div>
               </div>

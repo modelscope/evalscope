@@ -61,8 +61,9 @@ export function DatasetLines({ refs, fallback, className }: LinesProps & { fallb
 /**
  * One metric label per line.
  *
- * Render this column only when {@link uniformMetricLabel} returns `null`; otherwise the label is
- * in the header and this column is redundant.
+ * A column of its own, so line N here names the metric behind line N of Score. Do not also pass
+ * `inlineMetricClass` to {@link ScoreLines} in a layout that renders this column: the label would
+ * appear twice.
  */
 export function MetricLines({ refs, inferredHint, className }: LinesProps & { inferredHint?: string }) {
   const { visible, hidden } = visibleOf(refs)

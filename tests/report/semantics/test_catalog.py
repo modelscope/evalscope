@@ -52,3 +52,12 @@ class TestGsm8kAccuracy:
         assert semantics.semantic_id == 'quality.accuracy.ratio'
         assert semantics.role is MetricRole.PRIMARY
         assert semantics.direction is MetricDirection.HIGHER_IS_BETTER
+
+
+def test_job_bench_normalized_score_is_a_bounded_ratio() -> None:
+    semantics = METRIC_NAME_SEMANTICS['mean_normalized_score'].resolve('mean_normalized_score')
+
+    assert semantics.semantic_id == 'quality.score.ratio'
+    assert semantics.value_range is not None
+    assert semantics.value_range.min == 0
+    assert semantics.value_range.max == 1

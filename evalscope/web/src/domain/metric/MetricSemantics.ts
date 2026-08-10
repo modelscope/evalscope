@@ -38,7 +38,7 @@ export interface MetricSemantics {
   display_multiplier?: number | null
   /** Unit appended to the displayed value (`%`, `s`, `ms`, ...). */
   display_unit?: string | null
-  /** Number of decimals of the displayed value, rounded half up. */
+  /** Number of decimals; ties are rounded toward positive infinity. */
   display_precision: number
   /** Version of the backend contract this declaration follows. */
   contract_version: number

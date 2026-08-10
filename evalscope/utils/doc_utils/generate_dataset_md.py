@@ -10,8 +10,9 @@ This module provides functions for:
 Note: This is a library module. CLI operations are handled by evalscope benchmark-info command.
 """
 
+import copy
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from evalscope.utils.io_utils import current_time
 from . import (
@@ -25,6 +26,9 @@ from . import (
     save_benchmark_data,
 )
 from .readme_generator import _format_sample_count, _format_tags, generate_readme_from_dict
+
+if TYPE_CHECKING:
+    from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
 
 # =============================================================================
 # Localization Dictionaries
@@ -199,17 +203,21 @@ def get_adapters():
 
 def extract_adapter_meta(adapter) -> Dict[str, Any]:
     """Extract metadata from a DataAdapter instance."""
+    return extract_benchmark_meta(adapter._benchmark_meta, adapter.__class__)
+
+
+def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['DataAdapter']]) -> Dict[str, Any]:
+    """Extract documentation metadata without instantiating the adapter."""
     from evalscope.api.benchmark.adapters import AgentLoopAdapter
 
-    meta = adapter._benchmark_meta
     agent_config = None
-    if isinstance(adapter, AgentLoopAdapter):
+    if adapter_cls is not None and issubclass(adapter_cls, AgentLoopAdapter):
         agent_config = {
-            'strategy': adapter.strategy_name,
-            'max_steps': adapter.max_steps,
+            'strategy': adapter_cls.strategy_name,
+            'max_steps': adapter_cls.max_steps_default,
         }
     adapter_meta = {
-        'pretty_name': getattr(meta, 'pretty_name', None) or adapter.name,
+        'pretty_name': getattr(meta, 'pretty_name', None) or meta.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
         'paper_url': getattr(meta, 'paper_url', None),
         'tags': list(getattr(meta, 'tags', [])) if getattr(meta, 'tags', None) else [],
@@ -226,7 +234,7 @@ def extract_adapter_meta(adapter) -> Dict[str, Any]:
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
-        'category': get_adapter_category(adapter),
+        'category': get_category_from_adapter_class(adapter_cls),
     }
     if agent_config is not None:
         adapter_meta['agent_config'] = agent_config
@@ -359,10 +367,11 @@ def _update_single_benchmark(
     Returns:
         Updated benchmark entry or None if failed
     """
-    from evalscope.api.registry import get_benchmark
+    from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 
     try:
-        adapter = get_benchmark(name)
+        metadata = copy.deepcopy(BENCHMARK_REGISTRY.lookup(name))
+        adapter = get_benchmark(name) if compute_stats else None
         # Load single benchmark data
         single_data = load_benchmark_data(name)
         entry = single_data[name]
@@ -371,7 +380,7 @@ def _update_single_benchmark(
         has_changes = False
 
         # Check if metadata has changed
-        new_meta = extract_adapter_meta(adapter)
+        new_meta = extract_benchmark_meta(metadata, metadata.data_adapter)
         old_meta = entry.get('meta', {})
         if new_meta != old_meta:
             entry['meta'] = new_meta

@@ -196,8 +196,20 @@ PERF_API_PATH_SEMANTICS: Dict[str, MetricEntry] = {
     # Both wire shapes stay as they are; only the semantics map is added next to them.
     'latency': MetricEntry(baseline='perf.latency.seconds', metric_name='Latency'),
     'best_latency': MetricEntry(baseline='perf.latency.seconds', metric_name='Best Latency'),
-    'ttft': MetricEntry(baseline='perf.latency.seconds', metric_name='TTFT'),
-    'tpot': MetricEntry(baseline='perf.latency.seconds', metric_name='TPOT'),
+    'ttft': MetricEntry(
+        baseline='perf.latency.seconds',
+        metric_name='TTFT',
+        display_multiplier=1000.0,
+        display_unit='ms',
+        display_precision=1,
+    ),
+    'tpot': MetricEntry(
+        baseline='perf.latency.seconds',
+        metric_name='TPOT',
+        display_multiplier=1000.0,
+        display_unit='ms',
+        display_precision=1,
+    ),
     'throughput.avg_output_tps': MetricEntry(
         baseline='perf.throughput.tokens_per_second',
         metric_name='Output Throughput',
@@ -206,7 +218,15 @@ PERF_API_PATH_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='perf.throughput.requests_per_second',
         metric_name='Request Throughput',
     ),
-    'best_rps': MetricEntry(baseline='perf.throughput.requests_per_second', metric_name='Best RPS'),
+    #: The display name already says RPS, so repeating `req/s` after the value only adds noise
+    #: wherever the two are shown together. `raw_unit` keeps the unit for tooltips and exports.
+    #: An empty string rather than `None`: a `None` override is skipped by `MetricEntry.resolve`,
+    #: which would leave the baseline's unit in place.
+    'best_rps': MetricEntry(
+        baseline='perf.throughput.requests_per_second',
+        metric_name='Best RPS',
+        display_unit='',
+    ),
     #: The run list reports this as a 0-100 percentage, so it renders with multiplier 1.
     'success_rate': MetricEntry(
         baseline='quality.score.points_100',

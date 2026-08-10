@@ -185,6 +185,14 @@ class TestPerfKeySpaces:
         assert semantics['display_unit'] == '%'
         assert semantics['value_range'] == {'min': 0.0, 'max': 100.0}
 
+    @pytest.mark.parametrize('field_key', ['ttft', 'tpot'])
+    def test_in_report_streaming_latency_converts_seconds_to_milliseconds(self, field_key: str) -> None:
+        semantics = resolve_perf_semantics([field_key])[field_key]
+
+        assert semantics['raw_unit'] == 's'
+        assert semantics['display_multiplier'] == 1000.0
+        assert semantics['display_unit'] == 'ms'
+
     def test_summary_keys_follow_the_table_shape(self) -> None:
         from evalscope.service.perf_archive import _summary_metric_keys
 

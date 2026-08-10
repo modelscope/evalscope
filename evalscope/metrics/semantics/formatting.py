@@ -14,15 +14,15 @@ Only the display fields of ``MetricSemantics`` are consulted (``display_kind``,
 - Missing value (``None`` or a non-finite float) -> ``MISSING_PLACEHOLDER`` (``'—'``).
 - Missing semantics (``None``) -> diagnostic fallback: the raw value rounded to
   ``DIAGNOSTIC_FALLBACK_PRECISION`` decimals, no unit.
-- ``display_kind='percent'`` -> ``value * (display_multiplier or 1)`` rounded half up to
+- ``display_kind='percent'`` -> ``value * (display_multiplier or 1)`` rounded to nearest to
   ``display_precision`` decimals, immediately followed by ``display_unit`` (no space before
   ``%``). A ratio in [0, 1] uses ``display_multiplier=100``, an official 0-100 scale uses ``1``.
-- ``display_kind='number'`` -> the value rounded half up to ``display_precision`` decimals,
-  then a single space and ``display_unit``. The unit and its space are omitted when
-  ``display_unit`` is ``None``.
+- ``display_kind='number'`` -> ``value * (display_multiplier or 1)`` rounded to nearest to
+  ``display_precision`` decimals, then a single space and ``display_unit``. The multiplier allows
+  declared unit conversions such as seconds to milliseconds.
 
-Rounding is half up (``decimal.ROUND_HALF_UP``), never Python's banker's rounding: ``12.5``
-at precision 0 renders as ``13``, and negative ties round away from zero (``-0.5`` -> ``-1``).
+Decimal ties go toward positive infinity, matching JavaScript ``Math.round`` rather than Python's
+banker's rounding: ``12.5`` renders as ``13`` and ``-0.5`` renders as ``0`` at precision 0.
 Rounded values are rendered in their shortest exact decimal form, matching JavaScript number
 stringification: trailing zeros are dropped (``90.0`` -> ``'90'``) and a value that rounds to
 zero renders as ``'0'`` (never ``'-0'`` nor ``'0.000'``).
@@ -52,7 +52,7 @@ unambiguous on both sides.
 """
 
 import math
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_FLOOR, Decimal
 from typing import Any, Optional
 
 from evalscope.api.metric.semantics import MetricDisplayKind, MetricSemantics
@@ -88,11 +88,12 @@ def is_missing_value(value: Any) -> bool:
 
 
 def _round_to_decimal(value: float, precision: int) -> Decimal:
-    """Round ``value`` half up into a ``Decimal`` quantized to ``precision`` decimals."""
+    """Round to nearest with decimal ties going toward positive infinity."""
     quantum = Decimal(1).scaleb(-max(precision, 0))
-    # Decimal(float) keeps the exact binary value, so the tie decision matches the frontend,
-    # which rounds the same double without an intermediate decimal-string conversion.
-    return Decimal(value).quantize(quantum, rounding=ROUND_HALF_UP)
+    # Convert through the shortest decimal representation used by JSON / JavaScript rather than
+    # preserving the binary approximation (for example, 1.005 must remain a decimal tie).
+    shifted = Decimal(str(value)) / quantum
+    return (shifted + Decimal('0.5')).to_integral_value(rounding=ROUND_FLOOR) * quantum
 
 
 def _format_number(value: float, precision: int) -> str:
@@ -129,8 +130,8 @@ def format_metric_value(value: Optional[float], semantics: Optional[MetricSemant
     if semantics is None:
         return _format_number(number, DIAGNOSTIC_FALLBACK_PRECISION)
 
+    scaled = number * (semantics.display_multiplier or 1.0)
     if semantics.display_kind == MetricDisplayKind.PERCENT:
-        scaled = number * (semantics.display_multiplier or 1.0)
         return _join_unit(_format_number(scaled, semantics.display_precision), semantics.display_unit, '')
 
-    return _join_unit(_format_number(number, semantics.display_precision), semantics.display_unit, ' ')
+    return _join_unit(_format_number(scaled, semantics.display_precision), semantics.display_unit, ' ')

@@ -13,6 +13,7 @@
       "partial_credit",
       "error_rate"
     ],
+    "primary_metric": "pass_rate",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -147,6 +148,6 @@
     "content_hash": "5c0094941e963cbdc9cb2c12f43f9025",
     "needs_translation": false
   },
-  "updated_at": "2026-07-22T16:02:16.242636",
+  "updated_at": "2026-08-10T14:50:31.854660",
   "translation_updated_at": "2026-07-22T16:02:21"
 }

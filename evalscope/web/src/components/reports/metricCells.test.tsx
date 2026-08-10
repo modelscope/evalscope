@@ -11,7 +11,6 @@ import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { DatasetLines, MetricLines, ScoreLines } from './metricCells'
-import { uniformMetricLabel } from '@/domain/report/primaryMetrics'
 import type { PrimaryMetricRef } from '@/domain/report/primaryMetrics'
 import type { MetricSemantics } from '@/domain/metric'
 
@@ -62,20 +61,6 @@ const MIXED = [
 ]
 
 afterEach(cleanup)
-
-describe('uniformMetricLabel', () => {
-  it('returns the shared label so it can be hoisted into a column header', () => {
-    expect(uniformMetricLabel([[ref()], [ref({ dataset_name: 'arc' })]])).toBe('Accuracy ↑')
-  })
-
-  it('returns null when the metrics differ, so a Metric column is needed', () => {
-    expect(uniformMetricLabel([MIXED])).toBeNull()
-  })
-
-  it('returns null for no refs at all', () => {
-    expect(uniformMetricLabel([[], []])).toBeNull()
-  })
-})
 
 describe('ScoreLines', () => {
   it('shows the value of a single dataset', () => {

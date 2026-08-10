@@ -187,7 +187,7 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'gpt_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
-    'mean_normalized_score': MetricEntry(baseline='quality.judge_score.unbounded'),
+    'mean_normalized_score': MetricEntry(baseline='quality.score.ratio'),
     'mean_avg_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_net_match_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     # health_bench grades each answer along named rubric axes.

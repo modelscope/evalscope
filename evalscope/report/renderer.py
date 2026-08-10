@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from evalscope.api.metric.semantics import MetricDirection, MetricRole
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.metrics.semantics import format_metric_value
+from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report.combinator import get_report_list
 from evalscope.report.report import Metric, Report, ReportKey
 from evalscope.report.visualization import (
@@ -158,14 +159,11 @@ def _sunburst_chart_div(report_list: List) -> str:
     return fig.to_html(full_html=False, include_plotlyjs=False, config=_PLOTLY_CDN_CONFIG)
 
 
-def _overview_chart_div(labels: List[str], scores: List[float]) -> str:
+def _overview_chart_div(rows: List[dict]) -> str:
     """Return a Plotly HTML div for the overview bar chart, or empty string."""
-    if not labels:
+    if not rows:
         return ''
-    overview_df = pd.DataFrame({
-        ReportKey.dataset_name: labels,
-        ReportKey.score: scores,
-    })
+    overview_df = pd.DataFrame.from_records(rows)
     fig = plot_single_report_scores(overview_df)
     if fig is None:
         return ''
@@ -180,10 +178,15 @@ def _subset_chart_div(
     """Return a Plotly HTML div for a per-dataset subset bar chart, or empty string."""
     if not subset_rows:
         return ''
+    chart_rows = [row for row in subset_rows if row['quality_score'] is not None]
+    if not chart_rows:
+        return ''
     subset_df = pd.DataFrame({
-        ReportKey.subset_name: [row['subset'] for row in subset_rows],
-        ReportKey.metric_name: [row['metric'] for row in subset_rows],
-        ReportKey.score: [row['score'] for row in subset_rows],
+        ReportKey.subset_name: [row['subset'] for row in chart_rows],
+        ReportKey.metric_name: [row['metric'] for row in chart_rows],
+        ReportKey.score: [row['quality_score'] for row in chart_rows],
+        ReportKey.raw_score: [row['score'] for row in chart_rows],
+        ReportKey.display_score: [row['score_display'] for row in chart_rows],
     })
     fig = plot_single_dataset_scores(subset_df)
     if fig is None:
@@ -247,8 +250,7 @@ def gen_html_report_file(
     # Overview data
     # ------------------------------------------------------------------
     summary_rows: List[dict] = []
-    overview_labels: List[str] = []
-    overview_scores: List[float] = []
+    overview_chart_rows: List[dict] = []
 
     for ds in all_datasets:
         info = dataset_info[ds]
@@ -272,10 +274,18 @@ def gen_html_report_file(
             )
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
         if first is not None and first.primary_metric is not None:
-            overview_labels.append(pretty)
-            overview_scores.append(first.primary_metric.score)
+            metric = first.primary_metric
+            quality_score = bounded_quality_ratio(metric.score, metric.semantics)
+            if quality_score is not None:
+                overview_chart_rows.append({
+                    ReportKey.dataset_name: pretty,
+                    ReportKey.metric_name: _metric_label(metric),
+                    ReportKey.score: quality_score,
+                    ReportKey.raw_score: metric.score,
+                    ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
+                })
 
-    overview_chart_div = _overview_chart_div(overview_labels, overview_scores)
+    overview_chart_div = _overview_chart_div(overview_chart_rows)
     sunburst_chart_div = _sunburst_chart_div(report_list)
 
     # ------------------------------------------------------------------
@@ -326,6 +336,7 @@ def gen_html_report_file(
                             category=cat_display,
                             metric=_metric_label(metric),
                             score=sub.score,
+                            quality_score=bounded_quality_ratio(sub.score, semantics),
                             score_display=format_metric_value(sub.score, semantics),
                             num=sub.num,
                         )

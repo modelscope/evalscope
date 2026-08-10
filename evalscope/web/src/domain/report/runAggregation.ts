@@ -157,10 +157,14 @@ export function aggregateRuns(
     const key = cellKey(cell)
     const existing = cells.get(key)
     if (existing) {
+      const latestTimestamp = existing.history.reduce(
+        (latest, historyPoint) => historyPoint.timestamp > latest ? historyPoint.timestamp : latest,
+        '',
+      )
       existing.history.push(point)
       // A later run's semantics win: the catalog may have gained a declaration since the older run
       // was written, and the newer resolution is the more accurate one.
-      if (point.timestamp >= existing.history[0].timestamp && cell.semantics) {
+      if (point.timestamp >= latestTimestamp && cell.semantics) {
         existing.semantics = cell.semantics
       }
       return

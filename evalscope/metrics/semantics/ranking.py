@@ -12,6 +12,7 @@ that a reported score keeps its own scale and unit. The frontend primitive
 rule for colour scales.
 """
 
+import math
 from typing import Iterable, Optional
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole, MetricSemantics
@@ -29,7 +30,7 @@ def bounded_quality_ratio(value: Optional[float], semantics: Optional[MetricSema
         metric without a ``value_range``, or one whose direction is ``none``. ``None`` means
         "not rankable", which callers must treat as unknown rather than as zero.
     """
-    if value is None or semantics is None:
+    if value is None or semantics is None or not math.isfinite(float(value)):
         return None
     if semantics.role is MetricRole.DIAGNOSTIC or semantics.direction is MetricDirection.NONE:
         return None

@@ -252,6 +252,8 @@ class BenchmarkMeta:
                 if key == 'few_shot_num' and value < 0:
                     raise ValueError('few_shot_num must be >= 0')
 
+        self._validate_primary_metric()
+
     def _update_filters(self, new_filters: dict):
         if self.filters is None:
             self.filters = OrderedDict()

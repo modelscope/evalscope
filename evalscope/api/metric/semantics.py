@@ -81,14 +81,14 @@ class MetricSemantics(BaseModel):
     """Rendering form of the value."""
 
     display_multiplier: Optional[float] = Field(default=None)
-    """Display multiplier. ``None`` means undeclared; consumers use ``display_multiplier or 1.0``.
-    A ratio in [0, 1] rendered as percent uses 100.0, an official 0-100 scale uses 1.0."""
+    """Finite positive display multiplier. ``None`` means undeclared and is treated as ``1.0``.
+    It supports percent scaling and declared unit conversions without changing the stored value."""
 
     display_unit: Optional[str] = Field(default=None)
     """Unit appended to the displayed value (``%``, ``s``, ``ms``, ...)."""
 
     display_precision: int = Field(default=4)
-    """Number of decimals of the displayed value, rounded half up."""
+    """Number of decimals of the displayed value, with ties rounded toward positive infinity."""
 
     contract_version: int = Field(default=METRIC_CONTRACT_VERSION)
     """Version of the contract this declaration follows."""

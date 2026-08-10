@@ -125,6 +125,37 @@ class TestPrimaryMetricByRole:
         assert report.primary_metric is not None
         assert report.primary_metric.name == 'cer'
 
+    def test_multi_metric_report_without_declaration_is_marked_inferred(self) -> None:
+        report = Report.from_dict({
+            'dataset_name': 'unknown_third_party_benchmark',
+            'metrics': [
+                {'name': 'precision', 'categories': []},
+                {'name': 'recall', 'categories': []},
+            ],
+        })
+
+        assert report.primary_metric is not None
+        assert report.primary_metric.name == 'precision'
+        assert report.primary_metric_is_inferred()
+        assert report.primary_metric_name is None
+        assert all(metric.semantics.role is MetricRole.AUXILIARY for metric in report.metrics)
+
+    def test_explicit_diagnostic_primary_survives_hydration(self) -> None:
+        report = Report.from_dict({
+            'dataset_name': 'unknown_third_party_benchmark',
+            'primary_metric_name': 'mystery_metric',
+            'metrics': [
+                {'name': 'mystery_metric', 'categories': [], 'semantic_id': 'diagnostic.unspecified'},
+                {'name': 'precision', 'categories': []},
+            ],
+        })
+
+        assert report.primary_metric is not None
+        assert report.primary_metric.name == 'mystery_metric'
+        assert not report.primary_metric_is_inferred()
+        assert report.primary_metric_name == 'mystery_metric'
+        assert report.primary_metric.semantics.role is MetricRole.DIAGNOSTIC
+
 
 class TestSerializationContract:
     """Feature: metric-semantics-governance, Property 40: the report persists the anchor only,
@@ -168,6 +199,34 @@ class TestSerializationContract:
             # still tell an old anchor from a new one without a report-level duplicate.
             assert after.semantics.contract_version == METRIC_CONTRACT_VERSION
 
+    def test_round_trip_reapplies_metric_name_overrides(self) -> None:
+        restored = Report.from_dict({
+            'dataset_name': 'agent_benchmark',
+            'metrics': [{
+                'name': 'mean_total_wall_time_s',
+                'categories': [],
+                'semantic_id': 'diagnostic.unspecified',
+            }],
+        })
+
+        semantics = restored.metrics[0].semantics
+        assert semantics.raw_unit == 's'
+        assert semantics.display_precision == 2
+
+    def test_catalog_correction_replaces_a_stale_anchor(self) -> None:
+        restored = Report.from_dict({
+            'dataset_name': 'job_bench',
+            'metrics': [{
+                'name': 'mean_normalized_score',
+                'categories': [],
+                'semantic_id': 'quality.judge_score.unbounded',
+            }],
+        })
+
+        metric = restored.metrics[0]
+        assert metric.semantics.semantic_id == 'quality.score.ratio'
+        assert metric.semantic_id == metric.semantics.semantic_id
+
 
 class TestGeneratorBinding:
     """Feature: metric-semantics-governance, Property 15 and 16: every metric carries semantics
@@ -198,6 +257,22 @@ class TestGeneratorBinding:
         assert roles['precision'] is MetricRole.AUXILIARY
         assert roles['recall'] is MetricRole.AUXILIARY
         assert roles['no_answer_num'] is MetricRole.DIAGNOSTIC
+
+    def test_missing_primary_demotes_all_graded_metrics(self) -> None:
+        report = ReportGenerator.generate_report(
+            score_dict=_ner_score_dict(),
+            model_name='m',
+            data_adapter=_StubAdapter('unknown_third_party_benchmark'),
+            add_aggregation_name=False,
+        )
+
+        roles = {metric.name: metric.semantics.role for metric in report.metrics}
+        assert roles['f1_score'] is MetricRole.AUXILIARY
+        assert roles['precision'] is MetricRole.AUXILIARY
+        assert roles['recall'] is MetricRole.AUXILIARY
+        assert roles['no_answer_num'] is MetricRole.DIAGNOSTIC
+        assert report.primary_metric_is_inferred()
+        assert report.primary_metric_name is None
 
     def test_scores_are_unchanged(self) -> None:
         score_dict = _ner_score_dict()

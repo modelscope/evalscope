@@ -14,6 +14,7 @@
       "pass_hat_k",
       "error_rate"
     ],
+    "primary_metric": "avg_score",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -107,6 +108,6 @@
     "content_hash": "96fad09d5529737f9cd0025e2494c9cd",
     "needs_translation": false
   },
-  "updated_at": "2026-07-14T17:44:31.169240",
+  "updated_at": "2026-08-10T14:50:31.855169",
   "translation_updated_at": "2026-07-14T17:44:38"
 }
