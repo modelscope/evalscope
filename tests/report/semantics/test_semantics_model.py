@@ -30,7 +30,6 @@ def _accuracy_kwargs(**overrides) -> dict:
         display_multiplier=100.0,
         display_unit='%',
         display_precision=1,
-        comparison_group='quality.accuracy',
     )
     kwargs.update(overrides)
     return kwargs
@@ -52,7 +51,6 @@ class TestMetricSemanticsValid:
             direction=MetricDirection.NONE,
         )
 
-        assert semantics.comparison_group is None
         assert semantics.display_kind == MetricDisplayKind.NUMBER
         assert semantics.display_precision == 4
 
@@ -89,18 +87,6 @@ class TestMetricSemanticsValidation:
         message = str(excinfo.value)
         assert 'diagnostic.count.items' in message
         assert 'Steps' in message
-
-    def test_r3_diagnostic_rejects_comparison_group(self) -> None:
-        with pytest.raises(ValidationError) as excinfo:
-            MetricSemantics(
-                semantic_id='diagnostic.count.items',
-                metric_name='Steps',
-                role=MetricRole.DIAGNOSTIC,
-                direction=MetricDirection.NONE,
-                comparison_group='diagnostic.count',
-            )
-
-        assert 'diagnostic.count.items' in str(excinfo.value)
 
     @pytest.mark.parametrize('missing', ['value_range', 'display_multiplier'])
     def test_r4_percent_requires_range_and_multiplier(self, missing: str) -> None:
@@ -212,42 +198,6 @@ class TestMetricSemanticsProperties:
             MetricSemantics(**kwargs)
 
         assert any(error['loc'] == (field_name, ) for error in excinfo.value.errors())
-
-    @given(kwargs=strategies.diagnostic_with_comparison_group_kwargs())
-    def test_diagnostic_metric_rejects_any_comparison_group(self, kwargs: Dict[str, Any]) -> None:
-        """Feature: metric-semantics-governance, Property 3: 诊断指标不参与比较分组.
-
-        Rejecting half of the property: for any semantics declaration with role == diagnostic and
-        any non-empty comparison_group string, construction fails and the error message contains
-        the semantic_id.
-
-        **Validates: Requirements 1.5**
-        """
-        assert kwargs['role'] == MetricRole.DIAGNOSTIC
-        assert kwargs['comparison_group']
-
-        with pytest.raises(ValidationError) as excinfo:
-            MetricSemantics(**kwargs)
-
-        message = str(excinfo.value)
-        assert kwargs['semantic_id'] in message
-        assert 'comparison_group' in message
-
-    @given(kwargs=strategies.valid_semantics_kwargs(roles=st.just(MetricRole.DIAGNOSTIC)))
-    def test_diagnostic_metric_without_comparison_group_is_accepted(self, kwargs: Dict[str, Any]) -> None:
-        """Feature: metric-semantics-governance, Property 3: 诊断指标不参与比较分组.
-
-        Accepting half of the property: the same diagnostic declaration with comparison_group
-        left empty always builds, so only the comparison group triggers the rejection.
-
-        **Validates: Requirements 1.5**
-        """
-        kwargs['comparison_group'] = None
-
-        semantics = MetricSemantics(**kwargs)
-
-        assert semantics.role == MetricRole.DIAGNOSTIC
-        assert semantics.comparison_group is None
 
     @given(kwargs=strategies.valid_semantics_kwargs(display_kinds=st.just(MetricDisplayKind.PERCENT)))
     def test_percent_with_range_and_multiplier_is_accepted(self, kwargs: Dict[str, Any]) -> None:

@@ -42,14 +42,13 @@ describe('metric domain public surface', () => {
     // what made a 4.3% WER draw a 95.7% full bar.
     // `formatDifference` is here rather than duplicated per feature, because "a difference of a
     // percentage is percentage points" is one rule and had already been written twice.
+    // `MISSING_PLACEHOLDER` / `roundHalfUp` are internals of `formatMetric` and stay unexported.
     expect(Object.keys(metricDomain).sort()).toEqual([
-      'MISSING_PLACEHOLDER',
       'formatDifference',
       'formatMetric',
       'getBoundedQualityRatio',
       'getComparisonVerdict',
       'getValuePosition',
-      'roundHalfUp',
     ])
   })
 

@@ -16,7 +16,7 @@ from evalscope.metrics.semantics.perf import (
     PERF_SUMMARY_COLUMN_SEMANTICS,
     resolve_perf_semantics,
 )
-from evalscope.metrics.semantics.resolver import SemanticsResolver, is_public_perf_field
+from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 
@@ -91,13 +91,6 @@ class TestPerfFieldCoverage:
 
         assert semantics.metric_name == field_key
 
-    def test_public_fields_are_strict_for_the_resolver(self) -> None:
-        for field_key in PUBLIC_FIELD_KEYS:
-            assert is_public_perf_field(field_key)
-
-    def test_extension_field_is_not_strict(self) -> None:
-        assert not is_public_perf_field('Some Vendor Extension')
-
 
 class TestPerfDirections:
     """Latency and throughput must not be confused with each other."""
@@ -124,11 +117,10 @@ class TestPerfDiagnostics:
 
         assert semantics.role is MetricRole.DIAGNOSTIC
         assert semantics.direction is MetricDirection.NONE
-        assert semantics.comparison_group is None
 
 
 class TestResolvePerfField:
-    """The resolver reads the perf table and degrades only for extension fields."""
+    """The resolver reads the perf table and degrades for anything it does not declare."""
 
     def test_public_field_resolves(self) -> None:
         resolved = SemanticsResolver().resolve_perf_field(Metrics.AVERAGE_LATENCY)
@@ -136,17 +128,16 @@ class TestResolvePerfField:
         assert not resolved.degraded
         assert resolved.semantics.direction is MetricDirection.LOWER_IS_BETTER
 
-    def test_extension_field_degrades_without_blocking(self) -> None:
+    def test_extension_field_degrades(self) -> None:
         resolved = SemanticsResolver().resolve_perf_field('Some Vendor Extension')
 
         assert resolved.degraded
-        assert not resolved.blocks_standard_semantics
-        resolved.raise_if_blocked()
+        assert resolved.semantics.role is MetricRole.DIAGNOSTIC
 
-    def test_undeclared_public_field_blocks(self) -> None:
+    def test_undeclared_field_reports_where_to_declare_it(self) -> None:
         resolved = SemanticsResolver(perf_fields={}).resolve_perf_field(Metrics.AVERAGE_LATENCY)
 
-        assert resolved.blocks_standard_semantics
+        assert resolved.degraded
         assert 'PERF_FIELD_SEMANTICS' in '\n'.join(resolved.audit_messages)
 
 

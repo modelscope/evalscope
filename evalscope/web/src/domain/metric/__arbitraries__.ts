@@ -21,7 +21,6 @@ export function ratioSemantics(): MetricSemantics {
     display_multiplier: 100,
     display_unit: '%',
     display_precision: 1,
-    comparison_group: 'quality.accuracy',
     contract_version: 1,
   }
 }
@@ -38,7 +37,6 @@ export function secondsSemantics(): MetricSemantics {
     display_kind: 'number',
     display_unit: 's',
     display_precision: 3,
-    comparison_group: 'perf.latency',
     contract_version: 1,
   }
 }
@@ -54,7 +52,6 @@ export function diagnosticSemantics(): MetricSemantics {
     display_kind: 'number',
     display_unit: null,
     display_precision: 0,
-    comparison_group: null,
     contract_version: 1,
   }
 }
@@ -86,7 +83,6 @@ export function arbSemantics(): fc.Arbitrary<MetricSemantics> {
       display_multiplier: isPercent ? 100 : null,
       display_unit: isPercent ? '%' : unit,
       display_precision: precision,
-      comparison_group: 'quality.generated',
       contract_version: 1,
     }
   })

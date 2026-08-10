@@ -16,7 +16,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.accuracy",
       "contract_version": 1
     },
     "value": 0.8567,
@@ -40,7 +39,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 0,
-      "comparison_group": "quality.accuracy",
       "contract_version": 1
     },
     "value": 0.125,
@@ -64,7 +62,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.accuracy",
       "contract_version": 1
     },
     "value": 0.0,
@@ -88,7 +85,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.accuracy",
       "contract_version": 1
     },
     "value": 1.0,
@@ -112,7 +108,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.f1",
       "contract_version": 1
     },
     "value": 0.9,
@@ -136,7 +131,6 @@
       "display_multiplier": 1.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.score",
       "contract_version": 1
     },
     "value": 87.25,
@@ -160,7 +154,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.wer",
       "contract_version": 1
     },
     "value": 0.0432,
@@ -184,7 +177,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": null,
       "contract_version": 1
     },
     "value": 0.9876,
@@ -205,7 +197,6 @@
       "display_multiplier": null,
       "display_unit": "s",
       "display_precision": 3,
-      "comparison_group": "perf.latency",
       "contract_version": 1
     },
     "value": 1.23456,
@@ -226,7 +217,6 @@
       "display_multiplier": null,
       "display_unit": "s",
       "display_precision": 3,
-      "comparison_group": "perf.latency",
       "contract_version": 1
     },
     "value": 0.0001234,
@@ -247,7 +237,6 @@
       "display_multiplier": null,
       "display_unit": "ms",
       "display_precision": 2,
-      "comparison_group": "perf.latency",
       "contract_version": 1
     },
     "value": 250.0,
@@ -268,7 +257,6 @@
       "display_multiplier": null,
       "display_unit": "tok/s",
       "display_precision": 2,
-      "comparison_group": "perf.throughput",
       "contract_version": 1
     },
     "value": 1234.5678,
@@ -289,7 +277,6 @@
       "display_multiplier": null,
       "display_unit": null,
       "display_precision": 2,
-      "comparison_group": "quality.judge_score",
       "contract_version": 1
     },
     "value": 7.5,
@@ -310,7 +297,6 @@
       "display_multiplier": null,
       "display_unit": null,
       "display_precision": 2,
-      "comparison_group": "quality.judge_score",
       "contract_version": 1
     },
     "value": -3.456,
@@ -331,7 +317,6 @@
       "display_multiplier": null,
       "display_unit": null,
       "display_precision": 0,
-      "comparison_group": null,
       "contract_version": 1
     },
     "value": 12.0,
@@ -355,7 +340,6 @@
       "display_multiplier": 100.0,
       "display_unit": "%",
       "display_precision": 1,
-      "comparison_group": "quality.accuracy",
       "contract_version": 1
     },
     "value": null,
@@ -403,7 +387,6 @@
       "display_multiplier": 100.0,
       "display_unit": "pp",
       "display_precision": 1,
-      "comparison_group": "quality.score",
       "contract_version": 1
     },
     "value": 0.5,
@@ -424,7 +407,6 @@
       "display_multiplier": null,
       "display_unit": "%",
       "display_precision": 2,
-      "comparison_group": null,
       "contract_version": 1
     },
     "value": 12.345,

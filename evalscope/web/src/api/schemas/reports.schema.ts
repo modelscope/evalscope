@@ -50,7 +50,6 @@ export const metricSemanticsSchema = z.object({
   display_multiplier: z.number().nullable().optional(),
   display_unit: z.string().nullable().optional(),
   display_precision: z.number(),
-  comparison_group: z.string().nullable().optional(),
   contract_version: z.number(),
 })
 
@@ -126,7 +125,6 @@ export const reportDataSchema = z.object({
   // Reports created without collect_perf persist this field as null rather
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
-  metric_schema_version: z.number().optional(),
   primary_metric_name: z.string().nullable().optional(),
 })
 

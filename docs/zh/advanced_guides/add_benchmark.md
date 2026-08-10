@@ -480,18 +480,19 @@ class MMLUProAdapter(MultiChoiceAdapter):
 metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
 ```
 
-只有两种情况需要你添一行：
+有两种情况值得你添一行：
 
 1. **产出多个指标时**：声明哪个是主指标，填 `metric_list` 中的原始名。其余指标自动解析为
    auxiliary，占比类、计数类指标解析为 diagnostic：
 
    ```python
    metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-   primary_metric='f1_score',   # metric_list 多于一个指标时必填
+   primary_metric='f1_score',   # metric_list 多于一个指标时应当声明
    ```
 
-   这一点是强制的：多指标却不写 `primary_metric` 会在构造 `BenchmarkMeta` 时报错——否则每个报告
-   视图都只能任选一个指标当结论。
+   不写只会告警，报告会自行推断一个头条指标（第一个非 diagnostic 的指标），已有 adapter 照常
+   工作——只是选择权变成了我们的而不是你的。若填了 `metric_list` 中不存在的名字则直接报错，因为
+   那只可能是拼写错误。
 
 2. **引入了新的指标名时**：在 `METRIC_NAME_SEMANTICS` 中加一行，引用描述它的基线：
 
@@ -500,9 +501,11 @@ metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
-仓库外的第三方 benchmark 不改目录也能跑：其未声明的指标降级为 diagnostic，原样显示数值，不伪造
-方向与单位。内置 benchmark 则不行——未声明的指标会让报告生成抛出 `UndeclaredMetricError`，并给出指标名
-与待补充的目录条目；否则目录的空洞就会表现为一个被静默错误渲染的分数。
+未声明的指标不会让评测失败：它降级为 diagnostic，原样显示数值，不伪造方向与单位，并在日志中给出
+待补充的目录条目。目录在原理上不可能完备——最终指标名是 `f'{aggregation_name}_{metric}'`，而若干
+benchmark 的 `aggregation_name` 来自数据（`hallusion_bench` 的子类别、`longmemeval` 的问题类型、
+`openai_mrcr` 的针距区间），这些名字无法预先穷举。因此补目录条目是对指标渲染效果的改进，而不是
+运行它的前置条件。
 
 ## 4. 运行评测
 

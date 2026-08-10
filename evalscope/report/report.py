@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, computed_field, field_serializer, field_v
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
-from evalscope.api.metric.semantics import METRIC_CONTRACT_VERSION, MetricRole, MetricSemantics
+from evalscope.api.metric.semantics import MetricRole, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -175,14 +175,6 @@ class Report(BaseModel):
     analysis: str = 'N/A'
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
-    metric_schema_version: int = METRIC_CONTRACT_VERSION
-    """Contract version this report's ``Metric.semantic_id`` anchors were written against.
-
-    Nothing reads it today: it is stamped so that a future contract change can tell an old report
-    from a new one at read time and migrate the anchors, which is impossible to reconstruct after
-    the fact. Bump :data:`METRIC_CONTRACT_VERSION`, never this field.
-    """
-
     primary_metric_name: Optional[str] = None
     """Final report metric name of the ``role=primary`` metric, ``None`` when there is none."""
 

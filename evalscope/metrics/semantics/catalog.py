@@ -6,15 +6,13 @@ produce 395 ``(benchmark, metric)`` pairs but only ~131 distinct metric names, a
 benchmarks emit a single metric. Direction / unit / scale / precision therefore need to be
 declared once per name and are reused by every benchmark.
 
-Three tables live here:
+Two tables live here:
 
 - :data:`METRIC_NAME_SEMANTICS` -- final report metric name -> :class:`MetricEntry` (a baseline
   reference plus optional field overrides). Also holds the historical report names, grouped in a
   dedicated section so they can be dropped once no report of that vintage is opened again.
 - :data:`BENCHMARK_METRIC_OVERRIDES` -- ``(benchmark_name, final_metric_name)`` -> entry, used
   *only* when the same name means different things in different benchmarks (a collision).
-- :data:`BENCHMARK_DYNAMIC_METRICS` -- ``benchmark_name`` -> allow-list of final report metric
-  names generated at runtime (``pass@{k}`` families, f-string composed names).
 
 The primary metric of a benchmark is **not** declared here: it is ``BenchmarkMeta.primary_metric``
 (next to ``metric_list``), applied as a role adjustment by the resolver.
@@ -23,6 +21,10 @@ Every lookup is an exact-key dictionary lookup: no regular expressions, no name 
 no fuzzy or magnitude based inference. Importing this module validates every entry (each
 ``MetricEntry`` resolves against :data:`SEMANTIC_BASELINES` and passes the contract validation),
 so an illegal declaration or a dangling baseline reference aborts the import immediately.
+
+The catalog is deliberately incomplete: a final metric name embeds ``AggScore.aggregation_name``,
+which several benchmarks derive from the data, so those names cannot be declared ahead of time.
+An undeclared name degrades to ``diagnostic.unspecified`` and is logged, never rejected.
 """
 
 from typing import Dict, Tuple
@@ -33,11 +35,8 @@ from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 #: Where to declare a metric name, used in audit and validation messages.
 METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_NAME_SEMANTICS'
 
-#: Where to declare a benchmark level collision override, used in audit messages.
+#: Where to declare a benchmark level collision override, used in validation messages.
 BENCHMARK_OVERRIDE_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::BENCHMARK_METRIC_OVERRIDES'
-
-#: Where to declare a dynamic metric allow-list, used in audit messages.
-DYNAMIC_METRIC_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::BENCHMARK_DYNAMIC_METRICS'
 
 METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     # --- quality ratios: one line each, reused by every benchmark ------------------------
@@ -60,6 +59,11 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'mean_text_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_icon_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_Center_ACC': MetricEntry(baseline='quality.accuracy.ratio'),
+    # hallusion_bench prefixes each accuracy with the aggregation bucket. The buckets come from
+    # the data, so only the `Overall_` ones can be declared; the per-category rows degrade.
+    'Overall_aAcc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'Overall_fAcc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'Overall_qAcc': MetricEntry(baseline='quality.accuracy.ratio'),
     # Grounding accuracy at a fixed IoU threshold (refcoco).
     'mean_ACC@0.1': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_ACC@0.3': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -261,8 +265,8 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
 }
 """Final report metric name -> catalog entry, reused by every benchmark.
 
-Seeded from the metric names this repository actually emits. The audit driven completion to the
-full ~131 names (task 5) fills the remaining default / custom aggregation names.
+Seeded from the metric names this repository actually emits, so the common names render with the
+right direction and unit. A name that is not here degrades to a diagnostic rather than blocking.
 """
 
 #: ``k`` values the runtime-sized ``pass@k`` / ``pass^k`` / ``vote@k`` families are declared for.
@@ -297,34 +301,6 @@ BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
 """``(benchmark_name, final_metric_name)`` -> entry, only for same-name / different-meaning
 collisions. Each entry carries the collision reason in a comment."""
 
-BENCHMARK_DYNAMIC_METRICS: Dict[str, Tuple[str, ...]] = {
-    # Code benchmarks emit one ``mean_acc_pass@{k}`` per configured k next to ``mean_acc``.
-    **{
-        benchmark_name: tuple(f'mean_acc_pass@{k}' for k in DYNAMIC_K_VALUES)
-        for benchmark_name in (
-            'bigcodebench',
-            'bigcodebench_hard',
-            'humaneval',
-            'humaneval_plus',
-            'live_code_bench',
-            'mbpp',
-            'mbpp_plus',
-            'multi_pl_e',
-            'swe_bench',
-        )
-    },
-    #: ARC-AGI reports the pass^k family instead, which requires all k samples to be correct.
-    'arc_agi_2': tuple(f'mean_acc_pass^{k}' for k in DYNAMIC_K_VALUES),
-    #: hallusion_bench composes ``Overall_<metric>`` from the per-figure metric names.
-    'hallusion_bench': ('Overall_aAcc', 'Overall_fAcc', 'Overall_qAcc'),
-    #: openai_mrcr keys its score by the needle range, e.g. ``2-4_mrcr_score``.
-    'openai_mrcr': ('overall_mrcr_score', ),
-}
-"""``benchmark_name`` -> allow-list of final report metric names generated at runtime.
-
-A name outside the allow-list degrades to diagnostic rather than being guessed, and the audit
-message names the allow-list it fell outside of."""
-
 
 def _validate_catalog() -> None:
     """Materialize every catalog entry at import time so illegal declarations fail fast.
@@ -355,28 +331,8 @@ def _validate_catalog() -> None:
 
 _validate_catalog()
 
-
-def lookup_metric_entry(final_metric_name: str) -> MetricEntry:
-    """Look up the catalog entry of a final report metric name, or ``None`` when undeclared.
-
-    Exact-key lookup against :data:`METRIC_NAME_SEMANTICS`: no name normalization and no fuzzy
-    matching, matching the resolution rules.
-
-    Args:
-        final_metric_name: Final report metric name as written into ``Metric.name``.
-
-    Returns:
-        The declared entry, or ``None`` when the name is not in the catalog.
-    """
-    return METRIC_NAME_SEMANTICS.get(final_metric_name)
-
-
 __all__ = [
-    'BENCHMARK_DYNAMIC_METRICS',
     'BENCHMARK_METRIC_OVERRIDES',
-    'BENCHMARK_OVERRIDE_TABLE_LOCATION',
-    'DYNAMIC_METRIC_TABLE_LOCATION',
     'METRIC_NAME_SEMANTICS',
     'METRIC_NAME_TABLE_LOCATION',
-    'lookup_metric_entry',
 ]

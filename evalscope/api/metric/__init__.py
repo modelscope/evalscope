@@ -8,5 +8,4 @@ from .semantics import (
     MetricRole,
     MetricSemantics,
     ValueRange,
-    lookup_baseline,
 )

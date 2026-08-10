@@ -90,10 +90,6 @@ class MetricSemantics(BaseModel):
     display_precision: int = Field(default=4)
     """Number of decimals of the displayed value, rounded half up."""
 
-    comparison_group: Optional[str] = Field(default=None)
-    """Group of metrics that may sit in the same comparison matrix. Never implies averaging.
-    Must be empty for diagnostic metrics."""
-
     contract_version: int = Field(default=METRIC_CONTRACT_VERSION)
     """Version of the contract this declaration follows."""
 
@@ -113,14 +109,7 @@ class MetricSemantics(BaseModel):
                 f"role='diagnostic' requires direction='none', got '{self.direction.value}'"
             )
 
-        # R3: diagnostic metrics never join a comparison group.
-        if self.role == MetricRole.DIAGNOSTIC and self.comparison_group:
-            raise ValueError(
-                f"semantic_id='{self.semantic_id}': role='diagnostic' must not declare "
-                f"comparison_group, got '{self.comparison_group}'"
-            )
-
-        # R4: percent display needs an explicit range and multiplier.
+        # R3: percent display needs an explicit range and multiplier.
         if self.display_kind == MetricDisplayKind.PERCENT:
             missing = [
                 name for name, value in (('value_range', self.value_range),
@@ -132,7 +121,7 @@ class MetricSemantics(BaseModel):
                     f"{' and '.join(missing)}"
                 )
 
-        # R5: reject non-positive scaling and negative precision.
+        # R4: reject non-positive scaling and negative precision.
         # value_range finiteness / min < max is already guaranteed by ValueRange, so it is
         # not re-checked here (that branch was unreachable).
         if self.display_multiplier is not None and (
@@ -206,7 +195,6 @@ class MetricEntry(BaseModel):
     display_multiplier: Optional[float] = Field(default=None)
     display_unit: Optional[str] = Field(default=None)
     display_precision: Optional[int] = Field(default=None)
-    comparison_group: Optional[str] = Field(default=None)
 
     @model_validator(mode='after')
     def _check_full_override_is_complete(self) -> Self:

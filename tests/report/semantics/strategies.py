@@ -89,15 +89,6 @@ def metric_names() -> st.SearchStrategy[str]:
     return st.text(alphabet=string.ascii_letters + string.digits + '_', min_size=1, max_size=16)
 
 
-def comparison_groups() -> st.SearchStrategy[str]:
-    """Generate non-empty comparison group names."""
-    return st.builds(
-        lambda domain, concept: f'{domain}.{concept}',
-        st.sampled_from(list(SEMANTIC_DOMAINS)),
-        identifiers(),
-    )
-
-
 @st.composite
 def value_ranges(draw: st.DrawFn) -> ValueRange:
     """Generate finite value ranges with ``min < max``."""
@@ -145,7 +136,6 @@ def valid_semantics_kwargs(
     draw: st.DrawFn,
     roles: Optional[st.SearchStrategy[MetricRole]] = None,
     display_kinds: Optional[st.SearchStrategy[MetricDisplayKind]] = None,
-    with_comparison_group: bool = True,
 ) -> Dict[str, Any]:
     """Generate keyword arguments that always build a valid ``MetricSemantics``.
 
@@ -153,19 +143,12 @@ def valid_semantics_kwargs(
         draw: Hypothesis draw function.
         roles: Role strategy, defaults to the full role domain.
         display_kinds: Display kind strategy, defaults to the full display kind domain.
-        with_comparison_group: Whether scored roles may declare a comparison group.
 
     Returns:
         A keyword mapping accepted by both ``MetricSemantics`` and ``MetricEntry``.
     """
     role = draw(roles if roles is not None else metric_roles())
-
-    if role == MetricRole.DIAGNOSTIC:
-        direction = MetricDirection.NONE
-        comparison_group: Optional[str] = None
-    else:
-        direction = draw(scored_directions())
-        comparison_group = draw(st.none() | comparison_groups()) if with_comparison_group else None
+    direction = MetricDirection.NONE if role == MetricRole.DIAGNOSTIC else draw(scored_directions())
 
     kwargs: Dict[str, Any] = {
         'semantic_id': draw(semantic_ids()),
@@ -173,7 +156,6 @@ def valid_semantics_kwargs(
         'role': role,
         'direction': direction,
         'raw_unit': draw(st.none() | st.sampled_from(list(RAW_UNITS))),
-        'comparison_group': comparison_group,
     }
     kwargs.update(draw(display_fields(display_kinds)))
     return kwargs
@@ -183,10 +165,10 @@ def valid_semantics_kwargs(
 def role_direction_kwargs(draw: st.DrawFn) -> Dict[str, Any]:
     """Generate kwargs whose only possibly invalid aspect is the ``role`` / ``direction`` pair.
 
-    Every other field is generated so that no other contract rule can fire: no comparison
-    group, and a display bundle consistent with the percent and scaling rules.
+    Every other field is generated so that no other contract rule can fire: a display bundle
+    consistent with the percent and scaling rules.
     """
-    kwargs = draw(valid_semantics_kwargs(roles=st.just(MetricRole.DIAGNOSTIC), with_comparison_group=False))
+    kwargs = draw(valid_semantics_kwargs(roles=st.just(MetricRole.DIAGNOSTIC)))
     kwargs['role'] = draw(metric_roles())
     kwargs['direction'] = draw(metric_directions())
     return kwargs
@@ -197,14 +179,6 @@ def is_role_direction_consistent(role: MetricRole, direction: MetricDirection) -
     if role in SCORED_ROLES:
         return direction != MetricDirection.NONE
     return direction == MetricDirection.NONE
-
-
-@st.composite
-def diagnostic_with_comparison_group_kwargs(draw: st.DrawFn) -> Dict[str, Any]:
-    """Generate diagnostic kwargs that violate the comparison group rule."""
-    kwargs = draw(valid_semantics_kwargs(roles=st.just(MetricRole.DIAGNOSTIC), with_comparison_group=False))
-    kwargs['comparison_group'] = draw(comparison_groups())
-    return kwargs
 
 
 @st.composite

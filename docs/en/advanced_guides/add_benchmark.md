@@ -482,7 +482,7 @@ the conclusion.
 metric_list=['acc'],   # 'acc' is already in the catalog: nothing else to do
 ```
 
-Two cases do need a line from you:
+Two cases are worth a line from you:
 
 1. **Your benchmark reports several metrics.** Declare which one is primary, using the raw name
    as written in `metric_list`. The others resolve as auxiliary automatically, and answer-share
@@ -490,11 +490,12 @@ Two cases do need a line from you:
 
    ```python
    metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-   primary_metric='f1_score',   # required once metric_list has more than one metric
+   primary_metric='f1_score',   # declare it once metric_list has more than one metric
    ```
 
-   This is enforced: constructing a `BenchmarkMeta` with several metrics and no `primary_metric`
-   raises an error, because otherwise every report view would have to pick one arbitrarily.
+   Omitting it logs a warning and the report infers a headline metric (the first non-diagnostic
+   one), so an existing adapter keeps working — but the choice is then ours, not yours. Naming a
+   metric that is not in `metric_list` is rejected outright, since it can only be a typo.
 
 2. **Your benchmark introduces a new metric name.** Add one line to `METRIC_NAME_SEMANTICS`,
    referencing the baseline that describes it:
@@ -504,11 +505,13 @@ Two cases do need a line from you:
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
-A third-party benchmark outside this repository can run without touching the catalog: its
-undeclared metrics degrade to diagnostics, which display the raw value without claiming a
-direction or a unit. A built-in benchmark cannot — an undeclared metric fails report generation
-with `UndeclaredMetricError`, naming the metric and the catalog entry to add, because a gap in the
-catalog would otherwise show up as a silently mis-rendered score.
+An undeclared metric never fails an evaluation: it degrades to a diagnostic, which displays the
+stored value without claiming a direction or a unit, and logs the catalog entry to add. The
+catalog cannot be complete by construction — a final metric name is `f'{aggregation_name}_{metric}'`
+and several benchmarks derive `aggregation_name` from the data (a subset label in
+`hallusion_bench`, a question type in `longmemeval`, a needle range in `openai_mrcr`), so those
+names are unknowable ahead of time. Adding an entry is therefore an improvement to how a metric
+renders, never a precondition for running it.
 
 ## 4. Running Evaluation
 

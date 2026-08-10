@@ -42,13 +42,11 @@
             "display_multiplier": 100.0,
             "display_unit": "%",
             "display_precision": 1,
-            "comparison_group": "quality.accuracy",
             "contract_version": 1
           }
         }
       ],
-      "primary_metric_name": "AverageAccuracy",
-      "metric_schema_version": 1
+      "primary_metric_name": "AverageAccuracy"
     },
     {
       "name": "test-model-a_arc_challenge",
@@ -97,13 +95,11 @@
             "display_multiplier": 1.0,
             "display_unit": "%",
             "display_precision": 1,
-            "comparison_group": "quality.score",
             "contract_version": 1
           }
         }
       ],
-      "primary_metric_name": "WeightedScorePercent",
-      "metric_schema_version": 1
+      "primary_metric_name": "WeightedScorePercent"
     },
     {
       "name": "test-model-a_throughput_suite",
@@ -144,13 +140,11 @@
             "display_multiplier": null,
             "display_unit": "tok/s",
             "display_precision": 2,
-            "comparison_group": "perf.throughput",
             "contract_version": 1
           }
         }
       ],
-      "primary_metric_name": "AverageOutputTps",
-      "metric_schema_version": 1
+      "primary_metric_name": "AverageOutputTps"
     }
   ],
   "datasets": [

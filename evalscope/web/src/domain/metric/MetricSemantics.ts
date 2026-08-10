@@ -40,8 +40,6 @@ export interface MetricSemantics {
   display_unit?: string | null
   /** Number of decimals of the displayed value, rounded half up. */
   display_precision: number
-  /** Metrics that may sit in the same comparison matrix; never implies averaging. */
-  comparison_group?: string | null
   /** Version of the backend contract this declaration follows. */
   contract_version: number
 }

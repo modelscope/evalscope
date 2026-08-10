@@ -4,13 +4,11 @@ Covers the fixed priority chain and the role attribution:
 
 * ``TestPriorityChain`` -- Property 9: the highest available source wins, deterministically.
 * ``TestNoNameInference`` -- Property 10: a name variant never hits the declared entry.
-* ``TestDegradation`` -- Property 11: third-party degrades safely, built-in blocks.
+* ``TestDegradation`` -- Property 11: an unresolvable metric degrades safely, never blocks.
 * ``TestCrossBenchmarkConsistency`` -- Property 12: one name means the same everywhere.
 * ``TestPrimaryRoleAttribution`` -- Property 7: the primary declaration decides the roles.
-* ``TestDynamicAllowList`` -- Property 23: an out-of-list dynamic name is reported.
 """
 
-import pytest
 import strategies
 from hypothesis import given
 from hypothesis import strategies as st
@@ -24,30 +22,26 @@ from evalscope.metrics.semantics.resolver import (
     ResolvedSemantics,
     SemanticsResolver,
     SemanticsSource,
-    UndeclaredMetricError,
     diagnostic_fallback,
     get_semantics_resolver,
 )
 
-#: Benchmark treated as built-in by the resolvers built here.
+#: Benchmark bundled with EvalScope, used where the shipped tables are exercised.
 BUILTIN_BENCHMARK = 'builtin_bench'
 
-#: Benchmark treated as third-party (absent from the built-in set).
+#: Benchmark outside this repository.
 THIRD_PARTY_BENCHMARK = 'third_party_bench'
 
 
 def _resolver(
     names: Dict[str, MetricEntry] = None,
     overrides: Dict[Tuple[str, str], MetricEntry] = None,
-    dynamic: Dict[str, Tuple[str, ...]] = None,
 ) -> SemanticsResolver:
-    """Build a resolver over injected tables, with a single benchmark treated as built-in."""
+    """Build a resolver over injected tables."""
     return SemanticsResolver(
         name_table=names if names is not None else {},
         override_table=overrides if overrides is not None else {},
-        dynamic_table=dynamic if dynamic is not None else {},
         perf_fields={},
-        builtin_benchmarks=frozenset({BUILTIN_BENCHMARK}),
     )
 
 
@@ -142,27 +136,32 @@ class TestNoNameInference:
 
 
 class TestDegradation:
-    """Feature: metric-semantics-governance, Property 11: an unresolvable third-party metric
-    degrades safely with a locatable audit message, while a built-in one blocks output."""
+    """Feature: metric-semantics-governance, Property 11: an unresolvable metric degrades safely
+    with a locatable audit message, and never stops the caller.
+
+    Degrading unconditionally is the point: a final metric name embeds the aggregation name, which
+    several benchmarks derive from the data, so no exact-key catalog can be complete."""
 
     def test_third_party_degrades_with_a_warning(self) -> None:
         resolved = _resolver().resolve(THIRD_PARTY_BENCHMARK, 'unknown_metric')
 
         assert resolved.degraded
-        assert not resolved.strict
-        assert not resolved.blocks_standard_semantics
-        assert resolved.audit_error is False
-        resolved.raise_if_blocked()
+        assert resolved.audit_messages
 
-    def test_builtin_blocks_standard_semantics(self) -> None:
+    def test_builtin_degrades_the_same_way(self) -> None:
         resolved = _resolver().resolve(BUILTIN_BENCHMARK, 'unknown_metric')
 
         assert resolved.degraded
-        assert resolved.strict
-        assert resolved.blocks_standard_semantics
-        assert resolved.audit_error is True
-        with pytest.raises(UndeclaredMetricError):
-            resolved.raise_if_blocked()
+        assert resolved.semantics.role is MetricRole.DIAGNOSTIC
+        assert resolved.audit_messages
+
+    def test_data_dependent_aggregation_prefix_degrades_instead_of_failing(self) -> None:
+        # `hallusion_bench` composes `{subcategory}_aAcc` from the data, so the name cannot be
+        # declared ahead of time. It must still resolve to something renderable.
+        resolved = get_semantics_resolver().resolve('hallusion_bench', 'VD_aAcc')
+
+        assert resolved.degraded
+        assert resolved.semantics.semantic_id == DIAGNOSTIC_FALLBACK_SEMANTIC_ID
 
     def test_audit_message_names_the_metric_and_the_entry_location(self) -> None:
         resolved = _resolver().resolve(BUILTIN_BENCHMARK, 'unknown_metric')
@@ -267,40 +266,6 @@ class TestPrimaryRoleAttribution:
         assert resolved.semantics.direction is MetricDirection.NONE
 
 
-class TestDynamicAllowList:
-    """Feature: metric-semantics-governance, Property 23: a metric outside a declared dynamic
-    allow-list yields an audit error naming the benchmark, the metric and the allow-list."""
-
-    def test_name_in_allow_list_but_undeclared_still_degrades(self) -> None:
-        resolver = _resolver(dynamic={BUILTIN_BENCHMARK: ('pass@1', 'pass@10')})
-
-        resolved = resolver.resolve(BUILTIN_BENCHMARK, 'pass@1')
-
-        assert resolved.degraded
-        assert all('dynamic allow-list' not in message for message in resolved.audit_messages)
-
-    def test_name_outside_allow_list_is_reported(self) -> None:
-        resolver = _resolver(dynamic={BUILTIN_BENCHMARK: ('pass@1', 'pass@10')})
-
-        resolved = resolver.resolve(BUILTIN_BENCHMARK, 'pass@999')
-
-        message = '\n'.join(resolved.audit_messages)
-        assert 'dynamic allow-list' in message
-        assert 'pass@999' in message
-        assert "'pass@1'" in message
-
-    def test_declared_name_resolves_regardless_of_allow_list(self) -> None:
-        resolver = _resolver(
-            names={'pass@1': MetricEntry(baseline='quality.pass_at_k.ratio')},
-            dynamic={BUILTIN_BENCHMARK: ('pass@1', )},
-        )
-
-        resolved = resolver.resolve(BUILTIN_BENCHMARK, 'pass@1')
-
-        assert resolved.source is SemanticsSource.METRIC_NAME
-        assert not resolved.degraded
-
-
 class TestShippedResolver:
     """The process-wide resolver reads the shipped tables."""
 
@@ -310,9 +275,3 @@ class TestShippedResolver:
         assert resolved.semantics.semantic_id == 'quality.accuracy.ratio'
         assert resolved.semantics.role is MetricRole.PRIMARY
         assert not resolved.degraded
-
-    def test_builtin_benchmark_is_strict(self) -> None:
-        assert get_semantics_resolver().is_strict('gsm8k')
-
-    def test_unknown_benchmark_is_not_strict(self) -> None:
-        assert not get_semantics_resolver().is_strict('definitely_not_a_builtin_benchmark')

@@ -4,6 +4,9 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from evalscope.constants import OutputType
+from evalscope.utils import get_logger
+
+logger = get_logger()
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -88,9 +91,9 @@ class BenchmarkMeta:
     primary_metric: Optional[str] = None
     """Raw ``metric_list`` name that is this benchmark's primary metric.
 
-    Optional for single-metric benchmarks (the only metric is implicitly primary); required for
-    multi-metric ones, so the report UI never has to guess which metric carries the conclusion.
-    Every other non-diagnostic metric of the benchmark is resolved as ``auxiliary``.
+    Optional for single-metric benchmarks (the only metric is implicitly primary). A multi-metric
+    benchmark that omits it gets a warning and an inferred headline metric, so the report UI never
+    has to guess silently. Every other non-diagnostic metric is resolved as ``auxiliary``.
     """
 
     shuffle: bool = False
@@ -158,19 +161,23 @@ class BenchmarkMeta:
         return names
 
     def _validate_primary_metric(self) -> None:
-        """Require an unambiguous primary metric and reject one that is not declared.
+        """Reject a primary metric that is not declared, and warn when one is missing.
 
-        A benchmark reporting several metrics must say which one carries the conclusion,
-        otherwise every consumer would have to guess. A single-metric benchmark may stay silent:
-        its only metric is implicitly primary.
+        A benchmark reporting several metrics should say which one carries the conclusion,
+        otherwise every consumer has to guess. Staying silent only warns: raising here would run
+        at import time (``@register_benchmark`` constructs the meta), so it would stop any
+        third-party adapter that predates this field from loading at all. A report without a
+        declaration still shows a headline number, inferred by ``Report._find_primary_metric``.
+
+        Naming a metric that is not in ``metric_list`` does raise: the field is new, so no
+        existing adapter can hit it, and the value can only be a typo.
 
         Only the two own fields ``metric_list`` and ``primary_metric`` are read: no
         ``task_config`` access and no dataset resolution, so instantiating an adapter without a
         task config (as the docs pipeline does) stays unaffected.
 
         Raises:
-            ValueError: If ``primary_metric`` is not part of ``metric_list``, or if it is missing
-                while ``metric_list`` declares more than one metric.
+            ValueError: If ``primary_metric`` is not part of ``metric_list``.
         """
         names = self._metric_names()
 
@@ -183,9 +190,10 @@ class BenchmarkMeta:
             return
 
         if len(names) >= 2:
-            raise ValueError(
-                f"benchmark '{self.name}': primary_metric is required when metric_list declares "
-                f'multiple metrics {names}'
+            logger.warning(
+                f"benchmark '{self.name}': metric_list declares multiple metrics {names} but no "
+                f'primary_metric; the report will infer which one carries the conclusion. Declare '
+                f'primary_metric to make the choice explicit.'
             )
 
     def _is_spec_entry(self, entry: Any) -> bool:

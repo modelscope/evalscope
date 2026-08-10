@@ -2,7 +2,7 @@
 
 Feature: metric-semantics-governance
 
-``evalscope/metrics/semantics/golden_samples.json`` is read by this module and by the vitest suite
+``tests/report/semantics/golden_samples.json`` is read by this module and by the vitest suite
 ``evalscope/web/src/domain/metric/metricFormat.test.ts``, so both implementations of the formatting
 rules are pinned to the same expected strings (requirements 13.9, 20.2).
 
@@ -18,18 +18,11 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Optional
 
-import evalscope.metrics.semantics.formatting as formatting
 from evalscope.api.metric.semantics import MetricDisplayKind, MetricSemantics
 from evalscope.metrics.semantics.formatting import MISSING_PLACEHOLDER, format_metric_value
 
 #: Location of the golden samples shared with the frontend formatting tests.
-GOLDEN_SAMPLES_PATH = Path(formatting.__file__).with_name('golden_samples.json')
-
-#: Keys that form the assertion contract shared with the frontend.
-CONTRACT_KEYS = frozenset({'semantics', 'value', 'expected_primary', 'expected_raw'})
-
-#: Metadata keys consumers may ignore.
-METADATA_KEYS = frozenset({'id', 'description'})
+GOLDEN_SAMPLES_PATH = Path(__file__).with_name('golden_samples.json')
 
 
 class GoldenSample(BaseModel):
@@ -78,21 +71,15 @@ def sample_ids() -> List[str]:
 
 
 class TestGoldenSampleFile:
-    """The file itself must stay a consumable, self-describing contract."""
+    """The file itself must stay a consumable, self-describing contract.
 
-    def test_file_sits_next_to_the_formatter(self) -> None:
-        assert GOLDEN_SAMPLES_PATH.name == 'golden_samples.json'
-        assert GOLDEN_SAMPLES_PATH.is_file()
+    ``SAMPLES`` is loaded through ``GoldenSample`` (``extra='forbid'``, required fields) at module
+    import, so a missing file, a malformed entry or an unknown key already errors at collection.
+    Only the invariants pydantic does *not* cover are asserted here.
+    """
 
     def test_top_level_is_a_non_empty_array(self) -> None:
-        raw = load_raw_samples()
-        assert isinstance(raw, list)
-        assert len(raw) >= 7
-
-    def test_every_sample_declares_the_contract_keys(self) -> None:
-        for raw in load_raw_samples():
-            assert CONTRACT_KEYS.issubset(raw), f"sample {raw.get('id')} misses contract keys"
-            assert set(raw) <= CONTRACT_KEYS | METADATA_KEYS, f"sample {raw.get('id')} has unknown keys"
+        assert len(load_raw_samples()) >= 7
 
     def test_sample_ids_are_unique(self) -> None:
         ids = sample_ids()

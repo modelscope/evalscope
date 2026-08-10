@@ -145,10 +145,9 @@ class TestSerializationContract:
             assert 'semantic_id' in metric_data
             assert 'semantics' not in metric_data
 
-    def test_schema_version_and_primary_name_are_persisted(self) -> None:
+    def test_primary_name_is_persisted(self) -> None:
         data = self._generated_report().to_dict()
 
-        assert data['metric_schema_version'] == METRIC_CONTRACT_VERSION
         assert data['primary_metric_name'] == 'f1_score'
 
     def test_legacy_fields_are_preserved(self) -> None:
@@ -162,10 +161,12 @@ class TestSerializationContract:
         restored = Report.from_dict(original.to_dict())
 
         assert restored.primary_metric_name == original.primary_metric_name
-        assert restored.metric_schema_version == original.metric_schema_version
         for before, after in zip(original.metrics, restored.metrics):
             assert after.semantic_id == before.semantic_id
             assert after.semantics == before.semantics
+            # The contract version travels with each metric's semantics, so a future change can
+            # still tell an old anchor from a new one without a report-level duplicate.
+            assert after.semantics.contract_version == METRIC_CONTRACT_VERSION
 
 
 class TestGeneratorBinding:
@@ -225,18 +226,20 @@ class TestGeneratorBinding:
         assert report.metrics[0].semantics.role is MetricRole.DIAGNOSTIC
         assert report.metrics[0].score == pytest.approx(0.5)
 
-    def test_builtin_undeclared_metric_blocks(self) -> None:
-        from evalscope.metrics.semantics import UndeclaredMetricError
-
+    def test_builtin_undeclared_metric_also_degrades(self) -> None:
+        # Report generation must not fail on a name the catalog does not have: a final metric name
+        # embeds the aggregation name, which several built-in benchmarks derive from the data.
         score_dict = {'default': [AggScore(score=0.5, metric_name='not_a_declared_name', aggregation_name='', num=2)]}
 
-        with pytest.raises(UndeclaredMetricError):
-            ReportGenerator.generate_report(
-                score_dict=score_dict,
-                model_name='m',
-                data_adapter=_StubAdapter('gsm8k'),
-                add_aggregation_name=False,
-            )
+        report = ReportGenerator.generate_report(
+            score_dict=score_dict,
+            model_name='m',
+            data_adapter=_StubAdapter('gsm8k'),
+            add_aggregation_name=False,
+        )
+
+        assert report.metrics[0].semantics.role is MetricRole.DIAGNOSTIC
+        assert report.metrics[0].score == pytest.approx(0.5)
 
 
 class TestLegacyReports:

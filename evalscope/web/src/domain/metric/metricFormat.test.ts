@@ -10,7 +10,7 @@
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
-import goldenSamples from '../../../../metrics/semantics/golden_samples.json'
+import goldenSamples from '../../../../../tests/report/semantics/golden_samples.json'
 import { MISSING_PLACEHOLDER, formatDifference, formatMetric, getBoundedQualityRatio, getComparisonVerdict, roundHalfUp } from './metricFormat'
 import type { MetricSemantics } from './MetricSemantics'
 import { arbSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
@@ -69,7 +69,6 @@ describe('formatMetric', () => {
           ...semantics,
           semantic_id: 'another.semantic.id',
           metric_name: 'Another Name',
-          comparison_group: 'another.group',
         }
         expect(formatMetric(value, renamed)).toEqual(formatMetric(value, semantics))
       }),

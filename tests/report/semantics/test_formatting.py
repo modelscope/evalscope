@@ -39,7 +39,6 @@ def make_percent_semantics(
         display_multiplier=multiplier,
         display_unit=unit,
         display_precision=precision,
-        comparison_group=None if role == MetricRole.DIAGNOSTIC else 'quality.accuracy',
     )
 
 
@@ -60,7 +59,6 @@ def make_number_semantics(
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=display_unit,
         display_precision=precision,
-        comparison_group=None if role == MetricRole.DIAGNOSTIC else 'perf.latency',
     )
 
 

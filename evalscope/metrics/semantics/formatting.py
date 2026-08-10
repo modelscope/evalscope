@@ -3,8 +3,8 @@
 This module formats the display text of a metric value for every backend surface: the CLI table,
 the HTML report and the reports API. The frontend primitive
 ``evalscope/web/src/domain/metric/metricFormat.ts`` implements the same rules, and both sides
-assert against the shared golden samples in ``golden_samples.json`` so one value renders
-identically wherever it appears.
+assert against the shared golden samples in ``tests/report/semantics/golden_samples.json`` so one
+value renders identically wherever it appears.
 
 Formatting rules
 ----------------
@@ -29,9 +29,10 @@ zero renders as ``'0'`` (never ``'-0'`` nor ``'0.000'``).
 
 Golden sample schema
 --------------------
-``golden_samples.json`` is a JSON array of objects, read by
+``tests/report/semantics/golden_samples.json`` is a JSON array of objects, read by
 ``tests/report/semantics/test_golden_samples.py`` on this side and by
-``evalscope/web/src/domain/metric/metricFormat.test.ts`` on the frontend side.
+``evalscope/web/src/domain/metric/metricFormat.test.ts`` on the frontend side. It lives under
+``tests/`` rather than next to this module so the shipped package carries no test fixture.
 
 .. code-block:: text
 

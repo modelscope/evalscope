@@ -200,7 +200,6 @@ class TestDirectionsSurviveTheRoundTrip:
         diagnostic = next(metric for metric in report.metrics if metric.name == 'no_answer_num')
         assert diagnostic.semantics.role is MetricRole.DIAGNOSTIC
         assert diagnostic.semantics.direction.value == 'none'
-        assert diagnostic.semantics.comparison_group is None
         assert report.primary_metric.name == 'mean_success_rate'
 
 

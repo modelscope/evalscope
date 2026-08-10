@@ -258,9 +258,9 @@ def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
     """Resolve the semantics of the perf fields a service response is about to return.
 
     Resolving at the API boundary keeps every perf file on disk untouched: the numbers, the field
-    names and the structure of ``benchmark_summary.json`` and friends do not change. A field of
-    the public perf contract that has no declaration is reported and skipped rather than shipped
-    with invented semantics; a vendor extension field degrades to a diagnostic.
+    names and the structure of ``benchmark_summary.json`` and friends do not change. A field with
+    no declaration degrades to a diagnostic, which renders the stored value without a direction or
+    a unit, and logs where to declare it.
 
     Args:
         field_keys: Field keys present in the response. They may come from any of the three perf
@@ -268,7 +268,7 @@ def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
             table labels); all three are declared in this module.
 
     Returns:
-        Field key -> serialized ``MetricSemantics``, for the fields that resolve.
+        Field key -> serialized ``MetricSemantics``, one entry per requested key.
     """
     from evalscope.metrics.semantics.resolver import get_semantics_resolver
 
@@ -276,8 +276,6 @@ def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
     semantics: Dict[str, dict] = {}
     for field_key in field_keys:
         resolved = resolver.resolve_perf_field(field_key)
-        if resolved.blocks_standard_semantics:
-            resolved.log_audit_messages()
-            continue
+        resolved.log_audit_messages()
         semantics[field_key] = resolved.semantics.model_dump(mode='json')
     return semantics

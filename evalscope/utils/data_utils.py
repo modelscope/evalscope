@@ -96,8 +96,9 @@ def get_acc_report_df(report_list: List[Report]):
                     }
                     data_dict.append(item)
         else:
-            # Role driven: a report without a `role=primary` metric shows no score rather than
-            # borrowing the first metric's number.
+            # `primary_metric` is the declared `role=primary` metric, or the inferred headline
+            # when the benchmark declared none (see `Report._find_primary_metric`). It is only
+            # `None` for a report with no metric at all, which then shows no score.
             primary_metric = report.primary_metric
             item = {
                 ReportKey.model_name: report.model_name,

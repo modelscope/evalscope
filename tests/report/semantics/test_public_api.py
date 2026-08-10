@@ -9,40 +9,23 @@ from pathlib import Path
 from typing import Iterator, List
 
 import evalscope.metrics.semantics as semantics
-from evalscope.metrics.semantics.catalog import lookup_metric_entry
 
-#: Names the rest of the codebase (report generation, service APIs) relies on.
-REQUIRED_EXPORTS: List[str] = [
-    'METRIC_NAME_SEMANTICS',
-    'BENCHMARK_METRIC_OVERRIDES',
-    'BENCHMARK_DYNAMIC_METRICS',
-    'SEMANTIC_BASELINES',
+#: The exact surface, verified against what production imports:
+#:
+#: - ``compose_final_metric_name`` / ``get_semantics_resolver`` -- ``evalscope/report/generator.py``
+#: - ``hydrate_report_semantics`` -- ``evalscope/report/report.py``
+#: - ``format_metric_value`` -- ``evalscope/report/renderer.py``
+#: - ``PrimaryMetricRef`` -- ``evalscope/service/blueprints/reports.py``
+#:
+#: The catalog tables, the baseline table and the resolver internals are deliberately absent: no
+#: production module imports them, so exporting them would widen the maintained API for nothing.
+#: Tests import those from their owning module instead.
+EXPECTED_EXPORTS: List[str] = [
+    'PrimaryMetricRef',
     'compose_final_metric_name',
+    'format_metric_value',
     'get_semantics_resolver',
     'hydrate_report_semantics',
-    'UndeclaredMetricError',
-    'PrimaryMetricRef',
-    'format_metric_value',
-]
-
-#: Names deliberately kept out of the package surface: they have no production consumer, so
-#: exporting them would widen the maintained API for nothing. Tests import them from their
-#: owning module instead.
-UNEXPORTED_HELPERS: List[str] = [
-    'format_metric',
-    'FormattedMetric',
-    'format_raw_metric_value',
-    'get_unit_label',
-    'round_half_up',
-    'MISSING_PLACEHOLDER',
-    'lookup_metric_entry',
-    'diagnostic_fallback',
-    'is_public_perf_field',
-    'builtin_benchmark_names',
-    'catalog_entry_location',
-    'ResolvedSemantics',
-    'SemanticsResolver',
-    'SemanticsSource',
 ]
 
 
@@ -80,33 +63,13 @@ def _imports_report_at_module_level(path: Path) -> bool:
 class TestPublicSurface:
     """The exported surface must stay exactly what production imports.
 
-    The two guards that carry the design intent are
-    :meth:`test_required_exports_are_present` (nothing production needs may disappear) and
-    :meth:`test_helpers_without_a_production_consumer_stay_unexported` (nothing without a consumer
-    may creep in). The import checks below catch an ``__all__`` that lists a missing name, or a
-    module that exports more than it declares.
+    This is a policy gate, not a behaviour test: the branch that introduced this package exported
+    four catalog tables no production module imported. Pinning the list makes widening the surface
+    a deliberate edit.
     """
 
-    def test_every_exported_name_is_importable_from_the_package(self) -> None:
-        for name in semantics.__all__:
-            assert hasattr(semantics, name), f'{name} is listed in __all__ but not importable'
-
-    def test_required_exports_are_present(self) -> None:
-        missing = [name for name in REQUIRED_EXPORTS if name not in semantics.__all__]
-        assert missing == []
-
-    def test_helpers_without_a_production_consumer_stay_unexported(self) -> None:
-        leaked = [name for name in UNEXPORTED_HELPERS if name in semantics.__all__]
-        assert leaked == []
-
-    def test_star_import_exposes_exactly_all(self) -> None:
-        namespace: dict = {}
-        exec('from evalscope.metrics.semantics import *', namespace)  # noqa: S102
-        exported = {name for name in namespace if not name.startswith('__')}
-        assert exported == set(semantics.__all__)
-
-    def test_lookup_helper_returns_none_for_unknown_metric_name(self) -> None:
-        assert lookup_metric_entry('a-metric-that-does-not-exist') is None
+    def test_surface_is_exactly_the_expected_exports(self) -> None:
+        assert sorted(semantics.__all__) == EXPECTED_EXPORTS
 
 
 class TestNoImportCycle:

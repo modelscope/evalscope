@@ -1,6 +1,13 @@
 """Unit tests for the common metric semantics baseline table.
 
 Feature: metric-semantics-governance
+
+Every entry is a ``MetricSemantics`` literal built at import time, so the contract rules R1-R4 are
+already enforced before any test runs: a diagnostic baseline carrying a direction, or a percent
+baseline missing its range, would make this module unimportable. Tests re-asserting those rules
+cannot fail independently and were removed. What remains pins the things no validator checks --
+which baselines must exist, the key/``semantic_id`` correspondence, the naming convention, and the
+concrete direction / scale / unit choices.
 """
 import pytest
 from typing import List
@@ -11,7 +18,6 @@ from evalscope.api.metric.semantics import (
     MetricDisplayKind,
     MetricRole,
     MetricSemantics,
-    lookup_baseline,
 )
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 
@@ -37,9 +43,6 @@ REQUIRED_BASELINE_IDS: List[str] = [
 ]
 
 BASELINE_IDS = sorted(SEMANTIC_BASELINES)
-DIAGNOSTIC_IDS = sorted(
-    baseline_id for baseline_id, semantics in SEMANTIC_BASELINES.items() if semantics.role == MetricRole.DIAGNOSTIC
-)
 
 
 class TestBaselineTableShape:
@@ -65,55 +68,17 @@ class TestBaselineTableShape:
     def test_semantic_id_uses_the_declared_domains(self, baseline_id: str) -> None:
         assert baseline_id.split('.')[0] in {'quality', 'perf', 'diagnostic'}
 
-    @pytest.mark.parametrize('baseline_id', BASELINE_IDS)
-    def test_baseline_is_resolvable_through_the_contract_layer(self, baseline_id: str) -> None:
-        assert lookup_baseline(baseline_id) is SEMANTIC_BASELINES[baseline_id]
-
-
-class TestDiagnosticBaselines:
-
-    def test_diagnostic_baselines_exist(self) -> None:
-        assert DIAGNOSTIC_IDS
-
-    @pytest.mark.parametrize('baseline_id', DIAGNOSTIC_IDS)
-    def test_diagnostic_baseline_carries_no_direction_or_comparison_group(self, baseline_id: str) -> None:
-        semantics = SEMANTIC_BASELINES[baseline_id]
-
-        assert semantics.direction == MetricDirection.NONE
-        assert semantics.comparison_group is None
-
-    @pytest.mark.parametrize('baseline_id', BASELINE_IDS)
-    def test_only_diagnostic_baselines_drop_the_direction(self, baseline_id: str) -> None:
-        semantics = SEMANTIC_BASELINES[baseline_id]
-
-        if semantics.role != MetricRole.DIAGNOSTIC:
-            assert semantics.direction != MetricDirection.NONE
-
-
-class TestComparisonGroupNaming:
-
-    @pytest.mark.parametrize('baseline_id', BASELINE_IDS)
-    def test_comparison_group_matches_the_domain_concept_prefix(self, baseline_id: str) -> None:
-        semantics = SEMANTIC_BASELINES[baseline_id]
-        if semantics.comparison_group is None:
-            pytest.skip(f'{baseline_id} declares no comparison group')
-
-        domain, concept = semantics.semantic_id.split('.')[:2]
-
-        assert semantics.comparison_group == f'{domain}.{concept}'
-        assert semantics.semantic_id.startswith(f'{semantics.comparison_group}.')
-
 
 class TestDisplayDeclarations:
 
     @pytest.mark.parametrize('baseline_id', BASELINE_IDS)
-    def test_percent_baselines_declare_range_and_multiplier(self, baseline_id: str) -> None:
+    def test_percent_baselines_render_with_a_percent_sign(self, baseline_id: str) -> None:
         semantics = SEMANTIC_BASELINES[baseline_id]
         if semantics.display_kind != MetricDisplayKind.PERCENT:
             pytest.skip(f'{baseline_id} is not rendered as percent')
 
-        assert semantics.value_range is not None
-        assert semantics.display_multiplier is not None
+        # `value_range` / `display_multiplier` are already required by R3; only the unit is a
+        # convention this table has to keep on its own.
         assert semantics.display_unit == '%'
 
     def test_ratio_baselines_scale_by_100_and_point_scales_by_1(self) -> None:

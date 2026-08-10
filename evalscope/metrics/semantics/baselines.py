@@ -7,10 +7,7 @@ actually differ, so the 200+ benchmark declarations stay one line each.
 Conventions enforced here:
 
 - Keys equal the ``semantic_id`` of the declaration, named ``{domain}.{concept}.{unit}``.
-- ``comparison_group`` mirrors the ``{domain}.{concept}`` prefix of ``semantic_id``. It only
-  means "may sit in the same comparison matrix" and never implies that the members can be
-  averaged: nothing in the contract aggregates across benchmarks.
-- Diagnostic baselines always use ``direction=none`` and ``comparison_group=None``.
+- Diagnostic baselines always use ``direction=none``.
 - Quality baselines default to ``role=primary``. A benchmark that reports several of them
   (F1 plus Precision / Recall, WER plus CER) downgrades the extra ones to ``auxiliary`` in its
   own ``MetricEntry``.
@@ -43,7 +40,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.accuracy',
     ),
     'quality.f1.ratio': MetricSemantics(
         semantic_id='quality.f1.ratio',
@@ -55,7 +51,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.f1',
     ),
     'quality.precision.ratio': MetricSemantics(
         semantic_id='quality.precision.ratio',
@@ -67,7 +62,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.precision',
     ),
     'quality.recall.ratio': MetricSemantics(
         semantic_id='quality.recall.ratio',
@@ -79,7 +73,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.recall',
     ),
     'quality.exact_match.ratio': MetricSemantics(
         semantic_id='quality.exact_match.ratio',
@@ -91,7 +84,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.exact_match',
     ),
     'quality.pass_at_k.ratio': MetricSemantics(
         semantic_id='quality.pass_at_k.ratio',
@@ -103,7 +95,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.pass_at_k',
     ),
     'quality.score.ratio': MetricSemantics(
         semantic_id='quality.score.ratio',
@@ -115,7 +106,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.score',
     ),
     'quality.coverage.ratio': MetricSemantics(
         semantic_id='quality.coverage.ratio',
@@ -127,7 +117,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.coverage',
     ),
     'quality.win_rate.ratio': MetricSemantics(
         semantic_id='quality.win_rate.ratio',
@@ -139,7 +128,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.win_rate',
     ),
     'quality.iou.ratio': MetricSemantics(
         semantic_id='quality.iou.ratio',
@@ -151,7 +139,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.iou',
     ),
     # --- quality: text generation overlap and similarity ----------------------------------
     'quality.bleu.ratio': MetricSemantics(
@@ -164,7 +151,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.bleu',
     ),
     'quality.rouge.ratio': MetricSemantics(
         semantic_id='quality.rouge.ratio',
@@ -176,7 +162,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.rouge',
     ),
     'quality.meteor.ratio': MetricSemantics(
         semantic_id='quality.meteor.ratio',
@@ -188,7 +173,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.meteor',
     ),
     'quality.similarity.ratio': MetricSemantics(
         semantic_id='quality.similarity.ratio',
@@ -200,7 +184,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.similarity',
     ),
     #: CIDEr is a consensus score that is not bounded by 1, so it renders as a plain number.
     'quality.cider.unbounded': MetricSemantics(
@@ -212,7 +195,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=None,
         display_precision=3,
-        comparison_group='quality.cider',
     ),
     # --- quality: bounded error rates, lower is better -----------------------------------
     'quality.wer.ratio': MetricSemantics(
@@ -225,7 +207,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.wer',
     ),
     'quality.cer.ratio': MetricSemantics(
         semantic_id='quality.cer.ratio',
@@ -237,7 +218,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.cer',
     ),
     'quality.mer.ratio': MetricSemantics(
         semantic_id='quality.mer.ratio',
@@ -249,7 +229,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.mer',
     ),
     #: Share of failed or hallucinated outcomes: a graded result, unlike the diagnostic
     #: parse-status shares, so it keeps a direction.
@@ -263,7 +242,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.error_rate',
     ),
     # --- quality: official scales and unbounded judge scores ------------------------------
     'quality.score.points_100': MetricSemantics(
@@ -276,7 +254,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=1.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group='quality.score',
     ),
     'quality.judge_score.unbounded': MetricSemantics(
         semantic_id='quality.judge_score.unbounded',
@@ -287,7 +264,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=None,
         display_precision=2,
-        comparison_group='quality.judge_score',
     ),
     #: Score assigned by a scoring model (aesthetic / preference / alignment scorers) whose
     #: scale is defined by the model rather than by the benchmark.
@@ -300,7 +276,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=None,
         display_precision=4,
-        comparison_group='quality.model_score',
     ),
     # --- perf: latency, lower is better ---------------------------------------------------
     'perf.latency.seconds': MetricSemantics(
@@ -312,7 +287,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit='s',
         display_precision=3,
-        comparison_group='perf.latency',
     ),
     'perf.latency.milliseconds': MetricSemantics(
         semantic_id='perf.latency.milliseconds',
@@ -323,7 +297,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit='ms',
         display_precision=2,
-        comparison_group='perf.latency',
     ),
     # --- perf: throughput, higher is better -----------------------------------------------
     'perf.throughput.tokens_per_second': MetricSemantics(
@@ -335,7 +308,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit='tok/s',
         display_precision=2,
-        comparison_group='perf.throughput',
     ),
     'perf.throughput.requests_per_second': MetricSemantics(
         semantic_id='perf.throughput.requests_per_second',
@@ -346,7 +318,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit='req/s',
         display_precision=2,
-        comparison_group='perf.throughput',
     ),
     # --- diagnostic: never carries a direction nor a comparison group ----------------------
     'diagnostic.count.items': MetricSemantics(
@@ -357,7 +328,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=None,
         display_precision=0,
-        comparison_group=None,
     ),
     'diagnostic.parse_status.ratio': MetricSemantics(
         semantic_id='diagnostic.parse_status.ratio',
@@ -369,7 +339,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_multiplier=100.0,
         display_unit='%',
         display_precision=_PERCENT_PRECISION,
-        comparison_group=None,
     ),
     'diagnostic.unspecified': MetricSemantics(
         semantic_id='diagnostic.unspecified',
@@ -379,7 +348,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_kind=MetricDisplayKind.NUMBER,
         display_unit=None,
         display_precision=4,
-        comparison_group=None,
     ),
 }
 """Baseline identifier -> semantics. Keys equal the declared ``semantic_id``."""

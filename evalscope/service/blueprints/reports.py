@@ -359,8 +359,10 @@ def list_reports():
 
         sort_key_map = {
             # Rank by quality, so a lower-is-better metric is not sorted backwards and metrics on
-            # different scales are comparable. Unrankable runs sort last in either direction.
-            'score': lambda x: (x['quality_ratio'] is not None, x['quality_ratio'] or 0.0),
+            # different scales are comparable. Unrankable runs have no ratio and sort at the
+            # bottom of whichever direction was asked for.
+            'score': lambda x: (x['quality_ratio'] is not None, x['quality_ratio'] or 0.0)
+            if reverse else (x['quality_ratio'] is None, x['quality_ratio'] or 0.0),
             'model': lambda x: x['model_name'].lower(),
             'dataset': lambda x: x['dataset_name'].lower(),
             'time': lambda x: x['timestamp'],

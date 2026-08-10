@@ -159,9 +159,10 @@ class ReportGenerator:
     ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[str]]:
         """Resolve the semantics of every metric this report will contain.
 
-        An undeclared metric of a built-in benchmark is an error: the catalog has a gap and the
-        report must not claim a direction or unit it cannot justify. A third-party benchmark
-        degrades to a diagnostic instead so its evaluation still completes. Scores are never
+        An undeclared metric degrades to a diagnostic, which shows the stored value without
+        claiming a direction or a unit, and logs where to declare it. Report generation never
+        fails on it: a final metric name embeds the aggregation name, which several benchmarks
+        derive from the data, so the set of names is not knowable ahead of time. Scores are never
         touched.
 
         Args:
@@ -173,9 +174,6 @@ class ReportGenerator:
         Returns:
             The final report metric name -> semantics mapping, and the final name of the primary
             metric (``None`` when the benchmark declares none).
-
-        Raises:
-            UndeclaredMetricError: If a built-in benchmark emits an undeclared metric name.
         """
         resolver = get_semantics_resolver()
 
@@ -199,6 +197,5 @@ class ReportGenerator:
         for final_name in final_metric_names:
             resolved = resolver.resolve(dataset_name, final_name, primary_metric_name=primary_metric_name)
             resolved.log_audit_messages()
-            resolved.raise_if_blocked()
             semantics_by_metric[final_name] = resolved.semantics
         return semantics_by_metric, primary_metric_name
