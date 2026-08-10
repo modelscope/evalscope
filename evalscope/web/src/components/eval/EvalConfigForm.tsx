@@ -95,7 +95,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
   const [sandboxEngine, setSandboxEngine] = useState('docker')
   const [sandboxUrl, setSandboxUrl] = useState('')
   const [sandboxImage, setSandboxImage] = useState('')
-  const [sandboxPoolSize, setSandboxPoolSize] = useState('8')
+  const [sandboxPoolSize, setSandboxPoolSize] = useState('')
 
   const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
 
@@ -426,102 +426,44 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset }: P
               )}
             </Field>
             <hr className="md:col-span-3 my-2" />
-            <h3 className="md:col-span-3 font-semibold">
-                {t('eval.sandbox')}
-            </h3>
-
-            <Field
-                id={IDS.sandboxEnable}
-                name="sandbox_enabled"
-                labelKey="eval.sandboxEnable"
-            >
-                {(aria) => (
-                    <input
-                        {...aria}
-                        type="checkbox"
-                        checked={sandboxEnabled}
-                        onChange={(e) => setSandboxEnabled(e.target.checked)}
-                        className="size-11 accent-[var(--accent)] cursor-pointer"
-                    />
-                )}
+            <h3 className="md:col-span-3 font-semibold">{t('eval.sandbox')}</h3>
+            <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">
+              {(aria) => (
+                <input
+                  {...aria}
+                  type="checkbox"
+                  checked={sandboxEnabled}
+                  onChange={(e) => setSandboxEnabled(e.target.checked)}
+                  className="size-11 accent-[var(--accent)] cursor-pointer"
+                />
+              )}
             </Field>
-
             {sandboxEnabled && (
-                <>
-                    {/* Engine */}
-                    <Field
-                        id={IDS.sandboxEngine}
-                        name="sandbox_engine"
-                        labelKey="eval.sandboxEngine"
-                    >
-                        {(aria) => (
-                            <select
-                                {...aria}
-                                value={sandboxEngine}
-                                onChange={(e) => setSandboxEngine(e.target.value)}
-                                className={inputClass()}
-                            >
-                                <option value="docker">docker</option>
-                                <option value="volcengine">volcengine</option>
-                            </select>
-                        )}
-                    </Field>
-
-                    {/* Manager URL */}
-                    <Field
-                        id={IDS.sandboxUrl}
-                        name="sandbox_url"
-                        labelKey="eval.sandboxUrl"
-                    >
-                        {(aria) => (
-                            <input
-                                {...aria}
-                                value={sandboxUrl}
-                                onChange={(e) => setSandboxUrl(e.target.value)}
-                                className={inputClass()}
-                            />
-                        )}
-                    </Field>
-
-                    {/* Docker Image */}
-                    <Field
-                        id={IDS.sandboxImage}
-                        name="sandbox_image"
-                        labelKey="eval.sandboxImage"
-                    >
-                        {(aria) => (
-                            <input
-                                {...aria}
-                                value={sandboxImage}
-                                onChange={(e) => setSandboxImage(e.target.value)}
-                                className={inputClass()}
-                            />
-                        )}
-                    </Field>
-
-                    {/* Pool Size */}
-                    <Field
-                        id={IDS.sandboxPool}
-                        name="sandbox_pool"
-                        labelKey="eval.sandboxPool"
-                        error={errMsg(IDS.sandboxPool)}
-                    >
-                        {(aria) => (
-                            <input
-                                {...aria}
-                                type="number"
-                                min={1}
-                                step={1}
-                                value={sandboxPoolSize}
-                                onChange={(e) => {
-                                    setSandboxPoolSize(e.target.value)
-                                    clearErr(IDS.sandboxPool)
-                                }}
-                                className={inputClass(errMsg(IDS.sandboxPool))}
-                            />
-                        )}
-                    </Field>
-                </>
+              <>
+                <Field id={IDS.sandboxEngine} name="sandbox_engine" labelKey="eval.sandboxEngine">
+                  {(aria) => (
+                    <select {...aria} value={sandboxEngine} onChange={(e) => setSandboxEngine(e.target.value)} className={inputClass()}>
+                      <option value="docker">docker</option>
+                      <option value="volcengine">volcengine</option>
+                    </select>
+                  )}
+                </Field>
+                <Field id={IDS.sandboxUrl} name="sandbox_url" labelKey="eval.sandboxUrl">
+                  {(aria) => (
+                    <input {...aria} value={sandboxUrl} onChange={(e) => setSandboxUrl(e.target.value)} className={inputClass()} />
+                  )}
+                </Field>
+                <Field id={IDS.sandboxImage} name="sandbox_image" labelKey="eval.sandboxImage">
+                  {(aria) => (
+                    <input {...aria} value={sandboxImage} onChange={(e) => setSandboxImage(e.target.value)} className={inputClass()} />
+                  )}
+                </Field>
+                <Field id={IDS.sandboxPool} name="sandbox_pool" labelKey="eval.sandboxPool" error={errMsg(IDS.sandboxPool)}>
+                  {(aria) => (
+                    <input {...aria} type="number" min={1} step={1} value={sandboxPoolSize} onChange={(e) => { setSandboxPoolSize(e.target.value); clearErr(IDS.sandboxPool) }} className={inputClass(errMsg(IDS.sandboxPool))} />
+                  )}
+                </Field>
+              </>
             )}
           </div>
         </Card>
