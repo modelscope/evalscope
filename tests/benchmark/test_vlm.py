@@ -539,3 +539,11 @@ class TestVLMBenchmark(TestBenchmark):
             use_mock=True,
             judge_model_args={'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM},
         )
+
+    def test_pmc_vqa(self):
+        """Test PMC-VQA medical visual question answering benchmark."""
+        self._run_dataset_test('pmc_vqa', limit=5)
+
+    def test_pmc_vqa_mock(self):
+        """Test PMC-VQA with mock LLM."""
+        self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
