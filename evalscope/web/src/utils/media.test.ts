@@ -11,7 +11,7 @@ describe('resolveMediaSrc', () => {
   })
 
   it('passes remote sources through regardless of scheme case', () => {
-    for (const src of ['http://e.com/a.png', 'HTTPS://e.com/a.png', 'data:image/png;base64,x', 'blob:abc-123']) {
+    for (const src of ['http://e.com/a.png', 'HTTPS://e.com/a.png', 'data:image/png;base64,x']) {
       expect(resolveMediaSrc(src, 'image/jpeg')).toBe(src)
     }
   })

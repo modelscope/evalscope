@@ -1,10 +1,10 @@
 /** Schemes that already point at something the browser can load directly. */
-const REMOTE_SCHEME_RE = /^(?:https?|data|blob):/i
+const REMOTE_SCHEME_RE = /^(?:https?|data):/i
 
 /**
  * Resolve a server-side path / URL / base64 payload to a browser-loadable src.
  *
- * - http(s), data: and blob: URIs are returned as-is (scheme match is case-insensitive).
+ * - http(s) and data: URIs are returned as-is (the scheme match is case-insensitive).
  * - Absolute POSIX/Windows paths are proxied through the media file endpoint.
  * - Anything else is treated as base64 and wrapped in a data: URI with `mimeType`.
  *
