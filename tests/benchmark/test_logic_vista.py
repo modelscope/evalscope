@@ -79,6 +79,27 @@ def test_labels_outside_the_alphabet_are_not_extracted() -> None:
     assert _extract('ANSWER: Z') == ''
 
 
+def test_bracketed_label_is_read_instead_of_a_letter_from_the_option_text() -> None:
+    """Real replies quote the label as printed in the image and append the option text.
+
+    Without normalization `parse_answers` rejects '(D)' and its fallback returns the last
+    capital letter of the reply ('F' below), silently turning a correct answer into a miss.
+    All four strings below are verbatim answer lines from a qwen-vl-plus run.
+    """
+    assert _extract('Therefore:\n\nANSWER: (D) B, D and F are turning anticlockwise', target='D') == 'D'
+    assert _extract('Thus:\n\nANSWER: (E)', target='E') == 'E'
+    assert _extract('So:\n\nANSWER: (E) None', target='E') == 'E'
+    assert _extract('Hence:\n\nANSWER: (B) B and C, then A and D', target='B') == 'B'
+    # Multi-select stays multi-select
+    assert _extract('ANSWER: (B, D)', target='B, D') == 'BD'
+
+
+def test_normalization_leaves_non_label_parentheses_alone() -> None:
+    """Only a bracketed label is rewritten; bracketed prose must not become a valid label."""
+    assert _extract('ANSWER: (see the diagram above)') not in OPTION_LABELS
+    assert _extract('ANSWER: [LETTER]') not in OPTION_LABELS
+
+
 def test_records_without_ground_truth_are_skipped() -> None:
     adapter = _adapter()
     assert adapter.record_to_sample(_record(answer='', question='')) == []

@@ -3,19 +3,19 @@
 
 ## 概述
 
-LogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理能力。每个题目均为多项选择题，其选项直接绘制在图像中（如图表、谜题、序列、图形等），因此模型必须读取并推理这些视觉选项，而非文本选项。
+LogicVista 评估多模态大语言模型在视觉场景下的基础逻辑推理能力。每个题目均为多项选择题，其选项直接绘制在图像中（如图表、谜题、序列、图形等），因此模型必须读取并推理这些视觉选项，而非文本选项。
 
 ## 任务描述
 
 - **任务类型**：视觉逻辑推理（多项选择）
-- **输入**：包含标注答案选项的图像 + 问题文本
+- **输入**：包含标注选项的图像 + 问题文本
 - **输出**：所选选项的标签
 - **领域**：抽象与图示逻辑推理
 
 ## 主要特点
 
-- 包含 448 道人工标注的视觉多项选择题，源自各类能力与推理测试
-- 按五种推理技能划分子集：归纳（inductive）、演绎（deductive）、数值（numerical）、空间（spatial）和机械（mechanical）
+- 包含 448 道人工标注的视觉多项选择题，来源于各类能力与推理测试
+- 按五种推理技能划分子集：归纳、演绎、数值、空间和机械推理
 - 答案选项位于图像内，每道题的标签范围不同（通常为 A-D 或 A-E，最多至 A-I）
 - 少量题目允许多选（例如“哪两个方案能完成该图”），其标准答案为一组标签
 
@@ -23,8 +23,8 @@ LogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理
 
 - 默认使用 **test** 划分进行评估，报告整体及各推理技能子集的 **准确率（Accuracy）**
 - 使用思维链（Chain-of-thought）提示；从回复末尾的 `ANSWER:` 行提取标签；对于多选题，将预测答案与标准答案作为无序集合进行比较，符合官方评分规则
-- 设置较宽松的 `max_tokens`：若回复在 `ANSWER:` 行前被截断，则从回复最后一个大写字母推测答案标签，这是一种宽容的猜测策略
-- 发布的 448 道题目中有 2 道无法按原样评分：`v1_382` 既无问题也无答案，故跳过；`v1_20` 的选项使用数字而非字母标注，基于字母的答案解析器无法匹配——参考实现同样如此处理
+- 设置较宽松的 `max_tokens`：若回复在 `ANSWER:` 行前被截断，则从回复最后一个大写字母猜测答案，这是一种宽容的处理方式
+- 在发布的 448 道题目中，有 2 道无法按原样评分：`v1_382` 既无问题也无答案，被跳过；`v1_20` 的选项使用数字标注，而基于字母的答案解析器无法匹配——参考实现采用相同处理方式
 
 ## 属性
 
@@ -44,18 +44,18 @@ LogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 447 |
-| 提示词长度（平均） | 565.27 字符 |
-| 提示词长度（最小/最大） | 433 / 936 字符 |
+| 提示词长度（平均） | 529.27 字符 |
+| 提示词长度（最小/最大） | 397 / 900 字符 |
 
 **各子集统计信息：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
-| `inductive` | 107 | 499.01 | 442 | 681 |
-| `deductive` | 93 | 613.96 | 462 | 826 |
-| `numerical` | 95 | 618.38 | 496 | 847 |
-| `spatial` | 78 | 486.85 | 433 | 783 |
-| `mechanical` | 74 | 614.35 | 486 | 936 |
+| `inductive` | 107 | 463.01 | 406 | 645 |
+| `deductive` | 93 | 577.96 | 426 | 790 |
+| `numerical` | 95 | 582.38 | 460 | 811 |
+| `spatial` | 78 | 450.85 | 397 | 747 |
+| `mechanical` | 74 | 578.35 | 450 | 900 |
 
 **图像统计信息：**
 
@@ -75,13 +75,13 @@ LogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理
 {
   "input": [
     {
-      "id": "8b9f40b1",
+      "id": "3a2564ac",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~46.7KB]"
         },
         {
-          "text": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?"
+          "text": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?"
         }
       ]
     }
@@ -112,7 +112,7 @@ LogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理
 **提示模板：**
 ```text
 Answer the following multiple choice question. The answer options are shown in the image.
-The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.
+The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose. If more than one option is correct, list all of their labels on that line. Think step by step before answering.
 
 {question}
 ```

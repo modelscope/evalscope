@@ -45,18 +45,18 @@ LogicVista evaluates the fundamental logical reasoning abilities of multimodal l
 | Metric | Value |
 |--------|-------|
 | Total Samples | 447 |
-| Prompt Length (Mean) | 565.27 chars |
-| Prompt Length (Min/Max) | 433 / 936 chars |
+| Prompt Length (Mean) | 529.27 chars |
+| Prompt Length (Min/Max) | 397 / 900 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
-| `inductive` | 107 | 499.01 | 442 | 681 |
-| `deductive` | 93 | 613.96 | 462 | 826 |
-| `numerical` | 95 | 618.38 | 496 | 847 |
-| `spatial` | 78 | 486.85 | 433 | 783 |
-| `mechanical` | 74 | 614.35 | 486 | 936 |
+| `inductive` | 107 | 463.01 | 406 | 645 |
+| `deductive` | 93 | 577.96 | 426 | 790 |
+| `numerical` | 95 | 582.38 | 460 | 811 |
+| `spatial` | 78 | 450.85 | 397 | 747 |
+| `mechanical` | 74 | 578.35 | 450 | 900 |
 
 **Image Statistics:**
 
@@ -76,13 +76,13 @@ LogicVista evaluates the fundamental logical reasoning abilities of multimodal l
 {
   "input": [
     {
-      "id": "8b9f40b1",
+      "id": "3a2564ac",
       "content": [
         {
           "image": "[BASE64_IMAGE: png, ~46.7KB]"
         },
         {
-          "text": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?"
+          "text": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?"
         }
       ]
     }
@@ -113,7 +113,7 @@ LogicVista evaluates the fundamental logical reasoning abilities of multimodal l
 **Prompt Template:**
 ```text
 Answer the following multiple choice question. The answer options are shown in the image.
-The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.
+The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose. If more than one option is correct, list all of their labels on that line. Think step by step before answering.
 
 {question}
 ```
