@@ -240,6 +240,10 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
         matched = matched.replace(' ', '')
 
+        # The bracketed pattern also accepts a full-width comma, which the split below would
+        # otherwise keep inside the label and turn a valid multi-select answer into no answer.
+        matched = matched.replace('，', ',')
+
         split_comma = set(matched.split(','))
         if split_comma.issubset(allowed_options):
             answers = split_comma

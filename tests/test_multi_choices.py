@@ -79,6 +79,16 @@ def test_parse_answers_wrapped_multiple_answers() -> None:
     assert parse_answers(_make_state('reasoning\nANSWER: (A, C)'), multiple_correct=True) == {'A', 'C'}
 
 
+def test_parse_answers_wrapped_multiple_answers_full_width_comma() -> None:
+    """The bracketed pattern accepts a full-width comma, so the splitting must too.
+
+    Otherwise the label is captured but never split, and a valid multi-select answer is
+    recorded as no answer at all.
+    """
+    assert parse_answers(_make_state('reasoning\nANSWER: (A，C)'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：（A，C）'), multiple_correct=True) == {'A', 'C'}
+
+
 def test_parse_answers_ignores_bracketed_prose() -> None:
     """Only label-shaped bracket contents may be read as an answer."""
     assert parse_answers(_make_state('ANSWER: (see the diagram above)')).isdisjoint(set('ABCD'))
