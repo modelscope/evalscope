@@ -3,29 +3,32 @@
 
 ## 概述
 
-HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评估的基准测试。它汇集了近期（2024–2025 年）13 场国际及区域性奥赛试题，涵盖多种模态，包括纯文本题目和基于图表的题目。
+HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评估的基准测试。它汇集了13场近期（2024-2025年）的国际及地区性奥赛试题，涵盖多种模态，包括纯文本题目和基于图表的题目。
 
 ## 任务描述
 
 - **任务类型**：自由形式的物理问题求解，依据官方评分标准进行评分
 - **输入**：一道物理题（包含常数表、上下文和问题），可选附带图表
-- **输出**：分步解答，并在末尾使用 `<answer>...</answer>` 标签包裹带框的最终答案
+- **输出**：分步解答，最终答案用 `<answer>...</answer>` 包裹并以 `\boxed{}` 格式呈现
 - **模态**：纯文本，以及文本+图表（示意图 / 变量图 / 数据图）
 
 ## 主要特性
 
-- 共计 403 道题目，来自 14 套试卷（IPhO、APhO、EuPhO、NBPhO、PanPhO、PanMechanics、CPhO、F=MA），每套试卷作为一个独立子集提供。
-- 英文试卷使用英文提示，中文试卷（CPhO、PanMechanics）使用中文提示，遵循官方语言对应关系。
+- 共计403道题目，来自14套试卷（IPhO、APhO、EuPhO、NBPhO、PanPhO、PanMechanics、CPhO、F=MA），每套试卷作为一个独立子集。
+- 英语试卷使用英文提示，中文试卷（CPhO、PanMechanics）使用中文提示，遵循官方语言对应关系。
 - 根据论文复现了两种评分机制，按题目分别应用：
-  - **步骤级评分（Step-level）**：适用于附带官方评分标准的题目；LLM 评委对每个评分项打分，最终得分是各项得分之和。
-  - **答案级评分（Answer-level）**：适用于无评分标准的题目；通过基于规则的数学检查匹配带框最终答案与标准答案，若规则检查失败则回退至 LLM 评委判断。
+  - **步骤级评分**：适用于提供官方评分标准的题目，LLM 评判器对每个评分项打分，最终得分累加。
+  - **答案级评分**：适用于无评分标准的题目，通过基于规则的数学检查比对 `\boxed{}` 中的最终答案与标准答案；若规则检查失败，则回退至 LLM 评判器。
 
 ## 评估说明
 
-- 需要 LLM 评委：运行时需设置 `judge_strategy='llm'`（或 `'auto'`，该选项会为此基准自动启用评委），并提供 `judge_model_args`。不支持 `judge_strategy='rule'`。
-- 主要指标：`acc`，即每道题获得分数与满分之比（范围 `[0, 1]`），按子集取平均值聚合。对于步骤级题目，满分为各评分项之和；对于拥有多个官方评分方案的题目（如 EuPhO、NBPhO），采用得分最高的方案，与论文一致。
-- 本基准报告的是每场考试的标准化得分，不计算论文中金/银/铜牌的分数线，后者需要原始总分和官方截断值。
-- 解答可能较长，且图表题需要视觉输入；请为被评估模型设置较大的 `generation_config.max_tokens`。若解答在 `<answer>` 块前被截断，则无法提取带框答案，导致得分接近零，但这与模型的物理能力无关。
+- 需要 LLM 评判器：运行时需设置 `judge_strategy='llm'`（或 `'auto'`，该选项会为此基准自动启用评判器），并提供 `judge_model_args`。不支持 `judge_strategy='rule'`。
+- 主要指标：`acc`，即每道题得分与满分之比（范围 `[0, 1]`），按子集取平均值聚合。
+  - 对于步骤级题目，满分为各评分项分数之和；
+  - 对于拥有多个官方评分方案的题目（如 EuPhO、NBPhO），采用得分最高的方案，与论文一致。
+- 本基准报告的是每场考试的标准化得分，**不计算**论文中的金/银/铜牌分数线，后者需要原始总分和官方划定的阈值。
+- 解答可能很长，且图表题需要视觉输入；请为被评估模型设置较大的 `generation_config.max_tokens`。若生成在 `<answer>` 块前被截断，则无法提取答案，导致得分接近零，这与模型的物理能力无关。
+- 图表以内联 base64 形式提供，最大约 1.5 MB；若部署的模型对单图有更小的字节限制，请在 `dataset_args` 中设置 `max_image_bytes`。
 - 资源链接：[论文](https://arxiv.org/abs/2509.07894) | [GitHub](https://github.com/SciYu/HiPhO) | [排行榜](https://phyarena.github.io/)
 
 
@@ -39,7 +42,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 | **标签** | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | **指标** | `acc` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -50,7 +53,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 | 提示词长度（平均） | 3020.35 字符 |
 | 提示词长度（最小/最大） | 653 / 9336 字符 |
 
-**各子集统计信息：**
+**各子集统计：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -69,7 +72,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 | `PanPhO_2024` | 33 | 2820.55 | 1448 | 3880 |
 | `PanPhO_2025` | 47 | 3526.47 | 1561 | 6209 |
 
-**图像统计信息：**
+**图像统计：**
 
 | 指标 | 值 |
 |--------|-------|
@@ -87,7 +90,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 {
   "input": [
     {
-      "id": "16d8d75c",
+      "id": "9ec40cee",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."
@@ -126,7 +129,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 }
 ```
 
-*注：部分内容因显示需要已截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 

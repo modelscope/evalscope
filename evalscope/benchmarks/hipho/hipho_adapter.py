@@ -1,7 +1,7 @@
 # flake8: noqa: E501
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample, build_dataset_dict_from_record_map, resolve_snapshot_or_local_path
@@ -83,6 +83,8 @@ range from text-only problems to diagram-based problems.
 - Solutions can be long and figure problems need vision input; give the evaluated model a generous
   `generation_config.max_tokens`. A solution truncated before its `<answer>` block yields no boxed answer and
   scores near zero for reasons unrelated to physics ability.
+- Figures are sent inline as base64 and the largest is ~1.5 MB; set `max_image_bytes` in `dataset_args` if the
+  served model enforces a smaller per-image limit.
 - Resources: [Paper](https://arxiv.org/abs/2509.07894) | [GitHub](https://github.com/SciYu/HiPhO) |
   [Leaderboard](https://phyarena.github.io/)
 """
@@ -97,7 +99,6 @@ range from text-only problems to diagram-based problems.
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2509.07894',
         subset_list=SUBSET_LIST,
-        default_subset='IPhO_2025',
         metric_list=['acc'],
         eval_split='test',
     )
@@ -113,8 +114,6 @@ class HiPhOAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.reformat_subset = True
-        self.save_metadata = True
         # Set during load(); used by record_to_sample to resolve figure paths.
         self.data_root: Optional[str] = None
 
@@ -221,9 +220,22 @@ class HiPhOAdapter(VisionLanguageAdapter):
             'grading': 'step_level' if metadata.get('marking') else 'answer_level',
             'judge_model': self.llm_judge.model_id,
         }
+        # Surface the official answer in the review Gold column, which is otherwise
+        # empty because grading is judge-based rather than reference-based.
+        task_state.target = self._format_target(metadata)
         return score
 
-    def _score_step_level(self, prediction: str, metadata: Dict[str, Any]) -> tuple:
+    @staticmethod
+    def _format_target(metadata: Dict[str, Any]) -> str:
+        """Render the official answer for display in review files and the dashboard."""
+        answers = [strip_boxed(a) for a in metadata['answers'] if (a or '').strip()]
+        if answers:
+            return ' | '.join(answers)
+        # Open-ended problems ship no reference answer, only a marking scheme.
+        criteria = sum(len(scheme) for scheme in metadata['marking'])
+        return f'graded on {criteria} marking criteria'
+
+    def _score_step_level(self, prediction: str, metadata: Dict[str, Any]) -> Tuple[float, str]:
         """Grade every criterion of each official scheme and keep the best scheme."""
         question = metadata['question']
         best_ratio = 0.0
@@ -240,13 +252,21 @@ class HiPhOAdapter(VisionLanguageAdapter):
                 points = parse_judge_points(response, max_points)
                 awarded += points
                 lines.append(f'{points:g}/{max_points:g}')
-            ratio = awarded / attainable if attainable > 0 else 0.0
+            if attainable <= 0:
+                # No criterion stated a point allocation, so the scheme cannot be
+                # graded. Warn instead of silently reporting a zero score.
+                logger.warning(
+                    f'HiPhO sample {metadata["id"]} scheme {scheme_idx} has no parseable point '
+                    f'allocation in its marking criteria; scoring it as 0.'
+                )
+                continue
+            ratio = awarded / attainable
             if ratio >= best_ratio:
                 best_ratio = ratio
                 best_detail = f'scheme {scheme_idx}: {awarded:g}/{attainable:g} [' + ', '.join(lines) + ']'
         return best_ratio, best_detail
 
-    def _score_answer_level(self, prediction: str, metadata: Dict[str, Any]) -> tuple:
+    def _score_answer_level(self, prediction: str, metadata: Dict[str, Any]) -> Tuple[float, str]:
         """Match each boxed final answer against the ground truth (rule first, judge fallback)."""
         from evalscope.metrics.math import math_equal
 

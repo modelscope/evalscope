@@ -64,11 +64,22 @@ def test_parse_judge_points_clamps_to_max():
     assert parse_judge_points('', 1.0) == 0.0
 
 
+def test_parse_judge_points_rejects_judge_error():
+    # A failed judge request must never be read as a score. LLMJudge.judge returns
+    # this string on failure and the model id / endpoint inside it contains digits.
+    error = (
+        '[ERROR] Error occurred during qwen3-max@https://dashscope.aliyuncs.com/'
+        'compatible-mode/v1 LLM judge evaluation: timeout'
+    )
+    assert parse_judge_points(error, 0.2) == 0.0
+
+
 def test_parse_judge_correct():
     assert parse_judge_correct('[Correct]') is True
     assert parse_judge_correct('[Incorrect]') is False
     assert parse_judge_correct('Correct') is True
     assert parse_judge_correct('') is False
+    assert parse_judge_correct('[ERROR] judge request failed, correct endpoint?') is False
 
 
 def test_is_chinese_exam():

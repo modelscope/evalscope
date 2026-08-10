@@ -38,6 +38,8 @@ range from text-only problems to diagram-based problems.
 - Solutions can be long and figure problems need vision input; give the evaluated model a generous
   `generation_config.max_tokens`. A solution truncated before its `<answer>` block yields no boxed answer and
   scores near zero for reasons unrelated to physics ability.
+- Figures are sent inline as base64 and the largest is ~1.5 MB; set `max_image_bytes` in `dataset_args` if the
+  served model enforces a smaller per-image limit.
 - Resources: [Paper](https://arxiv.org/abs/2509.07894) | [GitHub](https://github.com/SciYu/HiPhO) |
   [Leaderboard](https://phyarena.github.io/)
 
@@ -100,7 +102,7 @@ range from text-only problems to diagram-based problems.
 {
   "input": [
     {
-      "id": "16d8d75c",
+      "id": "9ec40cee",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."

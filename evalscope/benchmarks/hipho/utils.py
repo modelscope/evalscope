@@ -2,7 +2,7 @@
 """Helpers for the HiPhO physics Olympiad benchmark: prompts, marking-scheme
 parsing, boxed-answer extraction, and judge-response parsing."""
 import re
-from typing import List, Optional
+from typing import List
 
 # Exams whose problems are written in Chinese; every other exam is English.
 # Matches the official language mapping in the HiPhO paper (Appendix B.1).
@@ -97,6 +97,9 @@ _CRITERION_POINTS_RE = re.compile(
 )
 _JUDGE_NUMBER_RE = re.compile(r'-?[0-9]*\.?[0-9]+')
 
+# Sentinel that ``LLMJudge.judge`` returns instead of raising on a failed request.
+JUDGE_ERROR_PREFIX = '[ERROR]'
+
 
 def is_chinese_exam(source: str) -> bool:
     """Return True when the exam's problems are written in Chinese."""
@@ -133,8 +136,12 @@ def parse_judge_points(response: str, max_points: float) -> float:
     The judge is instructed to return a bare number; the first number in the
     response is used and clamped to ``[0, max_points]`` so a malformed judge
     reply can never inflate or deflate a criterion beyond its allocation.
+
+    A failed judge request must score 0, never full credit: ``LLMJudge.judge``
+    reports failures as an ``[ERROR] ...`` string that embeds the model id and
+    endpoint, whose digits would otherwise be parsed as an awarded score.
     """
-    if not response:
+    if not response or response.startswith(JUDGE_ERROR_PREFIX):
         return 0.0
     match = _JUDGE_NUMBER_RE.search(response)
     if not match:
@@ -144,7 +151,7 @@ def parse_judge_points(response: str, max_points: float) -> float:
 
 def parse_judge_correct(response: str) -> bool:
     """Parse a ``[Correct]`` / ``[Incorrect]`` answer-level judge verdict."""
-    if not response:
+    if not response or response.startswith(JUDGE_ERROR_PREFIX):
         return False
     text = response.lower()
     if '[incorrect]' in text:
