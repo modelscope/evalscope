@@ -79,6 +79,12 @@ METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
     'small_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'large_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'xl_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    # Rubric dimensions of the plawbench `case_analysis` subset, reported next to the overall
+    # `mean_acc` as point ratios over the same rubric.
+    'mean_conclusion_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_fact_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_reasoning_acc': MetricEntry(baseline='quality.accuracy.ratio'),
+    'mean_law_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     # Instruction following: strict / loose at prompt and instruction level.
     'mean_prompt_level_strict': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_prompt_level_loose': MetricEntry(baseline='quality.accuracy.ratio'),

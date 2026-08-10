@@ -16,6 +16,7 @@
       "reasoning_acc",
       "law_acc"
     ],
+    "primary_metric": "acc",
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -120,6 +121,6 @@
     "content_hash": "e5337eee9a600c56f07be86a6caf00a4",
     "needs_translation": false
   },
-  "updated_at": "2026-08-07T15:04:10.791741+08:00",
+  "updated_at": "2026-08-10T18:28:23.967311",
   "translation_updated_at": "2026-08-07T15:04:14+08:00"
 }
