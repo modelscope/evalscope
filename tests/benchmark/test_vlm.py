@@ -514,6 +514,16 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {'subset_list': ['CAD']}
         self._run_dataset_test('screenspot_pro', dataset_args=dataset_args, limit=5, use_mock=True)
 
+    def test_cc_ocr_v2(self):
+        """Test CC-OCR-V2 real-world document OCR benchmark."""
+        dataset_args = {'subset_list': ['info_board_parsing', 'text_grounding', 'blueprint_qa']}
+        self._run_dataset_test('cc_ocr_v2', dataset_args=dataset_args, limit=5)
+
+    def test_cc_ocr_v2_mock(self):
+        """Test CC-OCR-V2 with mock LLM."""
+        dataset_args = {'subset_list': ['info_board_parsing']}
+        self._run_dataset_test('cc_ocr_v2', dataset_args=dataset_args, limit=5, use_mock=True)
+
     def test_perception_bench(self):
         """Test PerceptionBench atomic visual perception benchmark."""
         dataset_args = {'subset_list': ['ocr_error']}
