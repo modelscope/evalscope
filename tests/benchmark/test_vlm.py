@@ -523,3 +523,11 @@ class TestVLMBenchmark(TestBenchmark):
         """Test PerceptionBench with mock LLM."""
         dataset_args = {'subset_list': ['ocr_error']}
         self._run_dataset_test('perception_bench', dataset_args=dataset_args, limit=5, use_mock=True)
+
+    def test_pmc_vqa(self):
+        """Test PMC-VQA medical visual question answering benchmark."""
+        self._run_dataset_test('pmc_vqa', limit=5)
+
+    def test_pmc_vqa_mock(self):
+        """Test PMC-VQA with mock LLM."""
+        self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
