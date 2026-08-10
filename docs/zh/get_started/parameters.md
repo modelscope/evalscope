@@ -59,7 +59,7 @@
 | `top_logprobs` | `int` | 返回概率最高的前N个token（范围0~20） | OpenAI兼容、HuggingFace |
 | `parallel_tool_calls` | `bool` | 工具调用是否支持并行 | OpenAI、Groq |
 | `response_schema` | `dict` | 请求结构化输出（JSON Schema），仍需对输出做校验 | OpenAI、Google、Mistral |
-| `reasoning_effort` | `str` | reasoning 努力程度，原样透传给服务端（如 `none` / `minimal` / `low` / `medium` / `high` / `xhigh`），合法取值由具体模型和服务端决定 | OpenAI兼容 |
+| `reasoning_effort` | `str` | reasoning 努力程度，原样透传给服务端（如 `none` / `minimal` / `low` / `medium` / `high` / `xhigh` / `max`），合法取值由具体模型和服务端决定 | OpenAI兼容 |
 | `reasoning_tokens` | `int` | reasoning 最大 token 预算（thinking budget） | Anthropic Claude |
 | `reasoning_summary` | `str` | reasoning 摘要级别，可选 `concise` / `detailed` / `auto` | OpenAI reasoning 系列 |
 | `reasoning_history` | `str` | 多轮对话中如何编码上一轮 assistant 的 `reasoning_content`。可选值：`reasoning_field`（默认，作为独立顶层字段透传，适配 DeepSeek V4 thinking、Qwen3 thinking 等）、`think_tag`（编码为 `<think>...</think>` 塞进 content 字符串，兼容旧版 Together / Groq 等部署）、`none`（完全剥离，DeepSeek R1 等禁止回传 `reasoning_content` 的 legacy 模型必须显式设此值） | OpenAI兼容 |

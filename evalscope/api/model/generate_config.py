@@ -110,9 +110,10 @@ class GenerateConfig(BaseModel):
     """Constrains effort on reasoning for reasoning models, passed through to the provider as-is.
 
     Not validated client-side: the accepted values are provider- and model-specific and keep
-    expanding (OpenAI alone spans `minimal`, `low`, `medium`, `high`, `none` and `xhigh` across
-    model generations), and OpenAI-compatible servers such as vLLM and SGLang define their own.
-    An unsupported value is rejected by the server rather than by this schema.
+    expanding (OpenAI alone documents `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and
+    `max`, each supported by a different subset of models), and OpenAI-compatible servers such
+    as vLLM and SGLang define their own. An unsupported value is rejected by the server rather
+    than by this schema.
     """
 
     reasoning_tokens: Optional[int] = Field(default=None)

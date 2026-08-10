@@ -149,6 +149,6 @@ def test_reasoning_history_default_is_none():
 
 def test_reasoning_effort_passes_through_provider_specific_values():
     """Issue #1555: the effort whitelist blocked values that current providers accept."""
-    for value in ('none', 'minimal', 'low', 'medium', 'high', 'xhigh'):
+    for value in ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'):
         params = openai_completion_params('gpt-5.1', GenerateConfig(reasoning_effort=value), tools=False)
         assert params['reasoning_effort'] == value
