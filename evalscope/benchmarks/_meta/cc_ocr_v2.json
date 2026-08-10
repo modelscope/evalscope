@@ -1,0 +1,777 @@
+{
+  "meta": {
+    "pretty_name": "CC-OCR-V2",
+    "dataset_id": "evalscope/CC-OCR-V2",
+    "paper_url": "https://arxiv.org/abs/2605.03903",
+    "tags": [
+      "MultiModal",
+      "QA",
+      "Grounding",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "multi_lingual_recognition",
+      "natural_scene_recognition",
+      "complex_table_parsing",
+      "formula_parsing",
+      "general_documents_parsing",
+      "info_board_parsing",
+      "molecular_parsing",
+      "object_grounding",
+      "text_grounding",
+      "business_transactions",
+      "public_services",
+      "regulated_records",
+      "blueprint_qa",
+      "dashboards_fact_qa",
+      "dashboards_numeric_qa",
+      "financial_documents_qa"
+    ],
+    "description": "\n## Overview\n\nCC-OCR V2 is a challenging OCR benchmark tailored to real-world enterprise document processing. It deliberately\nover-samples the hard and corner cases that prior OCR benchmarks under-represent, such as photographed and\nscanned tables, handwritten formulas, multi-page receipts, and low-quality multilingual scene text.\n\n## Task Description\n\n- **Task Type**: Text recognition, document parsing, document grounding, key information extraction, and document VQA\n- **Input**: One or more document images plus the task instruction shipped with each sample\n- **Output**: Free-form text, LaTeX, HTML tables, SMILES strings, JSON objects, or bounding boxes, depending on the track\n- **Modalities**: Image + text, bilingual (Chinese / English) with 32 additional languages in the recognition track\n\n## Key Features\n\n- 7,093 official samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark; 7,091 are\n  loaded because the dataset repository ships no image for two of them\n- **recognition**: multilingual (32 languages) and natural-scene text reading\n- **parsing**: complex tables, general documents, handwritten formulas, molecular structures, and information boards\n- **grounding**: text grounding (single box) and object grounding (multi-box detection with labels)\n- **extraction**: schema-driven key information extraction over business, public-service, and regulated records\n- **qa**: question answering over blueprints, dashboards, and financial documents\n- Prompts come from the official dataset, so results stay comparable to the published leaderboard\n\n## Evaluation Notes\n\n- Every sample yields one `score` in `[0, 1]`; each track uses its official metric:\n  recognition = token-level F1, parsing = edit similarity / TEDS, grounding = IoU,\n  extraction = field-level F1, qa = substring match with ANLS fallback\n- Subset scores are sample means; the per-track category also reports a macro average over its sub-tasks\n- The grounding prompts ask for boxes on a 0-1000 grid; predictions in absolute pixels are rescaled\n  as if normalized and therefore score close to zero, matching the official leaderboard behavior\n- Full-page parsing targets are long, so allow a generous `max_tokens` (4096 or more)\n- Requires: `apted`, `distance`, `lxml`, `python-Levenshtein`, `scipy`, `zss`\n  (`pip install 'evalscope[cc_ocr_v2]'`)\n- The dataset is a file tree of images and answers (about 5 GB). Only the tracks listed in\n  `subset_list` are downloaded, so restricting subsets keeps the download small\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 7091,
+    "subset_stats": [
+      {
+        "name": "multi_lingual_recognition",
+        "sample_count": 639,
+        "prompt_length_mean": 101,
+        "prompt_length_min": 101,
+        "prompt_length_max": 101,
+        "prompt_length_std": null,
+        "target_length_mean": 2066.78,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 639,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1500",
+              "1024x1184",
+              "1024x1440",
+              "1024x1472",
+              "1024x1504",
+              "1024x1536",
+              "1024x1760",
+              "1024x1824",
+              "1056x1504",
+              "1056x1536"
+            ],
+            "resolution_range": {
+              "min": "598x912",
+              "max": "3072x4096"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "natural_scene_recognition",
+        "sample_count": 1150,
+        "prompt_length_mean": 101.87,
+        "prompt_length_min": 101,
+        "prompt_length_max": 103,
+        "prompt_length_std": 0.68,
+        "target_length_mean": 343.81,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1150,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x750",
+              "1001x1666",
+              "1008x579",
+              "1008x754",
+              "1008x756",
+              "100x100",
+              "100x102",
+              "100x103",
+              "100x96",
+              "100x97"
+            ],
+            "resolution_range": {
+              "min": "70x71",
+              "max": "7020x5100"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "complex_table_parsing",
+        "sample_count": 300,
+        "prompt_length_mean": 327,
+        "prompt_length_min": 327,
+        "prompt_length_max": 327,
+        "prompt_length_std": null,
+        "target_length_mean": 4169.97,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x678",
+              "1008x1350",
+              "1010x450",
+              "1017x338",
+              "1018x2048",
+              "1033x758",
+              "1037x497",
+              "1044x838",
+              "1046x914",
+              "1047x292"
+            ],
+            "resolution_range": {
+              "min": "413x87",
+              "max": "4962x7014"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "formula_parsing",
+        "sample_count": 100,
+        "prompt_length_mean": 119,
+        "prompt_length_min": 119,
+        "prompt_length_max": 119,
+        "prompt_length_std": null,
+        "target_length_mean": 1365.27,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1028x556",
+              "1054x444",
+              "1067x467",
+              "1080x1036",
+              "1080x1278",
+              "1280x1707",
+              "1280x960",
+              "2060x2852",
+              "2188x2940",
+              "2330x3294"
+            ],
+            "resolution_range": {
+              "min": "454x230",
+              "max": "4032x3024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "general_documents_parsing",
+        "sample_count": 299,
+        "prompt_length_mean": 258,
+        "prompt_length_min": 258,
+        "prompt_length_max": 258,
+        "prompt_length_std": null,
+        "target_length_mean": 2014.65,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 299,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1413",
+              "1018x1776",
+              "1023x1620",
+              "1025x1025",
+              "1052x1600",
+              "1076x1712",
+              "1079x1600",
+              "1080x810",
+              "1090x1722",
+              "1096x1440"
+            ],
+            "resolution_range": {
+              "min": "467x437",
+              "max": "5093x6400"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "info_board_parsing",
+        "sample_count": 26,
+        "prompt_length_mean": 701,
+        "prompt_length_min": 701,
+        "prompt_length_max": 701,
+        "prompt_length_std": null,
+        "target_length_mean": 5936.04,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 26,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "2816x1536"
+            ],
+            "resolution_range": {
+              "min": "2816x1536",
+              "max": "2816x1536"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "molecular_parsing",
+        "sample_count": 100,
+        "prompt_length_mean": 232,
+        "prompt_length_min": 232,
+        "prompt_length_max": 232,
+        "prompt_length_std": null,
+        "target_length_mean": 58.11,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1017x947",
+              "1095x958",
+              "1246x1348",
+              "1279x1706",
+              "1319x927",
+              "1422x988",
+              "1430x817",
+              "1490x1937",
+              "1556x886",
+              "157x207"
+            ],
+            "resolution_range": {
+              "min": "226x114",
+              "max": "3072x4096"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "object_grounding",
+        "sample_count": 734,
+        "prompt_length_mean": 491.83,
+        "prompt_length_min": 306,
+        "prompt_length_max": 1330,
+        "prompt_length_std": 183.69,
+        "target_length_mean": 1080.83,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 734,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1035x2155",
+              "1044x1900",
+              "1045x826",
+              "1048x1626",
+              "1066x1493",
+              "1067x1578",
+              "1068x949",
+              "1080x1512",
+              "1080x1519",
+              "1080x1527"
+            ],
+            "resolution_range": {
+              "min": "367x703",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "text_grounding",
+        "sample_count": 734,
+        "prompt_length_mean": 369.88,
+        "prompt_length_min": 358,
+        "prompt_length_max": 468,
+        "prompt_length_std": 16.59,
+        "target_length_mean": 29.33,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 734,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1035x2155",
+              "1044x1900",
+              "1045x826",
+              "1048x1626",
+              "1066x1493",
+              "1067x1578",
+              "1068x949",
+              "1080x1512",
+              "1080x1519",
+              "1080x1527"
+            ],
+            "resolution_range": {
+              "min": "367x703",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "business_transactions",
+        "sample_count": 340,
+        "prompt_length_mean": 793.91,
+        "prompt_length_min": 702,
+        "prompt_length_max": 1105,
+        "prompt_length_std": 94.93,
+        "target_length_mean": 321.59,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 365,
+            "count_per_sample": {
+              "min": 1,
+              "max": 3,
+              "mean": 1.07
+            },
+            "resolutions": [
+              "1017x1525",
+              "1044x1900",
+              "1048x1626",
+              "1050x1400",
+              "1066x1493",
+              "1067x1578",
+              "1080x1439",
+              "1080x1512",
+              "1080x1527",
+              "1080x1528"
+            ],
+            "resolution_range": {
+              "min": "228x336",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "public_services",
+        "sample_count": 369,
+        "prompt_length_mean": 735.45,
+        "prompt_length_min": 687,
+        "prompt_length_max": 902,
+        "prompt_length_std": 26.6,
+        "target_length_mean": 115.43,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 369,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1431",
+              "1025x1536",
+              "1061x1610",
+              "1080x1430",
+              "1080x1526",
+              "1080x1527",
+              "1080x1544",
+              "1080x1597",
+              "1080x810",
+              "1080x887"
+            ],
+            "resolution_range": {
+              "min": "354x500",
+              "max": "4869x6286"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "regulated_records",
+        "sample_count": 300,
+        "prompt_length_mean": 798.84,
+        "prompt_length_min": 722,
+        "prompt_length_max": 898,
+        "prompt_length_std": 57.37,
+        "target_length_mean": 219.98,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 300,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1068x949",
+              "1074x842",
+              "1080x1527",
+              "1080x1528",
+              "1231x1969",
+              "1245x968",
+              "1279x1064",
+              "1297x958",
+              "1376x917",
+              "1385x943"
+            ],
+            "resolution_range": {
+              "min": "220x140",
+              "max": "4961x7016"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "blueprint_qa",
+        "sample_count": 100,
+        "prompt_length_mean": 25.4,
+        "prompt_length_min": 10,
+        "prompt_length_max": 69,
+        "prompt_length_std": 18.16,
+        "target_length_mean": 11.32,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 100,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1728x2464",
+              "1792x2400",
+              "2400x1792",
+              "2816x1536"
+            ],
+            "resolution_range": {
+              "min": "1728x2464",
+              "max": "2816x1536"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "dashboards_fact_qa",
+        "sample_count": 400,
+        "prompt_length_mean": 66.59,
+        "prompt_length_min": 19,
+        "prompt_length_max": 159,
+        "prompt_length_std": 21.59,
+        "target_length_mean": 9.4,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 400,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1582",
+              "1000x2755",
+              "1000x3303",
+              "1000x3428",
+              "1000x3500",
+              "1000x3655",
+              "1000x4423",
+              "1000x5428",
+              "1000x5574",
+              "1000x6329"
+            ],
+            "resolution_range": {
+              "min": "500x422",
+              "max": "5214x3873"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "dashboards_numeric_qa",
+        "sample_count": 500,
+        "prompt_length_mean": 70.49,
+        "prompt_length_min": 19,
+        "prompt_length_max": 148,
+        "prompt_length_std": 22.58,
+        "target_length_mean": 7.44,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 500,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1000x1294",
+              "1000x1403",
+              "1000x1876",
+              "1000x2713",
+              "1000x3273",
+              "1000x3320",
+              "1000x3735",
+              "1000x3893",
+              "1000x5117",
+              "1000x5138"
+            ],
+            "resolution_range": {
+              "min": "236x558",
+              "max": "7200x4800"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "financial_documents_qa",
+        "sample_count": 1000,
+        "prompt_length_mean": 41.77,
+        "prompt_length_min": 14,
+        "prompt_length_max": 115,
+        "prompt_length_std": 16.93,
+        "target_length_mean": 13.33,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1000,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1006x847",
+              "1008x846",
+              "1030x1804",
+              "1048x596",
+              "1082x1682",
+              "1086x977",
+              "1103x1681",
+              "1135x1749",
+              "1142x1725",
+              "1146x1736"
+            ],
+            "resolution_range": {
+              "min": "586x710",
+              "max": "5313x7219"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 272.16,
+      "min": 10,
+      "max": 1330,
+      "std": 261.31
+    },
+    "target_length_mean": 693.95,
+    "computed_at": "2026-08-10T12:05:42.136420",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 7116,
+        "count_per_sample": {
+          "min": 1,
+          "max": 3,
+          "mean": 1.0
+        },
+        "resolutions": [
+          "1000x1294",
+          "1000x1403",
+          "1000x1413",
+          "1000x1500",
+          "1000x1582",
+          "1000x1876",
+          "1000x2713",
+          "1000x2755",
+          "1000x3273",
+          "1000x3303"
+        ],
+        "resolution_range": {
+          "min": "70x71",
+          "max": "5313x7219"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "253834d2",
+          "content": [
+            {
+              "image": "~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg"
+            },
+            {
+              "text": "Please output only the text content from the image without any additional descriptions or formatting."
+            }
+          ]
+        }
+      ],
+      "target": "الآن بحق السماء يا دجونا، أكل طعامك المتحجر غير المطابقة ....Demonstrandum\n.للمواصفات واتركني بسلام .”قال دجونا بحزن وهو ينظر إلى الحقيبة الفارغة: “لقد ذهب كل شيء أنا هنا!” صرخ بصوت غالي مرح، وكتم إليري أنينًا آخر عندما رأى السيد دوفال يقفز“\n ... [TRUNCATED 1733 chars] ... حنة الحشد“\nكان هناك ضحكة خفيفة. كان الشخص الضعيف القلب الذي خاطبه المرافق شابًا زنجيًا\nقويًا، يرتدي ملابس بنية سيمفونية أنيقة، وقبعته القشية مبهرة على الكربون السخام\n!الموجود في جلده. ضحكت فتاة جميلة ملونة على ذراعه. “هيا يا عزيزتي، سوف نريهم",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "multi_lingual_recognition",
+      "metadata": {
+        "id": "0c780237abcb",
+        "task": "recognition",
+        "sub_task": "multi_lingual_recognition",
+        "scenario": "multi_lan_ocr_Arabic_Arabic_20",
+        "image_paths": [
+          "~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg"
+        ]
+      }
+    },
+    "subset": "multi_lingual_recognition",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# CC-OCR-V2\n\n\n## Overview\n\nCC-OCR V2 is a challenging OCR benchmark tailored to real-world enterprise document processing. It deliberately\nover-samples the hard and corner cases that prior OCR benchmarks under-represent, such as photographed and\nscanned tables, handwritten formulas, multi-page receipts, and low-quality multilingual scene text.\n\n## Task Description\n\n- **Task Type**: Text recognition, document parsing, document grounding, key information extraction, and document VQA\n- **Input**: One or more document images plus the task instruction shipped with each sample\n- **Output**: Free-form text, LaTeX, HTML tables, SMILES strings, JSON objects, or bounding boxes, depending on the track\n- **Modalities**: Image + text, bilingual (Chinese / English) with 32 additional languages in the recognition track\n\n## Key Features\n\n- 7,093 official samples over 5 tracks and 16 sub-tasks, evaluated as one benchmark; 7,091 are\n  loaded because the dataset repository ships no image for two of them\n- **recognition**: multilingual (32 languages) and natural-scene text reading\n- **parsing**: complex tables, general documents, handwritten formulas, molecular structures, and information boards\n- **grounding**: text grounding (single box) and object grounding (multi-box detection with labels)\n- **extraction**: schema-driven key information extraction over business, public-service, and regulated records\n- **qa**: question answering over blueprints, dashboards, and financial documents\n- Prompts come from the official dataset, so results stay comparable to the published leaderboard\n\n## Evaluation Notes\n\n- Every sample yields one `score` in `[0, 1]`; each track uses its official metric:\n  recognition = token-level F1, parsing = edit similarity / TEDS, grounding = IoU,\n  extraction = field-level F1, qa = substring match with ANLS fallback\n- Subset scores are sample means; the per-track category also reports a macro average over its sub-tasks\n- The grounding prompts ask for boxes on a 0-1000 grid; predictions in absolute pixels are rescaled\n  as if normalized and therefore score close to zero, matching the official leaderboard behavior\n- Full-page parsing targets are long, so allow a generous `max_tokens` (4096 or more)\n- Requires: `apted`, `distance`, `lxml`, `python-Levenshtein`, `scipy`, `zss`\n  (`pip install 'evalscope[cc_ocr_v2]'`)\n- The dataset is a file tree of images and answers (about 5 GB). Only the tracks listed in\n  `subset_list` are downloaded, so restricting subsets keeps the download small\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `cc_ocr_v2` |\n| **Dataset ID** | [evalscope/CC-OCR-V2](https://modelscope.cn/datasets/evalscope/CC-OCR-V2/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2605.03903) |\n| **Tags** | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |\n| **Metrics** | `score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 7,091 |\n| Prompt Length (Mean) | 272.16 chars |\n| Prompt Length (Min/Max) | 10 / 1330 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `multi_lingual_recognition` | 639 | 101 | 101 | 101 |\n| `natural_scene_recognition` | 1,150 | 101.87 | 101 | 103 |\n| `complex_table_parsing` | 300 | 327 | 327 | 327 |\n| `formula_parsing` | 100 | 119 | 119 | 119 |\n| `general_documents_parsing` | 299 | 258 | 258 | 258 |\n| `info_board_parsing` | 26 | 701 | 701 | 701 |\n| `molecular_parsing` | 100 | 232 | 232 | 232 |\n| `object_grounding` | 734 | 491.83 | 306 | 1330 |\n| `text_grounding` | 734 | 369.88 | 358 | 468 |\n| `business_transactions` | 340 | 793.91 | 702 | 1105 |\n| `public_services` | 369 | 735.45 | 687 | 902 |\n| `regulated_records` | 300 | 798.84 | 722 | 898 |\n| `blueprint_qa` | 100 | 25.4 | 10 | 69 |\n| `dashboards_fact_qa` | 400 | 66.59 | 19 | 159 |\n| `dashboards_numeric_qa` | 500 | 70.49 | 19 | 148 |\n| `financial_documents_qa` | 1,000 | 41.77 | 14 | 115 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 7,116 |\n| Images per Sample | min: 1, max: 3, mean: 1.0 |\n| Resolution Range | 70x71 - 5313x7219 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `multi_lingual_recognition`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"253834d2\",\n      \"content\": [\n        {\n          \"image\": \"~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg\"\n        },\n        {\n          \"text\": \"Please output only the text content from the image without any additional descriptions or formatting.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"الآن بحق السماء يا دجونا، أكل طعامك المتحجر غير المطابقة ....Demonstrandum\\n.للمواصفات واتركني بسلام .”قال دجونا بحزن وهو ينظر إلى الحقيبة الفارغة: “لقد ذهب كل شيء أنا هنا!” صرخ بصوت غالي مرح، وكتم إليري أنينًا آخر عندما رأى السيد دوفال يقفز“\\n ... [TRUNCATED 1733 chars] ... حنة الحشد“\\nكان هناك ضحكة خفيفة. كان الشخص الضعيف القلب الذي خاطبه المرافق شابًا زنجيًا\\nقويًا، يرتدي ملابس بنية سيمفونية أنيقة، وقبعته القشية مبهرة على الكربون السخام\\n!الموجود في جلده. ضحكت فتاة جميلة ملونة على ذراعه. “هيا يا عزيزتي، سوف نريهم\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"multi_lingual_recognition\",\n  \"metadata\": {\n    \"id\": \"0c780237abcb\",\n    \"task\": \"recognition\",\n    \"sub_task\": \"multi_lingual_recognition\",\n    \"scenario\": \"multi_lan_ocr_Arabic_Arabic_20\",\n    \"image_paths\": [\n      \"~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg\"\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cc_ocr_v2 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cc_ocr_v2'],\n    dataset_args={\n        'cc_ocr_v2': {\n            # subset_list: ['multi_lingual_recognition', 'natural_scene_recognition', 'complex_table_parsing']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# CC-OCR-V2\n\n\n## 概述\n\nCC-OCR V2 是一个面向真实企业文档处理场景的高难度 OCR 基准测试。它刻意对先前 OCR 基准测试中代表性不足的困难和边缘案例进行了过采样，例如拍摄或扫描的表格、手写公式、多页收据以及低质量的多语言自然场景文本。\n\n## 任务描述\n\n- **任务类型**：文本识别、文档解析、文档定位（grounding）、关键信息抽取和文档问答（VQA）\n- **输入**：一张或多张文档图像，以及每个样本附带的任务指令\n- **输出**：自由格式文本、LaTeX、HTML 表格、SMILES 字符串、JSON 对象或边界框，具体取决于任务赛道\n- **模态**：图像 + 文本，双语（中文 / 英文），识别赛道额外包含 32 种语言\n\n## 核心特性\n\n- 共包含 7,093 个官方样本，覆盖 5 个赛道和 16 个子任务，统一作为单一基准进行评估；由于数据集仓库中缺少其中两个样本的图像，实际加载 7,091 个样本\n- **识别（recognition）**：多语言（32 种语言）及自然场景文本阅读\n- **解析（parsing）**：复杂表格、通用文档、手写公式、分子结构和信息公告板\n- **定位（grounding）**：文本定位（单框）和对象定位（带标签的多框检测）\n- **抽取（extraction）**：基于模式（schema-driven）的关键信息抽取，涵盖商业、公共服务和监管记录\n- **问答（qa）**：针对蓝图、仪表盘和财务文档的问答任务\n- 提示词（prompts）直接来自官方数据集，确保结果可与已发布的排行榜进行比较\n\n## 评估说明\n\n- 每个样本产生一个 `[0, 1]` 范围内的 `score`；各赛道使用其官方指标：\n  - 识别 = token 级别 F1\n  - 解析 = 编辑相似度 / TEDS\n  - 定位 = IoU\n  - 抽取 = 字段级别 F1\n  - 问答 = 子串匹配，辅以 ANLS 回退策略\n- 子集得分是样本得分的均值；各赛道类别还会报告其子任务的宏平均分\n- 定位任务的提示要求在 0–1000 的归一化坐标网格上返回边界框；若预测使用绝对像素坐标，则会被重新缩放为归一化形式，否则得分将接近零，与官方排行榜行为一致\n- 全页解析的目标输出较长，因此需设置较大的 `max_tokens`（建议 4096 或更高）\n- 依赖项：`apted`, `distance`, `lxml`, `python-Levenshtein`, `scipy`, `zss`  \n  （可通过 `pip install 'evalscope[cc_ocr_v2]'` 安装）\n- 数据集以图像和答案组成的文件树形式提供（约 5 GB）。仅下载 `subset_list` 中指定的赛道，因此限制子集可显著减小下载体积\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `cc_ocr_v2` |\n| **数据集ID** | [evalscope/CC-OCR-V2](https://modelscope.cn/datasets/evalscope/CC-OCR-V2/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2605.03903) |\n| **标签** | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |\n| **指标** | `score` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 7,091 |\n| 提示词长度（平均） | 272.16 字符 |\n| 提示词长度（最小/最大） | 10 / 1330 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `multi_lingual_recognition` | 639 | 101 | 101 | 101 |\n| `natural_scene_recognition` | 1,150 | 101.87 | 101 | 103 |\n| `complex_table_parsing` | 300 | 327 | 327 | 327 |\n| `formula_parsing` | 100 | 119 | 119 | 119 |\n| `general_documents_parsing` | 299 | 258 | 258 | 258 |\n| `info_board_parsing` | 26 | 701 | 701 | 701 |\n| `molecular_parsing` | 100 | 232 | 232 | 232 |\n| `object_grounding` | 734 | 491.83 | 306 | 1330 |\n| `text_grounding` | 734 | 369.88 | 358 | 468 |\n| `business_transactions` | 340 | 793.91 | 702 | 1105 |\n| `public_services` | 369 | 735.45 | 687 | 902 |\n| `regulated_records` | 300 | 798.84 | 722 | 898 |\n| `blueprint_qa` | 100 | 25.4 | 10 | 69 |\n| `dashboards_fact_qa` | 400 | 66.59 | 19 | 159 |\n| `dashboards_numeric_qa` | 500 | 70.49 | 19 | 148 |\n| `financial_documents_qa` | 1,000 | 41.77 | 14 | 115 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 7,116 |\n| 每样本图像数 | 最小: 1, 最大: 3, 平均: 1.0 |\n| 分辨率范围 | 70x71 - 5313x7219 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `multi_lingual_recognition`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"253834d2\",\n      \"content\": [\n        {\n          \"image\": \"~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg\"\n        },\n        {\n          \"text\": \"Please output only the text content from the image without any additional descriptions or formatting.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"الآن بحق السماء يا دجونا، أكل طعامك المتحجر غير المطابقة ....Demonstrandum\\n.للمواصفات واتركني بسلام .”قال دجونا بحزن وهو ينظر إلى الحقيبة الفارغة: “لقد ذهب كل شيء أنا هنا!” صرخ بصوت غالي مرح، وكتم إليري أنينًا آخر عندما رأى السيد دوفال يقفز“\\n ... [TRUNCATED 1733 chars] ... حنة الحشد“\\nكان هناك ضحكة خفيفة. كان الشخص الضعيف القلب الذي خاطبه المرافق شابًا زنجيًا\\nقويًا، يرتدي ملابس بنية سيمفونية أنيقة، وقبعته القشية مبهرة على الكربون السخام\\n!الموجود في جلده. ضحكت فتاة جميلة ملونة على ذراعه. “هيا يا عزيزتي، سوف نريهم\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"multi_lingual_recognition\",\n  \"metadata\": {\n    \"id\": \"0c780237abcb\",\n    \"task\": \"recognition\",\n    \"sub_task\": \"multi_lingual_recognition\",\n    \"scenario\": \"multi_lan_ocr_Arabic_Arabic_20\",\n    \"image_paths\": [\n      \"~/.cache/modelscope/hub/datasets/evalscope/CC-OCR-V2/recognition/multi_lingual_recognition/images/multi_lan_ocr_Arabic_Arabic_20/0c780237abcb.jpg\"\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets cc_ocr_v2 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['cc_ocr_v2'],\n    dataset_args={\n        'cc_ocr_v2': {\n            # subset_list: ['multi_lingual_recognition', 'natural_scene_recognition', 'complex_table_parsing']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a53d38b3ceb33f4d3ea084622555a610",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-10T12:23:51.218226",
+  "translation_updated_at": "2026-08-10T12:23:57"
+}

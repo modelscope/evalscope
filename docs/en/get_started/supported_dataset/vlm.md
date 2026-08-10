@@ -11,6 +11,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `baby_vision` | [BabyVision](../../benchmarks/baby_vision.md) | `MultiModal`, `QA`, `Reasoning` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `cc_ocr_v2` | [CC-OCR-V2](../../benchmarks/cc_ocr_v2.md) | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `charxiv` | [CharXiv](../../benchmarks/charxiv.md) | `MultiModal`, `QA`, `Reasoning` |
 | `cmmmu` | [CMMMU](../../benchmarks/cmmmu.md) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
@@ -79,6 +80,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/baby_vision.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
+../../benchmarks/cc_ocr_v2.md
 ../../benchmarks/chartqa.md
 ../../benchmarks/charxiv.md
 ../../benchmarks/cmmmu.md
