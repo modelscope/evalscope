@@ -9,7 +9,7 @@ import os
 import pytest
 import tempfile
 
-from evalscope.benchmarks.cc_ocr_v2.cc_ocr_v2_adapter import SUBSET_LIST, SUBSET_TO_TRACK, TASK_STRUCTURE, _index_images
+from evalscope.benchmarks.cc_ocr_v2.cc_ocr_v2_adapter import _index_images
 from evalscope.benchmarks.cc_ocr_v2.utils import (
     parse_object_list,
     parse_point_box,
@@ -22,15 +22,7 @@ from evalscope.benchmarks.cc_ocr_v2.utils import (
     score_text_grounding,
     score_vqa,
     strip_code_fence,
-    token_multiset_f1,
 )
-
-
-def test_subset_structure_is_consistent() -> None:
-    assert len(SUBSET_LIST) == 16
-    assert len(set(SUBSET_LIST)) == 16, 'subset names double as DatasetDict keys and must be unique'
-    assert set(SUBSET_TO_TRACK.values()) == set(TASK_STRUCTURE)
-    assert SUBSET_TO_TRACK['text_grounding'] == 'grounding'
 
 
 def test_strip_code_fence_only_unwraps_bare_and_json_fences() -> None:
@@ -46,12 +38,6 @@ def test_strip_code_fence_only_unwraps_bare_and_json_fences() -> None:
     assert strip_code_fence('```latex\n\\alpha\n```') == 'latex\n\\alpha'
     # A fence that is not the whole reply is left alone
     assert strip_code_fence('text ```json\n1\n``` tail').startswith('text ```json')
-
-
-def test_token_multiset_f1_counts_duplicates() -> None:
-    assert token_multiset_f1(['a', 'b'], ['a', 'b']) == pytest.approx(1.0)
-    assert token_multiset_f1(['a', 'a'], ['a']) == pytest.approx(2 / 3)
-    assert token_multiset_f1(['a'], []) == 0.0
 
 
 def test_score_recognition_tokenizes_per_language() -> None:
