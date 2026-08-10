@@ -27,6 +27,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `hipho` | [HiPhO](../../benchmarks/hipho.md) | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | `infovqa` | [InfoVQA](../../benchmarks/infovqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `librispeech` | [LibriSpeech](../../benchmarks/librispeech.md) | `Audio`, `SpeechRecognition` |
+| `logic_vista` | [LogicVista](../../benchmarks/logic_vista.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `maritime_ocr_bench` | [Maritime-OCR-Bench](../../benchmarks/maritime_ocr_bench.md) | `MultiModal`, `QA` |
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -94,6 +95,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/hipho.md
 ../../benchmarks/infovqa.md
 ../../benchmarks/librispeech.md
+../../benchmarks/logic_vista.md
 ../../benchmarks/maritime_ocr_bench.md
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
