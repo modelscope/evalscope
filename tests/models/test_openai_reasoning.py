@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText
 from evalscope.api.model import GenerateConfig
 from evalscope.api.tool import ToolCall, ToolFunction
-from evalscope.models.utils.openai import openai_chat_message
+from evalscope.models.utils.openai import openai_chat_message, openai_completion_params
 
 
 def _asst_reasoning_and_text(reasoning: str, text: str) -> ChatMessageAssistant:
@@ -145,3 +145,10 @@ def test_reasoning_history_rejects_legacy_literal_values():
 
 def test_reasoning_history_default_is_none():
     assert GenerateConfig().reasoning_history is None
+
+
+def test_reasoning_effort_passes_through_provider_specific_values():
+    """Issue #1555: the effort whitelist blocked values that current providers accept."""
+    for value in ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'):
+        params = openai_completion_params('gpt-5.1', GenerateConfig(reasoning_effort=value), tools=False)
+        assert params['reasoning_effort'] == value

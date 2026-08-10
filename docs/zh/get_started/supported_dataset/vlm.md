@@ -11,6 +11,7 @@
 | `baby_vision` | [BabyVision](../../benchmarks/baby_vision.md) | `MultiModal`, `QA`, `Reasoning` |
 | `blink` | [BLINK](../../benchmarks/blink.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `cc_bench` | [CCBench](../../benchmarks/cc_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
+| `cc_ocr_v2` | [CC-OCR-V2](../../benchmarks/cc_ocr_v2.md) | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |
 | `chartqa` | [ChartQA](../../benchmarks/chartqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `charxiv` | [CharXiv](../../benchmarks/charxiv.md) | `MultiModal`, `QA`, `Reasoning` |
 | `cmmmu` | [CMMMU](../../benchmarks/cmmmu.md) | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
@@ -24,8 +25,10 @@
 | `general_vqa` | [General-VQA](../../benchmarks/general_vqa.md) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](../../benchmarks/gsm8k_v.md) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](../../benchmarks/hallusion_bench.md) | `Hallucination`, `MultiModal`, `Yes/No` |
+| `hipho` | [HiPhO](../../benchmarks/hipho.md) | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | `infovqa` | [InfoVQA](../../benchmarks/infovqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `librispeech` | [LibriSpeech](../../benchmarks/librispeech.md) | `Audio`, `SpeechRecognition` |
+| `logic_vista` | [LogicVista](../../benchmarks/logic_vista.md) | `MCQ`, `MultiModal`, `Reasoning` |
 | `maritime_ocr_bench` | [Maritime-OCR-Bench](../../benchmarks/maritime_ocr_bench.md) | `MultiModal`, `QA` |
 | `math_verse` | [MathVerse](../../benchmarks/math_verse.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
@@ -48,6 +51,7 @@
 | `omni_doc_bench` | [OmniDocBench](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `omni_doc_bench_v1_6` | [OmniDocBench-v1.6](../../benchmarks/omni_doc_bench_v1_6.md) | `Knowledge`, `MultiModal`, `QA` |
 | `perception_bench` | [PerceptionBench](../../benchmarks/perception_bench.md) | `MultiModal`, `QA` |
+| `pmc_vqa` | [PMC-VQA](../../benchmarks/pmc_vqa.md) | `MCQ`, `Medical`, `MultiModal` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
@@ -76,6 +80,7 @@
 ../../benchmarks/baby_vision.md
 ../../benchmarks/blink.md
 ../../benchmarks/cc_bench.md
+../../benchmarks/cc_ocr_v2.md
 ../../benchmarks/chartqa.md
 ../../benchmarks/charxiv.md
 ../../benchmarks/cmmmu.md
@@ -89,8 +94,10 @@
 ../../benchmarks/general_vqa.md
 ../../benchmarks/gsm8k_v.md
 ../../benchmarks/hallusion_bench.md
+../../benchmarks/hipho.md
 ../../benchmarks/infovqa.md
 ../../benchmarks/librispeech.md
+../../benchmarks/logic_vista.md
 ../../benchmarks/maritime_ocr_bench.md
 ../../benchmarks/math_verse.md
 ../../benchmarks/math_vision.md
@@ -113,6 +120,7 @@
 ../../benchmarks/omni_doc_bench.md
 ../../benchmarks/omni_doc_bench_v1_6.md
 ../../benchmarks/perception_bench.md
+../../benchmarks/pmc_vqa.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
 ../../benchmarks/science_qa.md

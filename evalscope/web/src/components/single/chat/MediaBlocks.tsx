@@ -5,21 +5,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import ImageLightbox from '@/components/common/ImageLightbox'
 import ChatBubble, { bubbleAccent } from '@/components/ui/ChatBubble'
-
-/**
- * Resolve a server-side path / URL / base64 payload to a browser-loadable src.
- *
- * - http(s) and data: URIs are returned as-is.
- * - Absolute POSIX/Windows paths are proxied through the media file endpoint.
- * - Anything else is treated as base64 and wrapped in a data: URI with `mimeType`.
- */
-function resolveMediaSrc(src: string, mimeType: string): string {
-  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src
-  if (src.startsWith('/') || /^[A-Za-z]:[/\\]/.test(src)) {
-    return `/api/v1/reports/media/file?path=${encodeURIComponent(src)}`
-  }
-  return `data:${mimeType};base64,${src}`
-}
+import { resolveMediaSrc } from '@/utils/media'
 
 const IMG_INLINE_CLASS = 'cursor-zoom-in hover:scale-[1.02] transition-transform max-w-full max-h-[360px] rounded-lg border border-[var(--border)] block'
 

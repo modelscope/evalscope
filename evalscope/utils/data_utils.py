@@ -266,6 +266,34 @@ def _load_perf_map(cache_manager: CacheManager, dataset_name: str, subset_name: 
     return perf_map
 
 
+# Serialised ContentBlock types that may carry a server-side media path.  The
+# payload field of each of these blocks is named after the block type.
+_MEDIA_BLOCK_TYPES = frozenset({'image', 'audio', 'video'})
+
+
+def _absolutize_media_path(block: Dict[str, Any]) -> Dict[str, Any]:
+    """Rewrite a local media path in a serialised ContentBlock to an absolute path.
+
+    A renderer can only resolve a server-side file when it is given an absolute
+    path: a relative path is indistinguishable from a base64 payload on the
+    client side.  This mirrors what :func:`messages_to_markdown` does for the
+    markdown chain, so both chains expose local media the same way.
+
+    Args:
+        block (Dict[str, Any]): A serialised ContentBlock, mutated in place.
+
+    Returns:
+        Dict[str, Any]: The same block, for convenient chaining.
+    """
+    block_type = block.get('type')
+    if block_type not in _MEDIA_BLOCK_TYPES:
+        return block
+    value = block.get(block_type)
+    if isinstance(value, str) and value and not value.startswith('data:') and os.path.isfile(value):
+        block[block_type] = os.path.abspath(value)
+    return block
+
+
 def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
     """Serialize a ReviewResult's message list into frontend-compatible dicts.
 
@@ -295,7 +323,7 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
                 # reasoning, text, …).  model_dump() mirrors the Python
                 # ContentBase subclasses to plain dicts that match the
                 # TypeScript ContentBlock interface in types.ts.
-                serialised_content = [c.model_dump() for c in m.content]
+                serialised_content = [_absolutize_media_path(c.model_dump()) for c in m.content]
             else:
                 # Text-only / legacy path – content is already a str.
                 serialised_content = m.content

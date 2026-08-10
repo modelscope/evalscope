@@ -44,6 +44,11 @@ const IDS = {
   maxTokens: 'eval-maxTokens',
   topK: 'eval-topK',
   datasetArgs: 'eval-datasetArgs',
+  sandboxEngine: 'eval-sandboxEngine',
+  sandboxUrl: 'eval-sandboxUrl',
+  sandboxImage: 'eval-sandboxImage',
+  sandboxPool: 'eval-sandboxPool',
+  sandboxEnable: 'eval-sandboxEnable',
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -61,6 +66,7 @@ const DOM_ORDER: string[] = [
   IDS.maxTokens,
   IDS.topK,
   IDS.datasetArgs,
+  IDS.sandboxPool,
 ]
 
 /** Fields that live inside the collapsible "More Parameters" section. */
@@ -72,6 +78,7 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.maxTokens,
   IDS.topK,
   IDS.datasetArgs,
+  IDS.sandboxPool,
 ]
 
 export default function EvalConfigForm({ onSubmit, disabled, initialDataset, initialModel }: Props) {
@@ -91,6 +98,11 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
   const [maxTokens, setMaxTokens] = useState('')
   const [topK, setTopK] = useState('')
   const [datasetArgs, setDatasetArgs] = useState('')
+  const [sandboxEnabled, setSandboxEnabled] = useState(false)
+  const [sandboxEngine, setSandboxEngine] = useState('docker')
+  const [sandboxUrl, setSandboxUrl] = useState('')
+  const [sandboxImage, setSandboxImage] = useState('')
+  const [sandboxPoolSize, setSandboxPoolSize] = useState('')
 
   const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
 
@@ -209,6 +221,12 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
       const err = validateNumeric(Number(check.value), check.min, check.max, check.step)
       if (err) newErrors[check.id] = err.messageKey
     }
+    if (sandboxEnabled && sandboxPoolSize.trim() !== '') {
+      const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
+      if (err) {
+        newErrors[IDS.sandboxPool] = err.messageKey
+      }
+    }
 
     // Dataset_Args JSON validation without mutating the raw input.
     let parsedDatasetArgs: Record<string, unknown> | undefined
@@ -255,6 +273,30 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
     if (topK) genConfig.top_k = Number(topK)
     if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
     if (parsedDatasetArgs) config.dataset_args = parsedDatasetArgs
+    if (sandboxEnabled) {
+      const sandbox: Record<string, unknown> = {
+        enabled: true,
+        engine: sandboxEngine,
+      }
+
+      if (sandboxUrl.trim()) {
+        sandbox.manager_config = {
+          base_url: sandboxUrl.trim(),
+        }
+      }
+
+      if (sandboxImage.trim()) {
+        sandbox.default_config = {
+          image: sandboxImage.trim(),
+        }
+      }
+
+      if (sandboxPoolSize.trim()) {
+        sandbox.pool_size = Number(sandboxPoolSize)
+      }
+
+      config.sandbox = sandbox
+    }
     onSubmit(config)
   }
 
@@ -391,6 +433,46 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
                 />
               )}
             </Field>
+            <hr className="md:col-span-3 my-2" />
+            <h3 className="md:col-span-3 font-semibold">{t('eval.sandbox')}</h3>
+            <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">
+              {(aria) => (
+                <input
+                  {...aria}
+                  type="checkbox"
+                  checked={sandboxEnabled}
+                  onChange={(e) => setSandboxEnabled(e.target.checked)}
+                  className="size-11 accent-[var(--accent)] cursor-pointer"
+                />
+              )}
+            </Field>
+            {sandboxEnabled && (
+              <>
+                <Field id={IDS.sandboxEngine} name="sandbox_engine" labelKey="eval.sandboxEngine">
+                  {(aria) => (
+                    <select {...aria} value={sandboxEngine} onChange={(e) => setSandboxEngine(e.target.value)} className={inputClass()}>
+                      <option value="docker">docker</option>
+                      <option value="volcengine">volcengine</option>
+                    </select>
+                  )}
+                </Field>
+                <Field id={IDS.sandboxUrl} name="sandbox_url" labelKey="eval.sandboxUrl">
+                  {(aria) => (
+                    <input {...aria} value={sandboxUrl} onChange={(e) => setSandboxUrl(e.target.value)} className={inputClass()} />
+                  )}
+                </Field>
+                <Field id={IDS.sandboxImage} name="sandbox_image" labelKey="eval.sandboxImage">
+                  {(aria) => (
+                    <input {...aria} value={sandboxImage} onChange={(e) => setSandboxImage(e.target.value)} className={inputClass()} />
+                  )}
+                </Field>
+                <Field id={IDS.sandboxPool} name="sandbox_pool" labelKey="eval.sandboxPool" error={errMsg(IDS.sandboxPool)}>
+                  {(aria) => (
+                    <input {...aria} type="number" min={1} step={1} value={sandboxPoolSize} onChange={(e) => { setSandboxPoolSize(e.target.value); clearErr(IDS.sandboxPool) }} className={inputClass(errMsg(IDS.sandboxPool))} />
+                  )}
+                </Field>
+              </>
+            )}
           </div>
         </Card>
       )}

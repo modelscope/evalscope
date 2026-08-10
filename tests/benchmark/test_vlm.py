@@ -514,6 +514,16 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {'subset_list': ['CAD']}
         self._run_dataset_test('screenspot_pro', dataset_args=dataset_args, limit=5, use_mock=True)
 
+    def test_cc_ocr_v2(self):
+        """Test CC-OCR-V2 real-world document OCR benchmark."""
+        dataset_args = {'subset_list': ['info_board_parsing', 'text_grounding', 'blueprint_qa']}
+        self._run_dataset_test('cc_ocr_v2', dataset_args=dataset_args, limit=5)
+
+    def test_cc_ocr_v2_mock(self):
+        """Test CC-OCR-V2 with mock LLM."""
+        dataset_args = {'subset_list': ['info_board_parsing']}
+        self._run_dataset_test('cc_ocr_v2', dataset_args=dataset_args, limit=5, use_mock=True)
+
     def test_perception_bench(self):
         """Test PerceptionBench atomic visual perception benchmark."""
         dataset_args = {'subset_list': ['ocr_error']}
@@ -523,3 +533,35 @@ class TestVLMBenchmark(TestBenchmark):
         """Test PerceptionBench with mock LLM."""
         dataset_args = {'subset_list': ['ocr_error']}
         self._run_dataset_test('perception_bench', dataset_args=dataset_args, limit=5, use_mock=True)
+
+    def test_hipho(self):
+        """Test HiPhO physics Olympiad benchmark (step-level + answer-level subsets)."""
+        dataset_args = {'subset_list': ['IPhO_2025', 'F=MA_2025']}
+        self._run_dataset_test('hipho', dataset_args=dataset_args, limit=3)
+
+    def test_hipho_mock(self):
+        """Test HiPhO with a mock model and a mock judge."""
+        dataset_args = {'subset_list': ['IPhO_2025']}
+        self._run_dataset_test(
+            'hipho',
+            dataset_args=dataset_args,
+            limit=3,
+            use_mock=True,
+            judge_model_args={'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM},
+        )
+
+    def test_logic_vista(self):
+        """Test LogicVista visual logical reasoning benchmark."""
+        self._run_dataset_test('logic_vista', limit=5)
+
+    def test_logic_vista_mock(self):
+        """Test LogicVista with mock LLM."""
+        self._run_dataset_test('logic_vista', limit=5, use_mock=True)
+
+    def test_pmc_vqa(self):
+        """Test PMC-VQA medical visual question answering benchmark."""
+        self._run_dataset_test('pmc_vqa', limit=5)
+
+    def test_pmc_vqa_mock(self):
+        """Test PMC-VQA with mock LLM."""
+        self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
