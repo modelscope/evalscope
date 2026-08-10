@@ -29,11 +29,13 @@ from evalscope.report.visualization import (
 from evalscope.utils.data_utils import (
     get_acc_report_df,
     get_compare_report_df,
+    get_comparison_quality_report_df,
     get_model_prediction,
     get_quality_metric_df,
     get_quality_report_df,
     get_report_analysis,
     load_multi_report,
+    load_multi_report_groups,
     load_single_report,
     normalize_score,
     process_report_name,
@@ -680,8 +682,7 @@ def get_chart():
                     names = [single]
                 else:
                     return jsonify({'error': 'report_names or report_name is required for radar'}), 400
-            report_list = load_multi_report(root, names)
-            quality_df = get_quality_report_df(report_list)
+            quality_df = get_comparison_quality_report_df(load_multi_report_groups(root, names))
             fig = plot_multi_report_radar(quality_df)
         elif chart_type == 'grouped_bar':
             # Grouped bar chart for multi-model comparison
@@ -689,8 +690,7 @@ def get_chart():
             names = [n.strip() for n in names_raw.split(';') if n.strip()]
             if not names:
                 return jsonify({'error': 'report_names is required for grouped_bar'}), 400
-            report_list = load_multi_report(root, names)
-            quality_df = get_quality_report_df(report_list)
+            quality_df = get_comparison_quality_report_df(load_multi_report_groups(root, names))
             if not quality_df.empty:
                 color_seq = ['#816DF8', '#0F9C7E', '#fbbf24', '#a78bfa', '#63b3ed']
                 fig = px.bar(

@@ -5,7 +5,7 @@ import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPredictions, getChartUrl } from '@/api/reports'
 import type { ReportData, PredictionRow } from '@/api/types'
 import { getDisplayNames, parseReportName } from '@/utils/reportParser'
-import { buildDisplayLabel, compatibilityReason, MAX_COMPARE_SLOTS } from '@/domain/compare/compareModel'
+import { buildDisplayLabels, compatibilityReason, MAX_COMPARE_SLOTS } from '@/domain/compare/compareModel'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
@@ -331,13 +331,7 @@ export default function ComparePage() {
 
   // Meaningful model + dataset display label per run, used for table headers and
   // column identifiers instead of the raw timestamped run path.
-  const displayLabels = useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const name of reportNames) {
-      map[name] = buildDisplayLabel(name).label
-    }
-    return map
-  }, [reportNames])
+  const displayLabels = useMemo(() => buildDisplayLabels(reportNames), [reportNames])
 
   // Incompatibility check across the selected runs. When runs share no common
   // dataset they cannot be aligned for comparison; we surface the localized
@@ -547,11 +541,12 @@ function ScoreTab({
   const dataRows = scoreTableData.filter((r) => r.dataset !== t('compare.average'))
   const avgRow = scoreTableData.find((r) => r.dataset === t('compare.average')) ?? null
   const datasetNames = dataRows.map((r) => r.dataset as string)
+  const chartType = datasetNames.length >= 3 ? 'radar' : 'grouped_bar'
 
   return (
     <div className="flex flex-col gap-6">
       <PlotlyChart
-        src={getChartUrl(rootPath, 'radar', { reportNames })}
+        src={getChartUrl(rootPath, chartType, { reportNames })}
         fallbackTable={{
           columns: scoreTableColumns.map((column) => column.key),
           rows: scoreTableData,
@@ -561,7 +556,7 @@ function ScoreTab({
           semantics: canAggregate ? scoreSemantics[datasetNames[0]] : undefined,
         }}
         height={450}
-        title={t('multi.modelRadar')}
+        title={t(chartType === 'radar' ? 'multi.modelRadar' : 'multi.modelScores')}
       />
 
       <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden shadow-[var(--shadow-sm)]">

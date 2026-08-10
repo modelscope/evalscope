@@ -14,6 +14,7 @@ import { DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, parseReportName } from '@/uti
 import {
   addToSelection,
   buildDisplayLabel,
+  buildDisplayLabels,
   MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
 } from './compareModel'
@@ -118,6 +119,24 @@ describe('buildDisplayLabel (Property 8: run display label is composed of model 
         }
       }),
     )
+  })
+})
+
+describe('buildDisplayLabels', () => {
+  it('adds each run timestamp when the same model is compared twice', () => {
+    const first = `20260810_100000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
+    const second = `20260810_110000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
+
+    expect(buildDisplayLabels([first, second])).toEqual({
+      [first]: 'qwen-plus (20260810_100000) · gsm8k',
+      [second]: 'qwen-plus (20260810_110000) · gsm8k',
+    })
+  })
+
+  it('keeps the compact model and dataset label when model names are unique', () => {
+    const run = `20260810_100000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
+
+    expect(buildDisplayLabels([run])).toEqual({ [run]: 'qwen-plus · gsm8k' })
   })
 })
 

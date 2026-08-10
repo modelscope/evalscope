@@ -9,7 +9,7 @@
  */
 
 import type { ReportData } from '@/api/types'
-import { DATASET_TOKEN, parseReportName } from '@/utils/reportParser'
+import { DATASET_TOKEN, getDisplayNames, parseReportName } from '@/utils/reportParser'
 
 /** Separator placed between the model and dataset parts of a display label. */
 const LABEL_SEPARATOR = ' · '
@@ -55,6 +55,20 @@ export function buildDisplayLabel(runName: string): RunDisplayLabel {
 
   const label = dataset.length > 0 ? `${trimmedModel}${LABEL_SEPARATOR}${dataset}` : trimmedModel
   return { model: trimmedModel, dataset, label }
+}
+
+/** Build model-and-dataset labels that still distinguish repeated runs of one model. */
+export function buildDisplayLabels(runNames: string[]): Record<string, string> {
+  const uniqueModelNames = getDisplayNames(runNames)
+  const labels: Record<string, string> = {}
+
+  for (const runName of runNames) {
+    const { dataset } = buildDisplayLabel(runName)
+    const model = uniqueModelNames[runName]
+    labels[runName] = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
+  }
+
+  return labels
 }
 
 /**

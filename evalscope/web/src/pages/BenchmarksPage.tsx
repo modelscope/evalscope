@@ -119,9 +119,9 @@ export default function BenchmarksPage() {
   const getDescription = useCallback(
     (entry: BenchmarkEntry) => {
       const desc = locale === 'zh' ? entry.description?.zh : entry.description?.en
-      const full = desc?.full
-      if (!full) return t('benchmarks.noDescription')
-      return stripMarkdown(full)
+      const preview = desc?.sections.overview ?? desc?.sections.Overview ?? desc?.full
+      if (!preview) return t('benchmarks.noDescription')
+      return stripMarkdown(preview)
     },
     [locale, t],
   )
@@ -134,16 +134,18 @@ export default function BenchmarksPage() {
     }
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase()
-      result = result.filter(
-        (e) =>
+      result = result.filter((e) => {
+        const fullDescription = locale === 'zh' ? e.description?.zh?.full : e.description?.en?.full
+        return (
           e.name.toLowerCase().includes(q) ||
           (e.pretty_name ?? '').toLowerCase().includes(q) ||
-          getDescription(e).toLowerCase().includes(q) ||
-          (e.tags ?? []).some((tag) => tag.toLowerCase().includes(q)),
-      )
+          (fullDescription ?? getDescription(e)).toLowerCase().includes(q) ||
+          (e.tags ?? []).some((tag) => tag.toLowerCase().includes(q))
+        )
+      })
     }
     return result
-  }, [tabFiltered, debouncedSearch, selectedTags, getDescription])
+  }, [tabFiltered, debouncedSearch, selectedTags, getDescription, locale])
 
   // Pagination (page is reset to 1 by every filter/tab/search mutator below).
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
@@ -157,6 +159,15 @@ export default function BenchmarksPage() {
   const closeDetail = useCallback(() => {
     setSelectedEntry(null)
   }, [])
+
+  useEffect(() => {
+    if (selectedEntry == null) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDetail()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedEntry, closeDetail])
 
   const toggleTag = (tag: string) => {
     setPage(1)
@@ -364,6 +375,9 @@ export default function BenchmarksPage() {
           <div
             className="relative w-full max-w-3xl max-h-[85vh] rounded-[var(--radius-lg)] bg-[var(--bg-card)] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="benchmark-detail-title"
           >
             {/* Modal header */}
             <div className="flex items-start gap-3 p-5 pb-3 border-b border-[var(--border)]">
@@ -372,7 +386,7 @@ export default function BenchmarksPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-[var(--text)]">{selectedEntry.pretty_name}</h2>
+                  <h2 id="benchmark-detail-title" className="text-lg font-semibold text-[var(--text)]">{selectedEntry.pretty_name}</h2>
                   {CATEGORY_BADGE[selectedEntry.category] && (
                     <Badge variant={CATEGORY_BADGE[selectedEntry.category]!.variant} className="text-[10px] shrink-0">
                       {CATEGORY_BADGE[selectedEntry.category]!.label}
@@ -421,7 +435,9 @@ export default function BenchmarksPage() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={closeDetail}
+                aria-label={t('benchmarks.close')}
                 className="shrink-0 p-1.5 rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
               >
                 <X size={18} />

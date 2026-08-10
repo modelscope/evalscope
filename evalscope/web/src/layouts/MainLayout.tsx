@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import TopNav from '@/components/nav/TopNav'
 import PathBar from '@/components/ui/PathBar'
@@ -21,6 +21,10 @@ export default function MainLayout() {
     const sync = () => setPathInput(rootPath)
     sync()
   }, [rootPath])
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0 })
+  }, [location.pathname])
 
   useEffect(() => {
     if (prevPath.current !== location.pathname) {

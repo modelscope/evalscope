@@ -3,9 +3,9 @@ import pytest
 
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.report import Category, Metric, Report, Subset
-from evalscope.report.visualization import plot_single_report_scores
+from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
 from evalscope.service.blueprints.reports import _apply_chart_theme, _build_report_meta, _report_to_service_dict
-from evalscope.utils.data_utils import get_quality_report_df
+from evalscope.utils.data_utils import get_comparison_quality_report_df, get_quality_report_df
 
 
 def test_apply_chart_theme_uses_light_template_for_light_console() -> None:
@@ -136,3 +136,22 @@ def test_comparison_chart_omits_unbounded_metrics() -> None:
 
     assert quality_df.empty
     assert plot_single_report_scores(quality_df) is None
+
+
+def test_comparison_chart_keeps_separate_runs_of_the_same_model() -> None:
+    first_name = '20260810_100000@@test-model::points'
+    second_name = '20260810_110000@@test-model::points'
+    quality_df = get_comparison_quality_report_df([
+        (first_name, [_semantic_report('points', 75.0, 'quality.score.points_100')]),
+        (second_name, [_semantic_report('points', 90.0, 'quality.score.points_100')]),
+    ])
+
+    assert quality_df['Model'].tolist() == [
+        'test-model (20260810_100000)',
+        'test-model (20260810_110000)',
+    ]
+    figure = plot_multi_report_radar(quality_df)
+    assert [trace.name for trace in figure.data] == [
+        'test-model (20260810_100000)',
+        'test-model (20260810_110000)',
+    ]

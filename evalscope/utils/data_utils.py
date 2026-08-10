@@ -74,14 +74,19 @@ def load_single_report(root_path: str, report_name: str):
     return report_list, datasets, task_cfg
 
 
-def load_multi_report(root_path: str, report_names: List[str]):
-    report_list = []
+def load_multi_report(root_path: str, report_names: List[str]) -> List[Report]:
+    return [report for _, reports in load_multi_report_groups(root_path, report_names) for report in reports]
+
+
+def load_multi_report_groups(root_path: str, report_names: List[str]) -> List[tuple[str, List[Report]]]:
+    """Load reports while retaining the run identifier that owns each group."""
+    report_groups = []
     for report_name in report_names:
-        prefix, model_name, datasets = process_report_name(report_name)
+        prefix, model_name, _ = process_report_name(report_name)
         report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
         reports = get_report_list([report_path_list])
-        report_list.extend(reports)
-    return report_list
+        report_groups.append((report_name, reports))
+    return report_groups
 
 
 def get_acc_report_df(report_list: List[Report]):
@@ -151,6 +156,26 @@ def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
             ReportKey.num,
         ],
     )
+
+
+def get_comparison_quality_report_df(report_groups: List[tuple[str, List[Report]]]) -> pd.DataFrame:
+    """Build comparison chart rows without collapsing separate runs of the same model."""
+    parsed_names = {report_name: process_report_name(report_name) for report_name, _ in report_groups}
+    model_counts: Dict[str, int] = {}
+    for _, model_name, _ in parsed_names.values():
+        model_counts[model_name] = model_counts.get(model_name, 0) + 1
+
+    frames = []
+    for report_name, reports in report_groups:
+        frame = get_quality_report_df(reports)
+        if frame.empty:
+            continue
+        prefix, model_name, _ = parsed_names[report_name]
+        display_name = f'{model_name} ({prefix})' if model_counts[model_name] > 1 else model_name
+        frame[ReportKey.model_name] = display_name
+        frames.append(frame)
+
+    return pd.concat(frames, ignore_index=True) if frames else get_quality_report_df([])
 
 
 def get_quality_metric_df(report_list: List[Report], metric_df: pd.DataFrame) -> pd.DataFrame:
