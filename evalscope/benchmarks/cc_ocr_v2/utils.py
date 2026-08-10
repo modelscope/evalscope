@@ -65,9 +65,11 @@ _CUSTOM_TABLE_WEIGHT = 0.9
 def strip_code_fence(text: str) -> str:
     """Return the body of a fully fenced code block, or the text unchanged.
 
-    Only bare and ``json`` fences are recognised, matching the official scorers: an ``html`` or
-    ``latex`` fence is left in place and therefore counts against the prediction, except in the
-    parsing track which unwraps those tags explicitly.
+    The pattern is copied from the official scorers (``evaluate_recognition.py``,
+    ``evaluate_vqa.py``, ``evaluate_grounding.py``), which accept a bare or ``json`` fence only.
+    An ``html`` or ``latex`` fence still loses its backticks, but the language tag itself is not
+    consumed and so leaks into the scored text and costs the prediction points. The parsing track
+    therefore unwraps those two languages explicitly instead of relying on this helper.
     """
     text = text.strip()
     match = _CODE_FENCE_RE.match(text)
@@ -131,8 +133,15 @@ def edit_similarity(pred: str, gt: str) -> float:
 
 
 def score_recognition(prediction: str, reference: str, scenario: str) -> float:
-    """Token-level F1. Chinese/Japanese/Korean/Arabic ground truth is scored per character;
-    multi-scene word-level data additionally keeps alphanumeric characters only."""
+    """Token-level F1, scored per character when the reference contains a CJK ideograph.
+
+    This mirrors the CC-OCR V2 entry point ``evaluate_recognition.py::main`` (``--mode auto``),
+    which switches to character level from ``_has_cjk`` on the reference text alone. Arabic and
+    Korean therefore stay word-level here: the ``dataset_name in ["Arabic", "Japanese",
+    "Korean"]`` rule belongs to the CC-OCR v1 ``OcrEvaluator`` class, which V2 no longer calls.
+    Word-level multi-scene data additionally keeps alphanumeric characters only, matching the
+    official ``_path_indicates_multi_scene``.
+    """
     gt_text = reference.strip()
     pred_text = strip_code_fence(prediction).strip()
 
