@@ -102,14 +102,33 @@ def test_parse_point_box_reads_the_first_tuple() -> None:
     assert parse_point_box('I cannot locate that text.') is None
 
 
-def test_score_text_grounding_rescales_predictions() -> None:
-    """Without an image the prediction is compared as-is; with one it is mapped from the
-    0-1000 grid requested by the prompt into pixels."""
+def test_score_text_grounding_without_image_compares_as_is() -> None:
     reference = '[100.0, 100.0, 200.0, 200.0]'
     assert score_text_grounding('(100, 100, 200, 200)', reference, '') == 1.0
     assert score_text_grounding('no box here', reference, '') == 0.0
     # A malformed reference cannot be scored
     assert score_text_grounding('(100, 100, 200, 200)', 'not a box', '') == 0.0
+
+
+def test_score_text_grounding_maps_normalized_predictions_to_pixels(tmp_path) -> None:
+    """Regression: nothing else exercises the rescaling branch.
+
+    Every model observed so far answered in absolute pixels, so a run never reaches the
+    ``scale=1000`` path -- a silent break here would zero out the score of every model that
+    actually obeys the prompt, while leaving the rest of the suite green.
+    """
+    from PIL import Image
+
+    image_path = str(tmp_path / 'page.png')
+    Image.new('RGB', (1000, 500), 'white').save(image_path)
+
+    reference = '[400.0, 100.0, 600.0, 300.0]'  # pixels
+    # The same box expressed on the 0-1000 grid the prompt asks for, and unit normalized
+    assert score_text_grounding('(400, 200, 600, 600)', reference, image_path) == pytest.approx(1.0)
+    assert score_text_grounding('(0.4, 0.2, 0.6, 0.6)', reference, image_path) == pytest.approx(1.0)
+    # Absolute pixels are read as 0-1000 values and therefore land elsewhere, matching the
+    # official scorer, which normalizes the same way.
+    assert score_text_grounding('(400, 100, 600, 300)', reference, image_path) < 0.5
 
 
 def test_parse_object_list_accepts_common_bbox_notations() -> None:
