@@ -152,11 +152,27 @@ def format_example(
     return f'{question}\n{choices_text}\nANSWER: {answer.text}'
 
 
-def _fallback_parse_answer(completion: str) -> Optional[set[str]]:
+# A label the model may wrap the way the options are printed, optionally listing several labels:
+# '(A)', '[A]', '(A, C)'.  Only label-shaped content is accepted, so bracketed prose such as
+# '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
+_BRACKETED_LABEL = r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，]\s*[A-Za-z\d])*)\s*[\)\]）】]'
+
+# Models frequently give the label in that wrapped form and then append the option text, e.g.
+# 'ANSWER: (A) 36'.  Neither the strict nor the loose pattern accepts a leading bracket, so
+# without this pattern such a reply reaches `_fallback_parse_answer` and is answered with an
+# arbitrary capital letter taken from the reasoning.
+_BRACKETED_ANSWER_RE = re.compile(rf'(?i)ANSWER\s*:\s*\**\s*{_BRACKETED_LABEL}')
+_BRACKETED_ANSWER_ZH_RE = re.compile(rf'答案\s*[:：]\s*\**\s*{_BRACKETED_LABEL}')
+
+
+def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
     # Fallback to find the last upper case letter
     for letter in reversed(completion):
         if letter.isupper():
-            return {letter}
+            # A letter that is not one of the sample's labels cannot be the model's choice, and
+            # returning it would record an answer the model never gave.  Reporting no answer
+            # scores the same (an invalid label never equals the target) and stays diagnosable.
+            return {letter} if letter in allowed_options else None
     return None
 
 
@@ -180,6 +196,8 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
     """
     text = state.output.completion if completion is None else completion
 
+    allowed_options = set(answer_character(i) for i in range(len(state.choices)))
+
     # First check whether the string strictly ends with the expected answer
     # In this case, we're looking for a single line which contains the expected
     # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
@@ -187,34 +205,32 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
     # placeholder the model echoed from the prompt (e.g. `ANSWER: [LETTER]`) matches
     # with a whitespace-only capture and shadows the real answer that follows.
     match = re.search(
-        r'(?i)^ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
+        r'(?i)^ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
         text,
         flags=re.MULTILINE,
     )
+
+    # The alphanumeric-start rule above also rejects a label the model wrapped in brackets,
+    # so try that form explicitly before giving up on the answer marker.
+    if match is None:
+        match = _BRACKETED_ANSWER_RE.search(text)
 
     # If we couldn't match the strict version, we can try the less strict
     # version for backward compatibility
     if match is None:
         match = re.search(
-            r'(?i)ANSWER\s*:\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
+            r'(?i)ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
             text,
         )
 
     if match is None:
-        fallback_answer = _fallback_parse_answer(text)
-        if fallback_answer:
-            return fallback_answer
-
-    if match is None:
-        return set()
+        return _fallback_parse_answer(text, allowed_options) or set()
 
     matched = match.group(1)
 
     # Strip trailing period / full stop
     matched = matched.strip()
     matched = matched.rstrip('.')
-
-    allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
     if multiple_correct:
         # Match must contain only the allowed choices
@@ -260,20 +276,20 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
     """
     text = state.output.completion if completion is None else completion
 
+    allowed_options = set(answer_character(i) for i in range(len(state.choices)))
+
     # Simple pattern to capture answers with optional bold markdown
-    pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
+    pattern = r'答案\s*[:：]\s*\**\s*([A-Za-z0-9,，]+)'
     match = re.search(pattern, text, flags=re.MULTILINE)
 
+    # The pattern above cannot start on a bracket, so try a wrapped label explicitly.
     if match is None:
-        fallback_answer = _fallback_parse_answer(text)
-        if fallback_answer:
-            return fallback_answer
+        match = _BRACKETED_ANSWER_ZH_RE.search(text)
 
     if match is None:
-        return set()
+        return _fallback_parse_answer(text, allowed_options) or set()
 
     matched = match.group(1).strip().rstrip('。.')
-    allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
     if multiple_correct:
         # Handle comma-separated or continuous letters
