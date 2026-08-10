@@ -51,7 +51,7 @@ export function VideoBlock({ src, format }: { src: string; format?: string }) {
 }
 
 /** Collapsible reasoning block rendered above the main answer. */
-export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number }) {
+export function ReasoningBlock({ text, tokens }: { text: string; tokens?: number | null }) {
   const { t } = useLocale()
   const [open, setOpen] = useState(false)
   return (
