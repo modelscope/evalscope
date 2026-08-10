@@ -30,6 +30,9 @@ reporting results.
 - Answers are extracted from the `ANSWER: [LETTER]` line requested by the prompt; the original
   paper instead matches free-form generations to the closest option string, which is only needed
   for models that cannot follow an answer format
+- Keep `max_tokens` generous enough for the model to finish its answer line: when no
+  `ANSWER:` line is present, the shared multiple-choice parser falls back to the last
+  upper-case letter in the reply, so a truncated response may be scored as a lenient guess
 - Images are shipped as a single `images.zip` (about 18 GB) in the dataset repository. It is
   downloaded once and the figures needed for the evaluated samples are read directly from the
   archive, so no extracted copy is kept on disk
@@ -75,7 +78,7 @@ reporting results.
 {
   "input": [
     {
-      "id": "09d34a66",
+      "id": "03f4a772",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~93.0KB]"
