@@ -75,4 +75,14 @@ describe('MarkdownRenderer image sources', () => {
     expect(images[0]).toHaveAttribute('src', 'https://example.com/a%20b.png')
     expect(images[1]).toHaveAttribute('src', 'data:image/png;base64,aGVsbG8=')
   })
+
+  it('keeps an uppercase scheme and a protocol-relative url untouched', () => {
+    // These are valid remote sources; treating them as local paths or base64
+    // payloads would break images that rendered fine before.
+    const { container } = renderMarkdown('![up](HTTPS://example.com/a.png)\n\n![rel](//cdn.example.com/a.png)')
+
+    const images = container.querySelectorAll('img')
+    expect(images[0]).toHaveAttribute('src', 'HTTPS://example.com/a.png')
+    expect(images[1]).toHaveAttribute('src', '//cdn.example.com/a.png')
+  })
 })

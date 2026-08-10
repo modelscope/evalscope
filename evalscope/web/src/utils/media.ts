@@ -1,7 +1,10 @@
+/** Schemes that already point at something the browser can load directly. */
+const REMOTE_SCHEME_RE = /^(?:https?|data|blob):/i
+
 /**
  * Resolve a server-side path / URL / base64 payload to a browser-loadable src.
  *
- * - http(s) and data: URIs are returned as-is.
+ * - http(s), data: and blob: URIs are returned as-is (scheme match is case-insensitive).
  * - Absolute POSIX/Windows paths are proxied through the media file endpoint.
  * - Anything else is treated as base64 and wrapped in a data: URI with `mimeType`.
  *
@@ -10,7 +13,7 @@
  * `Input` column produced by `messages_to_markdown`).
  */
 export function resolveMediaSrc(src: string, mimeType: string): string {
-  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src
+  if (REMOTE_SCHEME_RE.test(src)) return src
   if (src.startsWith('/') || /^[A-Za-z]:[/\\]/.test(src)) {
     return `/api/v1/reports/media/file?path=${encodeURIComponent(src)}`
   }
@@ -26,11 +29,12 @@ export function resolveMediaSrc(src: string, mimeType: string): string {
  * to the real filesystem path before the media endpoint can look it up,
  * otherwise the proxy receives the literal escape sequences.
  *
- * Remote URLs and data: URIs are returned untouched, so an intentionally
- * escaped remote URL is never rewritten.
+ * Markdown content is authored text rather than a media field, so anything that
+ * looks like a URL is passed through untouched - including protocol-relative
+ * URLs and intentionally escaped remote URLs.
  */
 export function resolveMarkdownMediaSrc(src: string, mimeType: string): string {
-  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src
+  if (REMOTE_SCHEME_RE.test(src) || src.startsWith('//')) return src
   try {
     return resolveMediaSrc(decodeURI(src), mimeType)
   } catch {
