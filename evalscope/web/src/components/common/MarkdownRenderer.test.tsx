@@ -46,13 +46,33 @@ describe('MarkdownRenderer image sources', () => {
     )
   })
 
+  it('decodes a percent-encoded non-ascii path back to the real filesystem path', () => {
+    // The markdown parser encodes non-ascii destinations, so without decoding
+    // the proxy would receive the literal escape sequences and return 404.
+    const { container } = renderMarkdown('![shot](</tmp/\u6570\u636e\u96c6/a.png>)')
+
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      `/api/v1/reports/media/file?path=${encodeURIComponent('/tmp/\u6570\u636e\u96c6/a.png')}`,
+    )
+  })
+
+  it('renders a local path containing spaces via the angle-bracket destination', () => {
+    const { container } = renderMarkdown('![shot](</tmp/my dir/a.png>)')
+
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      `/api/v1/reports/media/file?path=${encodeURIComponent('/tmp/my dir/a.png')}`,
+    )
+  })
+
   it('keeps http and data URI image sources untouched', () => {
     const { container } = renderMarkdown(
-      '![remote](https://example.com/a.png)\n\n![inline](data:image/png;base64,aGVsbG8=)',
+      '![remote](https://example.com/a%20b.png)\n\n![inline](data:image/png;base64,aGVsbG8=)',
     )
 
     const images = container.querySelectorAll('img')
-    expect(images[0]).toHaveAttribute('src', 'https://example.com/a.png')
+    expect(images[0]).toHaveAttribute('src', 'https://example.com/a%20b.png')
     expect(images[1]).toHaveAttribute('src', 'data:image/png;base64,aGVsbG8=')
   })
 })

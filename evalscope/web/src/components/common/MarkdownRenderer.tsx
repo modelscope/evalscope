@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import type { Components, Options } from 'react-markdown'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLocale } from '@/contexts/LocaleContext'
-import { resolveMediaSrc } from '@/utils/media'
+import { resolveMarkdownMediaSrc } from '@/utils/media'
 import ImageLightbox from './ImageLightbox'
 import LazyCodeBlock from './LazyCodeBlock'
 
@@ -117,7 +117,7 @@ export default function MarkdownRenderer({ content, collapsed = false }: Props) 
 
   const markdownComponents = useMemo<Components>(() => ({
     img: ({ src, alt }) => (
-      <ImageLightbox src={src ? resolveMediaSrc(src, 'image/jpeg') : ''} alt={alt} style={INLINE_IMG_STYLE} />
+      <ImageLightbox src={src ? resolveMarkdownMediaSrc(src, 'image/jpeg') : ''} alt={alt} style={INLINE_IMG_STYLE} />
     ),
     code: ({ className, children }) => {
       const match = /language-(\w+)/.exec(className || '')

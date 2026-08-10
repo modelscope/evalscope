@@ -227,8 +227,10 @@ def messages_to_markdown(messages: List[ChatMessage], max_length: Optional[int] 
                     if os.path.isfile(image_base64_or_url):
                         # Local file: emit the absolute path so that renderers can resolve it,
                         # e.g. the Web dashboard proxies it through its media file endpoint.
+                        # The destination is wrapped in <> so that paths containing spaces or
+                        # unbalanced parentheses still parse as a markdown image.
                         image_base64_or_url = os.path.abspath(image_base64_or_url)
-                        content_parts.append(f'![image]({image_base64_or_url})')
+                        content_parts.append(f'![image](<{image_base64_or_url}>)')
                     else:
                         # If it's not a file, assume it's a base64 string
                         if max_length and len(image_base64_or_url) > max_length:

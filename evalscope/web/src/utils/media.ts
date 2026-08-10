@@ -16,3 +16,25 @@ export function resolveMediaSrc(src: string, mimeType: string): string {
   }
   return `data:${mimeType};base64,${src}`
 }
+
+/**
+ * Resolve an image src taken from rendered Markdown.
+ *
+ * A Markdown parser percent-encodes the link destination, so a local path
+ * containing spaces, non-ASCII characters or backslashes arrives here already
+ * encoded (`/tmp/my img.jpg` -> `/tmp/my%20img.jpg`).  It has to be decoded back
+ * to the real filesystem path before the media endpoint can look it up,
+ * otherwise the proxy receives the literal escape sequences.
+ *
+ * Remote URLs and data: URIs are returned untouched, so an intentionally
+ * escaped remote URL is never rewritten.
+ */
+export function resolveMarkdownMediaSrc(src: string, mimeType: string): string {
+  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src
+  try {
+    return resolveMediaSrc(decodeURI(src), mimeType)
+  } catch {
+    // Malformed escape sequence – fall back to the raw value.
+    return resolveMediaSrc(src, mimeType)
+  }
+}

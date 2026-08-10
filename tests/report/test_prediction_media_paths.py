@@ -1,5 +1,6 @@
 import pytest
 from pathlib import Path
+from typing import List
 
 from evalscope.api.evaluator import ReviewResult
 from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
@@ -16,7 +17,7 @@ def _review_result(image: str) -> ReviewResult:
     )
 
 
-def _image_values(review_result: ReviewResult) -> list:
+def _image_values(review_result: ReviewResult) -> List[str]:
     values = []
     for message in _serialize_messages(review_result):
         content = message['content']

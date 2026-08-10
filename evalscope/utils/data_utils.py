@@ -171,8 +171,9 @@ def _load_perf_map(cache_manager: CacheManager, dataset_name: str, subset_name: 
     return perf_map
 
 
-# Serialised ContentBlock types that may carry a server-side media path.
-_MEDIA_BLOCK_FIELDS = {'image': 'image', 'audio': 'audio', 'video': 'video'}
+# Serialised ContentBlock types that may carry a server-side media path.  The
+# payload field of each of these blocks is named after the block type.
+_MEDIA_BLOCK_TYPES = frozenset({'image', 'audio', 'video'})
 
 
 def _absolutize_media_path(block: Dict[str, Any]) -> Dict[str, Any]:
@@ -189,12 +190,12 @@ def _absolutize_media_path(block: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: The same block, for convenient chaining.
     """
-    field = _MEDIA_BLOCK_FIELDS.get(block.get('type'))
-    if not field:
+    block_type = block.get('type')
+    if block_type not in _MEDIA_BLOCK_TYPES:
         return block
-    value = block.get(field)
+    value = block.get(block_type)
     if isinstance(value, str) and value and not value.startswith('data:') and os.path.isfile(value):
-        block[field] = os.path.abspath(value)
+        block[block_type] = os.path.abspath(value)
     return block
 
 
