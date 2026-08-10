@@ -1,10 +1,8 @@
 # flake8: noqa: E501
-import re
 from typing import Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -53,14 +51,6 @@ The last line of your response should be of the following format: 'ANSWER: [LETT
 # of labels `parse_answers` accepts; the labels themselves are never shown to the model.
 OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
 
-# Models often quote the label the way the image prints it and append the option text, e.g.
-# 'ANSWER: (D) B, D and F are turning anticlockwise'. `parse_answers` only accepts a bare label,
-# and its fallback then reads the last capital letter of the whole reply ('F' here), which is
-# arbitrary. Reduce such a line to the bare label(s) and let `parse_answers` do the rest.
-BRACKETED_ANSWER_LINE = re.compile(
-    r'^.*?ANSWER\s*:\s*[\(\[]\s*([A-Za-z\d](?:\s*,\s*[A-Za-z\d])*)\s*[\)\]].*$', re.IGNORECASE | re.MULTILINE
-)
-
 
 @register_benchmark(
     BenchmarkMeta(
@@ -88,11 +78,6 @@ class LogicVistaAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         self.reformat_subset = True
         # A few questions ask for more than one option (ground truth such as 'A, C').
         self.multiple_correct = True
-
-    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        return super().extract_answer(
-            prediction=BRACKETED_ANSWER_LINE.sub(r'ANSWER: \1', prediction), task_state=task_state
-        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Union[Sample, List[Sample]]:
         answer = record.get('answer', '').strip()
