@@ -523,3 +523,11 @@ class TestVLMBenchmark(TestBenchmark):
         """Test PerceptionBench with mock LLM."""
         dataset_args = {'subset_list': ['ocr_error']}
         self._run_dataset_test('perception_bench', dataset_args=dataset_args, limit=5, use_mock=True)
+
+    def test_logic_vista(self):
+        """Test LogicVista visual logical reasoning benchmark."""
+        self._run_dataset_test('logic_vista', limit=5)
+
+    def test_logic_vista_mock(self):
+        """Test LogicVista with mock LLM."""
+        self._run_dataset_test('logic_vista', limit=5, use_mock=True)

@@ -1,0 +1,328 @@
+{
+  "meta": {
+    "pretty_name": "LogicVista",
+    "dataset_id": "evalscope/LogicVista",
+    "paper_url": "https://arxiv.org/abs/2407.04973",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "MCQ"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "inductive",
+      "deductive",
+      "numerical",
+      "spatial",
+      "mechanical"
+    ],
+    "description": "\n## Overview\n\nLogicVista evaluates the fundamental logical reasoning abilities of multimodal large language models in visual contexts. Every item is a multiple-choice question whose answer options are drawn inside the image (diagrams, puzzles, sequences, charts), so a model must read the visual options and reason over them rather than over textual choices.\n\n## Task Description\n\n- **Task Type**: Visual Logical Reasoning (Multiple Choice)\n- **Input**: Image containing the labelled answer options + question text\n- **Output**: The label(s) of the chosen option(s)\n- **Domain**: Abstract and diagrammatic logical reasoning\n\n## Key Features\n\n- 448 human-annotated visual multiple-choice questions collected from aptitude and reasoning tests\n- Five reasoning skills used as subsets: inductive, deductive, numerical, spatial and mechanical\n- Answer options live in the image and their label range varies per question (typically A-D or A-E, up to A-I)\n- A handful of questions are multi-select (e.g. \"which two proposals complete the diagram\"), whose ground truth is a set of labels\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split and reports **Accuracy** overall and per reasoning skill\n- Chain-of-thought prompting is used; the label is read from the final `ANSWER:` line and multi-select answers are compared as an unordered set, matching the official scoring rule\n- Allow a generous `max_tokens`: when a reply is truncated before its `ANSWER:` line, the label is recovered from the last capital letter of the reply, which is a lenient guess\n- Two of the released 448 items cannot be scored as published: `v1_382` carries neither a question nor an answer and is skipped, and `v1_20` labels its options with digits, which the letter-based answer parser cannot match — the reference implementations behave the same way\n",
+    "prompt_template": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\n{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 447,
+    "subset_stats": [
+      {
+        "name": "inductive",
+        "sample_count": 107,
+        "prompt_length_mean": 499.01,
+        "prompt_length_min": 442,
+        "prompt_length_max": 681,
+        "prompt_length_std": 29.22,
+        "target_length_mean": 1.03,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 107,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1015x414",
+              "1086x614",
+              "1115x250",
+              "1135x194",
+              "683x480",
+              "686x311",
+              "686x468",
+              "691x318",
+              "692x320",
+              "692x475"
+            ],
+            "resolution_range": {
+              "min": "686x311",
+              "max": "890x854"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "deductive",
+        "sample_count": 93,
+        "prompt_length_mean": 613.96,
+        "prompt_length_min": 462,
+        "prompt_length_max": 826,
+        "prompt_length_std": 113.68,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 93,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1002x96",
+              "1004x105",
+              "1005x105",
+              "1018x91",
+              "1048x95",
+              "1058x125",
+              "1060x94",
+              "1061x99",
+              "1064x126",
+              "1065x96"
+            ],
+            "resolution_range": {
+              "min": "358x94",
+              "max": "1143x435"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "numerical",
+        "sample_count": 95,
+        "prompt_length_mean": 618.38,
+        "prompt_length_min": 496,
+        "prompt_length_max": 847,
+        "prompt_length_std": 76.19,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 95,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1015x694",
+              "565x607",
+              "591x551",
+              "620x519",
+              "641x811",
+              "644x594",
+              "733x518",
+              "743x313",
+              "747x586",
+              "752x508"
+            ],
+            "resolution_range": {
+              "min": "786x264",
+              "max": "1015x694"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "spatial",
+        "sample_count": 78,
+        "prompt_length_mean": 486.85,
+        "prompt_length_min": 433,
+        "prompt_length_max": 783,
+        "prompt_length_std": 61.02,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 78,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1242x1350",
+              "1258x1354",
+              "1258x1364",
+              "1260x1370",
+              "1262x1352",
+              "1268x1354",
+              "1272x1360",
+              "1272x1366",
+              "1276x1350",
+              "1280x1352"
+            ],
+            "resolution_range": {
+              "min": "156x165",
+              "max": "1328x1352"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "mechanical",
+        "sample_count": 74,
+        "prompt_length_mean": 614.35,
+        "prompt_length_min": 486,
+        "prompt_length_max": 936,
+        "prompt_length_std": 106.65,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 74,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "135x201",
+              "216x242",
+              "281x263",
+              "294x126",
+              "315x292",
+              "356x296",
+              "362x141",
+              "385x234",
+              "394x186",
+              "394x192"
+            ],
+            "resolution_range": {
+              "min": "135x201",
+              "max": "928x512"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 565.27,
+      "min": 433,
+      "max": 936,
+      "std": 101.1
+    },
+    "target_length_mean": 1.01,
+    "computed_at": "2026-08-10T12:15:48.178650",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 447,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1002x96",
+          "1004x105",
+          "1005x105",
+          "1015x414",
+          "1015x694",
+          "1018x91",
+          "1048x95",
+          "1058x125",
+          "1060x94",
+          "1061x99"
+        ],
+        "resolution_range": {
+          "min": "156x165",
+          "max": "1328x1352"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "8b9f40b1",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: png, ~46.7KB]"
+            },
+            {
+              "text": "Answer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "inductive",
+      "metadata": {
+        "id": "v1_0"
+      }
+    },
+    "subset": "inductive",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# LogicVista\n\n\n## Overview\n\nLogicVista evaluates the fundamental logical reasoning abilities of multimodal large language models in visual contexts. Every item is a multiple-choice question whose answer options are drawn inside the image (diagrams, puzzles, sequences, charts), so a model must read the visual options and reason over them rather than over textual choices.\n\n## Task Description\n\n- **Task Type**: Visual Logical Reasoning (Multiple Choice)\n- **Input**: Image containing the labelled answer options + question text\n- **Output**: The label(s) of the chosen option(s)\n- **Domain**: Abstract and diagrammatic logical reasoning\n\n## Key Features\n\n- 448 human-annotated visual multiple-choice questions collected from aptitude and reasoning tests\n- Five reasoning skills used as subsets: inductive, deductive, numerical, spatial and mechanical\n- Answer options live in the image and their label range varies per question (typically A-D or A-E, up to A-I)\n- A handful of questions are multi-select (e.g. \"which two proposals complete the diagram\"), whose ground truth is a set of labels\n\n## Evaluation Notes\n\n- Default evaluation uses the **test** split and reports **Accuracy** overall and per reasoning skill\n- Chain-of-thought prompting is used; the label is read from the final `ANSWER:` line and multi-select answers are compared as an unordered set, matching the official scoring rule\n- Allow a generous `max_tokens`: when a reply is truncated before its `ANSWER:` line, the label is recovered from the last capital letter of the reply, which is a lenient guess\n- Two of the released 448 items cannot be scored as published: `v1_382` carries neither a question nor an answer and is skipped, and `v1_20` labels its options with digits, which the letter-based answer parser cannot match — the reference implementations behave the same way\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `logic_vista` |\n| **Dataset ID** | [evalscope/LogicVista](https://modelscope.cn/datasets/evalscope/LogicVista/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2407.04973) |\n| **Tags** | `MCQ`, `MultiModal`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 447 |\n| Prompt Length (Mean) | 565.27 chars |\n| Prompt Length (Min/Max) | 433 / 936 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `inductive` | 107 | 499.01 | 442 | 681 |\n| `deductive` | 93 | 613.96 | 462 | 826 |\n| `numerical` | 95 | 618.38 | 496 | 847 |\n| `spatial` | 78 | 486.85 | 433 | 783 |\n| `mechanical` | 74 | 614.35 | 486 | 936 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 447 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 156x165 - 1328x1352 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `inductive`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8b9f40b1\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~46.7KB]\"\n        },\n        {\n          \"text\": \"Answer the following multiple choice question. The answer options are shown in the image.\\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\\n\\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\",\n    \"E\",\n    \"F\",\n    \"G\",\n    \"H\",\n    \"I\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"inductive\",\n  \"metadata\": {\n    \"id\": \"v1_0\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets logic_vista \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['logic_vista'],\n    dataset_args={\n        'logic_vista': {\n            # subset_list: ['inductive', 'deductive', 'numerical']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# LogicVista\n\n\n## 概述\n\nLogicVista 评估多模态大语言模型在视觉情境下的基础逻辑推理能力。每个题目均为多项选择题，其选项直接绘制在图像中（如图表、谜题、序列、图形等），因此模型必须读取并推理这些视觉选项，而非文本选项。\n\n## 任务描述\n\n- **任务类型**：视觉逻辑推理（多项选择）\n- **输入**：包含标注答案选项的图像 + 问题文本\n- **输出**：所选选项的标签\n- **领域**：抽象与图示逻辑推理\n\n## 主要特点\n\n- 包含 448 道人工标注的视觉多项选择题，源自各类能力与推理测试\n- 按五种推理技能划分子集：归纳（inductive）、演绎（deductive）、数值（numerical）、空间（spatial）和机械（mechanical）\n- 答案选项位于图像内，每道题的标签范围不同（通常为 A-D 或 A-E，最多至 A-I）\n- 少量题目允许多选（例如“哪两个方案能完成该图”），其标准答案为一组标签\n\n## 评估说明\n\n- 默认使用 **test** 划分进行评估，报告整体及各推理技能子集的 **准确率（Accuracy）**\n- 使用思维链（Chain-of-thought）提示；从回复末尾的 `ANSWER:` 行提取标签；对于多选题，将预测答案与标准答案作为无序集合进行比较，符合官方评分规则\n- 设置较宽松的 `max_tokens`：若回复在 `ANSWER:` 行前被截断，则从回复最后一个大写字母推测答案标签，这是一种宽容的猜测策略\n- 发布的 448 道题目中有 2 道无法按原样评分：`v1_382` 既无问题也无答案，故跳过；`v1_20` 的选项使用数字而非字母标注，基于字母的答案解析器无法匹配——参考实现同样如此处理\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `logic_vista` |\n| **数据集ID** | [evalscope/LogicVista](https://modelscope.cn/datasets/evalscope/LogicVista/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2407.04973) |\n| **标签** | `MCQ`, `MultiModal`, `Reasoning` |\n| **指标** | `acc` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 447 |\n| 提示词长度（平均） | 565.27 字符 |\n| 提示词长度（最小/最大） | 433 / 936 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `inductive` | 107 | 499.01 | 442 | 681 |\n| `deductive` | 93 | 613.96 | 462 | 826 |\n| `numerical` | 95 | 618.38 | 496 | 847 |\n| `spatial` | 78 | 486.85 | 433 | 783 |\n| `mechanical` | 74 | 614.35 | 486 | 936 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 447 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 156x165 - 1328x1352 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `inductive`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"8b9f40b1\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~46.7KB]\"\n        },\n        {\n          \"text\": \"Answer the following multiple choice question. The answer options are shown in the image.\\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\\n\\nWhat choice (A, B, C, or D) should be in place of the question mark that fits the pattern?\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"A\",\n    \"B\",\n    \"C\",\n    \"D\",\n    \"E\",\n    \"F\",\n    \"G\",\n    \"H\",\n    \"I\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"inductive\",\n  \"metadata\": {\n    \"id\": \"v1_0\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The answer options are shown in the image.\nThe last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is the label of the option you choose, exactly as it appears in the image. If more than one option is correct, list all of their labels on that line. Think step by step before answering.\n\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets logic_vista \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['logic_vista'],\n    dataset_args={\n        'logic_vista': {\n            # subset_list: ['inductive', 'deductive', 'numerical']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "a5e454395102e11327f531589268b396",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-10T12:15:48.438688",
+  "translation_updated_at": "2026-08-10T12:15:52"
+}
