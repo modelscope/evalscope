@@ -24,6 +24,7 @@
 | `general_vqa` | [General-VQA](../../benchmarks/general_vqa.md) | `Custom`, `MultiModal`, `QA` |
 | `gsm8k_v` | [GSM8K-V](../../benchmarks/gsm8k_v.md) | `Math`, `MultiModal`, `Reasoning` |
 | `hallusion_bench` | [HallusionBench](../../benchmarks/hallusion_bench.md) | `Hallucination`, `MultiModal`, `Yes/No` |
+| `hipho` | [HiPhO](../../benchmarks/hipho.md) | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | `infovqa` | [InfoVQA](../../benchmarks/infovqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `librispeech` | [LibriSpeech](../../benchmarks/librispeech.md) | `Audio`, `SpeechRecognition` |
 | `maritime_ocr_bench` | [Maritime-OCR-Bench](../../benchmarks/maritime_ocr_bench.md) | `MultiModal`, `QA` |
@@ -89,6 +90,7 @@
 ../../benchmarks/general_vqa.md
 ../../benchmarks/gsm8k_v.md
 ../../benchmarks/hallusion_bench.md
+../../benchmarks/hipho.md
 ../../benchmarks/infovqa.md
 ../../benchmarks/librispeech.md
 ../../benchmarks/maritime_ocr_bench.md
