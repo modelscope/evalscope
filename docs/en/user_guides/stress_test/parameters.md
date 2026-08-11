@@ -298,7 +298,7 @@ Replay behaviour is tuned via `--dataset-args`:
 
 When benchmarking a `chat/completions` endpoint, `--apply-chat-template` is on by default and the client applies the chat template before counting tokens, so client-side lengths line up with the `usage.prompt_tokens` reported by the service; the tokenizer given to `--tokenizer-path` must therefore ship a Jinja chat template. DeepSeek-V3.2 / V4 provide `encoding` scripts instead, and base / pretrain checkpoints have no template either — those fail with an error that lists the available options.
 
-Two things to watch out for: without `--tokenizer-path`, `--min/max-prompt-length` filters by characters instead of tokens; and borrowing another model's tokenizer does not fail, but a mismatched vocabulary silently distorts token counts.
+Two things to watch out for: without `--tokenizer-path`, `--min-prompt-length` / `--max-prompt-length` filter by characters instead of tokens; and borrowing another model's tokenizer does not fail, but a mismatched vocabulary silently distorts token counts.
 
 ## Output
 

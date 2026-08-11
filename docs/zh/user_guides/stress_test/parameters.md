@@ -298,7 +298,7 @@ trace 文件为 JSONL，每行一条请求记录：
 
 压测 `chat/completions` 接口时 `--apply-chat-template` 默认开启，客户端会先套上 chat template 再统计 token 数，使长度计算与服务端 `usage.prompt_tokens` 对齐；因此 `--tokenizer-path` 指向的分词器必须自带 Jinja 格式的 chat template。DeepSeek-V3.2 / V4 官方改为提供 `encoding` 脚本，base / pretrain 权重也不带模板，这类权重会直接报错，报错信息中列出了可选的处理方式。
 
-两个易错点：不传 `--tokenizer-path` 时 `--min/max-prompt-length` 按字符数而非 token 数过滤；借用其它模型的分词器不会报错，但词表不一致会默默把 token 统计算偏。
+两个易错点：不传 `--tokenizer-path` 时 `--min-prompt-length` / `--max-prompt-length` 按字符数而非 token 数过滤；借用其它模型的分词器不会报错，但词表不一致会默默把 token 统计算偏。
 
 ## 结果输出
 

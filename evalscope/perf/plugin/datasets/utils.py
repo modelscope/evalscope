@@ -67,11 +67,16 @@ def tokenize_chat_messages(tokenizer, messages: List[Dict], add_generation_promp
         List[int]: Flat list of token IDs.
 
     Raises:
+        ImportError: Propagated unchanged when an optional dependency (e.g. jinja2) is missing.
         ValueError: If the tokenizer has no chat template usable for these messages.
         TypeError: If the tokenizer returns an unexpected type that cannot be converted.
     """
     try:
         result = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=add_generation_prompt)
+    except ImportError:
+        # Missing optional dependency (e.g. jinja2): the template exists, so surface the
+        # real dependency error instead of the misleading no-template hint.
+        raise
     except Exception as e:
         name = getattr(tokenizer, 'name_or_path', None) or type(tokenizer).__name__
         raise ValueError(

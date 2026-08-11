@@ -37,6 +37,15 @@ class BareTokenizer:
         return [ord(c) for c in text]
 
 
+class MissingDepTokenizer:
+    """Tokenizer whose template needs an optional dependency that is not installed."""
+
+    name_or_path = 'some/model'
+
+    def apply_chat_template(self, messages, tokenize=True, add_generation_prompt=True):
+        raise ImportError('apply_chat_template requires jinja2 to be installed.')
+
+
 def test_error_reports_tokenizer_cause_and_options():
     with pytest.raises(ValueError) as excinfo:
         tokenize_chat_messages(NoTemplateTokenizer(), MESSAGES)
@@ -53,6 +62,12 @@ def test_error_when_apply_chat_template_is_missing():
     with pytest.raises(ValueError) as excinfo:
         tokenize_chat_messages(BareTokenizer(), MESSAGES)
     assert 'bert-base-uncased' in str(excinfo.value)
+
+
+def test_import_error_propagates_unchanged():
+    # A missing optional dependency is not a missing template; keep the real error.
+    with pytest.raises(ImportError):
+        tokenize_chat_messages(MissingDepTokenizer(), MESSAGES)
 
 
 def test_length_filter_reports_the_error(tmp_path, monkeypatch):
