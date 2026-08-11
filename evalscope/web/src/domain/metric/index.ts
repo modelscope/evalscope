@@ -16,14 +16,16 @@ export type {
   ValueRange,
 } from './MetricSemantics'
 
-export type { ComparisonVerdict, FormattedMetric } from './metricFormat'
+export type { ComparisonVerdict, FormattedMetric, MetricIdentity } from './metricFormat'
 export {
   directionArrow,
   formatMetricLabel,
+  formatMetricIdentityLabel,
   formatMetricLabels,
   formatMetric,
   getBoundedQualityRatio,
   getComparisonVerdict,
   formatDifference,
   getValuePosition,
+  metricIdentityKey,
 } from './metricFormat'

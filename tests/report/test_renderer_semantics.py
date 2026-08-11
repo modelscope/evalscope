@@ -1,8 +1,7 @@
 """Semantic display coverage for the standalone HTML report."""
 
-from pathlib import Path
-
 import pytest
+from pathlib import Path
 
 from evalscope.report import renderer
 from evalscope.report.report import Report
@@ -37,6 +36,6 @@ def test_html_uses_semantic_labels_values_and_raw_name_tooltips(
     output = renderer.gen_html_report_file(str(tmp_path))
     html = Path(output).read_text(encoding='utf-8')
 
-    assert 'title="mean_acc">Accuracy ↑</span>' in html
+    assert 'title="accuracy:mean">Accuracy ↑</span>' in html
     assert '<span class="score-pill" data-score="0.8567">85.7%</span>' in html
     assert '<td class="score-cell">85.7%</td>' in html

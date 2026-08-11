@@ -7,6 +7,7 @@ from typing import Any, Dict
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.benchmark import BenchmarkMeta, BrowserGymAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from .utils import (
@@ -54,7 +55,7 @@ scrolling and dragging items.
         eval_split='test',
         prompt_template='{question}',
         metric_list=['success_rate', 'error_rate'],
-        primary_metric='success_rate',
+        primary_metric=MetricSelector(name='success_rate'),
     )
 )
 class MiniWobAdapter(BrowserGymAdapter):

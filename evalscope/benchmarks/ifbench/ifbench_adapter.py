@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -53,7 +54,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
             'prompt_level_loose',
             'inst_level_loose',
         ],
-        primary_metric='prompt_level_strict',
+        primary_metric=MetricSelector(name='prompt_level_strict'),
         few_shot_num=0,
         train_split=None,
         eval_split='train',

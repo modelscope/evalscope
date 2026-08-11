@@ -41,11 +41,11 @@ function report(name: string, timestamp: string, score: number, dataset = 'iquiz
     name,
     model_name: 'qwen-plus',
     dataset_name: dataset,
-    score,
     num_samples: 3,
     timestamp,
-    primary_metrics: [{ dataset_name: dataset, metric_name: 'mean_acc', score, semantics: ACCURACY }],
-  } as ReportSummary
+    primary_metrics: [{ dataset_name: dataset, identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score, semantics: ACCURACY }],
+    quality_ratio: score,
+  }
 }
 
 function renderWith(node: ReactNode) {

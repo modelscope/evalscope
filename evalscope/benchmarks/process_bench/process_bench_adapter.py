@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -69,7 +70,7 @@ ProcessBench is a benchmark for evaluating AI models on mathematical reasoning p
         dataset_id='Qwen/ProcessBench',
         subset_list=['gsm8k', 'math', 'olympiadbench', 'omnimath'],
         metric_list=['error_acc', 'correct_acc', 'simple_f1_score'],
-        primary_metric='simple_f1_score',
+        primary_metric=MetricSelector(name='simple_f1_score'),
         aggregation='f1',
         eval_split='test',
         prompt_template=CRITIQUE_TEMPLATE
@@ -170,13 +171,21 @@ class ProcessBenchAdapter(DefaultDataAdapter):
         if correct_scores:
             agg_list.append(
                 AggScore(
-                    metric_name='correct_acc', score=sum(correct_scores) / len(correct_scores), num=len(correct_scores)
+                    aggregation='identity',
+                    metric_name='correct_acc',
+                    score=sum(correct_scores) / len(correct_scores),
+                    num=len(correct_scores)
                 )
             )
 
         if error_scores:
             agg_list.append(
-                AggScore(metric_name='error_acc', score=sum(error_scores) / len(error_scores), num=len(error_scores))
+                AggScore(
+                    aggregation='identity',
+                    metric_name='error_acc',
+                    score=sum(error_scores) / len(error_scores),
+                    num=len(error_scores)
+                )
             )
 
         # Calculate simple F1 score
@@ -184,6 +193,7 @@ class ProcessBenchAdapter(DefaultDataAdapter):
             from evalscope.metrics import simple_f1_score
             agg_list.append(
                 AggScore(
+                    aggregation='identity',
                     metric_name='simple_f1_score',
                     score=simple_f1_score((correct_scores, error_scores)),
                     num=len(correct_scores) + len(error_scores)

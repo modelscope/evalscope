@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
-from evalscope.api.metric.semantics import MetricRole
+from evalscope.api.metric.semantics import MetricRole, MetricSelector
 from evalscope.metrics.semantics import format_metric_value
 from evalscope.report.report import Report
 from evalscope.utils.data_utils import get_acc_report_df
@@ -24,10 +24,9 @@ from evalscope.utils.data_utils import get_acc_report_df
 class _StubAdapter:
     """Minimal adapter surface the report generator reads."""
 
-    def __init__(self, name: str, primary_metric: Optional[str] = None, aggregation: str = 'mean') -> None:
+    def __init__(self, name: str, primary_metric: Optional[MetricSelector] = None) -> None:
         self.name = name
         self.primary_metric = primary_metric
-        self.aggregation = aggregation
         self.pretty_name = name
         self.description = ''
         self.category_map: Dict[str, List[str]] = {}
@@ -39,34 +38,34 @@ SCENARIOS = [
         'accuracy',
         'gsm8k',
         None,
-        [AggScore(score=0.8567, metric_name='acc', aggregation_name='mean', num=100)],
+        [AggScore(score=0.8567, metric_name='accuracy', aggregation='mean', num=100)],
         'quality.accuracy.ratio',
     ),
     (
         'wer',
         'torgo',
-        'wer',
+        MetricSelector(name='wer', aggregation='identity'),
         [
-            AggScore(score=0.0432, metric_name='wer', aggregation_name='', num=50),
-            AggScore(score=0.0321, metric_name='cer', aggregation_name='', num=50),
+            AggScore(score=0.0432, metric_name='wer', aggregation='identity', num=50),
+            AggScore(score=0.0321, metric_name='cer', aggregation='identity', num=50),
         ],
         'quality.wer.ratio',
     ),
     (
         'pass_at_1',
         'humaneval',
-        None,
-        [AggScore(score=0.75, metric_name='acc', aggregation_name='mean', num=164)],
-        'quality.accuracy.ratio',
+        MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
+        [AggScore(score=0.75, metric_name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}, num=164)],
+        'quality.pass_at_k.ratio',
     ),
     (
         'ner_f1',
         'conll2003',
-        'f1_score',
+        MetricSelector(name='f1', aggregation='identity'),
         [
-            AggScore(score=0.91, metric_name='f1_score', aggregation_name='', num=200),
-            AggScore(score=0.89, metric_name='precision', aggregation_name='', num=200),
-            AggScore(score=0.93, metric_name='recall', aggregation_name='', num=200),
+            AggScore(score=0.91, metric_name='f1', aggregation='identity', num=200),
+            AggScore(score=0.89, metric_name='precision', aggregation='identity', num=200),
+            AggScore(score=0.93, metric_name='recall', aggregation='identity', num=200),
         ],
         'quality.f1.ratio',
     ),
@@ -74,36 +73,36 @@ SCENARIOS = [
         'official_points_100',
         'arena_hard',
         None,
-        [AggScore(score=87.25, metric_name='WeightedScorePercent', aggregation_name='', num=500)],
+        [AggScore(score=87.25, metric_name='weighted_score_percent', aggregation='identity', num=500)],
         'quality.score.points_100',
     ),
     (
         'agent_diagnostics',
         'miniwob',
-        'success_rate',
+        MetricSelector(name='success_rate', aggregation='mean'),
         [
-            AggScore(score=0.62, metric_name='success_rate', aggregation_name='mean', num=80),
-            AggScore(score=0.11, metric_name='error_rate', aggregation_name='mean', num=80),
+            AggScore(score=0.62, metric_name='success_rate', aggregation='mean', num=80),
+            AggScore(score=0.11, metric_name='error_rate', aggregation='mean', num=80),
         ],
         'quality.accuracy.ratio',
     ),
     (
         'rubric_dimensions',
         'plawbench',
-        'acc',
+        MetricSelector(name='accuracy', aggregation='mean'),
         [
-            AggScore(score=0.72, metric_name='acc', aggregation_name='mean', num=30),
-            AggScore(score=0.68, metric_name='conclusion_acc', aggregation_name='mean', num=30),
-            AggScore(score=0.75, metric_name='fact_acc', aggregation_name='mean', num=30),
-            AggScore(score=0.70, metric_name='reasoning_acc', aggregation_name='mean', num=30),
-            AggScore(score=0.66, metric_name='law_acc', aggregation_name='mean', num=30),
+            AggScore(score=0.72, metric_name='accuracy', aggregation='mean', num=30),
+            AggScore(score=0.68, metric_name='conclusion_acc', aggregation='mean', num=30),
+            AggScore(score=0.75, metric_name='fact_acc', aggregation='mean', num=30),
+            AggScore(score=0.70, metric_name='reasoning_acc', aggregation='mean', num=30),
+            AggScore(score=0.66, metric_name='law_acc', aggregation='mean', num=30),
         ],
         'quality.accuracy.ratio',
     ),
 ]
 
 
-def _build_report(benchmark: str, primary_metric: Optional[str], agg_scores: List[AggScore]) -> Report:
+def _build_report(benchmark: str, primary_metric: Optional[MetricSelector], agg_scores: List[AggScore]) -> Report:
     """Generate a report the way the evaluator does, then round-trip it through JSON."""
     from evalscope.report.generator import ReportGenerator
 
@@ -111,7 +110,6 @@ def _build_report(benchmark: str, primary_metric: Optional[str], agg_scores: Lis
         score_dict={'default': agg_scores},
         model_name='test-model',
         data_adapter=_StubAdapter(benchmark, primary_metric=primary_metric),
-        add_aggregation_name=True,
     )
     # Reading a report back is the path every surface takes, so assert on that shape.
     return Report.from_dict(json.loads(json.dumps(report.to_dict())))
@@ -142,7 +140,7 @@ class TestSemanticsEndToEnd:
         self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
     ) -> None:
         report = _build_report(benchmark, primary_metric, agg_scores)
-        df, _ = get_acc_report_df([report])
+        df = get_acc_report_df([report])
 
         assert len(df) == 1
         assert df.iloc[0]['Score'] == pytest.approx(report.primary_metric.score)
@@ -174,13 +172,14 @@ class TestSemanticsEndToEnd:
         report = _build_report(benchmark, primary_metric, agg_scores)
         payload = _report_to_service_dict(report)
 
-        assert payload['primary_metric_name'] == report.primary_metric.name
-        by_name = {metric['name']: metric for metric in payload['metrics']}
-        primary_payload = by_name[report.primary_metric.name]
+        assert payload['primary_metric_identity'] == report.primary_metric.identity.model_dump()
+        by_identity = {json.dumps(metric['identity'], sort_keys=True): metric for metric in payload['metrics']}
+        primary_key = json.dumps(report.primary_metric.identity.model_dump(), sort_keys=True)
+        primary_payload = by_identity[primary_key]
         assert primary_payload['semantics']['semantic_id'] == expected_semantic_id
         assert primary_payload['semantics']['role'] == 'primary'
-        # The persisted anchor and the hydrated contract must not disagree.
-        assert primary_payload['semantic_id'] == primary_payload['semantics']['semantic_id']
+        assert set(('name', 'semantic_id')).isdisjoint(primary_payload)
+        assert set(('score', 'primary_metric_name')).isdisjoint(payload)
 
 
 class TestDirectionsSurviveTheRoundTrip:
@@ -188,33 +187,34 @@ class TestDirectionsSurviveTheRoundTrip:
 
     def test_wer_is_lower_is_better_everywhere(self) -> None:
         report = _build_report(
-            'torgo', 'wer', [
-                AggScore(score=0.0432, metric_name='wer', aggregation_name='', num=50),
-                AggScore(score=0.0321, metric_name='cer', aggregation_name='', num=50),
+            'torgo', MetricSelector(name='wer'), [
+                AggScore(score=0.0432, metric_name='wer', aggregation='identity', num=50),
+                AggScore(score=0.0321, metric_name='cer', aggregation='identity', num=50),
             ]
         )
 
         assert report.primary_metric.semantics.direction.value == 'lower_is_better'
         # The supporting error rate stays comparable but is not the conclusion.
-        cer = next(metric for metric in report.metrics if metric.name == 'cer')
+        cer = next(metric for metric in report.metrics if metric.identity.name == 'cer')
         assert cer.semantics.role is MetricRole.AUXILIARY
         assert cer.semantics.direction.value == 'lower_is_better'
 
     def test_diagnostics_never_become_the_conclusion(self) -> None:
         report = _build_report(
             'miniwob',
-            'success_rate',
+            MetricSelector(name='success_rate'),
             [
-                AggScore(score=0.62, metric_name='success_rate', aggregation_name='mean', num=80),
+                AggScore(score=0.62, metric_name='success_rate', aggregation='mean', num=80),
                 # Emitted without an aggregation prefix, as the adapters that report counts do.
-                AggScore(score=0.5, metric_name='no_answer_num', aggregation_name='', num=80),
+                AggScore(score=0.5, metric_name='no_answer_num', aggregation='identity', num=80),
             ]
         )
 
-        diagnostic = next(metric for metric in report.metrics if metric.name == 'no_answer_num')
+        diagnostic = next(metric for metric in report.metrics if metric.identity.name == 'no_answer_num')
         assert diagnostic.semantics.role is MetricRole.DIAGNOSTIC
         assert diagnostic.semantics.direction.value == 'none'
-        assert report.primary_metric.name == 'mean_success_rate'
+        assert report.primary_metric.identity.name == 'success_rate'
+        assert report.primary_metric.identity.aggregation == 'mean'
 
 
 class TestPerfSemanticsSurface:

@@ -25,13 +25,10 @@ module, so tests import those directly from ``catalog.py`` / ``baselines.py`` / 
 """
 
 from evalscope.metrics.semantics.formatting import format_metric_label, format_metric_labels, format_metric_value
-from evalscope.metrics.semantics.naming import compose_final_metric_name
 from evalscope.metrics.semantics.resolver import get_semantics_resolver, hydrate_report_semantics
 from evalscope.metrics.semantics.summary import PrimaryMetricRef
 
 __all__ = [
-    # naming
-    'compose_final_metric_name',
     # resolution
     'get_semantics_resolver',
     'hydrate_report_semantics',

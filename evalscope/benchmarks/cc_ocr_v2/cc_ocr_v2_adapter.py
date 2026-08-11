@@ -103,7 +103,6 @@ class CCOCRV2Adapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.category_map = SUBSET_TO_TRACK
 
     def load(self) -> Tuple[DatasetDict, None]:

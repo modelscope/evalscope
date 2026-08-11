@@ -10,12 +10,7 @@ import pytest
 from typing import Dict, FrozenSet
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole
-from evalscope.metrics.semantics.perf import (
-    PERF_API_PATH_SEMANTICS,
-    PERF_FIELD_SEMANTICS,
-    PERF_SUMMARY_COLUMN_SEMANTICS,
-    resolve_perf_semantics,
-)
+from evalscope.metrics.semantics.perf import PERF_SEMANTICS, attach_perf_semantics, resolve_perf_semantics
 from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
@@ -76,18 +71,13 @@ class TestPerfFieldCoverage:
     public field key, and every declared key is one of the perf name constants."""
 
     def test_every_public_field_is_declared(self) -> None:
-        missing = sorted(PUBLIC_FIELD_KEYS - set(PERF_FIELD_SEMANTICS))
+        missing = sorted(PUBLIC_FIELD_KEYS - set(PERF_SEMANTICS))
 
         assert missing == []
 
-    def test_no_declared_key_is_invented(self) -> None:
-        unexpected = sorted(set(PERF_FIELD_SEMANTICS) - PUBLIC_FIELD_KEYS)
-
-        assert unexpected == []
-
-    @pytest.mark.parametrize('field_key', sorted(PERF_FIELD_SEMANTICS))
+    @pytest.mark.parametrize('field_key', sorted(PUBLIC_FIELD_KEYS))
     def test_every_entry_resolves(self, field_key: str) -> None:
-        semantics = PERF_FIELD_SEMANTICS[field_key].resolve(field_key)
+        semantics = PERF_SEMANTICS[field_key].resolve(field_key)
 
         assert semantics.metric_name == field_key
 
@@ -97,13 +87,13 @@ class TestPerfDirections:
 
     @pytest.mark.parametrize('field_key', LOWER_IS_BETTER_FIELDS)
     def test_latency_is_lower_is_better(self, field_key: str) -> None:
-        semantics = PERF_FIELD_SEMANTICS[field_key].resolve(field_key)
+        semantics = PERF_SEMANTICS[field_key].resolve(field_key)
 
         assert semantics.direction is MetricDirection.LOWER_IS_BETTER
 
     @pytest.mark.parametrize('field_key', HIGHER_IS_BETTER_FIELDS)
     def test_throughput_is_higher_is_better(self, field_key: str) -> None:
-        semantics = PERF_FIELD_SEMANTICS[field_key].resolve(field_key)
+        semantics = PERF_SEMANTICS[field_key].resolve(field_key)
 
         assert semantics.direction is MetricDirection.HIGHER_IS_BETTER
 
@@ -113,7 +103,7 @@ class TestPerfDiagnostics:
 
     @pytest.mark.parametrize('field_key', DIAGNOSTIC_FIELDS)
     def test_field_is_diagnostic(self, field_key: str) -> None:
-        semantics = PERF_FIELD_SEMANTICS[field_key].resolve(field_key)
+        semantics = PERF_SEMANTICS[field_key].resolve(field_key)
 
         assert semantics.role is MetricRole.DIAGNOSTIC
         assert semantics.direction is MetricDirection.NONE
@@ -138,7 +128,7 @@ class TestResolvePerfField:
         resolved = SemanticsResolver(perf_fields={}).resolve_perf_field(Metrics.AVERAGE_LATENCY)
 
         assert resolved.degraded
-        assert 'PERF_FIELD_SEMANTICS' in '\n'.join(resolved.audit_messages)
+        assert 'PERF_SEMANTICS' in '\n'.join(resolved.audit_messages)
 
 
 class TestPerfKeySpaces:
@@ -149,13 +139,9 @@ class TestPerfKeySpaces:
     without any error.
     """
 
-    def test_the_three_key_spaces_do_not_collide(self) -> None:
-        constants = set(PERF_FIELD_SEMANTICS)
-        api_paths = set(PERF_API_PATH_SEMANTICS)
-        summary_labels = set(PERF_SUMMARY_COLUMN_SEMANTICS)
-
-        assert constants & summary_labels == set()
-        assert api_paths & summary_labels == set()
+    def test_all_key_spaces_share_one_registry(self) -> None:
+        for field_key in (Metrics.AVERAGE_LATENCY, 'best_rps', 'Avg Lat.(s)'):
+            assert field_key in PERF_SEMANTICS
 
     @pytest.mark.parametrize(
         'field_key,expected_semantic_id',
@@ -203,3 +189,24 @@ class TestPerfKeySpaces:
             ['Metric', 'Value'],
             [['Avg Latency (s)', '1.2'], ['Total Requests', '100']],
         ) == ['Avg Latency (s)', 'Total Requests']
+
+    def test_report_payload_persists_the_semantics_it_displays(self) -> None:
+        payload = attach_perf_semantics({
+            'summary': {
+                'n_samples': 2,
+                'latency': {},
+                'throughput': {
+                    'avg_output_tps': 12.5,
+                    'avg_req_ps': 1.5,
+                },
+                'usage': {
+                    'input_tokens': {},
+                    'output_tokens': {},
+                    'total_tokens': {},
+                },
+                'ttft': {},
+            }
+        })
+
+        assert payload['metric_semantics']['ttft']['display_unit'] == 'ms'
+        assert payload['metric_semantics']['throughput.avg_output_tps']['display_unit'] == 'tok/s'

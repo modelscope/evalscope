@@ -1,6 +1,7 @@
 import { scoreColor } from '@/utils/colorScale'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
-import { metricLabel } from '@/domain/report/primaryMetrics'
+import { metricIdentityKey } from '@/domain/metric'
+import { datasetLabel, metricLabel } from '@/domain/report/primaryMetrics'
 import type { PrimaryMetricRef } from '@/domain/report/primaryMetrics'
 
 /**
@@ -33,7 +34,7 @@ function visibleOf(refs: PrimaryMetricRef[]): { visible: PrimaryMetricRef[]; hid
 
 /** Stable key for a ref, which is unique per dataset within a run. */
 function keyOf(ref: PrimaryMetricRef): string {
-  return `${ref.dataset_name}:${ref.metric_name}`
+  return `${ref.dataset_name}:${metricIdentityKey(ref.identity)}`
 }
 
 interface LinesProps {
@@ -51,7 +52,7 @@ export function DatasetLines({ refs, fallback, className }: LinesProps & { fallb
   return (
     <div className={className}>
       {visible.map((ref) => (
-        <div key={keyOf(ref)} className={LINE}>{ref.dataset_name}</div>
+        <div key={keyOf(ref)} className={LINE} title={ref.dataset_name}>{datasetLabel(ref)}</div>
       ))}
       {hidden > 0 && <div className={`${LINE} text-[var(--text-dim)]`}>+{hidden}</div>}
     </div>
@@ -65,7 +66,7 @@ export function DatasetLines({ refs, fallback, className }: LinesProps & { fallb
  * `inlineMetricClass` to {@link ScoreLines} in a layout that renders this column: the label would
  * appear twice.
  */
-export function MetricLines({ refs, inferredHint, className }: LinesProps & { inferredHint?: string }) {
+export function MetricLines({ refs, className }: LinesProps) {
   const { visible, hidden } = visibleOf(refs)
   return (
     <div className={className}>
@@ -75,10 +76,9 @@ export function MetricLines({ refs, inferredHint, className }: LinesProps & { in
           <div
             key={keyOf(ref)}
             className={LINE}
-            title={ref.inferred ? `${ref.metric_name} — ${inferredHint ?? ''}` : ref.metric_name}
+            title={metricIdentityKey(ref.identity)}
           >
             {label}
-            {ref.inferred && <span className="ml-0.5 opacity-60">*</span>}
           </div>
         )
       })}
@@ -114,13 +114,12 @@ export function ScoreLines(
           <div key={keyOf(ref)} className={`${LINE} justify-end gap-1.5`}>
             {inlineDatasetClass !== undefined && (
               <span className={`text-[11px] text-[var(--text-dim)] ${inlineDatasetClass}`}>
-                {ref.dataset_name}
+                {datasetLabel(ref)}
               </span>
             )}
             {inlineMetricClass !== undefined && (
               <span className={`text-[11px] font-normal text-[var(--text-muted)] ${inlineMetricClass}`}>
                 {metricLabel(ref)}
-                {ref.inferred && <span className="ml-0.5 opacity-60">*</span>}
               </span>
             )}
             <span

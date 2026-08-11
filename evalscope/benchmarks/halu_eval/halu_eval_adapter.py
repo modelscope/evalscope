@@ -6,6 +6,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.halu_eval.halu_eval_instructions import (
     DIALOGUE_INSTRUCTIONS,
@@ -62,7 +63,7 @@ logger = get_logger()
         subset_list=['dialogue_samples', 'qa_samples', 'summarization_samples'],
         default_subset='Full',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        primary_metric='accuracy',
+        primary_metric=MetricSelector(name='accuracy'),
         few_shot_num=0,
         eval_split='data',
         prompt_template='{question}'
@@ -154,6 +155,10 @@ class HaluEvalAdapter(DefaultDataAdapter):
         overall_metrics = compute_metrics(sample_scores)
         agg_scores = []
         for metric_name, value in overall_metrics.items():
-            agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))
+            agg_scores.append(
+                AggScore(
+                    aggregation='identity', metric_name=metric_name, score=value, num=len(sample_scores), metadata={}
+                )
+            )
 
         return agg_scores

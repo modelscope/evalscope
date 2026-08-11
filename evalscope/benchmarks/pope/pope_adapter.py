@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -49,7 +50,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 """,
         dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        primary_metric='accuracy',
+        primary_metric=MetricSelector(name='accuracy'),
         aggregation='f1',
         subset_list=['popular', 'adversarial', 'random'],
         default_subset='Full',
@@ -135,6 +136,10 @@ class PopeAdapter(VisionLanguageAdapter):
         overall_metrics = compute_metrics(sample_scores)
         agg_scores = []
         for metric_name, value in overall_metrics.items():
-            agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))
+            agg_scores.append(
+                AggScore(
+                    aggregation='identity', metric_name=metric_name, score=value, num=len(sample_scores), metadata={}
+                )
+            )
 
         return agg_scores

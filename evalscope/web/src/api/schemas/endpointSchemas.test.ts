@@ -51,13 +51,14 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
     valid: {
       report_list: [
         {
+          schema_version: 2,
           name: 'run-a',
           dataset_name: 'gsm8k',
           model_name: 'model-a',
-          score: 0.5,
           analysis: '',
           metrics: [],
           perf_metrics: null,
+          primary_metric_identity: null,
         },
       ],
       datasets: ['gsm8k'],

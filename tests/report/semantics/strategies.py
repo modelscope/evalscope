@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricEntry, MetricRole, ValueRange
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
-from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, METRIC_NAME_SEMANTICS
+from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, METRIC_DEFINITIONS
 
 #: Roles that carry an optimization direction.
 SCORED_ROLES: Tuple[MetricRole, ...] = (MetricRole.PRIMARY, MetricRole.AUXILIARY)
@@ -232,8 +232,8 @@ BASELINE_IDS: Tuple[str, ...] = tuple(sorted(SEMANTIC_BASELINES))
 
 #: Metric names declared by the shipped catalog, i.e. names the name level may resolve.
 DECLARED_METRIC_NAMES: Tuple[str, ...] = tuple(
-    sorted(set(METRIC_NAME_SEMANTICS) | {metric_name
-                                         for _, metric_name in BENCHMARK_METRIC_OVERRIDES})
+    sorted(set(METRIC_DEFINITIONS) | {metric_name
+                                      for _, metric_name in BENCHMARK_METRIC_OVERRIDES})
 )
 
 #: Benchmark names carrying a benchmark level collision override.

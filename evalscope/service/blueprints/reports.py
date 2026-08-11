@@ -16,7 +16,6 @@ from typing import List
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
-from evalscope.metrics.semantics.perf import resolve_perf_semantics
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio, mean_quality_ratio
 from evalscope.report import ReportKey, get_data_frame
 from evalscope.report.report import Report
@@ -175,27 +174,15 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     first = report_list[0]
     total_num = 0
     dataset_names = []
-    score_sum = 0.0
+    dataset_pretty_names = []
     primary_metrics = []
     for r in report_list:
         dataset_names.append(r.dataset_name)
+        dataset_pretty_names.append(r.dataset_pretty_name or r.dataset_name)
         total_num += r.num or 0
         primary_metric = r.primary_metric
         primary_metrics.append(primary_metric)
-        score_sum += primary_metric.score if primary_metric else r.score
-
-    avg_score = round(score_sum / len(report_list), 4) if report_list else 0.0
     timestamp = _extract_timestamp(report_name, root)
-    metric_names = [metric.name for metric in primary_metrics if metric]
-    metric_name = metric_names[0] if len(metric_names) == len(report_list) and all(
-        name == metric_names[0] for name in metric_names
-    ) else ''
-
-    # Preserve each metric's native scale; consumers use metric_name to format it.
-    dataset_scores = {}
-    for r, primary_metric in zip(report_list, primary_metrics):
-        score = primary_metric.score if primary_metric else r.score
-        dataset_scores[r.dataset_name] = round(score, 4) if score is not None else None
 
     # Every dataset contributes a reference so each one can be shown as
     # `dataset -> metric -> score`, each in its own native scale. They are never collapsed into a
@@ -204,10 +191,10 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     primary_metric_refs = [
         PrimaryMetricRef(
             dataset_name=r.dataset_name,
-            metric_name=metric.name,
+            dataset_pretty_name=r.dataset_pretty_name or r.dataset_name,
+            identity=metric.identity,
             score=metric.score,
             semantics=metric.semantics,
-            inferred=r.primary_metric_is_inferred(),
         ) for r, metric in zip(report_list, primary_metrics) if metric
     ]
 
@@ -216,11 +203,8 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         'model_name': first.model_name,
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
-        # Deprecated: an average over possibly heterogeneous metrics. Kept for old clients;
-        # semantic consumers read `primary_metrics` and `summary_*` instead.
-        'score': avg_score,
-        'metric_name': metric_name,
-        'dataset_scores': dataset_scores,
+        'dataset_pretty_name': ', '.join(dataset_pretty_names) if len(dataset_pretty_names) > 1 else
+        (dataset_pretty_names[0] if dataset_pretty_names else ''),
         'num_samples': total_num,
         'timestamp': timestamp,
         'primary_metrics': [ref.model_dump(mode='json') for ref in primary_metric_refs],
@@ -232,47 +216,12 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         ),
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
-        '_scores': [metric.score if metric else report.score for report, metric in zip(report_list, primary_metrics)],
     }
 
 
-#: Stable API paths of the perf data embedded in a report, used to key its semantics map.
-_IN_REPORT_PERF_FIELDS = (
-    'n_samples',
-    'latency',
-    'ttft',
-    'tpot',
-    'throughput.avg_output_tps',
-    'throughput.avg_req_ps',
-    'usage.input_tokens',
-    'usage.output_tokens',
-    'usage.total_tokens',
-)
-
-
 def _report_to_service_dict(report: Report) -> dict:
-    """Serialize a report, adding the resolved semantics next to the legacy fields.
-
-    ``score`` and ``metric_name`` keep their existing behaviour for old clients. New clients
-    select the primary metric through ``primary_metric_name`` or the per-metric ``role``, never
-    through ``score`` or ``metrics[0]``.
-    """
-    data = report.to_dict()
-    if report.primary_metric:
-        data['score'] = report.primary_metric.score
-
-    # `Metric.semantics` is excluded from serialization by design (only the anchor is stored),
-    # so attach the hydrated contract explicitly for the wire format.
-    semantics_by_name = {metric.name: metric.semantics for metric in report.metrics}
-    for metric_data in data.get('metrics', []):
-        semantics = semantics_by_name.get(metric_data.get('name'))
-        metric_data['semantics'] = semantics.model_dump(mode='json') if semantics else None
-
-    # In-report perf data is keyed by stable API paths, so its semantics map uses those keys.
-    perf_metrics = data.get('perf_metrics')
-    if isinstance(perf_metrics, dict):
-        perf_metrics['metric_semantics'] = resolve_perf_semantics(_IN_REPORT_PERF_FIELDS)
-    return data
+    """Serialize the persisted Report v2 contract without boundary-time reinjection."""
+    return report.to_dict()
 
 
 def _refresh_html_report(reports_dir: str) -> None:
@@ -333,7 +282,10 @@ def list_reports():
         # --- Filters ---
         search = request.args.get('search', '').strip().lower()
         if search:
-            items = [it for it in items if search in it['model_name'].lower() or search in it['dataset_name'].lower()]
+            items = [
+                it for it in items if search in it['model_name'].lower() or search in it['dataset_name'].lower()
+                or search in it['dataset_pretty_name'].lower()
+            ]
 
         models_filter = request.args.get('models', '').strip()
         if models_filter:
@@ -384,7 +336,6 @@ def list_reports():
         # Strip internal keys before returning
         for it in page_items:
             it.pop('_datasets', None)
-            it.pop('_scores', None)
 
         return jsonify({
             'reports': page_items,
@@ -547,16 +498,16 @@ def get_dataframe():
     try:
         root = _root_path()
         report_list, datasets, _ = load_single_report(root, report_name)
-        acc_df, _ = get_acc_report_df(report_list)
+        acc_df = get_acc_report_df(report_list)
 
         if df_type == 'compare':
-            df, _ = get_compare_report_df(acc_df)
+            df = get_compare_report_df(acc_df)
         elif df_type == 'dataset':
             if not dataset_name:
                 return jsonify({'error': 'dataset_name is required for type=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
             from evalscope.utils.data_utils import get_single_dataset_df
-            df, _ = get_single_dataset_df(report_df, dataset_name)
+            df = get_single_dataset_df(report_df, dataset_name)
         else:
             df = acc_df
 
@@ -757,7 +708,7 @@ def get_chart():
                     return jsonify({'error': 'dataset_name is required for dataset_scores'}), 400
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
                 from evalscope.utils.data_utils import get_single_dataset_df
-                ds_df, _ = get_single_dataset_df(report_df, dataset_name)
+                ds_df = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(get_quality_metric_df(report_list, ds_df))
             else:
                 fig = plot_single_report_scores(get_quality_report_df(report_list))

@@ -21,6 +21,7 @@ from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model.generate_config import GenerateConfig
 from evalscope.api.model.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
@@ -78,7 +79,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
             'param_default_accept_rate',
             'inference_error_rate',
         ],
-        primary_metric='param_immutable_reject_rate',
+        primary_metric=MetricSelector(name='param_immutable_reject_rate'),
         aggregation='mean',
         subset_list=list(_THINK_MODES),
         eval_split='test',
@@ -88,7 +89,6 @@ class KimiVerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     # --------------------------------------------------------------------
     # Synthetic dataset
@@ -299,9 +299,22 @@ class KimiVerifierAdapter(FunctionCallAdapter):
         accept_rate = accept_correct / accept_total if accept_total else 0.0
 
         return [
-            AggScore(metric_name='param_immutable_reject_rate', score=reject_rate, num=reject_total, metadata={}),
-            AggScore(metric_name='param_default_accept_rate', score=accept_rate, num=accept_total, metadata={}),
             AggScore(
+                aggregation='identity',
+                metric_name='param_immutable_reject_rate',
+                score=reject_rate,
+                num=reject_total,
+                metadata={}
+            ),
+            AggScore(
+                aggregation='identity',
+                metric_name='param_default_accept_rate',
+                score=accept_rate,
+                num=accept_total,
+                metadata={}
+            ),
+            AggScore(
+                aggregation='identity',
                 metric_name='inference_error_rate',
                 score=inference_errors / total if total else 0.0,
                 num=total,

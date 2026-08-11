@@ -224,7 +224,9 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
                     </span>
                   </td>
                   <td className={`${CELL_PADDING} py-2 ${FIELD_COLUMN}`}>
-                    <span className={`${FIELD_TYPE} text-[var(--text)]`}>{cell.benchmark}</span>
+                    <span className={`${FIELD_TYPE} text-[var(--text)]`} title={cell.benchmark}>
+                      {cell.benchmarkLabel || cell.benchmark}
+                    </span>
                   </td>
                   <td className={`${CELL_PADDING} py-2 ${FIELD_TYPE} text-[var(--text-muted)] ${FIELD_COLUMN}`}>
                     <span title={cell.metricName}>{label}</span>

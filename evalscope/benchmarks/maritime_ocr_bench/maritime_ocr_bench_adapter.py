@@ -74,7 +74,6 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
-        self.add_aggregation_name = False
         self.data_root: Optional[str] = None
 
     def load(self):

@@ -2,9 +2,9 @@ import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatMetric, getBoundedQualityRatio, metricIdentityKey } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 
 interface Props {
   reports: ReportData[]
@@ -42,7 +42,8 @@ export default function ReportSummaryStats({ reports }: Props) {
     const entries = reports.map((report) => {
       const primary = primaryMetricOf(report)
       return {
-        name: report.dataset_name,
+        name: datasetLabel(report),
+        identity: primary?.identity ?? null,
         score: primary?.score ?? null,
         semantics: primary?.semantics ?? null,
         num: primary?.categories?.reduce((sum, category) => sum + category.num, 0) ?? 0,
@@ -52,8 +53,8 @@ export default function ReportSummaryStats({ reports }: Props) {
     // Averaging, best and worst are only meaningful across one and the same metric: a set mixing
     // an accuracy with a WER has no best dataset, so those cards are omitted instead of ranking
     // incomparable numbers.
-    const semanticIds = entries.map((entry) => entry.semantics?.semantic_id ?? null)
-    const comparable = semanticIds.every((id) => id !== null && id === semanticIds[0])
+    const identityKeys = entries.map((entry) => entry.identity == null ? null : metricIdentityKey(entry.identity))
+    const comparable = identityKeys.every((key) => key !== null && key === identityKeys[0])
       && entries.every((entry) => entry.score !== null)
     const scores = entries.map((entry) => entry.score ?? 0)
     const avg = comparable ? scores.reduce((s, v) => s + v, 0) / scores.length : null

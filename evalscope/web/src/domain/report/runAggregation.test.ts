@@ -55,12 +55,12 @@ function report(over: Partial<ReportSummary> = {}): ReportSummary {
     name: 'run@qwen-plus',
     model_name: 'qwen-plus',
     dataset_name: 'iquiz',
-    score: 0.5,
     num_samples: 3,
     timestamp: '2026-08-07T10:00:00',
     primary_metrics: [
-      { dataset_name: 'iquiz', metric_name: 'mean_acc', score: 0.5, semantics: ACCURACY },
+      { dataset_name: 'iquiz', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 0.5, semantics: ACCURACY },
     ],
+    quality_ratio: 0.5,
     ...over,
   } as ReportSummary
 }
@@ -187,7 +187,7 @@ describe('aggregateRuns', () => {
           timestamp: '2026-08-07T10:00:00',
           primary_metrics: [{
             dataset_name: 'iquiz',
-            metric_name: 'mean_acc',
+            identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} },
             score: 0.7,
             semantics: newestSemantics,
           }],
@@ -205,8 +205,8 @@ describe('aggregateRuns', () => {
       [
         report({
           primary_metrics: [
-            { dataset_name: 'general_mcq', metric_name: 'mean_acc', score: 1, semantics: ACCURACY },
-            { dataset_name: 'iquiz', metric_name: 'mean_acc', score: 0.5, semantics: ACCURACY },
+            { dataset_name: 'general_mcq', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 1, semantics: ACCURACY },
+            { dataset_name: 'iquiz', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 0.5, semantics: ACCURACY },
           ],
         }),
       ],
@@ -230,9 +230,9 @@ describe('aggregateRuns', () => {
     expect(rows.filter((r) => r.cell.kind === 'eval')).toHaveLength(1)
   })
 
-  it('skips runs with no recorded score rather than plotting a gap', () => {
+  it('skips runs without a primary metric rather than plotting a gap', () => {
     const rows = aggregateRuns(
-      [report({ primary_metrics: [{ dataset_name: 'iquiz', metric_name: 'mean_acc', score: null, semantics: ACCURACY }] })],
+      [report({ primary_metrics: [] })],
       [],
     )
 
@@ -246,8 +246,8 @@ describe('aggregateRuns', () => {
       [
         report({
           primary_metrics: [
-            { dataset_name: 'conll2003', metric_name: 'mean_precision', score: 0.88, semantics: ACCURACY },
-            { dataset_name: 'conll2003', metric_name: 'mean_recall', score: 0.93, semantics: ACCURACY },
+            { dataset_name: 'conll2003', identity: { name: 'precision', aggregation: 'mean', dimensions: {} }, score: 0.88, semantics: ACCURACY },
+            { dataset_name: 'conll2003', identity: { name: 'recall', aggregation: 'mean', dimensions: {} }, score: 0.93, semantics: ACCURACY },
           ],
         }),
       ],

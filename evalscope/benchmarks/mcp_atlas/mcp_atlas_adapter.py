@@ -10,6 +10,7 @@ from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.constants import Tags
@@ -44,7 +45,7 @@ logger = get_logger()
         eval_split='train',
         prompt_template='{question}',
         metric_list=['coverage_score', 'pass'],
-        primary_metric='pass',
+        primary_metric=MetricSelector(name='pass'),
         extra_params=EXTRA_PARAMS,
         paper_url='https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf',
     )
@@ -174,14 +175,14 @@ class MCPAtlasAdapter(AgentLoopAdapter):
             AggScore(
                 metric_name='coverage_score',
                 score=sum(coverage_values) / len(coverage_values),
-                aggregation_name='mean',
+                aggregation='mean',
                 num=len(coverage_values),
                 ids=sample_ids,
             ),
             AggScore(
                 metric_name='pass_rate',
                 score=sum(pass_values) / len(pass_values),
-                aggregation_name='mean',
+                aggregation='mean',
                 num=len(pass_values),
                 ids=sample_ids,
                 metadata={'pass_threshold': self.pass_threshold},

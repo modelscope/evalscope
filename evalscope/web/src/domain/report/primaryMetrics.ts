@@ -7,8 +7,8 @@
  * the components.
  */
 
-import { formatMetricLabel } from '@/domain/metric'
-import type { MetricSemantics } from '@/domain/metric'
+import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
+import type { MetricIdentity, MetricSemantics } from '@/domain/metric'
 import type { ReportData, ReportSummary } from '@/api/types'
 
 /** One metric of a dataset report, as returned by the API. */
@@ -17,28 +17,31 @@ export type ReportMetric = ReportData['metrics'][number]
 /**
  * The metric that represents one dataset report, selected by role rather than by position.
  *
- * `primary_metric_name` names it explicitly; otherwise the metric whose semantics say
- * `role === 'primary'` is used. A report with neither yields `null`, which the UI shows as an
- * absent score instead of borrowing another metric's number.
+ * ``primary_metric_identity`` names it explicitly. The API migrates old reports before they
+ * reach the frontend, so this function never guesses from metric order or role.
  *
  * Every surface that needs "the score of this run" must go through here, so the report list, the
  * detail page, the overview tab and the compare page can never disagree about which metric that is.
  */
 export function primaryMetricOf(report: ReportData): ReportMetric | null {
-  const named = report.primary_metric_name
-    ? report.metrics.find((metric) => metric.name === report.primary_metric_name)
-    : undefined
-  return named ?? report.metrics.find((metric) => metric.semantics?.role === 'primary') ?? null
+  if (!report.primary_metric_identity) return null
+  return report.metrics.find(
+    (metric) => metricIdentityKey(metric.identity) === metricIdentityKey(report.primary_metric_identity!),
+  ) ?? null
 }
 
 /** One dataset's primary metric as reported by the API. */
 export interface PrimaryMetricRef {
   dataset_name: string
-  metric_name: string
-  score: number | null
-  semantics?: MetricSemantics | null
-  /** Whether the benchmark declared this metric as primary, or one was inferred to show a value. */
-  inferred?: boolean
+  dataset_pretty_name?: string
+  identity: MetricIdentity
+  score: number
+  semantics: MetricSemantics
+}
+
+/** Human-readable dataset label, with the stable registry name as a lossless fallback. */
+export function datasetLabel(dataset: { dataset_name: string; dataset_pretty_name?: string | null }): string {
+  return dataset.dataset_pretty_name?.trim() || dataset.dataset_name
 }
 
 /**
@@ -77,10 +80,10 @@ export function directionHintKey(semantics: MetricSemantics | null | undefined):
 /** Label of a metric: its display name plus the direction arrow, e.g. `Accuracy ↑`. */
 export function metricLabel(ref: PrimaryMetricRef | null | undefined): string {
   if (!ref) return ''
-  return formatMetricLabel(ref.metric_name, ref.semantics)
+  return formatMetricIdentityLabel(ref.identity, ref.semantics)
 }
 
-/** Primary metrics of a run, falling back to an empty list on an older backend response. */
+/** Primary metrics of a run. */
 export function primaryMetricsOf(report: ReportSummary): PrimaryMetricRef[] {
-  return (report as { primary_metrics?: PrimaryMetricRef[] }).primary_metrics ?? []
+  return report.primary_metrics
 }

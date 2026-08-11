@@ -10,6 +10,20 @@
 
 import type { MetricDirection, MetricDisplayKind, MetricSemantics } from './MetricSemantics'
 
+export interface MetricIdentity {
+  name: string
+  aggregation: string
+  dimensions: Record<string, string | number | boolean>
+}
+
+export function metricIdentityKey(identity: MetricIdentity): string {
+  const dimensions = Object.entries(identity.dimensions)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(',')
+  return `${identity.name}:${identity.aggregation}${dimensions ? `[${dimensions}]` : ''}`
+}
+
 /**
  * Placeholder shown for a missing metric value. Intentionally distinct from a legitimate `0` or
  * an empty string so a missing value can never be mistaken for a real zero.
@@ -59,6 +73,26 @@ export function formatMetricLabel(
 ): string {
   if (!semantics || semantics.role === 'diagnostic') return finalMetricName
   return `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd()
+}
+
+/** Label a v2 identity; default mean stays in the tooltip/key, while dimensions disambiguate rows. */
+export function formatMetricIdentityLabel(
+  identity: MetricIdentity,
+  semantics: MetricSemantics | null | undefined,
+  legacyName?: string | null,
+): string {
+  if (!semantics || semantics.role === 'diagnostic') return legacyName || metricIdentityKey(identity)
+  const base = formatMetricLabel(identity.name, semantics)
+  const dimensionOrder: Record<string, number> = { target: 0, level: 1, scope: 2 }
+  const dimensions = Object.entries(identity.dimensions)
+    .sort(([left], [right]) => (dimensionOrder[left] ?? 3) - (dimensionOrder[right] ?? 3) || left.localeCompare(right))
+    .map(([, value]) => {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+    return String(value)
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (character) => character.toUpperCase())
+    })
+  return dimensions.length > 0 ? `${base} · ${dimensions.join(' · ')}` : base
 }
 
 /** Label all metrics of one report and disambiguate repeated semantic display names. */

@@ -7,6 +7,7 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -98,7 +99,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
                 }
             },
         ],
-        primary_metric='text_block',
+        primary_metric=MetricSelector(name='text_block'),
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         extra_params={
@@ -115,7 +116,6 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.match_method = self.extra_params.get('match_method', 'quick_match')
 
         check_import(
@@ -175,6 +175,7 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
         for metric_name, agg_result in agg_results.items():
             if agg_result is not np.nan:
                 agg_score = AggScore(
+                    aggregation='identity',
                     score=agg_result,
                     metric_name=metric_name,
                     num=len(sample_scores),

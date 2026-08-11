@@ -532,7 +532,10 @@ class DefaultEvaluator(Evaluator):
 
         # Inject perf metrics into the report when collect_perf is enabled
         if self.task_config.collect_perf:
-            report.perf_metrics = self.perf_collector.get_perf_dict() or None
+            perf_metrics = self.perf_collector.get_perf_dict()
+            if perf_metrics:
+                from evalscope.metrics.semantics.perf import attach_perf_semantics
+                report.perf_metrics = attach_perf_semantics(perf_metrics)
 
         # Save the complete report to file
         report.to_json(report_file)

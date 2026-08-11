@@ -5,8 +5,7 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
-import { formatMetric } from '@/domain/metric'
-import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
 interface ReportCardProps {
   report: ReportSummary
@@ -72,7 +71,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           {/* Secondary row: dataset + sample count */}
           <span className="flex items-center gap-3 mt-0.5">
             <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
-              {report.dataset_name}
+              <span title={report.dataset_name}>{datasetLabel(report)}</span>
             </span>
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
@@ -93,12 +92,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
             inlineDatasetClass={metricRefs.length > 1 ? '' : undefined}
             className="shrink-0"
           />
-        ) : (
-          // Response from a backend without semantics: the raw legacy number, unscaled.
-          <span className="text-sm font-mono tabular-nums text-[var(--text)] shrink-0">
-            {formatMetric(report.score, undefined).primary}
-          </span>
-        )}
+        ) : <span className="text-sm text-[var(--text-muted)]">{t('metrics.noPrimaryMetric')}</span>}
       </button>
 
       {/* Chevron — dedicated detail navigation button */}

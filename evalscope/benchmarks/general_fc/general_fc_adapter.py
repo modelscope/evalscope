@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
@@ -52,7 +53,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
             'schema_accuracy',
             'tool_call_f1',
         ],
-        primary_metric='tool_call_f1',
+        primary_metric=MetricSelector(name='tool_call_f1'),
         aggregation='f1',
         eval_split='test',
     )
@@ -61,8 +62,6 @@ class GeneralFCAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.add_aggregation_name = False
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
@@ -195,6 +194,8 @@ class GeneralFCAdapter(FunctionCallAdapter):
 
         agg_scores: List[AggScore] = []
         for name, value in metrics.items():
-            agg_scores.append(AggScore(metric_name=name, score=value, num=total_count, metadata={}))
+            agg_scores.append(
+                AggScore(aggregation='identity', metric_name=name, score=value, num=total_count, metadata={})
+            )
 
         return agg_scores

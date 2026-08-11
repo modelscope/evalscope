@@ -4,6 +4,7 @@ from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from .utils import aggregate_official_scores, build_grader_prompt, parse_judge_response, rule_fallback_score
@@ -41,7 +42,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 
 - EvalScope loads the ModelScope dataset `google/deepsearchqa` from the `eval` split.
 - LLM judge is enabled by default. Official starter code uses Gemini 2.5 Flash with the DeepSearchQA judge prompt, but EvalScope can use any configured judge model for local runs.
-- The primary metric is `f1_score`; `precision`, `recall`, and empty/invalid response rates are also reported.
+- The primary metric is `f1`; `precision`, `recall`, and empty/invalid response rates are also reported.
 - `JudgeStrategy.RULE` provides a conservative exact/substring fallback for smoke tests and is not equivalent to official LLM judging.
 """.strip()  # noqa: E501
 
@@ -53,8 +54,8 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
         tags=[Tags.AGENT, Tags.KNOWLEDGE, Tags.QA, Tags.RETRIEVAL],
         description=DESCRIPTION,
         dataset_id=DEEPSEARCHQA_DATASET_ID,
-        metric_list=['f1_score', 'precision', 'recall'],
-        primary_metric='f1_score',
+        metric_list=['f1', 'precision', 'recall'],
+        primary_metric=MetricSelector(name='f1'),
         few_shot_num=0,
         train_split=None,
         eval_split='eval',
@@ -104,7 +105,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             prediction=original_prediction,
             value=value,
             metadata=metadata,
-            main_score_name='f1_score',
+            main_score_name='f1',
         )
 
     def llm_match_score(
@@ -137,7 +138,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             prediction=original_prediction,
             value=value,
             explanation=f'LLM judge: {judge_response}',
-            main_score_name='f1_score',
+            main_score_name='f1',
         )
         score.metadata = {
             'source': 'llm_judge',

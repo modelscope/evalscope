@@ -45,7 +45,7 @@ class Mean(Aggregator):
                     AggScore(
                         score=self.agg_func(values),
                         metric_name=metric_name,
-                        aggregation_name=self.name,
+                        aggregation=self.name,
                         num=len(values),
                         ids=metric_sample_ids[metric_name]
                     )

@@ -103,6 +103,6 @@ class EvalMuseAdapter(Text2ImageAdapter):
                 new_items[f'{metrics_prefix}:{category}'].append(value)
 
         for k, v in new_items.items():
-            agg_list.append(AggScore(metric_name=k, score=mean(v), num=len(v)))
+            agg_list.append(AggScore(aggregation='identity', metric_name=k, score=mean(v), num=len(v)))
 
         return agg_list

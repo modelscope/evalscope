@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 import pytest
 
+from evalscope.api.metric.semantics import MetricIdentity, MetricRole
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.report import Category, Metric, Report, Subset
 from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
@@ -37,18 +38,21 @@ def _hydrated(report: Report) -> Report:
     return Report.from_dict(report.to_dict())
 
 
-def test_build_report_meta_exposes_primary_metric_name(monkeypatch) -> None:
-    report = _hydrated(
-        Report(
-            dataset_name='throughput_suite',
-            model_name='test-model',
-            metrics=[
-                Metric(
-                    name='AverageOutputTps',
-                    categories=[Category(name=('default', ), subsets=[Subset(name='main', score=512.0, num=1)])],
-                )
-            ],
-        )
+def test_build_report_meta_exposes_primary_metric_identity(monkeypatch) -> None:
+    identity = MetricIdentity(name='output_throughput', aggregation='mean')
+    semantics = SEMANTIC_BASELINES['perf.throughput.tokens_per_second'].model_copy(update={'role': MetricRole.PRIMARY})
+    report = Report(
+        dataset_name='throughput_suite',
+        dataset_pretty_name='Throughput Suite',
+        model_name='test-model',
+        metrics=[
+            Metric(
+                identity=identity,
+                semantics=semantics,
+                categories=[Category(name=('default', ), subsets=[Subset(name='main', score=512.0, num=1)])],
+            )
+        ],
+        primary_metric_identity=identity,
     )
     monkeypatch.setattr(
         'evalscope.service.blueprints.reports.load_single_report',
@@ -57,32 +61,40 @@ def test_build_report_meta_exposes_primary_metric_name(monkeypatch) -> None:
 
     metadata = _build_report_meta('run', '/tmp')
 
-    assert metadata['metric_name'] == 'AverageOutputTps'
-    assert metadata['score'] == 512.0
-    assert metadata['dataset_scores'] == {'throughput_suite': 512.0}
+    assert metadata['primary_metrics'] == [{
+        'dataset_name': 'throughput_suite',
+        'dataset_pretty_name': 'Throughput Suite',
+        'identity': identity.model_dump(),
+        'score': 512.0,
+        'semantics': semantics.model_dump(mode='json'),
+    }]
+    assert metadata['dataset_name'] == 'throughput_suite'
+    assert metadata['dataset_pretty_name'] == 'Throughput Suite'
+    assert set(('metric_name', 'score', 'dataset_scores')).isdisjoint(metadata)
 
 
 def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypatch) -> None:
-    """The conclusion comes from the declared role, not from the order metrics happen to be in.
-
-    ``text_edit`` is listed first and is what the deprecated ``score`` field still reports, but
-    ``overall`` is the metric declared to carry the conclusion, so that is what the API exposes.
-    """
-    report = _hydrated(
-        Report(
-            dataset_name='document_suite',
-            model_name='test-model',
-            metrics=[
-                Metric(
-                    name='text_edit',
-                    categories=[Category(name=('default', ), subsets=[Subset(name='main', score=0.1, num=2)])],
-                ),
-                Metric(
-                    name='overall',
-                    categories=[Category(name=('default', ), subsets=[Subset(name='main', score=0.9, num=2)])],
-                ),
-            ],
-        )
+    """The declared structured identity, not metric order, selects the conclusion."""
+    accuracy_identity = MetricIdentity(name='accuracy', aggregation='mean')
+    normalized_identity = MetricIdentity(name='normalized_score', aggregation='mean')
+    accuracy_semantics = SEMANTIC_BASELINES['quality.accuracy.ratio'].model_copy(update={'role': MetricRole.AUXILIARY})
+    normalized_semantics = SEMANTIC_BASELINES['quality.score.ratio'].model_copy(update={'role': MetricRole.PRIMARY})
+    report = Report(
+        dataset_name='document_suite',
+        model_name='test-model',
+        metrics=[
+            Metric(
+                identity=accuracy_identity,
+                semantics=accuracy_semantics,
+                categories=[Category(name=('default', ), subsets=[Subset(name='main', score=0.1, num=2)])],
+            ),
+            Metric(
+                identity=normalized_identity,
+                semantics=normalized_semantics,
+                categories=[Category(name=('default', ), subsets=[Subset(name='main', score=0.9, num=2)])],
+            ),
+        ],
+        primary_metric_identity=normalized_identity,
     )
     monkeypatch.setattr(
         'evalscope.service.blueprints.reports.load_single_report',
@@ -91,27 +103,28 @@ def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypat
 
     metadata = _build_report_meta('run', '/tmp')
 
-    # The deprecated field keeps its historical first-metric value for old clients.
-    assert report.score == 0.1
-    assert metadata['metric_name'] == 'overall'
-    assert metadata['score'] == 0.9
-    assert metadata['dataset_scores'] == {'document_suite': 0.9}
-    assert _report_to_service_dict(report)['score'] == 0.9
+    assert report.primary_metric.score == 0.9
+    assert metadata['primary_metrics'][0]['identity'] == normalized_identity.model_dump()
+    assert metadata['primary_metrics'][0]['score'] == 0.9
+    payload = _report_to_service_dict(report)
+    assert payload['primary_metric_identity'] == normalized_identity.model_dump()
+    assert set(('score', 'metric_name', 'dataset_scores')).isdisjoint(payload)
 
 
 def _semantic_report(dataset_name: str, score: float, semantic_id: str) -> Report:
-    semantics = SEMANTIC_BASELINES[semantic_id]
+    semantics = SEMANTIC_BASELINES[semantic_id].model_copy(update={'role': MetricRole.PRIMARY})
+    identity = MetricIdentity(name=dataset_name, aggregation='mean')
     return Report(
         dataset_name=dataset_name,
         model_name='test-model',
         metrics=[
             Metric(
-                name=f'mean_{dataset_name}',
-                semantic_id=semantic_id,
+                identity=identity,
                 semantics=semantics,
                 categories=[Category(name=('default', ), subsets=[Subset(name='main', score=score, num=1)])],
             )
         ],
+        primary_metric_identity=identity,
     )
 
 

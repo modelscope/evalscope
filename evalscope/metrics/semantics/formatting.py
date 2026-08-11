@@ -54,9 +54,15 @@ unambiguous on both sides.
 import math
 from collections import Counter
 from decimal import ROUND_FLOOR, Decimal
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
-from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics
+from evalscope.api.metric.semantics import (
+    MetricDirection,
+    MetricDisplayKind,
+    MetricIdentity,
+    MetricRole,
+    MetricSemantics,
+)
 
 #: Rendered in place of a value that is absent or not finite.
 MISSING_PLACEHOLDER = '—'
@@ -69,6 +75,8 @@ _DIRECTION_ARROWS = {
     MetricDirection.HIGHER_IS_BETTER: '↑',
     MetricDirection.LOWER_IS_BETTER: '↓',
 }
+
+_DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2}
 
 __all__ = [
     'MISSING_PLACEHOLDER',
@@ -120,26 +128,50 @@ def _join_unit(text: str, unit: Optional[str], separator: str) -> str:
     return f'{text}{separator}{unit}'
 
 
-def format_metric_label(final_metric_name: str, semantics: Optional[MetricSemantics]) -> str:
-    """Render one final metric name through its display name and optimization direction.
+def _format_dimension(value: Union[str, int, float, bool]) -> str:
+    if isinstance(value, bool):
+        return 'Yes' if value else 'No'
+    return str(value).replace('_', ' ').title()
+
+
+def format_metric_label(
+    identity: Union[MetricIdentity, str],
+    semantics: Optional[MetricSemantics],
+    legacy_name: Optional[str] = None,
+) -> str:
+    """Render one identity through its display name, direction, and meaningful dimensions.
 
     Diagnostic and unresolved metrics keep their final report name because their shared generic
     baselines must not erase what was actually measured.
 
     Args:
-        final_metric_name: Exact metric name stored in the report.
+        identity: V2 identity, or a v1 string during migration.
         semantics: Resolved semantics, or ``None`` for an older/unresolved report.
+        legacy_name: Original v1 spelling for a diagnostic migration fallback.
 
     Returns:
         A label such as ``'Accuracy ↑'``, ``'WER ↓'`` or the unchanged final metric name.
     """
+    if isinstance(identity, str):
+        raw_name = identity
+        dimensions = {}
+    else:
+        raw_name = identity.key
+        dimensions = identity.dimensions
     if semantics is None or semantics.role is MetricRole.DIAGNOSTIC:
-        return final_metric_name
+        return legacy_name or raw_name
     arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
-    return f'{semantics.metric_name} {arrow}'.strip()
+    label = f'{semantics.metric_name} {arrow}'.strip()
+    if dimensions:
+        ordered = sorted(dimensions.items(), key=lambda item: (_DIMENSION_DISPLAY_ORDER.get(item[0], 3), item[0]))
+        details = ' · '.join(_format_dimension(value) for _, value in ordered)
+        label = f'{label} · {details}'
+    return label
 
 
-def format_metric_labels(metrics: Iterable[Tuple[str, Optional[MetricSemantics]]]) -> Dict[str, str]:
+def format_metric_labels(
+    metrics: Iterable[Tuple[Union[MetricIdentity, str], Optional[MetricSemantics]]]
+) -> Dict[str, str]:
     """Render all metric labels of one report and disambiguate repeated display names.
 
     Args:
@@ -150,9 +182,10 @@ def format_metric_labels(metrics: Iterable[Tuple[str, Optional[MetricSemantics]]
         parentheses, for example ``'Accuracy ↑ (mean_fact_acc)'``.
     """
     pairs = list(metrics)
-    labels = {name: format_metric_label(name, semantics) for name, semantics in pairs}
+    keys = [identity if isinstance(identity, str) else identity.key for identity, _ in pairs]
+    labels = {key: format_metric_label(identity, semantics) for key, (identity, semantics) in zip(keys, pairs)}
     counts = Counter(labels.values())
-    return {name: f'{labels[name]} ({name})' if counts[labels[name]] > 1 else labels[name] for name, _ in pairs}
+    return {key: f'{labels[key]} ({key})' if counts[labels[key]] > 1 else labels[key] for key in keys}
 
 
 def format_metric_value(value: Optional[float], semantics: Optional[MetricSemantics]) -> str:

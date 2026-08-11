@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -70,7 +71,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['multi-label-classification'],
         metric_list=['f1_weighted', 'f1_micro', 'f1_macro', 'exact_match'],
-        primary_metric='f1_weighted',
+        primary_metric=MetricSelector(name='f1_weighted'),
         aggregation='f1_weighted',
         eval_split='test',
         prompt_template='{question}',
@@ -187,10 +188,10 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
         """
         if not sample_scores:
             return [
-                AggScore(metric_name='f1_weighted', score=0.0, num=0, metadata={}),
-                AggScore(metric_name='f1_micro', score=0.0, num=0, metadata={}),
-                AggScore(metric_name='f1_macro', score=0.0, num=0, metadata={}),
-                AggScore(metric_name='exact_match', score=0.0, num=0, metadata={})
+                AggScore(aggregation='identity', metric_name='f1_weighted', score=0.0, num=0, metadata={}),
+                AggScore(aggregation='identity', metric_name='f1_micro', score=0.0, num=0, metadata={}),
+                AggScore(aggregation='identity', metric_name='f1_macro', score=0.0, num=0, metadata={}),
+                AggScore(aggregation='identity', metric_name='exact_match', score=0.0, num=0, metadata={})
             ]
 
         # Initialize category statistics
@@ -258,6 +259,7 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
         # Return list of aggregate scores
         return [
             AggScore(
+                aggregation='identity',
                 metric_name='f1_weighted',
                 score=f1_weighted,
                 num=num_samples,
@@ -266,7 +268,9 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
                     for cat, f1 in category_f1.items()
                 }}
             ),
-            AggScore(metric_name='f1_micro', score=f1_micro, num=num_samples, metadata={}),
-            AggScore(metric_name='f1_macro', score=f1_macro, num=num_samples, metadata={}),
-            AggScore(metric_name='exact_match', score=exact_match, num=num_samples, metadata={})
+            AggScore(aggregation='identity', metric_name='f1_micro', score=f1_micro, num=num_samples, metadata={}),
+            AggScore(aggregation='identity', metric_name='f1_macro', score=f1_macro, num=num_samples, metadata={}),
+            AggScore(
+                aggregation='identity', metric_name='exact_match', score=exact_match, num=num_samples, metadata={}
+            )
         ]

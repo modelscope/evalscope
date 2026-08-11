@@ -22,7 +22,7 @@ class ExactMatch(Metric):
         ]
 
 
-@register_metric(name='acc')
+@register_metric(name=['accuracy', 'acc'])
 class Accuracy(ExactMatch):
 
     def __init__(self, allow_inclusion: bool = False, numeric: bool = False):

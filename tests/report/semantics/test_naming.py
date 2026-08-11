@@ -1,78 +1,111 @@
-"""Unit tests for final report metric name composition.
+import pytest
+from pydantic import ValidationError
 
-Feature: metric-semantics-governance
-"""
-from typing import Dict, List
-
-from evalscope.api.metric import AggScore
-from evalscope.metrics.semantics.naming import compose_final_metric_name
+from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
+from evalscope.metrics.semantics.identity import migrate_legacy_identity
 
 
-class TestComposeFinalMetricName:
-
-    def test_prefixes_aggregation_name_when_enabled(self) -> None:
-        agg_score = AggScore(score=0.5, metric_name='Accuracy', aggregation_name='mean', num=2)
-
-        assert compose_final_metric_name(agg_score, add_aggregation_name=True) == 'mean_Accuracy'
-
-    def test_defaults_to_adding_aggregation_name(self) -> None:
-        agg_score = AggScore(score=0.5, metric_name='Accuracy', aggregation_name='mean', num=2)
-
-        assert compose_final_metric_name(agg_score) == 'mean_Accuracy'
-
-    def test_empty_aggregation_name_falls_back_to_metric_name(self) -> None:
-        agg_score = AggScore(score=0.5, metric_name='Accuracy', aggregation_name='', num=2)
-
-        assert compose_final_metric_name(agg_score, add_aggregation_name=True) == 'Accuracy'
-
-    def test_default_aggregation_name_falls_back_to_metric_name(self) -> None:
-        # AggScore.aggregation_name defaults to '' and is never None.
-        agg_score = AggScore(score=0.5, metric_name='Accuracy', num=2)
-
-        assert compose_final_metric_name(agg_score, add_aggregation_name=True) == 'Accuracy'
-
-    def test_disabled_flag_keeps_plain_metric_name(self) -> None:
-        agg_score = AggScore(score=0.5, metric_name='Accuracy', aggregation_name='mean', num=2)
-
-        assert compose_final_metric_name(agg_score, add_aggregation_name=False) == 'Accuracy'
+def test_identity_sorts_dimensions_and_builds_stable_key() -> None:
+    identity = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'target': 'answer', 'level': 'overall'})
+    assert list(identity.dimensions) == ['level', 'target']
+    assert identity.key == 'accuracy:mean[level=overall,target=answer]'
 
 
-class TestGeneratorParity:
-    """The helper must reproduce the spelling rule of ReportGenerator.generate_report()."""
+def test_frozen_identity_dimensions_cannot_mutate() -> None:
+    identity = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'target': 'answer'})
 
-    @staticmethod
-    def _generated_metric_names(score_dict: Dict[str, List[AggScore]], add_aggregation_name: bool) -> List[str]:
-        from evalscope.report.generator import ReportGenerator
+    with pytest.raises(TypeError, match='immutable'):
+        identity.dimensions['target'] = 'figure'
 
-        class _StubAdapter:
-            name = 'stub_benchmark'
-            pretty_name = 'Stub Benchmark'
-            description = 'stub'
-            category_map: Dict[str, List[str]] = {}
-            # A third-party benchmark: it declares no primary metric and its metric names are
-            # undeclared, so the generator degrades them to diagnostics instead of failing.
-            primary_metric = None
-            aggregation = 'mean'
 
-        report = ReportGenerator.generate_report(
-            score_dict=score_dict,
-            model_name='stub_model',
-            data_adapter=_StubAdapter(),
-            add_aggregation_name=add_aggregation_name,
-        )
-        return [metric.name for metric in report.metrics]
+@pytest.mark.parametrize('field,value', [('name', 'F1'), ('name', 'pass@1'), ('aggregation', 'Macro Mean')])
+def test_identity_rejects_non_canonical_names(field: str, value: str) -> None:
+    values = {'name': 'accuracy', 'aggregation': 'mean'}
+    values[field] = value
+    with pytest.raises(ValidationError):
+        MetricIdentity(**values)
 
-    def test_parity_with_report_generator(self) -> None:
-        agg_scores = [
-            AggScore(score=0.5, metric_name='Accuracy', aggregation_name='mean', num=2),
-            AggScore(score=0.25, metric_name='Pass@1', aggregation_name='', num=2),
-        ]
-        score_dict = {'subset_a': agg_scores}
 
-        for add_aggregation_name in (True, False):
-            expected = [
-                compose_final_metric_name(agg_score, add_aggregation_name=add_aggregation_name)
-                for agg_score in agg_scores
-            ]
+def test_selector_dimensions_are_partial_constraints() -> None:
+    selector = MetricSelector(name='accuracy', aggregation='mean', dimensions={'target': 'answer'})
+    identity = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'level': 'overall', 'target': 'answer'})
+    assert selector.matches(identity)
 
-            assert self._generated_metric_names(score_dict, add_aggregation_name) == expected
+
+@pytest.mark.parametrize(
+    ('legacy_name', 'aggregation', 'expected'),
+    [
+        ('mean_acc', 'identity', ('accuracy', 'mean', {})),
+        ('Bleu_4', 'mean', ('bleu', 'mean', {
+            'ngram': 4
+        })),
+        ('ACC@0.5', 'mean', ('accuracy', 'mean', {
+            'threshold': 0.5
+        })),
+        ('all/success_rate', 'avg@8', ('success_rate', 'mean', {
+            'k': 8,
+            'scope': 'all'
+        })),
+        ('acc_pass@16', 'mean', ('accuracy', 'pass_at_k', {
+            'k': 16
+        })),
+        ('Act.EM', 'mean', ('exact_match', 'mean', {
+            'target': 'action'
+        })),
+        ('mean_total_wall_time_s', 'identity', ('total_wall_time', 'mean', {})),
+    ],
+)
+def test_legacy_names_migrate_to_structured_identity(
+    legacy_name: str,
+    aggregation: str,
+    expected: tuple,
+) -> None:
+    identity = migrate_legacy_identity(legacy_name, aggregation)
+    assert (identity.name, identity.aggregation, identity.dimensions) == expected
+
+
+def test_hallusion_dynamic_prefix_becomes_dimensions() -> None:
+    identity = migrate_legacy_identity('Overall_aAcc', 'f1', benchmark_name='hallusion_bench')
+    assert identity == MetricIdentity(
+        name='accuracy', aggregation='mean', dimensions={
+            'level': 'overall',
+            'target': 'answer'
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ('benchmark', 'legacy_name', 'expected'),
+    [
+        (
+            'longmemeval',
+            'overall_acc',
+            MetricIdentity(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
+        ),
+        (
+            'locomo',
+            'task_averaged_f1',
+            MetricIdentity(name='f1', aggregation='macro_mean', dimensions={'scope': 'question_types'}),
+        ),
+        (
+            'openai_mrcr',
+            '8000-16000_mrcr_score',
+            MetricIdentity(name='mrcr_score', aggregation='mean', dimensions={
+                'min_tokens': 8000,
+                'max_tokens': 16000
+            }),
+        ),
+        (
+            'wide_search',
+            'pass@4_all/success_rate',
+            MetricIdentity(name='success_rate', aggregation='pass_at_k', dimensions={
+                'k': 4,
+                'scope': 'all'
+            }),
+        ),
+    ],
+)
+def test_known_dynamic_benchmark_names_migrate_without_guessing(
+    benchmark: str, legacy_name: str, expected: MetricIdentity
+) -> None:
+    assert migrate_legacy_identity(legacy_name, 'identity', benchmark_name=benchmark) == expected

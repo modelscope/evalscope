@@ -12,6 +12,7 @@ interface Props {
   modelName: string
   datasetName: string
   datasets?: string[]
+  datasetLabels?: Record<string, string>
   score: number | null
   metricName?: string
   /** Backend semantics of the primary metric shown in the header. */
@@ -25,6 +26,7 @@ export default function ReportHeader({
   modelName,
   datasetName,
   datasets,
+  datasetLabels = {},
   score,
   metricName,
   semantics,
@@ -66,10 +68,10 @@ export default function ReportHeader({
                         onClick={() => onDatasetClick(ds)}
                         className="text-lg text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit"
                       >
-                        {ds}
+                        <span title={ds}>{datasetLabels[ds] || ds}</span>
                       </button>
                     ) : (
-                      <span className="text-lg text-[var(--text-muted)]">{ds}</span>
+                      <span className="text-lg text-[var(--text-muted)]" title={ds}>{datasetLabels[ds] || ds}</span>
                     )}
                   </span>
                 ))}
@@ -85,7 +87,7 @@ export default function ReportHeader({
                 title={metricTooltip}
                 aria-label={semantics ? `${semantics.metric_name}${directionHint ? `, ${directionHint}` : ''}` : undefined}
               >
-                {semantics ? `${formatMetricLabel(metricName ?? semantics.metric_name, semantics)} ` : ''}
+                {semantics ? `${metricName ?? formatMetricLabel(semantics.metric_name, semantics)} ` : ''}
                 {formatMetric(score, semantics).primary}
               </span>
             </Badge>

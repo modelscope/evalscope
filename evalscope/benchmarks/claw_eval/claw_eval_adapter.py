@@ -13,6 +13,7 @@ from evalscope.api.dataset import DatasetDict, Sample, build_dataset_dict_from_r
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, JudgeStrategy, Tags
@@ -87,8 +88,8 @@ parallel execution, reporting, and dashboard trace review.
         dataset_id=DEFAULT_CLAW_EVAL_DATASET_ID,
         tags=[Tags.AGENT, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
-        metric_list=['avg_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],
-        primary_metric='avg_score',
+        metric_list=['judge_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],
+        primary_metric=MetricSelector(name='judge_score'),
         aggregation='mean',
         eval_split='test',
         subset_list=_DEFAULT_SPLITS,
@@ -246,11 +247,13 @@ class ClawEvalAdapter(AgentAdapter):
     ) -> Score:
         result = task_state.metadata.get('claw_eval_result') or {}
         metrics = dict(result.get('metrics') or {})
+        if 'avg_score' in metrics:
+            metrics['judge_score'] = metrics.pop('avg_score')
         return Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
             value=metrics,
-            main_score_name='avg_score',
+            main_score_name='judge_score',
             metadata={
                 'task_id': result.get('task_id'),
                 'task_name': result.get('task_name'),
@@ -278,7 +281,7 @@ class ClawEvalAdapter(AgentAdapter):
         group_pass_hat = []
         sample_errors = 0
         for group_scores in grouped.values():
-            trial_scores = [float(item.score.value.get('avg_score', 0.0)) for item in group_scores]
+            trial_scores = [float(item.score.value.get('judge_score', 0.0)) for item in group_scores]
             group_avg_scores.append(sum(trial_scores) / len(trial_scores) if trial_scores else 0.0)
             k = len(trial_scores)
             group_pass_at.append(compute_pass_at_k(trial_scores, k=k))
@@ -291,23 +294,15 @@ class ClawEvalAdapter(AgentAdapter):
         num_samples = len(sample_scores)
         return [
             AggScore(
-                score=sum(group_avg_scores) / num_groups,
-                metric_name='avg_score',
-                aggregation_name='mean',
-                num=num_groups
+                score=sum(group_avg_scores) / num_groups, metric_name='judge_score', aggregation='mean', num=num_groups
             ),
             AggScore(
-                score=sum(group_pass_at) / num_groups, metric_name='pass_at_k', aggregation_name='mean', num=num_groups
+                score=sum(group_pass_at) / num_groups, metric_name='pass_at_k', aggregation='mean', num=num_groups
             ),
             AggScore(
-                score=sum(group_pass_hat) / num_groups,
-                metric_name='pass_hat_k',
-                aggregation_name='mean',
-                num=num_groups
+                score=sum(group_pass_hat) / num_groups, metric_name='pass_hat_k', aggregation='mean', num=num_groups
             ),
-            AggScore(
-                score=sample_errors / num_samples, metric_name='error_rate', aggregation_name='mean', num=num_samples
-            ),
+            AggScore(score=sample_errors / num_samples, metric_name='error_rate', aggregation='mean', num=num_samples),
         ]
 
     def _build_official_config(

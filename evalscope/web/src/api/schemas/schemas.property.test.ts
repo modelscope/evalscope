@@ -61,7 +61,6 @@ const REPORT_SUMMARY_FIELDS: FieldSpec[] = [
   { name: 'name', type: 'string' },
   { name: 'model_name', type: 'string' },
   { name: 'dataset_name', type: 'string' },
-  { name: 'score', type: 'number' },
   { name: 'num_samples', type: 'number' },
   { name: 'timestamp', type: 'string' },
 ]
@@ -72,17 +71,22 @@ const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
     name: fc.string(),
     model_name: fc.string(),
     dataset_name: fc.string(),
-    score: fc.double({ noNaN: true, noDefaultInfinity: true }),
     num_samples: fc.nat(),
     timestamp: fc.string(),
-    // Optional field: sometimes present, sometimes absent (requiredKeys below).
-    dataset_scores: fc.dictionary(
-      fc.string(),
-      fc.double({ noNaN: true, noDefaultInfinity: true }),
-      { maxKeys: 4 },
-    ),
+    primary_metrics: fc.constant([]),
+    quality_ratio: fc.oneof(fc.double({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }), fc.constant(null)),
   },
-  { requiredKeys: ['name', 'model_name', 'dataset_name', 'score', 'num_samples', 'timestamp'] },
+  {
+    requiredKeys: [
+      'name',
+      'model_name',
+      'dataset_name',
+      'num_samples',
+      'timestamp',
+      'primary_metrics',
+      'quality_ratio',
+    ],
+  },
 )
 
 // ------------------------------------------------------------------ //

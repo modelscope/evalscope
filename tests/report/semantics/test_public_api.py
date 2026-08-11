@@ -12,7 +12,7 @@ import evalscope.metrics.semantics as semantics
 
 #: The exact surface, verified against what production imports:
 #:
-#: - ``compose_final_metric_name`` / ``get_semantics_resolver`` -- ``evalscope/report/generator.py``
+#: - ``get_semantics_resolver`` -- ``evalscope/report/generator.py``
 #: - ``hydrate_report_semantics`` -- ``evalscope/report/report.py``
 #: - ``format_metric_label`` / ``format_metric_labels`` / ``format_metric_value`` -- report renderers
 #: - ``PrimaryMetricRef`` -- ``evalscope/service/blueprints/reports.py``
@@ -22,7 +22,6 @@ import evalscope.metrics.semantics as semantics
 #: Tests import those from their owning module instead.
 EXPECTED_EXPORTS: List[str] = [
     'PrimaryMetricRef',
-    'compose_final_metric_name',
     'format_metric_label',
     'format_metric_labels',
     'format_metric_value',

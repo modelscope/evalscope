@@ -1,14 +1,14 @@
 {
   "report_list": [
     {
+      "schema_version": 2,
       "name": "test-model-a_gsm8k",
       "dataset_name": "gsm8k",
       "model_name": "test-model-a",
-      "score": 0.92,
       "analysis": "Multi-dataset report entry: gsm8k with a bounded ratio accuracy metric.",
       "metrics": [
         {
-          "name": "AverageAccuracy",
+          "identity": {"name": "accuracy", "aggregation": "mean", "dimensions": {}},
           "num": 200,
           "score": 0.92,
           "categories": [
@@ -27,7 +27,6 @@
               ]
             }
           ],
-          "semantic_id": "quality.accuracy.ratio",
           "semantics": {
             "semantic_id": "quality.accuracy.ratio",
             "metric_name": "Accuracy",
@@ -46,17 +45,17 @@
           }
         }
       ],
-      "primary_metric_name": "AverageAccuracy"
+      "primary_metric_identity": {"name": "accuracy", "aggregation": "mean", "dimensions": {}}
     },
     {
+      "schema_version": 2,
       "name": "test-model-a_arc_challenge",
       "dataset_name": "arc_challenge",
       "model_name": "test-model-a",
-      "score": 81.5,
       "analysis": "Multi-dataset report entry: arc_challenge with a bounded percentage metric (0-100).",
       "metrics": [
         {
-          "name": "WeightedScorePercent",
+          "identity": {"name": "weighted_score_percent", "aggregation": "mean", "dimensions": {}},
           "num": 150,
           "score": 81.5,
           "categories": [
@@ -80,7 +79,6 @@
               ]
             }
           ],
-          "semantic_id": "quality.score.points_100",
           "semantics": {
             "semantic_id": "quality.score.points_100",
             "metric_name": "Score",
@@ -99,17 +97,17 @@
           }
         }
       ],
-      "primary_metric_name": "WeightedScorePercent"
+      "primary_metric_identity": {"name": "weighted_score_percent", "aggregation": "mean", "dimensions": {}}
     },
     {
+      "schema_version": 2,
       "name": "test-model-a_throughput_suite",
       "dataset_name": "throughput_suite",
       "model_name": "test-model-a",
-      "score": 512.0,
       "analysis": "Multi-dataset report entry: throughput_suite with an unbounded tokens-per-second metric.",
       "metrics": [
         {
-          "name": "AverageOutputTps",
+          "identity": {"name": "average_output_tps", "aggregation": "mean", "dimensions": {}},
           "num": 100,
           "score": 512.0,
           "categories": [
@@ -128,7 +126,6 @@
               ]
             }
           ],
-          "semantic_id": "perf.throughput.tokens_per_second",
           "semantics": {
             "semantic_id": "perf.throughput.tokens_per_second",
             "metric_name": "Token Throughput",
@@ -144,7 +141,7 @@
           }
         }
       ],
-      "primary_metric_name": "AverageOutputTps"
+      "primary_metric_identity": {"name": "average_output_tps", "aggregation": "mean", "dimensions": {}}
     }
   ],
   "datasets": [

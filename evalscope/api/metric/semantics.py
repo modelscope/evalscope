@@ -7,13 +7,132 @@ the resolver live under ``evalscope.metrics.semantics``.
 """
 
 import math
+import re
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing import Any, Dict, Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing import Any, Dict, Optional, Tuple, Union
 from typing_extensions import Self
 
 METRIC_CONTRACT_VERSION = 1
 """Version of the MetricSemantics contract. Bump when the contract shape changes."""
+
+Scalar = Union[str, int, float, bool]
+_CANONICAL_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*$')
+
+
+class _FrozenDimensions(dict):
+    """JSON-dict representation whose contents cannot mutate after validation."""
+
+    @staticmethod
+    def _reject_mutation(*args, **kwargs) -> None:
+        raise TypeError('metric identity dimensions are immutable')
+
+    __setitem__ = _reject_mutation
+    __delitem__ = _reject_mutation
+    __ior__ = _reject_mutation
+    clear = _reject_mutation
+    pop = _reject_mutation
+    popitem = _reject_mutation
+    setdefault = _reject_mutation
+    update = _reject_mutation
+
+    def __hash__(self) -> int:
+        return hash(tuple(self.items()))
+
+
+def _validate_canonical_name(value: str, field_name: str) -> str:
+    if not _CANONICAL_NAME_PATTERN.fullmatch(value):
+        raise ValueError(f'{field_name} must be lower-case snake_case, got {value!r}')
+    return value
+
+
+class MetricIdentity(BaseModel):
+    """Stable identity of one aggregated metric.
+
+    Aggregation and dimensions are deliberately separate from ``name`` so changing how a
+    metric is summarized never creates another metric vocabulary entry.
+    """
+
+    model_config = ConfigDict(frozen=True, extra='forbid')
+
+    name: str
+    aggregation: str
+    dimensions: Dict[str, Scalar] = Field(default_factory=dict)
+
+    @field_validator('name', 'aggregation')
+    @classmethod
+    def _validate_names(cls, value: str, info) -> str:
+        canonical = _validate_canonical_name(value, info.field_name)
+        if info.field_name == 'name' and canonical in {'score', 'overall', 'total_score'}:
+            raise ValueError(f'ambiguous metric name {canonical!r} is forbidden; declare the measured concept')
+        return canonical
+
+    @field_validator('dimensions')
+    @classmethod
+    def _validate_dimensions(cls, dimensions: Dict[str, Scalar]) -> Dict[str, Scalar]:
+        normalized: Dict[str, Scalar] = {}
+        for key, value in sorted(dimensions.items()):
+            _validate_canonical_name(key, 'dimension key')
+            if isinstance(value, float) and not math.isfinite(value):
+                raise ValueError(f'dimension {key!r} must be a finite JSON scalar')
+            normalized[key] = value
+        return _FrozenDimensions(normalized)
+
+    @property
+    def sort_key(self) -> Tuple[str, str, Tuple[Tuple[str, Scalar], ...]]:
+        """Deterministic comparison key independent of input dictionary order."""
+        return self.name, self.aggregation, tuple(self.dimensions.items())
+
+    def __hash__(self) -> int:
+        """Hash the frozen identity through its normalized scalar dimensions."""
+        return hash(self.sort_key)
+
+    @property
+    def key(self) -> str:
+        """Human-readable, lossless identity key for logs and table grouping."""
+        dimensions = ','.join(f'{key}={value}' for key, value in self.dimensions.items())
+        suffix = f'[{dimensions}]' if dimensions else ''
+        return f'{self.name}:{self.aggregation}{suffix}'
+
+
+class MetricSelector(BaseModel):
+    """Partial identity used to select one metric from a report.
+
+    Omitted aggregation and dimensions are wildcards. Supplied dimensions are matched as a
+    subset, allowing a selector to constrain only the axes relevant to the benchmark headline.
+    """
+
+    model_config = ConfigDict(frozen=True, extra='forbid')
+
+    name: str
+    aggregation: Optional[str] = None
+    dimensions: Dict[str, Scalar] = Field(default_factory=dict)
+
+    @field_validator('name')
+    @classmethod
+    def _validate_name(cls, value: str) -> str:
+        canonical = _validate_canonical_name(value, 'name')
+        if canonical in {'score', 'overall', 'total_score'}:
+            raise ValueError(f'ambiguous metric name {canonical!r} is forbidden; declare the measured concept')
+        return canonical
+
+    @field_validator('aggregation')
+    @classmethod
+    def _validate_aggregation(cls, value: Optional[str]) -> Optional[str]:
+        return _validate_canonical_name(value, 'aggregation') if value is not None else None
+
+    @field_validator('dimensions')
+    @classmethod
+    def _validate_dimensions(cls, dimensions: Dict[str, Scalar]) -> Dict[str, Scalar]:
+        return MetricIdentity(name='placeholder', aggregation='identity', dimensions=dimensions).dimensions
+
+    def matches(self, identity: MetricIdentity) -> bool:
+        """Whether ``identity`` satisfies every constraint in this selector."""
+        if self.name != identity.name:
+            return False
+        if self.aggregation is not None and self.aggregation != identity.aggregation:
+            return False
+        return all(identity.dimensions.get(key) == value for key, value in self.dimensions.items())
 
 
 class MetricRole(str, Enum):

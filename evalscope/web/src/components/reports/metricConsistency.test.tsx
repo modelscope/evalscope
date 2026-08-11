@@ -44,15 +44,17 @@ function makeReport(score: number, semantics: MetricSemantics = ACCURACY): Repor
     name: 'Qwen2.5-0.5B_gsm8k_20260701_120000',
     model_name: 'Qwen2.5-0.5B',
     dataset_name: 'gsm8k',
-    score,
-    metric_name: semantics.metric_name,
+    dataset_pretty_name: 'GSM8K Pretty',
     num_samples: 128,
     timestamp: '2026-07-01T12:00:00',
-    primary_metrics: [{ dataset_name: 'gsm8k', metric_name: 'mean_acc', score, semantics }],
-    summary_status: 'single_metric',
-    summary_score: score,
-    summary_semantics: semantics,
-  } as ReportSummary
+    primary_metrics: [{
+      dataset_name: 'gsm8k', dataset_pretty_name: 'GSM8K Pretty',
+      identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} },
+      score,
+      semantics,
+    }],
+    quality_ratio: score,
+  }
 }
 
 /** Build a report whose datasets report different metrics, so no single score exists. */
@@ -60,13 +62,11 @@ function makeMixedReport(): ReportSummary {
   return {
     ...makeReport(0.5),
     primary_metrics: [
-      { dataset_name: 'gsm8k', metric_name: 'mean_acc', score: 0.9, semantics: ACCURACY },
-      { dataset_name: 'librispeech', metric_name: 'mean_wer', score: 0.07, semantics: WER },
+      { dataset_name: 'gsm8k', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 0.9, semantics: ACCURACY },
+      { dataset_name: 'librispeech', identity: { name: 'wer', aggregation: 'mean', dimensions: {} }, score: 0.07, semantics: WER },
     ],
-    summary_status: 'mixed_metrics',
-    summary_score: null,
-    summary_semantics: null,
-  } as ReportSummary
+    quality_ratio: 0.915,
+  }
 }
 
 /** Render the card surface and return its displayed score text. */
@@ -101,6 +101,29 @@ function tableScoreText(report: ReportSummary): string {
 }
 
 describe('metric display consistency across surfaces', () => {
+  it('shows the pretty dataset name while retaining the stable id in data', () => {
+    const report = makeReport(0.5)
+
+    for (const render_ of [
+      () => <ReportCard report={report} selected={false} onSelect={() => {}} onClick={() => {}} />,
+      () => (
+        <ReportsTable
+          reports={[report]}
+          selected={[]}
+          allSelected={false}
+          onToggleSelectAll={() => {}}
+          onToggleSelect={() => {}}
+          onRowClick={() => {}}
+        />
+      ),
+    ]) {
+      const { container } = render(<LocaleProvider>{render_()}</LocaleProvider>)
+      expect(container.textContent).toContain('GSM8K Pretty')
+      expect(report.dataset_name).toBe('gsm8k')
+      cleanup()
+    }
+  })
+
   it('renders the same formatted score in the card and the table', () => {
     for (const score of [0, 0.0721, 0.5, 0.8567, 1]) {
       const report = makeReport(score)

@@ -4,7 +4,8 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import { isDomainError } from '@/api/errors'
 import type { LoadReportResponse, ReportData } from '@/api/types'
-import { primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
@@ -72,21 +73,14 @@ export default function ReportDetailPage() {
 
   // Derive overall info from report list
   const modelName = reportList[0]?.model_name ?? reportName
-  const primaryDataset = reportList[0]?.dataset_name ?? ''
+  const primaryDataset = reportList[0] ? datasetLabel(reportList[0]) : ''
   const overallMetric = useMemo(() => {
-    if (reportList.length === 0) return { score: null, semantics: null, metricName: '' }
-    const primaries = reportList.map(primaryMetricOf)
-    const semanticIds = primaries.map((metric) => metric?.semantics?.semantic_id ?? null)
-    // Only average across datasets that report the same metric; otherwise show no header score.
-    if (!semanticIds.every((id) => id !== null && id === semanticIds[0])) {
-      return { score: null, semantics: null, metricName: '' }
-    }
-    const scores = primaries.map((metric) => metric?.score ?? 0)
-    const metricNames = primaries.map((metric) => metric?.name ?? '')
+    if (reportList.length !== 1) return { score: null, semantics: null, metricName: '' }
+    const primary = primaryMetricOf(reportList[0])
     return {
-      score: scores.reduce((sum, score) => sum + score, 0) / scores.length,
-      semantics: primaries[0]?.semantics ?? null,
-      metricName: metricNames.every((name) => name === metricNames[0]) ? metricNames[0] : '',
+      score: primary?.score ?? null,
+      semantics: primary?.semantics ?? null,
+      metricName: primary ? formatMetricIdentityLabel(primary.identity, primary.semantics, primary.legacy_name) : '',
     }
   }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
@@ -95,6 +89,10 @@ export default function ReportDetailPage() {
   }, 0)
 
   const datasets = data?.datasets ?? []
+  const datasetLabels = useMemo(
+    () => Object.fromEntries(reportList.map((report) => [report.dataset_name, datasetLabel(report)])),
+    [reportList],
+  )
   const htmlReportUrl = getHtmlReportUrl(rootPath, reportName)
 
   // Semantics of the dataset currently shown in the details panel: its primary metric drives the
@@ -104,7 +102,7 @@ export default function ReportDetailPage() {
     if (!report) return undefined
     const primaryMetric = primaryMetricOf(report)
     const semanticsByMetric = Object.fromEntries(
-      report.metrics.map((metric) => [metric.name, metric.semantics ?? null]),
+      report.metrics.map((metric) => [metricIdentityKey(metric.identity), metric.semantics]),
     )
     return { primaryMetric, semanticsByMetric }
   }, [reportList, activeDataset])
@@ -146,12 +144,12 @@ export default function ReportDetailPage() {
                     : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
                 }`}
               >
-                {ds}
+                <span title={ds}>{datasetLabels[ds] || ds}</span>
               </button>
             ))}
           </div>
           <div className="hidden md:block">
-            <DatasetNav datasets={datasets} active={activeDataset} onChange={handleDatasetChange} />
+            <DatasetNav datasets={datasets} labels={datasetLabels} active={activeDataset} onChange={handleDatasetChange} />
           </div>
         </>
       )}
@@ -204,6 +202,7 @@ export default function ReportDetailPage() {
         modelName={modelName}
         datasetName={primaryDataset}
         datasets={datasets}
+        datasetLabels={datasetLabels}
         score={overallMetric.score}
         metricName={overallMetric.metricName}
         semantics={overallMetric.semantics}
@@ -237,7 +236,13 @@ export default function ReportDetailPage() {
               rootPath={rootPath}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
               overallScore={activeReport?.primaryMetric?.score}
-              metricName={activeReport?.primaryMetric?.name}
+              metricName={activeReport?.primaryMetric
+                ? formatMetricIdentityLabel(
+                    activeReport.primaryMetric.identity,
+                    activeReport.primaryMetric.semantics,
+                    activeReport.primaryMetric.legacy_name,
+                  )
+                : undefined}
               semantics={activeReport?.primaryMetric?.semantics}
               semanticsByMetric={activeReport?.semanticsByMetric}
               onSubsetClick={handleSubsetClick}

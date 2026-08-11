@@ -8,6 +8,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -107,7 +108,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
         paper_url='https://arxiv.org/abs/1612.00837',
         subset_list=['default'],
         metric_list=['vqa_score', 'exact_match'],
-        primary_metric='vqa_score',
+        primary_metric=MetricSelector(name='vqa_score'),
         eval_split='validation',
         prompt_template=PROMPT_TEMPLATE,
     )
@@ -117,7 +118,6 @@ class VQAv2Adapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = str(record.get('question') or '').strip()

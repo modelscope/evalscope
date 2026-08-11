@@ -1,11 +1,12 @@
 import pandas as pd
 from pandas import DataFrame
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
-from evalscope.metrics.semantics import compose_final_metric_name, get_semantics_resolver
-from evalscope.metrics.semantics.naming import match_primary_final_name
-from evalscope.metrics.semantics.resolver import apply_primary_metric_roles
+from evalscope.metrics.semantics import get_semantics_resolver
+from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.resolver import attribute_metric_roles
 from evalscope.report.report import *
 
 if TYPE_CHECKING:
@@ -29,9 +30,20 @@ class ReportGenerator:
                     num = group_subset['score'].count()
                     subsets.append(Subset(name=f'{dataset_name}/{subset_name}', score=float(avg_score), num=int(num)))
                 categories.append(Category(name=category_name, subsets=subsets))
-            metrics_list.append(Metric(name=metric_name, categories=categories))
+            identity = migrate_legacy_identity(metric_name, 'mean', benchmark_name=all_dataset_name)
+            semantics = get_semantics_resolver().resolve(all_dataset_name, identity).semantics
+            metrics_list.append(Metric(identity=identity, categories=categories, semantics=semantics))
+        identities = [metric.identity for metric in metrics_list]
+        semantics = {metric.identity.key: metric.semantics for metric in metrics_list}
+        attributed, primary = attribute_metric_roles(identities, semantics, None)
+        for metric in metrics_list:
+            metric.semantics = attributed[metric.identity.key]
         return Report(
-            name=DataCollection.NAME, metrics=metrics_list, dataset_name=all_dataset_name, model_name=model_name
+            name=DataCollection.NAME,
+            metrics=metrics_list,
+            dataset_name=all_dataset_name,
+            model_name=model_name,
+            primary_metric_identity=primary,
         )
 
     @staticmethod
@@ -39,7 +51,6 @@ class ReportGenerator:
         score_dict: Dict[str, List['AggScore']],
         model_name: str,
         data_adapter: 'DataAdapter',
-        add_aggregation_name: bool = True
     ) -> Report:
         """
         Generate a report for a specific dataset based on provided subset scores.
@@ -49,8 +60,8 @@ class ReportGenerator:
             ```
             {
                 'subset_name': [
-                    AggScore={'metric_name': 'AverageAccuracy', 'score': 0.3389, 'num': 100},
-                    AggScore={'metric_name': 'WeightedAverageAccuracy', 'score': 0.3389, 'num': 100}
+                    AggScore(metric_name='accuracy', aggregation='mean', score=0.3389, num=100),
+                    AggScore(metric_name='f1', aggregation='mean', score=0.3389, num=100),
                 ],
                 ...
             }
@@ -80,7 +91,7 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
-                    metric_name = compose_final_metric_name(agg_score_item, add_aggregation_name)
+                    identity = agg_score_item.identity
 
                     if isinstance(categories, str):
                         categories = [categories]
@@ -89,7 +100,8 @@ class ReportGenerator:
                             name=subset_name,
                             score=agg_score_item.score,
                             num=agg_score_item.num,
-                            metric_name=metric_name,
+                            identity_key=identity.key,
+                            identity=identity,
                             categories=tuple(categories)
                         )
                     )
@@ -103,21 +115,21 @@ class ReportGenerator:
                 f'No scores were collected for dataset "{dataset_name}". '
                 'Please check that samples are not all filtered out and that the aggregation step produces results.'
             )
-        if 'metric_name' not in df.columns:
+        if 'identity_key' not in df.columns:
             raise KeyError(
-                f'Column "metric_name" is missing from the score DataFrame for dataset "{dataset_name}". '
+                f'Column "identity_key" is missing from the score DataFrame for dataset "{dataset_name}". '
                 f'Available columns: {list(df.columns)}'
             )
 
-        semantics_by_metric, primary_metric_name = ReportGenerator._resolve_semantics(
-            score_dict=score_dict,
-            dataset_name=dataset_name,
-            data_adapter=data_adapter,
-            add_aggregation_name=add_aggregation_name,
+        identities = list({identity.key: identity for identity in df['identity']}.values())
+        semantics_by_identity, primary_identity = ReportGenerator._resolve_semantics(
+            benchmark_name=dataset_name,
+            identities=identities,
+            selector=data_adapter.primary_metric,
         )
 
         metrics_list = []
-        for metric_name, group_metric in df.groupby('metric_name', sort=False):
+        for identity_key, group_metric in df.groupby('identity_key', sort=False):
             categories = []
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []
@@ -126,15 +138,13 @@ class ReportGenerator:
 
                 categories.append(Category(name=category_name, subsets=subsets))
 
-            semantics = semantics_by_metric.get(metric_name)
+            identity = group_metric.iloc[0]['identity']
+            semantics = semantics_by_identity[identity_key]
             metric = Metric(
-                name=metric_name,
+                identity=identity,
                 categories=categories,
-                semantic_id=semantics.semantic_id if semantics else None,
+                semantics=semantics,
             )
-            # Runtime-only: lets this run's CLI table, HTML report and API response use the
-            # semantics without re-resolving. Only `semantic_id` reaches the report file.
-            metric.semantics = semantics
             metrics_list.append(metric)
 
         report = Report(
@@ -144,57 +154,35 @@ class ReportGenerator:
             model_name=model_name,
             dataset_description=data_adapter.description,
             dataset_pretty_name=data_adapter.pretty_name,
-            primary_metric_name=primary_metric_name,
+            primary_metric_identity=primary_identity,
         )
         return report
 
     @staticmethod
     def _resolve_semantics(
-        score_dict: Dict[str, List['AggScore']],
-        dataset_name: str,
-        data_adapter: 'DataAdapter',
-        add_aggregation_name: bool,
-    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[str]]:
+        benchmark_name: str,
+        identities: List[MetricIdentity],
+        selector: Optional[MetricSelector],
+    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[MetricIdentity]]:
         """Resolve the semantics of every metric this report will contain.
 
         An undeclared metric degrades to a diagnostic, which shows the stored value without
-        claiming a direction or a unit, and logs where to declare it. Report generation never
-        fails on it: a final metric name embeds the aggregation name, which several benchmarks
-        derive from the data, so the set of names is not knowable ahead of time. Scores are never
-        touched.
+        claiming a direction or unit and logs where to declare it. Aggregation and dynamic axes
+        are already structured in each identity, so resolution never parses a final-name string.
 
         Args:
-            score_dict: Subset name -> aggregated scores, as passed to the report.
-            dataset_name: Benchmark name the scores belong to.
-            data_adapter: Adapter that produced the scores.
-            add_aggregation_name: Whether metric names carry the aggregation prefix.
+            benchmark_name: Benchmark name the scores belong to.
+            identities: Distinct identities emitted by aggregation.
+            selector: Structured primary selector from benchmark metadata.
 
         Returns:
-            The final report metric name -> semantics mapping, and the final name of the primary
-            metric (``None`` when the benchmark declares none).
+            Identity key -> semantics mapping and the uniquely selected primary identity.
         """
         resolver = get_semantics_resolver()
 
-        # Two passes: the role of a metric depends on which primary metric the benchmark
-        # declares, which is only known once every emitted name has been composed. Names repeat
-        # across subsets, so this collapses to one entry per distinct final metric name.
-        final_metric_names = []
-        for agg_scores in score_dict.values():
-            for agg_score_item in agg_scores:
-                final_name = compose_final_metric_name(agg_score_item, add_aggregation_name)
-                if final_name not in final_metric_names:
-                    final_metric_names.append(final_name)
-
-        primary_metric_name = match_primary_final_name(
-            data_adapter.primary_metric,
-            final_metric_names,
-            data_adapter.aggregation if add_aggregation_name else None,
-        )
-
-        semantics_by_metric: Dict[str, 'MetricSemantics'] = {}
-        for final_name in final_metric_names:
-            resolved = resolver.resolve(dataset_name, final_name)
+        semantics_by_identity: Dict[str, 'MetricSemantics'] = {}
+        for identity in identities:
+            resolved = resolver.resolve(benchmark_name, identity)
             resolved.log_audit_messages()
-            semantics_by_metric[final_name] = resolved.semantics
-        semantics_by_metric = apply_primary_metric_roles(semantics_by_metric, primary_metric_name)
-        return semantics_by_metric, primary_metric_name
+            semantics_by_identity[identity.key] = resolved.semantics
+        return attribute_metric_roles(identities, semantics_by_identity, selector)

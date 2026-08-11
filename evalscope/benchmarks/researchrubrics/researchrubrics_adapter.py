@@ -424,7 +424,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         return AggScore(
             metric_name=metric_name,
             score=sum(values) / len(values),
-            aggregation_name='mean',
+            aggregation='mean',
             num=len(values),
             ids=[sample_score.sample_id for sample_score in sample_scores],
         )

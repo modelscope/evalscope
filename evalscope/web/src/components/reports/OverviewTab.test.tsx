@@ -86,4 +86,28 @@ describe('OverviewTab dataset score view', () => {
 
     expect(screen.queryByRole('button', { name: 'Radar' })).not.toBeInTheDocument()
   })
+
+  it('does not average the same semantic metric across different identities', () => {
+    const scoped = ['all', 'hard'].map((scope, index) => {
+      const identity = { name: 'accuracy', aggregation: 'mean', dimensions: { scope } }
+      return {
+        ...multi[0],
+        name: `scoped-accuracy-${scope}`,
+        dataset_name: `scoped_accuracy_${scope}`,
+        primary_metric_identity: identity,
+        metrics: multi[0].metrics.map((metric) => ({
+          ...metric,
+          identity,
+          score: 0.7 + index * 0.1,
+        })),
+      }
+    })
+
+    renderOverview(scoped)
+
+    expect(screen.queryByText('Average Score')).not.toBeInTheDocument()
+    expect(screen.queryByText('Best Dataset')).not.toBeInTheDocument()
+    expect(screen.queryByText('Worst Dataset')).not.toBeInTheDocument()
+    expect(screen.getByText('Total Samples')).toBeInTheDocument()
+  })
 })

@@ -168,7 +168,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
     metric_values: Dict[str, List[float]] = {
         'precision': [],
         'recall': [],
-        'f1_score': [],
+        'f1': [],
     }
     metric_ids: Dict[str, List[Any]] = {metric_name: [] for metric_name in metric_values}
 
@@ -185,7 +185,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
                 AggScore(
                     score=sum(values) / len(values),
                     metric_name=metric_name,
-                    aggregation_name='mean',
+                    aggregation='mean',
                     num=len(values),
                     ids=metric_ids[metric_name],
                 )
@@ -199,7 +199,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
         agg_scores.append(AggScore(
             score=count / total,
             metric_name=metric_name,
-            aggregation_name='rate',
+            aggregation='rate',
             num=total,
         ))
 
@@ -247,7 +247,7 @@ def _calculate_metric(true_positives: int, false_positives: int, false_negatives
     return {
         'precision': precision,
         'recall': recall,
-        'f1_score': f1_score,
+        'f1': f1_score,
     }
 
 

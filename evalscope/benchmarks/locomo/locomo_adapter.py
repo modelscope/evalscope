@@ -8,6 +8,7 @@ from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from .utils import CATEGORY_IDS, CATEGORY_NAMES, DATA_FILE, build_qa_prompt, get_target_answer, locomo_f1_score
@@ -46,6 +47,7 @@ official question-answering task from `locomo10.json`.
 """,
         dataset_id='evalscope/locomo',
         metric_list=['f1'],
+        primary_metric=MetricSelector(name='f1', aggregation='mean', dimensions={'scope': 'overall'}),
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -162,7 +164,7 @@ class LoCoMoAdapter(DefaultDataAdapter):
             return []
 
         agg_scores = [
-            self._make_agg_score(metric_name='f1', aggregation_name='overall', scores=valid_scores),
+            self._make_agg_score(metric_name='f1', dimensions={'scope': 'overall'}, scores=valid_scores),
         ]
 
         category_means = []
@@ -171,7 +173,9 @@ class LoCoMoAdapter(DefaultDataAdapter):
             if not category_scores:
                 continue
             category_name = CATEGORY_NAMES.get(category, f'category_{category}')
-            agg = self._make_agg_score(metric_name='f1', aggregation_name=category_name, scores=category_scores)
+            agg = self._make_agg_score(
+                metric_name='f1', dimensions={'question_type': category_name}, scores=category_scores
+            )
             agg_scores.append(agg)
             category_means.append(agg.score)
 
@@ -179,7 +183,8 @@ class LoCoMoAdapter(DefaultDataAdapter):
             agg_scores.append(
                 AggScore(
                     metric_name='f1',
-                    aggregation_name='task_averaged',
+                    aggregation='macro_mean',
+                    dimensions={'scope': 'question_types'},
                     score=sum(category_means) / len(category_means),
                     num=len(category_means),
                 )
@@ -188,12 +193,13 @@ class LoCoMoAdapter(DefaultDataAdapter):
         return agg_scores
 
     @staticmethod
-    def _make_agg_score(metric_name: str, aggregation_name: str, scores: List[SampleScore]) -> AggScore:
+    def _make_agg_score(metric_name: str, dimensions: Dict[str, Any], scores: List[SampleScore]) -> AggScore:
         values = [float(s.score.value[metric_name]) for s in scores]
         ids = [s.sample_id for s in scores]
         return AggScore(
             metric_name=metric_name,
-            aggregation_name=aggregation_name,
+            aggregation='mean',
+            dimensions=dimensions,
             score=sum(values) / len(values),
             num=len(values),
             ids=ids,

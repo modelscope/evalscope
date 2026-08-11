@@ -1,30 +1,9 @@
-"""Central metric semantics catalog.
+"""Canonical metric semantics registry and read-old migration manifest.
 
-The catalog answers one question only: *what does this final report metric name mean?* It is
-organized by final report metric name (not by benchmark), because the 219 built-in benchmarks
-produce 395 ``(benchmark, metric)`` pairs but only ~131 distinct metric names, and 149
-benchmarks emit a single metric. Direction / unit / scale / precision therefore need to be
-declared once per name and are reused by every benchmark.
-
-Two tables live here:
-
-- :data:`METRIC_NAME_SEMANTICS` -- final report metric name -> :class:`MetricEntry` (a baseline
-  reference plus optional field overrides). Also holds the historical report names, grouped in a
-  dedicated section so they can be dropped once no report of that vintage is opened again.
-- :data:`BENCHMARK_METRIC_OVERRIDES` -- ``(benchmark_name, final_metric_name)`` -> entry, used
-  *only* when the same name means different things in different benchmarks (a collision).
-
-The primary metric of a benchmark is **not** declared here: it is ``BenchmarkMeta.primary_metric``
-(next to ``metric_list``), applied as a role adjustment by the resolver.
-
-Every lookup is an exact-key dictionary lookup: no regular expressions, no name normalization,
-no fuzzy or magnitude based inference. Importing this module validates every entry (each
-``MetricEntry`` resolves against :data:`SEMANTIC_BASELINES` and passes the contract validation),
-so an illegal declaration or a dangling baseline reference aborts the import immediately.
-
-The catalog is deliberately incomplete: a final metric name embeds ``AggScore.aggregation_name``,
-which several benchmarks derive from the data, so those names cannot be declared ahead of time.
-An undeclared name degrades to ``diagnostic.unspecified`` and is logged, never rejected.
+``METRIC_DEFINITIONS`` is the only table used by the v2 resolver. It is keyed by canonical metric
+name and deliberately contains no aggregation prefixes or dynamic ``k`` variants. The larger
+``LEGACY_METRIC_MIGRATIONS`` table is a read-old manifest used only to migrate adapter output and
+historical reports; aliases in it never participate in v2 resolution.
 """
 
 from typing import Dict, Tuple
@@ -32,13 +11,13 @@ from typing import Dict, Tuple
 from evalscope.api.metric.semantics import BASELINE_TABLE_LOCATION, MetricEntry
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 
-#: Where to declare a metric name, used in audit and validation messages.
-METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_NAME_SEMANTICS'
+#: Where to declare a canonical metric name, used in audit and validation messages.
+METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_DEFINITIONS'
 
 #: Where to declare a benchmark level collision override, used in validation messages.
 BENCHMARK_OVERRIDE_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::BENCHMARK_METRIC_OVERRIDES'
 
-METRIC_NAME_SEMANTICS: Dict[str, MetricEntry] = {
+LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     # --- quality ratios: one line each, reused by every benchmark ------------------------
     # Bounded [0, 1] ratios rendered as percent, higher is better.
     'mean_acc': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -275,34 +254,175 @@ Seeded from the metric names this repository actually emits, so the common names
 right direction and unit. A name that is not here degrades to a diagnostic rather than blocking.
 """
 
-#: ``k`` values the runtime-sized ``pass@k`` / ``pass^k`` / ``vote@k`` families are declared for.
-#: Exact-key lookup cannot cover an unbounded family, so the common powers-of-two and decimal
-#: sample counts are declared explicitly; a ``k`` outside this tuple degrades to diagnostic with
-#: an audit message pointing here.
-DYNAMIC_K_VALUES: Tuple[int, ...] = (1, 2, 3, 4, 5, 8, 10, 16, 20, 32, 50, 64, 100)
+# Canonical v2 names are declared independently from the read-old manifest above. This keeps
+# aliases from participating in new-result resolution or determining which semantics wins when
+# several historical spellings collapse to the same identity.
+_CANONICAL_NAMES_BY_BASELINE = {
+    'diagnostic.count.items': (
+        'avg_reason_lens',
+        'count_finish_reason_tool_call',
+        'count_finish_reason_tool_calls',
+        'count_successful_tool_call',
+        'no_answer_num',
+        'total_model_input_tokens',
+        'total_model_output_tokens',
+        'total_tokens',
+    ),
+    'diagnostic.parse_status.ratio': (
+        'inference_error_rate',
+        'is_incorrect',
+        'is_not_attempted',
+        'maybe_ratio',
+        'official_mean_correct_with_excessive_answers',
+        'official_mean_fully_incorrect_items',
+        'rate_empty_auto_rater_response',
+        'rate_empty_model_response',
+        'rate_invalid_auto_rater_response',
+        'yes_ratio',
+    ),
+    'perf.throughput.tokens_per_second': ('average_output_tps', ),
+    'quality.accuracy.ratio': (
+        'accuracy',
+        'cell_acc',
+        'conclusion_acc',
+        'correct_acc',
+        'easy_puzzle_acc',
+        'error_acc',
+        'fact_acc',
+        'hard_puzzle_acc',
+        'icon_acc',
+        'inst_level_loose',
+        'inst_level_strict',
+        'is_correct',
+        'large_puzzle_acc',
+        'law_acc',
+        'medium_puzzle_acc',
+        'multi_choice_acc',
+        'number_acc',
+        'official_mean_all_answers_correct',
+        'overall_a_acc',
+        'overall_f_acc',
+        'overall_q_acc',
+        'param_default_accept_rate',
+        'param_immutable_reject_rate',
+        'process_acc',
+        'prompt_level_loose',
+        'prompt_level_strict',
+        'puzzle_acc',
+        'reasoning_acc',
+        'relaxed_acc',
+        'schema_accuracy',
+        'small_puzzle_acc',
+        'success_rate',
+        'task_averaged_acc',
+        'text_acc',
+        'unit_acc',
+        'xl_puzzle_acc',
+    ),
+    'quality.bleu.ratio': ('bleu', ),
+    'quality.cer.ratio': ('cer', ),
+    'quality.cider.unbounded': ('cider', ),
+    'quality.coverage.ratio': ('coverage_score', 'required_coverage'),
+    'quality.error_rate.ratio': (
+        'display_formula_edit_dist',
+        'distractor_leakage',
+        'error_rate',
+        'hallucination_rate',
+        'reading_order_edit_dist',
+        'simple_error_rate',
+        'table_edit_dist',
+        'text_block_edit_dist',
+    ),
+    'quality.exact_match.ratio': ('act_em', 'exact_match', 'plan_em'),
+    'quality.f1.ratio': (
+        'f1',
+        'f1_macro',
+        'f1_micro',
+        'f1_weighted',
+        'official_mean_f1_score',
+        'simple_f1_score',
+        'task_averaged_f1',
+        'tool_call_f1',
+    ),
+    'quality.iou.ratio': ('iou', ),
+    'quality.judge_score.unbounded': (
+        'communication_quality',
+        'completeness',
+        'context_awareness',
+        'instruction_following',
+        'judge_score',
+        'max_score',
+        'net_match_score',
+    ),
+    'quality.mer.ratio': ('mer', ),
+    'quality.meteor.ratio': ('meteor', ),
+    'quality.model_score.unbounded': ('hps_v2_1_score', 'pick_score'),
+    'quality.pass_at_k.ratio': (
+        'main_problem_pass_rate',
+        'pass_1',
+        'pass_at_k',
+        'pass_hat_k',
+        'pass_rate',
+        'simple_pass_rate',
+        'strict_pass',
+        'subproblem_pass_rate',
+    ),
+    'quality.precision.ratio': ('boundary_precision', 'official_mean_precision', 'precision'),
+    'quality.recall.ratio': ('official_mean_recall', 'recall'),
+    'quality.rouge.ratio': ('rouge', ),
+    'quality.score.points_100': ('eq_bench_score', 'weighted_score_percent'),
+    'quality.score.ratio': (
+        'compliance_score',
+        'mrcr_score',
+        'normalized_score',
+        'overall_ch',
+        'overall_en',
+        'overall_mrcr_score',
+        'partial_credit',
+        'simple_partial_credit',
+        'submission_ready',
+        'vqa_score',
+    ),
+    'quality.similarity.ratio': (
+        'anls',
+        'bert_score',
+        'comet',
+        'display_formula_cdm',
+        'perceptual_similarity',
+        'sem_score',
+        'semantic_consistency',
+        'table_teds',
+        'table_teds_structure_only',
+    ),
+    'quality.wer.ratio': ('audio_wer', 'wer'),
+    'quality.win_rate.ratio': ('win_rate', ),
+}
 
+METRIC_DEFINITIONS: Dict[str, MetricEntry] = {
+    name: MetricEntry(baseline=baseline)
+    for baseline, names in _CANONICAL_NAMES_BY_BASELINE.items()
+    for name in names
+}
+METRIC_DEFINITIONS.update({
+    'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    'total_wall_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+})
 
-def _dynamic_pass_at_k_names() -> Dict[str, MetricEntry]:
-    """Build the ``mean_acc_pass@{k}`` style entries of the runtime-sized families.
+AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {}
 
-    Returns:
-        Final report metric name -> entry, one per template and declared ``k``.
-    """
-    templates = ('mean_acc_pass@{k}', 'mean_acc_pass^{k}', 'mean_acc_vote@{k}')
-    return {
-        template.format(k=k): MetricEntry(baseline='quality.pass_at_k.ratio')
-        for template in templates
-        for k in DYNAMIC_K_VALUES
-    }
-
-
-METRIC_NAME_SEMANTICS.update(_dynamic_pass_at_k_names())
+# Aggregations whose meaning differs from the base metric are explicit overrides. Any ``k`` is
+# represented by ``dimensions.k`` and therefore needs no catalog enumeration.
+for _metric_name in ('accuracy', 'pass_rate', 'pass_at_k'):
+    AGGREGATION_SEMANTICS[(_metric_name, 'pass_at_k')] = MetricEntry(baseline='quality.pass_at_k.ratio')
+    AGGREGATION_SEMANTICS[(_metric_name, 'pass_hat_k')] = MetricEntry(baseline='quality.pass_at_k.ratio')
+    AGGREGATION_SEMANTICS[(_metric_name, 'vote_at_k')] = MetricEntry(baseline='quality.accuracy.ratio')
 
 BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
     # job_bench, i.e. an intermediate judge value: reassign the collision to a diagnostic.
-    ('job_bench', 'total_score'): MetricEntry(baseline='diagnostic.unspecified'),
-    ('job_bench', 'mean_total_score'): MetricEntry(baseline='diagnostic.unspecified'),
+    ('job_bench', 'judge_score'): MetricEntry(baseline='diagnostic.unspecified'),
 }
 """``(benchmark_name, final_metric_name)`` -> entry, only for same-name / different-meaning
 collisions. Each entry carries the collision reason in a comment."""
@@ -318,13 +438,19 @@ def _validate_catalog() -> None:
         ValueError: If an entry references a baseline absent from the baseline table.
         pydantic.ValidationError: If a resolved entry violates the metric semantics contract.
     """
-    for name, entry in METRIC_NAME_SEMANTICS.items():
+    for name, entry in LEGACY_METRIC_MIGRATIONS.items():
         if entry.baseline is not None and entry.baseline not in SEMANTIC_BASELINES:
             raise ValueError(
                 f"metric name '{name}' in {METRIC_NAME_TABLE_LOCATION} references unknown baseline "
                 f"'{entry.baseline}'; declare it at {BASELINE_TABLE_LOCATION}"
             )
         entry.resolve(name)
+
+    for name, entry in METRIC_DEFINITIONS.items():
+        entry.resolve(name)
+
+    for (name, aggregation), entry in AGGREGATION_SEMANTICS.items():
+        entry.resolve(f'{name}:{aggregation}')
 
     for (benchmark_name, metric_name), entry in BENCHMARK_METRIC_OVERRIDES.items():
         if entry.baseline is not None and entry.baseline not in SEMANTIC_BASELINES:
@@ -338,7 +464,9 @@ def _validate_catalog() -> None:
 _validate_catalog()
 
 __all__ = [
+    'AGGREGATION_SEMANTICS',
     'BENCHMARK_METRIC_OVERRIDES',
-    'METRIC_NAME_SEMANTICS',
+    'LEGACY_METRIC_MIGRATIONS',
+    'METRIC_DEFINITIONS',
     'METRIC_NAME_TABLE_LOCATION',
 ]

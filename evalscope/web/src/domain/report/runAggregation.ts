@@ -1,6 +1,7 @@
+import { metricIdentityKey } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
-import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
 
 /**
  * Aggregation of evaluation and performance runs by what they measure.
@@ -37,6 +38,8 @@ export interface AggregatedCell {
   model: string
   /** Benchmark name for an eval cell; dataset or API type for a perf cell. */
   benchmark: string
+  /** Human-readable benchmark label; identity and grouping continue to use ``benchmark``. */
+  benchmarkLabel?: string
   /** Final report metric name, as produced by the backend. */
   metricName: string
   semantics: MetricSemantics | null
@@ -180,7 +183,8 @@ export function aggregateRuns(
           kind: 'eval',
           model: report.model_name,
           benchmark: ref.dataset_name || report.dataset_name,
-          metricName: ref.metric_name,
+          benchmarkLabel: datasetLabel(ref),
+          metricName: metricIdentityKey(ref.identity),
           semantics: ref.semantics ?? null,
         },
         { timestamp: report.timestamp || '', score: ref.score, runId: report.name },

@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.models.utils.openai import chat_messages_from_openai
@@ -50,7 +51,7 @@ It supports OpenAI-compatible message format with flexible image/video input (lo
         tags=[Tags.QA, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vqa',
         metric_list=['BLEU', 'Rouge'],
-        primary_metric='Rouge',
+        primary_metric=MetricSelector(name='rouge'),
         few_shot_num=0,
         train_split=None,
         eval_split='test',

@@ -173,7 +173,7 @@ export default function DetailsTab({
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
               {semantics
-                ? formatMetricLabel(metricName ?? semantics.metric_name, semantics)
+                ? metricName ?? formatMetricLabel(semantics.metric_name, semantics)
                 : t('reportDetail.overallScore')}
             </span>
             <span

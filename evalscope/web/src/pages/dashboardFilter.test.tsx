@@ -63,10 +63,10 @@ const EVAL_REPORT = {
   name: 'qwen-plus_gsm8k_20260810_112700',
   model_name: 'qwen-plus',
   dataset_name: 'gsm8k',
-  score: 0.6,
   num_samples: 3,
   timestamp: '2026-08-10T11:27:00',
-  primary_metrics: [{ dataset_name: 'gsm8k', metric_name: 'mean_acc', score: 0.6, semantics: ACCURACY }],
+  primary_metrics: [{ dataset_name: 'gsm8k', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 0.6, semantics: ACCURACY }],
+  quality_ratio: 0.6,
 } as ReportSummary
 
 const PERF_RUN = {

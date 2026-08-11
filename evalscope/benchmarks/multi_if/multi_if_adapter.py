@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageUser, messages_pretty_str
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -71,7 +72,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
             'prompt_level_loose',
             'inst_level_loose',
         ],
-        primary_metric='prompt_level_strict',
+        primary_metric=MetricSelector(name='prompt_level_strict'),
         few_shot_num=0,
         train_split=None,
         eval_split='train',

@@ -228,7 +228,7 @@ def gen_html_report_file(
             if rpt is None:
                 continue
             primary_metric = rpt.primary_metric
-            metric_labels = format_metric_labels((metric.name, metric.semantics) for metric in rpt.metrics)
+            metric_labels = format_metric_labels((metric.identity, metric.semantics) for metric in rpt.metrics)
             semantics = primary_metric.semantics if primary_metric else None
             score = primary_metric.score if primary_metric else None
             summary_rows.append(
@@ -245,7 +245,7 @@ def gen_html_report_file(
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
         if first is not None and first.primary_metric is not None:
             metric = first.primary_metric
-            metric_labels = format_metric_labels((item.name, item.semantics) for item in first.metrics)
+            metric_labels = format_metric_labels((item.identity, item.semantics) for item in first.metrics)
             quality_score = bounded_quality_ratio(metric.score, metric.semantics)
             if quality_score is not None:
                 overview_chart_rows.append({
@@ -297,7 +297,7 @@ def gen_html_report_file(
 
             subset_rows: List[dict] = []
             diagnostic_rows: List[dict] = []
-            metric_labels = format_metric_labels((metric.name, metric.semantics) for metric in rpt.metrics)
+            metric_labels = format_metric_labels((metric.identity, metric.semantics) for metric in rpt.metrics)
 
             for metric in rpt.metrics:
                 semantics = metric.semantics

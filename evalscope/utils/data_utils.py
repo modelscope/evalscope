@@ -89,7 +89,7 @@ def load_multi_report_groups(root_path: str, report_names: List[str]) -> List[tu
     return report_groups
 
 
-def get_acc_report_df(report_list: List[Report]):
+def get_acc_report_df(report_list: List[Report]) -> pd.DataFrame:
     data_dict = []
     for report in report_list:
         if report.name == DataCollection.NAME:
@@ -116,8 +116,7 @@ def get_acc_report_df(report_list: List[Report]):
             data_dict.append(item)
     df = pd.DataFrame.from_dict(data_dict, orient='columns')
 
-    styler = style_df(df, columns=[ReportKey.score])
-    return df, styler
+    return df
 
 
 def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
@@ -205,26 +204,15 @@ def get_quality_metric_df(report_list: List[Report], metric_df: pd.DataFrame) ->
     return pd.DataFrame.from_records(rows, columns=columns)
 
 
-def style_df(df: pd.DataFrame, columns: List[str] = None):
-    # Apply background gradient to the specified columns
-    styler = df.style.background_gradient(subset=columns, cmap='RdYlGn', vmin=0.0, vmax=1.0, axis=0)
-    # Format the dataframe with a precision of 4 decimal places
-    styler.format(precision=4)
-    return styler
-
-
-def get_compare_report_df(acc_df: pd.DataFrame):
+def get_compare_report_df(acc_df: pd.DataFrame) -> pd.DataFrame:
     df = acc_df.pivot_table(index=ReportKey.model_name, columns=ReportKey.dataset_name, values=ReportKey.score)
     df.reset_index(inplace=True)
 
-    styler = style_df(df)
-    return df, styler
+    return df
 
 
-def get_single_dataset_df(df: pd.DataFrame, dataset_name: str):
-    df = df[df[ReportKey.dataset_name] == dataset_name]
-    styler = style_df(df, columns=[ReportKey.score])
-    return df, styler
+def get_single_dataset_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
+    return df[df[ReportKey.dataset_name] == dataset_name]
 
 
 def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:

@@ -166,7 +166,8 @@ class ArenaHardAdapter(DefaultDataAdapter):
         score = get_win_rate_column(stats, 'score', 'gpt4-0314').at['test_model']
 
         return [AggScore(
+            aggregation='identity',
             score=score,
-            metric_name='winrate',
+            metric_name='win_rate',
             num=len(sample_scores),
         )]

@@ -1,6 +1,6 @@
 """Perf field semantics.
 
-``PERF_FIELD_SEMANTICS`` declares the direction, unit and display rules of the public perf
+``PERF_SEMANTICS`` declares the direction, unit and display rules of the public perf
 contract. Keys are taken from the ``Metrics`` / ``PercentileMetrics`` constants rather than
 written as literals, so renaming a constant cannot silently orphan an entry.
 
@@ -12,16 +12,16 @@ Directions follow what the field measures, not how it reads:
 * request counts, token counts, cache and speculative-decoding details and the concurrency /
   request-rate knobs are ``diagnostic``: they describe the run, they are not better when larger
 
-The entries are only attached to service API responses. No perf JSON written to disk changes
-shape, and no numeric value is touched.
+Report v2 persists the resolved entries next to embedded perf values; perf archive APIs resolve
+the same registry for their own wire shapes. No numeric value is touched.
 """
 
-from typing import Dict, Iterable
+from typing import Any, Dict, Iterable
 
 from evalscope.api.metric.semantics import MetricEntry, MetricRole
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
-PERF_FIELD_SEMANTICS: Dict[str, MetricEntry] = {
+PERF_SEMANTICS: Dict[str, MetricEntry] = {
     # --- run shape: knobs and counts, no direction ----------------------------------------
     Metrics.TIME_TAKEN_FOR_TESTS: MetricEntry(
         baseline='diagnostic.unspecified',
@@ -190,7 +190,7 @@ PERF_FIELD_SEMANTICS: Dict[str, MetricEntry] = {
 }
 """Perf field key -> catalog entry. Keys come from the perf name constants."""
 
-PERF_API_PATH_SEMANTICS: Dict[str, MetricEntry] = {
+PERF_SEMANTICS.update({
     # In-report `perf_metrics` and the perf run list expose their numbers under stable API paths
     # rather than under the display names of the archive tables, so they need their own key set.
     # Both wire shapes stay as they are; only the semantics map is added next to them.
@@ -237,10 +237,10 @@ PERF_API_PATH_SEMANTICS: Dict[str, MetricEntry] = {
     'usage.output_tokens': MetricEntry(baseline='diagnostic.count.items', metric_name='Output Tokens'),
     'usage.total_tokens': MetricEntry(baseline='diagnostic.count.items', metric_name='Total Tokens'),
     'n_samples': MetricEntry(baseline='diagnostic.count.items', metric_name='Samples'),
-}
+})
 """Stable API path -> catalog entry, for perf data exposed under paths instead of display names."""
 
-PERF_SUMMARY_COLUMN_SEMANTICS: Dict[str, MetricEntry] = {
+PERF_SEMANTICS.update({
     # The archive's cross-run summary table labels its columns for humans (`build_summary_table`),
     # so those labels are a third key space next to the perf constants and the API paths. Values
     # follow the formatting of that table: latencies in seconds, TTFT / TPOT in milliseconds and
@@ -268,19 +268,38 @@ PERF_SUMMARY_COLUMN_SEMANTICS: Dict[str, MetricEntry] = {
     #: Run configuration, not a measurement: it describes the workload rather than grading it.
     'Conc.': MetricEntry(baseline='diagnostic.count.items', metric_name='Concurrency'),
     'Rate': MetricEntry(baseline='diagnostic.unspecified', metric_name='Request Rate', display_precision=2),
-}
+})
 """Archive summary table column label -> catalog entry."""
 
-__all__ = ['PERF_API_PATH_SEMANTICS', 'PERF_FIELD_SEMANTICS', 'PERF_SUMMARY_COLUMN_SEMANTICS', 'resolve_perf_semantics']
+__all__ = ['PERF_SEMANTICS', 'attach_perf_semantics', 'resolve_perf_semantics']
+
+
+def attach_perf_semantics(perf_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Attach the complete semantics map to an embedded report perf payload."""
+    payload = dict(perf_metrics)
+    summary = payload.get('summary')
+    if not isinstance(summary, dict):
+        return payload
+
+    field_keys = ['n_samples']
+    for key in ('latency', 'ttft', 'tpot'):
+        if key in summary:
+            field_keys.append(key)
+    throughput = summary.get('throughput')
+    if isinstance(throughput, dict):
+        field_keys.extend(f'throughput.{key}' for key in throughput if f'throughput.{key}' in PERF_SEMANTICS)
+    usage = summary.get('usage')
+    if isinstance(usage, dict):
+        field_keys.extend(f'usage.{key}' for key in usage if f'usage.{key}' in PERF_SEMANTICS)
+    payload['metric_semantics'] = resolve_perf_semantics(field_keys)
+    return payload
 
 
 def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
     """Resolve the semantics of the perf fields a service response is about to return.
 
-    Resolving at the API boundary keeps every perf file on disk untouched: the numbers, the field
-    names and the structure of ``benchmark_summary.json`` and friends do not change. A field with
-    no declaration degrades to a diagnostic, which renders the stored value without a direction or
-    a unit, and logs where to declare it.
+    A field with no declaration degrades to a diagnostic, which renders the stored value without a
+    direction or unit and logs where to declare it.
 
     Args:
         field_keys: Field keys present in the response. They may come from any of the three perf

@@ -12,6 +12,12 @@ import { metricSemanticsSchema } from '@/domain/metric/MetricSemantics'
 
 export { metricSemanticsSchema, valueRangeSchema } from '@/domain/metric/MetricSemantics'
 
+export const metricIdentitySchema = z.object({
+  name: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  aggregation: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  dimensions: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+})
+
 // ------------------------------------------------------------------ //
 // Report score tree                                                   //
 // ------------------------------------------------------------------ //
@@ -33,15 +39,12 @@ export const categoryDataSchema = z.object({
 
 /** Runtime contract for a metric score tree. */
 export const metricDataSchema = z.object({
-  name: z.string(),
+  identity: metricIdentitySchema,
+  legacy_name: z.string().nullable().optional(),
   num: z.number(),
   score: z.number(),
   categories: z.array(categoryDataSchema),
-  // Persisted anchor; the resolved contract below is attached by the API.
-  semantic_id: z.string().nullable().optional(),
-  // Absent for a response from an older backend: the metric then renders through the
-  // diagnostic fallback rather than failing to parse.
-  semantics: metricSemanticsSchema.nullable().optional(),
+  semantics: metricSemanticsSchema,
 })
 
 // ------------------------------------------------------------------ //
@@ -86,24 +89,23 @@ export const perfMetricsSummarySchema = z.object({
 /** Runtime contract for embedded performance metrics. */
 export const perfMetricsSchema = z.object({
   summary: perfMetricsSummarySchema,
-  // Field key -> semantics, attached by the API. Absent on an older backend.
-  metric_semantics: z.record(z.string(), metricSemanticsSchema).optional(),
+  // Field key -> persisted semantics. Report v2 always carries this map.
+  metric_semantics: z.record(z.string(), metricSemanticsSchema),
 })
 
 /** Runtime contract for one dataset report. */
 export const reportDataSchema = z.object({
+  schema_version: z.literal(2),
   name: z.string(),
   dataset_name: z.string(),
+  dataset_pretty_name: z.string().optional(),
   model_name: z.string(),
-  // Deprecated: kept for compatibility. New consumers use `primary_metric_name` and the
-  // per-metric `semantics` instead.
-  score: z.number(),
   analysis: z.string(),
   metrics: z.array(metricDataSchema),
   // Reports created without collect_perf persist this field as null rather
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
-  primary_metric_name: z.string().nullable().optional(),
+  primary_metric_identity: metricIdentitySchema.nullable(),
 })
 
 /** Runtime contract for a report detail response. */
@@ -120,12 +122,10 @@ export const loadReportResponseSchema = z.object({
 /** Runtime contract for one dataset's primary metric in a report-list item. */
 export const primaryMetricRefSchema = z.object({
   dataset_name: z.string(),
-  metric_name: z.string(),
-  score: z.number().nullable(),
-  semantics: metricSemanticsSchema.nullable().optional(),
-  // Whether the benchmark declared this metric as primary, or one was inferred so the run still
-  // shows a value. Optional, so a response from an older backend still parses.
-  inferred: z.boolean().optional(),
+  dataset_pretty_name: z.string().optional(),
+  identity: metricIdentitySchema,
+  score: z.number(),
+  semantics: metricSemanticsSchema,
 })
 
 /** Runtime contract for one report-list item. */
@@ -133,14 +133,11 @@ export const reportSummarySchema = z.object({
   name: z.string(),
   model_name: z.string(),
   dataset_name: z.string(),
-  // Deprecated: an average across possibly heterogeneous metrics. Kept non-null for old
-  // clients; new consumers read `primary_metrics`.
-  score: z.number(),
-  metric_name: z.string().optional(),
-  dataset_scores: z.record(z.string(), z.number()).optional(),
+  dataset_pretty_name: z.string().optional(),
   num_samples: z.number(),
   timestamp: z.string(),
-  primary_metrics: z.array(primaryMetricRefSchema).optional(),
+  primary_metrics: z.array(primaryMetricRefSchema),
+  quality_ratio: z.number().nullable(),
 })
 
 /** Runtime contract for a paginated report list. */

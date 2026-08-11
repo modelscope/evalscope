@@ -52,12 +52,18 @@ const LATENCY: MetricSemantics = {
 }
 
 function ref(overrides: Partial<PrimaryMetricRef> = {}): PrimaryMetricRef {
-  return { dataset_name: 'gsm8k', metric_name: 'mean_acc', score: 0.6, semantics: ACCURACY, ...overrides }
+  return {
+    dataset_name: 'gsm8k',
+    identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} },
+    score: 0.6,
+    semantics: ACCURACY,
+    ...overrides,
+  }
 }
 
 const MIXED = [
-  ref({ dataset_name: 'conll2003', metric_name: 'f1_score', score: 0.912, semantics: F1 }),
-  ref({ dataset_name: 'torgo', metric_name: 'wer', score: 0.0432, semantics: WER }),
+  ref({ dataset_name: 'conll2003', identity: { name: 'f1', aggregation: 'mean', dimensions: {} }, score: 0.912, semantics: F1 }),
+  ref({ dataset_name: 'torgo', identity: { name: 'wer', aggregation: 'mean', dimensions: {} }, score: 0.0432, semantics: WER }),
 ]
 
 afterEach(cleanup)
@@ -77,7 +83,7 @@ describe('ScoreLines', () => {
   })
 
   it('keeps each metric in its own unit rather than one shared one', () => {
-    const refs = [ref({ score: 0.5 }), ref({ dataset_name: 'b', metric_name: 'latency', score: 1.25, semantics: LATENCY })]
+    const refs = [ref({ score: 0.5 }), ref({ dataset_name: 'b', identity: { name: 'latency', aggregation: 'mean', dimensions: {} }, score: 1.25, semantics: LATENCY })]
 
     const { container } = render(<ScoreLines refs={refs} emptyLabel="none" />)
 
@@ -154,19 +160,8 @@ describe('MetricLines', () => {
     expect(container.textContent).toContain('WER ↓')
   })
 
-  it('marks an inferred metric and explains it in the tooltip', () => {
-    const inferred = [ref({ metric_name: 'avg@1_all/success_rate', semantics: null, inferred: true })]
-
-    const { container } = render(<MetricLines refs={inferred} inferredHint="inferred hint" />)
-
-    expect(container.textContent).toContain('*')
-    expect(container.querySelector('[title*="inferred hint"]')).not.toBeNull()
-  })
-
-  it('does not mark a declared metric', () => {
-    const { container } = render(<MetricLines refs={[ref()]} inferredHint="inferred hint" />)
-
-    expect(container.textContent).not.toContain('*')
-    expect(container.querySelector('[title*="inferred hint"]')).toBeNull()
+  it('puts the complete identity in the tooltip', () => {
+    const { container } = render(<MetricLines refs={[ref()]} />)
+    expect(container.querySelector('[title="accuracy:mean"]')).not.toBeNull()
   })
 })

@@ -9,6 +9,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec
@@ -62,7 +63,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
 """,  # noqa: E501
         dataset_id='evalscope/SciCode',
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
-        primary_metric='main_problem_pass_rate',
+        primary_metric=MetricSelector(name='main_problem_pass_rate'),
         eval_split='test',
         review_timeout=300,
         prompt_template=INITIAL_PROMPT,
@@ -187,11 +188,13 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
                         subproblem_solved += 1
         agg_scores = [
             AggScore(
+                aggregation='identity',
                 metric_name='main_problem_pass_rate',
                 score=main_problem_solved / main_problem_count if main_problem_count > 0 else 0.0,
                 num=main_problem_count,
             ),
             AggScore(
+                aggregation='identity',
                 metric_name='subproblem_pass_rate',
                 score=subproblem_solved / subproblem_count if subproblem_count > 0 else 0.0,
                 num=subproblem_count,

@@ -11,7 +11,7 @@ import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreColor } from '@/utils/colorScale'
 import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
-import { RATIO_PERCENT_SEMANTICS, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { RATIO_PERCENT_SEMANTICS, datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import type { MetricSemantics } from '@/domain/metric'
 import FilterChip from '@/components/ui/FilterChip'
 import Button from '@/components/ui/Button'
@@ -152,13 +152,16 @@ export default function ComparePage() {
     }
 
     const byReport: Record<string, Record<string, number>> = {}
+    const labelsByDataset: Record<string, string> = {}
     //  Each dataset's primary metric decides how its row is formatted and which end is "best".
     const semanticsByDataset: Record<string, MetricSemantics | undefined> = {}
     for (const r of reports) {
       const key = (r as ReportData & { _reportName?: string })._reportName ?? r.model_name
       if (!byReport[key]) byReport[key] = {}
-      byReport[key][r.dataset_name] = r.score
       const primary = primaryMetricOf(r)
+      if (!primary) continue
+      byReport[key][r.dataset_name] = primary.score
+      labelsByDataset[r.dataset_name] = datasetLabel(r)
       if (primary?.semantics) {
         semanticsByDataset[r.dataset_name] = primary.semantics
       }
@@ -172,7 +175,7 @@ export default function ComparePage() {
     common.sort()
 
     const rows: Record<string, unknown>[] = common.map((ds) => {
-      const row: Record<string, unknown> = { dataset: ds }
+      const row: Record<string, unknown> = { dataset: labelsByDataset[ds] || ds, dataset_id: ds }
       const scores = reportKeys.map((k) => byReport[k][ds] ?? 0)
       // "Best" follows the metric's direction: a low WER wins, a high accuracy wins.
       const lowerIsBetter = semanticsByDataset[ds]?.direction === 'lower_is_better'
@@ -226,6 +229,14 @@ export default function ComparePage() {
     if (dsLists.some((s) => s.size === 0)) return []
     return [...dsLists.reduce((a, b) => new Set([...a].filter((x) => b.has(x))))]
   }, [reportNames, reportCache])
+
+  const predictionDatasetLabels = useMemo(() => {
+    const labels: Record<string, string> = {}
+    for (const cached of Object.values(reportCache)) {
+      for (const report of cached.report_list) labels[report.dataset_name] = datasetLabel(report)
+    }
+    return labels
+  }, [reportCache])
 
   useEffect(() => {
     const applyDefault = () => {
@@ -482,6 +493,7 @@ export default function ComparePage() {
               displayNames={displayNames}
               displayLabels={displayLabels}
               predCommonDatasets={predCommonDatasets}
+              datasetLabels={predictionDatasetLabels}
               selectedDs={selectedDs}
               setSelectedDs={setSelectedDs}
               subsets={subsets}
@@ -541,6 +553,7 @@ function ScoreTab({
   const dataRows = scoreTableData.filter((r) => r.dataset !== t('compare.average'))
   const avgRow = scoreTableData.find((r) => r.dataset === t('compare.average')) ?? null
   const datasetNames = dataRows.map((r) => r.dataset as string)
+  const datasetIds = dataRows.map((r) => r.dataset_id as string)
   const chartType = datasetNames.length >= 3 ? 'radar' : 'grouped_bar'
 
   return (
@@ -553,7 +566,7 @@ function ScoreTab({
           scoreColumns: reportKeys,
           // Only meaningful when every dataset reports the same metric; otherwise the cells stay
           // plain numbers rather than being scaled under a metric they do not belong to.
-          semantics: canAggregate ? scoreSemantics[datasetNames[0]] : undefined,
+          semantics: canAggregate ? scoreSemantics[datasetIds[0]] : undefined,
         }}
         height={450}
         title={t(chartType === 'radar' ? 'multi.modelRadar' : 'multi.modelScores')}
@@ -574,9 +587,9 @@ function ScoreTab({
                   <th className="px-3 py-2.5 text-left type-table-xs sticky left-0 bg-[var(--bg-card)] z-10 border-r border-[var(--border)] w-32">
                     {t('compare.model')}
                   </th>
-                  {datasetNames.map((ds) => (
-                    <th key={ds} className="py-2.5 text-center type-table-xs whitespace-nowrap w-[100px]">
-                      {ds}
+                  {dataRows.map((row) => (
+                    <th key={String(row.dataset_id)} title={String(row.dataset_id)} className="py-2.5 text-center type-table-xs whitespace-nowrap w-[100px]">
+                      {String(row.dataset)}
                     </th>
                   ))}
                   {avgRow && (
@@ -597,8 +610,8 @@ function ScoreTab({
                         </span>
                       </div>
                     </td>
-                    {datasetNames.map((ds) => {
-                      const row = dataRows.find((r) => r.dataset === ds)
+                    {dataRows.map((row) => {
+                      const ds = String(row.dataset_id)
                       const score = row ? (row[rk] as number) : null
                       const isBest = row ? !!(row[`${rk}_best`]) : false
                       const semantics = scoreSemantics[ds]
@@ -628,7 +641,7 @@ function ScoreTab({
                       const score = avgRow[rk] as number
                       const isBest = !!(avgRow[`${rk}_best`])
                       // Present only when every dataset shares one metric, so any of them is it.
-                      const semantics = scoreSemantics[datasetNames[0]]
+                      const semantics = scoreSemantics[datasetIds[0]]
                       const ratio = getBoundedQualityRatio(score, semantics)
                       return (
                         <td className="px-1 py-1 border-l border-[var(--border)] w-[100px]">
@@ -664,6 +677,7 @@ function PredictionTab({
   displayNames,
   displayLabels,
   predCommonDatasets,
+  datasetLabels,
   selectedDs,
   setSelectedDs,
   subsets,
@@ -689,6 +703,7 @@ function PredictionTab({
   displayNames: Record<string, string>
   displayLabels: Record<string, string>
   predCommonDatasets: string[]
+  datasetLabels: Record<string, string>
   selectedDs: string
   setSelectedDs: (ds: string) => void
   subsets: string[]
@@ -763,7 +778,7 @@ function PredictionTab({
           <div className="min-w-[200px] flex-1">
             <Select
               label={t('compare.selectDataset')}
-              options={predCommonDatasets.map((ds) => ({ value: ds, label: ds }))}
+              options={predCommonDatasets.map((ds) => ({ value: ds, label: datasetLabels[ds] || ds }))}
               value={selectedDs}
               onChange={(v) => { setSelectedDs(v); setSelectedSubset('') }}
               placeholder={`-- ${t('compare.selectDataset')} --`}

@@ -12,14 +12,14 @@ import pytest
 
 from evalscope.api.metric.semantics import MetricDirection, MetricEntry, MetricRole
 from evalscope.metrics.semantics import catalog as catalog_module
-from evalscope.metrics.semantics.catalog import METRIC_NAME_SEMANTICS
+from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS
 
 
 class TestImportTimeValidation:
     """An illegal entry or a dangling baseline must abort the catalog validation."""
 
     def test_dangling_baseline_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setitem(METRIC_NAME_SEMANTICS, 'bogus_metric', MetricEntry(baseline='quality.does.not.exist'))
+        monkeypatch.setitem(METRIC_DEFINITIONS, 'bogus_metric', MetricEntry(baseline='quality.does.not.exist'))
 
         with pytest.raises(ValueError, match='unknown baseline'):
             catalog_module._validate_catalog()
@@ -27,7 +27,7 @@ class TestImportTimeValidation:
     def test_illegal_entry_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # role=primary with direction=none violates R1 and must not resolve.
         monkeypatch.setitem(
-            METRIC_NAME_SEMANTICS,
+            METRIC_DEFINITIONS,
             'bogus_metric',
             MetricEntry(
                 semantic_id='quality.bogus.ratio',
@@ -44,10 +44,10 @@ class TestImportTimeValidation:
 
 
 class TestGsm8kAccuracy:
-    """GSM8K reports a single ``mean_acc`` metric that must resolve to a primary Accuracy."""
+    """GSM8K's canonical accuracy definition has the expected quality contract."""
 
-    def test_mean_acc_resolves_to_primary_accuracy(self) -> None:
-        semantics = METRIC_NAME_SEMANTICS['mean_acc'].resolve('mean_acc')
+    def test_accuracy_resolves_to_primary_accuracy(self) -> None:
+        semantics = METRIC_DEFINITIONS['accuracy'].resolve('accuracy')
 
         assert semantics.semantic_id == 'quality.accuracy.ratio'
         assert semantics.role is MetricRole.PRIMARY
@@ -55,9 +55,19 @@ class TestGsm8kAccuracy:
 
 
 def test_job_bench_normalized_score_is_a_bounded_ratio() -> None:
-    semantics = METRIC_NAME_SEMANTICS['mean_normalized_score'].resolve('mean_normalized_score')
+    semantics = METRIC_DEFINITIONS['normalized_score'].resolve('normalized_score')
 
     assert semantics.semantic_id == 'quality.score.ratio'
     assert semantics.value_range is not None
     assert semantics.value_range.min == 0
     assert semantics.value_range.max == 1
+
+
+def test_v2_registry_contains_only_canonical_non_dynamic_names() -> None:
+    forbidden_names = {'score', 'overall', 'total_score'}
+    for name in METRIC_DEFINITIONS:
+        assert name == name.lower()
+        assert not name.startswith('mean_')
+        assert not name.endswith(('_s', '_ms'))
+        assert all(character not in name for character in ('@', '/', ' '))
+        assert name not in forbidden_names

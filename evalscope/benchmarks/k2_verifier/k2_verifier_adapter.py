@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
@@ -54,7 +55,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
             'count_finish_reason_tool_calls',
             'count_successful_tool_call',
         ],
-        primary_metric='schema_accuracy',
+        primary_metric=MetricSelector(name='schema_accuracy'),
         aggregation='f1',
         subset_list=['k2_thinking'],
         eval_split='test',
@@ -64,7 +65,6 @@ class K2VerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         # Fields are stored as JSON-encoded strings in the hosted dataset.
@@ -179,7 +179,10 @@ class K2VerifierAdapter(FunctionCallAdapter):
             'count_finish_reason_tool_calls': finish_reason_tool_call_count,
             'count_successful_tool_call': successful_tool_call_count,
         }
-        return [AggScore(metric_name=name, score=val, num=total, metadata={}) for name, val in metrics.items()]
+        return [
+            AggScore(aggregation='identity', metric_name=name, score=val, num=total, metadata={})
+            for name, val in metrics.items()
+        ]
 
 
 def _sanitize_assistant_tool_call_args(messages: List[Dict[str, Any]]) -> None:

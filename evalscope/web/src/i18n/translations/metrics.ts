@@ -14,7 +14,6 @@ export const en: Dict = {
   value: 'Value',
   multiplePrimaryMetrics: '${count} primary metrics, cannot be merged',
   noPrimaryMetric: 'No metric reported',
-  inferredPrimary: 'This benchmark declares no primary metric; one was inferred to show a value',
   multipleMetrics: 'Multiple metrics',
 }
 
@@ -25,6 +24,5 @@ export const zh: Dict = {
   value: '数值',
   multiplePrimaryMetrics: '${count} 个主指标，不可合并',
   noPrimaryMetric: '未报告指标',
-  inferredPrimary: '该 benchmark 未声明主指标，此处推断了一个用于展示',
   multipleMetrics: '多个指标',
 }

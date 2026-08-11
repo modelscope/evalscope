@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -187,7 +188,7 @@ WMT2024++ is a comprehensive machine translation benchmark based on the WMT 2024
                 'model_id_or_path': 'evalscope/wmt22-comet-da',
             }
         }],
-        primary_metric='comet',
+        primary_metric=MetricSelector(name='comet'),
         few_shot_num=0,
         prompt_template=PROMPT_TEMPLATE,
     )

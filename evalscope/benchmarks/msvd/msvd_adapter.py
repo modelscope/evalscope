@@ -7,6 +7,7 @@ from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_METRICS, compute_caption_scores
 from evalscope.constants import HubType, Tags
@@ -47,7 +48,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
         paper_url='https://aclanthology.org/P11-1020/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
-        primary_metric='CIDEr',
+        primary_metric=MetricSelector(name='cider'),
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
@@ -75,7 +76,6 @@ class MSVDAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.use_batch_scoring = True
-        self.add_aggregation_name = False
 
     @property
     def source_dataset_id(self) -> str:

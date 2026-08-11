@@ -15,6 +15,7 @@ import {
   MISSING_PLACEHOLDER,
   formatDifference,
   formatMetric,
+  formatMetricIdentityLabel,
   formatMetricLabel,
   formatMetricLabels,
   getBoundedQualityRatio,
@@ -26,6 +27,21 @@ import type { MetricSemantics } from './MetricSemantics'
 import { arbSemantics, diagnosticSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
 
 const NUM_RUNS = 100
+
+describe('formatMetricIdentityLabel', () => {
+  it('matches the backend title-cased dimension labels', () => {
+    expect(
+      formatMetricIdentityLabel(
+        {
+          name: 'accuracy',
+          aggregation: 'mean',
+          dimensions: { level: 'overall', target: 'answer', strict: true },
+        },
+        ratioSemantics(),
+      ),
+    ).toBe('Accuracy ↑ · Answer · Overall · Yes')
+  })
+})
 
 describe('roundHalfUp', () => {
   it('rounds a tie toward positive infinity', () => {

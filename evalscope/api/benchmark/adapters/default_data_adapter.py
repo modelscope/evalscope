@@ -852,9 +852,7 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             Report: The generated evaluation report
         """
-        return ReportGenerator.generate_report(
-            score_dict=scores, model_name=model_name, data_adapter=self, add_aggregation_name=self.add_aggregation_name
-        )
+        return ReportGenerator.generate_report(score_dict=scores, model_name=model_name, data_adapter=self)
 
     @override
     def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:

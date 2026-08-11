@@ -1,6 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+import re
+import warnings
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from typing import Any, Callable, Dict, List, Optional, Union
 
+from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -82,14 +85,19 @@ class SampleScore(BaseModel):
 class AggScore(BaseModel):
     """Output of an aggregation operation."""
 
+    model_config = ConfigDict(populate_by_name=True, extra='forbid')
+
     score: float = Field(default=0.0)
     """Aggregated value as a float."""
 
     metric_name: str = Field(default='')
     """Name of the metric being aggregated."""
 
-    aggregation_name: str = Field(default='')
-    """Name of the aggregation methods"""
+    aggregation: str = Field(validation_alias=AliasChoices('aggregation', 'aggregation_name'))
+    """Canonical name of the aggregation method. It is not part of ``metric_name``."""
+
+    dimensions: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    """Structured axes such as scope, threshold, level, target, or k."""
 
     num: int = Field(default=0)
     """Number of samples used in the aggregation."""
@@ -99,6 +107,53 @@ class AggScore(BaseModel):
 
     metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Additional metadata related to the aggregation."""
+
+    @property
+    def identity(self) -> MetricIdentity:
+        """Return the canonical structured identity represented by this aggregate."""
+        return MetricIdentity(name=self.metric_name, aggregation=self.aggregation, dimensions=self.dimensions)
+
+    @model_validator(mode='before')
+    @classmethod
+    def _warn_deprecated_aggregation_name(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'aggregation_name' in data and 'aggregation' not in data:
+            warnings.warn('AggScore.aggregation_name is deprecated; use aggregation.', DeprecationWarning, stacklevel=3)
+        return data
+
+    @model_validator(mode='after')
+    def _normalize_legacy_identity_fields(self) -> 'AggScore':
+        """Normalize known adapter aliases before an aggregate leaves the metric layer."""
+        from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
+        from evalscope.metrics.semantics.identity import migrate_legacy_identity
+
+        canonical_pattern = re.compile(r'^[a-z][a-z0-9_]*$')
+        known_dynamic = re.fullmatch(
+            r'.+_(?:pass|vote)@\d+|.+_pass\^\d+|(?:mean_)?ACC@\d+(?:\.\d+)?|(?:mean_)?Bleu_\d+',
+            self.metric_name,
+        )
+        if (
+            not canonical_pattern.fullmatch(self.metric_name) and self.metric_name not in LEGACY_METRIC_MIGRATIONS
+            and not known_dynamic
+        ):
+            raise ValueError(
+                f'unknown non-canonical metric_name={self.metric_name!r}; declare a legacy migration or use snake_case'
+            )
+
+        identity = migrate_legacy_identity(self.metric_name, self.aggregation, self.dimensions)
+        if (self.metric_name, self.aggregation, self.dimensions) != (
+            identity.name,
+            identity.aggregation,
+            identity.dimensions,
+        ):
+            warnings.warn(
+                f"legacy metric identity '{self.metric_name}' is deprecated; emit {identity.key}",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+        self.metric_name = identity.name
+        self.aggregation = identity.aggregation
+        self.dimensions = identity.dimensions
+        return self
 
 
 class Aggregator:

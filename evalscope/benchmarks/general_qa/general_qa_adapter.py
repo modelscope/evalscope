@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -49,7 +50,7 @@ General-QA is a customizable question answering benchmark for evaluating languag
         tags=[Tags.QA, Tags.CUSTOM],
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],
-        primary_metric='Rouge',
+        primary_metric=MetricSelector(name='rouge'),
         few_shot_num=0,
         train_split=None,
         eval_split='test',

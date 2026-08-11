@@ -2,11 +2,26 @@ import json
 import os
 import pandas as pd
 from collections import defaultdict
-from pydantic import BaseModel, Field, computed_field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
-from evalscope.api.metric.semantics import MetricRole, MetricSemantics
+from evalscope.api.metric.semantics import (
+    MetricDirection,
+    MetricDisplayKind,
+    MetricIdentity,
+    MetricRole,
+    MetricSemantics,
+)
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -109,28 +124,35 @@ class Category(BaseModel):
 
 
 class Metric(BaseModel):
-    name: str = 'default_metric'
+    model_config = ConfigDict(extra='forbid')
+
+    identity: MetricIdentity
+    legacy_name: Optional[str] = None
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
-    semantic_id: Optional[str] = None
-    """Persisted anchor into the semantics baseline table.
-
-    Only the identifier is stored: the full contract is rebuilt on read by
-    ``hydrate_report_semantics``, so a catalog correction applies to historical reports too and
-    the file does not carry a copy of the semantics per metric.
-    """
-
     categories: List[Category] = Field(default_factory=list)
 
-    semantics: Optional[MetricSemantics] = Field(default=None, exclude=True)
-    """Runtime-only resolved semantics, shared by every ``Category`` and ``Subset`` below.
+    semantics: MetricSemantics
+    """Persisted display contract. Historical reports are resolved once during migration."""
 
-    Excluded from serialization: ``semantic_id`` is the persisted form.
-    """
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_v1_shape(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or 'identity' in data:
+            return data
+        migrated = dict(data)
+        old_name = migrated.pop('name', 'legacy_metric')
+        semantic_id = migrated.pop('semantic_id', None)
+        migrated['identity'] = _migrate_legacy_report_identity(old_name)
+        if 'semantics' not in migrated:
+            migrated['semantics'] = _diagnostic_semantics(old_name, semantic_id)
+        return migrated
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
+        if not self.categories:
+            return self
         # Categories whose subsets are all is_aggregate end up with num=0; skip them
         # so they don't drag down macro_mean.
         real = [c for c in self.categories if c.num > 0]
@@ -142,7 +164,38 @@ class Metric(BaseModel):
     @property
     def role(self) -> Optional[MetricRole]:
         """Display tier of this metric, or ``None`` while the semantics are not resolved."""
-        return self.semantics.role if self.semantics else None
+        return self.semantics.role
+
+    @property
+    def name(self) -> str:
+        """Compatibility display key; v2 serialization stores ``identity`` instead."""
+        return self.legacy_name or self.identity.key
+
+
+def _diagnostic_semantics(metric_name: str, semantic_id: Optional[str] = None) -> MetricSemantics:
+    """Create a self-contained fallback without importing the resolver/catalog."""
+    return MetricSemantics(
+        semantic_id=semantic_id or 'diagnostic.unspecified',
+        metric_name=metric_name,
+        role=MetricRole.DIAGNOSTIC,
+        direction=MetricDirection.NONE,
+        display_kind=MetricDisplayKind.NUMBER,
+        display_precision=4,
+    )
+
+
+def _migrate_legacy_report_identity(metric_name: str, benchmark_name: Optional[str] = None) -> MetricIdentity:
+    """Migrate a known v1 name, or isolate an unknown legacy spelling as a diagnostic identity."""
+    import re
+
+    from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
+    from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
+
+    if metric_name in LEGACY_METRIC_MIGRATIONS or is_known_dynamic_legacy_name(metric_name, benchmark_name):
+        return migrate_legacy_identity(metric_name, 'identity', benchmark_name=benchmark_name)
+    if re.fullmatch(r'[a-z][a-z0-9_]*', metric_name) and metric_name not in {'score', 'overall', 'total_score'}:
+        return MetricIdentity(name=metric_name, aggregation='identity')
+    return MetricIdentity(name='legacy_metric', aggregation='identity', dimensions={'original_name': metric_name})
 
 
 class ReportKey:
@@ -160,89 +213,78 @@ class ReportKey:
 
 
 class Report(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    schema_version: int = 2
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
     dataset_pretty_name: str = ''
     dataset_description: str = ''
     model_name: str = 'default_model'
-    score: float = 0.0
-    """Deprecated: kept for backward compatible readers.
-
-    Retains its historical value (the first metric's score) and its non-null shape. Semantic
-    consumers use :attr:`primary_metric_name` and ``Metric.semantics`` instead; nothing derives
-    the primary metric from this number.
-    """
-
     metrics: List[Metric] = Field(default_factory=list)
     analysis: str = 'N/A'
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
-    primary_metric_name: Optional[str] = None
-    """Final report metric name of the ``role=primary`` metric, ``None`` when there is none."""
+    primary_metric_identity: Optional[MetricIdentity] = None
 
-    model_config = {'ignored_types': ()}
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_v1_shape(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        migrated = dict(data)
+        migrated.pop('num', None)
+        migrated.pop('metric_schema_version', None)
+        metrics = migrated.get('metrics', [])
+        has_v2_metrics = bool(metrics) and all(
+            hasattr(metric, 'identity') or isinstance(metric, dict) and 'identity' in metric for metric in metrics
+        )
+        if migrated.get('schema_version') == 2 or has_v2_metrics:
+            migrated.setdefault('schema_version', 2)
+            return migrated
+
+        dataset_name = migrated.get('dataset_name')
+        primary_name = migrated.pop('primary_metric_name', None)
+        migrated.pop('score', None)
+        migrated['schema_version'] = 2
+        migrated_metrics = []
+        for metric_data in migrated.get('metrics', []):
+            item = dict(metric_data)
+            old_name = item.pop('name', 'legacy_metric')
+            semantic_id = item.pop('semantic_id', None)
+            identity = _migrate_legacy_report_identity(old_name, benchmark_name=dataset_name)
+            item['identity'] = identity.model_dump()
+            item['legacy_name'] = old_name
+            item['semantics'] = _diagnostic_semantics(old_name, semantic_id).model_dump()
+            migrated_metrics.append(item)
+            if primary_name == old_name:
+                migrated['primary_metric_identity'] = identity.model_dump()
+        migrated['metrics'] = migrated_metrics
+        return migrated
 
     @model_validator(mode='after')
-    def _set_score(self) -> Self:
-        if self.metrics:
-            # Keep the historical number and shape of the deprecated `score` field.
-            self.score = self.metrics[0].score
-        declared = self._declared_primary_metric()
-        if declared is not None:
-            self.primary_metric_name = declared.name
+    def _validate_v2(self, info: ValidationInfo) -> Self:
+        if self.schema_version != 2:
+            raise ValueError(f'unsupported report schema_version={self.schema_version}')
+        declared_metrics = [metric for metric in self.metrics if metric.role is MetricRole.PRIMARY]
+        if len(declared_metrics) > 1:
+            raise ValueError('Report v2 must contain at most one metric with role=primary')
+        declared = declared_metrics[0] if declared_metrics else None
+        if self.primary_metric_identity is not None:
+            matches = [metric for metric in self.metrics if metric.identity == self.primary_metric_identity]
+            if len(matches) != 1:
+                raise ValueError('primary_metric_identity must match exactly one report metric')
+            if matches[0].role is not MetricRole.PRIMARY and not (info.context or {}).get('migrating_v1'):
+                raise ValueError('primary_metric_identity must reference the metric with role=primary')
+        elif declared is not None:
+            self.primary_metric_identity = declared.identity
         return self
 
-    def _declared_primary_metric(self) -> Optional[Metric]:
-        """Return the metric the benchmark *declared* as primary, if any.
-
-        Kept separate from :meth:`_find_primary_metric` because ``primary_metric_name`` is not a
-        display detail: ``hydrate_report_semantics`` reads it to decide which metric to promote to
-        ``role=primary``. Writing an inferred choice there would make the inference decide the
-        semantics, so only a declared metric is ever persisted under that name.
-
-        A declared metric is one whose resolved semantics carry ``role=primary``; the resolver
-        enforces at most one such metric per report, so scanning for it also covers the metric
-        named by ``primary_metric_name``.
-        """
-        return next((m for m in self.metrics if m.role is MetricRole.PRIMARY), None)
-
     def _find_primary_metric(self) -> Optional[Metric]:
-        """Return the metric that carries this report's conclusion.
-
-        Resolution order, most to least authoritative:
-
-        1. the metric declared primary, via :meth:`_declared_primary_metric`;
-        2. the metric named by ``primary_metric_name``, which the benchmark declared through
-           ``BenchmarkMeta.primary_metric`` and the report persisted, even if its resolved role
-           disagrees;
-        3. the first metric that is not a diagnostic;
-        4. the first metric.
-
-        Steps 3 and 4 are inferences, reported by :meth:`primary_metric_is_inferred`. They exist
-        so every report presents a headline number: a report that shows nothing is less useful
-        than one that shows its first real metric and says the choice was inferred. This is a read
-        only: it never writes ``primary_metric_name``, and it never invents semantics -- an
-        inferred metric is still formatted, coloured and compared strictly by its own contract.
-        """
-        declared = self._declared_primary_metric()
-        if declared is not None:
-            return declared
-        if self.primary_metric_name:
-            named = next((m for m in self.metrics if m.name == self.primary_metric_name), None)
-            if named is not None:
-                return named
-        graded = next((m for m in self.metrics if m.role is not MetricRole.DIAGNOSTIC), None)
-        return graded or (self.metrics[0] if self.metrics else None)
-
-    def primary_metric_is_inferred(self) -> bool:
-        """Whether the primary metric was inferred rather than declared.
-
-        A consumer can mark an inferred headline as such, so "this benchmark says this is the
-        conclusion" is never confused with "we picked something to show".
-        """
-        if not self.metrics:
-            return False
-        return self._declared_primary_metric() is None and self.primary_metric_name is None
+        """Return the metric identified by the persisted primary identity."""
+        if self.primary_metric_identity is None:
+            return None
+        return next((metric for metric in self.metrics if metric.identity == self.primary_metric_identity), None)
 
     @computed_field
     @property
@@ -250,8 +292,7 @@ class Report(BaseModel):
         """Total sample count derived from the primary metric's subsets.
 
         Using a single metric avoids double-counting datasets that evaluate several metrics over
-        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Falls
-        back to the first metric while no primary metric is resolved.
+        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples).
         """
         metric = self._find_primary_metric()
         if metric is None:
@@ -262,11 +303,8 @@ class Report(BaseModel):
     def primary_metric(self) -> Optional[Metric]:
         """The metric carrying this report's conclusion, or ``None`` when it has no metric.
 
-        Prefers the metric whose resolved semantics say ``role=primary``. When the benchmark
-        declared none, a metric is *inferred* so the report still shows a headline number -- the
-        first non-diagnostic metric, else the first one. There is no ``overall`` name convention.
-        Call :meth:`primary_metric_is_inferred` to tell a declared conclusion from a chosen one;
-        see :meth:`_find_primary_metric` for the full order.
+        A sole scored metric may be selected implicitly during generation; report reads use only
+        the persisted identity and never fall back to list order.
         """
         return self._find_primary_metric()
 
@@ -287,12 +325,19 @@ class Report(BaseModel):
     @classmethod
     def from_dict(cls, data: dict):
         # Pydantic handles nested model construction automatically via model_validate
-        report = cls.model_validate(data)
+        is_v2 = data.get('schema_version') == 2
+        report = cls.model_validate(data, context={'migrating_v1': not is_v2})
         # Resolve the semantics of every metric on the single read path, so the API, the HTML
         # report, the CLI table and the DataFrame all see the same contract. Imported inside the
         # function to keep `report` importable without pulling in the semantics catalog.
+        if is_v2:
+            return report
         from evalscope.metrics.semantics import hydrate_report_semantics
-        return hydrate_report_semantics(report)
+        report = hydrate_report_semantics(report)
+        if report.perf_metrics:
+            from evalscope.metrics.semantics.perf import attach_perf_semantics
+            report.perf_metrics = attach_perf_semantics(report.perf_metrics)
+        return report
 
     @classmethod
     def from_json(cls, json_file: str):

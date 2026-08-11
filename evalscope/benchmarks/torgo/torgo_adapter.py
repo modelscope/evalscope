@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -53,7 +54,7 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
         subset_list=['mild', 'moderate', 'severe'],
         few_shot_num=0,
         metric_list=['cer', 'wer', 'sem_score'],
-        primary_metric='wer',
+        primary_metric=MetricSelector(name='wer'),
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -63,7 +64,6 @@ class TorgoAdapter(AudioLanguageAdapter):
         super().__init__(**kwargs)
         self.reformat_subset = True
         self.add_overall_metric = False
-        self.add_aggregation_name = False
         self.use_batch_scoring = True
 
         self.jiwer_cer = None

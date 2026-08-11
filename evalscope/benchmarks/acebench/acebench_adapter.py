@@ -8,6 +8,7 @@ from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, Model, ModelOutput, get_model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
@@ -96,7 +97,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         subset_list=list(ACEBENCH_CATEGORIES),
         default_subset='en',
         metric_list=['acc', 'process_acc'],
-        primary_metric='acc',
+        primary_metric=MetricSelector(name='accuracy'),
         eval_split='normal',
         extra_params={
             'language': {
@@ -135,7 +136,6 @@ class AceBenchAdapter(AgentAdapter):
         super().__init__(**kwargs)
         self.split_as_subset = True
         self.reformat_subset = True
-        self.add_aggregation_name = False
         self.add_overall_metric = False
 
         self.category_map = dict(ACEBENCH_CATEGORIES)
@@ -371,15 +371,15 @@ class AceBenchAdapter(AgentAdapter):
         return [
             AggScore(
                 score=sum(end_scores) / len(end_scores),
-                metric_name='acc',
-                aggregation_name=self.aggregation,
+                metric_name='accuracy',
+                aggregation=self.aggregation,
                 num=len(dialogues),
                 ids=ids,
             ),
             AggScore(
                 score=sum(process_scores) / len(process_scores),
                 metric_name='process_acc',
-                aggregation_name=self.aggregation,
+                aggregation=self.aggregation,
                 num=len(dialogues),
                 ids=ids,
             ),
@@ -388,7 +388,7 @@ class AceBenchAdapter(AgentAdapter):
     def _on_generate_report_end(self, report: Report, output_dir: str, **kwargs) -> None:
         """Append the official ACEBench groupings and the weighted OVERALL score."""
         for metric in report.metrics:
-            if metric.name != 'acc':
+            if metric.identity.name != 'accuracy':
                 continue
 
             subset_dict: Dict[str, Subset] = {

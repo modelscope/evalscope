@@ -636,8 +636,8 @@ def test_multi_turn_subsets_aggregate_per_dialogue(adapter):
     ]
 
     scores = {agg.metric_name: agg for agg in adapter.aggregate_scores(sample_scores)}
-    assert scores['acc'].score == pytest.approx(0.5)
-    assert scores['acc'].num == 2
+    assert scores['accuracy'].score == pytest.approx(0.5)
+    assert scores['accuracy'].num == 2
     assert scores['process_acc'].score == pytest.approx(0.75)
 
 

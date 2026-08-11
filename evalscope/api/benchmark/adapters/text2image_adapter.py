@@ -36,8 +36,6 @@ class Text2ImageAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.add_aggregation_name = False  # Do not add aggregation name in the report by default
-
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)
 

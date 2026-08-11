@@ -7,6 +7,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -166,7 +167,7 @@ class PerspectiveGapBaseAdapter(DefaultDataAdapter):
         paper_url='https://arxiv.org/abs/2606.08878',
         subset_list=['default'],
         metric_list=[STRICT_PASS, *SUBMETRICS],
-        primary_metric='strict_pass',
+        primary_metric=MetricSelector(name='strict_pass'),
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -196,7 +197,7 @@ class PerspectiveGapRoleAssignmentAdapter(PerspectiveGapBaseAdapter):
         paper_url='https://arxiv.org/abs/2606.08878',
         subset_list=['default'],
         metric_list=[STRICT_PASS, *SUBMETRICS],
-        primary_metric='strict_pass',
+        primary_metric=MetricSelector(name='strict_pass'),
         few_shot_num=0,
         train_split=None,
         eval_split='test',

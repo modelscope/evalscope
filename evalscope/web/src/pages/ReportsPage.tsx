@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
 import { isDomainError } from '@/api/errors'
@@ -227,7 +228,7 @@ export default function ReportsPage() {
       selectedForCompare.map((name) => {
         const report = reports.find((r) => r.name === name)
         if (!report) return name
-        return `${report.model_name} · ${report.dataset_name}`
+        return `${report.model_name} · ${datasetLabel(report)}`
       }),
     [selectedForCompare, reports],
   )

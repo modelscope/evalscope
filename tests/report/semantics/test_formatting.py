@@ -9,7 +9,14 @@ of ``MetricSemantics``, shared by the CLI, the HTML report, the reports API and 
 import pytest
 from typing import Optional
 
-from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics, ValueRange
+from evalscope.api.metric.semantics import (
+    MetricDirection,
+    MetricDisplayKind,
+    MetricIdentity,
+    MetricRole,
+    MetricSemantics,
+    ValueRange,
+)
 from evalscope.metrics.semantics.formatting import (
     DIAGNOSTIC_FALLBACK_PRECISION,
     MISSING_PLACEHOLDER,
@@ -183,6 +190,19 @@ class TestMetricLabels:
         semantics = make_percent_semantics(direction=MetricDirection.LOWER_IS_BETTER)
 
         assert format_metric_label('wer', semantics) == 'Accuracy ↓'
+
+    def test_identity_dimensions_use_stable_semantic_order(self) -> None:
+        identity = MetricIdentity(
+            name='accuracy',
+            aggregation='mean',
+            dimensions={
+                'level': 'overall',
+                'target': 'answer',
+                'strict': True
+            },
+        )
+
+        assert format_metric_label(identity, make_percent_semantics()) == 'Accuracy ↑ · Answer · Overall · Yes'
 
     def test_diagnostic_and_missing_semantics_keep_final_name(self) -> None:
         diagnostic = make_number_semantics(

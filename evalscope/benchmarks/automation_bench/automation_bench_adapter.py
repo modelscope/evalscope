@@ -6,6 +6,7 @@ from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_dict_from_record_map
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
@@ -69,7 +70,7 @@ Zapier's official Python package.
         description=_DESCRIPTION,
         paper_url='https://arxiv.org/abs/2604.18934',
         metric_list=['pass_rate', 'partial_credit', 'error_rate'],
-        primary_metric='pass_rate',
+        primary_metric=MetricSelector(name='pass_rate'),
         aggregation='mean',
         eval_split='test',
         subset_list=PUBLIC_DOMAINS,

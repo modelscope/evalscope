@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -71,7 +72,7 @@ RefCOCO is a dataset for training and evaluating models on Referring Expression 
             'IoU', 'ACC@0.1', 'ACC@0.3', 'ACC@0.5', 'ACC@0.7', 'ACC@0.9', 'Center_ACC', 'Bleu_1', 'Bleu_2', 'Bleu_3',
             'Bleu_4', 'METEOR', 'ROUGE_L', 'CIDEr'
         ],
-        primary_metric='IoU',
+        primary_metric=MetricSelector(name='iou'),
         subset_list=['test', 'val', 'testA', 'testB'],
         extra_params={
             'eval_mode': {

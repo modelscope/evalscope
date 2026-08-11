@@ -39,8 +39,7 @@ describe('PerfMetricsPanel missing statistics', () => {
     expect(perfMetrics).toBeDefined()
     expect(perfMetrics).not.toBeNull()
     if (!perfMetrics) return
-    perfMetrics.metric_semantics = {
-      latency: {
+    perfMetrics.metric_semantics.latency = {
         semantic_id: 'perf.latency.seconds',
         metric_name: 'Latency',
         role: 'primary',
@@ -51,7 +50,6 @@ describe('PerfMetricsPanel missing statistics', () => {
         display_unit: 'ms',
         display_precision: 1,
         contract_version: 1,
-      },
     }
 
     render(

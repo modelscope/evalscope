@@ -8,10 +8,9 @@ one reference per dataset -- ``dataset -> metric -> score``, each in its own nat
 never collapsed into a single cross-benchmark number, which would average incomparable units.
 """
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import Optional
+from pydantic import BaseModel, ConfigDict
 
-from evalscope.api.metric.semantics import MetricSemantics
+from evalscope.api.metric.semantics import MetricIdentity, MetricSemantics
 
 __all__ = ['PrimaryMetricRef']
 
@@ -24,14 +23,14 @@ class PrimaryMetricRef(BaseModel):
     dataset_name: str
     """Name of the dataset the primary metric belongs to."""
 
-    metric_name: str
-    """Final report metric name."""
+    dataset_pretty_name: str = ''
+    """Human-readable dataset label; empty means callers display ``dataset_name``."""
 
-    score: Optional[float] = Field(default=None)
-    """Score of the primary metric in its native scale. ``None`` when unavailable."""
+    identity: MetricIdentity
+    """Canonical metric identity."""
 
-    semantics: Optional[MetricSemantics] = Field(default=None)
-    """Semantics of the primary metric. ``None`` when the report carries no declaration."""
+    score: float
+    """Score of the primary metric in its native scale."""
 
-    inferred: bool = Field(default=False)
-    """Whether the benchmark declared this metric as primary, or it was inferred to show a value."""
+    semantics: MetricSemantics
+    """Persisted semantics of the primary metric."""

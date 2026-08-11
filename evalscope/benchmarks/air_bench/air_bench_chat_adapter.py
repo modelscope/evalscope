@@ -21,6 +21,7 @@ from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -107,7 +108,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
         metric_list=['gpt_score', 'win_rate'],
-        primary_metric='gpt_score',
+        primary_metric=MetricSelector(name='judge_score'),
         few_shot_num=0,
         train_split=None,
         prompt_template='{question}',
@@ -149,7 +150,6 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.category_map = CHAT_TASK_TO_CATEGORY
         self._track_root: Optional[str] = None
         self._audio_cache_dir = ''

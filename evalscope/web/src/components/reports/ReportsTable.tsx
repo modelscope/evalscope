@@ -3,8 +3,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
-import { formatMetric } from '@/domain/metric'
-import { primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
 import { buildDisplayLabel } from '@/domain/compare/compareModel'
 
 interface ReportsTableProps {
@@ -86,7 +85,7 @@ export default function ReportsTable({
             const isSelected = selectedSet.has(report.name)
             const parsed = buildDisplayLabel(report.name)
             const model = report.model_name || parsed.model || report.name
-            const dataset = report.dataset_name || parsed.dataset
+            const dataset = datasetLabel(report) || parsed.dataset
             const metricRefs = primaryMetricsOf(report)
             return (
               <tr
@@ -114,18 +113,12 @@ export default function ReportsTable({
                   <DatasetLines refs={metricRefs} fallback={dataset} />
                 </td>
                 <td className="px-4 py-3 text-[var(--text-muted)] text-xs min-w-0">
-                  <MetricLines refs={metricRefs} inferredHint={t('metrics.inferredPrimary')} />
+                  <MetricLines refs={metricRefs} />
                 </td>
                 <td className="px-4 py-3 text-right">
                   {metricRefs.length > 0 ? (
                     <ScoreLines refs={metricRefs} emptyLabel={t('metrics.noPrimaryMetric')} />
-                  ) : (
-                    // Response from a backend without semantics: show the raw legacy number
-                    // rather than scaling it under a unit it never declared.
-                    <span className="text-sm font-mono tabular-nums text-[var(--text)]">
-                      {formatMetric(report.score, undefined).primary}
-                    </span>
-                  )}
+                  ) : <span className="text-sm text-[var(--text-muted)]">{t('metrics.noPrimaryMetric')}</span>}
                 </td>
                 <td className="px-4 py-3 text-[var(--text-muted)] text-right tabular-nums">
                   {report.num_samples}

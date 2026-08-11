@@ -5,10 +5,16 @@ import type { ReportData } from '@/api/types'
 import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
-import { formatMetric, formatMetricLabel, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
+import {
+  formatMetric,
+  formatMetricIdentityLabel,
+  getBoundedQualityRatio,
+  getValuePosition,
+  metricIdentityKey,
+} from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
-import { primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
@@ -31,7 +37,7 @@ function primarySummaryOf(report: ReportData): { name: string; score: number; nu
     return null
   }
   return {
-    name: metric.name,
+    name: metricIdentityKey(metric.identity),
     score: metric.score,
     num: metric.categories?.reduce((sum, category) => sum + category.num, 0) ?? 0,
     semantics: metric.semantics,
@@ -58,7 +64,8 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
     return reports.map((r) => {
       const primary = primarySummaryOf(r)
       return {
-        Dataset: r.dataset_name,
+        Dataset: datasetLabel(r),
+        DatasetId: r.dataset_name,
         Score: primary?.score ?? null,
         Metric: primary?.name ?? '',
         Samples: primary?.num ?? 0,
@@ -73,6 +80,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const name = String(row.Dataset)
+        const datasetId = String(row.DatasetId)
         const content = (
           <>
             <span className="block max-w-[72px] break-words sm:max-w-none">{name}</span>
@@ -84,7 +92,8 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         if (onDatasetClick) {
           return (
             <button
-              onClick={() => onDatasetClick(name)}
+              onClick={() => onDatasetClick(datasetId)}
+              title={datasetId}
               className="text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit text-left"
             >
               {content}
@@ -100,13 +109,15 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const metricName = String(row.Metric ?? '')
-        const semantics = primaries.find((primary) => primary?.name === metricName)?.semantics
         return (
           <span
             className="truncate text-xs text-[var(--text-muted)] sm:text-sm"
             title={metricName}
           >
-            {formatMetricLabel(metricName, semantics)}
+            {(() => {
+              const metric = primaries.find((primary) => primary && metricIdentityKey(primary.identity) === metricName)
+              return metric ? formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name) : metricName
+            })()}
           </span>
         )
       },
@@ -118,7 +129,9 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       render: (row: Record<string, unknown>) => {
         const score = row.Score == null ? null : Number(row.Score)
         const metricName = String(row.Metric ?? '')
-        const semantics = primaries.find((primary) => primary?.name === metricName)?.semantics
+        const semantics = primaries.find(
+          (primary) => primary && metricIdentityKey(primary.identity) === metricName,
+        )?.semantics
         // The bar length is the value's own position in its own range, so two different metrics
         // never draw the same length: an F1 of 91.2% is long, a WER of 4.3% is short. The colour
         // carries the quality, so that short WER bar is green. Sizing by quality instead is what

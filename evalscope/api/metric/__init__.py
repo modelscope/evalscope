@@ -5,7 +5,10 @@ from .semantics import (
     MetricDirection,
     MetricDisplayKind,
     MetricEntry,
+    MetricIdentity,
     MetricRole,
+    MetricSelector,
     MetricSemantics,
+    Scalar,
     ValueRange,
 )
