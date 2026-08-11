@@ -187,6 +187,14 @@ class TestSerializationContract:
         assert isinstance(data['score'], float)
         assert all('score' in metric_data for metric_data in data['metrics'])
 
+    def test_dataframe_keeps_raw_numeric_scores(self) -> None:
+        report = self._generated_report()
+
+        dataframe = report.to_dataframe()
+
+        assert dataframe['Score'].tolist() == [0.80, 0.75, 0.85, 0.90]
+        assert dataframe['Score'].dtype.kind == 'f'
+
     def test_round_trip_rebuilds_the_contract(self) -> None:
         original = self._generated_report()
         restored = Report.from_dict(original.to_dict())

@@ -87,6 +87,19 @@ SCENARIOS = [
         ],
         'quality.accuracy.ratio',
     ),
+    (
+        'rubric_dimensions',
+        'plawbench',
+        'acc',
+        [
+            AggScore(score=0.72, metric_name='acc', aggregation_name='mean', num=30),
+            AggScore(score=0.68, metric_name='conclusion_acc', aggregation_name='mean', num=30),
+            AggScore(score=0.75, metric_name='fact_acc', aggregation_name='mean', num=30),
+            AggScore(score=0.70, metric_name='reasoning_acc', aggregation_name='mean', num=30),
+            AggScore(score=0.66, metric_name='law_acc', aggregation_name='mean', num=30),
+        ],
+        'quality.accuracy.ratio',
+    ),
 ]
 
 
@@ -133,6 +146,7 @@ class TestSemanticsEndToEnd:
 
         assert len(df) == 1
         assert df.iloc[0]['Score'] == pytest.approx(report.primary_metric.score)
+        assert isinstance(df.iloc[0]['Score'], float)
 
     def test_html_report_shows_the_same_formatted_value(
         self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id, tmp_path: Path
