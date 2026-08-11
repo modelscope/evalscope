@@ -505,9 +505,23 @@ Two cases are worth a line from you:
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
+Keep the naming layers separate:
+
+- Adapters, `metric_list`, `primary_metric`, and `Score.value` use raw names such as `acc`.
+- The report generator adds the aggregation prefix automatically. Never emit `mean_acc` from an
+  adapter or put it in `primary_metric`.
+- The catalog uses the actual final report name such as `mean_acc`. If aggregation is disabled or
+  unnamed, the final name remains `acc`.
+- `Score.main_score_name` selects one value in a sample, `BenchmarkMeta.primary_metric` declares the
+  report-level primary metric, and `Report.primary_metric_name` persists its final report name.
+
+After changing `primary_metric`, refresh its generated metadata cache with
+`make docs-update BENCHMARK="<name>" FORCE=1`; do not edit `_meta/*.json` by hand.
+
 An undeclared metric never fails an evaluation: it degrades to a diagnostic, which displays the
 stored value without claiming a direction or a unit, and logs the catalog entry to add. The
-catalog cannot be complete by construction — a final metric name is `f'{aggregation_name}_{metric}'`
+catalog cannot be complete by construction — a final metric name is composed from its optional
+aggregation name and raw metric name
 and several benchmarks derive `aggregation_name` from the data (a subset label in
 `hallusion_bench`, a question type in `longmemeval`, a needle range in `openai_mrcr`), so those
 names are unknowable ahead of time. Adding an entry is therefore an improvement to how a metric

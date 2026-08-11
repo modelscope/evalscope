@@ -501,8 +501,21 @@ metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
    'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
    ```
 
+各命名层应保持分离：
+
+- Adapter、`metric_list`、`primary_metric` 与 `Score.value` 使用 `acc` 这类原始名。
+- 报告生成器自动添加聚合前缀。不要让 Adapter 产出 `mean_acc`，也不要将其写入
+  `primary_metric`。
+- Catalog 登记 `mean_acc` 这类实际最终报告名。关闭聚合前缀或聚合名为空时，最终名仍为
+  `acc`。
+- `Score.main_score_name` 在单样本中选取一个值，`BenchmarkMeta.primary_metric` 声明报告级
+  主指标，`Report.primary_metric_name` 持久化其最终报告名。
+
+修改 `primary_metric` 后，应运行 `make docs-update BENCHMARK="<name>" FORCE=1` 刷新自动生成的
+元数据缓存，不要手工编辑 `_meta/*.json`。
+
 未声明的指标不会让评测失败：它降级为 diagnostic，原样显示数值，不伪造方向与单位，并在日志中给出
-待补充的目录条目。目录在原理上不可能完备——最终指标名是 `f'{aggregation_name}_{metric}'`，而若干
+待补充的目录条目。目录在原理上不可能完备——最终指标名由可选聚合名与原始指标名组合而成，而若干
 benchmark 的 `aggregation_name` 来自数据（`hallusion_bench` 的子类别、`longmemeval` 的问题类型、
 `openai_mrcr` 的针距区间），这些名字无法预先穷举。因此补目录条目是对指标渲染效果的改进，而不是
 运行它的前置条件。

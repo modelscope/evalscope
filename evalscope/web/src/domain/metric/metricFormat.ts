@@ -44,6 +44,40 @@ export interface FormattedMetric {
   isDiagnosticFallback: boolean
 }
 
+/** Arrow indicating the optimization direction, empty when the metric carries none. */
+export function directionArrow(semantics: MetricSemantics | null | undefined): string {
+  if (!semantics) return ''
+  if (semantics.direction === 'higher_is_better') return '↑'
+  if (semantics.direction === 'lower_is_better') return '↓'
+  return ''
+}
+
+/** Label one final report metric without inferring anything from its name. */
+export function formatMetricLabel(
+  finalMetricName: string,
+  semantics: MetricSemantics | null | undefined,
+): string {
+  if (!semantics || semantics.role === 'diagnostic') return finalMetricName
+  return `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd()
+}
+
+/** Label all metrics of one report and disambiguate repeated semantic display names. */
+export function formatMetricLabels(
+  metrics: ReadonlyArray<{ metricName: string; semantics: MetricSemantics | null | undefined }>,
+): Record<string, string> {
+  const labels = Object.fromEntries(
+    metrics.map(({ metricName, semantics }) => [metricName, formatMetricLabel(metricName, semantics)]),
+  )
+  const counts = new Map<string, number>()
+  for (const label of Object.values(labels)) counts.set(label, (counts.get(label) ?? 0) + 1)
+  return Object.fromEntries(
+    metrics.map(({ metricName }) => [
+      metricName,
+      counts.get(labels[metricName])! > 1 ? `${labels[metricName]} (${metricName})` : labels[metricName],
+    ]),
+  )
+}
+
 /**
  * Round `value` to `precision` decimal places with ties toward positive infinity
  * (`0.5 → 1`, `-0.5 → 0`, `2.5 → 3`). Decimal-point shifting avoids the binary drift of

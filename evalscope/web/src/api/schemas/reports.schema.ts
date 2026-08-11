@@ -8,6 +8,9 @@
  * Covers: LoadReportResponse, ListReportsResponse, PredictionsResponse.
  */
 import { z } from 'zod'
+import { metricSemanticsSchema } from '@/domain/metric/MetricSemantics'
+
+export { metricSemanticsSchema, valueRangeSchema } from '@/domain/metric/MetricSemantics'
 
 // ------------------------------------------------------------------ //
 // Report score tree                                                   //
@@ -26,31 +29,6 @@ export const categoryDataSchema = z.object({
   num: z.number(),
   score: z.number(),
   subsets: z.array(subsetDataSchema),
-})
-
-/** Runtime contract for a bounded metric's value range. */
-export const valueRangeSchema = z.object({
-  min: z.number(),
-  max: z.number(),
-})
-
-/**
- * Runtime contract mirroring the backend `MetricSemantics`.
- *
- * Field names stay snake_case, so the parsed object is the mirrored TS type as-is.
- */
-export const metricSemanticsSchema = z.object({
-  semantic_id: z.string(),
-  metric_name: z.string(),
-  role: z.enum(['primary', 'auxiliary', 'diagnostic']),
-  direction: z.enum(['higher_is_better', 'lower_is_better', 'none']),
-  raw_unit: z.string().nullable().optional(),
-  value_range: valueRangeSchema.nullable().optional(),
-  display_kind: z.enum(['number', 'percent']),
-  display_multiplier: z.number().nullable().optional(),
-  display_unit: z.string().nullable().optional(),
-  display_precision: z.number(),
-  contract_version: z.number(),
 })
 
 /** Runtime contract for a metric score tree. */

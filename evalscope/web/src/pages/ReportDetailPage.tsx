@@ -74,17 +74,19 @@ export default function ReportDetailPage() {
   const modelName = reportList[0]?.model_name ?? reportName
   const primaryDataset = reportList[0]?.dataset_name ?? ''
   const overallMetric = useMemo(() => {
-    if (reportList.length === 0) return { score: null, semantics: null }
+    if (reportList.length === 0) return { score: null, semantics: null, metricName: '' }
     const primaries = reportList.map(primaryMetricOf)
     const semanticIds = primaries.map((metric) => metric?.semantics?.semantic_id ?? null)
     // Only average across datasets that report the same metric; otherwise show no header score.
     if (!semanticIds.every((id) => id !== null && id === semanticIds[0])) {
-      return { score: null, semantics: null }
+      return { score: null, semantics: null, metricName: '' }
     }
     const scores = primaries.map((metric) => metric?.score ?? 0)
+    const metricNames = primaries.map((metric) => metric?.name ?? '')
     return {
       score: scores.reduce((sum, score) => sum + score, 0) / scores.length,
       semantics: primaries[0]?.semantics ?? null,
+      metricName: metricNames.every((name) => name === metricNames[0]) ? metricNames[0] : '',
     }
   }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
@@ -203,6 +205,7 @@ export default function ReportDetailPage() {
         datasetName={primaryDataset}
         datasets={datasets}
         score={overallMetric.score}
+        metricName={overallMetric.metricName}
         semantics={overallMetric.semantics}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
@@ -234,6 +237,7 @@ export default function ReportDetailPage() {
               rootPath={rootPath}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
               overallScore={activeReport?.primaryMetric?.score}
+              metricName={activeReport?.primaryMetric?.name}
               semantics={activeReport?.primaryMetric?.semantics}
               semanticsByMetric={activeReport?.semanticsByMetric}
               onSubsetClick={handleSubsetClick}

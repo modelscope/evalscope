@@ -18,6 +18,9 @@ export type {
 
 export type { ComparisonVerdict, FormattedMetric } from './metricFormat'
 export {
+  directionArrow,
+  formatMetricLabel,
+  formatMetricLabels,
   formatMetric,
   getBoundedQualityRatio,
   getComparisonVerdict,

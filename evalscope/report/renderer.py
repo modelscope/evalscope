@@ -236,6 +236,7 @@ def gen_html_report_file(
                     dataset=pretty,
                     model=model,
                     metric=metric_labels.get(primary_metric.name, primary_metric.name) if primary_metric else 'N/A',
+                    metric_raw=primary_metric.name if primary_metric else 'N/A',
                     score=score if score is not None else 0.0,
                     score_display=format_metric_value(score, semantics),
                     num=primary_metric.num if primary_metric else 0,
@@ -268,6 +269,7 @@ def gen_html_report_file(
         pretty = info['pretty_name']
         model_sections: List[dict] = []
         overall_score = 0.0
+        overall_score_display = format_metric_value(overall_score, None)
 
         for model in all_models:
             rpt = info['model_reports'].get(model)
@@ -275,6 +277,10 @@ def gen_html_report_file(
                 continue
             primary_metric = rpt.primary_metric
             overall_score = primary_metric.score if primary_metric else 0.0
+            overall_score_display = format_metric_value(
+                primary_metric.score if primary_metric else None,
+                primary_metric.semantics if primary_metric else None,
+            )
 
             if not rpt.metrics:
                 model_sections.append(
@@ -306,6 +312,7 @@ def gen_html_report_file(
                             subset=sub.name,
                             category=cat_display,
                             metric=metric_labels.get(metric.name, metric.name),
+                            metric_raw=metric.name,
                             score=sub.score,
                             quality_score=bounded_quality_ratio(sub.score, semantics),
                             score_display=format_metric_value(sub.score, semantics),
@@ -340,6 +347,7 @@ def gen_html_report_file(
                 description_en=info['description_en'],
                 description_zh=info['description_zh'],
                 overall_score=overall_score,
+                overall_score_display=overall_score_display,
                 model_sections=model_sections,
                 multi_model=multi_model,
             )

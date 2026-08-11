@@ -4,15 +4,16 @@ import { useLocale } from '@/contexts/LocaleContext'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatMetric, formatMetricLabel, getBoundedQualityRatio } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { directionArrow, directionHintKey } from '@/domain/report/primaryMetrics'
+import { directionHintKey } from '@/domain/report/primaryMetrics'
 
 interface Props {
   modelName: string
   datasetName: string
   datasets?: string[]
   score: number | null
+  metricName?: string
   /** Backend semantics of the primary metric shown in the header. */
   semantics?: MetricSemantics | null
   totalSamples: number
@@ -25,6 +26,7 @@ export default function ReportHeader({
   datasetName,
   datasets,
   score,
+  metricName,
   semantics,
   totalSamples,
   htmlReportUrl,
@@ -39,6 +41,7 @@ export default function ReportHeader({
     : normalizedScore >= 0.7 ? 'success' : normalizedScore >= 0.4 ? 'warning' : 'danger'
   const hintKey = directionHintKey(semantics)
   const directionHint = hintKey ? t(hintKey) : undefined
+  const metricTooltip = [metricName, directionHint].filter(Boolean).join(' · ') || undefined
 
   return (
     <div
@@ -79,10 +82,10 @@ export default function ReportHeader({
             <Badge variant={variant} className="font-mono text-sm px-3 py-1">
               <span
                 style={{ color: normalizedScore == null ? undefined : scoreColor(normalizedScore) }}
-                title={directionHint}
+                title={metricTooltip}
                 aria-label={semantics ? `${semantics.metric_name}${directionHint ? `, ${directionHint}` : ''}` : undefined}
               >
-                {semantics ? `${semantics.metric_name} ${directionArrow(semantics)} ` : ''}
+                {semantics ? `${formatMetricLabel(metricName ?? semantics.metric_name, semantics)} ` : ''}
                 {formatMetric(score, semantics).primary}
               </span>
             </Badge>

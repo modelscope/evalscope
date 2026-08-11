@@ -1,45 +1,36 @@
-/**
- * TypeScript mirror of the backend `MetricSemantics` contract.
- *
- * Field names stay snake_case so the shape is byte-for-byte the wire format the API sends: no
- * renaming layer, no adapter, nothing to keep in sync beyond this file. The backend definition
- * lives in `evalscope/api/metric/semantics.py`.
- */
+import { z } from 'zod'
+
+/** Runtime and TypeScript mirror of the backend `MetricSemantics` contract. */
 
 /** Display tier of a metric and whether it may take part in verdicts. */
-export type MetricRole = 'primary' | 'auxiliary' | 'diagnostic'
+export const metricRoleSchema = z.enum(['primary', 'auxiliary', 'diagnostic'])
+export type MetricRole = z.infer<typeof metricRoleSchema>
 
 /** Optimization direction of a metric. */
-export type MetricDirection = 'higher_is_better' | 'lower_is_better' | 'none'
+export const metricDirectionSchema = z.enum(['higher_is_better', 'lower_is_better', 'none'])
+export type MetricDirection = z.infer<typeof metricDirectionSchema>
 
 /** How a metric value is rendered. */
-export type MetricDisplayKind = 'number' | 'percent'
+export const metricDisplayKindSchema = z.enum(['number', 'percent'])
+export type MetricDisplayKind = z.infer<typeof metricDisplayKindSchema>
 
 /** Closed value range of a bounded metric. */
-export interface ValueRange {
-  min: number
-  max: number
-}
+export const valueRangeSchema = z.object({ min: z.number(), max: z.number() })
+export type ValueRange = z.infer<typeof valueRangeSchema>
 
-/** Single source of truth for how one final report metric is interpreted and displayed. */
-export interface MetricSemantics {
-  /** Unique semantic identifier, named `{domain}.{concept}.{unit}`. */
-  semantic_id: string
-  /** Display name of the metric; may differ from the final report metric name. */
-  metric_name: string
-  role: MetricRole
-  direction: MetricDirection
-  /** Unit of the raw stored value (`s`, `ms`, `tok/s`, ...). */
-  raw_unit?: string | null
-  /** Value range for bounded metrics; `null` means unbounded. */
-  value_range?: ValueRange | null
-  display_kind: MetricDisplayKind
-  /** Display multiplier; `null` means undeclared, consumers use 1. */
-  display_multiplier?: number | null
-  /** Unit appended to the displayed value (`%`, `s`, `ms`, ...). */
-  display_unit?: string | null
-  /** Number of decimals; ties are rounded toward positive infinity. */
-  display_precision: number
-  /** Version of the backend contract this declaration follows. */
-  contract_version: number
-}
+/** Single source of truth for validating and typing metric semantics on the frontend. */
+export const metricSemanticsSchema = z.object({
+  semantic_id: z.string(),
+  metric_name: z.string(),
+  role: metricRoleSchema,
+  direction: metricDirectionSchema,
+  raw_unit: z.string().nullable().optional(),
+  value_range: valueRangeSchema.nullable().optional(),
+  display_kind: metricDisplayKindSchema,
+  display_multiplier: z.number().nullable().optional(),
+  display_unit: z.string().nullable().optional(),
+  display_precision: z.number(),
+  contract_version: z.number(),
+})
+
+export type MetricSemantics = z.infer<typeof metricSemanticsSchema>

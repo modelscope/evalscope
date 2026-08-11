@@ -44,8 +44,11 @@ describe('metric domain public surface', () => {
     // percentage is percentage points" is one rule and had already been written twice.
     // `MISSING_PLACEHOLDER` / `roundHalfUp` are internals of `formatMetric` and stay unexported.
     expect(Object.keys(metricDomain).sort()).toEqual([
+      'directionArrow',
       'formatDifference',
       'formatMetric',
+      'formatMetricLabel',
+      'formatMetricLabels',
       'getBoundedQualityRatio',
       'getComparisonVerdict',
       'getValuePosition',

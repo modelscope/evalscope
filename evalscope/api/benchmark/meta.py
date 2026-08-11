@@ -91,9 +91,10 @@ class BenchmarkMeta:
     primary_metric: Optional[str] = None
     """Raw ``metric_list`` name that is this benchmark's primary metric.
 
-    Optional for single-metric benchmarks (the only metric is implicitly primary). A multi-metric
-    benchmark that omits it gets a warning and an inferred headline metric, so the report UI never
-    has to guess silently. Every other non-diagnostic metric is resolved as ``auxiliary``.
+    This is the report-level authoritative declaration. Optional for single-metric benchmarks
+    (the only metric is implicitly primary). A multi-metric benchmark that omits it gets a warning
+    and an inferred headline metric, so the report UI never has to guess silently. Every other
+    non-diagnostic metric is resolved as ``auxiliary``.
     """
 
     shuffle: bool = False

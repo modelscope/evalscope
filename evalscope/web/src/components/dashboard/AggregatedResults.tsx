@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronRight, ChevronUp, FileText, Gauge } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { formatDifference, formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatDifference, formatMetric, formatMetricLabel, getBoundedQualityRatio } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import MetricTrend from '@/components/charts/MetricTrend'
 import { cellKey } from '@/domain/report/runAggregation'
@@ -94,19 +94,6 @@ interface AggregatedResultsProps {
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
 }
 
-/** Direction arrow for a metric, matching the other surfaces. */
-function directionArrow(semantics: AggregatedRow['cell']['semantics']): string {
-  if (semantics?.direction === 'higher_is_better') return '↑'
-  if (semantics?.direction === 'lower_is_better') return '↓'
-  return ''
-}
-
-function metricLabel(row: AggregatedRow): string {
-  const { semantics, metricName } = row.cell
-  // A resolved metric shows its display name; otherwise the raw name is what identifies it.
-  return semantics ? `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd() : metricName
-}
-
 function lastRunAt(row: AggregatedRow): string {
   return row.cell.history[row.cell.history.length - 1]?.timestamp ?? ''
 }
@@ -196,7 +183,7 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
             const { cell, stats } = row
             const quality = getBoundedQualityRatio(stats.latest, cell.semantics)
             const latest = formatMetric(stats.latest, cell.semantics)
-            const label = metricLabel(row)
+            const label = formatMetricLabel(cell.metricName, cell.semantics)
             const toggle = () => setExpanded(isOpen ? null : key)
 
             return (

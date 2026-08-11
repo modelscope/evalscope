@@ -4,9 +4,14 @@ import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
+import {
+  formatMetric,
+  formatMetricLabel,
+  formatMetricLabels,
+  getBoundedQualityRatio,
+  getValuePosition,
+} from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { directionArrow } from '@/domain/report/primaryMetrics'
 import MarkdownRenderer from '@/components/common/MarkdownRenderer'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
@@ -19,6 +24,7 @@ interface Props {
   perfMetrics?: PerfMetrics | null
   onSubsetClick?: (subset: string) => void
   overallScore?: number
+  metricName?: string
   /** Backend semantics of the primary metric, and of each metric by its final report name. */
   semantics?: MetricSemantics | null
   semanticsByMetric?: Record<string, MetricSemantics | null | undefined>
@@ -31,6 +37,7 @@ export default function DetailsTab({
   perfMetrics,
   onSubsetClick,
   overallScore,
+  metricName,
   semantics,
   semanticsByMetric = {},
 }: Props) {
@@ -66,6 +73,12 @@ export default function DetailsTab({
 
   // Detect whether data has Metric column
   const hasMetricCol = subsetData.data.length > 0 && 'Metric' in subsetData.data[0]
+  const metricLabels = formatMetricLabels(
+    Object.entries(semanticsByMetric).map(([name, metricSemantics]) => ({
+      metricName: name,
+      semantics: metricSemantics,
+    })),
+  )
 
   const subsetColumns = [
     {
@@ -99,9 +112,7 @@ export default function DetailsTab({
         // surface uses. The raw name stays reachable through the tooltip.
         return (
           <span className="text-xs text-[var(--text-muted)]" title={metricName}>
-            {rowSemantics
-              ? `${rowSemantics.metric_name} ${directionArrow(rowSemantics)}`.trimEnd()
-              : metricName}
+            {metricLabels[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
           </span>
         )
       },
@@ -161,7 +172,9 @@ export default function DetailsTab({
         <div className="flex items-center gap-3 p-4 rounded-[var(--radius)] bg-[var(--bg-card2)] border border-[var(--border)]">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-              {semantics ? `${semantics.metric_name} ${directionArrow(semantics)}`.trim() : t('reportDetail.overallScore')}
+              {semantics
+                ? formatMetricLabel(metricName ?? semantics.metric_name, semantics)
+                : t('reportDetail.overallScore')}
             </span>
             <span
               className="text-3xl font-bold font-mono tabular-nums"

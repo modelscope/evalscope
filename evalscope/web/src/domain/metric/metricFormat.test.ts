@@ -11,9 +11,19 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 import goldenSamples from '../../../../../tests/report/semantics/golden_samples.json'
-import { MISSING_PLACEHOLDER, formatDifference, formatMetric, getBoundedQualityRatio, getComparisonVerdict, roundHalfUp } from './metricFormat'
+import {
+  MISSING_PLACEHOLDER,
+  formatDifference,
+  formatMetric,
+  formatMetricLabel,
+  formatMetricLabels,
+  getBoundedQualityRatio,
+  getComparisonVerdict,
+  roundHalfUp,
+} from './metricFormat'
+import { metricSemanticsSchema } from './MetricSemantics'
 import type { MetricSemantics } from './MetricSemantics'
-import { arbSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
+import { arbSemantics, diagnosticSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
 
 const NUM_RUNS = 100
 
@@ -87,6 +97,30 @@ describe('formatMetric', () => {
   })
 })
 
+describe('metric labels', () => {
+  it('uses the semantic name and direction for scored metrics', () => {
+    expect(formatMetricLabel('mean_acc', ratioSemantics())).toBe('Accuracy ↑')
+    expect(formatMetricLabel('latency', secondsSemantics())).toBe('Latency ↓')
+  })
+
+  it('keeps the final name for diagnostic and unresolved metrics', () => {
+    expect(formatMetricLabel('failed_requests', diagnosticSemantics())).toBe('failed_requests')
+    expect(formatMetricLabel('unknown_metric', null)).toBe('unknown_metric')
+  })
+
+  it('disambiguates repeated labels within one report', () => {
+    const labels = formatMetricLabels([
+      { metricName: 'mean_acc', semantics: ratioSemantics() },
+      { metricName: 'mean_fact_acc', semantics: { ...ratioSemantics(), role: 'auxiliary' } },
+    ])
+
+    expect(labels).toEqual({
+      mean_acc: 'Accuracy ↑ (mean_acc)',
+      mean_fact_acc: 'Accuracy ↑ (mean_fact_acc)',
+    })
+  })
+})
+
 describe('golden samples', () => {
   it('Property 28: matches the backend formatter character for character', () => {
     for (const sample of goldenSamples as Array<{ semantics: MetricSemantics | null; value: number | null; expected_primary: string }>) {
@@ -100,6 +134,18 @@ describe('golden samples', () => {
     )
     expect(kinds.has('percent')).toBe(true)
     expect(kinds.has('number')).toBe(true)
+  })
+
+  it('validates every backend contract sample through the canonical Zod schema', () => {
+    for (const sample of goldenSamples) {
+      if (sample.semantics !== null) metricSemanticsSchema.parse(sample.semantics)
+    }
+  })
+
+  it('keeps the Zod field set aligned with the backend Pydantic wire contract', () => {
+    const backendContract = goldenSamples.find((sample) => sample.semantics !== null)?.semantics
+    expect(backendContract).toBeTruthy()
+    expect(Object.keys(metricSemanticsSchema.shape).sort()).toEqual(Object.keys(backendContract!).sort())
   })
 })
 

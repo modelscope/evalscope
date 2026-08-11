@@ -5,10 +5,10 @@ import type { ReportData } from '@/api/types'
 import { getChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
-import { formatMetric, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
+import { formatMetric, formatMetricLabel, getBoundedQualityRatio, getValuePosition } from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
-import { directionArrow, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/common/JsonViewer'
@@ -106,7 +106,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
             className="truncate text-xs text-[var(--text-muted)] sm:text-sm"
             title={metricName}
           >
-            {semantics ? `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd() : metricName}
+            {formatMetricLabel(metricName, semantics)}
           </span>
         )
       },

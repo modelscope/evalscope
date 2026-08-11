@@ -28,7 +28,11 @@ class Score(BaseModel):
     """Additional metadata related to the score"""
 
     main_score_name: Optional[str] = Field(default=None)
-    """Main score name, if applicable. This is used to indicate which score is the primary score in a multi-score scenario."""  # noqa: E501
+    """Raw per-sample score name used by :attr:`main_value` in a multi-score result.
+
+    This selects a value inside one ``Score`` only. ``BenchmarkMeta.primary_metric`` is the
+    report-level declaration; this field does not assign report metric roles.
+    """
 
     @property
     def main_value(self) -> Union[int, float, bool]:

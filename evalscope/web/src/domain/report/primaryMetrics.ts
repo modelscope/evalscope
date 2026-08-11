@@ -7,6 +7,7 @@
  * the components.
  */
 
+import { formatMetricLabel } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import type { ReportData, ReportSummary } from '@/api/types'
 
@@ -60,14 +61,6 @@ export const RATIO_PERCENT_SEMANTICS: MetricSemantics = {
   contract_version: 1,
 }
 
-/** Arrow indicating the optimization direction, empty when the metric carries none. */
-export function directionArrow(semantics: MetricSemantics | null | undefined): string {
-  if (!semantics) return ''
-  if (semantics.direction === 'higher_is_better') return '↑'
-  if (semantics.direction === 'lower_is_better') return '↓'
-  return ''
-}
-
 /**
  * i18n key describing the direction, for a tooltip and an `aria-label`.
  *
@@ -84,9 +77,7 @@ export function directionHintKey(semantics: MetricSemantics | null | undefined):
 /** Label of a metric: its display name plus the direction arrow, e.g. `Accuracy ↑`. */
 export function metricLabel(ref: PrimaryMetricRef | null | undefined): string {
   if (!ref) return ''
-  const name = ref.semantics?.metric_name || ref.metric_name
-  const arrow = directionArrow(ref.semantics)
-  return arrow ? `${name} ${arrow}` : name
+  return formatMetricLabel(ref.metric_name, ref.semantics)
 }
 
 /** Primary metrics of a run, falling back to an empty list on an older backend response. */

@@ -63,7 +63,7 @@
             <tr>
               <td><span class="tag">{{ row.dataset }}</span></td>
               <td>{{ row.model }}</td>
-              <td><span class="metric-tag">{{ row.metric }}</span></td>
+              <td><span class="metric-tag" title="{{ row.metric_raw | e }}">{{ row.metric }}</span></td>
               <td class="score-cell">{{ row.score_display }}</td>
               <td class="num-cell">{{ row.num }}</td>
             </tr>
@@ -118,7 +118,7 @@
           <span class="ds-name">{{ ds.pretty_name }}</span>
         </div>
         <div class="ds-summary-right">
-          <span class="score-pill" data-score="{{ ds.overall_score }}">{{ "%.4f" | format(ds.overall_score) }}</span>
+          <span class="score-pill" data-score="{{ ds.overall_score }}">{{ ds.overall_score_display }}</span>
         </div>
       </summary>
 
@@ -178,7 +178,7 @@
                     <td><span class="tag">{{ row.category }}</span></td>
                     {% endif %}
                     <td>{{ row.subset }}</td>
-                    <td><span class="metric-tag">{{ row.metric }}</span></td>
+                    <td><span class="metric-tag" title="{{ row.metric_raw | e }}">{{ row.metric }}</span></td>
                     <td class="score-cell">{{ row.score_display }}</td>
                     <td class="num-cell">{{ row.num }}</td>
                   </tr>
@@ -221,7 +221,7 @@
                       <td><span class="tag">{{ row.category }}</span></td>
                       {% endif %}
                       <td>{{ row.subset }}</td>
-                      <td><span class="metric-tag">{{ row.metric }}</span></td>
+                      <td><span class="metric-tag" title="{{ row.metric_raw | e }}">{{ row.metric }}</span></td>
                       <td class="num-cell">{{ row.score_display }}</td>
                       <td class="num-cell">{{ row.num }}</td>
                     </tr>
