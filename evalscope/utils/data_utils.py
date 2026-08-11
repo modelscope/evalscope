@@ -60,7 +60,10 @@ def load_report_bundle(root_path: str, ref: ReportRef) -> tuple[List[Report], Li
     The dataset list is derived from the loaded reports rather than from the identifier, so it always
     describes what is actually on disk.
     """
-    report_list = get_report_list([report_model_dir(root_path, ref)])
+    model_dir = report_model_dir(root_path, ref)
+    report_list = get_report_list([model_dir])
+    if not report_list:
+        raise FileNotFoundError(f'No report files found in {model_dir}')
     datasets = list(dict.fromkeys(report.dataset_name for report in report_list))
 
     configs_dir = os.path.join(root_path, ref.run_id, OutputsStructure.CONFIGS_DIR)

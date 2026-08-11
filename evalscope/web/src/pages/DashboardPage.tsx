@@ -66,11 +66,27 @@ export default function DashboardPage() {
       setLoading(true)
       setLoadError('')
       const [evalRes, perfRes] = await Promise.allSettled([
-        listReports({ rootPath, pageSize: 1000, sortBy: 'time', sortOrder: 'desc', signal: controller.signal }),
+        (async () => {
+          const reports: ReportSummary[] = []
+          let page = 1
+          while (true) {
+            const response = await listReports({
+              rootPath,
+              page,
+              pageSize: 100,
+              sortBy: 'time',
+              sortOrder: 'desc',
+              signal: controller.signal,
+            })
+            reports.push(...response.reports)
+            if (reports.length >= response.total || response.reports.length === 0) return reports
+            page += 1
+          }
+        })(),
         listPerfRuns(rootPath, controller.signal),
       ])
       if (controller.signal.aborted) return
-      if (evalRes.status === 'fulfilled') setReports(evalRes.value.reports)
+      if (evalRes.status === 'fulfilled') setReports(evalRes.value)
       if (perfRes.status === 'fulfilled') {
         setPerfRuns(perfRes.value.runs)
         setPerfSemantics(perfRes.value.metric_semantics ?? {})

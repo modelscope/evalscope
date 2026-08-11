@@ -30,9 +30,13 @@ const runNames = [
   '20260811_140000/Llama-3.1-70B-Instruct',
 ]
 
-function makeReport(runName: string, score: number): ReportData {
+function makeReport(
+  runName: string,
+  score: number,
+  direction: 'higher_is_better' | 'lower_is_better' = 'higher_is_better',
+): ReportData {
   const modelName = runName.split('/')[1]
-  const identity = { name: 'accuracy', aggregation: 'mean', dimensions: {} }
+  const identity = { name: direction === 'lower_is_better' ? 'wer' : 'accuracy', aggregation: 'mean', dimensions: {} }
   return {
     schema_version: 2,
     name: `${modelName}@gsm8k`,
@@ -45,10 +49,10 @@ function makeReport(runName: string, score: number): ReportData {
       score,
       categories: [],
       semantics: {
-        semantic_id: 'quality.accuracy.ratio',
-        metric_name: 'Accuracy',
+        semantic_id: direction === 'lower_is_better' ? 'quality.wer.ratio' : 'quality.accuracy.ratio',
+        metric_name: direction === 'lower_is_better' ? 'WER' : 'Accuracy',
         role: 'primary',
-        direction: 'higher_is_better',
+        direction,
         value_range: { min: 0, max: 1 },
         display_kind: 'percent',
         display_multiplier: 100,
@@ -173,5 +177,29 @@ describe('ComparePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Absolute' }))
     expect(screen.getByLabelText('Baseline')).toBeDisabled()
+  })
+
+  it('colors a lower-is-better decrease as an improvement', async () => {
+    const lowerReports = [0.8, 0.7, 0.9, 0.75].map((score, index) => ({
+      ...makeReport(runNames[index], score, 'lower_is_better'),
+      _reportRef: runNames[index],
+    }))
+    useReportsMock.mockReturnValue({
+      rootPath: 'outputs',
+      setRootPath: vi.fn(),
+      loadMultiReports: vi.fn(async () => lowerReports),
+      loading: false,
+      reportCache: Object.fromEntries(lowerReports.map((report) => [report._reportRef, {
+        report_list: [report],
+        datasets: ['gsm8k'],
+        task_config: {},
+      }])),
+    })
+
+    await renderPage()
+
+    const improvedDelta = screen.getAllByText('-10 pp')[0]
+    expect(improvedDelta).toHaveClass('text-[var(--success)]')
+    expect(improvedDelta.closest('td')?.getAttribute('style')).toContain('var(--success)')
   })
 })

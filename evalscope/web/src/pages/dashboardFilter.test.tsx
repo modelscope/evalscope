@@ -136,6 +136,29 @@ afterEach(() => {
 })
 
 describe('dashboard kind tabs', () => {
+  it('loads every evaluation report page', async () => {
+    vi.mocked(reportsApi.listReports)
+      .mockResolvedValueOnce({
+        reports: [EVAL_REPORT],
+        total: 2,
+        page: 1,
+        page_size: 100,
+        filters: { available_models: [], available_datasets: [] },
+      })
+      .mockResolvedValueOnce({
+        reports: [{ ...EVAL_REPORT, run_id: '20260809_112700' }],
+        total: 2,
+        page: 2,
+        page_size: 100,
+        filters: { available_models: [], available_datasets: [] },
+      })
+
+    await renderDashboard()
+
+    expect(reportsApi.listReports).toHaveBeenNthCalledWith(1, expect.objectContaining({ page: 1, pageSize: 100 }))
+    expect(reportsApi.listReports).toHaveBeenNthCalledWith(2, expect.objectContaining({ page: 2, pageSize: 100 }))
+  })
+
   it('shows both kinds under All', async () => {
     await renderDashboard()
 

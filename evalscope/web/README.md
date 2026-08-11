@@ -49,9 +49,8 @@ gradient (`hsl(score × 120, 70%, 45%)`).
 - No inline `style={{ background: 'var(--xxx)' }}` when a Tailwind class would do.
 - No hand-written hex literals or `rgba(129,109,248,…)` glows — go through `--shadow-glow*`.
 - `text-[var(--text-dim)]` requires an inline `// text-dim allowed` comment per DESIGN.md §Text.
-- Compare view tops out at 3 model slots (`MAX_COMPARE_SLOTS` in `domain/compare/compareModel.ts`) — adding a 4th
-  brand color violates DESIGN.md §Compare Slots. Run selection itself is unbounded; runs beyond the
-  slots are dropped when navigating to the compare view.
+- Prediction comparison tops out at 3 model slots (`MAX_COMPARE_SLOTS` in `domain/compare/compareModel.ts`) — adding
+  a 4th brand color violates DESIGN.md §Compare Slots. Run selection and score comparison are unbounded.
 
 ---
 

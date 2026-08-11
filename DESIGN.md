@@ -762,7 +762,7 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
   - **hover:** column header/row tint strengthens via the slot's `bg-hl` where interactive.
   - **focus:** compare-selection controls follow R-FOCUS and R-TOUCH.
   - **active (selected for compare):** slot accent applied; selection persists across sort/filter and is reflected in the sticky selection tray count.
-  - **disabled (selection limit / incompatible):** at `MAX_COMPARE_SELECTION = 5` further checkboxes are disabled with an explanatory message; an incompatible run shows its incompatibility reason and retains existing selection.
+  - **disabled (incompatible):** score-comparison selection is unbounded; prediction comparison accepts up to `MAX_COMPARE_SLOTS = 3` runs. An incompatible run shows its incompatibility reason and retains existing selection.
   - **error:** incompatibility reason text is the error presentation; it does not drop the selection.
 
 ### Examples (illustrative)

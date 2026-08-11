@@ -16,7 +16,7 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import { scoreBg, scoreColor } from '@/utils/colorScale'
-import { formatDifference, formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import { formatDifference, formatMetric, getBoundedQualityRatio, getComparisonVerdict } from '@/domain/metric'
 import {
   RATIO_PERCENT_SEMANTICS,
   datasetLabel,
@@ -701,11 +701,16 @@ function CompareReportRail({
 // Score Comparison Tab                                                //
 // ------------------------------------------------------------------ //
 
-function comparisonDeltaBackground(delta: number, maxAbsoluteDelta: number): string {
-  if (delta === 0 || maxAbsoluteDelta === 0) return 'var(--bg-deep)'
+function comparisonDeltaBackground(
+  delta: number,
+  maxAbsoluteDelta: number,
+  semantics: MetricSemantics | undefined,
+): string {
+  const verdict = getComparisonVerdict(delta, semantics)
+  if (verdict === 'equal' || verdict === 'incomparable' || maxAbsoluteDelta === 0) return 'var(--bg-deep)'
   const intensity = Math.min(1, Math.abs(delta) / maxAbsoluteDelta)
   const weight = Math.round((0.06 + intensity * 0.24) * 100)
-  const semanticColor = delta > 0 ? 'var(--success)' : 'var(--danger)'
+  const semanticColor = verdict === 'better' ? 'var(--success)' : 'var(--danger)'
   return `color-mix(in srgb, ${semanticColor} ${weight}%, var(--bg-deep))`
 }
 
@@ -766,6 +771,7 @@ function ScoreTab({
       return <span className="text-[var(--text-dim)]">—</span>
     }
     const delta = baselineScore == null ? 0 : score - baselineScore
+    const verdict = getComparisonVerdict(delta, semantics)
 
     return (
       <div
@@ -782,9 +788,9 @@ function ScoreTab({
           className={cn(
             'mt-0.5 h-4 text-[10px] font-semibold transition-opacity duration-[var(--transition)]',
             comparisonMode === 'baseline' ? 'opacity-100' : 'opacity-0',
-            isBaseline || delta === 0
+            isBaseline || verdict === 'equal' || verdict === 'incomparable'
               ? 'text-[var(--text-dim)]'
-              : delta > 0
+              : verdict === 'better'
                 ? 'text-[var(--success)]'
                 : 'text-[var(--danger)]',
           )}
@@ -805,7 +811,7 @@ function ScoreTab({
     const ratio = getBoundedQualityRatio(score, semantics)
     const delta = baselineScore == null ? 0 : score - baselineScore
     if (comparisonMode === 'baseline') {
-      return { backgroundColor: comparisonDeltaBackground(delta, deltaRanges[rangeKey] ?? 0) }
+      return { backgroundColor: comparisonDeltaBackground(delta, deltaRanges[rangeKey] ?? 0, semantics) }
     }
     if (ratio == null) return { backgroundColor: 'var(--bg-deep)', color: 'var(--text)' }
     return { backgroundColor: scoreBg(ratio, 0.18), color: scoreColor(ratio) }
