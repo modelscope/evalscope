@@ -6,7 +6,6 @@ import {
   listReportsResponseSchema,
   loadReportResponseSchema,
   predictionsResponseSchema,
-  scanResponseSchema,
 } from './schemas'
 import type {
   AnalysisResponse,
@@ -15,10 +14,16 @@ import type {
   ListReportsResponse,
   LoadReportResponse,
   PredictionsResponse,
-  ScanResponse,
 } from './types'
+import { parseReportRef } from '@/domain/report/reportRef'
 
 const BASE = '/api/v1/reports'
+
+/** Path to one model report resource: `/api/v1/reports/runs/{runId}/models/{modelId}`. */
+function reportPath(ref: string): string {
+  const { runId, modelId } = parseReportRef(ref)
+  return `${BASE}/runs/${encodeURIComponent(runId)}/models/${encodeURIComponent(modelId)}`
+}
 
 export async function listReports(params: {
   rootPath: string
@@ -34,7 +39,7 @@ export async function listReports(params: {
   /** Optional signal to cancel a superseded list/search request. */
   signal?: AbortSignal
 }): Promise<ListReportsResponse> {
-  return apiValidated(`${BASE}/list`, listReportsResponseSchema, {
+  return apiValidated(BASE, listReportsResponseSchema, {
     params: {
       root_path: params.rootPath,
       search: params.search,
@@ -51,48 +56,39 @@ export async function listReports(params: {
   })
 }
 
-export async function scanReports(rootPath: string, signal?: AbortSignal): Promise<string[]> {
-  const res: ScanResponse = await apiValidated(`${BASE}/scan`, scanResponseSchema, {
-    params: { root_path: rootPath },
-    signal,
-  })
-  return res.reports
-}
-
 export async function deleteReport(
   rootPath: string,
-  reportName: string,
+  ref: string,
   signal?: AbortSignal,
 ): Promise<DeleteReportResponse> {
-  return apiDeleteValidated(`${BASE}/report`, deleteReportResponseSchema, {
-    params: { root_path: rootPath, report_name: reportName },
+  return apiDeleteValidated(reportPath(ref), deleteReportResponseSchema, {
+    params: { root_path: rootPath },
     signal,
   })
 }
 
 export async function loadReport(
   rootPath: string,
-  reportName: string,
+  ref: string,
   signal?: AbortSignal,
 ): Promise<LoadReportResponse> {
-  return apiValidated(`${BASE}/load`, loadReportResponseSchema, {
-    params: { root_path: rootPath, report_name: reportName },
+  return apiValidated(reportPath(ref), loadReportResponseSchema, {
+    params: { root_path: rootPath },
     signal,
   })
 }
 
 export async function getDataFrame(
   rootPath: string,
-  reportName: string,
-  type: 'acc' | 'compare' | 'dataset' = 'acc',
+  ref: string,
+  view: 'acc' | 'compare' | 'dataset' = 'acc',
   datasetName?: string,
   signal?: AbortSignal,
 ): Promise<DataFrameResponse> {
-  return apiValidated(`${BASE}/dataframe`, dataFrameResponseSchema, {
+  return apiValidated(`${reportPath(ref)}/table`, dataFrameResponseSchema, {
     params: {
       root_path: rootPath,
-      report_name: reportName,
-      type,
+      view,
       dataset_name: datasetName,
     },
     signal,
@@ -101,15 +97,14 @@ export async function getDataFrame(
 
 export async function getPredictions(
   rootPath: string,
-  reportName: string,
+  ref: string,
   datasetName: string,
   subsetName: string,
   signal?: AbortSignal,
 ): Promise<PredictionsResponse> {
-  return apiValidated(`${BASE}/predictions`, predictionsResponseSchema, {
+  return apiValidated(`${reportPath(ref)}/predictions`, predictionsResponseSchema, {
     params: {
       root_path: rootPath,
-      report_name: reportName,
       dataset_name: datasetName,
       subset_name: subsetName,
     },
@@ -119,14 +114,13 @@ export async function getPredictions(
 
 export async function getAnalysis(
   rootPath: string,
-  reportName: string,
+  ref: string,
   datasetName: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const res: AnalysisResponse = await apiValidated(`${BASE}/analysis`, analysisResponseSchema, {
+  const res: AnalysisResponse = await apiValidated(`${reportPath(ref)}/analysis`, analysisResponseSchema, {
     params: {
       root_path: rootPath,
-      report_name: reportName,
       dataset_name: datasetName,
     },
     signal,
@@ -134,19 +128,18 @@ export async function getAnalysis(
   return res.analysis
 }
 
-export function getHtmlReportUrl(rootPath: string, reportName: string): string {
-  return `${BASE}/html?root_path=${encodeURIComponent(rootPath)}&report_name=${encodeURIComponent(reportName)}`
+export function getHtmlReportUrl(rootPath: string, ref: string): string {
+  const { runId } = parseReportRef(ref)
+  return `${BASE}/runs/${encodeURIComponent(runId)}/html?root_path=${encodeURIComponent(rootPath)}`
 }
 
-export function getChartUrl(
+/** URL of a multi-report comparison chart (`radar` | `grouped_bar`), one `report=` per reference. */
+export function getCompareChartUrl(
   rootPath: string,
-  chartType: 'scores' | 'sunburst' | 'dataset_scores' | 'radar' | 'histogram' | 'grouped_bar',
-  opts: { reportName?: string; reportNames?: string[]; datasetName?: string; subsetName?: string } = {},
+  refs: string[],
+  chartType: 'radar' | 'grouped_bar',
 ): string {
-  const params = new URLSearchParams({ root_path: rootPath, chart_type: chartType })
-  if (opts.reportName) params.set('report_name', opts.reportName)
-  if (opts.reportNames?.length) params.set('report_names', opts.reportNames.join(';'))
-  if (opts.datasetName) params.set('dataset_name', opts.datasetName)
-  if (opts.subsetName) params.set('subset_name', opts.subsetName)
-  return `${BASE}/chart?${params.toString()}`
+  const params = new URLSearchParams({ root_path: rootPath })
+  for (const ref of refs) params.append('report', ref)
+  return `${BASE}/charts/${chartType}?${params.toString()}`
 }

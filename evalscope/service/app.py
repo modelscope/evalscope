@@ -99,15 +99,15 @@ def create_app(outputs: str = None):
                 'GET  /api/v1/perf/compare/chart': 'Overlay a sweep metric across multiple perf runs',
                 'GET  /api/v1/perf/history/report': 'Get HTML report for a historical perf run',
                 'DELETE /api/v1/perf/run': 'Delete a historical perf run directory',
-                'GET  /api/v1/reports/scan': 'Scan available report folders',
-                'DELETE /api/v1/reports/report': 'Delete an evaluation report from disk',
-                'GET  /api/v1/reports/list': 'Filterable, paginated report listing',
-                'GET  /api/v1/reports/load': 'Load a single report',
-                'GET  /api/v1/reports/load_multi': 'Load multiple reports',
-                'GET  /api/v1/reports/dataframe': 'Get report data as JSON table',
-                'GET  /api/v1/reports/predictions': 'Get model predictions',
-                'GET  /api/v1/reports/analysis': 'Get AI analysis text',
-                'GET  /api/v1/reports/html': 'Get HTML report file',
+                'GET  /api/v1/reports': 'Filterable, paginated report listing',
+                'GET  /api/v1/reports/runs/<run_id>/models/<model_id>': 'Load a single model report',
+                'DELETE /api/v1/reports/runs/<run_id>/models/<model_id>': 'Delete an evaluation report from disk',
+                'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/table': 'Get report data as JSON table',
+                'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/predictions': 'Get model predictions',
+                'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/analysis': 'Get AI analysis text',
+                'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/charts/<chart_type>': 'Render a single-report chart',  # noqa: E501
+                'GET  /api/v1/reports/runs/<run_id>/html': 'Get HTML report file',
+                'GET  /api/v1/reports/charts/<chart_type>': 'Render a multi-report comparison chart',
             }
         }), 404
 

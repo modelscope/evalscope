@@ -38,7 +38,8 @@ const ACCURACY: MetricSemantics = {
 
 function report(name: string, timestamp: string, score: number, dataset = 'iquiz'): ReportSummary {
   return {
-    name,
+    run_id: name,
+    model_id: 'qwen-plus',
     model_name: 'qwen-plus',
     dataset_name: dataset,
     num_samples: 3,
@@ -76,6 +77,14 @@ function bodyRows(): string[] {
 }
 
 describe('AggregatedResults', () => {
+  it('uses the full table width without a trailing spacer column', () => {
+    const { container } = renderWith(<AggregatedResults rows={rows()} onOpenRun={() => {}} />)
+
+    expect(screen.getByRole('table')).toHaveClass('w-full', 'table-fixed')
+    expect(container.querySelectorAll('colgroup col')).toHaveLength(9)
+    expect(container.querySelector('thead tr')?.children).toHaveLength(9)
+  })
+
   it('collapses repeated runs into one row and counts them', () => {
     renderWith(<AggregatedResults rows={rows()} onOpenRun={() => {}} />)
 
@@ -92,6 +101,15 @@ describe('AggregatedResults', () => {
     expect(screen.getAllByText(/^Accuracy ↑$/).length).toBeGreaterThan(0)
     // The native ratio is never shown re-scaled twice.
     expect(screen.queryByText(/5000/)).not.toBeInTheDocument()
+  })
+
+  it('shows the latest change without inventing a stability label', () => {
+    renderWith(<AggregatedResults rows={rows()} onOpenRun={() => {}} />)
+
+    expect(screen.getByText('-50 pp')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Trend' })).toBeInTheDocument()
+    expect(screen.queryByText('Variable')).not.toBeInTheDocument()
+    expect(screen.queryByText('Stable')).not.toBeInTheDocument()
   })
 
   it('opens most recent first, and never labels a result', () => {
@@ -171,7 +189,18 @@ describe('AggregatedResults', () => {
     fireEvent.click(bars[0])
 
     expect(onOpenRun).toHaveBeenCalledTimes(1)
-    expect(onOpenRun.mock.calls[0][1].runId).toBe('a')
+    expect(onOpenRun.mock.calls[0][1].runId).toBe('a/qwen-plus')
+  })
+
+  it('opens the most recent run from the expanded summary action', () => {
+    const onOpenRun = vi.fn()
+    renderWith(<AggregatedResults rows={rows()} onOpenRun={onOpenRun} />)
+    fireEvent.click(screen.getByText('automation_bench'))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open latest run' }))
+
+    expect(onOpenRun).toHaveBeenCalledTimes(1)
+    expect(onOpenRun.mock.calls[0][1].runId).toBe('c/qwen-plus')
   })
 
   it('reads out a run as soon as the pointer reaches its bar', () => {
@@ -208,5 +237,6 @@ describe('AggregatedResults', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
 
     expect(screen.getByText(/Measured once/)).toBeInTheDocument()
+    expect(screen.queryByText('New')).not.toBeInTheDocument()
   })
 })

@@ -21,7 +21,21 @@ export function useQueryParams() {
     [setSearchParams],
   )
 
-  const getAll = useCallback(() => Object.fromEntries(searchParams.entries()), [searchParams])
+  /** Read every value of a repeated query parameter (e.g. `?report=a&report=b`). */
+  const getList = useCallback((key: string) => searchParams.getAll(key), [searchParams])
 
-  return { get, set, getAll }
+  /** Replace every value of a repeated query parameter with the given list. */
+  const setList = useCallback(
+    (key: string, values: string[]) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete(key)
+        for (const value of values) next.append(key, value)
+        return next
+      })
+    },
+    [setSearchParams],
+  )
+
+  return { get, set, getList, setList }
 }

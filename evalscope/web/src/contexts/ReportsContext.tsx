@@ -12,9 +12,8 @@ interface ReportsState {
   rootPath: string
   /** Monotonically-increasing token; bumped by triggerScan to fan out a rescan. */
   scanToken: number
-  availableReports: string[]
   selectedReports: string[]
-  /** Keyed by report_name */
+  /** Keyed by report reference (`{runId}/{modelId}`) */
   reportCache: Record<string, LoadReportResponse>
   /** Multi-report list cache (all selected) */
   multiReportList: ReportData[]
@@ -26,7 +25,6 @@ interface ReportsState {
 type Action =
   | { type: 'SET_ROOT'; rootPath: string }
   | { type: 'TRIGGER_SCAN'; rootPath: string }
-  | { type: 'SET_AVAILABLE'; reports: string[] }
   | { type: 'SET_SELECTED'; reports: string[] }
   | { type: 'CACHE_REPORT'; name: string; data: LoadReportResponse }
   | { type: 'SET_MULTI'; list: ReportData[] }
@@ -42,7 +40,6 @@ const REPORT_CACHE_LIMIT = 32 // bound the in-memory cache so long sessions don'
 const initialState: ReportsState = {
   rootPath: INITIAL_ROOT,
   scanToken: 0,
-  availableReports: [],
   selectedReports: [],
   reportCache: {},
   multiReportList: [],
@@ -56,8 +53,6 @@ function reducer(state: ReportsState, action: Action): ReportsState {
       return { ...state, rootPath: action.rootPath }
     case 'TRIGGER_SCAN':
       return { ...state, rootPath: action.rootPath, scanToken: state.scanToken + 1, reportCache: {}, multiReportList: [] }
-    case 'SET_AVAILABLE':
-      return { ...state, availableReports: action.reports }
     case 'SET_SELECTED':
       return { ...state, selectedReports: action.reports }
     case 'CACHE_REPORT': {
@@ -100,7 +95,6 @@ function reducer(state: ReportsState, action: Action): ReportsState {
 interface ReportsCtx extends ReportsState {
   setRootPath: (p: string) => void
   triggerScan: (p?: string) => void
-  scanReports: () => Promise<void>
   selectReports: (r: string[]) => void
   loadReport: (name: string, signal?: AbortSignal) => Promise<LoadReportResponse>
   loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
@@ -144,16 +138,6 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TRIGGER_SCAN', rootPath: nextRoot })
   }, [])
 
-  const scanReportsAction = useCallback(async () => {
-    dispatch({ type: 'SET_LOADING', loading: true })
-    try {
-      const reports = await reportsApi.scanReports(state.rootPath)
-      dispatch({ type: 'SET_AVAILABLE', reports })
-    } finally {
-      dispatch({ type: 'SET_LOADING', loading: false })
-    }
-  }, [state.rootPath])
-
   const selectReports = useCallback((r: string[]) => dispatch({ type: 'SET_SELECTED', reports: r }), [])
 
   const loadReport = useCallback(
@@ -187,7 +171,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
           }),
         )
         const list = results.flatMap((res, i) =>
-          res.report_list.map((r) => ({ ...r, _reportName: names[i] })),
+          res.report_list.map((r) => ({ ...r, _reportRef: names[i] })),
         )
         dispatch({ type: 'SET_MULTI', list })
         return list
@@ -218,7 +202,6 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       ...state,
       setRootPath,
       triggerScan,
-      scanReports: scanReportsAction,
       selectReports,
       loadReport,
       loadMultiReports,
@@ -226,7 +209,7 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       setCompareSelection,
       clearCompareSelection,
     }),
-    [state, setRootPath, triggerScan, scanReportsAction, selectReports, loadReport, loadMultiReports, toggleSelectForCompare, setCompareSelection, clearCompareSelection],
+    [state, setRootPath, triggerScan, selectReports, loadReport, loadMultiReports, toggleSelectForCompare, setCompareSelection, clearCompareSelection],
   )
 
   return <ReportsContext.Provider value={value}>{children}</ReportsContext.Provider>

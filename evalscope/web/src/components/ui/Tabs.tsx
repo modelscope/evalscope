@@ -70,6 +70,8 @@ export interface TabsProps {
   orientation?: RovingOrientation
   /** Extra class names applied to the tablist container. */
   className?: string
+  /** Optional page-specific controls aligned with the tablist. */
+  actions?: ReactNode
 }
 
 /**
@@ -92,6 +94,7 @@ export default function Tabs({
   panels,
   orientation = 'horizontal',
   className,
+  actions,
 }: TabsProps) {
   const { t } = useLocale()
   // Stable id namespace so tab and panel ids can reference each other.
@@ -140,46 +143,49 @@ export default function Tabs({
 
   return (
     <>
-      <div
-        role="tablist"
-        aria-orientation={orientation}
-        className={cn(
-          'inline-flex items-center gap-1 p-1 rounded-[var(--radius)] bg-[var(--bg-deep)] border border-[var(--border)]',
-          className,
-        )}
-      >
-        {validTabs.map((tab, index) => {
-          const isSelected = tab.key === selectedKey
-          const panelId = panelDomId(tab)
-          return (
-            <button
-              key={tab.key}
-              ref={(el) => {
-                tabRefs.current[tab.key] = el
-              }}
-              id={tabDomId(tab.key)}
-              role="tab"
-              type="button"
-              aria-selected={isSelected}
-              aria-controls={panelId}
-              tabIndex={tab.key === effectiveFocusKey ? 0 : -1}
-              onClick={() => {
-                setFocusKey(tab.key)
-                onChange(tab.key)
-              }}
-              onFocus={() => setFocusKey(tab.key)}
-              onKeyDown={(event) => handleKeyDown(event, index, tab.key)}
-              className={cn(
-                'px-4 py-1.5 text-sm font-medium rounded-[var(--radius-sm)] transition-all duration-[var(--transition)] cursor-pointer',
-                isSelected
-                  ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg-card2)]',
-              )}
-            >
-              {resolveLabel(tab)}
-            </button>
-          )
-        })}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          role="tablist"
+          aria-orientation={orientation}
+          className={cn(
+            'inline-flex self-start items-center gap-1 p-1 rounded-[var(--radius)] bg-[var(--bg-deep)] border border-[var(--border)]',
+            className,
+          )}
+        >
+          {validTabs.map((tab, index) => {
+            const isSelected = tab.key === selectedKey
+            const panelId = panelDomId(tab)
+            return (
+              <button
+                key={tab.key}
+                ref={(el) => {
+                  tabRefs.current[tab.key] = el
+                }}
+                id={tabDomId(tab.key)}
+                role="tab"
+                type="button"
+                aria-selected={isSelected}
+                aria-controls={panelId}
+                tabIndex={tab.key === effectiveFocusKey ? 0 : -1}
+                onClick={() => {
+                  setFocusKey(tab.key)
+                  onChange(tab.key)
+                }}
+                onFocus={() => setFocusKey(tab.key)}
+                onKeyDown={(event) => handleKeyDown(event, index, tab.key)}
+                className={cn(
+                  'px-4 py-1.5 text-sm font-medium rounded-[var(--radius-sm)] transition-all duration-[var(--transition)] cursor-pointer',
+                  isSelected
+                    ? 'bg-[var(--accent)] text-[var(--text-on-filled)] shadow-[var(--shadow-glow-soft)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text)] bg-[var(--bg-card)] hover:bg-[var(--bg-card2)]',
+                )}
+              >
+                {resolveLabel(tab)}
+              </button>
+            )
+          })}
+        </div>
+        {actions && <div className="flex min-w-0 flex-1 justify-end">{actions}</div>}
       </div>
 
       {validTabs.map((tab) => {

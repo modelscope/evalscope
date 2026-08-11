@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         weighted_average_from_subsets,
     )
     from .generator import ReportGenerator
+    from .ref import ReportRef
     from .renderer import gen_html_report_file
     from .report import Category, Metric, Report, ReportKey, Subset
 
@@ -30,6 +31,9 @@ else:
         ],
         'generator': [
             'ReportGenerator',
+        ],
+        'ref': [
+            'ReportRef',
         ],
         'report': [
             'Category',

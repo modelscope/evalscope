@@ -25,7 +25,7 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/reports/:reportId" element={<ReportDetailPage />} />
+          <Route path="/reports/:runId/:modelId" element={<ReportDetailPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/performance" element={<PerfReportsPage />} />
           <Route path="/perf-report" element={<PerfReportDetailPage />} />

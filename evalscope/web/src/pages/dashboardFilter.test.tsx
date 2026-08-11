@@ -60,7 +60,8 @@ const RPS: MetricSemantics = {
 }
 
 const EVAL_REPORT = {
-  name: 'qwen-plus_gsm8k_20260810_112700',
+  run_id: '20260810_112700',
+  model_id: 'qwen-plus',
   model_name: 'qwen-plus',
   dataset_name: 'gsm8k',
   num_samples: 3,
@@ -190,5 +191,48 @@ describe('dashboard kind tabs', () => {
     // The column headers of the results table are gone, replaced by the empty state.
     expect(screen.queryByRole('columnheader', { name: /Benchmark/ })).not.toBeInTheDocument()
     expect(screen.queryByText('gsm8k')).not.toBeInTheDocument()
+  })
+
+  it('filters rows by model or benchmark from the toolbar', async () => {
+    await renderDashboard()
+
+    fireEvent.change(screen.getByPlaceholderText('Search model or benchmark'), {
+      target: { value: 'openqa' },
+    })
+
+    expect(screen.getByText('openqa')).toBeInTheDocument()
+    expect(screen.queryByText('gsm8k')).not.toBeInTheDocument()
+  })
+
+  it('changes the result order from the toolbar sort control', async () => {
+    await renderDashboard()
+
+    fireEvent.change(screen.getByLabelText('Sort results'), { target: { value: 'lastRun-asc' } })
+
+    const bodyRows = screen.getAllByRole('row').slice(1)
+    expect(bodyRows[0]).toHaveTextContent('openqa')
+    expect(bodyRows[1]).toHaveTextContent('gsm8k')
+  })
+
+  it('surfaces the most recent changed result without inventing an alert system', async () => {
+    const older = {
+      ...EVAL_REPORT,
+      name: 'qwen-plus_gsm8k_20260809_112700',
+      timestamp: '2026-08-09T11:27:00',
+      primary_metrics: [{ ...EVAL_REPORT.primary_metrics[0], score: 1 }],
+      quality_ratio: 1,
+    } as ReportSummary
+    vi.mocked(reportsApi.listReports).mockResolvedValue({
+      reports: [EVAL_REPORT, older],
+      total: 2,
+      page: 1,
+      page_size: 1000,
+      filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'] },
+    })
+
+    await renderDashboard()
+
+    expect(screen.getByText('Recent change')).toBeInTheDocument()
+    expect(screen.getByText(/a change of -40 pp from the previous run/)).toBeInTheDocument()
   })
 })

@@ -130,7 +130,8 @@ export const primaryMetricRefSchema = z.object({
 
 /** Runtime contract for one report-list item. */
 export const reportSummarySchema = z.object({
-  name: z.string(),
+  run_id: z.string(),
+  model_id: z.string(),
   model_name: z.string(),
   dataset_name: z.string(),
   dataset_pretty_name: z.string().optional(),
@@ -267,14 +268,11 @@ export const predictionsResponseSchema = z.object({
   predictions: z.array(predictionRowSchema),
 })
 
-export const scanResponseSchema = z.object({
-  reports: z.array(z.string()),
-})
-
-/** Runtime contract for DELETE /api/v1/reports/report. */
+/** Runtime contract for DELETE /api/v1/reports/runs/{run_id}/models/{model_id}. */
 export const deleteReportResponseSchema = z.object({
   success: z.boolean(),
-  report_name: z.string(),
+  run_id: z.string(),
+  model_id: z.string(),
 })
 
 export const analysisResponseSchema = z.object({
@@ -298,6 +296,5 @@ export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
-export type ScanResponse = z.infer<typeof scanResponseSchema>
 export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>

@@ -52,7 +52,8 @@ function point(timestamp: string, score: number): CellPoint {
 
 function report(over: Partial<ReportSummary> = {}): ReportSummary {
   return {
-    name: 'run@qwen-plus',
+    run_id: 'run',
+    model_id: 'qwen-plus',
     model_name: 'qwen-plus',
     dataset_name: 'iquiz',
     num_samples: 3,
@@ -164,9 +165,9 @@ describe('aggregateRuns', () => {
   it('collapses repeated runs of one benchmark into a single cell', () => {
     const rows = aggregateRuns(
       [
-        report({ name: 'a', timestamp: '2026-08-07T08:00:00' }),
-        report({ name: 'b', timestamp: '2026-08-07T09:00:00' }),
-        report({ name: 'c', timestamp: '2026-08-07T10:00:00' }),
+        report({ run_id: 'a', timestamp: '2026-08-07T08:00:00' }),
+        report({ run_id: 'b', timestamp: '2026-08-07T09:00:00' }),
+        report({ run_id: 'c', timestamp: '2026-08-07T10:00:00' }),
       ],
       [],
     )
@@ -174,16 +175,16 @@ describe('aggregateRuns', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].stats.runs).toBe(3)
     // Oldest first, so a sparkline reads left to right as time.
-    expect(rows[0].cell.history.map((p) => p.runId)).toEqual(['a', 'b', 'c'])
+    expect(rows[0].cell.history.map((p) => p.runId)).toEqual(['a/qwen-plus', 'b/qwen-plus', 'c/qwen-plus'])
   })
 
   it('keeps semantics from the newest run when input is out of order', () => {
     const newestSemantics = { ...ACCURACY, display_precision: 3 }
     const rows = aggregateRuns(
       [
-        report({ name: 'old', timestamp: '2026-08-07T08:00:00' }),
+        report({ run_id: 'old', timestamp: '2026-08-07T08:00:00' }),
         report({
-          name: 'new',
+          run_id: 'new',
           timestamp: '2026-08-07T10:00:00',
           primary_metrics: [{
             dataset_name: 'iquiz',
@@ -192,7 +193,7 @@ describe('aggregateRuns', () => {
             semantics: newestSemantics,
           }],
         }),
-        report({ name: 'middle', timestamp: '2026-08-07T09:00:00' }),
+        report({ run_id: 'middle', timestamp: '2026-08-07T09:00:00' }),
       ],
       [],
     )

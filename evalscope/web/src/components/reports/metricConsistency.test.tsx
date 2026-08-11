@@ -41,7 +41,8 @@ const WER: MetricSemantics = { ...ACCURACY, semantic_id: 'quality.wer.ratio', me
 /** Build a report summary carrying one primary metric. */
 function makeReport(score: number, semantics: MetricSemantics = ACCURACY): ReportSummary {
   return {
-    name: 'Qwen2.5-0.5B_gsm8k_20260701_120000',
+    run_id: '20260701_120000',
+    model_id: 'Qwen2.5-0.5B',
     model_name: 'Qwen2.5-0.5B',
     dataset_name: 'gsm8k',
     dataset_pretty_name: 'GSM8K Pretty',

@@ -10,58 +10,46 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 
-import { DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, parseReportName } from '@/utils/reportParser'
+import { formatReportRef } from '@/domain/report/reportRef'
 import {
   addToSelection,
   buildDisplayLabel,
   buildDisplayLabels,
+  compatibilityReason,
   MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
   togglePredictionSelection,
 } from './compareModel'
 
-/* ─── Property 8: run display label composition ───────────────── */
+/* Property 8: run display label composition */
 
 describe('buildDisplayLabel (Property 8: run display label is composed of model and dataset)', () => {
   /** Separator the production code places between the model and dataset parts. */
   const LABEL_SEPARATOR = ' · '
 
-  /**
-   * Timestamp prefix generator: digits + underscore only (e.g. `20260701_120000`).
-   * Because it is purely numeric it can never coincide with a model name (models
-   * start with a letter), which mirrors real run identifiers.
-   */
-  const prefixArb = fc.stringMatching(/^\d{8}_\d{6}$/)
+  /** Run-id generator: digits + underscore only (e.g. `20260701_120000`), never a path separator. */
+  const runIdArb = fc.stringMatching(/^\d{8}_\d{6}$/)
 
-  /**
-   * Model name generator: starts with a letter, contains no encoding tokens
-   * (`@@`, `::`, `, `) and no surrounding whitespace, so after trimming it is a
-   * genuinely meaningful model name (e.g. `Qwen/Qwen2.5-0.5B-Instruct`).
-   */
-  const modelArb = fc.stringMatching(/^[A-Za-z][A-Za-z0-9._/-]{0,30}$/)
+  /** Model-id generator: a single safe path segment (no `/`), as produced by `safe_filename`. */
+  const modelArb = fc.stringMatching(/^[A-Za-z][A-Za-z0-9._-]{0,30}$/)
 
-  /** Dataset name generator: no encoding tokens and no whitespace. */
+  /** Dataset name generator. */
   const datasetArb = fc.stringMatching(/^[A-Za-z0-9._-]{1,20}$/)
 
-  /** Compose a well-formed run identifier from its parts. */
-  function makeRunName(prefix: string, model: string, datasets: string[]): string {
-    return `${prefix}${REPORT_TOKEN}${model}${MODEL_TOKEN}${datasets.join(DATASET_TOKEN)}`
-  }
-
-  it('composes the label from model and dataset for well-formed run names', () => {
+  it('composes the label from model and dataset for well-formed references', () => {
     const caseArb = fc.record({
-      prefix: prefixArb,
+      runId: runIdArb,
       model: modelArb,
       datasets: fc.array(datasetArb, { minLength: 1, maxLength: 3 }),
     })
 
     fc.assert(
-      fc.property(caseArb, ({ prefix, model, datasets }) => {
-        const runName = makeRunName(prefix, model, datasets)
-        const result = buildDisplayLabel(runName)
+      fc.property(caseArb, ({ runId, model, datasets }) => {
+        const ref = formatReportRef({ runId, modelId: model })
+        const result = buildDisplayLabel(ref, datasets)
 
-        const expectedDataset = datasets.join(DATASET_TOKEN)
-        // Model and dataset are parsed back out faithfully.
+        const expectedDataset = datasets.join(', ')
+        // Model and dataset appear faithfully.
         expect(result.model).toBe(model)
         expect(result.dataset).toBe(expectedDataset)
 
@@ -70,78 +58,77 @@ describe('buildDisplayLabel (Property 8: run display label is composed of model 
         expect(result.label).toContain(result.model)
         expect(result.label).toContain(result.dataset)
 
-        // A meaningful model never collapses to the raw prefix or full path.
-        expect(result.label).not.toBe(prefix)
-        expect(result.label).not.toBe(runName)
+        // A meaningful model never collapses to the raw reference.
+        expect(result.label).not.toBe(ref)
       }),
     )
   })
 
   it('uses the model alone as the label when a run has no dataset', () => {
-    const caseArb = fc.record({ prefix: prefixArb, model: modelArb })
+    const caseArb = fc.record({ runId: runIdArb, model: modelArb })
 
     fc.assert(
-      fc.property(caseArb, ({ prefix, model }) => {
-        const runName = makeRunName(prefix, model, [])
-        const result = buildDisplayLabel(runName)
+      fc.property(caseArb, ({ runId, model }) => {
+        const ref = formatReportRef({ runId, modelId: model })
+        const result = buildDisplayLabel(ref, [])
 
         expect(result.model).toBe(model)
         expect(result.dataset).toBe('')
         expect(result.label).toBe(model)
         expect(result.label).toContain(result.model)
 
-        // Still derived from the model, not the raw prefix or full path.
-        expect(result.label).not.toBe(prefix)
-        expect(result.label).not.toBe(runName)
+        // Still derived from the model, not the raw reference.
+        expect(result.label).not.toBe(ref)
       }),
     )
   })
 
-  it('always contains the parsed model and never falls back to the path for any string', () => {
+  it('always contains the parsed model for any reference', () => {
     fc.assert(
-      fc.property(fc.string(), (runName) => {
-        const result = buildDisplayLabel(runName)
-        const { prefix } = parseReportName(runName)
-
+      fc.property(fc.string(), (ref) => {
+        const result = buildDisplayLabel(ref, [])
         // The label always contains the parsed model (trivially so when empty).
         expect(result.label).toContain(result.model)
-
-        if (result.model.length > 0) {
-          // A meaningful model was parsed: the label is derived from it and can
-          // never equal the full run path (which still carries the encoding
-          // tokens the label drops).
-          expect(result.label).not.toBe(runName)
-
-          // Nor does it collapse to the bare timestamp prefix, except in the
-          // degenerate case where the model text is literally the prefix.
-          if (result.model !== prefix) {
-            expect(result.label).not.toBe(prefix)
-          }
-        }
       }),
     )
   })
 })
 
 describe('buildDisplayLabels', () => {
-  it('adds each run timestamp when the same model is compared twice', () => {
-    const first = `20260810_100000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
-    const second = `20260810_110000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
+  it('adds each run id when the same model is compared twice', () => {
+    const first = formatReportRef({ runId: '20260810_100000', modelId: 'qwen-plus' })
+    const second = formatReportRef({ runId: '20260810_110000', modelId: 'qwen-plus' })
+    const datasetsByRef = { [first]: ['gsm8k'], [second]: ['gsm8k'] }
 
-    expect(buildDisplayLabels([first, second])).toEqual({
+    expect(buildDisplayLabels([first, second], datasetsByRef)).toEqual({
       [first]: 'qwen-plus (20260810_100000) · gsm8k',
       [second]: 'qwen-plus (20260810_110000) · gsm8k',
     })
   })
 
   it('keeps the compact model and dataset label when model names are unique', () => {
-    const run = `20260810_100000${REPORT_TOKEN}qwen-plus${MODEL_TOKEN}gsm8k`
+    const run = formatReportRef({ runId: '20260810_100000', modelId: 'qwen-plus' })
 
-    expect(buildDisplayLabels([run])).toEqual({ [run]: 'qwen-plus · gsm8k' })
+    expect(buildDisplayLabels([run], { [run]: ['gsm8k'] })).toEqual({ [run]: 'qwen-plus · gsm8k' })
   })
 })
 
-/* ─── Property 9: selection preserved across reorder/filter ───── */
+describe('compatibilityReason', () => {
+  it('returns null for fewer than two runs', () => {
+    expect(compatibilityReason([])).toBeNull()
+    expect(compatibilityReason([['gsm8k']])).toBeNull()
+  })
+
+  it('returns null when runs share a common dataset', () => {
+    expect(compatibilityReason([['gsm8k', 'mmlu'], ['gsm8k']])).toBeNull()
+  })
+
+  it('flags runs that share no common dataset', () => {
+    expect(compatibilityReason([['gsm8k'], ['mmlu']])).toBe('compare.noCommon')
+  })
+})
+
+/* Property 9: selection preserved across reorder/filter */
 
 describe('preserveSelectionAcrossReorder (Property 9: retain selection across reorder)', () => {
   // A selection of run ids of size 0..8. Uses a small id alphabet so that
@@ -232,7 +219,7 @@ describe('preserveSelectionAcrossReorder (Property 9: retain selection across re
   })
 })
 
-/* ─── Property 10: comparison selection ───────────────────────── */
+/* Property 10: comparison selection */
 
 describe('addToSelection (Property 10: compare selection is an unbounded set)', () => {
   // A set of unique run ids of size 0..8, so we exercise small and large

@@ -58,7 +58,8 @@ function wrongTypedValue(type: FieldType): unknown {
 // ------------------------------------------------------------------ //
 
 const REPORT_SUMMARY_FIELDS: FieldSpec[] = [
-  { name: 'name', type: 'string' },
+  { name: 'run_id', type: 'string' },
+  { name: 'model_id', type: 'string' },
   { name: 'model_name', type: 'string' },
   { name: 'dataset_name', type: 'string' },
   { name: 'num_samples', type: 'number' },
@@ -68,7 +69,8 @@ const REPORT_SUMMARY_FIELDS: FieldSpec[] = [
 /** Generate a fully-valid `reportSummarySchema` object (optional key varies). */
 const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
   {
-    name: fc.string(),
+    run_id: fc.string(),
+    model_id: fc.string(),
     model_name: fc.string(),
     dataset_name: fc.string(),
     num_samples: fc.nat(),
@@ -78,7 +80,8 @@ const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
   },
   {
     requiredKeys: [
-      'name',
+      'run_id',
+      'model_id',
       'model_name',
       'dataset_name',
       'num_samples',

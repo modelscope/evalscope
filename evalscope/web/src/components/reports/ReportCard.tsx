@@ -6,13 +6,14 @@ import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportSummary } from '@/api/types'
 import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 interface ReportCardProps {
   report: ReportSummary
   selected: boolean
-  onSelect: (name: string) => void
-  /** Navigate to report detail */
-  onClick: (name: string) => void
+  onSelect: (ref: string) => void
+  /** Navigate to report detail by reference */
+  onClick: (ref: string) => void
 }
 
 function formatTimestamp(ts: string): string {
@@ -22,12 +23,13 @@ function formatTimestamp(ts: string): string {
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
+  const ref = formatReportRef(reportRefFromSummary(report))
   const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
   const metricRefs = primaryMetricsOf(report)
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
-    onClick(report.name)
+    onClick(ref)
   }
 
   return (
@@ -45,7 +47,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         label={`${t('reports.selectReport')}: ${report.model_name}`}
         onClick={(e) => {
           e.stopPropagation()
-          onSelect(report.name)
+          onSelect(ref)
         }}
       />
 
@@ -53,7 +55,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
       <button
         type="button"
         className="flex-1 min-w-0 min-h-11 flex items-center gap-4 cursor-pointer text-left"
-        onClick={() => onClick(report.name)}
+        onClick={() => onClick(ref)}
       >
         {/* Model + Dataset */}
         <span className="block flex-1 min-w-0">
@@ -70,8 +72,8 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </span>
           {/* Secondary row: dataset + sample count */}
           <span className="flex items-center gap-3 mt-0.5">
-            <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
-              <span title={report.dataset_name}>{datasetLabel(report)}</span>
+            <span className="text-sm text-[var(--text-muted)] break-words min-w-0" title={report.dataset_name}>
+              {datasetLabel(report)}
             </span>
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}

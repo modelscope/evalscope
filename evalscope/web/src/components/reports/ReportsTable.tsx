@@ -4,20 +4,20 @@ import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
 import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
-import { buildDisplayLabel } from '@/domain/compare/compareModel'
+import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 interface ReportsTableProps {
   reports: ReportSummary[]
-  /** Names currently selected for compare. */
+  /** Report references (`{runId}/{modelId}`) currently selected for compare. */
   selected: string[]
   /** Whether every run on the current page is selected. */
   allSelected: boolean
-  /** Toggle every run on the current page. */
+  /** Toggle a run's selection by reference. */
   onToggleSelectAll: () => void
-  /** Toggle a run's selection. */
-  onToggleSelect: (name: string) => void
-  /** Navigate to a run's detail view. */
-  onRowClick: (name: string) => void
+  /** Toggle a run's selection by reference. */
+  onToggleSelect: (ref: string) => void
+  /** Navigate to a run's detail view by reference. */
+  onRowClick: (ref: string) => void
 }
 
 function formatTimestamp(ts: string): string {
@@ -28,9 +28,8 @@ function formatTimestamp(ts: string): string {
  * Desktop (>=1024px) tabular view of the evaluation history.
  *
  * Columns are fixed and ordered: model, dataset, time, samples, score, status.
- * Each run's model/dataset are derived through
- * `buildDisplayLabel` so the row shows a meaningful label rather than the raw
- * timestamped run name. A leading selection column is always visible
+ * The model name and dataset come straight from the summary; the row is keyed and
+ * selected by its report reference. A leading selection column is always visible
  * while row clicks continue to open the report detail.
  */
 export default function ReportsTable({
@@ -82,15 +81,15 @@ export default function ReportsTable({
         </thead>
         <tbody>
           {reports.map((report) => {
-            const isSelected = selectedSet.has(report.name)
-            const parsed = buildDisplayLabel(report.name)
-            const model = report.model_name || parsed.model || report.name
-            const dataset = datasetLabel(report) || parsed.dataset
+            const ref = formatReportRef(reportRefFromSummary(report))
+            const isSelected = selectedSet.has(ref)
+            const model = report.model_name || report.model_id
+            const dataset = datasetLabel(report)
             const metricRefs = primaryMetricsOf(report)
             return (
               <tr
-                key={report.name}
-                onClick={() => onRowClick(report.name)}
+                key={ref}
+                onClick={() => onRowClick(ref)}
                 className={cn(
                   'border-b border-[var(--border)] last:border-b-0 cursor-pointer transition-colors',
                   isSelected ? 'bg-[var(--accent-dim)]' : 'hover:bg-[var(--bg-card2)]',
@@ -102,7 +101,7 @@ export default function ReportsTable({
                     label={`${t('reports.selectReport')}: ${model}`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      onToggleSelect(report.name)
+                      onToggleSelect(ref)
                     }}
                   />
                 </td>

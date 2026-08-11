@@ -12,12 +12,13 @@ import plotly.graph_objects as go
 import shutil
 from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
-from typing import List
+from pydantic import ValidationError
+from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio, mean_quality_ratio
-from evalscope.report import ReportKey, get_data_frame
+from evalscope.report import ReportKey, ReportRef, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
     plot_multi_report_radar,
@@ -33,12 +34,10 @@ from evalscope.utils.data_utils import (
     get_quality_metric_df,
     get_quality_report_df,
     get_report_analysis,
-    load_multi_report,
     load_multi_report_groups,
-    load_single_report,
+    load_report_bundle,
     normalize_score,
-    process_report_name,
-    scan_for_report_folders,
+    scan_report_refs,
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
@@ -139,31 +138,43 @@ def _df_to_records(df) -> list:
     return json.loads(df.to_json(orient='records', force_ascii=False))
 
 
-def _extract_timestamp(report_name: str, root: str) -> str:
-    """Try to extract a timestamp from the report directory name or fall back to mtime."""
-    try:
-        prefix, _, _ = process_report_name(report_name)
-        # Directory names typically look like "20260423_201338"
-        for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
-            try:
-                dt = datetime.strptime(prefix, fmt)
-                return dt.isoformat()
-            except ValueError:
-                continue
-        # Fall back to directory modification time
-        dir_path = os.path.join(root, prefix)
-        if os.path.isdir(dir_path):
-            mtime = os.path.getmtime(dir_path)
-            return datetime.fromtimestamp(mtime).isoformat()
-    except Exception:
-        pass
+def _parse_path_ref(run_id: str, model_id: str) -> ReportRef:
+    """Build a reference from URL path segments.
+
+    Raises:
+        ValidationError: when a segment is not a single, non-escaping name.
+    """
+    return ReportRef(run_id=run_id, model_id=model_id)
+
+
+def _query_refs() -> List[ReportRef]:
+    """Parse the repeated ``report={run_id}/{model_id}`` query parameter.
+
+    Raises:
+        ValueError: when a value is not a valid flat reference.
+    """
+    return [ReportRef.parse(value.strip()) for value in request.args.getlist('report') if value.strip()]
+
+
+def _extract_timestamp(ref: ReportRef, root: str) -> str:
+    """Try to extract a timestamp from the run directory name or fall back to mtime."""
+    # Directory names typically look like "20260423_201338"
+    for fmt in ('%Y%m%d_%H%M%S', '%Y%m%d'):
+        try:
+            return datetime.strptime(ref.run_id, fmt).isoformat()
+        except ValueError:
+            continue
+    # Fall back to directory modification time
+    run_dir = os.path.join(root, ref.run_id)
+    if os.path.isdir(run_dir):
+        return datetime.fromtimestamp(os.path.getmtime(run_dir)).isoformat()
     return ''
 
 
-def _build_report_meta(report_name: str, root: str) -> dict:
+def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
     """Load a report and return lightweight metadata for the list endpoint."""
     try:
-        report_list, datasets, _ = load_single_report(root, report_name)
+        report_list, _, _ = load_report_bundle(root, ref)
     except Exception:
         return None
 
@@ -182,7 +193,7 @@ def _build_report_meta(report_name: str, root: str) -> dict:
         total_num += r.num or 0
         primary_metric = r.primary_metric
         primary_metrics.append(primary_metric)
-    timestamp = _extract_timestamp(report_name, root)
+    timestamp = _extract_timestamp(ref, root)
 
     # Every dataset contributes a reference so each one can be shown as
     # `dataset -> metric -> score`, each in its own native scale. They are never collapsed into a
@@ -199,7 +210,8 @@ def _build_report_meta(report_name: str, root: str) -> dict:
     ]
 
     return {
-        'name': report_name,
+        'run_id': ref.run_id,
+        'model_id': ref.model_id,
         'model_name': first.model_name,
         'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
         (dataset_names[0] if dataset_names else ''),
@@ -246,7 +258,7 @@ def _refresh_html_report(reports_dir: str) -> None:
 # ------------------------------------------------------------------
 
 
-@bp_reports.route('/list', methods=['GET'])
+@bp_reports.route('', methods=['GET'])
 def list_reports():
     """Return a filterable, paginated list of reports with metadata.
 
@@ -268,10 +280,9 @@ def list_reports():
             return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
 
         # --- Scan & load metadata ---
-        raw_reports = scan_for_report_folders(root)
         items = []
-        for rn in raw_reports:
-            meta = _build_report_meta(rn, root)
+        for ref in scan_report_refs(root):
+            meta = _build_report_meta(ref, root)
             if meta is not None:
                 items.append(meta)
 
@@ -353,63 +364,42 @@ def list_reports():
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/scan', methods=['GET'])
-def scan_reports():
-    """Scan the output directory for available report folders.
-
-    Query params:
-        root_path (str): directory to scan (default: OUTPUT_DIR)
-    """
-    try:
-        root = _root_path()
-        reports = scan_for_report_folders(root)
-        return jsonify({'reports': reports}), 200
-    except Exception as e:
-        logger.error(f'Failed to scan reports: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@bp_reports.route('/report', methods=['DELETE'])
-def delete_report():
+@bp_reports.route('/runs/<run_id>/models/<model_id>', methods=['DELETE'])
+def delete_report(run_id: str, model_id: str):
     """Delete one evaluation report (its per-model artefacts) from disk.
 
-    Removes ``<prefix>/{reports,predictions,reviews}/<model>``. When no other
+    Removes ``<run_id>/{reports,predictions,reviews}/<model_id>``. When no other
     model report remains in the run directory afterwards, the whole
-    ``<prefix>/`` directory (logs/configs included) is removed as well.
+    ``<run_id>/`` directory (logs/configs included) is removed as well.
 
     Query params:
-        root_path   (str): output root directory (optional; falls back to config)
-        report_name (str): report identifier ``{prefix}@@{model}::{datasets}``
+        root_path (str): output root directory (optional; falls back to config)
 
     Returns 409 when the report belongs to a task that is still executing.
     """
-    report_name = request.args.get('report_name')
-    if not report_name:
-        return jsonify({'error': 'report_name is required'}), 400
-
     try:
-        prefix, model_name, _ = process_report_name(report_name)
-    except ValueError:
-        return jsonify({'error': f'Invalid report_name: {report_name}'}), 400
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
 
     # Running-task protection: in the service layout the run directory is the
     # task_id itself, so refuse deletion while that task is still active.
-    if prefix in active_task_ids():
-        return jsonify({'error': f'Task is still running: {prefix}'}), 409
+    if ref.run_id in active_task_ids():
+        return jsonify({'error': f'Task is still running: {ref.run_id}'}), 409
 
     root_real = os.path.realpath(_root_path())
-    run_dir = os.path.realpath(os.path.join(root_real, prefix))
+    run_dir = os.path.realpath(os.path.join(root_real, ref.run_id))
     # Reject path traversal and symlinks escaping the outputs root.
     if run_dir == root_real or not run_dir.startswith(root_real + os.sep):
         return jsonify({'error': 'Invalid report path'}), 400
 
-    model_report_dir = os.path.realpath(os.path.join(run_dir, OutputsStructure.REPORTS_DIR, model_name))
+    model_report_dir = os.path.realpath(os.path.join(run_dir, OutputsStructure.REPORTS_DIR, ref.model_id))
     if not model_report_dir.startswith(run_dir + os.sep) or not os.path.isdir(model_report_dir):
-        return jsonify({'error': f'Report not found: {report_name}'}), 404
+        return jsonify({'error': f'Report not found: {ref.key}'}), 404
 
     try:
         for sub in (OutputsStructure.REPORTS_DIR, OutputsStructure.PREDICTIONS_DIR, OutputsStructure.REVIEWS_DIR):
-            target = os.path.join(run_dir, sub, model_name)
+            target = os.path.join(run_dir, sub, ref.model_id)
             if os.path.isdir(target):
                 shutil.rmtree(target)
         # Drop the whole run directory once its last model report is gone;
@@ -422,89 +412,66 @@ def delete_report():
             shutil.rmtree(run_dir)
         else:
             _refresh_html_report(reports_dir)
-        logger.info(f'Deleted eval report {report_name} under {run_dir}')
-        return jsonify({'success': True, 'report_name': report_name}), 200
+        logger.info(f'Deleted eval report {ref.key} under {run_dir}')
+        return jsonify({'success': True, 'run_id': ref.run_id, 'model_id': ref.model_id}), 200
     except Exception as e:
-        logger.error(f'Failed to delete report {report_name}: {e}')
+        logger.error(f'Failed to delete report {ref.key}: {e}')
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/load', methods=['GET'])
-def load_report():
-    """Load a single report by name.
+@bp_reports.route('/runs/<run_id>/models/<model_id>', methods=['GET'])
+def load_report(run_id: str, model_id: str):
+    """Load one model report of one run.
 
     Query params:
-        root_path   (str): output root directory
-        report_name (str): report identifier
+        root_path (str): output root directory
     """
-    report_name = request.args.get('report_name')
-    if not report_name:
-        return jsonify({'error': 'report_name is required'}), 400
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
 
     try:
-        root = _root_path()
-        report_list, datasets, task_cfg = load_single_report(root, report_name)
+        report_list, datasets, task_cfg = load_report_bundle(_root_path(), ref)
         return jsonify({
             'report_list': [_report_to_service_dict(r) for r in report_list],
             'datasets': datasets,
             'task_config': task_cfg,
         }), 200
+    except FileNotFoundError as e:
+        logger.warning(f'Report {ref.key} not found: {e}')
+        return jsonify({'error': f'Report not found: {ref.key}'}), 404
     except Exception as e:
-        logger.error(f'Failed to load report {report_name}: {e}')
+        logger.error(f'Failed to load report {ref.key}: {e}')
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/load_multi', methods=['GET'])
-def load_multi():
-    """Load multiple reports at once.
-
-    Query params:
-        root_path    (str): output root directory
-        report_names (str): semicolon-separated report identifiers
-    """
-    names_raw = request.args.get('report_names', '')
-    if not names_raw:
-        return jsonify({'error': 'report_names is required'}), 400
-
-    names = [n.strip() for n in names_raw.split(';') if n.strip()]
-    try:
-        root = _root_path()
-        report_list = load_multi_report(root, names)
-        return jsonify({
-            'report_list': [_report_to_service_dict(r) for r in report_list],
-        }), 200
-    except Exception as e:
-        logger.error(f'Failed to load multi reports: {e}')
-        return jsonify({'error': str(e)}), 500
-
-
-@bp_reports.route('/dataframe', methods=['GET'])
-def get_dataframe():
+@bp_reports.route('/runs/<run_id>/models/<model_id>/table', methods=['GET'])
+def get_dataframe(run_id: str, model_id: str):
     """Get report data as a flat JSON table.
 
     Query params:
-        root_path        (str): output root directory
-        report_name      (str): report identifier
-        type             (str): 'acc' (accuracy overview) | 'compare' (pivot) | 'dataset' (single dataset)
-        dataset_name     (str): required when type=dataset
+        root_path    (str): output root directory
+        view         (str): 'acc' (accuracy overview) | 'compare' (pivot) | 'dataset' (single dataset)
+        dataset_name (str): required when view=dataset
     """
-    report_name = request.args.get('report_name')
-    if not report_name:
-        return jsonify({'error': 'report_name is required'}), 400
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
 
-    df_type = request.args.get('type', 'acc')
+    view = request.args.get('view', 'acc')
     dataset_name = request.args.get('dataset_name', '')
 
     try:
-        root = _root_path()
-        report_list, datasets, _ = load_single_report(root, report_name)
+        report_list, _, _ = load_report_bundle(_root_path(), ref)
         acc_df = get_acc_report_df(report_list)
 
-        if df_type == 'compare':
+        if view == 'compare':
             df = get_compare_report_df(acc_df)
-        elif df_type == 'dataset':
+        elif view == 'dataset':
             if not dataset_name:
-                return jsonify({'error': 'dataset_name is required for type=dataset'}), 400
+                return jsonify({'error': 'dataset_name is required for view=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
             from evalscope.utils.data_utils import get_single_dataset_df
             df = get_single_dataset_df(report_df, dataset_name)
@@ -520,28 +487,28 @@ def get_dataframe():
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/predictions', methods=['GET'])
-def get_predictions():
+@bp_reports.route('/runs/<run_id>/models/<model_id>/predictions', methods=['GET'])
+def get_predictions(run_id: str, model_id: str):
     """Get model predictions for a given subset.
 
     Query params:
         root_path    (str): output root directory
-        report_name  (str): report identifier
         dataset_name (str): dataset name
         subset_name  (str): subset name
     """
-    report_name = request.args.get('report_name')
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
+
     dataset_name = request.args.get('dataset_name')
     subset_name = request.args.get('subset_name')
-
-    if not all([report_name, dataset_name, subset_name]):
-        return jsonify({'error': 'report_name, dataset_name and subset_name are required'}), 400
+    if not dataset_name or not subset_name:
+        return jsonify({'error': 'dataset_name and subset_name are required'}), 400
 
     try:
-        root = _root_path()
-        prefix, model_name, _ = process_report_name(report_name)
-        work_dir = os.path.join(root, prefix)
-        df = get_model_prediction(work_dir, model_name, dataset_name, subset_name)
+        work_dir = os.path.join(_root_path(), ref.run_id)
+        df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
         return jsonify({
             'predictions': _df_to_records(df),
         }), 200
@@ -550,24 +517,25 @@ def get_predictions():
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/analysis', methods=['GET'])
-def get_analysis():
+@bp_reports.route('/runs/<run_id>/models/<model_id>/analysis', methods=['GET'])
+def get_analysis(run_id: str, model_id: str):
     """Get the AI analysis text for a dataset.
 
     Query params:
         root_path    (str): output root directory
-        report_name  (str): report identifier
         dataset_name (str): dataset name
     """
-    report_name = request.args.get('report_name')
-    dataset_name = request.args.get('dataset_name')
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
 
-    if not report_name or not dataset_name:
-        return jsonify({'error': 'report_name and dataset_name are required'}), 400
+    dataset_name = request.args.get('dataset_name')
+    if not dataset_name:
+        return jsonify({'error': 'dataset_name is required'}), 400
 
     try:
-        root = _root_path()
-        report_list, _, _ = load_single_report(root, report_name)
+        report_list, _, _ = load_report_bundle(_root_path(), ref)
         analysis = get_report_analysis(report_list, dataset_name)
         return jsonify({'analysis': analysis}), 200
     except Exception as e:
@@ -575,22 +543,24 @@ def get_analysis():
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/html', methods=['GET'])
-def get_html_report():
-    """Serve the HTML report file for a given report.
+@bp_reports.route('/runs/<run_id>/html', methods=['GET'])
+def get_html_report(run_id: str):
+    """Serve the generated HTML report of a run.
+
+    The HTML report covers every model of the run, so it is addressed by run alone.
 
     Query params:
-        root_path   (str): output root directory
-        report_name (str): report identifier
+        root_path (str): output root directory
     """
-    report_name = request.args.get('report_name')
-    if not report_name:
-        return jsonify({'error': 'report_name is required'}), 400
+    try:
+        # Reuse the reference validation by pairing the run with a placeholder model segment.
+        ReportRef(run_id=run_id, model_id='_')
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid run id: {e}'}), 400
 
     try:
         root = os.path.abspath(_root_path())
-        prefix, model_name, _ = process_report_name(report_name)
-        report_html = os.path.join(root, prefix, OutputsStructure.REPORTS_DIR, 'report.html')
+        report_html = os.path.join(root, run_id, OutputsStructure.REPORTS_DIR, 'report.html')
 
         if not os.path.exists(report_html):
             return jsonify({
@@ -604,82 +574,107 @@ def get_html_report():
         return jsonify({'error': str(e)}), 500
 
 
-@bp_reports.route('/chart', methods=['GET'])
-def get_chart():
-    """Generate an interactive Plotly chart as standalone HTML.
+def _render_chart_html(fig: Optional[go.Figure]) -> Tuple[str, int, dict]:
+    """Turn a figure into standalone Plotly HTML, or an empty-state page when there is nothing to plot."""
+    if fig is None:
+        return '<html><body style="background:#0f172a;color:#94a3b8;display:flex;align-items:center;' \
+               'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
+               200, {'Content-Type': 'text/html'}
+
+    _apply_chart_theme(fig, request.args.get('theme', 'dark'))
+    html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
+    plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
+    html = html.replace('</head>', f'  {plotly_script}\n</head>')
+    return html, 200, {'Content-Type': 'text/html'}
+
+
+@bp_reports.route('/charts/<chart_type>', methods=['GET'])
+def get_compare_chart(chart_type: str):
+    """Generate a multi-report comparison chart as standalone HTML.
+
+    Query params:
+        root_path (str): output root directory
+        report    (str): repeated ``{run_id}/{model_id}`` reference (one per compared report)
+        theme     (str): 'light' | 'dark'; defaults to the existing dark report theme
+    """
+    if chart_type not in ('radar', 'grouped_bar'):
+        return jsonify({'error': f'Unknown comparison chart type: {chart_type}'}), 400
+
+    try:
+        refs = _query_refs()
+    except ValueError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
+    if not refs:
+        return jsonify({'error': 'at least one report is required'}), 400
+
+    try:
+        quality_df = get_comparison_quality_report_df(load_multi_report_groups(_root_path(), refs))
+        fig = None
+        if chart_type == 'radar':
+            fig = plot_multi_report_radar(quality_df)
+        elif not quality_df.empty:
+            color_seq = ['#816DF8', '#0F9C7E', '#fbbf24', '#a78bfa', '#63b3ed']
+            fig = px.bar(
+                quality_df,
+                x=ReportKey.model_name,
+                y=ReportKey.score,
+                color=ReportKey.dataset_name,
+                barmode='group',
+                text=ReportKey.display_score,
+                custom_data=[ReportKey.metric_name, ReportKey.raw_score],
+                color_discrete_sequence=color_seq,
+            )
+            fig.update_traces(
+                textposition='outside',
+                hovertemplate=(
+                    '%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}'
+                    '<extra>%{fullData.name}</extra>'
+                ),
+            )
+            fig.update_layout(
+                template=PLOTLY_THEME,
+                uniformtext_minsize=12,
+                uniformtext_mode='hide',
+                yaxis=dict(range=[0, 1]),
+                margin=dict(t=20, l=20, r=20, b=20),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+            )
+        return _render_chart_html(fig)
+    except Exception as e:
+        logger.error(f'Failed to generate comparison chart: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+@bp_reports.route('/runs/<run_id>/models/<model_id>/charts/<chart_type>', methods=['GET'])
+def get_chart(run_id: str, model_id: str, chart_type: str):
+    """Generate a single-report chart as standalone HTML.
+
+    Path params:
+        chart_type (str): 'scores' | 'sunburst' | 'dataset_scores' | 'histogram'
 
     Query params:
         root_path    (str): output root directory
-        report_name  (str): report identifier (single report)
-        report_names (str): semicolon-separated report identifiers (multi report)
-        chart_type   (str): 'scores' | 'sunburst' | 'dataset_scores' | 'radar' | 'histogram' | 'grouped_bar'
-        dataset_name (str): required for chart_type=dataset_scores
-        subset_name  (str): required for chart_type=histogram
+        dataset_name (str): required for the 'dataset_scores' and 'histogram' charts
+        subset_name  (str): required for the 'histogram' chart
         theme        (str): 'light' | 'dark'; defaults to the existing dark report theme
     """
-    chart_type = request.args.get('chart_type', 'scores')
-    root = _root_path()
+    try:
+        ref = _parse_path_ref(run_id, model_id)
+    except ValidationError as e:
+        return jsonify({'error': f'Invalid report reference: {e}'}), 400
 
+    root = _root_path()
     try:
         fig = None
-
-        if chart_type == 'radar':
-            names_raw = request.args.get('report_names', '')
-            names = [n.strip() for n in names_raw.split(';') if n.strip()]
-            if not names:
-                # Fall back to singular report_name
-                single = request.args.get('report_name', '').strip()
-                if single:
-                    names = [single]
-                else:
-                    return jsonify({'error': 'report_names or report_name is required for radar'}), 400
-            quality_df = get_comparison_quality_report_df(load_multi_report_groups(root, names))
-            fig = plot_multi_report_radar(quality_df)
-        elif chart_type == 'grouped_bar':
-            # Grouped bar chart for multi-model comparison
-            names_raw = request.args.get('report_names', '')
-            names = [n.strip() for n in names_raw.split(';') if n.strip()]
-            if not names:
-                return jsonify({'error': 'report_names is required for grouped_bar'}), 400
-            quality_df = get_comparison_quality_report_df(load_multi_report_groups(root, names))
-            if not quality_df.empty:
-                color_seq = ['#816DF8', '#0F9C7E', '#fbbf24', '#a78bfa', '#63b3ed']
-                fig = px.bar(
-                    quality_df,
-                    x=ReportKey.model_name,
-                    y=ReportKey.score,
-                    color=ReportKey.dataset_name,
-                    barmode='group',
-                    text=ReportKey.display_score,
-                    custom_data=[ReportKey.metric_name, ReportKey.raw_score],
-                    color_discrete_sequence=color_seq,
-                )
-                fig.update_traces(
-                    textposition='outside',
-                    hovertemplate=(
-                        '%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}'
-                        '<extra>%{fullData.name}</extra>'
-                    ),
-                )
-                fig.update_layout(
-                    template=PLOTLY_THEME,
-                    uniformtext_minsize=12,
-                    uniformtext_mode='hide',
-                    yaxis=dict(range=[0, 1]),
-                    margin=dict(t=20, l=20, r=20, b=20),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                )
-        elif chart_type == 'histogram':
+        if chart_type == 'histogram':
             # Score distribution histogram from prediction NScore values
-            report_name = request.args.get('report_name')
             dataset_name = request.args.get('dataset_name', '')
             subset_name = request.args.get('subset_name', '')
-            if not report_name or not dataset_name or not subset_name:
-                return jsonify({'error': 'report_name, dataset_name and subset_name are required for histogram'}), 400
-            prefix, model_name, _ = process_report_name(report_name)
-            work_dir = os.path.join(root, prefix)
-            pred_df = get_model_prediction(work_dir, model_name, dataset_name, subset_name)
+            if not dataset_name or not subset_name:
+                return jsonify({'error': 'dataset_name and subset_name are required for histogram'}), 400
+            work_dir = os.path.join(root, ref.run_id)
+            pred_df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
             if pred_df is not None and not pred_df.empty and 'NScore' in pred_df.columns:
                 fig = px.histogram(
                     pred_df,
@@ -696,10 +691,7 @@ def get_chart():
                     plot_bgcolor='rgba(0,0,0,0)',
                 )
         else:
-            report_name = request.args.get('report_name')
-            if not report_name:
-                return jsonify({'error': 'report_name is required'}), 400
-            report_list, datasets, _ = load_single_report(root, report_name)
+            report_list, _, _ = load_report_bundle(root, ref)
             if chart_type == 'sunburst':
                 fig = plot_single_report_sunburst(report_list)
             elif chart_type == 'dataset_scores':
@@ -710,20 +702,12 @@ def get_chart():
                 from evalscope.utils.data_utils import get_single_dataset_df
                 ds_df = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(get_quality_metric_df(report_list, ds_df))
-            else:
+            elif chart_type == 'scores':
                 fig = plot_single_report_scores(get_quality_report_df(report_list))
+            else:
+                return jsonify({'error': f'Unknown chart type: {chart_type}'}), 400
 
-        if fig is None:
-            return '<html><body style="background:#0f172a;color:#94a3b8;display:flex;align-items:center;' \
-                   'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
-                   200, {'Content-Type': 'text/html'}
-
-        _apply_chart_theme(fig, request.args.get('theme', 'dark'))
-        html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
-        plotly_script = f'<script src="{PLOTLY_CDN_URL}" charset="utf-8"></script>'
-        html = html.replace('</head>', f'  {plotly_script}\n</head>')
-        return html, 200, {'Content-Type': 'text/html'}
-
+        return _render_chart_html(fig)
     except Exception as e:
         logger.error(f'Failed to generate chart: {e}')
         return jsonify({'error': str(e)}), 500

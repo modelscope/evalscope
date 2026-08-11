@@ -3,7 +3,7 @@ import pytest
 
 from evalscope.api.metric.semantics import MetricIdentity, MetricRole
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
-from evalscope.report import Category, Metric, Report, Subset
+from evalscope.report import Category, Metric, Report, ReportRef, Subset
 from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
 from evalscope.service.blueprints.reports import _apply_chart_theme, _build_report_meta, _report_to_service_dict
 from evalscope.utils.data_utils import get_comparison_quality_report_df, get_quality_report_df
@@ -55,12 +55,14 @@ def test_build_report_meta_exposes_primary_metric_identity(monkeypatch) -> None:
         primary_metric_identity=identity,
     )
     monkeypatch.setattr(
-        'evalscope.service.blueprints.reports.load_single_report',
-        lambda _root, _name: ([report], ['throughput_suite'], {}),
+        'evalscope.service.blueprints.reports.load_report_bundle',
+        lambda _root, _ref: ([report], ['throughput_suite'], {}),
     )
 
-    metadata = _build_report_meta('run', '/tmp')
+    metadata = _build_report_meta(ReportRef(run_id='run', model_id='test-model'), '/tmp')
 
+    assert metadata['run_id'] == 'run'
+    assert metadata['model_id'] == 'test-model'
     assert metadata['primary_metrics'] == [{
         'dataset_name': 'throughput_suite',
         'dataset_pretty_name': 'Throughput Suite',
@@ -97,11 +99,11 @@ def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypat
         primary_metric_identity=normalized_identity,
     )
     monkeypatch.setattr(
-        'evalscope.service.blueprints.reports.load_single_report',
-        lambda _root, _name: ([report], ['document_suite'], {}),
+        'evalscope.service.blueprints.reports.load_report_bundle',
+        lambda _root, _ref: ([report], ['document_suite'], {}),
     )
 
-    metadata = _build_report_meta('run', '/tmp')
+    metadata = _build_report_meta(ReportRef(run_id='run', model_id='test-model'), '/tmp')
 
     assert report.primary_metric.score == 0.9
     assert metadata['primary_metrics'][0]['identity'] == normalized_identity.model_dump()
@@ -152,11 +154,11 @@ def test_comparison_chart_omits_unbounded_metrics() -> None:
 
 
 def test_comparison_chart_keeps_separate_runs_of_the_same_model() -> None:
-    first_name = '20260810_100000@@test-model::points'
-    second_name = '20260810_110000@@test-model::points'
+    first_ref = ReportRef(run_id='20260810_100000', model_id='test-model')
+    second_ref = ReportRef(run_id='20260810_110000', model_id='test-model')
     quality_df = get_comparison_quality_report_df([
-        (first_name, [_semantic_report('points', 75.0, 'quality.score.points_100')]),
-        (second_name, [_semantic_report('points', 90.0, 'quality.score.points_100')]),
+        (first_ref, [_semantic_report('points', 75.0, 'quality.score.points_100')]),
+        (second_ref, [_semantic_report('points', 90.0, 'quality.score.points_100')]),
     ])
 
     assert quality_df['Model'].tolist() == [

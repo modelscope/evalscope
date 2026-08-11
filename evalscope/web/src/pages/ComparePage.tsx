@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReports } from '@/contexts/ReportsContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
-import { getPredictions, getChartUrl } from '@/api/reports'
+import { getPredictions, getCompareChartUrl } from '@/api/reports'
 import type { ReportData, PredictionRow } from '@/api/types'
-import { getDisplayNames, parseReportName } from '@/utils/reportParser'
+import { parseReportRef } from '@/domain/report/reportRef'
 import {
   buildDisplayLabels,
   compatibilityReason,
+  getDisplayNames,
   MAX_COMPARE_SLOTS,
   togglePredictionSelection,
 } from '@/domain/compare/compareModel'
@@ -89,10 +90,12 @@ export default function ComparePage() {
   // Score comparison consumes the complete URL selection. Prediction comparison
   // derives its own bounded subset below.
   const rootPath = qp.get('root_path') || ctxRootPath
-  const reportsParam = qp.get('reports') || ''
+  // Key the memo on a stable string: `useQueryParams` returns a fresh object each render, so a raw
+  // `[qp]` dependency would rebuild the array every render and re-fire the load effect in a loop.
+  const reportKey = qp.getList('report').filter(Boolean).join(';')
   const reportNames = useMemo(
-    () => reportsParam.split(';').filter(Boolean),
-    [reportsParam],
+    () => (reportKey ? reportKey.split(';') : []),
+    [reportKey],
   )
 
   // State
@@ -167,7 +170,7 @@ export default function ComparePage() {
     //  Each dataset's primary metric decides how its row is formatted and which end is "best".
     const semanticsByDataset: Record<string, MetricSemantics | undefined> = {}
     for (const r of reports) {
-      const key = (r as ReportData & { _reportName?: string })._reportName ?? r.model_name
+      const key = (r as ReportData & { _reportRef?: string })._reportRef ?? r.model_name
       if (!byReport[key]) byReport[key] = {}
       const primary = primaryMetricOf(r)
       if (!primary) continue
@@ -332,9 +335,24 @@ export default function ComparePage() {
   const totalPages = filtered.length
   const currentRow = filtered.length > 0 ? filtered[Math.min(page - 1, filtered.length - 1)] : null
 
+  // Datasets each selected report covers, keyed by report reference. Sourced from the loaded
+  // reports (one report per dataset) rather than from the reference, which carries no datasets.
+  const datasetsByRef = useMemo(() => {
+    const map: Record<string, string[]> = {}
+    for (const r of reports) {
+      const key = (r as ReportData & { _reportRef?: string })._reportRef ?? r.model_name
+      if (!map[key]) map[key] = []
+      if (r.dataset_name && !map[key].includes(r.dataset_name)) map[key].push(r.dataset_name)
+    }
+    return map
+  }, [reports])
+
   // Meaningful model + dataset display label per run, used for table headers and
-  // column identifiers instead of the raw timestamped run path.
-  const displayLabels = useMemo(() => buildDisplayLabels(reportNames), [reportNames])
+  // column identifiers instead of the raw reference.
+  const displayLabels = useMemo(
+    () => buildDisplayLabels(reportNames, datasetsByRef),
+    [reportNames, datasetsByRef],
+  )
 
   const activeReportNames = activeTab === 'score' ? reportNames : predictionReportNames
 
@@ -342,21 +360,20 @@ export default function ComparePage() {
   // and only the user-selected columns for prediction.
   const incompatibilityReason = useMemo(() => {
     if (activeReportNames.length < 2) return null
-    const runs = activeReportNames.map((name) => ({ name }) as ReportData)
-    return compatibilityReason(runs)
-  }, [activeReportNames])
+    return compatibilityReason(activeReportNames.map((ref) => datasetsByRef[ref] ?? []))
+  }, [activeReportNames, datasetsByRef])
 
   // ------------------------------------------------------------------ //
   // URL manipulation                                                    //
   // ------------------------------------------------------------------ //
 
   const removeReport = useCallback((name: string) => {
-    qp.set('reports', reportNames.filter((n) => n !== name).join(';'))
+    qp.setList('report', reportNames.filter((n) => n !== name))
   }, [reportNames, qp])
 
   const addReport = useCallback(() => {
     if (!addInput.trim() || reportNames.includes(addInput.trim())) return
-    qp.set('reports', [...reportNames, addInput.trim()].join(';'))
+    qp.setList('report', [...reportNames, addInput.trim()])
     setAddInput('')
     setShowAddInput(false)
   }, [addInput, reportNames, qp])
@@ -598,7 +615,7 @@ function CompareReportRail({
           const disabled = isPrediction
             ? !checked && predictionReportNames.length >= MAX_COMPARE_SLOTS
             : reportNames.length <= 2
-          const label = displayLabels[name] ?? (parseReportName(name).model || name)
+          const label = displayLabels[name] ?? (parseReportRef(name).modelId || name)
           const reportIndex = reportNames.indexOf(name)
           const slotIndex = isPrediction ? predictionReportNames.indexOf(name) : reportIndex
           const palette = slotIndex >= 0 && slotIndex < MODEL_PALETTE.length
@@ -797,7 +814,7 @@ function ScoreTab({
   return (
     <div className="flex flex-col gap-6">
       <PlotlyChart
-        src={getChartUrl(rootPath, 'radar', { reportNames })}
+        src={getCompareChartUrl(rootPath, reportNames, 'radar')}
         fallbackTable={{
           columns: scoreTableColumns.map((column) => column.key),
           rows: scoreTableData,
@@ -1159,7 +1176,7 @@ function PredictionTab({
             const rate = aboveRates[name]
             const modelLabel = displayLabels[name]
               ?? displayNames[name]
-              ?? (parseReportName(name).model || name)
+              ?? (parseReportRef(name).modelId || name)
             return (
               <div
                 key={name}
@@ -1295,9 +1312,9 @@ function PredictionTab({
                     <span
                       className="text-xs font-semibold truncate"
                       style={{ color: palette.dot }}
-                      title={displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
+                      title={displayLabels[name] ?? displayNames[name] ?? (parseReportRef(name).modelId || name)}
                     >
-                      {displayLabels[name] ?? displayNames[name] ?? (parseReportName(name).model || name)}
+                      {displayLabels[name] ?? displayNames[name] ?? (parseReportRef(name).modelId || name)}
                     </span>
                   </div>
                   {/*

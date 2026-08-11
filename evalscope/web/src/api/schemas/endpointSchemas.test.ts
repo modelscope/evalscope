@@ -16,7 +16,6 @@ import {
   perfRunsListResponseSchema,
   predictionsResponseSchema,
   progressResponseSchema,
-  scanResponseSchema,
   taskStatusResponseSchema,
 } from './index'
 
@@ -32,7 +31,6 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
   { name: 'eval invoke', schema: evalInvokeResponseSchema, valid: { status: 'completed', task_id: 'task-1' } },
   { name: 'progress', schema: progressResponseSchema, valid: { percent: 50, phase: 'evaluate' } },
   { name: 'benchmarks', schema: benchmarksResponseSchema, valid: { text: [] } },
-  { name: 'report scan', schema: scanResponseSchema, valid: { reports: ['run-a'] } },
   { name: 'analysis', schema: analysisResponseSchema, valid: { analysis: 'complete' } },
   {
     name: 'report list',

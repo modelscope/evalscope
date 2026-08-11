@@ -4,89 +4,76 @@ Data loading and processing utilities for reports and predictions.
 import glob
 import os
 import pandas as pd
+from pydantic import ValidationError
 from typing import Any, Dict, List, Union
 
 from evalscope.api.evaluator import CacheManager, ReviewResult
-from evalscope.constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, DataCollection
+from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import format_metric_value
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
-from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
+from evalscope.report import Report, ReportKey, ReportRef, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def scan_for_report_folders(root_path):
-    """Scan for folders containing reports subdirectories"""
+def scan_report_refs(root_path: str) -> List[ReportRef]:
+    """Scan an outputs root for every model report it holds.
+
+    Returns:
+        List[ReportRef]: One reference per ``<run_id>/reports/<model_id>`` directory, newest first.
+            Directories whose names cannot form a reference (e.g. a manually created nested path)
+            are skipped with a warning rather than breaking the whole listing.
+    """
     logger.debug(f'Scanning for report folders in {root_path}')
     if not os.path.exists(root_path):
         return []
 
-    reports = []
-    # Iterate over all folders in the root path
-    for folder in glob.glob(os.path.join(root_path, '*')):
-        # Check if reports folder exists
-        reports_path = os.path.join(folder, OutputsStructure.REPORTS_DIR)
+    refs: List[ReportRef] = []
+    for run_dir in glob.glob(os.path.join(root_path, '*')):
+        reports_path = os.path.join(run_dir, OutputsStructure.REPORTS_DIR)
         if not os.path.exists(reports_path):
             continue
 
-        # Iterate over all items in reports folder
-        for model_item in glob.glob(os.path.join(reports_path, '*')):
-            if not os.path.isdir(model_item):
+        for model_dir in glob.glob(os.path.join(reports_path, '*')):
+            if not os.path.isdir(model_dir):
                 continue
-            datasets = []
-            for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
-                base_name = os.path.basename(dataset_item)
-                if base_name == DataCollection.REPORT_NAME:
-                    continue
+            try:
+                refs.append(ReportRef(run_id=os.path.basename(run_dir), model_id=os.path.basename(model_dir)))
+            except ValidationError as e:
+                logger.warning(f'Skipping report directory {model_dir}: {e}')
 
-                datasets.append(os.path.splitext(base_name)[0])
-            datasets = DATASET_TOKEN.join(datasets)
-            reports.append(
-                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}'
-            )
-
-    reports = sorted(reports, reverse=True)
-    logger.debug(f'reports: {reports}')
-    return reports
+    refs.sort(key=lambda ref: ref.key, reverse=True)
+    logger.debug(f'reports: {[ref.key for ref in refs]}')
+    return refs
 
 
-def process_report_name(report_name: str):
-    prefix, report_name = report_name.split(REPORT_TOKEN)
-    model_name, datasets = report_name.split(MODEL_TOKEN)
-    datasets = datasets.split(DATASET_TOKEN)
-    return prefix, model_name, datasets
+def report_model_dir(root_path: str, ref: ReportRef) -> str:
+    """Directory holding the per-dataset report files of one model report."""
+    return os.path.join(root_path, ref.run_id, OutputsStructure.REPORTS_DIR, ref.model_id)
 
 
-def load_single_report(root_path: str, report_name: str):
-    prefix, model_name, datasets = process_report_name(report_name)
-    report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
-    report_list = get_report_list([report_path_list])
+def load_report_bundle(root_path: str, ref: ReportRef) -> tuple[List[Report], List[str], Dict[str, Any]]:
+    """Load one model report together with its datasets and the run's task configuration.
 
-    config_files = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))
+    The dataset list is derived from the loaded reports rather than from the identifier, so it always
+    describes what is actually on disk.
+    """
+    report_list = get_report_list([report_model_dir(root_path, ref)])
+    datasets = list(dict.fromkeys(report.dataset_name for report in report_list))
+
+    configs_dir = os.path.join(root_path, ref.run_id, OutputsStructure.CONFIGS_DIR)
+    config_files = glob.glob(os.path.join(configs_dir, '*.yaml'))
     if not config_files:
-        raise FileNotFoundError(
-            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}'
-        )
-    task_cfg_path = config_files[0]
-    task_cfg = yaml_to_dict(task_cfg_path)
+        raise FileNotFoundError(f'No configuration files found in {configs_dir}')
+    task_cfg = yaml_to_dict(config_files[0])
     return report_list, datasets, task_cfg
 
 
-def load_multi_report(root_path: str, report_names: List[str]) -> List[Report]:
-    return [report for _, reports in load_multi_report_groups(root_path, report_names) for report in reports]
-
-
-def load_multi_report_groups(root_path: str, report_names: List[str]) -> List[tuple[str, List[Report]]]:
-    """Load reports while retaining the run identifier that owns each group."""
-    report_groups = []
-    for report_name in report_names:
-        prefix, model_name, _ = process_report_name(report_name)
-        report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
-        reports = get_report_list([report_path_list])
-        report_groups.append((report_name, reports))
-    return report_groups
+def load_multi_report_groups(root_path: str, refs: List[ReportRef]) -> List[tuple[ReportRef, List[Report]]]:
+    """Load reports while retaining the reference that owns each group."""
+    return [(ref, get_report_list([report_model_dir(root_path, ref)])) for ref in refs]
 
 
 def get_acc_report_df(report_list: List[Report]) -> pd.DataFrame:
@@ -157,20 +144,18 @@ def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
     )
 
 
-def get_comparison_quality_report_df(report_groups: List[tuple[str, List[Report]]]) -> pd.DataFrame:
+def get_comparison_quality_report_df(report_groups: List[tuple[ReportRef, List[Report]]]) -> pd.DataFrame:
     """Build comparison chart rows without collapsing separate runs of the same model."""
-    parsed_names = {report_name: process_report_name(report_name) for report_name, _ in report_groups}
     model_counts: Dict[str, int] = {}
-    for _, model_name, _ in parsed_names.values():
-        model_counts[model_name] = model_counts.get(model_name, 0) + 1
+    for ref, _ in report_groups:
+        model_counts[ref.model_id] = model_counts.get(ref.model_id, 0) + 1
 
     frames = []
-    for report_name, reports in report_groups:
+    for ref, reports in report_groups:
         frame = get_quality_report_df(reports)
         if frame.empty:
             continue
-        prefix, model_name, _ = parsed_names[report_name]
-        display_name = f'{model_name} ({prefix})' if model_counts[model_name] > 1 else model_name
+        display_name = f'{ref.model_id} ({ref.run_id})' if model_counts[ref.model_id] > 1 else ref.model_id
         frame[ReportKey.model_name] = display_name
         frames.append(frame)
 

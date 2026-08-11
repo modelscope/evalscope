@@ -24,18 +24,18 @@ vi.mock('@/components/single/ChatView', () => ({
 import ComparePage from './ComparePage'
 
 const runNames = [
-  '20260811_144944@@Qwen3-Max-Instruct::gsm8k',
-  '20260811_143817@@Qwen3-235B-A22B-Thinking-2507::gsm8k',
-  '20260811_141102@@DeepSeek-R1-Distill-Qwen-32B::gsm8k',
-  '20260811_140000@@Llama-3.1-70B-Instruct::gsm8k',
+  '20260811_144944/Qwen3-Max-Instruct',
+  '20260811_143817/Qwen3-235B-A22B-Thinking-2507',
+  '20260811_141102/DeepSeek-R1-Distill-Qwen-32B',
+  '20260811_140000/Llama-3.1-70B-Instruct',
 ]
 
 function makeReport(runName: string, score: number): ReportData {
-  const modelName = runName.split('@@')[1].split('::')[0]
+  const modelName = runName.split('/')[1]
   const identity = { name: 'accuracy', aggregation: 'mean', dimensions: {} }
   return {
     schema_version: 2,
-    name: runName,
+    name: `${modelName}@gsm8k`,
     dataset_name: 'gsm8k',
     model_name: modelName,
     analysis: '',
@@ -63,11 +63,11 @@ function makeReport(runName: string, score: number): ReportData {
 
 const reports = [0.8, 0.9, 0.7, 0.85].map((score, index) => ({
   ...makeReport(runNames[index], score),
-  _reportName: runNames[index],
+  _reportRef: runNames[index],
 }))
 
 const reportCache = Object.fromEntries(
-  reports.map((report) => [report._reportName, {
+  reports.map((report) => [report._reportRef, {
     report_list: [report],
     datasets: ['gsm8k'],
     task_config: {},
@@ -75,9 +75,11 @@ const reportCache = Object.fromEntries(
 )
 
 async function renderPage() {
-  const reportsParam = encodeURIComponent(runNames.join(';'))
+  const params = new URLSearchParams()
+  for (const ref of runNames) params.append('report', ref)
+  params.set('root_path', 'outputs')
   const view = render(
-    <MemoryRouter initialEntries={[`/compare?reports=${reportsParam}&root_path=outputs`]}>
+    <MemoryRouter initialEntries={[`/compare?${params.toString()}`]}>
       <LocaleProvider>
         <ComparePage />
       </LocaleProvider>
@@ -113,8 +115,8 @@ describe('ComparePage', () => {
     expect(screen.getByRole('tab', { name: 'Score Comparison · 4 reports' })).toBeInTheDocument()
     const chart = screen.getByTestId('comparison-chart')
     const chartUrl = new URL(chart.getAttribute('data-src')!, 'http://localhost')
-    expect(chartUrl.searchParams.get('chart_type')).toBe('radar')
-    expect(chartUrl.searchParams.get('report_names')?.split(';')).toEqual(runNames)
+    expect(chartUrl.pathname.endsWith('/charts/radar')).toBe(true)
+    expect(chartUrl.searchParams.getAll('report')).toEqual(runNames)
     expect(screen.queryByRole('columnheader', { name: 'Average' })).not.toBeInTheDocument()
   })
 

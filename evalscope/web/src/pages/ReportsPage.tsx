@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { datasetLabel } from '@/domain/report/primaryMetrics'
+import { formatReportRef, parseReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 import { useReports } from '@/contexts/ReportsContext'
 import * as reportsApi from '@/api/reports'
 import { isDomainError } from '@/api/errors'
@@ -140,7 +141,10 @@ export default function ReportsPage() {
   }, [rootPath, scanToken, debouncedSearch, filters.models, filters.datasets, filters.scoreMin, filters.scoreMax, filters.sortBy, filters.sortOrder, page, reloadToken])
 
   // ---- Selection helpers ----
-  const currentPageNames = useMemo(() => reports.map((r) => r.name), [reports])
+  const currentPageNames = useMemo(
+    () => reports.map((r) => formatReportRef(reportRefFromSummary(r))),
+    [reports],
+  )
   const allSelected = currentPageNames.length > 0 && currentPageNames.every((n) => selectedForCompare.includes(n))
 
   // Selection is stored by run name in context, so it is naturally independent
@@ -174,16 +178,20 @@ export default function ReportsPage() {
   }, [allSelected, selectedForCompare, currentPageNames, setCompareSelection])
 
   const handleCardClick = useCallback(
-    (name: string) => {
-      navigate(`/reports/${encodeURIComponent(name)}?root_path=${encodeURIComponent(rootPath)}`)
+    (ref: string) => {
+      const { runId, modelId } = parseReportRef(ref)
+      navigate(
+        `/reports/${encodeURIComponent(runId)}/${encodeURIComponent(modelId)}?root_path=${encodeURIComponent(rootPath)}`,
+      )
     },
     [navigate, rootPath],
   )
 
   const handleCompare = useCallback(() => {
     if (selectedForCompare.length >= 2) {
-      const reports = selectedForCompare.join(';')
-      navigate(`/compare?reports=${reports}&root_path=${encodeURIComponent(rootPath)}`)
+      const params = new URLSearchParams({ root_path: rootPath })
+      for (const ref of selectedForCompare) params.append('report', ref)
+      navigate(`/compare?${params.toString()}`)
     }
   }, [selectedForCompare, navigate, rootPath])
 
@@ -222,9 +230,9 @@ export default function ReportsPage() {
 
   const pendingDeleteItems = useMemo(
     () =>
-      selectedForCompare.map((name) => {
-        const report = reports.find((r) => r.name === name)
-        if (!report) return name
+      selectedForCompare.map((ref) => {
+        const report = reports.find((r) => formatReportRef(reportRefFromSummary(r)) === ref)
+        if (!report) return ref
         return `${report.model_name} · ${datasetLabel(report)}`
       }),
     [selectedForCompare, reports],
@@ -319,15 +327,18 @@ export default function ReportsPage() {
             >
               {t('reports.selectAll')}
             </SelectionCheckbox>
-            {reports.map((report) => (
-              <ReportCard
-                key={report.name}
-                report={report}
-                selected={selectedForCompare.includes(report.name)}
-                onSelect={handleToggleSelect}
-                onClick={handleCardClick}
-              />
-            ))}
+            {reports.map((report) => {
+              const ref = formatReportRef(reportRefFromSummary(report))
+              return (
+                <ReportCard
+                  key={ref}
+                  report={report}
+                  selected={selectedForCompare.includes(ref)}
+                  onSelect={handleToggleSelect}
+                  onClick={handleCardClick}
+                />
+              )
+            })}
           </div>
         </>
       )}

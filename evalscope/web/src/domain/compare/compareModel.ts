@@ -8,11 +8,13 @@
  * unit and property tests.
  */
 
-import type { ReportData } from '@/api/types'
-import { DATASET_TOKEN, getDisplayNames, parseReportName } from '@/utils/reportParser'
+import { parseReportRef } from '@/domain/report/reportRef'
 
 /** Separator placed between the model and dataset parts of a display label. */
 const LABEL_SEPARATOR = ' · '
+
+/** Separator joining the datasets a run spans in a display label. */
+const DATASET_JOINER = ', '
 
 /**
  * A meaningful display label for a run, derived from its model and dataset(s)
@@ -26,46 +28,70 @@ export interface RunDisplayLabel {
   /**
    * Human-friendly label composed of model and dataset. When a meaningful model
    * is present the label always contains that model and is never equal to the
-   * raw timestamp prefix or the full run path.
+   * raw reference.
    */
   label: string
 }
 
 /**
- * Build a meaningful display label from a run identifier.
+ * Generate a display name that is unique among a list of report references.
  *
- * Run identifiers follow the `{timestamp}@@{model}::{dataset1}, {dataset2}`
- * encoding (see `parseReportName`). When a model can be parsed, the label is
- * `"{model} · {dataset}"` (or just the model when no dataset is present). When
- * no model can be parsed, the label falls back to the raw run name so the caller
- * still has something to render.
+ * The model part is the reference's `modelId` (a run writes its report under a per-model directory
+ * whose name is the sanitized model id). When several references share a `modelId`, the owning
+ * `runId` is appended so repeated runs of one model stay distinguishable.
+ */
+export function getDisplayNames(refs: string[]): Record<string, string> {
+  const modelCounts: Record<string, number> = {}
+  for (const ref of refs) {
+    const base = parseReportRef(ref).modelId || ref
+    modelCounts[base] = (modelCounts[base] ?? 0) + 1
+  }
+  const result: Record<string, string> = {}
+  for (const ref of refs) {
+    const { runId, modelId } = parseReportRef(ref)
+    const base = modelId || ref
+    result[ref] = modelCounts[base] > 1 ? `${base} (${runId})` : base
+  }
+  return result
+}
+
+/**
+ * Build a meaningful display label from a report reference and the datasets it covers.
  *
- * @param runName Raw run identifier string.
+ * The model is the reference's `modelId`; the datasets are supplied by the caller from the loaded
+ * reports (they are data on disk, not part of the reference). When a model can be parsed, the label
+ * is `"{model} · {dataset}"` (or just the model when no dataset is present). When no model can be
+ * parsed, the label falls back to the raw reference so the caller still has something to render.
+ *
+ * @param ref Report reference (`{runId}/{modelId}`).
+ * @param datasets Dataset names the report covers.
  * @returns The parsed model, dataset and composed label.
  */
-export function buildDisplayLabel(runName: string): RunDisplayLabel {
-  const { model, datasets } = parseReportName(runName)
-  const dataset = datasets.join(DATASET_TOKEN)
-  const trimmedModel = model.trim()
+export function buildDisplayLabel(ref: string, datasets: string[] = []): RunDisplayLabel {
+  const dataset = datasets.join(DATASET_JOINER)
+  const model = parseReportRef(ref).modelId.trim()
 
-  if (trimmedModel.length === 0) {
-    // No meaningful model could be parsed: fall back to the raw run name.
-    return { model: '', dataset, label: runName }
+  if (model.length === 0) {
+    // No meaningful model could be parsed: fall back to the raw reference.
+    return { model: '', dataset, label: ref }
   }
 
-  const label = dataset.length > 0 ? `${trimmedModel}${LABEL_SEPARATOR}${dataset}` : trimmedModel
-  return { model: trimmedModel, dataset, label }
+  const label = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
+  return { model, dataset, label }
 }
 
 /** Build model-and-dataset labels that still distinguish repeated runs of one model. */
-export function buildDisplayLabels(runNames: string[]): Record<string, string> {
-  const uniqueModelNames = getDisplayNames(runNames)
+export function buildDisplayLabels(
+  refs: string[],
+  datasetsByRef: Record<string, string[]> = {},
+): Record<string, string> {
+  const uniqueModelNames = getDisplayNames(refs)
   const labels: Record<string, string> = {}
 
-  for (const runName of runNames) {
-    const { dataset } = buildDisplayLabel(runName)
-    const model = uniqueModelNames[runName]
-    labels[runName] = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
+  for (const ref of refs) {
+    const dataset = (datasetsByRef[ref] ?? []).join(DATASET_JOINER)
+    const model = uniqueModelNames[ref]
+    labels[ref] = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
   }
 
   return labels
@@ -160,27 +186,6 @@ export function preserveSelectionAcrossReorder(selected: string[], reorderedList
 const NO_COMMON_DATASET_KEY = 'compare.noCommon'
 
 /**
- * Collect the set of dataset names a run covers.
- *
- * A run may carry its dataset either in the structured `dataset_name` field or
- * encoded in its `name` (for runs spanning multiple datasets), so both sources
- * are unioned.
- */
-function runDatasets(run: ReportData): Set<string> {
-  const datasets = new Set<string>()
-  if (run.dataset_name) {
-    datasets.add(run.dataset_name)
-  }
-  for (const ds of parseReportName(run.name).datasets) {
-    const trimmed = ds.trim()
-    if (trimmed.length > 0) {
-      datasets.add(trimmed)
-    }
-  }
-  return datasets
-}
-
-/**
  * Determine whether a set of runs can be meaningfully compared.
  *
  * Runs are compatible when they share at least one common dataset. When there is
@@ -189,15 +194,18 @@ function runDatasets(run: ReportData): Set<string> {
  * the reason. Fewer than two runs is not yet an incompatibility, so
  * `null` is returned.
  *
- * @param runs Runs selected for comparison.
+ * A run's datasets are read from its loaded reports (one report per dataset), so the caller passes
+ * the dataset name list of each run rather than the reports themselves.
+ *
+ * @param datasetsPerRun Dataset names covered by each run selected for comparison.
  * @returns A localized reason key when incompatible, or `null` when compatible.
  */
-export function compatibilityReason(runs: ReportData[]): string | null {
-  if (runs.length < 2) {
+export function compatibilityReason(datasetsPerRun: string[][]): string | null {
+  if (datasetsPerRun.length < 2) {
     return null
   }
 
-  const datasetSets = runs.map(runDatasets)
+  const datasetSets = datasetsPerRun.map((datasets) => new Set(datasets))
   const common = datasetSets.reduce((acc, set) => {
     return new Set([...acc].filter((ds) => set.has(ds)))
   })

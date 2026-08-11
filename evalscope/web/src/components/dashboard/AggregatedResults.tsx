@@ -1,9 +1,16 @@
 import { Fragment, useState } from 'react'
-import { ChevronDown, ChevronRight, ChevronUp, FileText, Gauge } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, ExternalLink, FileText, Gauge } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { formatDifference, formatMetric, formatMetricLabel, getBoundedQualityRatio } from '@/domain/metric'
+import {
+  formatDifference,
+  formatMetric,
+  formatMetricLabel,
+  getBoundedQualityRatio,
+  getComparisonVerdict,
+} from '@/domain/metric'
 import { scoreColor } from '@/utils/colorScale'
 import MetricTrend from '@/components/charts/MetricTrend'
+import Button from '@/components/ui/Button'
 import { cellKey } from '@/domain/report/runAggregation'
 import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
 
@@ -29,9 +36,9 @@ import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
  * -- a comparison this module refuses to make anywhere else (see `runAggregation`: comparison stays
  * inside a cell). The four keys here are all scale-free.
  */
-type SortKey = 'model' | 'benchmark' | 'runs' | 'lastRun'
+export type SortKey = 'model' | 'benchmark' | 'runs' | 'lastRun'
 
-interface SortState {
+export interface SortState {
   key: SortKey
   descending: boolean
 }
@@ -44,16 +51,8 @@ const DESCENDING_FIRST: Record<SortKey, boolean> = {
   lastRun: true,
 }
 
-/**
- * Width of every column that carries one field.
- *
- * `w-[1%]` plus `whitespace-nowrap` makes a cell shrink to its content, so no field is stretched
- * and none of them drift apart from each other. Nothing is truncated: an unusually long model or
- * benchmark name widens its column and the card scrolls sideways, which keeps the name readable
- * where wrapping it would instead break `qwen-vl-plus` across two lines and make one row taller
- * than the rest.
- */
-const FIELD_COLUMN = 'w-[1%] whitespace-nowrap'
+/** Field columns stay on one line and clip within the responsive widths defined by the colgroup. */
+const FIELD_COLUMN = 'overflow-hidden whitespace-nowrap'
 
 /**
  * Horizontal padding shared by every cell, which is what makes the gutters even.
@@ -65,7 +64,7 @@ const FIELD_COLUMN = 'w-[1%] whitespace-nowrap'
  * there than the rest. Closing that would mean capping the column and wrapping the long name, which
  * costs a taller row. This is the one knob for how airy the row reads.
  */
-const CELL_PADDING = 'px-5'
+const CELL_PADDING = 'px-4'
 
 /**
  * Type of a field value, applied to all seven of them.
@@ -77,29 +76,25 @@ const CELL_PADDING = 'px-5'
  */
 const FIELD_TYPE = 'type-body-sm'
 
-/**
- * The trailing column that absorbs the table's leftover width.
- *
- * Something has to take the ~400px a wide card leaves over. Parked on Benchmark it opened a void
- * mid-row, separating each benchmark from its own score; left unclaimed, the browser shares it out
- * in proportion to content width, which reopens that void in miniature between every pair of
- * columns. Collected at the end, the fields keep one even gutter and the slack sits past the last
- * of them, where nothing has to be read across it.
- */
-const SPACER_COLUMN = 'w-full'
-
 interface AggregatedResultsProps {
   rows: AggregatedRow[]
   /** Opens the run behind a given point. */
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
+  sort?: SortState
+  onSortChange?: (sort: SortState) => void
 }
 
 function lastRunAt(row: AggregatedRow): string {
   return row.cell.history[row.cell.history.length - 1]?.timestamp ?? ''
 }
 
-function formatShortTime(timestamp: string): string {
-  return timestamp ? timestamp.replace('T', ' ').slice(5, 16) : ''
+function formatShortTime(timestamp: string, todayLabel?: string): string {
+  if (!timestamp) return ''
+  const value = new Date(timestamp)
+  if (todayLabel && value.toDateString() === new Date().toDateString()) {
+    return `${todayLabel}, ${timestamp.slice(11, 16)}`
+  }
+  return timestamp.replace('T', ' ').slice(5, 16)
 }
 
 /** Order two rows by one column, ascending; the caller flips it. */
@@ -116,20 +111,46 @@ function compareBy(key: SortKey, a: AggregatedRow, b: AggregatedRow): number {
   }
 }
 
-export default function AggregatedResults({ rows, onOpenRun }: AggregatedResultsProps) {
+function latestDelta(row: AggregatedRow): number | null {
+  const history = row.cell.history
+  if (history.length < 2) return null
+  const latest = history[history.length - 1]
+  const previous = history
+    .slice(0, -1)
+    .reverse()
+    .find((point) => point.score !== latest.score)
+  return previous ? latest.score - previous.score : null
+}
+
+function formatSignedDifference(value: number, row: AggregatedRow): string {
+  const formatted = formatDifference(value, row.cell.semantics).primary
+  return value > 0 ? `+${formatted}` : formatted
+}
+
+export default function AggregatedResults({
+  rows,
+  onOpenRun,
+  sort: controlledSort,
+  onSortChange,
+}: AggregatedResultsProps) {
   const { t } = useLocale()
   // Time order by default: it is the one ordering the reader can confirm from the column itself.
-  const [sort, setSort] = useState<SortState>({ key: 'lastRun', descending: true })
+  const [internalSort, setInternalSort] = useState<SortState>({ key: 'lastRun', descending: true })
   const [expanded, setExpanded] = useState<string | null>(null)
+  const sort = controlledSort ?? internalSort
 
   const sorted = [...rows].sort((a, b) => (sort.descending ? -1 : 1) * compareBy(sort.key, a, b))
 
   const toggleSort = (key: SortKey) => {
-    setSort((current) =>
-      current.key === key
-        ? { key, descending: !current.descending }
-        : { key, descending: DESCENDING_FIRST[key] },
-    )
+    const next =
+      sort.key === key
+        ? { key, descending: !sort.descending }
+        : { key, descending: DESCENDING_FIRST[key] }
+    if (onSortChange) {
+      onSortChange(next)
+      return
+    }
+    setInternalSort(next)
   }
 
   const header = (key: SortKey, label: string, className: string) => (
@@ -155,7 +176,18 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
 
   return (
     <div className="overflow-x-auto rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-      <table className="w-full">
+      <table className="w-full min-w-[1100px] table-fixed">
+        <colgroup>
+          <col className="w-[4%]" />
+          <col className="w-[14%]" />
+          <col className="w-[15%]" />
+          <col className="w-[13%]" />
+          <col className="w-[9%]" />
+          <col className="w-[9%]" />
+          <col className="w-[18%]" />
+          <col className="w-[7%]" />
+          <col className="w-[11%]" />
+        </colgroup>
         <thead>
           <tr className="border-b border-[var(--border)] text-left type-body-xs text-[var(--text-muted)]">
             <th scope="col" className={`w-8 ${CELL_PADDING} py-2.5`} />
@@ -167,13 +199,14 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
             <th scope="col" className={`${CELL_PADDING} py-2.5 text-right font-semibold ${FIELD_COLUMN}`}>
               {t('dashboard.latest')}
             </th>
+            <th scope="col" className={`hidden ${CELL_PADDING} py-2.5 text-right font-semibold md:table-cell ${FIELD_COLUMN}`}>
+              {t('dashboard.change')}
+            </th>
             <th scope="col" className={`hidden ${CELL_PADDING} py-2.5 font-semibold sm:table-cell ${FIELD_COLUMN}`}>
               {t('dashboard.trend')}
             </th>
             {header('runs', t('dashboard.runsCol'), `hidden ${CELL_PADDING} py-2.5 text-right md:table-cell ${FIELD_COLUMN}`)}
             {header('lastRun', t('dashboard.lastRun'), `hidden ${CELL_PADDING} py-2.5 text-right lg:table-cell ${FIELD_COLUMN}`)}
-            {/* Holds the leftover width, so the fields keep an even gutter instead of one void. */}
-            <th scope="col" aria-hidden="true" className={SPACER_COLUMN} />
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
@@ -184,6 +217,8 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
             const quality = getBoundedQualityRatio(stats.latest, cell.semantics)
             const latest = formatMetric(stats.latest, cell.semantics)
             const label = formatMetricLabel(cell.metricName, cell.semantics)
+            const delta = latestDelta(row)
+            const verdict = delta == null ? 'incomparable' : getComparisonVerdict(delta, cell.semantics)
             const toggle = () => setExpanded(isOpen ? null : key)
 
             return (
@@ -216,26 +251,39 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
                     </button>
                   </td>
                   <td className={`${CELL_PADDING} py-2 ${FIELD_COLUMN}`}>
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex min-w-0 items-center gap-1.5">
                       <span className="shrink-0 text-[var(--text-dim)]" title={t(`dashboard.filter_${cell.kind}`)}>
                         {cell.kind === 'eval' ? <FileText size={13} /> : <Gauge size={13} />}
                       </span>
-                      <span className={`${FIELD_TYPE} text-[var(--text)]`}>{cell.model}</span>
+                      <span className={`${FIELD_TYPE} truncate text-[var(--text)]`} title={cell.model}>{cell.model}</span>
                     </span>
                   </td>
                   <td className={`${CELL_PADDING} py-2 ${FIELD_COLUMN}`}>
-                    <span className={`${FIELD_TYPE} text-[var(--text)]`} title={cell.benchmark}>
+                    <span className={`block truncate ${FIELD_TYPE} text-[var(--text)]`} title={cell.benchmark}>
                       {cell.benchmarkLabel || cell.benchmark}
                     </span>
                   </td>
                   <td className={`${CELL_PADDING} py-2 ${FIELD_TYPE} text-[var(--text-muted)] ${FIELD_COLUMN}`}>
-                    <span title={cell.metricName}>{label}</span>
+                    <span className="block truncate" title={cell.metricName}>{label}</span>
                   </td>
                   <td
                     className={`${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono font-semibold tabular-nums ${FIELD_COLUMN}`}
                     style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
                   >
                     {latest.primary}
+                  </td>
+                  <td
+                    className={`hidden ${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono tabular-nums md:table-cell ${FIELD_COLUMN}`}
+                    style={{
+                      color:
+                        verdict === 'better'
+                          ? 'var(--success)'
+                          : verdict === 'worse'
+                            ? 'var(--danger)'
+                            : 'var(--text-muted)',
+                    }}
+                  >
+                    {delta == null ? '—' : formatSignedDifference(delta, row)}
                   </td>
                   <td className={`hidden ${CELL_PADDING} py-2 sm:table-cell ${FIELD_COLUMN}`}>
                     <MetricTrend
@@ -248,9 +296,8 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
                     {stats.runs}
                   </td>
                   <td className={`hidden ${CELL_PADDING} py-2 text-right ${FIELD_TYPE} font-mono tabular-nums text-[var(--text-dim)] lg:table-cell ${FIELD_COLUMN}`}>
-                    {formatShortTime(lastRunAt(row))}
+                    {formatShortTime(lastRunAt(row), t('dashboard.today'))}
                   </td>
-                  <td className={SPACER_COLUMN} />
                 </tr>
 
                 {isOpen && (
@@ -270,7 +317,7 @@ export default function AggregatedResults({ rows, onOpenRun }: AggregatedResults
 }
 
 /** Width the history panel holds, so the statistics beside it never reflow with the run count. */
-const TREND_PANEL_WIDTH = 'lg:w-[420px]'
+const TREND_PANEL_WIDTH = 'lg:w-[48%]'
 
 /**
  * Full statistics for one cell, shown when its row is expanded.
@@ -306,12 +353,13 @@ function StatsPanel({
     { label: t('dashboard.statStddev'), text: stats.runs > 1 ? difference(stats.stddev) : '—' },
     { label: t('dashboard.statRuns'), text: String(stats.runs) },
   ]
+  const latestPoint = cell.history[cell.history.length - 1]
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+    <div className="flex flex-col gap-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card)] p-4 lg:flex-row lg:items-center lg:gap-8">
       <div className={`w-full shrink-0 ${TREND_PANEL_WIDTH}`}>
         {stats.runs > 1 ? (
-          <div className="overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card)] p-3">
+          <div className="overflow-x-auto">
             <MetricTrend
               history={cell.history}
               semantics={cell.semantics}
@@ -321,13 +369,13 @@ function StatsPanel({
             />
           </div>
         ) : (
-          <p className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card)] p-3 type-body-xs text-[var(--text-muted)]">
+          <p className="py-3 type-body-xs text-[var(--text-muted)]">
             {t('dashboard.singleRunHint')}
           </p>
         )}
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         {/* Each figure names itself. An earlier pass replaced these labels with bare glyphs -- a sigma
             for the mean, a wave for the standard deviation -- which only works for a reader who
             already knows which statistic is which, and that reader did not need the panel. */}
@@ -342,6 +390,19 @@ function StatsPanel({
 
         {stats.outOfRange && (
           <p className="mt-3 max-w-prose type-body-xs text-[var(--text-muted)]">{t('dashboard.outOfRangeHint')}</p>
+        )}
+
+        {latestPoint && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => onOpenRun(row, latestPoint)}
+          >
+            {t('dashboard.openLatestRun')}
+            <ExternalLink size={13} />
+          </Button>
         )}
       </div>
     </div>

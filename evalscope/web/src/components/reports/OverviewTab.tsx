@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Radar, Table2 } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
-import { getChartUrl } from '@/api/reports'
+import { getCompareChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import {
@@ -211,7 +211,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
 
         {scoreView === 'radar' && canShowRadar ? (
           <PlotlyChart
-            src={getChartUrl(rootPath, 'radar', { reportName })}
+            src={getCompareChartUrl(rootPath, [reportName], 'radar')}
             height={400}
             fallbackTable={{
               columns: ['Dataset', 'Score', 'Samples'],

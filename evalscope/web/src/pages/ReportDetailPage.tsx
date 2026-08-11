@@ -4,6 +4,7 @@ import { useLocale } from '@/contexts/LocaleContext'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import { isDomainError } from '@/api/errors'
 import type { LoadReportResponse, ReportData } from '@/api/types'
+import { formatReportRef } from '@/domain/report/reportRef'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -19,21 +20,15 @@ import PredictionsTab from '@/components/reports/PredictionsTab'
 type TabKey = 'overview' | 'details' | 'predictions'
 
 export default function ReportDetailPage() {
-  const { reportId } = useParams<{ reportId: string }>()
+  const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
   const [searchParams] = useSearchParams()
   const { t } = useLocale()
 
   const rootPath = searchParams.get('root_path') || './outputs'
-  const reportName = decodeURIComponent(reportId ?? '')
-
-  // Parse model name from reportName format: {timestamp}@@{model_name}::{datasets}
-  const breadcrumbLabel = useMemo(() => {
-    const atIdx = reportName.indexOf('@@')
-    if (atIdx === -1) return reportName
-    const afterAt = reportName.slice(atIdx + 2)
-    const colonIdx = afterAt.indexOf('::')
-    return colonIdx !== -1 ? afterAt.slice(0, colonIdx) : afterAt
-  }, [reportName])
+  const reportName = useMemo(
+    () => formatReportRef({ runId: runId ?? '', modelId: modelId ?? '' }),
+    [runId, modelId],
+  )
 
   const [data, setData] = useState<LoadReportResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -72,7 +67,9 @@ export default function ReportDetailPage() {
   const reportList = useMemo<ReportData[]>(() => data?.report_list ?? [], [data])
 
   // Derive overall info from report list
-  const modelName = reportList[0]?.model_name ?? reportName
+  const modelName = reportList[0]?.model_name ?? modelId ?? ''
+  // Prefer the loaded model name; fall back to the URL model id while the report loads.
+  const breadcrumbLabel = reportList[0]?.model_name ?? modelId ?? ''
   const primaryDataset = reportList[0] ? datasetLabel(reportList[0]) : ''
   const overallMetric = useMemo(() => {
     if (reportList.length !== 1) return { score: null, semantics: null, metricName: '' }

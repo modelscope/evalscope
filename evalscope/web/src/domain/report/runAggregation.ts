@@ -2,6 +2,7 @@ import { metricIdentityKey } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 /**
  * Aggregation of evaluation and performance runs by what they measure.
@@ -187,7 +188,7 @@ export function aggregateRuns(
           metricName: metricIdentityKey(ref.identity),
           semantics: ref.semantics ?? null,
         },
-        { timestamp: report.timestamp || '', score: ref.score, runId: report.name },
+        { timestamp: report.timestamp || '', score: ref.score, runId: formatReportRef(reportRefFromSummary(report)) },
       )
     }
   }
