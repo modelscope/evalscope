@@ -5,6 +5,18 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+# Guidance appended to the error raised when `apply_chat_template` fails.
+_NO_CHAT_TEMPLATE_HINT = (
+    'Some checkpoints ship no Jinja chat template at all (DeepSeek-V3.2 / V4 provide `encoding` scripts '
+    'instead, and base/pretrain checkpoints have none), and some templates reject the message shape used '
+    'here. The template is applied client-side only to count prompt tokens the way the model service does. '
+    'Options:\n'
+    '  1. drop `--tokenizer-path` and let the `usage` reported by the model service provide token counts;\n'
+    '  2. use a tokenizer that ships a chat template and shares the vocabulary of the served model (a '
+    'different vocabulary silently distorts token counts);\n'
+    '  3. pass `--no-apply-chat-template` and benchmark a text-completions endpoint instead.'
+)
+
 
 def load_tokenizer(tokenizer_path: str) -> object:
     """Load a tokenizer from the given path, with a fallback for models that lack ``max_position_embeddings``.
@@ -55,9 +67,21 @@ def tokenize_chat_messages(tokenizer, messages: List[Dict], add_generation_promp
         List[int]: Flat list of token IDs.
 
     Raises:
+        ImportError: Propagated unchanged when an optional dependency (e.g. jinja2) is missing.
+        ValueError: If the tokenizer has no chat template usable for these messages.
         TypeError: If the tokenizer returns an unexpected type that cannot be converted.
     """
-    result = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=add_generation_prompt)
+    try:
+        result = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=add_generation_prompt)
+    except ImportError:
+        # Missing optional dependency (e.g. jinja2): the template exists, so surface the
+        # real dependency error instead of the misleading no-template hint.
+        raise
+    except Exception as e:
+        name = getattr(tokenizer, 'name_or_path', None) or type(tokenizer).__name__
+        raise ValueError(
+            f'Failed to apply the chat template of tokenizer `{name}`: {e}\n{_NO_CHAT_TEMPLATE_HINT}'
+        ) from e
 
     # Old transformers: returns List[int] directly.
     if isinstance(result, list):
