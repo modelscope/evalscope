@@ -440,7 +440,6 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
                 benchmark_name,
                 metric.name,
                 embedded_semantic_id=getattr(metric, 'semantic_id', None),
-                primary_metric_name=primary_final_name,
             )
             resolved.log_audit_messages()
             semantics = resolved.semantics

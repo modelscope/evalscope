@@ -80,10 +80,7 @@ class ReportGenerator:
             for subset_name, agg_scores in score_dict.items():
                 for agg_score_item in agg_scores:
                     categories = category_map.get(subset_name, ['default'])
-                    if add_aggregation_name and agg_score_item.aggregation_name:
-                        metric_name = f'{agg_score_item.aggregation_name}_{agg_score_item.metric_name}'
-                    else:
-                        metric_name = agg_score_item.metric_name
+                    metric_name = compose_final_metric_name(agg_score_item, add_aggregation_name)
 
                     if isinstance(categories, str):
                         categories = [categories]
@@ -196,7 +193,7 @@ class ReportGenerator:
 
         semantics_by_metric: Dict[str, 'MetricSemantics'] = {}
         for final_name in final_metric_names:
-            resolved = resolver.resolve(dataset_name, final_name, primary_metric_name=primary_metric_name)
+            resolved = resolver.resolve(dataset_name, final_name)
             resolved.log_audit_messages()
             semantics_by_metric[final_name] = resolved.semantics
         semantics_by_metric = apply_primary_metric_roles(semantics_by_metric, primary_metric_name)
