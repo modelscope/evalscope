@@ -6,11 +6,13 @@
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
 
+import type { ReportSummary } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
 import {
   addToSelection,
   buildDisplayLabel,
   buildDisplayLabels,
+  canMerge,
   compatibilityReason,
   MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
@@ -277,5 +279,78 @@ describe('togglePredictionSelection', () => {
   it('keeps the existing selection when three reports are already selected', () => {
     const selected = ['a', 'b', 'c']
     expect(togglePredictionSelection(selected, 'd')).toBe(selected)
+  })
+})
+
+/* ─── canMerge: report-merge eligibility ───────────────────────── */
+
+describe('canMerge', () => {
+  const primaryMetric = (dataset_name: string) => ({
+    dataset_name,
+    identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} },
+    score: 0.5,
+    semantics: {
+      semantic_id: 'quality.accuracy.ratio',
+      metric_name: 'Accuracy',
+      kind: 'quality',
+      direction: 'higher_is_better',
+      value_range: { min: 0, max: 1 },
+      display_kind: 'percent',
+      display_multiplier: 100,
+      display_unit: '%',
+      display_precision: 1,
+    },
+  })
+
+  const summary = (overrides: Partial<ReportSummary> & { datasets?: string[] }): ReportSummary => {
+    const { datasets, ...rest } = overrides
+    return {
+      run_id: 'run',
+      model_id: 'model-a',
+      model_name: 'model-a',
+      dataset_name: 'ds',
+      num_samples: 10,
+      timestamp: '2026-01-01T00:00:00',
+      primary_metrics: (datasets ?? ['ds']).map(primaryMetric),
+      ...rest,
+    } as ReportSummary
+  }
+
+  it('rejects fewer than 2 selected reports', () => {
+    expect(canMerge([])).toEqual({ ok: false, reasonKey: 'reports.mergeNeedsTwo' })
+    expect(canMerge([summary({})])).toEqual({ ok: false, reasonKey: 'reports.mergeNeedsTwo' })
+  })
+
+  it('rejects reports belonging to different models', () => {
+    const result = canMerge([
+      summary({ run_id: 'a', model_id: 'model-a', datasets: ['gsm8k'] }),
+      summary({ run_id: 'b', model_id: 'model-b', datasets: ['mmlu'] }),
+    ])
+    expect(result).toEqual({ ok: false, reasonKey: 'reports.mergeDifferentModels' })
+  })
+
+  it('rejects reports that share a dataset', () => {
+    const result = canMerge([
+      summary({ run_id: 'a', datasets: ['gsm8k'] }),
+      summary({ run_id: 'b', datasets: ['gsm8k', 'mmlu'] }),
+    ])
+    expect(result).toEqual({ ok: false, reasonKey: 'reports.mergeOverlappingDatasets' })
+  })
+
+  it('accepts 2+ same-model reports with disjoint datasets', () => {
+    const result = canMerge([
+      summary({ run_id: 'a', datasets: ['gsm8k'] }),
+      summary({ run_id: 'b', datasets: ['mmlu'] }),
+      summary({ run_id: 'c', datasets: ['arc'] }),
+    ])
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('treats a missing primary_metrics entry as contributing no datasets to the overlap check', () => {
+    const result = canMerge([
+      summary({ run_id: 'a', datasets: [] }),
+      summary({ run_id: 'b', datasets: ['mmlu'] }),
+    ])
+    expect(result).toEqual({ ok: true })
   })
 })

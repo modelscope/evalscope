@@ -69,4 +69,69 @@ describe('selection controls', () => {
     expect(screen.queryByRole('status')).toBeNull()
     expect(screen.getByRole('button', { name: /Compare/ })).toBeEnabled()
   })
+
+  it('omits Delete/Rename/Merge when their handlers are not provided', () => {
+    render(
+      <LocaleProvider>
+        <SelectionTray count={1} canViewHtml onViewHtml={() => {}} onCompare={() => {}} onClear={() => {}} />
+      </LocaleProvider>,
+    )
+    expect(screen.queryByRole('button', { name: /Delete/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Rename/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Merge/ })).toBeNull()
+  })
+
+  it('wires Delete, Rename and Merge when provided, respecting their enabled flags', () => {
+    const onDelete = vi.fn()
+    const onRename = vi.fn()
+    const onMerge = vi.fn()
+    render(
+      <LocaleProvider>
+        <SelectionTray
+          count={2}
+          canViewHtml={false}
+          onViewHtml={() => {}}
+          onCompare={() => {}}
+          onClear={() => {}}
+          onDelete={onDelete}
+          onRename={onRename}
+          canRename={false}
+          onMerge={onMerge}
+          canMerge={true}
+        />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Delete/ }))
+    expect(onDelete).toHaveBeenCalledTimes(1)
+
+    // Rename is disabled (canRename=false, e.g. more than one report selected).
+    expect(screen.getByRole('button', { name: /Rename/ })).toBeDisabled()
+
+    const mergeButton = screen.getByRole('button', { name: /Merge/ })
+    expect(mergeButton).not.toBeDisabled()
+    fireEvent.click(mergeButton)
+    expect(onMerge).toHaveBeenCalledTimes(1)
+  })
+
+  it('disables Merge while merging and Delete while deleting', () => {
+    render(
+      <LocaleProvider>
+        <SelectionTray
+          count={2}
+          canViewHtml={false}
+          onViewHtml={() => {}}
+          onCompare={() => {}}
+          onClear={() => {}}
+          onDelete={() => {}}
+          deleting
+          onMerge={() => {}}
+          canMerge
+          merging
+        />
+      </LocaleProvider>,
+    )
+    expect(screen.getByRole('button', { name: /Delete/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Merge/ })).toBeDisabled()
+  })
 })

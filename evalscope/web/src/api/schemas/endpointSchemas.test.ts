@@ -11,11 +11,13 @@ import {
   listReportsResponseSchema,
   loadReportResponseSchema,
   logResponseSchema,
+  mergeReportResponseSchema,
   perfDetailResponseSchema,
   perfRequestsResponseSchema,
   perfRunsListResponseSchema,
   predictionsResponseSchema,
   progressResponseSchema,
+  renameReportResponseSchema,
   taskStatusResponseSchema,
 } from './index'
 
@@ -31,6 +33,8 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
   { name: 'eval invoke', schema: evalInvokeResponseSchema, valid: { status: 'completed', task_id: 'task-1' } },
   { name: 'progress', schema: progressResponseSchema, valid: { percent: 50, phase: 'evaluate' } },
   { name: 'benchmarks', schema: benchmarksResponseSchema, valid: { text: [] } },
+  { name: 'report merge', schema: mergeReportResponseSchema, valid: { success: true, run_id: 'merged-run', model_id: 'model-a' } },
+  { name: 'report rename', schema: renameReportResponseSchema, valid: { success: true, run_id: 'run-a', model_id: 'model-b' } },
   { name: 'analysis', schema: analysisResponseSchema, valid: { analysis: 'complete' } },
   {
     name: 'report list',

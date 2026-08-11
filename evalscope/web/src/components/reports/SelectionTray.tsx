@@ -1,4 +1,4 @@
-import { Eye, GitCompareArrows, Trash2, X } from 'lucide-react'
+import { Eye, GitCompareArrows, GitMerge, Pencil, Trash2, X } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Button from '@/components/ui/Button'
 
@@ -16,6 +16,11 @@ interface SelectionTrayProps {
   onClear: () => void
   onDelete?: () => void
   deleting?: boolean
+  onRename?: () => void
+  canRename?: boolean
+  onMerge?: () => void
+  canMerge?: boolean
+  merging?: boolean
 }
 
 export default function SelectionTray({
@@ -27,6 +32,11 @@ export default function SelectionTray({
   onClear,
   onDelete,
   deleting,
+  onRename,
+  canRename,
+  onMerge,
+  canMerge,
+  merging,
 }: SelectionTrayProps) {
   const { t } = useLocale()
 
@@ -62,6 +72,18 @@ export default function SelectionTray({
             <Eye size={14} />
             {t('reports.viewHtml')}
           </Button>
+          {onRename && (
+            <Button variant="outline" size="sm" disabled={!canRename} onClick={onRename}>
+              <Pencil size={14} />
+              {t('reports.rename')}
+            </Button>
+          )}
+          {onMerge && (
+            <Button variant="outline" size="sm" disabled={!canMerge || merging} onClick={onMerge}>
+              <GitMerge size={14} />
+              {t('reports.merge')}
+            </Button>
+          )}
           <Button variant="primary" size="sm" disabled={count < 2} onClick={onCompare}>
             <GitCompareArrows size={14} />
             {t('reports.compare')}

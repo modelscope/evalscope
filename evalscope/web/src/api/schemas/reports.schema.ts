@@ -275,6 +275,20 @@ export const deleteReportResponseSchema = z.object({
   model_id: z.string(),
 })
 
+/** Runtime contract for POST /api/v1/reports/merge. */
+export const mergeReportResponseSchema = z.object({
+  success: z.boolean(),
+  run_id: z.string(),
+  model_id: z.string(),
+})
+
+/** Runtime contract for POST /api/v1/reports/runs/{run_id}/models/{model_id}/rename. */
+export const renameReportResponseSchema = z.object({
+  success: z.boolean(),
+  run_id: z.string(),
+  model_id: z.string(),
+})
+
 export const analysisResponseSchema = z.object({
   analysis: z.string(),
 })
@@ -297,4 +311,6 @@ export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
 export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>
+export type MergeReportResponse = z.infer<typeof mergeReportResponseSchema>
+export type RenameReportResponse = z.infer<typeof renameReportResponseSchema>
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>

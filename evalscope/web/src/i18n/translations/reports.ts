@@ -35,6 +35,18 @@ export const en: Dict = {
   deleteConfirmTitle: 'Delete records',
   deleteConfirm: 'Delete ${n} selected record(s)? The corresponding output files will be removed from disk.',
   deleteFailed: 'Failed to delete: ${msg}',
+  merge: 'Merge',
+  mergeConfirmTitle: 'Merge reports',
+  mergeConfirm:
+    'Merge ${n} selected reports into one? A new combined report will be created; the originals are kept as-is.',
+  mergeFailed: 'Failed to merge: ${msg}',
+  mergeNeedsTwo: 'Select at least 2 reports to merge.',
+  mergeDifferentModels: 'Only reports for the same model can be merged.',
+  mergeOverlappingDatasets: 'These reports share a dataset and cannot be merged.',
+  rename: 'Rename',
+  renameTitle: 'Rename report',
+  renameLabel: 'Model name',
+  renameRequired: 'A name is required.',
 }
 
 export const zh: Dict = {
@@ -72,4 +84,15 @@ export const zh: Dict = {
   deleteConfirmTitle: '删除记录',
   deleteConfirm: '确定删除选中的 ${n} 条记录？对应输出文件将从磁盘移除。',
   deleteFailed: '删除失败：${msg}',
+  merge: '合并',
+  mergeConfirmTitle: '合并报告',
+  mergeConfirm: '合并选中的 ${n} 份报告？将创建一份新的合并报告，原始报告保持不变。',
+  mergeFailed: '合并失败：${msg}',
+  mergeNeedsTwo: '请至少选择 2 份报告以合并。',
+  mergeDifferentModels: '只能合并同一模型的报告。',
+  mergeOverlappingDatasets: '这些报告存在相同的数据集，无法合并。',
+  rename: '重命名',
+  renameTitle: '重命名报告',
+  renameLabel: '模型名称',
+  renameRequired: '名称不能为空。',
 }

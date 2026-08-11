@@ -102,12 +102,14 @@ def create_app(outputs: str = None):
                 'GET  /api/v1/reports': 'Filterable, paginated report listing',
                 'GET  /api/v1/reports/runs/<run_id>/models/<model_id>': 'Load a single model report',
                 'DELETE /api/v1/reports/runs/<run_id>/models/<model_id>': 'Delete an evaluation report from disk',
+                'POST /api/v1/reports/runs/<run_id>/models/<model_id>/rename': "Rename a report's model name",
                 'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/table': 'Get report data as JSON table',
                 'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/predictions': 'Get model predictions',
                 'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/analysis': 'Get AI analysis text',
                 'GET  /api/v1/reports/runs/<run_id>/models/<model_id>/charts/<chart_type>': 'Render a single-report chart',  # noqa: E501
                 'GET  /api/v1/reports/runs/<run_id>/html': 'Get HTML report file',
                 'GET  /api/v1/reports/charts/<chart_type>': 'Render a multi-report comparison chart',
+                'POST /api/v1/reports/merge': 'Merge same-model reports with disjoint datasets into one report',
             }
         }), 404
 

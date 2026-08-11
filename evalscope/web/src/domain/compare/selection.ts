@@ -8,6 +8,7 @@
  * unit and property tests.
  */
 
+import type { ReportSummary } from '@/api/types'
 import { parseReportRef } from '@/domain/report/reportRef'
 
 /** Separator placed between the model and dataset parts of a display label. */
@@ -211,4 +212,53 @@ export function compatibilityReason(datasetsPerRun: string[][]): string | null {
   })
 
   return common.size === 0 ? NO_COMMON_DATASET_KEY : null
+}
+
+/** Result of validating whether a set of runs can be merged into one report. */
+export interface MergeValidation {
+  /** `true` when the runs can be merged. */
+  ok: boolean
+  /** Localized message key explaining why they can't, when `ok` is `false`. */
+  reasonKey?: string
+}
+
+/**
+ * Determine whether a set of runs can be merged into a single report.
+ *
+ * Mirrors the backend's ``POST /api/v1/reports/merge`` validation so the UI can
+ * disable the action and explain why *before* making a request:
+ *
+ *   - at least 2 runs are required;
+ *   - every run must belong to the same model;
+ *   - no dataset may appear in more than one of the selected runs (the backend
+ *     rejects the merge outright rather than silently dropping a duplicate).
+ *
+ * This is a client-side pre-check only — `primary_metrics` may be absent or
+ * incomplete for a given summary row, so the backend remains the source of
+ * truth and re-validates on every merge request.
+ *
+ * @param runs Report summaries selected for merging.
+ * @returns Whether the merge is valid, and a reason key when it isn't.
+ */
+export function canMerge(runs: ReportSummary[]): MergeValidation {
+  if (runs.length < 2) {
+    return { ok: false, reasonKey: 'reports.mergeNeedsTwo' }
+  }
+
+  const modelIds = new Set(runs.map((r) => r.model_id))
+  if (modelIds.size > 1) {
+    return { ok: false, reasonKey: 'reports.mergeDifferentModels' }
+  }
+
+  const seenDatasets = new Set<string>()
+  for (const run of runs) {
+    for (const metric of run.primary_metrics) {
+      if (seenDatasets.has(metric.dataset_name)) {
+        return { ok: false, reasonKey: 'reports.mergeOverlappingDatasets' }
+      }
+      seenDatasets.add(metric.dataset_name)
+    }
+  }
+
+  return { ok: true }
 }
