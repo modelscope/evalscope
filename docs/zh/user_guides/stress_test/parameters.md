@@ -280,7 +280,7 @@ trace 文件为 JSONL，每行一条请求记录：
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--tokenizer-path` | `str` | 分词器权重路径<br>用于计算输入和输出的token数量<br>通常与模型权重在同一目录 | `None` |
+| `--tokenizer-path` | `str` | 分词器权重路径<br>用于计算输入和输出的token数量<br>通常与模型权重在同一目录<br>压测 chat 接口时，该分词器需自带 chat template（详见下方说明） | `None` |
 | `--frequency-penalty` | `float` | frequency_penalty值 | - |
 | `--logprobs` | `bool` | 是否返回对数概率 | - |
 | `--max-tokens` | `int` 或 `int int` | 可以生成的最大token数量<br>• 单个整数：固定值，如 `--max-tokens 2048`<br>• 两个整数：`最小值 最大值`，每次请求从该范围均匀随机采样，如 `--max-tokens 512 2048` | `2048` |
@@ -293,6 +293,12 @@ trace 文件为 JSONL，每行一条请求记录：
 | `--top-p` | `float` | top_p采样 | - |
 | `--top-k` | `int` | top_k采样 | - |
 | `--extra-args` | `str` | 额外传入请求体的参数<br>JSON字符串格式<br>示例：`'{"ignore_eos": true}'` | - |
+
+### 分词器与 chat template
+
+压测 `chat/completions` 接口时 `--apply-chat-template` 默认开启，客户端会先套上 chat template 再统计 token 数，使长度计算与服务端 `usage.prompt_tokens` 对齐；因此 `--tokenizer-path` 指向的分词器必须自带 Jinja 格式的 chat template。DeepSeek-V3.2 / V4 官方改为提供 `encoding` 脚本，base / pretrain 权重也不带模板，这类权重会直接报错，报错信息中列出了可选的处理方式。
+
+两个易错点：不传 `--tokenizer-path` 时 `--min/max-prompt-length` 按字符数而非 token 数过滤；借用其它模型的分词器不会报错，但词表不一致会默默把 token 统计算偏。
 
 ## 结果输出
 
