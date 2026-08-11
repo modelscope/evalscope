@@ -1,7 +1,30 @@
 import json
+from typing import List, Optional
 
+from evalscope.api.metric import AggScore
 from evalscope.report import gen_table, get_report_list
+from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Category, Metric, Report, Subset
+
+
+class _StubAdapter:
+
+    def __init__(self, name: str, primary_metric: Optional[str] = None, aggregation: str = 'mean') -> None:
+        self.name = name
+        self.primary_metric = primary_metric
+        self.aggregation = aggregation
+        self.pretty_name = name
+        self.description = ''
+        self.category_map = {}
+
+
+def _report(benchmark: str, scores: List[AggScore], primary_metric: Optional[str] = None) -> Report:
+    return ReportGenerator.generate_report(
+        score_dict={'default': scores},
+        model_name='test-model',
+        data_adapter=_StubAdapter(benchmark, primary_metric=primary_metric),
+        add_aggregation_name=True,
+    )
 
 
 def test_get_report_list_skips_non_report_json(tmp_path):
@@ -43,3 +66,43 @@ def test_get_report_list_skips_non_report_json(tmp_path):
     assert 'gdpval' in table
     assert 'qwen-plus' in table
     assert 'default_dataset' not in table
+
+
+def test_gen_table_formats_metric_values_without_changing_dataframe_scores() -> None:
+    accuracy = _report('gsm8k', [AggScore(score=0.8567, metric_name='acc', aggregation_name='mean', num=100)])
+    wer = _report(
+        'torgo', [AggScore(score=0.0432, metric_name='wer', aggregation_name='', num=50)], primary_metric='wer'
+    )
+    cider = _report('cider', [AggScore(score=1.23456, metric_name='CIDEr', aggregation_name='mean', num=10)])
+    diagnostic = _report(
+        'third_party', [AggScore(score=0.87654321, metric_name='mystery', aggregation_name='', num=2)]
+    )
+
+    table = gen_table(report_list=[accuracy, wer, cider, diagnostic])
+
+    assert 'Accuracy ↑' in table
+    assert '85.7%' in table
+    assert 'WER ↓' in table
+    assert '4.3%' in table
+    assert 'CIDEr ↑' in table
+    assert '1.235' in table
+    assert 'mystery' in table
+    assert '0.8765' in table
+    assert '0.8567' not in table
+    assert accuracy.to_dataframe()['Score'].tolist() == [0.8567]
+
+
+def test_gen_table_disambiguates_repeated_metric_display_names() -> None:
+    report = _report(
+        'plawbench',
+        [
+            AggScore(score=0.72, metric_name='acc', aggregation_name='mean', num=30),
+            AggScore(score=0.75, metric_name='fact_acc', aggregation_name='mean', num=30),
+        ],
+        primary_metric='acc',
+    )
+
+    table = gen_table(report_list=[report])
+
+    assert 'Accuracy ↑ (mean_acc)' in table
+    assert 'Accuracy ↑ (mean_fact_acc)' in table

@@ -3,12 +3,12 @@ import pandas as pd
 import re
 from typing import Dict, List, Optional
 
-from evalscope.api.metric.semantics import MetricDirection, MetricRole
+from evalscope.api.metric.semantics import MetricRole
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
-from evalscope.metrics.semantics import format_metric_value
+from evalscope.metrics.semantics import format_metric_labels, format_metric_value
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report.combinator import get_report_list
-from evalscope.report.report import Metric, Report, ReportKey
+from evalscope.report.report import Report, ReportKey
 from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
@@ -26,38 +26,6 @@ _PLOTLY_CDN_CONFIG = {'responsive': True}
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
-
-#: Arrow shown next to a metric name, so a reader sees at a glance which way is better.
-_DIRECTION_ARROWS = {
-    MetricDirection.HIGHER_IS_BETTER: '↑',
-    MetricDirection.LOWER_IS_BETTER: '↓',
-}
-
-
-def _metric_label(metric: Optional[Metric]) -> str:
-    """Render a metric as its display name plus its direction arrow.
-
-    Uses the resolved semantics when available (``Accuracy ↑``), and falls back to the raw final
-    report metric name otherwise, so a report whose semantics could not be resolved still shows
-    the metric it actually contains.
-
-    A diagnostic is labelled by its raw name. Diagnostic baselines are deliberately generic, so
-    several unrelated observations share one display name -- labelling by semantics would turn
-    ``no_answer_num`` and ``total_tokens`` into two indistinguishable ``Count`` rows.
-
-    Args:
-        metric: Metric to label, or ``None`` when the report has no primary metric.
-
-    Returns:
-        The label to display.
-    """
-    if metric is None:
-        return 'N/A'
-    semantics = metric.semantics
-    if semantics is None or semantics.role is MetricRole.DIAGNOSTIC:
-        return metric.name
-    arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
-    return f'{semantics.metric_name} {arrow}'.strip()
 
 
 def _process_readme_content(content: str) -> str:
@@ -260,13 +228,14 @@ def gen_html_report_file(
             if rpt is None:
                 continue
             primary_metric = rpt.primary_metric
+            metric_labels = format_metric_labels((metric.name, metric.semantics) for metric in rpt.metrics)
             semantics = primary_metric.semantics if primary_metric else None
             score = primary_metric.score if primary_metric else None
             summary_rows.append(
                 dict(
                     dataset=pretty,
                     model=model,
-                    metric=_metric_label(primary_metric),
+                    metric=metric_labels.get(primary_metric.name, primary_metric.name) if primary_metric else 'N/A',
                     score=score if score is not None else 0.0,
                     score_display=format_metric_value(score, semantics),
                     num=primary_metric.num if primary_metric else 0,
@@ -275,11 +244,12 @@ def gen_html_report_file(
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
         if first is not None and first.primary_metric is not None:
             metric = first.primary_metric
+            metric_labels = format_metric_labels((item.name, item.semantics) for item in first.metrics)
             quality_score = bounded_quality_ratio(metric.score, metric.semantics)
             if quality_score is not None:
                 overview_chart_rows.append({
                     ReportKey.dataset_name: pretty,
-                    ReportKey.metric_name: _metric_label(metric),
+                    ReportKey.metric_name: metric_labels.get(metric.name, metric.name),
                     ReportKey.score: quality_score,
                     ReportKey.raw_score: metric.score,
                     ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
@@ -321,6 +291,7 @@ def gen_html_report_file(
 
             subset_rows: List[dict] = []
             diagnostic_rows: List[dict] = []
+            metric_labels = format_metric_labels((metric.name, metric.semantics) for metric in rpt.metrics)
 
             for metric in rpt.metrics:
                 semantics = metric.semantics
@@ -334,7 +305,7 @@ def gen_html_report_file(
                         row = dict(
                             subset=sub.name,
                             category=cat_display,
-                            metric=_metric_label(metric),
+                            metric=metric_labels.get(metric.name, metric.name),
                             score=sub.score,
                             quality_score=bounded_quality_ratio(sub.score, semantics),
                             score_display=format_metric_value(sub.score, semantics),

@@ -19,12 +19,12 @@ stays importable on its own and no ``report`` <-> ``metrics.semantics`` import c
 Nothing in this package imports ``evalscope.report`` at module level.
 
 The surface is exactly what production imports. Everything else -- the catalog tables, the
-baseline table, the resolver internals, the formatting helpers -- stays in its owning module, so
-tests import those directly from ``catalog.py`` / ``baselines.py`` / ``resolver.py`` /
+baseline table, the resolver internals and private formatting helpers -- stays in its owning
+module, so tests import those directly from ``catalog.py`` / ``baselines.py`` / ``resolver.py`` /
 ``formatting.py``.
 """
 
-from evalscope.metrics.semantics.formatting import format_metric_value
+from evalscope.metrics.semantics.formatting import format_metric_label, format_metric_labels, format_metric_value
 from evalscope.metrics.semantics.naming import compose_final_metric_name
 from evalscope.metrics.semantics.resolver import get_semantics_resolver, hydrate_report_semantics
 from evalscope.metrics.semantics.summary import PrimaryMetricRef
@@ -38,5 +38,7 @@ __all__ = [
     # primary metric references
     'PrimaryMetricRef',
     # formatting
+    'format_metric_label',
+    'format_metric_labels',
     'format_metric_value',
 ]

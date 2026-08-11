@@ -52,10 +52,11 @@ unambiguous on both sides.
 """
 
 import math
+from collections import Counter
 from decimal import ROUND_FLOOR, Decimal
-from typing import Any, Optional
+from typing import Any, Dict, Iterable, Optional, Tuple
 
-from evalscope.api.metric.semantics import MetricDisplayKind, MetricSemantics
+from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics
 
 #: Rendered in place of a value that is absent or not finite.
 MISSING_PLACEHOLDER = '—'
@@ -64,9 +65,16 @@ MISSING_PLACEHOLDER = '—'
 #: ``resolver.diagnostic_fallback``, which builds the semantics this precision belongs to.
 DIAGNOSTIC_FALLBACK_PRECISION = 4
 
+_DIRECTION_ARROWS = {
+    MetricDirection.HIGHER_IS_BETTER: '↑',
+    MetricDirection.LOWER_IS_BETTER: '↓',
+}
+
 __all__ = [
     'MISSING_PLACEHOLDER',
     'DIAGNOSTIC_FALLBACK_PRECISION',
+    'format_metric_label',
+    'format_metric_labels',
     'format_metric_value',
     'is_missing_value',
 ]
@@ -110,6 +118,41 @@ def _join_unit(text: str, unit: Optional[str], separator: str) -> str:
     if not unit:
         return text
     return f'{text}{separator}{unit}'
+
+
+def format_metric_label(final_metric_name: str, semantics: Optional[MetricSemantics]) -> str:
+    """Render one final metric name through its display name and optimization direction.
+
+    Diagnostic and unresolved metrics keep their final report name because their shared generic
+    baselines must not erase what was actually measured.
+
+    Args:
+        final_metric_name: Exact metric name stored in the report.
+        semantics: Resolved semantics, or ``None`` for an older/unresolved report.
+
+    Returns:
+        A label such as ``'Accuracy ↑'``, ``'WER ↓'`` or the unchanged final metric name.
+    """
+    if semantics is None or semantics.role is MetricRole.DIAGNOSTIC:
+        return final_metric_name
+    arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
+    return f'{semantics.metric_name} {arrow}'.strip()
+
+
+def format_metric_labels(metrics: Iterable[Tuple[str, Optional[MetricSemantics]]]) -> Dict[str, str]:
+    """Render all metric labels of one report and disambiguate repeated display names.
+
+    Args:
+        metrics: ``(final_metric_name, semantics)`` pairs from one report.
+
+    Returns:
+        Final metric name -> display label. Repeated scored labels carry the final name in
+        parentheses, for example ``'Accuracy ↑ (mean_fact_acc)'``.
+    """
+    pairs = list(metrics)
+    labels = {name: format_metric_label(name, semantics) for name, semantics in pairs}
+    counts = Counter(labels.values())
+    return {name: f'{labels[name]} ({name})' if counts[labels[name]] > 1 else labels[name] for name, _ in pairs}
 
 
 def format_metric_value(value: Optional[float], semantics: Optional[MetricSemantics]) -> str:

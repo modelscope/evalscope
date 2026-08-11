@@ -13,6 +13,8 @@ from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, M
 from evalscope.metrics.semantics.formatting import (
     DIAGNOSTIC_FALLBACK_PRECISION,
     MISSING_PLACEHOLDER,
+    format_metric_label,
+    format_metric_labels,
     format_metric_value,
     is_missing_value,
 )
@@ -170,6 +172,36 @@ class TestMissingAndFallback:
 
     def test_missing_semantics_and_missing_value(self) -> None:
         assert format_metric_value(None, None) == MISSING_PLACEHOLDER
+
+
+class TestMetricLabels:
+
+    def test_scored_metric_uses_display_name_and_direction(self) -> None:
+        assert format_metric_label('mean_acc', make_percent_semantics()) == 'Accuracy ↑'
+
+    def test_lower_is_better_uses_down_arrow(self) -> None:
+        semantics = make_percent_semantics(direction=MetricDirection.LOWER_IS_BETTER)
+
+        assert format_metric_label('wer', semantics) == 'Accuracy ↓'
+
+    def test_diagnostic_and_missing_semantics_keep_final_name(self) -> None:
+        diagnostic = make_number_semantics(
+            role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE, display_unit=None, raw_unit=None
+        )
+
+        assert format_metric_label('judge_failed', diagnostic) == 'judge_failed'
+        assert format_metric_label('unknown_metric', None) == 'unknown_metric'
+
+    def test_duplicate_display_names_are_disambiguated(self) -> None:
+        labels = format_metric_labels([
+            ('mean_acc', make_percent_semantics()),
+            ('mean_fact_acc', make_percent_semantics(role=MetricRole.AUXILIARY)),
+        ])
+
+        assert labels == {
+            'mean_acc': 'Accuracy ↑ (mean_acc)',
+            'mean_fact_acc': 'Accuracy ↑ (mean_fact_acc)',
+        }
 
 
 def test_formatting_reads_only_display_fields() -> None:

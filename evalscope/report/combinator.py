@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.constants import DataCollection
+from evalscope.metrics.semantics import format_metric_labels, format_metric_value
 from evalscope.report.report import Report, Subset
 from evalscope.utils.logger import get_logger
 
@@ -109,7 +110,27 @@ def gen_table(
         flatten_categories=flatten_categories,
         add_overall_metric=add_overall_metric
     )
-    return tabulate(table, headers=table.columns, tablefmt='simple_grid', showindex=False)
+    display_table = table.copy()
+    semantics_by_metric = {}
+    labels_by_metric = {}
+    for report in report_list:
+        labels = format_metric_labels((metric.name, metric.semantics) for metric in report.metrics)
+        for metric in report.metrics:
+            key = (report.model_name, report.dataset_name, metric.name)
+            semantics_by_metric[key] = metric.semantics
+            labels_by_metric[key] = labels[metric.name]
+
+    if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
+        metric_labels = []
+        display_scores = []
+        for _, row in display_table.iterrows():
+            key = (row['Model'], row['Dataset'], row['Metric'])
+            metric_labels.append(labels_by_metric.get(key, row['Metric']))
+            display_scores.append(format_metric_value(float(row['Score']), semantics_by_metric.get(key)))
+        display_table['Metric'] = metric_labels
+        display_table['Score'] = display_scores
+
+    return tabulate(display_table, headers=display_table.columns, tablefmt='simple_grid', showindex=False)
 
 
 def weighted_average_from_subsets(
