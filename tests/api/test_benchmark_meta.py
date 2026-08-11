@@ -1,5 +1,6 @@
 """Tests for benchmark metadata validation."""
 
+import json
 import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
@@ -60,3 +61,23 @@ def test_doc_metadata_extraction_does_not_instantiate_adapter() -> None:
 
     assert extracted['metrics'] == ['accuracy']
     assert extracted['category'] == 'llm'
+
+
+def test_doc_metadata_serializes_structured_primary_metric() -> None:
+    meta = BenchmarkMeta(
+        name='structured_primary',
+        dataset_id='local',
+        metric_list=['accuracy'],
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
+    )
+
+    extracted = extract_benchmark_meta(meta, None)
+
+    assert extracted['primary_metric'] == {
+        'name': 'accuracy',
+        'aggregation': 'pass_at_k',
+        'dimensions': {
+            'k': 1
+        },
+    }
+    json.dumps(extracted)

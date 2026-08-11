@@ -37,7 +37,7 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
 | **Dataset ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

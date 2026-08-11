@@ -1,14 +1,15 @@
 # JNLPBA-Rare
 
+
 ## 概述
 
-JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模型在最不常见的实体类型（RNA 和细胞系）上的零样本（zero-shot）性能。该数据集用于测试模型识别稀有生物医学实体的能力。
+JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，旨在评估模型在最不常见的实体类型（RNA 和细胞系）上的零样本（zero-shot）性能。该数据集用于测试模型识别稀有生物医学实体的能力。
 
 ## 任务描述
 
 - **任务类型**：稀有生物医学命名实体识别（NER）
 - **输入**：来自 MEDLINE 摘要的生物医学文本
-- **输出**：识别出的 RNA 和细胞系实体范围
+- **输出**：识别出的 RNA 和细胞系实体片段
 - **领域**：分子生物学、生物信息学
 
 ## 主要特点
@@ -16,7 +17,7 @@ JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模
 - 聚焦于稀有实体类型（RNA、细胞系）
 - 作为 JNLPBA 的子集，专用于零样本评估
 - 测试模型对低频生物医学实体的处理能力
-- 是命名实体识别任务中具有挑战性的基准
+- 对实体识别任务具有挑战性
 - 适用于评估模型在长尾分布上的表现
 
 ## 评估说明
@@ -24,6 +25,7 @@ JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模
 - 默认配置使用 **0-shot** 评估
 - 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
 - 实体类型：RNA、CELL_LINE
+
 
 ## 属性
 
@@ -33,9 +35,10 @@ JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模
 | **数据集ID** | [extraordinarylab/jnlpba-rare](https://modelscope.cn/datasets/extraordinarylab/jnlpba-rare/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
+
 
 ## 数据统计
 

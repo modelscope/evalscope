@@ -3,7 +3,7 @@
 
 ## 概述
 
-AnatEM 语料库是一个用于解剖学实体识别的丰富资源，通过扩展和整合先前的语料库构建而成。该语料库包含来自 1,212 篇生物医学文献的超过 13,000 个标注，专注于识别从亚细胞组分到器官系统的各类解剖结构。
+AnatEM 语料库是一个用于解剖学实体识别的丰富资源，通过扩展和整合先前的语料库构建而成。该语料库包含来自 1,212 篇生物医学文献的超过 13,000 条标注，专注于识别从亚细胞组分到器官系统的各类解剖结构。
 
 ## 任务描述
 
@@ -14,7 +14,7 @@ AnatEM 语料库是一个用于解剖学实体识别的丰富资源，通过扩�
 
 ## 主要特点
 
-- 超过 13,000 个解剖学实体标注
+- 超过 13,000 条解剖学实体标注
 - 来自 PubMed 的 1,212 篇生物医学文献
 - 全面覆盖解剖结构（从细胞到器官）
 - 由专家人工标注
@@ -31,11 +31,11 @@ AnatEM 语料库是一个用于解剖学实体识别的丰富资源，通过扩�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `anat_em` |
-| **数据集 ID** | [extraordinarylab/anat-em](https://modelscope.cn/datasets/extraordinarylab/anat-em/summary) |
+| **数据集ID** | [extraordinarylab/anat-em](https://modelscope.cn/datasets/extraordinarylab/anat-em/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认示例数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
 
@@ -123,7 +123,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -158,7 +158,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -166,7 +166,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets anat_em \
-    --limit 10  # 正式评估时请移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -180,7 +180,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['anat_em'],
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

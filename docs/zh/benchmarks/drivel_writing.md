@@ -2,7 +2,7 @@
 
 ## 概述
 
-Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“drivelology”文本中隐含的叙事——这类语言表达在句法上连贯，但在语用上却具有悖论性、情感负载性或修辞颠覆性。
+Drivelology Narrative Writing 用于评估模型生成详细描述的能力，以阐释“drivelology”文本中隐含的叙事内容——这类语言表达在句法上连贯，但在语用层面却具有悖论性、情感负载性或修辞颠覆性。
 
 ## 任务描述
 
@@ -11,11 +11,11 @@ Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“dr
 - **输出**：生成的叙事描述，解释文本的隐含意义
 - **领域**：语言学分析、叙事生成
 
-## 核心特点
+## 主要特点
 
 - 测试模型生成叙事解释的能力
 - 要求理解多层次的语言含义
-- 使用 LLM-as-judge 方法与参考叙事进行对比评估
+- 使用 LLM-as-judge 方法，将生成结果与参考叙事进行对比评估
 - 采用李克特量表（1-5 分）对匹配质量评分
 - 考察模型在语言和文化理解方面的深度
 
@@ -23,8 +23,8 @@ Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“dr
 
 - 默认配置使用 **0-shot** 评估
 - 采用 LLM-as-judge 进行评估
-- 指标：平均李克特得分（1-5 分制）
-- 评估生成叙事的相关性、准确性、深度和细节
+- 评估指标：平均李克特得分（1-5 分制）
+- 评估维度包括生成叙事的相关性、准确性、深度和细节丰富度
 
 ## 属性
 
@@ -34,7 +34,7 @@ Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“dr
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `Reasoning` |
-| **指标** | `bert_score`, `gpt_score` |
+| **指标** | `bert_score`, `judge_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
@@ -74,7 +74,7 @@ Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“dr
 
 ## 提示模板
 
-**提示模板：**
+**提示模板**:
 ```text
 You need to first read and understand the text given. Generate a detailed description to illustrate the implicit narrative of the text.
 

@@ -1,8 +1,9 @@
 # DROP
 
+
 ## 概述
 
-DROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有挑战性的阅读理解基准测试，要求模型在文本段落上执行离散推理操作。与简单的抽取式问答不同，DROP 的问题需要进行数值推理、计数和比较等操作。
+DROP（Discrete Reasoning Over Paragraphs）是一个具有挑战性的阅读理解基准测试，要求模型在文本段落上执行离散推理操作。与简单的抽取式问答不同，DROP 的问题需要进行数值推理、计数和比较等操作。
 
 ## 任务描述
 
@@ -25,7 +26,7 @@ DROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有
 - 评估指标包括精确匹配（Exact Match, EM）和 token 级别的 F1 分数
 - 答案应遵循格式："Answer: [ANSWER]"
 - F1 分数是主要的比较指标
-- 答案会与多个参考答案进行比对验证
+- 答案会与多个参考答案进行验证
 
 ## 属性
 
@@ -35,9 +36,10 @@ DROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有
 | **数据集ID** | [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary) |
 | **论文** | N/A |
 | **标签** | `Reasoning` |
-| **指标** | `em`, `f1` |
-| **默认示例数量** | 3-shot |
+| **指标** | `exact_match`, `f1` |
+| **默认示例数** | 3-shot |
 | **评估划分** | `validation` |
+
 
 ## 数据统计
 
@@ -115,7 +117,7 @@ DROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已被截断。*
 
 ## 提示模板
 

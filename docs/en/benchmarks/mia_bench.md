@@ -36,7 +36,7 @@ MIA-Bench is a multimodal instruction-following benchmark designed to evaluate v
 | **Dataset ID** | [lmms-lab/MIA-Bench](https://modelscope.cn/datasets/lmms-lab/MIA-Bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `InstructionFollowing`, `MultiModal`, `QA` |
-| **Metrics** | `total_score` |
+| **Metrics** | `judge_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

@@ -28,7 +28,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 
 ## Evaluation Notes
 
-- `acc` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
+- `accuracy` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
   end-state accuracy. `process_acc` additionally reports milestone progress for `agent` samples and
   per-step progress for `normal_multi_turn_*` samples.
 - The report adds the official groupings (ATOM, SINGLE_TURN, MULTI_TURN, NORMAL, SPECIAL, AGENT)
@@ -47,7 +47,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 | **Dataset ID** | [evalscope/acebench](https://modelscope.cn/datasets/evalscope/acebench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |
-| **Metrics** | `acc`, `process_acc` |
+| **Metrics** | `accuracy`, `process_acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `normal` |
 
@@ -90,11 +90,11 @@ multi-step agent tasks against a simulated environment. Data is split into three
 {
   "input": [
     {
-      "id": "9198db95",
+      "id": "9d3a77c8",
       "content": "You are an AI assistant with the role name \"assistant.\" Based on the provided API specifications and conversation history from steps 1 to t, generate the API requests that the assistant should call in step t+1. The API requests should be outp ... [TRUNCATED 3788 chars] ... '}, 'effects': {'description': 'List of audio effects to apply.', 'type': 'array', 'items': {'type': 'string', 'enum': ['reverb', 'echo', 'distortion']}}}, 'required': ['frequency', 'gain']}}}, 'required': ['microphone', 'performanceTime']}}]"
     },
     {
-      "id": "61cfd720",
+      "id": "8389aaec",
       "content": "Conversation history 1..t:\nuser: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n"
     }
   ],

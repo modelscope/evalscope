@@ -6,6 +6,7 @@ interface SelectionCheckboxProps {
   checked: boolean
   label: string
   onClick: (event: MouseEvent<HTMLButtonElement>) => void
+  disabled?: boolean
   children?: ReactNode
   className?: string
 }
@@ -14,6 +15,7 @@ export default function SelectionCheckbox({
   checked,
   label,
   onClick,
+  disabled = false,
   children,
   className,
 }: SelectionCheckboxProps) {
@@ -24,9 +26,11 @@ export default function SelectionCheckbox({
       aria-checked={checked}
       aria-label={label}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         'inline-flex min-h-[44px] min-w-[44px] items-center justify-center',
         children && 'gap-2',
+        disabled && 'cursor-not-allowed opacity-45',
         className,
       )}
     >

@@ -37,7 +37,7 @@ HellaSwag is a benchmark for evaluating commonsense natural language inference, 
 | **Dataset ID** | [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary) |
 | **Paper** | N/A |
 | **Tags** | `Commonsense`, `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

@@ -52,7 +52,8 @@ _AGGREGATION_ALIASES = {
 
 _DYNAMIC_K = re.compile(r'^(?P<name>.+?)_(?P<kind>pass|vote)@(?P<k>\d+)$')
 _DYNAMIC_HAT_K = re.compile(r'^(?P<name>.+?)_pass\^(?P<k>\d+)$')
-_BLEU_N = re.compile(r'^(?:mean_)?[Bb]leu_(?P<ngram>\d+)$')
+_BLEU_N = re.compile(r'^(?:mean_)?[Bb]leu[-_](?P<ngram>\d+)$')
+_ROUGE_VARIANT = re.compile(r'^(?:mean_)?Rouge-(?P<variant>[12L])-(?P<statistic>[RPF])$')
 _THRESHOLD_ACC = re.compile(r'^(?:mean_)?ACC@(?P<threshold>\d+(?:\.\d+)?)$')
 _SCOPE_METRIC = re.compile(r'^(?P<scope>[^/]+)/(?P<name>[^/]+)$')
 _K_AGGREGATION = re.compile(r'^(?P<kind>avg|mean|pass|max|vote)@(?P<k>\d+)$')
@@ -82,6 +83,20 @@ def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
     if bleu:
         dimensions.setdefault('ngram', int(bleu.group('ngram')))
         return 'bleu'
+
+    rouge = _ROUGE_VARIANT.fullmatch(name)
+    if rouge:
+        variant = rouge.group('variant')
+        if variant == 'L':
+            dimensions.setdefault('variant', 'l')
+        else:
+            dimensions.setdefault('ngram', int(variant))
+        dimensions.setdefault('statistic', {
+            'R': 'recall',
+            'P': 'precision',
+            'F': 'f1',
+        }[rouge.group('statistic')])
+        return 'rouge'
 
     threshold = _THRESHOLD_ACC.fullmatch(name)
     if threshold:
@@ -123,6 +138,14 @@ def migrate_legacy_identity(
     identity_dimensions = dict(dimensions or {})
     raw_name = metric_name
     raw_aggregation = aggregation or 'identity'
+
+    if (
+        benchmark_name in {'general_qa', 'general_vqa'}
+        and (_BLEU_N.fullmatch(raw_name) or _ROUGE_VARIANT.fullmatch(raw_name)) and raw_aggregation == 'identity'
+    ):
+        # Historical General-QA/VQA reports stored post-aggregation overlap metric names
+        # without the `mean_` prefix. Recover the aggregation from the benchmark contract.
+        raw_aggregation = 'mean'
 
     if benchmark_name == 'longmemeval':
         match = re.fullmatch(r'(?P<scope>.+)_acc', raw_name)
@@ -240,7 +263,7 @@ def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str]
     """Whether a non-catalogued v1 name belongs to a supported structured family."""
     if _DYNAMIC_K.fullmatch(metric_name) or _DYNAMIC_HAT_K.fullmatch(metric_name):
         return True
-    if _BLEU_N.fullmatch(metric_name) or _THRESHOLD_ACC.fullmatch(metric_name):
+    if _BLEU_N.fullmatch(metric_name) or _ROUGE_VARIANT.fullmatch(metric_name) or _THRESHOLD_ACC.fullmatch(metric_name):
         return True
     scope_metric = _SCOPE_METRIC.fullmatch(metric_name)
     if scope_metric and scope_metric.group('name') in {'success_rate', 'precision', 'recall', 'f1'}:

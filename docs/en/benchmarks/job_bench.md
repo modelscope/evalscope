@@ -33,7 +33,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 | **Dataset ID** | [evalscope/job-bench](https://modelscope.cn/datasets/evalscope/job-bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `Knowledge`, `MultiTurn` |
-| **Metrics** | `normalized_score`, `pass_rate`, `total_score` |
+| **Metrics** | `normalized_score`, `pass_rate`, `judge_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `main` |
 

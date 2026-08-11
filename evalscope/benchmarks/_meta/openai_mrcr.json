@@ -10,7 +10,13 @@
     "metrics": [
       "mrcr_score"
     ],
-    "primary_metric": null,
+    "primary_metric": {
+      "name": "mrcr_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -141,6 +147,6 @@
     "content_hash": "9e43b38e9a988af92804b524edc198ba",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:32.604827",
+  "updated_at": "2026-08-11T15:30:53.628808",
   "translation_updated_at": "2026-01-28T18:07:35Z"
 }

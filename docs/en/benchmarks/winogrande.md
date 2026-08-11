@@ -37,7 +37,7 @@ Winogrande is a large-scale benchmark for commonsense reasoning, specifically de
 | **Dataset ID** | [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

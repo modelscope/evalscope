@@ -43,7 +43,7 @@ parallel execution, reporting, and dashboard trace review.
 | **Dataset ID** | [claw-eval/Claw-Eval](https://modelscope.cn/datasets/claw-eval/Claw-Eval/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `MultiModal`, `MultiTurn` |
-| **Metrics** | `avg_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |
+| **Metrics** | `judge_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

@@ -108,38 +108,38 @@ class ModelOutput:
 Represents the scoring result of a single sample:
 
 ```python
-@dataclass
-class Score:
-    value: Dict[str, float]      # Scores for each metric {"acc": 1.0, "f1": 0.8}
-    extracted_prediction: str    # Extracted prediction answer
-    prediction: str              # Raw prediction text
-    metadata: Dict = None        # Scoring metadata
+class Score(BaseModel):
+    value: Dict[str, int | float | bool] = Field(default_factory=dict)  # E.g. {"accuracy": 1.0}
+    extracted_prediction: Optional[str] = None
+    prediction: Optional[str] = None
+    explanation: Optional[str] = None
+    metadata: Optional[Dict] = Field(default_factory=dict)
+    main_score_name: Optional[str] = None  # Selects one value within this sample only
 ```
 
 #### 5. SampleScore Object
 Encapsulates the complete scoring information of a single sample:
 
 ```python
-@dataclass
-class SampleScore:
-    score: Score                 # Scoring object
-    sample_id: Optional[str]     # Unique identifier for the sample
-    group_id: Optional[str]      # Group identifier
-    sample_metadata: Optional[Dict] = None  # Sample metadata
+class SampleScore(BaseModel):
+    score: Score
+    sample_id: Optional[str | int] = None
+    group_id: Optional[str | int] = None
+    sample_metadata: Optional[Dict] = None
 ```
 
 #### 6. AggScore Object
 Represents aggregated scoring statistics:
 
 ```python
-@dataclass
-class AggScore:
-    metric: str                  # Metric name
-    value: float                 # Aggregated value (e.g., average score)
-    subset: str                  # Subset name
-    num_samples: int             # Number of samples
-    agg_method: str              # Aggregation method (mean, median, etc.)
-    metadata: Dict = None        # Aggregation metadata
+class AggScore(BaseModel):
+    score: float = 0.0
+    metric_name: str = ''        # Canonical measured concept, e.g. "accuracy"
+    aggregation: str = 'identity'
+    dimensions: Dict[str, str | int | float | bool] = Field(default_factory=dict)
+    num: int = 0
+    ids: Optional[List[str | int]] = None
+    metadata: Optional[Dict] = None
 ```
 
 #### 7. DatasetDict Object
@@ -325,7 +325,7 @@ Reasoning:
         few_shot_num=4,                       # Few-shot example number
         train_split='train',                  # Training set split name
         eval_split='test',                    # Evaluation set split name
-        metric_list=['acc'],                  # Evaluation metrics
+        metric_list=['accuracy'],             # Canonical evaluation metrics
         prompt_template=PROMPT_TEMPLATE,      # Prompt template
     )
 )
@@ -400,7 +400,7 @@ SUBSET_LIST = [
         description='MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects.',
         dataset_id='modelscope/MMLU-Pro',
         subset_list=SUBSET_LIST,
-        metric_list=['acc'],
+        metric_list=['accuracy'],
         few_shot_num=5,
         train_split='validation',
         eval_split='test',
@@ -475,57 +475,59 @@ direction, its unit, its scale and its precision — comes from a central catalo
 `evalscope/metrics/semantics/catalog.py`, and each benchmark states which of its metrics carries
 the conclusion.
 
-**Most new benchmarks need no catalog change at all.** Reusing an existing metric name (`acc`,
-`f1_score`, `exact_match`, `pass_rate`, ...) means the semantics are already declared:
+**Most new benchmarks need no catalog change at all.** Reusing an existing canonical metric name
+(`accuracy`, `f1`, `exact_match`, `pass_rate`, ...) means the semantics are already declared:
 
 ```python
-metric_list=['acc'],   # 'acc' is already in the catalog: nothing else to do
+metric_list=['accuracy'],
 ```
 
 Two cases are worth a line from you:
 
-1. **Your benchmark reports several metrics.** Declare which one is primary, using the raw name
-   as written in `metric_list`. The others resolve as auxiliary automatically, and answer-share
-   or count style metrics resolve as diagnostics:
+1. **Your benchmark reports several metrics or several variants of one metric.** Declare exactly
+   which emitted identity is primary. A selector may constrain the aggregation and any structured
+   dimensions such as `k`, `scope`, or `threshold`:
 
    ```python
-   metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-   primary_metric='f1_score',   # declare it once metric_list has more than one metric
+   from evalscope.api.metric.semantics import MetricSelector
+
+   metric_list=['precision', 'recall', 'f1', 'accuracy'],
+   primary_metric=MetricSelector(name='f1', aggregation='mean'),
    ```
 
-   Omitting it logs a warning and the report infers a headline metric (the first non-diagnostic
-   one), so an existing adapter keeps working — but the choice is then ours, not yours. Naming a
-   metric that is not in `metric_list` is rejected outright, since it can only be a typo.
+   A single non-diagnostic identity is implicitly primary. If several non-diagnostic identities
+   are emitted, omitting the selector makes report generation fail instead of guessing from list
+   order. A selector must match exactly one emitted identity, and its name must be declared in
+   `metric_list`.
 
-2. **Your benchmark introduces a new metric name.** Add one line to `METRIC_NAME_SEMANTICS`,
+2. **Your benchmark introduces a new canonical metric name.** Add one line to `METRIC_DEFINITIONS`,
    referencing the baseline that describes it:
 
    ```python
    # evalscope/metrics/semantics/catalog.py
-   'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
+   METRIC_DEFINITIONS['my_new_score'] = MetricEntry(baseline='quality.accuracy.ratio')
    ```
 
 Keep the naming layers separate:
 
-- Adapters, `metric_list`, `primary_metric`, and `Score.value` use raw names such as `acc`.
-- The report generator adds the aggregation prefix automatically. Never emit `mean_acc` from an
-  adapter or put it in `primary_metric`.
-- The catalog uses the actual final report name such as `mean_acc`. If aggregation is disabled or
-  unnamed, the final name remains `acc`.
+- `metric_list`, `Score.value`, and custom `AggScore.metric_name` use canonical names such as
+  `accuracy`. A small set of legacy aliases is normalized for compatibility, but new adapters
+  should not introduce more aliases.
+- `AggScore` stores `metric_name`, `aggregation`, and `dimensions` separately. Do not encode
+  `mean`, `pass@k`, thresholds, or scopes into the metric name.
+- The catalog is keyed by the canonical metric name. Aggregation-specific meaning belongs in
+  `AGGREGATION_SEMANTICS`; benchmark-specific name collisions belong in
+  `BENCHMARK_METRIC_OVERRIDES`.
 - `Score.main_score_name` selects one value in a sample, `BenchmarkMeta.primary_metric` declares the
-  report-level primary metric, and `Report.primary_metric_name` persists its final report name.
+  report-level primary identity, and `Report.primary_metric_identity` persists that identity.
 
 After changing `primary_metric`, refresh its generated metadata cache with
 `make docs-update BENCHMARK="<name>" FORCE=1`; do not edit `_meta/*.json` by hand.
 
-An undeclared metric never fails an evaluation: it degrades to a diagnostic, which displays the
-stored value without claiming a direction or a unit, and logs the catalog entry to add. The
-catalog cannot be complete by construction — a final metric name is composed from its optional
-aggregation name and raw metric name
-and several benchmarks derive `aggregation_name` from the data (a subset label in
-`hallusion_bench`, a question type in `longmemeval`, a needle range in `openai_mrcr`), so those
-names are unknowable ahead of time. Adding an entry is therefore an improvement to how a metric
-renders, never a precondition for running it.
+An undeclared metric degrades to a diagnostic, which displays the stored value without claiming a
+direction or unit and logs the catalog entry to add. Dynamic variants do not require catalog
+enumeration: values such as `k`, question type, threshold, and token range belong in structured
+dimensions and share the canonical metric's semantics.
 
 ## 4. Running Evaluation
 
@@ -564,11 +566,11 @@ Output Example:
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 | Model                 | Dataset   | Metric          | Subset           |   Num |   Score | Cat.0   |
 +=======================+===========+=================+==================+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | gsm8k     | mean_acc        | main             |    10 |     0.3 | default |
+| Qwen2.5-0.5B-Instruct | gsm8k     | Accuracy ↑      | main             |    10 |     30% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | computer science |    10 |     0.1 | default |
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | Accuracy ↑      | computer science |    10 |     10% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | math             |    10 |     0.1 | default |
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | Accuracy ↑      | math             |    10 |     10% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 ```
 

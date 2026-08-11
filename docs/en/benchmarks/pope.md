@@ -24,7 +24,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 - Default configuration uses **0-shot** evaluation
 - Five metrics: accuracy, precision, recall, F1 score, yes_ratio
-- F1 score is the primary aggregation metric
+- Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
 - Three subsets: `popular`, `adversarial`, `random`
 - "Popular" and "adversarial" subsets are more challenging
 - yes_ratio indicates model's tendency to answer "yes"
@@ -38,7 +38,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 | **Dataset ID** | [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary) |
 | **Paper** | N/A |
 | **Tags** | `Hallucination`, `MultiModal`, `Yes/No` |
-| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **Metrics** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `N/A` |
 | **Aggregation** | `f1` |
@@ -46,60 +46,11 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 ## Data Statistics
 
-| Metric | Value |
-|--------|-------|
-| Total Samples | 9,000 |
-| Prompt Length (Mean) | 79.4 chars |
-| Prompt Length (Min/Max) | 75 / 87 chars |
-
-**Per-Subset Statistics:**
-
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
-|--------|---------|-------------|------------|------------|
-| `popular` | 3,000 | 79.27 | 75 | 87 |
-| `adversarial` | 3,000 | 79.36 | 75 | 87 |
-| `random` | 3,000 | 79.59 | 75 | 87 |
-
-**Image Statistics:**
-
-| Metric | Value |
-|--------|-------|
-| Total Images | 9,000 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 500x243 - 640x640 |
-| Formats | jpeg |
-
+*Statistics not available.*
 
 ## Sample Example
 
-**Subset**: `popular`
-
-```json
-{
-  "input": [
-    {
-      "id": "8847a5a3",
-      "content": [
-        {
-          "text": "Is there a snowboard in the image?\nPlease answer YES or NO without an explanation."
-        },
-        {
-          "image": "[BASE64_IMAGE: png, ~87.2KB]"
-        }
-      ]
-    }
-  ],
-  "target": "YES",
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "id": "3000",
-    "answer": "YES",
-    "category": "popular",
-    "question_id": "1"
-  }
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 
@@ -133,11 +84,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['pope'],
-    dataset_args={
-        'pope': {
-            # subset_list: ['popular', 'adversarial', 'random']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

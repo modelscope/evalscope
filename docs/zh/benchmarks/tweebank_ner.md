@@ -32,9 +32,9 @@ Tweebank-NER 是一个英文 Twitter 语料库，通过对已进行句法分析�
 |----------|-------|
 | **基准测试名称** | `tweebank_ner` |
 | **数据集ID** | [extraordinarylab/tweebank-ner](https://modelscope.cn/datasets/extraordinarylab/tweebank-ner/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
@@ -130,7 +130,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:

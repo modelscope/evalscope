@@ -118,7 +118,7 @@ run_task(task_cfg=task_cfg)
 +-----------+--------------------+----------+----------+-------+---------+---------+
 | Model     | Dataset            | Metric   | Subset   |   Num |   Score | Cat.0   |
 +===========+====================+==========+==========+=======+=========+=========+
-| qwen-plus | swe_bench_verified | mean_acc | default  |     5 |     0.2 | default |
+| qwen-plus | swe_bench_verified | Accuracy ↑ | default  |     5 |     20% | default |
 +-----------+--------------------+----------+----------+-------+---------+---------+
 ```
 

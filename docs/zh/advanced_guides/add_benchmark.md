@@ -108,38 +108,38 @@ class ModelOutput:
 表示单个样本的评分结果：
 
 ```python
-@dataclass
-class Score:
-    value: Dict[str, float]      # 各指标的得分 {"acc": 1.0, "f1": 0.8}
-    extracted_prediction: str    # 提取的预测答案
-    prediction: str              # 原始预测文本
-    metadata: Dict = None        # 评分元数据
+class Score(BaseModel):
+    value: Dict[str, int | float | bool] = Field(default_factory=dict)  # 例如 {"accuracy": 1.0}
+    extracted_prediction: Optional[str] = None
+    prediction: Optional[str] = None
+    explanation: Optional[str] = None
+    metadata: Optional[Dict] = Field(default_factory=dict)
+    main_score_name: Optional[str] = None  # 仅用于选择当前样本内的一个值
 ```
 
 #### 5. SampleScore对象
 封装单个样本的完整评分信息：
 
 ```python
-@dataclass
-class SampleScore:
-    score: Score                 # 评分对象
-    sample_id: Optional[str]     # 样本唯一标识
-    group_id: Optional[str]      # 分组标识
-    sample_metadata: Optional[Dict] = None  # 样本元数据
+class SampleScore(BaseModel):
+    score: Score
+    sample_id: Optional[str | int] = None
+    group_id: Optional[str | int] = None
+    sample_metadata: Optional[Dict] = None
 ```
 
 #### 6. AggScore对象
 表示聚合后的评分统计：
 
 ```python
-@dataclass
-class AggScore:
-    metric: str                  # 指标名称
-    value: float                 # 聚合值（如平均分）
-    subset: str                  # 子集名称
-    num_samples: int             # 样本数量
-    agg_method: str              # 聚合方法（mean, median等）
-    metadata: Dict = None        # 聚合元数据
+class AggScore(BaseModel):
+    score: float = 0.0
+    metric_name: str = ''        # 规范指标概念，例如 "accuracy"
+    aggregation: str = 'identity'
+    dimensions: Dict[str, str | int | float | bool] = Field(default_factory=dict)
+    num: int = 0
+    ids: Optional[List[str | int]] = None
+    metadata: Optional[Dict] = None
 ```
 
 #### 7. DatasetDict对象
@@ -325,7 +325,7 @@ Reasoning:
         few_shot_num=4,                       # few-shot示例数量
         train_split='train',                  # 训练集split名称
         eval_split='test',                    # 评测集split名称
-        metric_list=['acc'],                  # 评估指标
+        metric_list=['accuracy'],             # 规范评估指标
         prompt_template=PROMPT_TEMPLATE,      # 提示模板
     )
 )
@@ -400,7 +400,7 @@ SUBSET_LIST = [
         description='MMLU-Pro is a benchmark for evaluating language models on multiple-choice questions across various subjects.',
         dataset_id='modelscope/MMLU-Pro',
         subset_list=SUBSET_LIST,
-        metric_list=['acc'],
+        metric_list=['accuracy'],
         few_shot_num=5,
         train_split='validation',
         eval_split='test',
@@ -473,52 +473,53 @@ class MMLUProAdapter(MultiChoiceAdapter):
 报告不会猜测指标的含义。指标如何展示——名称、优化方向、单位、刻度与精度——统一来自
 `evalscope/metrics/semantics/catalog.py` 中的集中目录；每个 benchmark 则声明自己的哪个指标承载结论。
 
-**大多数新 benchmark 无需改动目录。** 复用已有指标名（`acc`、`f1_score`、`exact_match`、
-`pass_rate` 等）时，语义已经声明好了：
+**大多数新 benchmark 无需改动目录。** 复用已有规范指标名（`accuracy`、`f1`、
+`exact_match`、`pass_rate` 等）时，语义已经声明好了：
 
 ```python
-metric_list=['acc'],   # 'acc' 已在目录中：无需其它改动
+metric_list=['accuracy'],
 ```
 
 有两种情况值得你添一行：
 
-1. **产出多个指标时**：声明哪个是主指标，填 `metric_list` 中的原始名。其余指标自动解析为
-   auxiliary，占比类、计数类指标解析为 diagnostic：
+1. **产出多个指标或同一指标的多个变体时**：明确声明哪个指标身份是主指标。Selector 可以约束
+   aggregation，也可以约束 `k`、`scope`、`threshold` 等结构化维度：
 
    ```python
-   metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-   primary_metric='f1_score',   # metric_list 多于一个指标时应当声明
+   from evalscope.api.metric.semantics import MetricSelector
+
+   metric_list=['precision', 'recall', 'f1', 'accuracy'],
+   primary_metric=MetricSelector(name='f1', aggregation='mean'),
    ```
 
-   不写只会告警，报告会自行推断一个头条指标（第一个非 diagnostic 的指标），已有 adapter 照常
-   工作——只是选择权变成了我们的而不是你的。若填了 `metric_list` 中不存在的名字则直接报错，因为
-   那只可能是拼写错误。
+   仅产出一个非 diagnostic 指标身份时，它会被隐式选为主指标；若产出多个，则必须声明 selector，
+   报告生成不会按列表顺序猜测。Selector 必须恰好匹配一个实际产出的指标身份，并且其名称必须在
+   `metric_list` 中声明。
 
-2. **引入了新的指标名时**：在 `METRIC_NAME_SEMANTICS` 中加一行，引用描述它的基线：
+2. **引入新的规范指标名时**：在 `METRIC_DEFINITIONS` 中加一行，引用描述它的基线：
 
    ```python
    # evalscope/metrics/semantics/catalog.py
-   'my_new_score': MetricEntry(baseline='quality.accuracy.ratio'),
+   METRIC_DEFINITIONS['my_new_score'] = MetricEntry(baseline='quality.accuracy.ratio')
    ```
 
 各命名层应保持分离：
 
-- Adapter、`metric_list`、`primary_metric` 与 `Score.value` 使用 `acc` 这类原始名。
-- 报告生成器自动添加聚合前缀。不要让 Adapter 产出 `mean_acc`，也不要将其写入
-  `primary_metric`。
-- Catalog 登记 `mean_acc` 这类实际最终报告名。关闭聚合前缀或聚合名为空时，最终名仍为
-  `acc`。
+- `metric_list`、`Score.value` 与自定义 `AggScore.metric_name` 使用 `accuracy` 这类规范名称。
+  少量旧别名会为兼容性自动迁移，但新 Adapter 不应继续增加别名。
+- `AggScore` 分别保存 `metric_name`、`aggregation` 和 `dimensions`。不要把 `mean`、`pass@k`、
+  threshold 或 scope 编码进指标名。
+- Catalog 以规范指标名为键；聚合方式导致的含义差异写入 `AGGREGATION_SEMANTICS`，benchmark
+  特有的同名冲突写入 `BENCHMARK_METRIC_OVERRIDES`。
 - `Score.main_score_name` 在单样本中选取一个值，`BenchmarkMeta.primary_metric` 声明报告级
-  主指标，`Report.primary_metric_name` 持久化其最终报告名。
+  主指标身份，`Report.primary_metric_identity` 持久化该身份。
 
 修改 `primary_metric` 后，应运行 `make docs-update BENCHMARK="<name>" FORCE=1` 刷新自动生成的
 元数据缓存，不要手工编辑 `_meta/*.json`。
 
-未声明的指标不会让评测失败：它降级为 diagnostic，原样显示数值，不伪造方向与单位，并在日志中给出
-待补充的目录条目。目录在原理上不可能完备——最终指标名由可选聚合名与原始指标名组合而成，而若干
-benchmark 的 `aggregation_name` 来自数据（`hallusion_bench` 的子类别、`longmemeval` 的问题类型、
-`openai_mrcr` 的针距区间），这些名字无法预先穷举。因此补目录条目是对指标渲染效果的改进，而不是
-运行它的前置条件。
+未声明的指标会降级为 diagnostic，原样显示数值，不伪造方向与单位，并在日志中给出待补充的目录
+条目。动态变体无需在目录中逐一枚举：`k`、问题类型、threshold、token range 等值应放入结构化
+dimensions，并复用规范指标的语义。
 
 ## 4. 运行评测
 
@@ -557,11 +558,11 @@ run_task(task_cfg=task_cfg)
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 | Model                 | Dataset   | Metric          | Subset           |   Num |   Score | Cat.0   |
 +=======================+===========+=================+==================+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | gsm8k     | mean_acc        | main             |    10 |     0.3 | default |
+| Qwen2.5-0.5B-Instruct | gsm8k     | Accuracy ↑      | main             |    10 |     30% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | computer science |    10 |     0.1 | default |
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | Accuracy ↑      | computer science |    10 |     10% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | mmlu_pro  | mean_acc        | math             |    10 |     0.1 | default |
+| Qwen2.5-0.5B-Instruct | mmlu_pro  | Accuracy ↑      | math             |    10 |     10% | default |
 +-----------------------+-----------+-----------------+------------------+-------+---------+---------+
 ```
 

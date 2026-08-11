@@ -37,7 +37,7 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 | **Dataset ID** | [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary) |
 | **Paper** | N/A |
 | **Tags** | `Arena`, `InstructionFollowing` |
-| **Metrics** | `winrate` |
+| **Metrics** | `win_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `eval` |
 

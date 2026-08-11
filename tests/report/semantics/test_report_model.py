@@ -172,3 +172,74 @@ def test_selector_must_match_exactly_one_identity() -> None:
     }
     with pytest.raises(ValueError, match='matched 2 identities'):
         ReportGenerator.generate_report(scores, 'model', _StubAdapter('benchmark', MetricSelector(name='accuracy')))
+
+
+def test_legacy_humaneval_report_recovers_structured_primary_from_metadata() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'humaneval',
+        'metrics': [
+            {
+                'name': 'mean_acc',
+                'score': 0.5,
+                'categories': [],
+            },
+            {
+                'name': 'mean_acc_pass@1',
+                'score': 0.75,
+                'categories': [],
+            },
+        ],
+    })
+
+    assert report.primary_metric_identity == MetricIdentity(
+        name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}
+    )
+
+
+def test_legacy_general_qa_report_recovers_rouge_primary_from_metadata() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'general_qa',
+        'metrics': [
+            {
+                'name': 'Rouge-1-R',
+                'score': 0.7,
+                'categories': [],
+            },
+            {
+                'name': 'Rouge-L-R',
+                'score': 0.8,
+                'categories': [],
+            },
+        ],
+    })
+
+    assert report.primary_metric_identity == MetricIdentity(
+        name='rouge', aggregation='mean', dimensions={
+            'statistic': 'recall',
+            'variant': 'l'
+        }
+    )
+
+
+def test_agg_score_keeps_deprecated_aggregation_name_compatibility() -> None:
+    with pytest.warns(DeprecationWarning, match='aggregation_name'):
+        score = AggScore(score=1.0, metric_name='accuracy', aggregation_name='mean')
+    with pytest.warns(DeprecationWarning, match='aggregation_name'):
+        assert score.aggregation_name == 'mean'
+
+    assert AggScore(score=1.0, metric_name='accuracy').aggregation == 'identity'
+
+
+def test_agg_score_migrates_general_qa_overlap_metrics() -> None:
+    with pytest.warns(DeprecationWarning, match='legacy metric identity'):
+        bleu = AggScore(score=0.5, metric_name='bleu-4', aggregation='mean')
+    with pytest.warns(DeprecationWarning, match='legacy metric identity'):
+        rouge = AggScore(score=0.5, metric_name='Rouge-L-R', aggregation='mean')
+
+    assert bleu.identity == MetricIdentity(name='bleu', aggregation='mean', dimensions={'ngram': 4})
+    assert rouge.identity == MetricIdentity(
+        name='rouge', aggregation='mean', dimensions={
+            'statistic': 'recall',
+            'variant': 'l'
+        }
+    )

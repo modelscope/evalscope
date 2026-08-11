@@ -2,7 +2,7 @@
 
 ## 概述
 
-OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、中文和阿拉伯语文本，涵盖多种体裁。该语料库包含丰富的多层次语言学标注信息，包括句法、谓词-论元结构、词义、命名实体和共指关系。
+OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、中文和阿拉伯语的多种体裁文本。该语料库标注了丰富的语言学信息层次，包括句法、谓词-论元结构、词义、命名实体和共指关系。
 
 ## 任务描述
 
@@ -17,7 +17,7 @@ OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、�
 - 多种体裁（新闻、博客、广播）
 - 18 种细粒度实体类型
 - 丰富的语言学标注
-- 命名实体识别评估的标准基准
+- NER 评估的标准基准
 
 ## 评估说明
 
@@ -31,12 +31,13 @@ OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、�
 |----------|-------|
 | **基准测试名称** | `ontonotes5` |
 | **数据集ID** | [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary) |
-| **论文** | N/A |
+| **论文** | 无 |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数** | 5-shot |
-| **评估分割** | `test` |
-| **训练分割** | `train` |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -134,7 +135,7 @@ OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -165,7 +166,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本提示模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -200,7 +201,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行接口（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

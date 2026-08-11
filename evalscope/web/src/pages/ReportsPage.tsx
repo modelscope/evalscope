@@ -21,7 +21,6 @@ import SelectionTray from '@/components/reports/SelectionTray'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   addToSelection,
-  MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
 } from '@/domain/compare/compareModel'
 
@@ -153,8 +152,8 @@ export default function ReportsPage() {
     [selectedForCompare, currentPageNames],
   )
 
-  // Selection is unbounded: it also drives batch delete, and the compare view
-  // clamps to its own slot count on navigation.
+  // Selection is unbounded: score comparison uses the full set, while the
+  // prediction tab derives its own three-report subset.
   const handleToggleSelect = useCallback(
     (name: string) => {
       if (selectedForCompare.includes(name)) {
@@ -183,9 +182,7 @@ export default function ReportsPage() {
 
   const handleCompare = useCallback(() => {
     if (selectedForCompare.length >= 2) {
-      // The compare view only has `MAX_COMPARE_SLOTS` model slots; the tray warns
-      // the user that any runs beyond them are dropped here.
-      const reports = selectedForCompare.slice(0, MAX_COMPARE_SLOTS).join(';')
+      const reports = selectedForCompare.join(';')
       navigate(`/compare?reports=${reports}&root_path=${encodeURIComponent(rootPath)}`)
     }
   }, [selectedForCompare, navigate, rootPath])
@@ -340,7 +337,6 @@ export default function ReportsPage() {
 
       <SelectionTray
         count={orderedSelection.length}
-        compareLimit={MAX_COMPARE_SLOTS}
         canViewHtml={orderedSelection.length === 1}
         onViewHtml={handleViewHtml}
         onCompare={handleCompare}

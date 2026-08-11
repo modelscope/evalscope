@@ -35,7 +35,7 @@ ERQA (Embodied Reasoning QA) is a benchmark for evaluating spatial reasoning and
 | **Dataset ID** | [evalscope/ERQA](https://modelscope.cn/datasets/evalscope/ERQA/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

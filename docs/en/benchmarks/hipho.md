@@ -30,7 +30,7 @@ range from text-only problems to diagram-based problems.
 
 - Requires an LLM judge: run with `judge_strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
   and provide `judge_model_args`. `judge_strategy='rule'` is not supported.
-- Primary metric: `acc`, the per-problem awarded/attainable point ratio in `[0, 1]`, aggregated by mean per subset.
+- Primary metric: `accuracy`, the per-problem awarded/attainable point ratio in `[0, 1]`, aggregated by mean per subset.
   For step-level problems the attainable maximum is the sum of the marking criteria; for problems with several
   official schemes (EuPhO, NBPhO) the highest-scoring scheme is used, matching the paper.
 - This reports the normalized exam score per exam. It does not compute the paper's gold/silver/bronze medal
@@ -52,7 +52,7 @@ range from text-only problems to diagram-based problems.
 | **Dataset ID** | [evalscope/HiPhO](https://modelscope.cn/datasets/evalscope/HiPhO/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2509.07894) |
 | **Tags** | `Math`, `MultiModal`, `QA`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 
@@ -102,7 +102,7 @@ range from text-only problems to diagram-based problems.
 {
   "input": [
     {
-      "id": "9ec40cee",
+      "id": "b441ea36",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."

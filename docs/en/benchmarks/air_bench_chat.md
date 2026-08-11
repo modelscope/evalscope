@@ -52,7 +52,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
 | **Dataset ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **Tags** | `Audio`, `InstructionFollowing`, `QA` |
-| **Metrics** | `gpt_score`, `win_rate` |
+| **Metrics** | `judge_score`, `win_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

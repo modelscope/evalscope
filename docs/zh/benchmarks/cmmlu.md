@@ -3,29 +3,29 @@
 
 ## 概述
 
-C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多任务语言理解）是一个全面的中文评估基准，涵盖 STEM、人文、社会科学以及中国特有主题等共计 67 个学科领域，用于评估模型在中文语境下的知识储备与推理能力。
+C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多任务语言理解）是一个全面的中文评估基准，涵盖 STEM、人文、社会科学以及中国特有主题等共 67 个学科领域，用于评估模型在中文语境下的知识储备与推理能力。
 
 ## 任务描述
 
-- **任务类型**：中文多项选择题问答（Multiple-Choice Question Answering）
+- **任务类型**：中文多项选择题问答
 - **输入**：一道中文问题，附带四个选项（A、B、C、D）
 - **输出**：单个正确答案字母
-- **学科范围**：67 个学科，按类别组织，包括中国特有主题
+- **学科范围**：67 个学科，包含中国特有主题类别
 
 ## 主要特点
 
 - 覆盖 67 个多样化的中文知识领域
-- 包含中国特有主题（如中国历史、中国文学、公务员考试等）
-- 题目难度从基础教育到专业水平不等
+- 包含中国特有主题（如中国历史、文学、公务员考试等）
+- 题目难度从基础教育到专业级别
 - 同时考察通用知识与中国特有文化知识
-- 是中文语言模型评估的标准基准之一
+- 是中文大语言模型评估的标准基准之一
 
 ## 评估说明
 
-- 默认配置采用 **0-shot** 评估方式
-- 设置 `few_shot_num=5` 可使用开发集（dev split）中每个学科的五个示例
+- 默认配置使用 **0-shot** 评估方式
+- 设置 `few_shot_num=5` 可为每个学科从开发集（dev split）中选取五个示例
 - 使用中文思维链（Chain-of-Thought, CoT）提示模板
-- 结果可按学科或类别进行汇总
+- 结果可按学科或类别进行聚合
 - 类别包括：STEM、人文、社会科学、中国特有、其他
 - 在测试集（test split）上进行评估
 
@@ -37,7 +37,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 | **数据集ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数（Shots）** | 0-shot |
 | **评估分割** | `test` |
 | **训练分割** | `dev` |
@@ -52,7 +52,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示均长 | 提示最短 | 提示最长 |
 |--------|---------|-------------|------------|------------|
 | `agronomy` | 169 | 168.76 | 142 | 266 |
 | `anatomy` | 148 | 157.72 | 141 | 224 |
@@ -182,7 +182,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

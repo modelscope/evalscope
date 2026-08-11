@@ -34,7 +34,7 @@ PIQA (Physical Interaction QA) is a benchmark for evaluating AI models' understa
 | **Dataset ID** | [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Commonsense`, `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 | **Train Split** | `train` |

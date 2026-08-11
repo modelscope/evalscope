@@ -93,7 +93,7 @@ class AggScore(BaseModel):
     metric_name: str = Field(default='')
     """Name of the metric being aggregated."""
 
-    aggregation: str = Field(validation_alias=AliasChoices('aggregation', 'aggregation_name'))
+    aggregation: str = Field(default='identity', validation_alias=AliasChoices('aggregation', 'aggregation_name'))
     """Canonical name of the aggregation method. It is not part of ``metric_name``."""
 
     dimensions: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
@@ -113,6 +113,12 @@ class AggScore(BaseModel):
         """Return the canonical structured identity represented by this aggregate."""
         return MetricIdentity(name=self.metric_name, aggregation=self.aggregation, dimensions=self.dimensions)
 
+    @property
+    def aggregation_name(self) -> str:
+        """Deprecated compatibility alias for :attr:`aggregation`."""
+        warnings.warn('AggScore.aggregation_name is deprecated; use aggregation.', DeprecationWarning, stacklevel=2)
+        return self.aggregation
+
     @model_validator(mode='before')
     @classmethod
     def _warn_deprecated_aggregation_name(cls, data: Any) -> Any:
@@ -124,16 +130,12 @@ class AggScore(BaseModel):
     def _normalize_legacy_identity_fields(self) -> 'AggScore':
         """Normalize known adapter aliases before an aggregate leaves the metric layer."""
         from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
-        from evalscope.metrics.semantics.identity import migrate_legacy_identity
+        from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
 
         canonical_pattern = re.compile(r'^[a-z][a-z0-9_]*$')
-        known_dynamic = re.fullmatch(
-            r'.+_(?:pass|vote)@\d+|.+_pass\^\d+|(?:mean_)?ACC@\d+(?:\.\d+)?|(?:mean_)?Bleu_\d+',
-            self.metric_name,
-        )
         if (
             not canonical_pattern.fullmatch(self.metric_name) and self.metric_name not in LEGACY_METRIC_MIGRATIONS
-            and not known_dynamic
+            and not is_known_dynamic_legacy_name(self.metric_name)
         ):
             raise ValueError(
                 f'unknown non-canonical metric_name={self.metric_name!r}; declare a legacy migration or use snake_case'

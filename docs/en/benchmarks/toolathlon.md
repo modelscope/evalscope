@@ -42,7 +42,7 @@ Official sources:
 | **Dataset ID** | [Toolathlon](https://github.com/hkust-nlp/Toolathlon) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `MultiTurn` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

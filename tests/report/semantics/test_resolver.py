@@ -39,6 +39,31 @@ def test_explicit_selector_assigns_primary_once() -> None:
     assert attributed[identities[1].key].role is MetricRole.PRIMARY
 
 
+def test_structured_selector_disambiguates_rouge_variants() -> None:
+    identities = [
+        MetricIdentity(name='rouge', aggregation='mean', dimensions={
+            'ngram': 1,
+            'statistic': 'recall'
+        }),
+        MetricIdentity(name='rouge', aggregation='mean', dimensions={
+            'statistic': 'recall',
+            'variant': 'l'
+        }),
+    ]
+    resolver = get_semantics_resolver()
+    base = {identity.key: resolver.resolve('general_qa', identity).semantics for identity in identities}
+    selector = MetricSelector(
+        name='rouge', aggregation='mean', dimensions={
+            'variant': 'l',
+            'statistic': 'recall'
+        }
+    )
+
+    _, primary = attribute_metric_roles(identities, base, selector)
+
+    assert primary == identities[1]
+
+
 @pytest.mark.parametrize('selector', [MetricSelector(name='recall'), MetricSelector(name='accuracy')])
 def test_selector_zero_or_multiple_matches_fails(selector: MetricSelector) -> None:
     identities = [

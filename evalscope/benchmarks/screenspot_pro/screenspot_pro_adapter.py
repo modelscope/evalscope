@@ -37,7 +37,7 @@ UI element on the screen, which stresses fine-grained localization on large, den
 
 ## Evaluation Notes
 
-- Primary metric: **acc** — a prediction is correct when the predicted point falls inside the ground-truth bounding box
+- Primary metric: **accuracy** — a prediction is correct when the predicted point falls inside the ground-truth bounding box
 - Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`
 - Predictions are read from the answer line that the prompt requires (`Answer: [x, y]`), so reasoning traces cannot be mistaken for the answer. Replies ignoring the format fall back to scanning for unambiguous point notation only (`[x, y]` pairs or `<bbox>` tags); loose notation such as `x=.., y=..` and bare numbers is accepted only on the answer line, because in free prose it harvests layout bounds and ordinals instead of a click point
 - A reply truncated before its answer line yields no prediction and scores 0 rather than a coordinate invented from its reasoning, so allow enough `max_tokens` for the model to finish answering

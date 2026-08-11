@@ -37,7 +37,7 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
 | **Dataset ID** | [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary) |
 | **Paper** | N/A |
 | **Tags** | `QA`, `ReadingComprehension` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

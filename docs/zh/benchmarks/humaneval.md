@@ -14,7 +14,7 @@ HumanEval 是一个用于评估语言模型代码生成能力的基准测试。�
 
 ## 主要特性
 
-- 164 个精心设计的编程问题
+- 包含 164 个精心设计的编程问题
 - 每个问题均包含函数签名、文档字符串和测试用例
 - 问题难度从简单的字符串操作到复杂的算法不等
 - 提供标准参考解答
@@ -22,7 +22,7 @@ HumanEval 是一个用于评估语言模型代码生成能力的基准测试。�
 
 ## 评估说明
 
-- **安全警告**：默认情况下，代码会在本地环境中执行。我们强烈建议使用沙箱（sandbox）执行以确保安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱环境以确保安全。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算，用于衡量生成质量
 - 每个问题默认超时时间为 4 秒
 - 若存在 Markdown 代码块，则从中提取代码
@@ -35,10 +35,11 @@ HumanEval 是一个用于评估语言模型代码生成能力的基准测试。�
 | **数据集ID** | [opencompass/humaneval](https://modelscope.cn/datasets/opencompass/humaneval/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
-| **默认示例数（Shots）** | 0-shot |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
+
 
 ## 数据统计
 
@@ -73,7 +74,7 @@ HumanEval 是一个用于评估语言模型代码生成能力的基准测试。�
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 

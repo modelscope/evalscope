@@ -3,30 +3,29 @@
 
 ## 概述
 
-CoNLL-2003 是在 2003 年计算自然语言学习会议（Conference on Computational Natural Language Learning）上提出的经典命名实体识别（NER）基准数据集。该数据集包含标注了四种实体类型的新闻文章。
+CoNLL-2003 是一个经典的命名实体识别（NER）基准测试，最初在 2003 年计算自然语言学习会议（Conference on Computational Natural Language Learning）上提出。该数据集包含标注了四种实体类型的新闻文章。
 
 ## 任务描述
 
 - **任务类型**：命名实体识别（NER）
-- **输入**：待识别实体的文本
-- **输出**：带有类型标签的实体片段
+- **输入**：需识别实体的文本
+- **输出**：带类型标签的实体片段
 - **实体类型**：人物（PER）、组织（ORG）、地点（LOC）、其他（MISC）
 
 ## 主要特点
 
-- 标准 NER 基准，实体类型定义清晰
+- 标准 NER 基准测试，实体类型定义清晰
 - 新闻领域文本，标注质量高
-- 四类实体，定义明确
+- 四种实体类别，定义明确
 - 支持少样本（few-shot）评估
-- 提供全面的评估指标（精确率、召回率、F1 分数、准确率）
+- 提供全面的评估指标（精确率、召回率、F1、准确率）
 
 ## 评估说明
 
 - 默认配置使用 **5-shot** 评估
-- 评估指标：**精确率（Precision）**、**召回率（Recall）**、**F1 分数（F1 Score）**、**准确率（Accuracy）**
+- 指标：**精确率（Precision）**、**召回率（Recall）**、**F1 分数（F1 Score）**、**准确率（Accuracy）**
 - 训练集划分：**train**，评估集划分：**test**
-- 实体类型映射为人类可读的名称
-
+- 实体类型已映射为人类可读的名称
 
 ## 属性
 
@@ -36,11 +35,10 @@ CoNLL-2003 是在 2003 年计算自然语言学习会议（Conference on Computa
 | **数据集ID** | [extraordinarylab/conll2003](https://modelscope.cn/datasets/extraordinarylab/conll2003/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 5-shot |
-| **评估集划分** | `test` |
-| **训练集划分** | `train` |
-
+| **评估划分** | `test` |
+| **训练划分** | `train` |
 
 ## 数据统计
 
@@ -98,7 +96,7 @@ CoNLL-2003 是在 2003 年计算自然语言学习会议（Conference on Computa
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已被截断。*
 
 ## 提示模板
 

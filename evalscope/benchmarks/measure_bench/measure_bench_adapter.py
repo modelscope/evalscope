@@ -39,7 +39,7 @@ to read values from measuring instruments. It covers both **real-world photograp
 ## Evaluation Notes
 
 - Default splits: **real_world** and **synthetic_test** (treated as separate subsets)
-- Primary metric: **Accuracy** (acc) — ``all_correct``: number *and* unit both correct
+- Primary metric: **Accuracy** (`accuracy`) — ``all_correct``: number *and* unit both correct
 - Secondary metrics: **number_acc** (numeric only), **unit_acc** (unit only)
 - Two evaluators: ``interval_matching`` (single valid range) and ``multi_interval_matching`` (e.g. clock AM/PM)
 - Model output is expected in the format ``Answer: <value> <unit>`` on the last line

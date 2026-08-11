@@ -15,9 +15,9 @@ PubMedQA 是一个生物医学问答数据集，旨在评估模型在生物医�
 
 - 问题来源于真实的 PubMed 研究摘要
 - 三分类任务（YES/NO/MAYBE）
-- 考察科学推理与理解能力
+- 考察科学推理与阅读理解能力
 - 由专家标注并附带推理解释
-- 适用于生物医学 AI 的评估
+- 适用于生物医学 AI 系统的评估
 
 ## 评估说明
 
@@ -34,10 +34,11 @@ PubMedQA 是一个生物医学问答数据集，旨在评估模型在生物医�
 | **数据集ID** | [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio`, `maybe_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio`, `maybe_ratio` |
 | **默认示例数量** | 0-shot |
-| **评估分割** | `test` |
+| **评估划分** | `test` |
 | **聚合方式** | `f1` |
+
 
 ## 数据统计
 
@@ -73,7 +74,7 @@ PubMedQA 是一个生物医学问答数据集，旨在评估模型在生物医�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 

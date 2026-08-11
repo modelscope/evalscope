@@ -12,7 +12,11 @@
       "is_incorrect",
       "is_not_attempted"
     ],
-    "primary_metric": "is_correct",
+    "primary_metric": {
+      "name": "is_correct",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -81,6 +85,6 @@
     "content_hash": "6e3c1db699b8f98c67f4a475ad5412ed",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:25.912473",
+  "updated_at": "2026-08-11T15:30:53.472769",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

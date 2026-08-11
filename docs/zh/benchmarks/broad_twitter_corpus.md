@@ -14,10 +14,10 @@ BroadTwitterCorpus 是一个在时间、地点和社会用途上分层采样的�
 ## 主要特点
 
 - 在时间、地点和用途上进行分层采样
-- 能代表多样化的 Twitter 语言风格
-- 针对社交媒体 NER 的挑战进行优化
+- 能够代表多样化的 Twitter 语言
+- 针对社交媒体 NER 的挑战进行设计
 - 包含三种标准 NER 实体类型（PER、ORG、LOC）
-- 适用于鲁棒的社交媒体自然语言处理评估
+- 适用于鲁棒的社交媒体 NLP 评估
 
 ## 评估说明
 
@@ -31,12 +31,13 @@ BroadTwitterCorpus 是一个在时间、地点和社会用途上分层采样的�
 |----------|-------|
 | **基准测试名称** | `broad_twitter_corpus` |
 | **数据集ID** | [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认示例数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -133,7 +134,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:

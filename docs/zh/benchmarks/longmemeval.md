@@ -3,20 +3,20 @@
 
 ## 概述
 
-LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题均基于带有时间戳的多轮会话用户-助手历史记录进行回答。
+LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题均基于带时间戳的多轮会话用户-助手历史进行回答。
 
 ## 任务描述
 
 - **任务类型**：长上下文 / 检索日志问答
 - **输入**：多个带日期的聊天会话 + 当前问题日期 + 问题
-- **输出**：基于历史记录的自由形式答案
-- **子集**：`s`（约115K token的历史记录）、`m`（约500个会话，规模较大）和 `oracle`（仅包含证据会话）
+- **输出**：基于历史内容的自由格式答案
+- **子集**：`s`（约115K token的历史）、`m`（约500个会话，规模较大）和 `oracle`（仅包含证据会话）
 
 ## 主要特性
 
-- 涵盖单会话、多会话、时序推理、知识更新、偏好及弃权类问题
-- 支持完整历史记录的长上下文提示和官方检索日志提示
-- 使用 LongMemEval 的 LLM 评判提示来评估语义答案正确性
+- 涵盖单会话、多会话、时序推理、知识更新、偏好及弃答类问题
+- 支持完整历史的长上下文提示和官方检索日志提示
+- 使用 LongMemEval 的 LLM 评判提示来评估答案的语义正确性
 - 仅从 ModelScope 下载所选的 JSON 文件
 
 ## 评估说明
@@ -24,7 +24,7 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 - 默认子集为 `s`，并使用 `eval_mode=long_context` 进行标准长上下文评估
 - 使用 `subset_list=['oracle']` 和 `extra_params.eval_mode='oracle_context'` 进行仅含证据的上限评估
 - `m` 子集规模较大，必须显式请求
-- `retrieval_log` 模式使用官方 LongMemEval 检索日志；其本身不执行嵌入检索
+- `retrieval_log` 模式使用官方 LongMemEval 检索日志；该模式本身不执行嵌入检索
 
 ## 属性
 
@@ -34,7 +34,7 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 | **数据集ID** | [evalscope/longmemeval-cleaned](https://modelscope.cn/datasets/evalscope/longmemeval-cleaned/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
@@ -98,12 +98,12 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `eval_mode` | `str` | `long_context` | 评估模式：oracle_context、long_context 或 retrieval_log。可选项：['oracle_context', 'long_context', 'retrieval_log'] |
+| `eval_mode` | `str` | `long_context` | 评估模式：oracle_context、long_context 或 retrieval_log。可选值：['oracle_context', 'long_context', 'retrieval_log'] |
 | `retrieval_log_path` | `str | null` | `None` | eval_mode=retrieval_log 时使用的官方 LongMemEval 检索日志路径。 |
-| `retriever_type` | `str` | `flat-session` | retrieval_log 模式下的检索提示格式。可选项：['flat-session', 'flat-turn'] |
-| `history_format` | `str` | `json` | 历史记录渲染格式。可选项：['json', 'nl'] |
-| `user_only` | `bool` | `False` | 是否仅保留历史记录中的用户发言。 |
-| `reading_method` | `str` | `con` | 提示阅读方法。`con` 要求模型先提取信息并推理后再作答。可选项：['direct', 'con'] |
+| `retriever_type` | `str` | `flat-session` | retrieval_log 模式下的检索提示格式。可选值：['flat-session', 'flat-turn'] |
+| `history_format` | `str` | `json` | 历史记录的渲染格式。可选值：['json', 'nl'] |
+| `user_only` | `bool` | `False` | 是否仅保留用户发言。 |
+| `reading_method` | `str` | `con` | 提示阅读方法。`con` 要求模型先提取信息并推理后再作答。可选值：['direct', 'con'] |
 | `topk_context` | `int` | `1000` | 提示中包含的最大历史会话数或检索片段数。 |
 
 ## 使用方法

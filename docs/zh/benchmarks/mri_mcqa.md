@@ -2,12 +2,12 @@
 
 ## 概述
 
-MRI-MCQA 是一个专门针对磁共振成像（MRI）的多项选择题基准测试，用于评估 AI 模型对 MRI 物理原理、扫描协议、图像采集及临床应用的理解能力。
+MRI-MCQA 是一个专门的基准测试，包含与磁共振成像（MRI）相关的多项选择题。该基准用于评估 AI 模型对 MRI 物理原理、扫描协议、图像采集和临床应用的理解能力。
 
 ## 任务描述
 
 - **任务类型**：医学影像知识多项选择问答
-- **输入**：与 MRI 相关的问题及其多个选项
+- **输入**：与 MRI 相关的问题及多个选项
 - **输出**：正确答案的字母
 - **领域**：医学影像、MRI 物理、放射学
 
@@ -15,7 +15,7 @@ MRI-MCQA 是一个专门针对磁共振成像（MRI）的多项选择题基准�
 
 - 专注于 MRI 技术及其应用
 - 考察对 MRI 物理原理和扫描协议的理解
-- 涵盖临床 MRI 应用和序列
+- 涵盖临床 MRI 应用和成像序列
 - 专为评估医学影像 AI 系统而设计
 - 采用多项选择格式以实现标准化评估
 
@@ -24,18 +24,18 @@ MRI-MCQA 是一个专门针对磁共振成像（MRI）的多项选择题基准�
 - 默认配置使用 **0-shot** 评估
 - 在测试集（test split）上进行评估
 - 使用简单准确率（accuracy）作为评估指标
-- 无训练集可用
+- 无训练集（training split）可用
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `mri_mcqa` |
-| **数据集 ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |
+| **数据集ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `Medical` |
-| **指标** | `acc` |
-| **默认示例数量** | 0-shot |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
 ## 数据统计

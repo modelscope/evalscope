@@ -18,7 +18,11 @@
       "avg_reason_lens",
       "no_answer_num"
     ],
-    "primary_metric": "puzzle_acc",
+    "primary_metric": {
+      "name": "puzzle_acc",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -80,6 +84,6 @@
     "content_hash": "da48d7f3123a49cf3ca30d3654741882",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:31.739704",
+  "updated_at": "2026-08-11T15:30:53.620528",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

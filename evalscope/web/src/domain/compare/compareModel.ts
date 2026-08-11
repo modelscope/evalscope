@@ -71,23 +71,33 @@ export function buildDisplayLabels(runNames: string[]): Record<string, string> {
   return labels
 }
 
-/**
- * Number of runs the evaluation compare view can render side by side.
- *
- * DESIGN.md §Compare Slots defines exactly three brand-color slots, so the
- * `MODEL_PALETTE` in `ComparePage.tsx` must have this many entries. Selection
- * itself is unbounded: extra runs are simply not carried into the comparison,
- * which lets the list surfaces select (and delete) any number of runs.
- */
+/** Number of report columns that prediction comparison can render side by side. */
 export const MAX_COMPARE_SLOTS = 3
+
+/**
+ * Toggle one report in the bounded prediction-comparison selection.
+ *
+ * Score comparison uses the full, unbounded report selection. Prediction
+ * comparison is the only surface capped at three because it renders complete
+ * responses side by side.
+ */
+export function togglePredictionSelection(state: string[], runId: string): string[] {
+  if (state.includes(runId)) {
+    return state.filter((id) => id !== runId)
+  }
+  if (state.length >= MAX_COMPARE_SLOTS) {
+    return state
+  }
+  return [...state, runId]
+}
 
 /**
  * Add a run to the compare selection, de-duping.
  *
  * The selection is a set with a stable insertion order and is not capped: the
  * same selection also drives batch deletion, so bounding it here would limit
- * unrelated actions. Surfaces that can only render a fixed number of runs clamp
- * at navigation time instead (see `MAX_COMPARE_SLOTS`).
+ * unrelated actions. Prediction comparison derives its own bounded subset via
+ * `togglePredictionSelection` instead of truncating this shared selection.
  *
  * @param state Current selection of run ids.
  * @param runId Run id to add.

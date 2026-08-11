@@ -6,6 +6,7 @@ It is intentionally data-free: the semantics catalog, the legacy mapping table a
 the resolver live under ``evalscope.metrics.semantics``.
 """
 
+import json
 import math
 import re
 from enum import Enum
@@ -18,6 +19,15 @@ METRIC_CONTRACT_VERSION = 1
 
 Scalar = Union[str, int, float, bool]
 _CANONICAL_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*$')
+
+
+def _scalar_key(value: Scalar) -> Tuple[str, Scalar]:
+    """Comparable JSON scalar key that keeps booleans distinct from numbers."""
+    if isinstance(value, bool):
+        return 'boolean', value
+    if isinstance(value, (int, float)):
+        return 'number', value
+    return 'string', value
 
 
 class _FrozenDimensions(dict):
@@ -38,6 +48,12 @@ class _FrozenDimensions(dict):
 
     def __hash__(self) -> int:
         return hash(tuple(self.items()))
+
+    def __copy__(self) -> '_FrozenDimensions':
+        return self
+
+    def __deepcopy__(self, memo: Dict[int, Any]) -> '_FrozenDimensions':
+        return self
 
 
 def _validate_canonical_name(value: str, field_name: str) -> str:
@@ -75,13 +91,23 @@ class MetricIdentity(BaseModel):
             _validate_canonical_name(key, 'dimension key')
             if isinstance(value, float) and not math.isfinite(value):
                 raise ValueError(f'dimension {key!r} must be a finite JSON scalar')
+            if isinstance(value, float) and value.is_integer():
+                # JSON and JavaScript have one numeric type. Canonicalize integral floats (and
+                # negative zero) so backend and frontend identity keys stay identical.
+                value = int(value)
             normalized[key] = value
         return _FrozenDimensions(normalized)
 
     @property
-    def sort_key(self) -> Tuple[str, str, Tuple[Tuple[str, Scalar], ...]]:
+    def sort_key(self) -> Tuple[str, str, Tuple[Tuple[str, Tuple[str, Scalar]], ...]]:
         """Deterministic comparison key independent of input dictionary order."""
-        return self.name, self.aggregation, tuple(self.dimensions.items())
+        return self.name, self.aggregation, tuple((key, _scalar_key(value)) for key, value in self.dimensions.items())
+
+    def __eq__(self, other: object) -> bool:
+        """Compare identities without Python's bool/int scalar coercion."""
+        if not isinstance(other, MetricIdentity):
+            return NotImplemented
+        return self.sort_key == other.sort_key
 
     def __hash__(self) -> int:
         """Hash the frozen identity through its normalized scalar dimensions."""
@@ -90,7 +116,10 @@ class MetricIdentity(BaseModel):
     @property
     def key(self) -> str:
         """Human-readable, lossless identity key for logs and table grouping."""
-        dimensions = ','.join(f'{key}={value}' for key, value in self.dimensions.items())
+        dimensions = ','.join(
+            f'{key}={json.dumps(value, ensure_ascii=False, separators=(",", ":"))}'
+            for key, value in self.dimensions.items()
+        )
         suffix = f'[{dimensions}]' if dimensions else ''
         return f'{self.name}:{self.aggregation}{suffix}'
 
@@ -132,7 +161,10 @@ class MetricSelector(BaseModel):
             return False
         if self.aggregation is not None and self.aggregation != identity.aggregation:
             return False
-        return all(identity.dimensions.get(key) == value for key, value in self.dimensions.items())
+        return all(
+            key in identity.dimensions and _scalar_key(identity.dimensions[key]) == _scalar_key(value)
+            for key, value in self.dimensions.items()
+        )
 
 
 class MetricRole(str, Enum):

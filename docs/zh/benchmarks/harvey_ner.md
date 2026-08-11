@@ -2,7 +2,7 @@
 
 ## 概述
 
-HarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数据集，其中标注了细粒度的位置信息。该数据集在非正式的危机相关描述中包含复杂且较长的位置提及，带来了独特的挑战。
+HarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数据集，其中标注了细粒度的位置实体。该数据集在非正式的危机相关描述中包含复杂且较长的位置提及，带来了独特的挑战。
 
 ## 任务描述
 
@@ -15,8 +15,8 @@ HarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数
 
 - 推文中包含细粒度的位置标注
 - 位置提及复杂且长度较长
-- 非正式的危机相关文本
-- 四种位置实体类型（AREA、POINT、RIVER、ROAD）
+- 文本为非正式的危机相关语言
+- 包含四种位置实体类型（AREA、POINT、RIVER、ROAD）
 - 适用于灾害响应相关的自然语言处理应用
 
 ## 评估说明
@@ -33,10 +33,11 @@ HarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数
 | **数据集ID** | [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认样本数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
+
 
 ## 数据统计
 

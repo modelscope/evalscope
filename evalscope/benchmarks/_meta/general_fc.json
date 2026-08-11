@@ -14,7 +14,11 @@
       "schema_accuracy",
       "tool_call_f1"
     ],
-    "primary_metric": "tool_call_f1",
+    "primary_metric": {
+      "name": "tool_call_f1",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -203,6 +207,6 @@
     "content_hash": "b38191c73775b795a3aa0f90d1525f6f",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:25.908250",
+  "updated_at": "2026-08-11T15:30:53.471012",
   "translation_updated_at": "2026-06-01T14:08:20"
 }

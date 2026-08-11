@@ -106,7 +106,7 @@ evalscope eval \
 
 ## 评分
 
-主指标是 `f1_score`，同时报告 `precision` 和 `recall`。EvalScope 还会按照官方 starter 逻辑输出评测流程健康度指标：
+主指标是 `f1`，同时报告 `precision` 和 `recall`。EvalScope 还会按照官方 starter 逻辑输出评测流程健康度指标：
 
 - `empty_model_response`
 - `empty_auto_rater_response`

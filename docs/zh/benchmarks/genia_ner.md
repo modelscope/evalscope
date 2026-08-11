@@ -13,7 +13,7 @@ GeniaNER 是一个大规模的生物医学命名实体识别（NER）数据集�
 
 ## 主要特点
 
-- 2,000 篇 MEDLINE 摘要
+- 包含 2,000 篇 MEDLINE 摘要
 - 超过 40 万个单词
 - 近 10 万个生物学术语标注
 - 五种分子生物学实体类型
@@ -30,13 +30,14 @@ GeniaNER 是一个大规模的生物医学命名实体识别（NER）数据集�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `genia_ner` |
-| **数据集 ID** | [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary) |
+| **数据集ID** | [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
-| **评估集** | `test` |
-| **训练集** | `train` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认示例数** | 5-shot |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
+
 
 ## 数据统计
 

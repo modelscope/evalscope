@@ -2,7 +2,7 @@
 
 ## 概述
 
-MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务而创建的，后经合并和过滤槽位类型，被改造用于命名实体识别（NER）。该数据集用于测试在对话式查询中识别电影相关实体的能力。
+MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务而创建的，后经合并和过滤槽位类型，被修改用于命名实体识别（NER）。该数据集用于测试在对话式查询中识别电影相关实体的能力。
 
 ## 任务描述
 
@@ -23,7 +23,7 @@ MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务
 
 - 默认配置使用 **5-shot** 评估
 - 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
-- 实体类型：ACTOR（演员）、AWARD（奖项）、CHARACTER_NAME（角色名）、DIRECTOR（导演）、GENRE（类型）、OPINION（观点）、ORIGIN（起源地）、PLOT（剧情）、QUOTE（台词）、RELATIONSHIP（关系）、SOUNDTRACK（配乐）、YEAR（年份）
+- 实体类型：ACTOR（演员）、AWARD（奖项）、CHARACTER_NAME（角色名）、DIRECTOR（导演）、GENRE（类型）、OPINION（观点）、ORIGIN（产地）、PLOT（剧情）、QUOTE（台词）、RELATIONSHIP（关系）、SOUNDTRACK（配乐）、YEAR（年份）
 
 ## 属性
 
@@ -33,10 +33,11 @@ MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务
 | **数据集ID** | [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
-| **评估集** | `test` |
-| **训练集** | `train` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认样本数** | 5-shot |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -104,7 +105,7 @@ MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容因显示原因已被截断。*
 
 ## 提示模板
 

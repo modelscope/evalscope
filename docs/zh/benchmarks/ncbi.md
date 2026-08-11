@@ -12,7 +12,7 @@ NCBI 疾病语料库是一个人工标注的 PubMed 摘要资源，专为疾病�
 - **输出**：识别出的疾病实体范围（spans）
 - **领域**：医学信息学、临床自然语言处理（Clinical NLP）
 
-## 主要特性
+## 主要特点
 
 - 人工标注的疾病提及
 - 基于 PubMed 摘要的语料库
@@ -31,11 +31,11 @@ NCBI 疾病语料库是一个人工标注的 PubMed 摘要资源，专为疾病�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `ncbi` |
-| **数据集 ID** | [extraordinarylab/ncbi](https://modelscope.cn/datasets/extraordinarylab/ncbi/summary) |
+| **数据集ID** | [extraordinarylab/ncbi](https://modelscope.cn/datasets/extraordinarylab/ncbi/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认示例数（Shots）** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
 
@@ -174,7 +174,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

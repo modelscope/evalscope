@@ -17,16 +17,16 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 - 覆盖 18 种编程语言的多语言评估
 - 基于执行的测试用例评估
 - 支持代码生成的 pass@k 指标
-- 使用 Docker 沙箱环境进行安全代码执行
+- 使用 Docker 沙箱环境实现安全代码执行
 - 源自 HumanEval，保持一致的问题难度
 
 ## 评估说明
 
 - **需要沙箱**：需使用沙箱环境以确保代码安全执行
 - 默认评估使用 **test** 划分
-- 主要指标：**准确率（Accuracy）**，采用 **pass@k** 聚合方式
-- 每个测试用例超时时间：30 秒
-- 沙箱设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- 主要指标：**Accuracy**（准确率），采用 **pass@k** 聚合方式
+- 单个测试用例超时时间：30 秒
+- 沙箱环境配置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -36,7 +36,7 @@ MultiPL-E HumanEval 是一个源自 OpenAI HumanEval 的多语言代码生成基
 | **数据集ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |

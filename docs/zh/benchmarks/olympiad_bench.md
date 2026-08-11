@@ -1,8 +1,9 @@
 # OlympiadBench
 
+
 ## 概述
 
-OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，包含 8,476 道来自数学和物理竞赛的问题（包括中国高考），用于严格评估高级科学推理能力。
+OlympiadBench 是一个面向奥林匹克竞赛级别的双语多模态科学基准测试，包含 8,476 道来自数学和物理竞赛的问题，其中包括中国高考（CEE）题目。该基准为高级科学推理能力提供严格评估。
 
 ## 任务描述
 
@@ -11,7 +12,7 @@ OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，
 - **输出**：数学答案或证明
 - **领域**：数学、物理（双语：英文和中文）
 
-## 主要特点
+## 主要特性
 
 - 包含 8,476 道奥林匹克级别问题
 - 支持双语（英文和中文）
@@ -22,14 +23,14 @@ OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，
   - `MM`：多模态（含图片）
   - `TO`：纯文本（Text-Only）
   - `CEE`：中国高考（Chinese Entrance Exam）
-  - `COMP`：综合竞赛题（Comprehensive competition problems）
+  - `COMP`：综合性竞赛题（Comprehensive competition problems）
 
 ## 评估说明
 
 - 默认使用 **train** 数据划分进行评估
 - 主要指标：基于数学判断的 **准确率（Accuracy）**
 - 答案需使用 `\boxed{}` 格式
-- **注意**：目前 `TP`（定理证明）子集无法自动评估
+- **注意**：当前 `TP`（定理证明）子集无法自动评估
 - 支持对近似答案设置数值精度/误差阈值
 
 ## 属性
@@ -37,12 +38,13 @@ OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `olympiad_bench` |
-| **数据集 ID** | [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary) |
+| **数据集ID** | [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
-| **默认提示方式** | 0-shot |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
 | **评估划分** | `train` |
+
 
 ## 数据统计
 
@@ -80,9 +82,10 @@ OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，
 | 指标 | 值 |
 |--------|-------|
 | 图片总数 | 5,875 |
-| 每样本图片数 | 最小: 1，最大: 9，平均: 1.21 |
+| 每样本图片数 | 最小: 1, 最大: 9, 平均: 1.21 |
 | 分辨率范围 | 64x46 - 1765x1947 |
-| 图片格式 | jpeg, png |
+| 格式 | jpeg, png |
+
 
 ## 样例示例
 
@@ -164,7 +167,7 @@ task_cfg = TaskConfig(
     datasets=['olympiad_bench'],
     dataset_args={
         'olympiad_bench': {
-            # subset_list: ['OE_MM_maths_en_COMP', 'OE_MM_maths_zh_CEE', 'OE_MM_maths_zh_COMP']  # 可选，用于评估特定子集
+            # subset_list: ['OE_MM_maths_en_COMP', 'OE_MM_maths_zh_CEE', 'OE_MM_maths_zh_COMP']  # 可选，用于指定评估特定子集
         }
     },
     limit=10,  # 正式评估时请删除此行

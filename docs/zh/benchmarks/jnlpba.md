@@ -3,7 +3,7 @@
 
 ## 概述
 
-JNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 GENIA 语料库的 2,404 篇 MEDLINE 摘要，标注了五种关键的分子生物学实体类型。它是生物医学命名实体识别（NER）的标准基准测试数据集。
+JNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 GENIA 语料库的 2,404 篇 MEDLINE 摘要，标注了五种关键的分子生物学实体类型。它是生物医学命名实体识别（NER）的标准基准测试。
 
 ## 任务描述
 
@@ -16,9 +16,9 @@ JNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 
 
 - 包含 GENIA 语料库中的 2,404 篇 MEDLINE 摘要
 - 涵盖五种分子生物学实体类型
-- 由领域专家进行人工标注
-- 是生物医学 NER 的标准基准
-- 全面覆盖各类生物分子实体
+- 由领域专家进行专业标注
+- 是生物医学 NER 的标准基准测试
+- 对生物分子实体具有全面覆盖
 
 ## 评估说明
 
@@ -34,10 +34,10 @@ JNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 
 | **数据集ID** | [extraordinarylab/jnlpba](https://modelscope.cn/datasets/extraordinarylab/jnlpba/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
-| **评估分割** | `test` |
-| **训练分割** | `train` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认样本数** | 5-shot |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
 
 ## 数据统计
 
@@ -128,7 +128,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -163,7 +163,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

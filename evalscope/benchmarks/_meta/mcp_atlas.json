@@ -11,7 +11,11 @@
       "coverage_score",
       "pass"
     ],
-    "primary_metric": "pass",
+    "primary_metric": {
+      "name": "pass",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -335,6 +339,6 @@
     "content_hash": "0e5695b85c692d3b10706dee807155d1",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:27.917973",
+  "updated_at": "2026-08-11T15:30:53.555566",
   "translation_updated_at": "2026-07-10T20:24:42"
 }

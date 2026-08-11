@@ -3,12 +3,12 @@
 
 ## 概述
 
-TweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 至 2021 年间超过 11,000 条推文，标注了七种实体类型，旨在促进对社交媒体语言短期时间变化的研究。
+TweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 至 2021 年间的 11,000 多条推文，标注了七种实体类型，旨在促进对社交媒体语言短期时间变化的研究。
 
 ## 任务描述
 
 - **任务类型**：社交媒体命名实体识别（NER）
-- **输入**：2019–2021 年间的 Twitter 文本
+- **输入**：2019–2021 年的 Twitter 文本
 - **输出**：识别出的七类实体片段
 - **领域**：社交媒体、语言的时间变化
 
@@ -16,7 +16,7 @@ TweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 �
 
 - 超过 11,000 条已标注推文
 - 七种多样化的实体类型
-- 时间跨度为 2019–2021 年，支持时间维度分析
+- 时间跨度为 2019–2021 年，适用于时间维度分析
 - 研究社交媒体中的语言演变
 - 针对社交内容提供丰富的实体类型覆盖
 
@@ -34,11 +34,10 @@ TweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 �
 | **数据集 ID** | [extraordinarylab/tweet-ner-7](https://modelscope.cn/datasets/extraordinarylab/tweet-ner-7/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认样本数（Shots）** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
-
 
 ## 数据统计
 
@@ -205,7 +204,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>Few-shot 模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -248,7 +247,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets tweet_ner_7 \
-    --limit 10  # 正式评估时请移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -262,7 +261,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['tweet_ner_7'],
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

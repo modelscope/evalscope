@@ -3,11 +3,11 @@
 
 ## 概述
 
-LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模型对长上下文的理解能力。它涵盖了多种需要阅读和理解长文档（长度从数千到超过200万token不等）的真实世界任务，涉及多个领域，包括单文档问答、多文档问答、长上下文学习、长结构化数据理解以及代码仓库理解。
+LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模型对长上下文的理解能力。它涵盖了多种需要阅读和理解长文档（长度从几千到超过200万 tokens 不等）的真实世界任务，覆盖多个领域，包括单文档问答（Single-Doc QA）、多文档问答（Multi-Doc QA）、长上下文学习（Long In-Context Learning）、长结构化数据理解（Long Structured Data Understanding）以及代码仓库理解（Code Repo Understanding）。
 
 ## 任务描述
 
-- **任务类型**：长上下文多项选择题问答
+- **任务类型**：长上下文多项选择题问答（Long-Context Multiple-Choice Question Answering）
 - **输入**：长文档上下文 + 包含四个选项（A、B、C、D）的多项选择题
 - **输出**：单个正确答案字母
 - **领域**：单文档问答、多文档问答、长上下文学习、长结构化数据理解、代码仓库理解
@@ -16,19 +16,19 @@ LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模�
 
 ## 主要特点
 
-- 包含503道高质量问题，要求真正理解长文档内容
-- 上下文长度从数千token到超过200万token不等
+- 包含503道高质量问题，要求模型真正理解长文档内容
+- 上下文长度范围从几千 tokens 到超过200万 tokens
 - 问题为双语（英文和中文）
 - 设计上要求仔细阅读文档；若不阅读文档则无法猜出正确答案
 - 覆盖多样化的现实应用场景
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估（训练集用作测试集）
-- 主要指标：**准确率**（答案字母完全匹配）
+- 默认配置使用 **0-shot** 评估（使用训练集作为测试集）
+- 主要指标：**准确率（Accuracy）**（答案字母完全匹配）
 - 必须提供全部四个选项；无需随机打乱顺序
 - 样本按上下文长度划分为 **3个子集**：`short`、`medium`、`long`
-- 使用 `subset_list` 可评估特定长度子集（例如 `['short', 'medium']`）
+- 可通过 `subset_list` 参数指定评估特定长度子集（例如 `['short', 'medium']`）
 
 ## 属性
 
@@ -38,7 +38,7 @@ LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模�
 | **数据集ID** | [ZhipuAI/LongBench-v2](https://modelscope.cn/datasets/ZhipuAI/LongBench-v2/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `MCQ`, `ReadingComprehension` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认Shots数** | 0-shot |
 | **评估划分** | `train` |
 
@@ -60,7 +60,7 @@ LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模�
 
 ## 样例示例
 
-**子集**：`short`
+**子集**: `short`
 
 ```json
 {
@@ -110,7 +110,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ## 使用方法
 
-### 使用命令行接口（CLI）
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \
@@ -121,7 +121,7 @@ evalscope eval \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 使用Python
+### 使用 Python
 
 ```python
 from evalscope import run_task

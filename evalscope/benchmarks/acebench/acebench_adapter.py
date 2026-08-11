@@ -83,7 +83,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 
 ## Evaluation Notes
 
-- `acc` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
+- `accuracy` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
   end-state accuracy. `process_acc` additionally reports milestone progress for `agent` samples and
   per-step progress for `normal_multi_turn_*` samples.
 - The report adds the official groupings (ATOM, SINGLE_TURN, MULTI_TURN, NORMAL, SPECIAL, AGENT)

@@ -1,30 +1,31 @@
 # Competition-MATH
 
+
 ## 概述
 
-Competition-MATH 是一个包含 12,500 道高难度竞赛数学题目的综合性基准测试数据集，题目来源于 AMC、AIME 等知名数学竞赛。该基准旨在评估语言模型在高级数学推理方面的能力。
+Competition-MATH 是一个包含 12,500 道高难度竞赛数学题的综合性基准测试数据集，题目来源于 AMC、AIME 等知名数学竞赛，旨在评估语言模型在高级数学推理方面的能力。
 
 ## 任务描述
 
 - **任务类型**：竞赛数学问题求解
 - **输入**：来自数学竞赛的数学问题
-- **输出**：包含逐步推导过程的解答，并将最终答案置于 `\boxed{}` 中
-- **难度等级**：Level 1（最简单）到 Level 5（最难）
+- **输出**：包含逐步推理过程的解答，最终答案需用 `\boxed{}` 标注
+- **难度等级**：Level 1（最简单）至 Level 5（最难）
 
 ## 主要特点
 
 - 包含 12,500 道数学竞赛题目
-- 提供五个难度等级，支持全面评估
-- 涵盖主题：代数、计数与概率、几何、中级代数、数论、预代数、微积分预备
+- 划分为五个难度等级，便于全面评估
+- 涵盖主题：代数、计数与概率、几何、中级代数、数论、初级代数、微积分预备知识
 - 每道题目均附有人工撰写的解答
 - 专为评估高级数学推理能力而设计
 
 ## 评估说明
 
-- 默认配置使用 **4-shot** 示例并结合 Chain-of-Thought（思维链）提示
+- 默认配置使用 **4-shot** 示例并结合思维链（Chain-of-Thought）提示
 - 从 `\boxed{}` 格式中提取答案
 - 使用数值等价性检查进行答案比对
-- 支持按难度等级和问题类型分析结果
+- 可按难度等级和问题类型分别分析结果
 - 使用 math_parser 进行鲁棒的答案提取
 
 ## 属性
@@ -35,10 +36,11 @@ Competition-MATH 是一个包含 12,500 道高难度竞赛数学题目的综合�
 | **数据集ID** | [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
-| **默认示例数量** | 4-shot |
+| **指标** | `accuracy` |
+| **默认示例数** | 4-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -48,9 +50,9 @@ Competition-MATH 是一个包含 12,500 道高难度竞赛数学题目的综合�
 | 提示词长度（平均） | 1019.03 字符 |
 | 提示词长度（最小/最大） | 675 / 3991 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `Level 1` | 437 | 947.84 | 842 | 2757 |
 | `Level 2` | 894 | 816.87 | 682 | 2328 |
@@ -95,7 +97,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本提示模板</summary>
 
 ```text
 Here are some examples of how to solve similar problems:
@@ -112,7 +114,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

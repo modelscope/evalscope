@@ -76,7 +76,7 @@ _DIRECTION_ARROWS = {
     MetricDirection.LOWER_IS_BETTER: '↓',
 }
 
-_DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2}
+_DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2, 'ngram': 3, 'variant': 3, 'statistic': 4}
 
 __all__ = [
     'MISSING_PLACEHOLDER',

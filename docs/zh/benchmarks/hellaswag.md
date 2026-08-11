@@ -3,30 +3,30 @@
 
 ## 概述
 
-HellaSwag 是一个用于评估常识性自然语言推理的基准测试，专门测试模型完成描述日常情境句子的能力。该数据集采用对抗性过滤（adversarial filtering）方法生成具有挑战性的干扰项，这些干扰项在语法上正确但在语义上不合理。
+HellaSwag 是一个用于评估常识性自然语言推理的基准测试，专门测试模型完成描述日常情境句子的能力。该数据集使用对抗过滤（adversarial filtering）技术生成具有挑战性的干扰项，这些干扰项在语法上正确但在语义上不合理。
 
 ## 任务描述
 
-- **任务类型**：多项选择题句子补全
+- **任务类型**：多项选择填空题（Multiple-Choice Sentence Completion）
 - **输入**：描述某项活动或情境的上下文
 - **输出**：从 4 个选项（A、B、C、D）中选择最合理的后续内容
 - **领域**：日常活动与常识场景
 
 ## 主要特点
 
-- 包含 70,000 多个问题，用于测试基于现实情境的常识推理能力
+- 包含 70,000 多道测试题，考察基于现实情境的常识推理能力
 - 上下文来源于 ActivityNet 和 WikiHow
-- 错误选项经过对抗性过滤处理
+- 错误选项经过对抗过滤处理
 - 要求理解典型事件序列
 - 测试物理常识与社会常识推理能力
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估方式
+- 默认配置采用 **0-shot** 评估方式
 - 在验证集（validation split）上进行评估
-- 已对选项结尾进行预处理，清除格式化伪影
-- 上下文由 `ctx_a` 和 `ctx_b` 字段拼接而成
-- 元数据中包含活动标签，可用于分析
+- 结尾选项已预处理以清除格式问题
+- 上下文由 `ctx_a` 和 `ctx_b` 字段组合而成
+- 元数据中包含活动标签，可用于进一步分析
 
 ## 属性
 
@@ -36,8 +36,8 @@ HellaSwag 是一个用于评估常识性自然语言推理的基准测试，专�
 | **数据集ID** | [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
-| **默认示例数量** | 0-shot |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 
 
@@ -89,7 +89,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

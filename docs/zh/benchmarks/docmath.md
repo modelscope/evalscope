@@ -1,5 +1,6 @@
 # DocMath
 
+
 ## 概述
 
 DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测试。该基准要求模型理解长篇且专业的文档，并基于文档内容进行数值推理以回答问题。
@@ -8,7 +9,7 @@ DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测�
 
 - **任务类型**：基于文档的数学推理
 - **输入**：长文档上下文 + 数值推理问题
-- **输出**：带推理过程的数值答案
+- **输出**：包含推理过程的数值答案
 - **重点**：长上下文理解与定量推理能力
 
 ## 主要特点
@@ -21,10 +22,10 @@ DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测�
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估
+- 默认配置采用 **0-shot** 评估方式
 - 使用 LLM-as-judge 进行答案评估
-- 子集包括：`complong_testmini`、`compshort_testmini`、`simplong_testmini`、`simpshort_testmini`
-- 答案格式：`"Therefore, the answer is (answer)"`
+- 子集包括：complong_testmini、compshort_testmini、simplong_testmini、simpshort_testmini
+- 答案格式："Therefore, the answer is (answer)"
 
 ## 属性
 
@@ -34,8 +35,8 @@ DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测�
 | **数据集ID** | [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `Math`, `Reasoning` |
-| **指标** | `acc` |
-| **默认示例数** | 0-shot |
+| **指标** | `accuracy` |
+| **默认Shots数** | 0-shot |
 | **评估分割** | `test` |
 
 ## 数据统计
@@ -77,7 +78,7 @@ DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 

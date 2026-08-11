@@ -23,7 +23,11 @@
         }
       }
     ],
-    "primary_metric": "comet",
+    "primary_metric": {
+      "name": "comet",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -633,6 +637,6 @@
     "content_hash": "f0c96a413a0c2e0d95e52561f2c11a7c",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:27.717065",
+  "updated_at": "2026-08-11T15:30:53.503371",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

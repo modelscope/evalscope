@@ -34,7 +34,7 @@ QASC (Question Answering via Sentence Composition) is a question-answering datas
 | **Dataset ID** | [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

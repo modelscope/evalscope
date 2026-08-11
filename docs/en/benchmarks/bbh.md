@@ -37,7 +37,7 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
 | **Dataset ID** | [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary) |
 | **Paper** | N/A |
 | **Tags** | `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 3-shot |
 | **Evaluation Split** | `test` |
 

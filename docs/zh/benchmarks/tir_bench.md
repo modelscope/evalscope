@@ -3,34 +3,34 @@
 
 ## 概述
 
-TIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模态基准测试，用于评估视觉语言模型的具身视觉推理能力。该基准涵盖多种任务类别，要求模型具备空间、组合式及多步骤的视觉推理能力。
+TIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模态基准测试，用于评估视觉语言模型的具身视觉推理能力。该基准涵盖多种任务类别，要求模型具备空间、组合式以及多步骤的视觉推理能力。
 
 ## 任务描述
 
-- **任务类型**：多任务视觉推理（选择题、OCR、单词搜索、找不同、拼图等）
+- **任务类型**：多任务视觉推理（包括选择题、OCR、单词搜索、找不同、拼图等）
 - **输入**：一张或两张图像 + 问题（大多数任务采用选择题格式）
 - **输出**：答案字母（选择题）或数字/文本形式的答案（取决于任务类型）
-- **领域**：instrument（仪器）、color（颜色）、refcoco、rotation_game（旋转游戏）、math（数学）、word_search（单词搜索）、visual_search（视觉搜索）、ocr、symbolic（符号）、spot_difference（找不同）、contrast（对比）、jigsaw（拼图）、maze（迷宫）
+- **领域**：instrument（仪器读数）、color（颜色识别）、refcoco（指代表达理解）、rotation_game（旋转游戏）、math（数学题）、word_search（单词搜索）、visual_search（视觉搜索）、ocr（光学字符识别）、symbolic（符号推理）、spot_difference（找不同）、contrast（对比分析）、jigsaw（拼图）、maze（迷宫）
 
 ## 核心特性
 
 - 包含13种多样化的视觉推理任务类别，共计1,215个测试样本
 - 覆盖单图和双图推理场景
 - 答案形式包括字母选项（A-J）、整数、浮点数和文本
-- 采用任务特定评分机制，并辅以LLM-as-judge作为后备方案，确保评估的鲁棒性
+- 采用任务特定的评分机制，并在必要时回退至基于大语言模型（LLM-as-judge）的评分方式，以实现稳健评估
 
 ## 评估说明
 
-- 默认使用 **test** 划分进行评估（共1,215个样本）
-- 主要指标：**准确率**（acc）
+- 默认使用 **test** 分割进行评估（共1,215个样本）
+- 主要指标：**准确率**（`accuracy`）
 - 图像数据通过 ModelScope 下载为 `data.zip` 并自动解压
 - 基于规则的评分方式：
-  - OCR（子串匹配）
-  - 拼图（grid IoU）
-  - 找不同（set IoU）
-  - 单词搜索（数值匹配）
-  - 其他所有任务（选择题 / 数值判断）
-- **推荐设置**：将 `judge_strategy=JudgeStrategy.LLM_RECALL` 并提供 `judge_model_args`，以启用 LLM-as-judge 作为召回机制——仅当基于规则的评分结果为0时才调用判别模型，在避免不必要 API 开销的同时提升评估准确性
+  - OCR：子字符串匹配
+  - 拼图（jigsaw）：网格 IoU
+  - 找不同（spot_difference）：集合 IoU
+  - 单词搜索（word_search）：数值匹配
+  - 其他所有任务：选择题或数值判断
+- **推荐设置**：将 `judge_strategy=JudgeStrategy.LLM_RECALL` 并提供 `judge_model_args`，以启用 LLM-as-judge 作为召回机制——仅当基于规则的评分结果为0时才调用评判模型，从而在避免不必要 API 开销的同时提升评估准确性
 - [论文](https://arxiv.org/abs/2511.01833) | [GitHub](https://github.com/agents-x-project/TIR-Bench)
 
 
@@ -42,9 +42,9 @@ TIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模�
 | **数据集ID** | [evalscope/TIR-Bench](https://modelscope.cn/datasets/evalscope/TIR-Bench/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2511.01833) |
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -55,7 +55,7 @@ TIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模�
 | 提示词长度（平均） | 384.97 字符 |
 | 提示词长度（最小/最大） | 19 / 4039 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -73,14 +73,14 @@ TIR-Bench（Thinking-with-Images Reasoning Benchmark）是一个全面的多模�
 | `jigsaw` | 120 | 605 | 605 | 605 |
 | `maze` | 120 | 1527.06 | 626 | 4039 |
 
-**图像统计数据：**
+**图像统计信息：**
 
 | 指标 | 值 |
 |--------|-------|
 | 图像总数 | 1,255 |
 | 每样本图像数 | 最小: 1, 最大: 2, 平均: 1.03 |
 | 分辨率范围 | 60x23 - 6944x9280 |
-| 格式 | jpeg, mpo, png, webp |
+| 图像格式 | jpeg, mpo, png, webp |
 
 
 ## 样例示例

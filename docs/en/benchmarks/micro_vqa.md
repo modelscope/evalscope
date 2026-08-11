@@ -36,7 +36,7 @@ MicroVQA is an expert-curated benchmark for multimodal reasoning in microscopy-b
 | **Dataset ID** | [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

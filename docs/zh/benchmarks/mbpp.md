@@ -15,8 +15,8 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 
 ## Key Features
 
 - 约 1,000 个众包编程问题
-- 涵盖编程基础和标准库使用
-- 每个问题包含任务描述、参考答案和 3 个测试用例
+- 涵盖编程基础知识和标准库使用
+- 每个问题包含任务描述、参考解答和 3 个测试用例
 - 问题设计为入门级程序员可解决
 - 通过执行测试用例进行自动评估
 
@@ -26,7 +26,7 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 
 - **安全警告**：需要沙箱环境以安全执行代码。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
 - 每个问题默认超时时间为 20 秒
-- 若存在 `[BEGIN]...[DONE]` 块，则从中提取代码
+- 若存在 `[BEGIN]...[DONE]` 区块，则从中提取代码
 
 ## Properties
 
@@ -36,7 +36,7 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 
 | **Dataset ID** | [google-research-datasets/mbpp](https://modelscope.cn/datasets/google-research-datasets/mbpp/summary) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 3-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `prompt` |
@@ -77,7 +77,7 @@ MBPP（Mostly Basic Python Problems）是一个包含约 1,000 个众包 Python 
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注意：部分内容因展示需要已被截断。*
 
 ## Prompt Template
 

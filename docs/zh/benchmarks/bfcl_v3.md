@@ -9,7 +9,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 
 - **任务类型**：函数调用 / 工具使用评估
 - **输入**：包含可用函数定义的用户查询
-- **输出**：带有正确参数的函数调用
+- **输出**：带参数的正确函数调用
 - **类别**：AST_NON_LIVE、AST_LIVE、RELEVANCE、MULTI_TURN
 
 ## 主要特性
@@ -25,9 +25,9 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 
 - 评估前需安装 `pip install bfcl-eval==2025.10.27.1`
 - 对于原生支持函数调用的模型，请设置 `is_fc_model=True`
-- `underscore_to_dot` 参数控制函数名称的格式化方式
+- `underscore_to_dot` 参数控制函数名称的格式化方式（下划线转为点号）
 - 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v3.html)
-- 结果按类别（AST、相关性、多轮）细分
+- 结果按类别（AST、相关性、多轮）分别统计
 
 ## 属性
 
@@ -37,7 +37,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 | **数据集ID** | [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 
@@ -52,7 +52,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `simple` | 400 | 119.66 | 57 | 303 |
 | `multiple` | 200 | 120.75 | 65 | 229 |
@@ -74,7 +74,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 
 ## 样例示例
 
-**子集**：`simple`
+**子集**: `simple`
 
 ```json
 {
@@ -222,7 +222,7 @@ task_cfg = TaskConfig(
     datasets=['bfcl_v3'],
     dataset_args={
         'bfcl_v3': {
-            # subset_list: ['simple', 'multiple', 'parallel']  # 可选，评估特定子集
+            # subset_list: ['simple', 'multiple', 'parallel']  # 可选，仅评估指定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

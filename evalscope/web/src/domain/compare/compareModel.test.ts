@@ -17,6 +17,7 @@ import {
   buildDisplayLabels,
   MAX_COMPARE_SLOTS,
   preserveSelectionAcrossReorder,
+  togglePredictionSelection,
 } from './compareModel'
 
 /* ─── Property 8: run display label composition ───────────────── */
@@ -281,5 +282,17 @@ describe('addToSelection (Property 10: compare selection is an unbounded set)', 
         expect(next).toEqual(expect.arrayContaining(state))
       }),
     )
+  })
+})
+
+describe('togglePredictionSelection', () => {
+  it('adds and removes reports without affecting score selection', () => {
+    expect(togglePredictionSelection(['a', 'b'], 'c')).toEqual(['a', 'b', 'c'])
+    expect(togglePredictionSelection(['a', 'b', 'c'], 'b')).toEqual(['a', 'c'])
+  })
+
+  it('keeps the existing selection when three reports are already selected', () => {
+    const selected = ['a', 'b', 'c']
+    expect(togglePredictionSelection(selected, 'd')).toBe(selected)
   })
 })

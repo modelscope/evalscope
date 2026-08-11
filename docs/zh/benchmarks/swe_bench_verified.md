@@ -14,7 +14,7 @@ SWE-bench Verified 是从 SWE-bench 中人工验证筛选出的 500 个样本子
 
 ## 主要特点
 
-- 包含 500 对人工验证的 Issue-Pull Request 数据
+- 包含 500 对经人工验证的 Issue-Pull Request 数据
 - 来源于生产级 Python 仓库的真实 bug
 - 通过单元测试进行验证评估
 - 基于 Docker 的隔离执行环境
@@ -24,7 +24,7 @@ SWE-bench Verified 是从 SWE-bench 中人工验证筛选出的 500 个样本子
 
 - 评估前需先安装 `pip install swebench==4.1.0`
 - 每个仓库的 Docker 镜像会自动构建或拉取
-- 每个实例的超时时间为 1800 秒（30 分钟）
+- 每个实例超时时间为 1800 秒（30 分钟）
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
 - 支持本地构建镜像和远程拉取镜像两种方式
 
@@ -36,7 +36,7 @@ SWE-bench Verified 是从 SWE-bench 中人工验证筛选出的 500 个样本子
 | **数据集ID** | [princeton-nlp/SWE-bench_Verified](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Verified/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
@@ -63,7 +63,7 @@ SWE-bench Verified 是从 SWE-bench 中人工验证筛选出的 500 个样本子
 | `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于获取推理上下文的 Oracle 数据集 ID。 |
 | `build_docker_images` | `bool` | `True` | 是否为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前是否尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 Docker 镜像。可选项：['', 'arm64', 'x86_64'] |
+| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 Docker 镜像。可选值：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法

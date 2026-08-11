@@ -41,7 +41,11 @@
         }
       }
     ],
-    "primary_metric": "text_block",
+    "primary_metric": {
+      "name": "text_block",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "train",
     "train_split": "",
@@ -182,6 +186,6 @@
     "content_hash": "edee9d1faeb3f7a3926dec740efab52a",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:28.181876",
+  "updated_at": "2026-08-11T15:30:53.464115",
   "translation_updated_at": "2026-08-04T14:31:11"
 }

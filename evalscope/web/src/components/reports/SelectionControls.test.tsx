@@ -18,6 +18,16 @@ describe('selection controls', () => {
     expect(onClick).toHaveBeenCalledTimes(1)
   })
 
+  it('prevents selection changes when disabled', () => {
+    const onClick = vi.fn()
+    render(<SelectionCheckbox checked={false} disabled label="Unavailable run" onClick={onClick} />)
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Unavailable run' })
+    expect(checkbox).toBeDisabled()
+    fireEvent.click(checkbox)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
   it('shares the view, compare, compare-limit notice, and clear behavior', () => {
     const onViewHtml = vi.fn()
     const onCompare = vi.fn()

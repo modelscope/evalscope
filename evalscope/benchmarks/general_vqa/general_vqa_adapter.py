@@ -51,7 +51,12 @@ It supports OpenAI-compatible message format with flexible image/video input (lo
         tags=[Tags.QA, Tags.CUSTOM, Tags.MULTI_MODAL],
         dataset_id='general_vqa',
         metric_list=['BLEU', 'Rouge'],
-        primary_metric=MetricSelector(name='rouge'),
+        primary_metric=MetricSelector(
+            name='rouge', aggregation='mean', dimensions={
+                'variant': 'l',
+                'statistic': 'recall'
+            }
+        ),
         few_shot_num=0,
         train_split=None,
         eval_split='test',

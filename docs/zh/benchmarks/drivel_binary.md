@@ -2,7 +2,7 @@
 
 ## 概述
 
-Drivelology 二分类任务评估模型识别“drivelology”的能力——这是一种独特的语言现象，其特征是“有深度的胡言乱语”。这类话语在句法上连贯，但在语用层面具有悖论性、情感负载性或修辞颠覆性。
+Drivelology 二分类任务评估模型识别“drivelology”的能力——这是一种独特的语言现象，其特征是“有深度的胡言乱语”。这类话语在句法上连贯，但在语用层面却具有悖论性、情感负载或修辞颠覆性。
 
 ## 任务描述
 
@@ -14,7 +14,7 @@ Drivelology 二分类任务评估模型识别“drivelology”的能力——这
 ## 主要特点
 
 - 测试对多层次语言含义的理解能力
-- 能区分“有深度的胡言乱语”、纯粹的胡言乱语和正常文本
+- 能够区分“有深度的胡言乱语”、纯粹的无意义文本和正常文本
 - 需要上下文理解与情感洞察力
 - 涵盖幽默、反讽、讽刺等检测
 - 提供多个难度级别
@@ -33,10 +33,11 @@ Drivelology 二分类任务评估模型识别“drivelology”的能力——这
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **默认示例数量** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 | **聚合方式** | `f1` |
+
 
 ## 数据统计
 

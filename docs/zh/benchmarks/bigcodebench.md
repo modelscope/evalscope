@@ -10,11 +10,11 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 - **任务类型**：代码生成（Python）
 - **输入**：编程任务描述（文档字符串或自然语言指令）
 - **输出**：完整的 Python 函数实现
-- **库**：139 个流行的 Python 库（如 numpy、pandas、sklearn 等）
+- **依赖库**：139 个流行的 Python 库（如 numpy、pandas、sklearn 等）
 
-## 主要特性
+## 核心特性
 
-- 包含 1,140 个上下文丰富的 Python 编程任务
+- 包含 1,140 个具有丰富上下文的 Python 编程任务
 - 提供两种评估模式：Complete（基于文档字符串）和 Instruct（基于自然语言指令）
 - 覆盖来自 139 个流行库的多样化函数调用
 - 使用 `unittest.TestCase` 进行全面的正确性验证
@@ -22,11 +22,11 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 
 ## 评估说明
 
-- **需要沙箱环境**：要求预装 70 多个 Python 库的沙箱环境
+- **需要沙箱环境**：要求预装 70+ 个 Python 库的沙箱环境
 - 通过 `split` 参数选择两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
 - 每个问题默认超时时间为 240 秒
 - 启用 `calibrate` 选项会在生成代码前添加 `code_prompt`，以对齐函数签名
-- 沙箱环境设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- 沙箱环境搭建请参考 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -36,7 +36,7 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 | **数据集ID** | [evalscope/bigcodebench](https://modelscope.cn/datasets/evalscope/bigcodebench/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分版本** | `v0.1.4` |
 | **聚合方式** | `mean_and_pass_at_k` |
@@ -84,10 +84,10 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 |-----------|------|---------|-------------|
 | `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。可选值：['complete', 'instruct'] |
 | `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
-| `calibrate` | `bool` | `True` | 是否在解决方案前添加 `code_prompt` 以对齐函数签名。 |
+| `calibrate` | `bool` | `True` | 是否在生成代码前添加 `code_prompt` 以对齐函数签名。 |
 | `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后将覆盖默认沙箱镜像。 |
 | `dockerfile` | `str` | `Dockerfile` | `docker_build_context` 内的 Dockerfile 路径。 |
-| `force_rebuild` | `bool` | `False` | 是否强制重建可选的本地 Docker 镜像。 |
+| `force_rebuild` | `bool` | `False` | 强制重建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
 

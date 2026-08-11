@@ -204,6 +204,18 @@ class TestMetricLabels:
 
         assert format_metric_label(identity, make_percent_semantics()) == 'Accuracy ↑ · Answer · Overall · Yes'
 
+    def test_overlap_variant_precedes_statistic(self) -> None:
+        identity = MetricIdentity(
+            name='rouge',
+            aggregation='mean',
+            dimensions={
+                'statistic': 'recall',
+                'variant': 'l'
+            },
+        )
+
+        assert format_metric_label(identity, make_percent_semantics()) == 'Accuracy ↑ · L · Recall'
+
     def test_diagnostic_and_missing_semantics_keep_final_name(self) -> None:
         diagnostic = make_number_semantics(
             role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE, display_unit=None, raw_unit=None

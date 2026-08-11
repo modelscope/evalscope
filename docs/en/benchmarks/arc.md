@@ -36,7 +36,7 @@ ARC (AI2 Reasoning Challenge) is a benchmark designed to evaluate science questi
 | **Dataset ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

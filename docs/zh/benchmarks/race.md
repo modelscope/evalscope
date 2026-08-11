@@ -3,7 +3,7 @@
 
 ## 概述
 
-RACE（ReAding Comprehension from Examinations）是一个大规模阅读理解基准数据集，收集自中国初中和高中英语考试题目。该数据集用于测试综合阅读理解能力。
+RACE（ReAding Comprehension from Examinations）是一个大规模阅读理解基准数据集，收集自中国初中和高中英语考试题目，用于评估综合阅读理解能力。
 
 ## 任务描述
 
@@ -14,7 +14,7 @@ RACE（ReAding Comprehension from Examinations）是一个大规模阅读理解�
 
 ## 主要特点
 
-- 包含28,000+篇文章和100,000道问题
+- 包含28,000+篇文章和100,000道题目
 - 使用真实考试题目，确保难度的真实性
 - 包含两个子集：`middle`（较简单）和 `high`（较难）
 - 考察多种阅读理解技能（推理、词汇、主旨等）
@@ -36,11 +36,10 @@ RACE（ReAding Comprehension from Examinations）是一个大规模阅读理解�
 | **数据集ID** | [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 3-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
-
 
 ## 数据统计
 

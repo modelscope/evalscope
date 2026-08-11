@@ -3,29 +3,29 @@
 
 ## 概述
 
-MMMU（Massive Multi-discipline Multimodal Understanding，大规模多学科多模态理解）是一个综合性基准测试，旨在评估多模态模型在需要大学水平学科知识和深度推理的专家级任务上的表现。该基准涵盖6个核心学科领域的30个具体科目。
+MMMU（Massive Multi-discipline Multimodal Understanding，大规模多学科多模态理解）是一个综合性基准测试，旨在评估多模态模型在需要大学水平学科知识和深度推理的专家级任务上的表现。该基准涵盖6个核心学科领域的30个具体学科。
 
 ## 任务描述
 
-- **任务类型**：多模态问答（选择题与开放式问题）
+- **任务类型**：多模态问答（选择题与开放题）
 - **输入**：包含多样化图像（图表、示意图、地图、表格等）的问题
-- **输出**：答案选项字母（选择题）或自由文本（开放式问题）
+- **输出**：选项字母（选择题）或自由文本（开放题）
 - **学科领域**：艺术与设计、商业、科学、健康与医学、人文学科、技术与工程
 
 ## 核心特性
 
 - 精心收集的11.5K个多模态问题
 - 数据来源包括大学考试、测验和教材
-- 覆盖30个科目和183个子领域
+- 覆盖30个学科及183个子领域
 - 包含30种异构图像类型（图表、示意图、乐谱、化学结构式等）
-- 同时考察感知能力和专家级推理能力
+- 同时考察感知能力与专家级推理能力
 
 ## 评估说明
 
 - 默认配置采用 **0-shot** 评估方式
-- 支持选择题和开放式问题两种题型
+- 支持选择题与开放题两种题型
 - 单个问题最多可包含7张图像
-- 对于开放式问题，需按 "ANSWER: [ANSWER]" 格式输出答案
+- 开放题需以 "ANSWER: [ANSWER]" 格式作答
 - 评估使用验证集（测试集需提交结果）
 
 ## 属性
@@ -36,8 +36,8 @@ MMMU（Massive Multi-discipline Multimodal Understanding，大规模多学科多
 | **数据集ID** | [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
-| **默认示例数** | 0-shot |
+| **指标** | `accuracy` |
+| **默认Shots** | 0-shot |
 | **评估分割** | `validation` |
 
 
@@ -51,7 +51,7 @@ MMMU（Massive Multi-discipline Multimodal Understanding，大规模多学科多
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `Accounting` | 30 | 525.2 | 356 | 899 |
 | `Agriculture` | 30 | 472.73 | 321 | 747 |
@@ -152,7 +152,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: [ANS
 
 ## 使用方法
 
-### 使用命令行
+### 使用 CLI
 
 ```bash
 evalscope eval \

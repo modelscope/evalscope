@@ -37,7 +37,7 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
 | **Dataset ID** | [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) |
 | **Paper** | N/A |
 | **Tags** | `Arena`, `InstructionFollowing` |
-| **Metrics** | `winrate` |
+| **Metrics** | `win_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `elo` |

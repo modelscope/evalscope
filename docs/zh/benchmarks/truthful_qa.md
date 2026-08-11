@@ -3,27 +3,27 @@
 
 ## 概述
 
-TruthfulQA 是一个用于衡量语言模型是否能对问题生成真实答案的基准测试。它重点关注那些人类可能因误解、迷信或错误信念而给出错误答案的问题。
+TruthfulQA 是一个用于衡量语言模型是否能对问题生成真实答案的基准测试。它聚焦于那些人类可能因误解、迷信或错误信念而给出错误答案的问题。
 
 ## 任务描述
 
 - **任务类型**：多项选择真实性评估
 - **输入**：探测潜在误解的问题
-- **输出**：真/假答案选择
+- **输出**：真假答案选择
 - **格式**：MC1（单个正确答案）和 MC2（多个正确答案）
 
 ## 主要特点
 
 - 包含 817 个问题，涵盖 38 个类别（健康、法律、金融、政治等）
 - 问题针对常见的人类误解和错误信念
-- 通过对抗性筛选，以揭示模型重复错误信息的倾向
+- 通过对抗性筛选，揭示模型重复错误信息的倾向
 - 测试模型避免生成看似合理但实际错误答案的能力
 - 同时包含最佳答案（MC1）和所有正确答案（MC2）两种格式
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估，并采用 MC1 格式
-- 设置 `multiple_correct=True` 可启用 MC2（多正确答案）格式
+- 设置 `multiple_correct=True` 可启用 MC2（多选）格式
 - 评估过程中选项顺序会被打乱
 - 使用 `multi_choice_acc` 指标进行评分
 - 是安全性和对齐研究中的重要基准测试
@@ -83,20 +83,13 @@ TruthfulQA 是一个用于衡量语言模型是否能对问题生成真实答案
 
 ## 提示模板
 
-**提示模板：**
-```text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
-
-{question}
-
-{choices}
-```
+*未定义提示模板。*
 
 ## 额外参数
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `multiple_correct` | `bool` | `False` | 若为 True，则使用多答案格式（MC2）；否则使用单答案格式（MC1）。 |
+| `multiple_correct` | `bool` | `False` | 若为 True，则使用多选格式（MC2）；否则使用单选格式（MC1）。 |
 
 ## 使用方法
 

@@ -19,7 +19,7 @@ export interface MetricIdentity {
 export function metricIdentityKey(identity: MetricIdentity): string {
   const dimensions = Object.entries(identity.dimensions)
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([key, value]) => `${key}=${String(value)}`)
+    .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
     .join(',')
   return `${identity.name}:${identity.aggregation}${dimensions ? `[${dimensions}]` : ''}`
 }
@@ -83,7 +83,14 @@ export function formatMetricIdentityLabel(
 ): string {
   if (!semantics || semantics.role === 'diagnostic') return legacyName || metricIdentityKey(identity)
   const base = formatMetricLabel(identity.name, semantics)
-  const dimensionOrder: Record<string, number> = { target: 0, level: 1, scope: 2 }
+  const dimensionOrder: Record<string, number> = {
+    target: 0,
+    level: 1,
+    scope: 2,
+    ngram: 3,
+    variant: 3,
+    statistic: 4,
+  }
   const dimensions = Object.entries(identity.dimensions)
     .sort(([left], [right]) => (dimensionOrder[left] ?? 3) - (dimensionOrder[right] ?? 3) || left.localeCompare(right))
     .map(([, value]) => {

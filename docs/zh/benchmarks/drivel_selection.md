@@ -2,27 +2,27 @@
 
 ## 概述
 
-Drivelology 叙事选择（Drivelology Narrative Selection）用于评估模型理解“drivelology”文本底层叙事的能力——这类语言表达在句法上连贯，但在语用层面具有悖论性、情感负载强烈或修辞上具有颠覆性。
+Drivelology Narrative Selection 用于评估模型理解“drivelology”文本底层叙事的能力——这类语言表达在句法上连贯，但在语用层面具有悖论性、情感负载强烈或修辞上具有颠覆性。
 
 ## 任务描述
 
 - **任务类型**：多项选择式叙事理解
 - **输入**：包含多个叙事解释选项的 drivelology 文本
-- **输出**：最能代表文本底层叙事的最佳选项
+- **输出**：最能代表文本底层叙事的选项
 - **领域**：语言分析、叙事理解
 
-## 核心特点
+## 主要特点
 
-- 考察深层叙事理解能力
+- 测试深层叙事理解能力
 - 要求解读多层次含义
 - 多项选择格式，干扰项具有挑战性
 - 包含简单和困难两个难度级别
-- 考察文化与语境理解能力
+- 考察文化和语境理解能力
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 使用简单准确率（accuracy）作为指标
+- 使用简单的准确率（accuracy）指标
 - 子集：`multiple-choice-english-easy`、`multiple-choice-english-hard`
 
 ## 属性
@@ -33,9 +33,9 @@ Drivelology 叙事选择（Drivelology Narrative Selection）用于评估模型�
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ` |
-| **指标** | `acc` |
-| **默认示例数** | 0-shot |
-| **评估分割** | `test` |
+| **指标** | `accuracy` |
+| **默认示例数（Shots）** | 0-shot |
+| **评估划分** | `test` |
 
 
 ## 数据统计
@@ -48,7 +48,7 @@ Drivelology 叙事选择（Drivelology Narrative Selection）用于评估模型�
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `multiple-choice-english-easy` | 600 | 1563.53 | 908 | 2865 |
 | `multiple-choice-english-hard` | 600 | 1262.98 | 754 | 2348 |
@@ -79,7 +79,7 @@ Drivelology 叙事选择（Drivelology Narrative Selection）用于评估模型�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 

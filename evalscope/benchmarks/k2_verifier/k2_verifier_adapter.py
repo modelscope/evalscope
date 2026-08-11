@@ -55,7 +55,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
             'count_finish_reason_tool_calls',
             'count_successful_tool_call',
         ],
-        primary_metric=MetricSelector(name='schema_accuracy'),
+        primary_metric=MetricSelector(name='trigger_similarity'),
         aggregation='f1',
         subset_list=['k2_thinking'],
         eval_split='test',

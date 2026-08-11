@@ -96,11 +96,11 @@ run_task(task_cfg="config.json")
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 | Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
 +=======================+================+=================+=================+===============+=======+=========+
-| Qwen2.5-0.5B-Instruct | gsm8k          | AverageAccuracy | default         | main          |     5 |     0.4 |
+| Qwen2.5-0.5B-Instruct | gsm8k          | Accuracy ↑ | default | main          | 5 | 40% |
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
-| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Easy      |     5 |     0.8 |
+| Qwen2.5-0.5B-Instruct | ai2_arc        | Accuracy ↑ | default | ARC-Easy      | 5 | 80% |
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
-| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Challenge |     5 |     0.4 |
+| Qwen2.5-0.5B-Instruct | ai2_arc        | Accuracy ↑ | default | ARC-Challenge | 5 | 40% |
 +-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
 ```
 

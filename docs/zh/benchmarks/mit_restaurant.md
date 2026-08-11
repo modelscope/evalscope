@@ -2,7 +2,7 @@
 
 ## 概述
 
-MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别（NER）自然语言处理（NLP）模型的餐厅评论文本。该数据集包含来自真实评论的句子，并采用 BIO 格式进行标注。
+MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别（NER）NLP 模型的餐厅评论文本。该数据集包含来自真实评论的句子，并以 BIO 格式进行标注。
 
 ## 任务描述
 
@@ -14,10 +14,10 @@ MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别�
 ## 主要特点
 
 - 真实的餐厅评论句子
-- 采用 BIO 格式标注
-- 包含八种餐厅特定的实体类型
+- BIO 格式标注
+- 八种餐厅特定的实体类型
 - 适用于餐饮服务领域的 NLP 任务
-- 适配于对话式 AI 应用
+- 针对对话式 AI 应用进行了适配
 
 ## 评估说明
 
@@ -31,12 +31,13 @@ MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别�
 |----------|-------|
 | **基准测试名称** | `mit_restaurant` |
 | **数据集ID** | [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数** | 5-shot |
-| **评估分割** | `test` |
-| **训练分割** | `train` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认样本数** | 5-shot |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -84,7 +85,7 @@ MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别�
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -115,7 +116,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本（Few-shot）模板</summary>
+<summary>少样本模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -150,7 +151,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -158,7 +159,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mit_restaurant \
-    --limit 10  # 正式评估时请移除此行
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -172,7 +173,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mit_restaurant'],
-    limit=10,  # 正式评估时请移除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

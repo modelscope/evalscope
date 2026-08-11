@@ -14,7 +14,11 @@
       "boundary_precision",
       "distractor_leakage"
     ],
-    "primary_metric": "strict_pass",
+    "primary_metric": {
+      "name": "strict_pass",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -134,6 +138,6 @@
     "content_hash": "2151e29a336c1fb9ee066620cebb03cd",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:30.422102",
+  "updated_at": "2026-08-11T15:30:53.596821",
   "translation_updated_at": "2026-07-08T10:58:35"
 }

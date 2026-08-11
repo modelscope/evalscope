@@ -20,6 +20,7 @@ import {
   formatMetricLabels,
   getBoundedQualityRatio,
   getComparisonVerdict,
+  metricIdentityKey,
   roundHalfUp,
 } from './metricFormat'
 import { metricSemanticsSchema } from './MetricSemantics'
@@ -40,6 +41,37 @@ describe('formatMetricIdentityLabel', () => {
         ratioSemantics(),
       ),
     ).toBe('Accuracy ↑ · Answer · Overall · Yes')
+  })
+
+  it('places an overlap variant before its statistic', () => {
+    expect(
+      formatMetricIdentityLabel(
+        {
+          name: 'rouge',
+          aggregation: 'mean',
+          dimensions: { statistic: 'recall', variant: 'l' },
+        },
+        ratioSemantics(),
+      ),
+    ).toBe('Accuracy ↑ · L · Recall')
+  })
+})
+
+describe('metricIdentityKey', () => {
+  it('preserves dimension types and delimiter boundaries', () => {
+    const numeric = metricIdentityKey({ name: 'accuracy', aggregation: 'mean', dimensions: { k: 1 } })
+    const text = metricIdentityKey({ name: 'accuracy', aggregation: 'mean', dimensions: { k: '1' } })
+    const embedded = metricIdentityKey({ name: 'accuracy', aggregation: 'mean', dimensions: { a: 'x,b=y' } })
+    const separate = metricIdentityKey({ name: 'accuracy', aggregation: 'mean', dimensions: { a: 'x', b: 'y' } })
+
+    expect(numeric).not.toBe(text)
+    expect(embedded).not.toBe(separate)
+  })
+
+  it('normalizes negative zero like backend JSON scalar keys', () => {
+    expect(metricIdentityKey({ name: 'accuracy', aggregation: 'mean', dimensions: { value: -0 } })).toBe(
+      'accuracy:mean[value=0]',
+    )
   })
 })
 

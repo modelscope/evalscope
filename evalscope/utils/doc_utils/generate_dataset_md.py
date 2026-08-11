@@ -210,6 +210,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
     """Extract documentation metadata without instantiating the adapter."""
     from evalscope.api.benchmark.adapters import AgentLoopAdapter
 
+    serialized_primary_metric = meta.to_dict().get('primary_metric')
     agent_config = None
     if adapter_cls is not None and issubclass(adapter_cls, AgentLoopAdapter):
         agent_config = {
@@ -222,7 +223,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         'paper_url': getattr(meta, 'paper_url', None),
         'tags': list(getattr(meta, 'tags', [])) if getattr(meta, 'tags', None) else [],
         'metrics': list(getattr(meta, 'metric_list', [])) if getattr(meta, 'metric_list', None) else [],
-        'primary_metric': getattr(meta, 'primary_metric', None),
+        'primary_metric': serialized_primary_metric,
         'few_shot_num': getattr(meta, 'few_shot_num', 0),
         'eval_split': getattr(meta, 'eval_split', ''),
         'train_split': getattr(meta, 'train_split', '') or '',

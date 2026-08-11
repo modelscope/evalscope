@@ -38,7 +38,7 @@
 | **Dataset ID** | [tau-bench](https://github.com/sierra-research/tau-bench) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `Reasoning` |
-| **Metrics** | N/A |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `mean_and_pass_hat_k` |

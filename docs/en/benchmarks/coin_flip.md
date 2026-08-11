@@ -24,7 +24,7 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 - Default configuration uses **0-shot** evaluation
 - Answers should follow "ANSWER: YES/NO" format
 - Five metrics: accuracy, precision, recall, F1, yes_ratio
-- F1 score is the primary aggregation metric
+- Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
 - Supports few-shot evaluation with reasoning examples
 
 ## Properties
@@ -35,7 +35,7 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 | **Dataset ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |
 | **Paper** | N/A |
 | **Tags** | `Reasoning`, `Yes/No` |
-| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **Metrics** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `validation` |
@@ -44,38 +44,11 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 
 ## Data Statistics
 
-| Metric | Value |
-|--------|-------|
-| Total Samples | 3,333 |
-| Prompt Length (Mean) | 500.15 chars |
-| Prompt Length (Min/Max) | 453 / 551 chars |
+*Statistics not available.*
 
 ## Sample Example
 
-**Subset**: `default`
-
-```json
-{
-  "input": [
-    {
-      "id": "05503706",
-      "content": [
-        {
-          "text": "\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n"
-        }
-      ]
-    }
-  ],
-  "target": "NO",
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "answer": "NO"
-  }
-}
-```
-
-*Note: Some content was truncated for display.*
+*Sample example not available.*
 
 ## Prompt Template
 

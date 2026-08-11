@@ -41,7 +41,7 @@ MathVerse is an all-around visual math benchmark designed for equitable and in-d
 | **Dataset ID** | [evalscope/MathVerse](https://modelscope.cn/datasets/evalscope/MathVerse/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `testmini` |
 

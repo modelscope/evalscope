@@ -18,7 +18,7 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 - 主要指标：**准确率（Accuracy）**
 - 默认的 `action_antonym` 子集会下载一个小型公开 MP4 压缩包用于快速验证
 - 可通过设置 `subset_list` 参数指定额外的 MVBench 子集以进行完整基准评估
-- 对于带时间范围的记录，保留起始/结束时间元数据，并在提示词中添加简短的片段指令
+- 对于带时间范围的记录，保留起止时间元数据，并在提示词中添加简短的片段指令
 
 ## 属性
 
@@ -28,7 +28,7 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 | **数据集ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2311.17005) |
 | **标签** | `MCQ`, `MultiModal`, `Video` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 
@@ -72,7 +72,7 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 
 **提示模板：**
 ```text
-请回答以下多项选择题。你的回复最后一行应采用如下格式：'ANSWER: [LETTER]'（不含引号），其中 [LETTER] 是 {letters} 中的一个字母。请逐步思考后再作答。
+Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 

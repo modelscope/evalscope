@@ -7,23 +7,23 @@ GAIA（General AI Assistants）是一个包含 450 多个问题的基准测试�
 
 ## 任务描述
 
-- **任务类型**：工具使用型智能体（多轮交互）
+- **任务类型**：工具使用智能体（多轮交互）
 - **输入**：自然语言问题，可选附带一个引用附件文件（PDF / xlsx / 图像 / 音频 / ...）
 - **输出**：简短的最终答案（数字 / 短语 / 逗号分隔的列表）
 - **数据划分**：``validation``（答案公开）和 ``test``（答案私有 — 跳过评估）
 
 ## 核心特性
 
-- 基于 ReAct 智能体循环，内置单一 ``bash`` 工具，运行于 Docker 沙箱中（默认镜像为 ``python:3.11``，已预装 ``curl`` / ``wget`` / ``git``）。
-- 附件文件以只读方式挂载至沙箱内的 ``/shared_files`` 目录。
+- 基于 ReAct 智能体循环，内置单个 ``bash`` 工具，运行于 Docker 沙箱中（默认镜像为 ``python:3.11``，已预装 ``curl`` / ``wget`` / ``git``）。
+- 附件文件以只读方式挂载到沙箱内的 ``/shared_files`` 目录。
 - 评分器直接移植自官方 GAIA 排行榜的规则逻辑（不使用 LLM 作为评判）。
 - 默认从 ModelScope 下载数据集（``gaia-benchmark/GAIA``）；设置 ``dataset_hub='huggingface'`` 可改为从 Hugging Face 加载。
 
 ## 评估说明
 
 - 需要在本地运行 Docker 守护进程（或通过 ms_enclave 配置使用远程沙箱引擎）。
-- 智能体循环默认最多执行 50 步。可通过 ``NativeAgentConfig.max_steps`` 覆盖该设置。
-- 默认启用网络访问，因为许多问题需要网页浏览。可通过 ``TaskConfig.sandbox.default_config`` 覆盖镜像、网络、CPU 或内存等配置。
+- 智能体循环默认最多执行 50 步。可通过 ``NativeAgentConfig.max_steps`` 覆盖该值。
+- 默认启用网络访问，因为许多问题需要网页浏览。可通过 ``TaskConfig.sandbox.default_config`` 覆盖镜像、网络、CPU 或内存等设置。
 - 使用 ``subset_list`` 限制评估特定难度级别，例如 ``['2023_level1']``、``['2023_level1', '2023_level2']`` 或默认的 ``['2023_all']``。
 - [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/gaia.html)
 
@@ -36,7 +36,7 @@ GAIA（General AI Assistants）是一个包含 450 多个问题的基准测试�
 | **数据集ID** | [gaia-benchmark/GAIA](https://modelscope.cn/datasets/gaia-benchmark/GAIA/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `MultiTurn`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 
@@ -49,7 +49,7 @@ GAIA（General AI Assistants）是一个包含 450 多个问题的基准测试�
 | 提示词长度（平均） | 861.35 字符 |
 | 提示词长度（最小/最大） | 596 / 2582 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|

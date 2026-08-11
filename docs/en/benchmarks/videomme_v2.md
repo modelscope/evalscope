@@ -32,7 +32,7 @@ downloads, so it exercises the same reusable video benchmark path as MVBench.
 | **Dataset ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2604.05015) |
 | **Tags** | `MCQ`, `MultiModal`, `Video` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

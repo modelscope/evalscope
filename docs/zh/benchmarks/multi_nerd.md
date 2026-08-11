@@ -1,8 +1,9 @@
 # MultiNERD
 
+
 ## 概述
 
-MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识别（Named Entity Recognition, NER）数据集，通过维基百科（Wikipedia）和维基新闻（Wikinews）自动生成。该数据集涵盖 10 种语言和 15 个不同的实体类别。
+MultiNERD 是一个大规模、多语言、多领域的细粒度命名实体识别（Named Entity Recognition, NER）数据集，通过维基百科（Wikipedia）和维基新闻（Wikinews）自动生成。该数据集涵盖 10 种语言和 15 种不同的实体类别。
 
 ## 任务描述
 
@@ -11,7 +12,7 @@ MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识�
 - **输出**：识别出的实体片段及其对应的 15 种细粒度类型
 - **领域**：通用知识、新闻、百科类内容
 
-## 主要特性
+## 主要特点
 
 - 大规模自动构建的语料库
 - 支持 10 种语言
@@ -21,7 +22,7 @@ MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识�
 
 ## 评估说明
 
-- 默认配置使用 **5-shot** 评估方式
+- 默认配置采用 **5-shot** 评估方式
 - 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
 - 实体类型包括：PER（人物）、ORG（组织）、LOC（地点）、ANIM（动物）、BIO（生物）、CEL（细胞）、DIS（疾病）、EVE（事件）、FOOD（食物）、INST（机构）、MEDIA（媒体）、MYTH（神话）、PLANT（植物）、TIME（时间）、VEHI（交通工具）
 
@@ -31,12 +32,13 @@ MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识�
 |----------|-------|
 | **基准测试名称** | `multi_nerd` |
 | **数据集ID** | [extraordinarylab/multi-nerd](https://modelscope.cn/datasets/extraordinarylab/multi-nerd/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
-| **默认示例数量** | 5-shot |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
+| **默认示例数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
+
 
 ## 数据统计
 

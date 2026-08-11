@@ -12,20 +12,20 @@ Data-Collection 是一个灵活的框架，用于将多个评估数据集混合�
 - **输出**：跨任务、数据集和类别的聚合得分
 - **灵活性**：支持自定义数据集组合
 
-## 核心特性
+## 主要特性
 
 - 将多个基准测试混合为单一评估
-- 分层报告（子集、数据集、任务、标签、类别级别）
+- 分层报告（子集、数据集、任务、标签、类别层级）
 - 支持样本级加权
 - 为每个数据集自动初始化适配器
-- 全面的聚合方式（微观平均、宏观平均、加权平均）
+- 全面的聚合方式（微观、宏观、加权平均）
 
 ## 评估说明
 
 - 数据集必须预先编译为集合形式
 - 支持多种任务类型（选择题、问答、代码生成等）
-- 生成多层次报告以支持详细分析
-- 使用方法详见 [Collection Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
+- 生成多层次报告以供详细分析
+- 使用方法请参阅 [Collection Guide](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/collection/index.html)
 
 ## 属性
 
@@ -35,7 +35,7 @@ Data-Collection 是一个灵活的框架，用于将多个评估数据集混合�
 | **数据集ID** | N/A |
 | **论文** | N/A |
 | **标签** | `Custom` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

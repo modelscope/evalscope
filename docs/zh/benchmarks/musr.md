@@ -1,8 +1,9 @@
 # MuSR
 
+
 ## 概述
 
-MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事的问题来评估复杂推理能力的基准测试。它包含谋杀谜题、物品放置和团队分配等场景，要求模型进行多步推理。
+MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事的问题来评估复杂推理能力的基准测试。它包含谋杀谜题、物品位置追踪和团队分配等场景，要求模型进行多步推理。
 
 ## 任务描述
 
@@ -15,7 +16,7 @@ MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事�
 
 - 基于叙事的推理问题
 - 需要多步逻辑推理
-- 三个不同的推理领域
+- 包含三个不同的推理领域
 - 测试约束满足与演绎能力
 - 上下文较长，需仔细推理
 
@@ -24,8 +25,9 @@ MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事�
 - 默认配置使用 **0-shot** 评估
 - 使用思维链（Chain-of-Thought, CoT）提示
 - 包含三个子集：`murder_mysteries`、`object_placements`、`team_allocation`
-- 使用简单准确率（accuracy）作为指标
-- 是一个具有挑战性的基准，要求仔细阅读
+- 使用简单准确率作为评估指标
+- 是一个具有挑战性的基准测试，要求仔细阅读上下文
+
 
 ## 属性
 
@@ -35,9 +37,10 @@ MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事�
 | **数据集ID** | [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
+
 
 ## 数据统计
 
@@ -92,7 +95,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \

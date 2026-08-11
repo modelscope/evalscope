@@ -3,14 +3,14 @@
 
 ## 概述
 
-Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800 个视频、3,200 个多选问答样本，以及带有时间戳的词级字幕。该基准测试的原生适配器使用共享的 `DatasetHub` 抽象来加载标注数据并可选地下载媒体存档，因此其复用了与 MVBench 相同的可重用视频基准测试路径。
+Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800 个视频、3,200 个多选问答（QA）样本，以及带有时间戳的词级字幕。该基准测试的原生适配器使用共享的 `DatasetHub` 抽象来加载标注数据，并可选地下载媒体存档，因此其复用了与 MVBench 相同的可重用视频基准测试路径。
 
 ## 任务描述
 
-- **任务类型**：视频多选问答（Video multiple-choice question answering）
+- **任务类型**：视频多选问答（MCQ）
 - **输入**：视频 URL 或归档的 MP4 文件 + 问题 + 答案选项
 - **输出**：单个正确答案字母
-- **子集**：`all`、`level_1`、`level_2`、`level_3`、`logic`、`relevance`
+- **子集**：`all`, `level_1`, `level_2`, `level_3`, `logic`, `relevance`
 
 ## 评估说明
 
@@ -28,7 +28,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 | **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2604.05015) |
 | **标签** | `MCQ`, `MultiModal`, `Video` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
