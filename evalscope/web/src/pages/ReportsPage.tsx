@@ -121,8 +121,16 @@ export default function ReportsPage() {
   const total = listing.data?.total ?? 0
   const availableModels = listing.data?.filters.available_models ?? EMPTY_FACETS
   const availableDatasets = listing.data?.filters.available_datasets ?? EMPTY_FACETS
+  const scoreComparable = listing.data?.filters.score_comparable ?? false
   const loading = listing.loading
   const hasLoaded = listing.data !== undefined || Boolean(listing.error)
+
+  const visibleFilters = scoreComparable ? filters : {
+    ...filters,
+    scoreMin: 0,
+    scoreMax: 1,
+    sortBy: filters.sortBy === 'score' ? 'time' as const : filters.sortBy,
+  }
 
   // ---- Selection helpers ----
   const currentPageNames = useMemo(
@@ -217,9 +225,8 @@ export default function ReportsPage() {
       filters.search.trim() !== '' ||
       filters.models.length > 0 ||
       filters.datasets.length > 0 ||
-      filters.scoreMin > 0 ||
-      filters.scoreMax < 1,
-    [filters],
+      (scoreComparable && (filters.scoreMin > 0 || filters.scoreMax < 1)),
+    [filters, scoreComparable],
   )
   const emptyReason: EmptyReason = error ? 'load-error' : hasActiveFilters ? 'no-match' : 'no-data'
 
@@ -242,9 +249,10 @@ export default function ReportsPage() {
     <div className="page-enter mx-auto flex w-full max-w-7xl flex-col gap-5">
       {/* Filters */}
       <ReportFiltersBar
-        filters={filters}
+        filters={visibleFilters}
         availableModels={availableModels}
         availableDatasets={availableDatasets}
+        scoreComparable={scoreComparable}
         onChange={handleFiltersChange}
       />
 

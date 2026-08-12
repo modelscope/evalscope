@@ -207,9 +207,12 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         ) for r, metric in zip(report_list, primary_metrics) if metric
     ]
     quality_ratio = None
+    quality_group = None
     if len(report_list) == 1 and len(primary_metric_refs) == 1:
         metric = primary_metrics[0]
         quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
+        if quality_ratio is not None:
+            quality_group = (report_list[0].dataset_name, metric.semantics.semantic_id)
 
     return {
         'run_id': ref.run_id,
@@ -226,6 +229,7 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         # a low WER ranks as well as a high accuracy and a 0-100 scale is not treated as 100x
         # better than a ratio. `None` means the run's metrics admit no such scale.
         'quality_ratio': quality_ratio,
+        '_quality_group': quality_group,
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
     }
@@ -308,15 +312,15 @@ def list_reports():
             ds_set = {d.strip().lower() for d in datasets_filter.split(';') if d.strip()}
             items = [it for it in items if any(d.lower() in ds_set for d in it['_datasets'])]
 
-        # The range is expressed as a 0-1 quality ratio, not as a raw score. Filtering raw values
-        # against a fixed 0-1 window silently dropped every benchmark on an official 0-100 scale:
-        # arena_hard reporting 87.25 could never satisfy `score <= 1`. A run whose metrics are not
-        # rankable has no ratio and is excluded whenever a quality range is active.
+        # A normalized score is comparable only within one dataset and semantic contract. Applying
+        # it across unrelated benchmarks would manufacture a global leaderboard from unlike tasks.
+        quality_groups = {it['_quality_group'] for it in items}
+        score_comparable = bool(items) and None not in quality_groups and len(quality_groups) == 1
         score_min = request.args.get('score_min', type=float)
         score_max = request.args.get('score_max', type=float)
-        if score_min is not None:
+        if score_comparable and score_min is not None:
             items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] >= score_min]
-        if score_max is not None:
+        if score_comparable and score_max is not None:
             items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] <= score_max]
 
         # --- Sort ---
@@ -329,12 +333,11 @@ def list_reports():
             'dataset': lambda x: x['dataset_name'].lower(),
             'time': lambda x: x['timestamp'],
         }
-        if sort_by == 'score':
-            rankable = [item for item in items if item['quality_ratio'] is not None]
-            unrankable = [item for item in items if item['quality_ratio'] is None]
-            rankable.sort(key=lambda item: item['quality_ratio'], reverse=reverse)
-            items = rankable + unrankable
+        if sort_by == 'score' and score_comparable:
+            items.sort(key=lambda item: item['quality_ratio'], reverse=reverse)
         else:
+            if sort_by == 'score':
+                sort_by = 'time'
             key_fn = sort_key_map.get(sort_by, sort_key_map['time'])
             items.sort(key=key_fn, reverse=reverse)
 
@@ -348,6 +351,7 @@ def list_reports():
         # Strip internal keys before returning
         for it in page_items:
             it.pop('_datasets', None)
+            it.pop('_quality_group', None)
 
         return jsonify({
             'reports': page_items,
@@ -357,6 +361,7 @@ def list_reports():
             'filters': {
                 'available_models': available_models,
                 'available_datasets': available_datasets,
+                'score_comparable': score_comparable,
             },
         }), 200
 

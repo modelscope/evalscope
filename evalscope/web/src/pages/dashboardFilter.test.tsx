@@ -121,7 +121,7 @@ beforeEach(() => {
     total: 1,
     page: 1,
     page_size: 1000,
-    filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'] },
+    filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'], score_comparable: true },
   })
   vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
     runs: [PERF_RUN],
@@ -143,14 +143,14 @@ describe('dashboard kind tabs', () => {
         total: 2,
         page: 1,
         page_size: 100,
-        filters: { available_models: [], available_datasets: [] },
+        filters: { available_models: [], available_datasets: [], score_comparable: false },
       })
       .mockResolvedValueOnce({
         reports: [{ ...EVAL_REPORT, run_id: '20260809_112700' }],
         total: 2,
         page: 2,
         page_size: 100,
-        filters: { available_models: [], available_datasets: [] },
+        filters: { available_models: [], available_datasets: [], score_comparable: false },
       })
 
     await renderDashboard()
@@ -250,7 +250,7 @@ describe('dashboard kind tabs', () => {
       total: 2,
       page: 1,
       page_size: 1000,
-      filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'] },
+      filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'], score_comparable: true },
     })
 
     await renderDashboard()

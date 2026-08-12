@@ -72,6 +72,7 @@ def test_build_report_meta_exposes_primary_metric_identity(monkeypatch) -> None:
     }]
     assert metadata['dataset_name'] == 'throughput_suite'
     assert metadata['dataset_pretty_name'] == 'Throughput Suite'
+    assert metadata['_quality_group'] is None
     assert set(('metric_name', 'score', 'dataset_scores')).isdisjoint(metadata)
 
 
@@ -108,6 +109,7 @@ def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypat
     assert report.primary_metric.score == 0.9
     assert metadata['primary_metrics'][0]['identity'] == normalized_identity.model_dump()
     assert metadata['primary_metrics'][0]['score'] == 0.9
+    assert metadata['_quality_group'] == ('document_suite', 'quality.score.ratio')
     payload = _report_to_service_dict(report)
     assert payload['primary_metric_identity'] == normalized_identity.model_dump()
     assert set(('score', 'metric_name', 'dataset_scores')).isdisjoint(payload)
@@ -127,6 +129,7 @@ def test_build_report_meta_does_not_rank_multiple_datasets(monkeypatch) -> None:
 
     assert len(metadata['primary_metrics']) == 2
     assert metadata['quality_ratio'] is None
+    assert metadata['_quality_group'] is None
 
 
 def _semantic_report(dataset_name: str, score: float, semantic_id: str) -> Report:

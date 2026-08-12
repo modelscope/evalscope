@@ -47,13 +47,13 @@ const REPORT = {
   quality_ratio: 0.6,
 } as ReportSummary
 
-function page(reports: ReportSummary[]): ListReportsResponse {
+function page(reports: ReportSummary[], scoreComparable = true): ListReportsResponse {
   return {
     reports,
     total: reports.length,
     page: 1,
     page_size: 20,
-    filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'] },
+    filters: { available_models: ['qwen-plus'], available_datasets: ['gsm8k'], score_comparable: scoreComparable },
   }
 }
 
@@ -104,5 +104,13 @@ describe('ReportsPage', () => {
     await renderReports()
 
     expect(screen.getByText(/list down/i)).toBeInTheDocument()
+  })
+
+  it('disables score controls for incomparable report groups', async () => {
+    vi.mocked(reportsApi.listReports).mockResolvedValue(page([REPORT], false))
+    await renderReports()
+
+    expect(screen.getAllByRole('spinbutton').every((input) => input.hasAttribute('disabled'))).toBe(true)
+    expect(screen.queryByRole('option', { name: 'Score' })).not.toBeInTheDocument()
   })
 })

@@ -151,6 +151,7 @@ export const listReportsResponseSchema = z.object({
   filters: z.object({
     available_models: z.array(z.string()),
     available_datasets: z.array(z.string()),
+    score_comparable: z.boolean(),
   }),
 })
 
