@@ -122,7 +122,7 @@ class MeanPassAtK(Aggregator):
                 pass_at_n_maps[n] = {gid: float(v) for gid, v in zip(group_order, pass_at_n_list)}
 
             for n in range(1, k + 1):
-                values = [pass_at_n_maps[n][getattr(s, 'group_id', s.sample_id)] for s in scores]
+                values = list(pass_at_n_maps[n].values())
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -130,7 +130,7 @@ class MeanPassAtK(Aggregator):
                         aggregation='pass_at_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=[s.sample_id for s in scores],
+                        ids=group_order,
                     )
                 )
 
@@ -213,7 +213,7 @@ class MeanVoteAtK(Aggregator):
                     vote_at_n_maps[n][group_id] = 1.0 if is_correct else 0.0
 
             for n in range(1, k + 1):
-                values = [vote_at_n_maps[n][getattr(score, 'group_id', score.sample_id)] for score in scores]
+                values = list(vote_at_n_maps[n].values())
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -221,7 +221,7 @@ class MeanVoteAtK(Aggregator):
                         aggregation='vote_at_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=[score.sample_id for score in scores],
+                        ids=list(group_samples),
                     )
                 )
 
@@ -276,7 +276,7 @@ class MeanPassHatK(Aggregator):
                     pass_hat_n_maps[n][gid] = float(calculate_pass_hat_k(total, correct, n))
 
             for n in range(1, k + 1):
-                values = [pass_hat_n_maps[n][getattr(s, 'group_id', s.sample_id)] for s in scores]
+                values = list(pass_hat_n_maps[n].values())
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -284,7 +284,7 @@ class MeanPassHatK(Aggregator):
                         aggregation='pass_hat_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=[s.sample_id for s in scores],
+                        ids=list(group_values),
                     )
                 )
 

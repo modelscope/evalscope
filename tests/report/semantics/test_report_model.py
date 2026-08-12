@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
@@ -357,6 +358,24 @@ def test_agg_score_does_not_reinterpret_valid_ambiguous_names(metric_name: str) 
     score = AggScore(score=1.0, metric_name=metric_name, aggregation='mean')
 
     assert score.identity == MetricIdentity(name=metric_name, aggregation='mean')
+
+
+@pytest.mark.parametrize(
+    'fields',
+    [
+        {
+            'aggregation': '!!!'
+        },
+        {
+            'aggregation': 'mean', 'dimensions': {
+                'Invalid Key': 1
+            }
+        },
+    ],
+)
+def test_agg_score_rejects_invalid_explicit_structure(fields) -> None:
+    with pytest.raises(ValidationError):
+        AggScore(score=1.0, metric_name='accuracy', **fields)
 
 
 def test_agg_score_only_normalizes_overlap_metric_syntax() -> None:

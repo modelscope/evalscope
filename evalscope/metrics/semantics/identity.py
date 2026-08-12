@@ -6,7 +6,6 @@ resolver.
 """
 
 import re
-from pydantic import ValidationError
 from typing import Callable, Dict, FrozenSet, Match, NamedTuple, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
@@ -66,17 +65,16 @@ def canonicalize_producer_identity(
     identity_dimensions = dict(dimensions or {})
 
     try:
-        return MetricIdentity(
-            name=canonical_name,
-            aggregation=canonical_aggregation,
-            dimensions=identity_dimensions,
-        )
-    except (ValueError, ValidationError):
-        return MetricIdentity(
-            name='legacy_metric',
-            aggregation=canonical_aggregation or 'identity',
-            dimensions={**identity_dimensions, 'original_name': original_name},
-        )
+        MetricIdentity(name=canonical_name, aggregation='identity')
+    except ValueError:
+        canonical_name = 'legacy_metric'
+        identity_dimensions['original_name'] = original_name
+
+    return MetricIdentity(
+        name=canonical_name,
+        aggregation=canonical_aggregation,
+        dimensions=identity_dimensions,
+    )
 
 
 class _BenchmarkRule(NamedTuple):

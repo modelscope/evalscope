@@ -38,4 +38,20 @@ def test_k_aggregators_emit_structured_identities_without_mutating_samples(
         MetricIdentity(name='accuracy', aggregation=aggregation, dimensions={'k': 2}),
     ]
     assert [aggregate.score for aggregate in structured] == pytest.approx(expected)
+    assert [aggregate.num for aggregate in structured] == [2, 2]
     assert all(list(sample.score.value) == ['accuracy'] for sample in scores)
+
+
+def test_pass_at_k_averages_unique_groups_instead_of_weighting_repetitions() -> None:
+    scores = [
+        SampleScore(sample_id=0, group_id='short', score=Score(value={'accuracy': 1})),
+        SampleScore(sample_id=1, group_id='long', score=Score(value={'accuracy': 0})),
+        SampleScore(sample_id=2, group_id='long', score=Score(value={'accuracy': 0})),
+    ]
+
+    aggregates = MeanPassAtK()(scores)
+    pass_at_1 = next(aggregate for aggregate in aggregates if aggregate.aggregation == 'pass_at_k')
+
+    assert pass_at_1.score == pytest.approx(0.5)
+    assert pass_at_1.num == 2
+    assert pass_at_1.ids == ['short', 'long']
