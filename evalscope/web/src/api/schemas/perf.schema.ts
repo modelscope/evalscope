@@ -75,7 +75,7 @@ export const perfRunItemSchema = z.object({
   name: z.string(),
   parallel: z.number(),
   number: z.number(),
-  rate: z.number().nullable(),
+  rate: z.number().nullish(),
   total_requests: z.number(),
   succeed_requests: z.number(),
   success_rate: z.number(),

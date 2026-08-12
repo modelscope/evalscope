@@ -48,7 +48,7 @@ export const benchmarkEntrySchema = z.object({
   total_samples: z.number(),
   few_shot_num: z.number(),
   dataset_id: z.string(),
-  paper_url: z.string().nullable(),
+  paper_url: z.string().nullish(),
   metrics: z.array(z.string()),
   meta: z.record(z.string(), z.unknown()),
   description: z.object({
