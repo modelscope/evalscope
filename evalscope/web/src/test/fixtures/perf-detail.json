@@ -30,13 +30,12 @@
       "semantics": {
         "semantic_id": "perf.throughput.requests_per_second",
         "metric_name": "Request Throughput",
-        "role": "auxiliary",
+        "kind": "quality",
         "direction": "higher_is_better",
         "raw_unit": "req/s",
         "display_kind": "number",
         "display_unit": "req/s",
-        "display_precision": 2,
-        "contract_version": 1
+        "display_precision": 2
       }
     },
     {
@@ -45,13 +44,12 @@
       "semantics": {
         "semantic_id": "perf.latency.seconds",
         "metric_name": "Latency",
-        "role": "auxiliary",
+        "kind": "quality",
         "direction": "lower_is_better",
         "raw_unit": "s",
         "display_kind": "number",
         "display_unit": "s",
-        "display_precision": 3,
-        "contract_version": 1
+        "display_precision": 3
       }
     },
     {
@@ -60,13 +58,12 @@
       "semantics": {
         "semantic_id": "perf.throughput.tokens_per_second",
         "metric_name": "Token Throughput",
-        "role": "auxiliary",
+        "kind": "quality",
         "direction": "higher_is_better",
         "raw_unit": "tok/s",
         "display_kind": "number",
         "display_unit": "tok/s",
-        "display_precision": 2,
-        "contract_version": 1
+        "display_precision": 2
       }
     },
     {
@@ -75,14 +72,13 @@
       "semantics": {
         "semantic_id": "quality.score.points_100",
         "metric_name": "Success Rate",
-        "role": "auxiliary",
+        "kind": "quality",
         "direction": "higher_is_better",
         "value_range": { "min": 0, "max": 100 },
         "display_kind": "percent",
         "display_multiplier": 1,
         "display_unit": "%",
-        "display_precision": 1,
-        "contract_version": 1
+        "display_precision": 1
       }
     }
   ],

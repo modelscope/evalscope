@@ -54,14 +54,13 @@ export function datasetLabel(dataset: { dataset_name: string; dataset_pretty_nam
 export const RATIO_PERCENT_SEMANTICS: MetricSemantics = {
   semantic_id: 'quality.score.ratio',
   metric_name: 'Score',
-  role: 'auxiliary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 1 },
   display_kind: 'percent',
   display_multiplier: 100,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 /**

@@ -139,7 +139,6 @@ export const reportSummarySchema = z.object({
   num_samples: z.number(),
   timestamp: z.string(),
   primary_metrics: z.array(primaryMetricRefSchema),
-  quality_ratio: z.number().nullable(),
 })
 
 /** Runtime contract for a paginated report list. */
@@ -151,7 +150,6 @@ export const listReportsResponseSchema = z.object({
   filters: z.object({
     available_models: z.array(z.string()),
     available_datasets: z.array(z.string()),
-    score_comparable: z.boolean(),
   }),
 })
 

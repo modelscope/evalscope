@@ -42,14 +42,13 @@ describe('PerfMetricsPanel missing statistics', () => {
     perfMetrics.metric_semantics.latency = {
         semantic_id: 'perf.latency.seconds',
         metric_name: 'Latency',
-        role: 'primary',
+        kind: 'quality',
         direction: 'lower_is_better',
         raw_unit: 's',
         display_kind: 'number',
         display_multiplier: 1000,
         display_unit: 'ms',
         display_precision: 1,
-        contract_version: 1,
     }
 
     render(

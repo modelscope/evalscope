@@ -15,15 +15,19 @@ from pathlib import Path
 from typing import Dict, List, Set
 
 import evalscope  # noqa: F401  # imported for its registration side effects
-from evalscope.api.metric.semantics import KNOWN_AGGREGATIONS
+from evalscope.api.benchmark.adapters.text2image_adapter import T2I_REPORT_METRIC_NAMES
+from evalscope.api.metric.semantics import KNOWN_AGGREGATIONS, MetricIdentity
 from evalscope.api.registry import BENCHMARK_REGISTRY, METRIC_REGISTRY
 from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS, METRIC_NAME_TABLE_LOCATION
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.identity import canonicalize_producer_identity, migrate_legacy_identity
+from evalscope.metrics.semantics.resolver import get_semantics_resolver
 
 
 def _canonical_metric_name(registered_name: str) -> str:
-    """Canonical report metric name a registered metric resolves to."""
-    return migrate_legacy_identity(registered_name, 'mean').name
+    """Canonical report metric name produced by a registered scorer."""
+    if registered_name in T2I_REPORT_METRIC_NAMES:
+        return T2I_REPORT_METRIC_NAMES[registered_name]
+    return canonicalize_producer_identity(registered_name, 'mean').name
 
 
 class TestRegisteredMetricsHaveSemantics:
@@ -45,6 +49,26 @@ class TestRegisteredMetricsHaveSemantics:
         monkeypatch.delitem(METRIC_DEFINITIONS, _canonical_metric_name('accuracy'))
         with pytest.raises(AssertionError, match='no declared semantics'):
             self.test_no_registered_metric_falls_back_to_diagnostic()
+
+    def test_every_builtin_primary_selector_resolves_to_declared_semantics(self) -> None:
+        resolver = get_semantics_resolver()
+        undeclared = []
+        for benchmark_name, meta in sorted(BENCHMARK_REGISTRY.items()):
+            selector = meta.primary_metric
+            if selector is None:
+                continue
+            identity = MetricIdentity(
+                name=selector.name,
+                aggregation=selector.aggregation or 'identity',
+                dimensions=selector.dimensions,
+            )
+            if resolver.resolve(benchmark_name, identity).degraded:
+                undeclared.append(f'{benchmark_name} -> {identity.key}')
+
+        assert undeclared == [], (
+            'these built-in primary selectors resolve to diagnostic semantics and cannot generate '
+            f'a primary report metric: {undeclared}; declare them at {METRIC_NAME_TABLE_LOCATION}'
+        )
 
 
 class TestAggregationAxisVocabulary:

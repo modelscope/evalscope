@@ -51,22 +51,20 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
   const latencySemantics = {
     semantic_id: 'perf.latency.seconds',
     metric_name: 'Latency',
-    role: 'auxiliary' as const,
+    kind: 'quality' as const,
     direction: 'lower_is_better' as const,
     display_kind: 'number' as const,
     display_unit: 's',
     display_precision: 2,
-    contract_version: 1,
   }
   const throughputSemantics = {
     semantic_id: 'perf.throughput.tokens_per_second',
     metric_name: 'Output Throughput',
-    role: 'auxiliary' as const,
+    kind: 'quality' as const,
     direction: 'higher_is_better' as const,
     display_kind: 'number' as const,
     display_unit: 'tok/s',
     display_precision: 2,
-    contract_version: 1,
   }
   const columns: PerfDetailResponse['summary_columns'] = [
     { key: 'avg_latency', label: 'Average latency (s)', semantics: latencySemantics },

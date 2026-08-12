@@ -30,9 +30,7 @@ export async function listReports(params: {
   search?: string
   models?: string[]
   datasets?: string[]
-  scoreMin?: number
-  scoreMax?: number
-  sortBy?: 'score' | 'model' | 'dataset' | 'time'
+  sortBy?: 'model' | 'dataset' | 'time'
   sortOrder?: 'asc' | 'desc'
   page?: number
   pageSize?: number
@@ -45,8 +43,6 @@ export async function listReports(params: {
       search: params.search,
       models: params.models?.join(';'),
       datasets: params.datasets?.join(';'),
-      score_min: params.scoreMin,
-      score_max: params.scoreMax,
       sort_by: params.sortBy,
       sort_order: params.sortOrder,
       page: params.page,

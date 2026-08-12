@@ -18,14 +18,13 @@ import { RATIO_PERCENT_SEMANTICS } from './primaryMetrics'
 const POINTS_100: MetricSemantics = {
   semantic_id: 'quality.score.points_100',
   metric_name: 'Score',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 100 },
   display_kind: 'percent',
   display_multiplier: 1,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 /** WER: a bounded ratio where lower is better. */
@@ -63,12 +62,11 @@ describe('native scales are preserved', () => {
     const judge: MetricSemantics = {
       semantic_id: 'quality.judge_score.unbounded',
       metric_name: 'Judge Score',
-      role: 'primary',
+      kind: 'quality',
       direction: 'higher_is_better',
       value_range: null,
       display_kind: 'number',
       display_precision: 2,
-      contract_version: 1,
     }
 
     expect(getBoundedQualityRatio(7.5, judge)).toBeNull()

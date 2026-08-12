@@ -4,7 +4,10 @@ from pydantic import ValidationError
 from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
-from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector
+from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector
+from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
+from evalscope.metrics.semantics.entry import MetricEntry
+from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
 from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Report
 
@@ -40,7 +43,7 @@ def test_generator_groups_by_identity_and_selects_primary() -> None:
     report = _report()
     assert [metric.identity.name for metric in report.metrics] == ['f1', 'precision']
     assert report.primary_metric_identity == MetricIdentity(name='f1', aggregation='mean')
-    assert [metric.role for metric in report.metrics] == [MetricRole.PRIMARY, MetricRole.AUXILIARY]
+    assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
 
 
 def test_generator_preserves_scores() -> None:
@@ -48,7 +51,7 @@ def test_generator_preserves_scores() -> None:
     assert [metric.score for metric in report.metrics] == [0.8, 0.75]
 
 
-def test_collection_report_keeps_mixed_metrics_auxiliary() -> None:
+def test_collection_report_keeps_mixed_metrics_without_primary() -> None:
     report = ReportGenerator.gen_collection_report(
         pd.DataFrame([
             {
@@ -71,7 +74,7 @@ def test_collection_report_keeps_mixed_metrics_auxiliary() -> None:
     )
 
     assert [metric.identity.name for metric in report.metrics] == ['accuracy', 'f1']
-    assert [metric.role for metric in report.metrics] == [MetricRole.AUXILIARY, MetricRole.AUXILIARY]
+    assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
     assert report.primary_metric is None
     assert report.primary_metric_identity is None
 
@@ -141,8 +144,69 @@ def test_v1_report_migrates_without_changing_values() -> None:
     })
     assert report.metrics[0].score == 0.8
     assert report.metrics[0].identity == MetricIdentity(name='f1', aggregation='mean')
-    assert report.metrics[0].semantics.role is MetricRole.PRIMARY
+    assert report.metrics[0].semantics.kind is MetricKind.QUALITY
+    assert report.primary_metric_identity == report.metrics[0].identity
     assert 'name' not in report.to_dict()['metrics'][0]
+
+
+@pytest.mark.parametrize(('legacy_name', 'entry'), sorted(LEGACY_METRIC_MIGRATIONS.items()))
+def test_every_legacy_manifest_entry_keeps_its_declared_semantics(legacy_name: str, entry: MetricEntry) -> None:
+    report = Report.from_dict({
+        'dataset_name': 'legacy_manifest_test',
+        'metrics': [{
+            'name': legacy_name,
+            'score': 0.73,
+            'categories': [],
+        }],
+    })
+
+    metric = report.metrics[0]
+    expected = entry.resolve(metric.identity.name)
+    assert metric.identity == migrate_legacy_report_identity(legacy_name, 'legacy_manifest_test')
+    assert metric.semantics == expected
+    expected_primary = None if expected.kind is MetricKind.DIAGNOSTIC else metric.identity
+    assert report.primary_metric_identity == expected_primary
+
+
+def test_legacy_vqa_score_keeps_unbounded_model_score_semantics() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'genai_bench',
+        'metrics': [{
+            'name': 'VQAScore',
+            'score': 0.73,
+            'categories': [],
+        }],
+    })
+
+    metric = report.metrics[0]
+    assert metric.identity == MetricIdentity(name='vqa_model_score', aggregation='identity')
+    assert metric.score == 0.73
+    assert metric.semantics.semantic_id == 'quality.model_score.unbounded'
+    assert metric.semantics.value_range is None
+    assert metric.semantics.kind is MetricKind.QUALITY
+    assert report.primary_metric_identity == metric.identity
+
+
+def test_legacy_and_v2_error_rate_keep_distinct_semantics() -> None:
+    legacy_report = Report.from_dict({
+        'dataset_name': 'legacy_parser',
+        'metrics': [{
+            'name': 'error_rate',
+            'score': 0.2,
+            'categories': [],
+        }],
+    })
+    current_report = ReportGenerator.generate_report(
+        {'test': [AggScore(score=0.2, metric_name='error_rate', aggregation='mean', num=1)]},
+        'model',
+        _StubAdapter('current_benchmark'),
+    )
+
+    assert legacy_report.metrics[0].semantics.semantic_id == 'diagnostic.parse_status.ratio'
+    assert legacy_report.metrics[0].semantics.kind is MetricKind.DIAGNOSTIC
+    assert current_report.metrics[0].semantics.semantic_id == 'quality.error_rate.ratio'
+    assert current_report.metrics[0].semantics.kind is MetricKind.QUALITY
+    assert current_report.primary_metric_identity == current_report.metrics[0].identity
 
 
 def test_unknown_legacy_metric_is_preserved_as_diagnostic() -> None:
@@ -157,7 +221,7 @@ def test_unknown_legacy_metric_is_preserved_as_diagnostic() -> None:
     metric = report.metrics[0]
     assert metric.legacy_name == 'vendor_metric'
     assert metric.score == 3.5
-    assert metric.role is MetricRole.DIAGNOSTIC
+    assert metric.semantics.kind is MetricKind.DIAGNOSTIC
     assert report.primary_metric is None
 
 
@@ -176,7 +240,7 @@ def test_unknown_noncanonical_legacy_name_uses_isolated_diagnostic_identity() ->
         name='legacy_metric', aggregation='identity', dimensions={'original_name': 'Vendor Metric @ 1'}
     )
     assert metric.legacy_name == 'Vendor Metric @ 1'
-    assert metric.role is MetricRole.DIAGNOSTIC
+    assert metric.semantics.kind is MetricKind.DIAGNOSTIC
 
 
 def test_unknown_valid_third_party_identity_can_be_written_as_diagnostic() -> None:
@@ -186,7 +250,7 @@ def test_unknown_valid_third_party_identity_can_be_written_as_diagnostic() -> No
         _StubAdapter('third_party'),
     )
     assert report.metrics[0].identity.name == 'vendor_metric'
-    assert report.metrics[0].role is MetricRole.DIAGNOSTIC
+    assert report.metrics[0].semantics.kind is MetricKind.DIAGNOSTIC
     assert report.primary_metric_identity is None
 
 
@@ -295,7 +359,14 @@ def test_agg_score_degrades_unknown_non_canonical_names(metric_name: str, expect
 
 @pytest.mark.parametrize(
     ('metric_name', 'canonical_name'),
-    [('acc', 'accuracy'), ('ACC', 'accuracy'), ('f1_score', 'f1'), ('F1', 'f1'), ('em', 'exact_match')],
+    [
+        ('acc', 'accuracy'),
+        ('ACC', 'accuracy'),
+        ('bertscore', 'bert_score'),
+        ('f1_score', 'f1'),
+        ('F1', 'f1'),
+        ('em', 'exact_match'),
+    ],
 )
 def test_agg_score_accepts_only_safe_producer_aliases(metric_name: str, canonical_name: str) -> None:
     score = AggScore(score=0.5, metric_name=metric_name, aggregation='mean')

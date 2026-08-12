@@ -73,7 +73,7 @@ export function formatMetricLabel(
   finalMetricName: string,
   semantics: MetricSemantics | null | undefined,
 ): string {
-  if (!semantics || semantics.role === 'diagnostic') return finalMetricName
+  if (!semantics || semantics.kind === 'diagnostic') return finalMetricName
   return `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd()
 }
 
@@ -83,7 +83,7 @@ export function formatMetricIdentityLabel(
   semantics: MetricSemantics | null | undefined,
   legacyName?: string | null,
 ): string {
-  if (!semantics || semantics.role === 'diagnostic') return legacyName || metricIdentityKey(identity)
+  if (!semantics || semantics.kind === 'diagnostic') return legacyName || metricIdentityKey(identity)
   const base = formatMetricLabel(identity.name, semantics)
   const dimensionOrder: Record<string, number> = {
     target: 0,
@@ -198,7 +198,7 @@ export function formatMetric(
   value: number | null | undefined,
   semantics: MetricSemantics | null | undefined,
 ): FormattedMetric {
-  const isDiagnosticFallback = !semantics || semantics.role === 'diagnostic'
+  const isDiagnosticFallback = !semantics || semantics.kind === 'diagnostic'
 
   if (isMissingValue(value)) {
     return {
@@ -290,7 +290,7 @@ export function getValuePosition(
   if (isMissingValue(value) || !semantics) {
     return null
   }
-  if (semantics.role === 'diagnostic' || semantics.direction === 'none') {
+  if (semantics.kind === 'diagnostic' || semantics.direction === 'none') {
     return null
   }
   const range = semantics.value_range
@@ -328,7 +328,7 @@ export function formatDifference(
   return formatMetric(scaled, {
     ...semantics,
     metric_name: 'Change',
-    role: 'diagnostic',
+    kind: 'diagnostic',
     direction: 'none',
     display_kind: 'number',
     display_unit: 'pp',
@@ -351,7 +351,7 @@ export type ComparisonVerdict = 'better' | 'worse' | 'equal' | 'incomparable'
  * @returns The verdict.
  */
 export function getComparisonVerdict(delta: number, semantics: MetricSemantics | null | undefined): ComparisonVerdict {
-  if (!semantics || semantics.role === 'diagnostic') {
+  if (!semantics || semantics.kind === 'diagnostic') {
     return 'incomparable'
   }
   const direction: MetricDirection = semantics.direction

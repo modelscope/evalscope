@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 /** Runtime and TypeScript mirror of the backend `MetricSemantics` contract. */
 
-/** Display tier of a metric and whether it may take part in verdicts. */
-export const metricRoleSchema = z.enum(['primary', 'auxiliary', 'diagnostic'])
-export type MetricRole = z.infer<typeof metricRoleSchema>
+/** Whether a metric grades quality or only describes a run. */
+export const metricKindSchema = z.enum(['quality', 'diagnostic'])
+export type MetricKind = z.infer<typeof metricKindSchema>
 
 /** Optimization direction of a metric. */
 export const metricDirectionSchema = z.enum(['higher_is_better', 'lower_is_better', 'none'])
@@ -22,7 +22,7 @@ export type ValueRange = z.infer<typeof valueRangeSchema>
 export const metricSemanticsSchema = z.object({
   semantic_id: z.string(),
   metric_name: z.string(),
-  role: metricRoleSchema,
+  kind: metricKindSchema,
   direction: metricDirectionSchema,
   raw_unit: z.string().nullable().optional(),
   value_range: valueRangeSchema.nullable().optional(),
@@ -30,7 +30,6 @@ export const metricSemanticsSchema = z.object({
   display_multiplier: z.number().nullable().optional(),
   display_unit: z.string().nullable().optional(),
   display_precision: z.number(),
-  contract_version: z.number(),
 })
 
 export type MetricSemantics = z.infer<typeof metricSemanticsSchema>

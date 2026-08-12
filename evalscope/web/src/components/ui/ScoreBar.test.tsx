@@ -10,14 +10,13 @@ afterEach(cleanup)
 const RATIO: MetricSemantics = {
   semantic_id: 'quality.score.ratio',
   metric_name: 'Accuracy',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 1 },
   display_kind: 'percent',
   display_multiplier: 100,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 /** Bounded metric where a low value is the good one. */
@@ -32,14 +31,13 @@ const ERROR_RATE: MetricSemantics = {
 const THROUGHPUT: MetricSemantics = {
   semantic_id: 'perf.throughput.tokens_per_second',
   metric_name: 'Token Throughput',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: null,
   display_kind: 'number',
   display_multiplier: 1,
   display_unit: 't/s',
   display_precision: 1,
-  contract_version: 1,
 }
 
 describe('ScoreBar', () => {

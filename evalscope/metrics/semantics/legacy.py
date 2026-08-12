@@ -41,8 +41,8 @@ LEGACY_METRIC_ALIASES: Dict[str, LegacyMetricAlias] = {
     'total_other_time_s': LegacyMetricAlias('total_other_time'),
     'HPSv2.1Score': LegacyMetricAlias('hps_v2_1_score', 'quality.model_score.unbounded'),
     'PickScore': LegacyMetricAlias('pick_score', 'quality.model_score.unbounded'),
-    # Historical VQAScore is a model score; canonical `vqa_score` now denotes a bounded score.
-    'VQAScore': LegacyMetricAlias('vqa_score', 'quality.model_score.unbounded'),
+    # Historical VQAScore is a model score; canonical `vqa_score` denotes bounded VQA accuracy.
+    'VQAScore': LegacyMetricAlias('vqa_model_score', 'quality.model_score.unbounded'),
 }
 
 __all__ = ['LEGACY_METRIC_ALIASES', 'LegacyMetricAlias']

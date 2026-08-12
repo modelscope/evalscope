@@ -119,12 +119,11 @@ export function classifySampleSize(n: number): SampleTier {
 const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
   semantic_id: 'diagnostic.unspecified',
   metric_name: 'Change',
-  role: 'diagnostic',
+  kind: 'diagnostic',
   direction: 'none',
   display_kind: 'number',
   display_unit: '%',
   display_precision: 2,
-  contract_version: 1,
 }
 
 type SummaryRow = PerfDetailResponse['summary_rows'][number]

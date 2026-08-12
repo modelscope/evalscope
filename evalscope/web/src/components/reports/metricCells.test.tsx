@@ -17,14 +17,13 @@ import type { MetricSemantics } from '@/domain/metric'
 const ACCURACY: MetricSemantics = {
   semantic_id: 'quality.accuracy.ratio',
   metric_name: 'Accuracy',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 1 },
   display_kind: 'percent',
   display_multiplier: 100,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 const F1: MetricSemantics = {
@@ -43,12 +42,11 @@ const WER: MetricSemantics = {
 const LATENCY: MetricSemantics = {
   semantic_id: 'perf.latency.seconds',
   metric_name: 'Latency',
-  role: 'primary',
+  kind: 'quality',
   direction: 'lower_is_better',
   display_kind: 'number',
   display_unit: 's',
   display_precision: 3,
-  contract_version: 1,
 }
 
 function ref(overrides: Partial<PrimaryMetricRef> = {}): PrimaryMetricRef {

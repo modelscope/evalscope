@@ -7,36 +7,33 @@ import { buildCompareModel, classifySampleSize } from './deltaModel'
 const LATENCY: MetricSemantics = {
   semantic_id: 'perf.latency.seconds',
   metric_name: 'Latency',
-  role: 'auxiliary',
+  kind: 'quality',
   direction: 'lower_is_better',
   display_kind: 'number',
   display_unit: 's',
   display_precision: 2,
-  contract_version: 1,
 }
 
 const THROUGHPUT: MetricSemantics = {
   semantic_id: 'perf.throughput.requests_per_second',
   metric_name: 'Request Throughput',
-  role: 'auxiliary',
+  kind: 'quality',
   direction: 'higher_is_better',
   display_kind: 'number',
   display_unit: 'req/s',
   display_precision: 2,
-  contract_version: 1,
 }
 
 const SUCCESS: MetricSemantics = {
   semantic_id: 'quality.score.points_100',
   metric_name: 'Success Rate',
-  role: 'auxiliary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 100 },
   display_kind: 'percent',
   display_multiplier: 1,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 type SummaryColumn = PerfDetailResponse['summary_columns'][number]

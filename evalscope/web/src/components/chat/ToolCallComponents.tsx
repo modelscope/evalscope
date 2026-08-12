@@ -5,7 +5,6 @@ import Collapsible from '@/components/ui/Collapsible'
 import { bubbleAccent, bubbleBorder } from '@/components/ui/ChatBubble'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText, argsPreview } from '@/domain/chat/messageText'
-import type { ToolCallEntry } from '@/domain/trace/stepGroups'
 
 /** Strip vendor prefixes (e.g. `toolu_` from Anthropic) and keep the unique tail. */
 function shortToolId(id: string): string {
@@ -57,8 +56,13 @@ export function ToolObservation({ msg }: { msg: ChatMessage }) {
 
 /* ─── ToolCallEntry / ToolCallsGroup / ToolCallEntryRow ─────── */
 
-/** Re-exported so call sites keep importing the entry type next to its renderer. */
-export type { ToolCallEntry } from '@/domain/trace/stepGroups'
+export interface ToolCallEntry {
+  id: string
+  function: string
+  arguments: unknown
+  result?: ChatMessage
+  latencyMs?: number | null
+}
 
 export function ToolCallsGroup({ calls }: { calls: ToolCallEntry[] }) {
   const { t } = useLocale()

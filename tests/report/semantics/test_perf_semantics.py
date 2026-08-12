@@ -9,7 +9,7 @@
 import pytest
 from typing import Dict, FrozenSet
 
-from evalscope.api.metric.semantics import MetricDirection, MetricRole
+from evalscope.api.metric.semantics import MetricDirection, MetricKind
 from evalscope.metrics.semantics import attach_perf_semantics, format_perf_value, resolve_perf_semantics
 from evalscope.metrics.semantics.perf import PERF_API_ALIASES, PERF_SEMANTICS
 from evalscope.metrics.semantics.resolver import SemanticsResolver
@@ -105,7 +105,7 @@ class TestPerfDiagnostics:
     def test_field_is_diagnostic(self, field_key: str) -> None:
         semantics = PERF_SEMANTICS[field_key].resolve(field_key)
 
-        assert semantics.role is MetricRole.DIAGNOSTIC
+        assert semantics.kind is MetricKind.DIAGNOSTIC
         assert semantics.direction is MetricDirection.NONE
 
 
@@ -122,7 +122,7 @@ class TestResolvePerfField:
         resolved = SemanticsResolver().resolve_perf_field('Some Vendor Extension')
 
         assert resolved.degraded
-        assert resolved.semantics.role is MetricRole.DIAGNOSTIC
+        assert resolved.semantics.kind is MetricKind.DIAGNOSTIC
         assert 'PERF_SEMANTICS' in '\n'.join(resolved.audit_messages)
 
 

@@ -6,7 +6,7 @@ from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.identity import canonicalize_producer_identity
-from evalscope.metrics.semantics.resolver import attribute_metric_roles
+from evalscope.metrics.semantics.resolver import select_primary_identity
 from evalscope.report.report import *
 
 if TYPE_CHECKING:
@@ -186,4 +186,5 @@ class ReportGenerator:
             resolved = resolver.resolve(benchmark_name, identity)
             resolved.log_audit_messages()
             semantics_by_identity[identity.key] = resolved.semantics
-        return attribute_metric_roles(identities, semantics_by_identity, selector)
+        primary = select_primary_identity(identities, semantics_by_identity, selector)
+        return semantics_by_identity, primary

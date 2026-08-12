@@ -3,7 +3,7 @@
     "accuracy": {
       "semantic_id": "quality.accuracy.ratio",
       "metric_name": "Accuracy",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -13,13 +13,12 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "accuracy_precision_0": {
       "semantic_id": "quality.accuracy.ratio",
       "metric_name": "Accuracy",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -29,13 +28,12 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 0,
-      "contract_version": 1
+      "display_precision": 0
     },
     "f1": {
       "semantic_id": "quality.f1.ratio",
       "metric_name": "F1",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -45,13 +43,12 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "points_100": {
       "semantic_id": "quality.score.points_100",
       "metric_name": "Score",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -61,13 +58,12 @@
       "display_kind": "percent",
       "display_multiplier": 1.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "wer": {
       "semantic_id": "quality.wer.ratio",
       "metric_name": "WER",
-      "role": "primary",
+      "kind": "quality",
       "direction": "lower_is_better",
       "raw_unit": null,
       "value_range": {
@@ -77,13 +73,12 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "parse_status": {
       "semantic_id": "diagnostic.parse_status.ratio",
       "metric_name": "Parse Status",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": {
@@ -93,117 +88,108 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "seconds": {
       "semantic_id": "perf.latency.seconds",
       "metric_name": "Latency",
-      "role": "primary",
+      "kind": "quality",
       "direction": "lower_is_better",
       "raw_unit": "s",
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": "s",
-      "display_precision": 3,
-      "contract_version": 1
+      "display_precision": 3
     },
     "milliseconds": {
       "semantic_id": "perf.latency.milliseconds",
       "metric_name": "Latency",
-      "role": "primary",
+      "kind": "quality",
       "direction": "lower_is_better",
       "raw_unit": "ms",
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": "ms",
-      "display_precision": 2,
-      "contract_version": 1
+      "display_precision": 2
     },
     "ttft_ms": {
       "semantic_id": "perf.latency.seconds",
       "metric_name": "TTFT",
-      "role": "primary",
+      "kind": "quality",
       "direction": "lower_is_better",
       "raw_unit": "s",
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": 1000.0,
       "display_unit": "ms",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "token_throughput": {
       "semantic_id": "perf.throughput.tokens_per_second",
       "metric_name": "Token Throughput",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": "tok/s",
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": "tok/s",
-      "display_precision": 2,
-      "contract_version": 1
+      "display_precision": 2
     },
     "judge_score": {
       "semantic_id": "quality.judge_score.unbounded",
       "metric_name": "Judge Score",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 2,
-      "contract_version": 1
+      "display_precision": 2
     },
     "count": {
       "semantic_id": "diagnostic.count.items",
       "metric_name": "Count",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 0,
-      "contract_version": 1
+      "display_precision": 0
     },
     "diagnostic_precision_2": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Value",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 2,
-      "contract_version": 1
+      "display_precision": 2
     },
     "diagnostic_precision_0": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Value",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 0,
-      "contract_version": 1
+      "display_precision": 0
     },
     "percent_pp": {
       "semantic_id": "quality.score.ratio",
       "metric_name": "Change",
-      "role": "auxiliary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -213,26 +199,24 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "pp",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "number_percent": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Cache Hit Rate",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": "%",
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": "%",
-      "display_precision": 2,
-      "contract_version": 1
+      "display_precision": 2
     },
     "rouge": {
       "semantic_id": "quality.rouge.ratio",
       "metric_name": "ROUGE",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -242,13 +226,12 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "similarity": {
       "semantic_id": "quality.similarity.ratio",
       "metric_name": "Similarity",
-      "role": "primary",
+      "kind": "quality",
       "direction": "higher_is_better",
       "raw_unit": null,
       "value_range": {
@@ -258,34 +241,31 @@
       "display_kind": "percent",
       "display_multiplier": 100.0,
       "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
+      "display_precision": 1
     },
     "legacy_diagnostic": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Weird.Metric",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 4,
-      "contract_version": 1
+      "display_precision": 4
     },
     "total_tokens": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "total_tokens",
-      "role": "diagnostic",
+      "kind": "diagnostic",
       "direction": "none",
       "raw_unit": null,
       "value_range": null,
       "display_kind": "number",
       "display_multiplier": null,
       "display_unit": null,
-      "display_precision": 4,
-      "contract_version": 1
+      "display_precision": 4
     }
   },
   "samples": [

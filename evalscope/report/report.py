@@ -2,20 +2,11 @@ import json
 import os
 import pandas as pd
 from collections import defaultdict
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    ValidationInfo,
-    computed_field,
-    field_serializer,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSemantics
+from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -149,11 +140,6 @@ class Metric(BaseModel):
         return self
 
     @property
-    def role(self) -> Optional[MetricRole]:
-        """Display tier of this metric, or ``None`` while the semantics are not resolved."""
-        return self.semantics.role
-
-    @property
     def name(self) -> str:
         """Compatibility display key; v2 serialization stores ``identity`` instead."""
         return self.legacy_name or self.identity.key
@@ -195,21 +181,15 @@ class Report(BaseModel):
         return migrate_legacy_report_payload(data)
 
     @model_validator(mode='after')
-    def _validate_v2(self, info: ValidationInfo) -> Self:
+    def _validate_v2(self) -> Self:
         if self.schema_version != 2:
             raise ValueError(f'unsupported report schema_version={self.schema_version}')
-        declared_metrics = [metric for metric in self.metrics if metric.role is MetricRole.PRIMARY]
-        if len(declared_metrics) > 1:
-            raise ValueError('Report v2 must contain at most one metric with role=primary')
-        declared = declared_metrics[0] if declared_metrics else None
         if self.primary_metric_identity is not None:
             matches = [metric for metric in self.metrics if metric.identity == self.primary_metric_identity]
             if len(matches) != 1:
                 raise ValueError('primary_metric_identity must match exactly one report metric')
-            if matches[0].role is not MetricRole.PRIMARY and not (info.context or {}).get('migrating_v1'):
-                raise ValueError('primary_metric_identity must reference the metric with role=primary')
-        elif declared is not None:
-            self.primary_metric_identity = declared.identity
+            if matches[0].semantics.kind is MetricKind.DIAGNOSTIC:
+                raise ValueError('primary_metric_identity must not reference a diagnostic metric')
         return self
 
     def _find_primary_metric(self) -> Optional[Metric]:

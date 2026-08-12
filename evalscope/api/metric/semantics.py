@@ -1,7 +1,7 @@
 """Metric semantics contract layer.
 
 This module defines the single authoritative data contract describing how one final
-report metric is interpreted and displayed (direction, unit, display rules, role).
+report metric is interpreted and displayed (kind, direction, unit, and display rules).
 It is data-free and depends on no table: the baseline table, the catalog entry model,
 the legacy mapping table and the resolver all live under ``evalscope.metrics.semantics``
 and import this module, never the other way round.
@@ -14,9 +14,6 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Dict, FrozenSet, Optional, Tuple, Union
 from typing_extensions import Self
-
-METRIC_CONTRACT_VERSION = 1
-"""Version of the MetricSemantics contract. Bump when the contract shape changes."""
 
 DIAGNOSTIC_FALLBACK_SEMANTIC_ID = 'diagnostic.unspecified'
 """Semantic identifier used when a metric has no declared meaning."""
@@ -179,11 +176,10 @@ class MetricSelector(BaseModel):
         )
 
 
-class MetricRole(str, Enum):
-    """Display tier of a metric and whether it may take part in verdicts."""
+class MetricKind(str, Enum):
+    """Whether a metric grades quality or only describes a run."""
 
-    PRIMARY = 'primary'
-    AUXILIARY = 'auxiliary'
+    QUALITY = 'quality'
     DIAGNOSTIC = 'diagnostic'
 
 
@@ -228,8 +224,8 @@ class MetricSemantics(BaseModel):
     metric_name: str
     """Display name of the metric. May differ from the final report metric name."""
 
-    role: MetricRole
-    """Display tier: primary / auxiliary / diagnostic."""
+    kind: MetricKind
+    """Intrinsic classification. Report-level primary selection lives on ``Report``."""
 
     direction: MetricDirection
     """Optimization direction. Diagnostic metrics must use ``none``."""
@@ -253,35 +249,32 @@ class MetricSemantics(BaseModel):
     display_precision: int = Field(default=4)
     """Number of decimals of the displayed value, with ties rounded toward positive infinity."""
 
-    contract_version: int = Field(default=METRIC_CONTRACT_VERSION)
-    """Version of the contract this declaration follows."""
-
     @classmethod
     def diagnostic(cls, metric_name: str, semantic_id: Optional[str] = None) -> Self:
         """Build the shared fallback contract for an undeclared metric."""
         return cls(
             semantic_id=semantic_id or DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
             metric_name=metric_name,
-            role=MetricRole.DIAGNOSTIC,
+            kind=MetricKind.DIAGNOSTIC,
             direction=MetricDirection.NONE,
             display_kind=MetricDisplayKind.NUMBER,
             display_precision=DIAGNOSTIC_FALLBACK_PRECISION,
         )
 
     @model_validator(mode='after')
-    def _check_role_direction_display(self) -> Self:
-        # Scored roles must declare an optimization direction.
-        if self.role in (MetricRole.PRIMARY, MetricRole.AUXILIARY) and self.direction == MetricDirection.NONE:
+    def _check_kind_direction_display(self) -> Self:
+        # Quality metrics must declare an optimization direction.
+        if self.kind is MetricKind.QUALITY and self.direction == MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
-                f"role='{self.role.value}' requires a direction other than 'none'"
+                "kind='quality' requires a direction other than 'none'"
             )
 
         # Diagnostic metrics carry no optimization direction.
-        if self.role == MetricRole.DIAGNOSTIC and self.direction != MetricDirection.NONE:
+        if self.kind is MetricKind.DIAGNOSTIC and self.direction != MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
-                f"role='diagnostic' requires direction='none', got '{self.direction.value}'"
+                f"kind='diagnostic' requires direction='none', got '{self.direction.value}'"
             )
 
         # Percent display needs an explicit range and multiplier.

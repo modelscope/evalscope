@@ -87,65 +87,51 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.get_json()['predictions']), 1)
 
-    def test_score_filter_applies_within_one_comparable_group(self):
+    def test_report_list_sorts_by_supported_fields(self):
         items = [
-            self._report_meta('known', 0.8),
-            self._report_meta('low', 0.2),
+            self._report_meta('z-model', dataset='a-dataset', timestamp='2026-01-01T00:00:00'),
+            self._report_meta('a-model', dataset='z-dataset', timestamp='2026-01-02T00:00:00'),
         ]
-        with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=['known', 'unknown']), \
-                mock.patch('evalscope.service.blueprints.reports._build_report_meta', side_effect=items):
-            res = self.client.get(
-                '/api/v1/reports',
-                query_string={
-                    'root_path': self.tmp, 'score_min': 0.5
-                },
-            )
+        cases = [
+            ('model', 'asc', ['a-model', 'z-model']),
+            ('dataset', 'asc', ['z-model', 'a-model']),
+            ('time', 'desc', ['a-model', 'z-model']),
+        ]
 
-        body = res.get_json()
-        self.assertEqual([item['model_id'] for item in body['reports']], ['known'])
-        self.assertTrue(body['filters']['score_comparable'])
-
-    def test_score_sort_applies_within_one_comparable_group(self):
-        for order, expected in [('asc', ['low', 'high']), ('desc', ['high', 'low'])]:
-            items = [
-                self._report_meta('high', 0.9),
-                self._report_meta('low', 0.2),
-            ]
-            with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=range(2)), \
-                    mock.patch('evalscope.service.blueprints.reports._build_report_meta', side_effect=items):
+        for sort_by, sort_order, expected in cases:
+            case_items = [{**item, '_datasets': list(item['_datasets'])} for item in items]
+            with self.subTest(sort_by=sort_by, sort_order=sort_order), \
+                    mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=range(2)), \
+                    mock.patch('evalscope.service.blueprints.reports._build_report_meta', side_effect=case_items):
                 res = self.client.get(
                     '/api/v1/reports',
                     query_string={
-                        'root_path': self.tmp, 'sort_by': 'score', 'sort_order': order
+                        'root_path': self.tmp, 'sort_by': sort_by, 'sort_order': sort_order
                     },
                 )
 
             self.assertEqual([item['model_id'] for item in res.get_json()['reports']], expected)
 
-    def test_score_controls_are_ignored_across_incomparable_groups(self):
-        items = [
-            self._report_meta('older-high', 0.9, dataset='dataset-a', timestamp='2026-01-01T00:00:00'),
-            self._report_meta('newer-low', 0.2, dataset='dataset-b', timestamp='2026-01-02T00:00:00'),
-        ]
-        with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=range(2)), \
-                mock.patch('evalscope.service.blueprints.reports._build_report_meta', side_effect=items):
-            res = self.client.get(
-                '/api/v1/reports',
-                query_string={
-                    'root_path': self.tmp,
-                    'score_min': 0.5,
-                    'sort_by': 'score',
-                    'sort_order': 'desc',
-                },
-            )
+    def test_report_list_rejects_removed_score_controls(self):
+        cases = ({'sort_by': 'score'}, {'score_min': 0.5}, {'score_max': 0.9})
 
-        body = res.get_json()
-        self.assertEqual([item['model_id'] for item in body['reports']], ['newer-low', 'older-high'])
-        self.assertFalse(body['filters']['score_comparable'])
+        for query in cases:
+            with self.subTest(query=query):
+                res = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp, **query})
+
+            self.assertEqual(res.status_code, 400)
+
+    def test_report_list_response_omits_score_comparability_fields(self):
+        item = self._report_meta('model')
+        with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=range(1)), \
+                mock.patch('evalscope.service.blueprints.reports._build_report_meta', return_value=item):
+            body = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}).get_json()
+
+        self.assertNotIn('score_comparable', body['filters'])
+        self.assertNotIn('quality_ratio', body['reports'][0])
 
     @staticmethod
-    def _report_meta(model_id, quality_ratio, dataset='dataset', semantic_id='quality.accuracy.ratio',
-                     timestamp='2026-01-01T00:00:00'):
+    def _report_meta(model_id, dataset='dataset', timestamp='2026-01-01T00:00:00'):
         return {
             'run_id': 'run',
             'model_id': model_id,
@@ -155,8 +141,6 @@ class TestReportEndpoints(unittest.TestCase):
             'num_samples': 1,
             'timestamp': timestamp,
             'primary_metrics': [],
-            'quality_ratio': quality_ratio,
-            '_quality_group': (dataset, semantic_id) if quality_ratio is not None else None,
             '_datasets': [dataset],
         }
 

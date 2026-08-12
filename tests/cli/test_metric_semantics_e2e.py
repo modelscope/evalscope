@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
-from evalscope.api.metric.semantics import MetricRole, MetricSelector
+from evalscope.api.metric.semantics import MetricKind, MetricSelector
 from evalscope.metrics.semantics import format_metric_value
 from evalscope.report.report import Report
 from evalscope.utils.data_utils import get_acc_report_df
@@ -129,11 +129,8 @@ class TestSemanticsEndToEnd:
     ) -> None:
         assert report.primary_metric is not None, scenario
         assert report.primary_metric.semantics.semantic_id == expected_semantic_id
-        assert report.primary_metric.semantics.role is MetricRole.PRIMARY
-
-        # Exactly one, so no surface has to choose between two conclusions.
-        primaries = [m for m in report.metrics if m.semantics and m.semantics.role is MetricRole.PRIMARY]
-        assert len(primaries) == 1, f'{scenario}: {[m.name for m in primaries]}'
+        assert report.primary_metric.semantics.kind is MetricKind.QUALITY
+        assert report.primary_metric.identity == report.primary_metric_identity
 
     def test_cli_dataframe_matches_the_primary_metric(
         self, report: Report, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
@@ -173,7 +170,7 @@ class TestSemanticsEndToEnd:
         primary_key = json.dumps(report.primary_metric.identity.model_dump(), sort_keys=True)
         primary_payload = by_identity[primary_key]
         assert primary_payload['semantics']['semantic_id'] == expected_semantic_id
-        assert primary_payload['semantics']['role'] == 'primary'
+        assert primary_payload['semantics']['kind'] == 'quality'
         assert set(('name', 'semantic_id')).isdisjoint(primary_payload)
         assert set(('score', 'primary_metric_name')).isdisjoint(payload)
 
@@ -197,7 +194,7 @@ class TestDirectionsSurviveTheRoundTrip:
         assert report.primary_metric.semantics.direction.value == 'lower_is_better'
         # The supporting error rate stays comparable but is not the conclusion.
         cer = next(metric for metric in report.metrics if metric.identity.name == 'cer')
-        assert cer.semantics.role is MetricRole.AUXILIARY
+        assert cer.semantics.kind is MetricKind.QUALITY
         assert cer.semantics.direction.value == 'lower_is_better'
 
     def test_diagnostics_never_become_the_conclusion(self) -> None:
@@ -212,7 +209,7 @@ class TestDirectionsSurviveTheRoundTrip:
         )
 
         diagnostic = next(metric for metric in report.metrics if metric.identity.name == 'no_answer_num')
-        assert diagnostic.semantics.role is MetricRole.DIAGNOSTIC
+        assert diagnostic.semantics.kind is MetricKind.DIAGNOSTIC
         assert diagnostic.semantics.direction.value == 'none'
         assert report.primary_metric.identity.name == 'success_rate'
         assert report.primary_metric.identity.aggregation == 'mean'

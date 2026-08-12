@@ -6,10 +6,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector, MetricSemantics
-from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
+from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector, MetricSemantics
+from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
-from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX, attribute_metric_roles, get_semantics_resolver
+from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX, get_semantics_resolver, select_primary_identity
 from evalscope.utils import get_logger
 
 if TYPE_CHECKING:
@@ -35,9 +35,15 @@ def migrate_legacy_metric_payload(data: Any, benchmark_name: Optional[str] = Non
         return data
     migrated = dict(data)
     old_name = migrated.pop('name', 'legacy_metric')
-    migrated['identity'] = migrate_legacy_report_identity(old_name, benchmark_name).model_dump()
+    identity = migrate_legacy_report_identity(old_name, benchmark_name)
+    migrated['identity'] = identity.model_dump()
     migrated['legacy_name'] = old_name
-    migrated.setdefault('semantics', MetricSemantics.diagnostic(old_name).model_dump())
+    legacy_entry = LEGACY_METRIC_MIGRATIONS.get(old_name)
+    if legacy_entry is not None:
+        semantics = legacy_entry.resolve(identity.name)
+    else:
+        semantics = MetricSemantics.diagnostic(old_name)
+    migrated.setdefault('semantics', semantics.model_dump())
     return migrated
 
 
@@ -103,17 +109,32 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
     identities = [metric.identity for metric in metrics]
     semantics_by_identity: Dict[str, MetricSemantics] = {}
     for metric in metrics:
-        resolved = active_resolver.resolve(benchmark_name, metric.identity)
-        resolved.log_audit_messages()
-        semantics_by_identity[metric.identity.key] = resolved.semantics
-        if not resolved.degraded and resolved.semantics.role is not MetricRole.DIAGNOSTIC:
+        benchmark_override = BENCHMARK_METRIC_OVERRIDES.get((benchmark_name, metric.identity.name))
+        legacy_entry = LEGACY_METRIC_MIGRATIONS.get(metric.legacy_name or '')
+        if legacy_entry is not None:
+            semantics = legacy_entry.resolve(metric.identity.name)
+            degraded = False
+        elif benchmark_override is not None:
+            semantics = benchmark_override.resolve(metric.identity.name)
+            degraded = semantics.kind is MetricKind.DIAGNOSTIC
+        else:
+            resolved = active_resolver.resolve(benchmark_name, metric.identity)
+            resolved.log_audit_messages()
+            semantics = resolved.semantics
+            degraded = resolved.degraded
+        semantics_by_identity[metric.identity.key] = semantics
+        if not degraded and semantics.kind is not MetricKind.DIAGNOSTIC:
             metric.legacy_name = None
 
     try:
-        semantics_by_identity, primary_identity = attribute_metric_roles(identities, semantics_by_identity, selector)
+        primary_identity = select_primary_identity(identities, semantics_by_identity, selector)
     except ValueError as error:
-        logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy report has no unambiguous primary metric: {error}')
-        primary_identity = None
+        logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy primary selector did not match the migrated identities: {error}')
+        try:
+            primary_identity = select_primary_identity(identities, semantics_by_identity, None)
+        except ValueError as fallback_error:
+            logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy report has no unambiguous primary metric: {fallback_error}')
+            primary_identity = None
     for metric in metrics:
         metric.semantics = semantics_by_identity[metric.identity.key]
     report.primary_metric_identity = primary_identity

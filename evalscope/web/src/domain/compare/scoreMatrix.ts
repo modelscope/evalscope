@@ -29,7 +29,7 @@ export function metricComparisonKey(
     metricIdentityKey(identity),
     semantics?.semantic_id ?? null,
     semantics?.metric_name ?? null,
-    semantics?.role ?? null,
+    semantics?.kind ?? null,
     semantics?.direction ?? null,
     semantics?.raw_unit ?? null,
     semantics?.value_range?.min ?? null,
@@ -38,7 +38,6 @@ export function metricComparisonKey(
     semantics?.display_multiplier ?? null,
     semantics?.display_unit ?? null,
     semantics?.display_precision ?? null,
-    semantics?.contract_version ?? null,
   ])
 }
 

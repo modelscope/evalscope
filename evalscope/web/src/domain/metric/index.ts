@@ -11,7 +11,7 @@
 export type {
   MetricDirection,
   MetricDisplayKind,
-  MetricRole,
+  MetricKind,
   MetricSemantics,
   ValueRange,
 } from './MetricSemantics'

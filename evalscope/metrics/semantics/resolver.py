@@ -5,19 +5,19 @@ axes such as ``k``, scope, threshold and category remain structured dimensions a
 not expand the registry. Historical semantic anchors are consulted only while migrating old
 reports. Unknown third-party metrics degrade to diagnostics without changing their values.
 
-Primary role assignment is intentionally separate and happens once per report through
-``attribute_metric_roles``. The resolver never reads a data adapter and never selects a primary.
+Primary selection is intentionally separate and happens once per report through
+``select_primary_identity``. The resolver never reads a data adapter.
 """
 
 from enum import Enum
 from functools import lru_cache
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from evalscope.api.metric.semantics import (
     DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
     MetricIdentity,
-    MetricRole,
+    MetricKind,
     MetricSelector,
     MetricSemantics,
 )
@@ -45,7 +45,7 @@ __all__ = [
     'SemanticsResolver',
     'SemanticsSource',
     'attach_perf_semantics',
-    'attribute_metric_roles',
+    'select_primary_identity',
     'catalog_entry_location',
     'diagnostic_fallback',
     'get_semantics_resolver',
@@ -101,7 +101,7 @@ def diagnostic_fallback(metric_name: str) -> MetricSemantics:
         metric_name: Final report metric name, or perf field key, that failed to resolve.
 
     Returns:
-        Semantics with ``semantic_id='diagnostic.unspecified'`` and ``role=diagnostic``.
+        Semantics with ``semantic_id='diagnostic.unspecified'`` and ``kind=diagnostic``.
     """
     return MetricSemantics.diagnostic(metric_name)
 
@@ -134,18 +134,12 @@ def _undeclared_perf_field_message(field_key: str) -> str:
     )
 
 
-def _with_role(semantics: MetricSemantics, role: MetricRole) -> MetricSemantics:
-    if semantics.role is role:
-        return semantics
-    return MetricSemantics(**{**semantics.model_dump(), 'role': role})
-
-
-def attribute_metric_roles(
+def select_primary_identity(
     identities: Sequence[MetricIdentity],
     semantics_by_identity: Mapping[str, MetricSemantics],
     selector: Optional[MetricSelector],
-) -> Tuple[Dict[str, MetricSemantics], Optional[MetricIdentity]]:
-    """Select exactly one primary identity and assign report roles once.
+) -> Optional[MetricIdentity]:
+    """Select exactly one report-level primary identity.
 
     An explicit selector must match exactly one emitted identity. Without a selector, implicit
     primary selection is allowed only when exactly one non-diagnostic identity exists.
@@ -157,29 +151,21 @@ def attribute_metric_roles(
                 f'primary metric selector {selector.model_dump()} matched {len(matches)} identities; expected exactly one'
             )
         primary = matches[0]
-        if semantics_by_identity[primary.key].role is MetricRole.DIAGNOSTIC:
+        if semantics_by_identity[primary.key].kind is MetricKind.DIAGNOSTIC:
             raise ValueError(f'primary metric selector matched diagnostic identity {primary.key}')
     else:
         graded = [
-            identity for identity in identities if semantics_by_identity[identity.key].role is not MetricRole.DIAGNOSTIC
+            identity for identity in identities if semantics_by_identity[identity.key].kind is not MetricKind.DIAGNOSTIC
         ]
         if not graded:
-            return dict(semantics_by_identity), None
+            return None
         if len(graded) != 1:
             raise ValueError(
                 f'benchmark emitted {len(graded)} non-diagnostic metric identities; declare BenchmarkMeta.primary_metric'
             )
         primary = graded[0]
 
-    attributed: Dict[str, MetricSemantics] = {}
-    for identity in identities:
-        semantics = semantics_by_identity[identity.key]
-        if semantics.role is MetricRole.DIAGNOSTIC:
-            attributed[identity.key] = semantics
-        else:
-            role = MetricRole.PRIMARY if identity == primary else MetricRole.AUXILIARY
-            attributed[identity.key] = _with_role(semantics, role)
-    return attributed, primary
+    return primary
 
 
 class SemanticsResolver:
@@ -190,7 +176,7 @@ class SemanticsResolver:
         benchmark_name: str,
         identity: MetricIdentity,
     ) -> ResolvedSemantics:
-        """Resolve one identity without assigning its report-level role.
+        """Resolve one identity without selecting the report-level primary.
 
         Args:
             benchmark_name: Benchmark (dataset) the metric belongs to.

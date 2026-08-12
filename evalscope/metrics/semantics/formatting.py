@@ -68,7 +68,7 @@ from evalscope.api.metric.semantics import (
     MetricDirection,
     MetricDisplayKind,
     MetricIdentity,
-    MetricRole,
+    MetricKind,
     MetricSemantics,
 )
 
@@ -175,7 +175,7 @@ def format_metric_label(
     else:
         raw_name = identity.key
         dimensions = identity.dimensions
-    if semantics is None or semantics.role is MetricRole.DIAGNOSTIC:
+    if semantics is None or semantics.kind is MetricKind.DIAGNOSTIC:
         return legacy_name or raw_name
     arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
     label = f'{semantics.metric_name} {arrow}'.strip()

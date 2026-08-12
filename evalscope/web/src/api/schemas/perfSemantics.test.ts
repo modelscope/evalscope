@@ -8,12 +8,11 @@ import type { MetricSemantics } from '@/domain/metric'
 const LATENCY: MetricSemantics = {
   semantic_id: 'perf.latency.seconds',
   metric_name: 'Avg Latency',
-  role: 'primary',
+  kind: 'quality',
   direction: 'lower_is_better',
   display_kind: 'number',
   display_unit: 's',
   display_precision: 3,
-  contract_version: 1,
 }
 
 describe('perf schemas keep metric semantics next to stable fields', () => {

@@ -15,7 +15,7 @@ rule for colour scales.
 import math
 from typing import Optional
 
-from evalscope.api.metric.semantics import MetricDirection, MetricRole, MetricSemantics
+from evalscope.api.metric.semantics import MetricDirection, MetricKind, MetricSemantics
 
 
 def bounded_quality_ratio(value: Optional[float], semantics: Optional[MetricSemantics]) -> Optional[float]:
@@ -32,7 +32,7 @@ def bounded_quality_ratio(value: Optional[float], semantics: Optional[MetricSema
     """
     if value is None or semantics is None or not math.isfinite(float(value)):
         return None
-    if semantics.role is MetricRole.DIAGNOSTIC or semantics.direction is MetricDirection.NONE:
+    if semantics.kind is MetricKind.DIAGNOSTIC or semantics.direction is MetricDirection.NONE:
         return None
     value_range = semantics.value_range
     if value_range is None:

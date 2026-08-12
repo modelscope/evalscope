@@ -10,9 +10,7 @@ export interface ReportFilters {
   search: string
   models: string[]
   datasets: string[]
-  scoreMin: number
-  scoreMax: number
-  sortBy: 'score' | 'model' | 'dataset' | 'time'
+  sortBy: 'model' | 'dataset' | 'time'
   sortOrder: 'asc' | 'desc'
 }
 
@@ -20,7 +18,6 @@ interface ReportFiltersProps {
   filters: ReportFilters
   availableModels: string[]
   availableDatasets: string[]
-  scoreComparable: boolean
   onChange: (filters: ReportFilters) => void
 }
 
@@ -97,7 +94,6 @@ export default function ReportFiltersBar({
   filters,
   availableModels,
   availableDatasets,
-  scoreComparable,
   onChange,
 }: ReportFiltersProps) {
   const { t } = useLocale()
@@ -109,7 +105,6 @@ export default function ReportFiltersBar({
 
   const sortOptions: { value: ReportFilters['sortBy']; label: string }[] = [
     { value: 'time', label: t('reports.filters.time') },
-    ...(scoreComparable ? [{ value: 'score' as const, label: t('reports.filters.score') }] : []),
     { value: 'model', label: t('reports.filters.model') },
     { value: 'dataset', label: t('reports.filters.dataset') },
   ]
@@ -129,19 +124,6 @@ export default function ReportFiltersBar({
       onRemove: () => update({ datasets: filters.datasets.filter((x) => x !== d) }),
     }),
   )
-  if (scoreComparable && filters.scoreMin > 0)
-    activeFilters.push({
-      key: 'scoreMin',
-      label: `${t('reports.filters.score')}≥${filters.scoreMin}`,
-      onRemove: () => update({ scoreMin: 0 }),
-    })
-  if (scoreComparable && filters.scoreMax < 1)
-    activeFilters.push({
-      key: 'scoreMax',
-      label: `${t('reports.filters.score')}≤${filters.scoreMax}`,
-      onRemove: () => update({ scoreMax: 1 }),
-    })
-
   return (
     <div className="flex flex-col gap-2">
       {/* Filter row */}
@@ -166,33 +148,6 @@ export default function ReportFiltersBar({
           selected={filters.datasets}
           onChange={(datasets) => update({ datasets })}
         />
-
-        {/* Score range is meaningful only within one dataset and semantic contract. */}
-        <div className={cn('flex items-center gap-1 text-sm', !scoreComparable && 'opacity-50')}>
-          <span className="text-[var(--text-muted)] text-xs">{t('reports.filters.score')}:</span>
-          <input
-            type="number"
-            min={0}
-            max={1}
-            step={0.01}
-            disabled={!scoreComparable}
-            value={filters.scoreMin}
-            onChange={(e) => update({ scoreMin: parseFloat(e.target.value) || 0 })}
-            className="w-[60px] px-2 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
-          />
-          {/* text-dim allowed: decorative em-dash range separator (DESIGN.md §Text) */}
-          <span className="text-[var(--text-dim)]">—</span>
-          <input
-            type="number"
-            min={0}
-            max={1}
-            step={0.01}
-            disabled={!scoreComparable}
-            value={filters.scoreMax}
-            onChange={(e) => update({ scoreMax: parseFloat(e.target.value) || 1 })}
-            className="w-[60px] px-2 py-1.5 text-xs rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
-          />
-        </div>
 
         {/* Sort */}
         <div className="flex items-center gap-1 ml-auto">

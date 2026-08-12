@@ -8,8 +8,8 @@ Conventions enforced here:
 
 - Keys equal the ``semantic_id`` of the declaration, named ``{domain}.{concept}.{unit}``.
 - Diagnostic baselines always use ``direction=none``.
-- Quality and performance baselines default to ``role=auxiliary``. Report attribution promotes
-  exactly one selected metric to ``primary``.
+- Quality and performance baselines use ``kind=quality``. Report-level primary selection is stored
+  separately on the report.
 - Bounded ratios in [0, 1] render as percent with ``display_multiplier=100``; official 0-100
   scales render as percent with ``display_multiplier=1``.
 
@@ -20,7 +20,7 @@ wall of repeated display settings, and why a change to how percentages render is
 
 from typing import Dict, Optional
 
-from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics, ValueRange
+from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricKind, MetricSemantics, ValueRange
 
 #: Value range of a ratio metric.
 _RATIO_RANGE = ValueRange(min=0.0, max=1.0)
@@ -36,7 +36,7 @@ def _percent(
     semantic_id: str,
     metric_name: str,
     direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
-    role: MetricRole = MetricRole.AUXILIARY,
+    kind: MetricKind = MetricKind.QUALITY,
     value_range: ValueRange = _RATIO_RANGE,
     display_multiplier: float = 100.0,
 ) -> MetricSemantics:
@@ -46,7 +46,7 @@ def _percent(
         semantic_id: Identifier of the declaration; must equal its key in the table.
         metric_name: Display name of the metric.
         direction: Optimization direction. Error rates pass ``LOWER_IS_BETTER``.
-        role: Display tier. A diagnostic must also pass ``direction=NONE``.
+        kind: Intrinsic metric classification. Diagnostics must also pass ``direction=NONE``.
         value_range: Bounds of the stored value. Official 0-100 scales pass
             ``_POINTS_100_RANGE``.
         display_multiplier: Scale applied for display only: ``100`` for a ``[0, 1]`` ratio, ``1``
@@ -58,7 +58,7 @@ def _percent(
     return MetricSemantics(
         semantic_id=semantic_id,
         metric_name=metric_name,
-        role=role,
+        kind=kind,
         direction=direction,
         value_range=value_range,
         display_kind=MetricDisplayKind.PERCENT,
@@ -73,7 +73,7 @@ def _plain_number(
     metric_name: str,
     display_precision: int,
     direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
-    role: MetricRole = MetricRole.AUXILIARY,
+    kind: MetricKind = MetricKind.QUALITY,
     raw_unit: Optional[str] = None,
     display_unit: Optional[str] = None,
 ) -> MetricSemantics:
@@ -84,7 +84,7 @@ def _plain_number(
         metric_name: Display name of the metric.
         display_precision: Decimals of the displayed value.
         direction: Optimization direction. Latencies pass ``LOWER_IS_BETTER``.
-        role: Display tier. A diagnostic must also pass ``direction=NONE``.
+        kind: Intrinsic metric classification. Diagnostics must also pass ``direction=NONE``.
         raw_unit: Unit of the stored value, when it has one.
         display_unit: Unit appended after a space, when the displayed value carries one.
 
@@ -94,7 +94,7 @@ def _plain_number(
     return MetricSemantics(
         semantic_id=semantic_id,
         metric_name=metric_name,
-        role=role,
+        kind=kind,
         direction=direction,
         raw_unit=raw_unit,
         value_range=None,
@@ -191,20 +191,20 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         'Count',
         display_precision=0,
         direction=MetricDirection.NONE,
-        role=MetricRole.DIAGNOSTIC,
+        kind=MetricKind.DIAGNOSTIC,
     ),
     'diagnostic.parse_status.ratio': _percent(
         'diagnostic.parse_status.ratio',
         'Parse Status',
         MetricDirection.NONE,
-        role=MetricRole.DIAGNOSTIC,
+        kind=MetricKind.DIAGNOSTIC,
     ),
     'diagnostic.unspecified': _plain_number(
         'diagnostic.unspecified',
         'Unspecified',
         display_precision=4,
         direction=MetricDirection.NONE,
-        role=MetricRole.DIAGNOSTIC,
+        kind=MetricKind.DIAGNOSTIC,
     ),
 }
 """Baseline identifier -> semantics. Keys equal the declared ``semantic_id``."""

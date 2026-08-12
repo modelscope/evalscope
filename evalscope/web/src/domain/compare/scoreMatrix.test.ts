@@ -14,16 +14,15 @@ import type { MetricSemantics } from '@/domain/metric'
 const HIGHER_IS_BETTER: MetricSemantics = {
   semantic_id: 'quality.accuracy',
   metric_name: 'Accuracy',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   display_kind: 'percent',
   display_unit: '%',
   display_precision: 2,
-  contract_version: 1,
 }
 
 const LOWER_IS_BETTER: MetricSemantics = { ...HIGHER_IS_BETTER, direction: 'lower_is_better' }
-const NO_DIRECTION: MetricSemantics = { ...HIGHER_IS_BETTER, role: 'diagnostic', direction: 'none' }
+const NO_DIRECTION: MetricSemantics = { ...HIGHER_IS_BETTER, kind: 'diagnostic', direction: 'none' }
 
 const PLAIN = 'var(--bg-deep)'
 

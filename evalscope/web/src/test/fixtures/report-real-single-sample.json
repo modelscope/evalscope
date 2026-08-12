@@ -24,14 +24,13 @@
           "semantics": {
             "semantic_id": "quality.accuracy.ratio",
             "metric_name": "Accuracy",
-            "role": "primary",
+            "kind": "quality",
             "direction": "higher_is_better",
             "value_range": {"min": 0.0, "max": 1.0},
             "display_kind": "percent",
             "display_multiplier": 100.0,
             "display_unit": "%",
-            "display_precision": 1,
-            "contract_version": 1
+            "display_precision": 1
           }
         }
       ],
@@ -53,45 +52,45 @@
         },
         "metric_semantics": {
           "n_samples": {
-            "semantic_id": "diagnostic.count.items", "metric_name": "Samples", "role": "diagnostic",
-            "direction": "none", "display_kind": "number", "display_precision": 0, "contract_version": 1
+            "semantic_id": "diagnostic.count.items", "metric_name": "Samples", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
           },
           "latency": {
-            "semantic_id": "perf.latency.seconds", "metric_name": "Latency", "role": "auxiliary",
+            "semantic_id": "perf.latency.seconds", "metric_name": "Latency", "kind": "quality",
             "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
-            "display_unit": "s", "display_precision": 3, "contract_version": 1
+            "display_unit": "s", "display_precision": 3
           },
           "ttft": {
-            "semantic_id": "perf.latency.seconds", "metric_name": "TTFT", "role": "auxiliary",
+            "semantic_id": "perf.latency.seconds", "metric_name": "TTFT", "kind": "quality",
             "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
-            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1, "contract_version": 1
+            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1
           },
           "tpot": {
-            "semantic_id": "perf.latency.seconds", "metric_name": "TPOT", "role": "auxiliary",
+            "semantic_id": "perf.latency.seconds", "metric_name": "TPOT", "kind": "quality",
             "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
-            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1, "contract_version": 1
+            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1
           },
           "throughput.avg_output_tps": {
             "semantic_id": "perf.throughput.tokens_per_second", "metric_name": "Output Throughput",
-            "role": "auxiliary", "direction": "higher_is_better", "raw_unit": "tok/s",
-            "display_kind": "number", "display_unit": "tok/s", "display_precision": 2, "contract_version": 1
+            "kind": "quality", "direction": "higher_is_better", "raw_unit": "tok/s",
+            "display_kind": "number", "display_unit": "tok/s", "display_precision": 2
           },
           "throughput.avg_req_ps": {
             "semantic_id": "perf.throughput.requests_per_second", "metric_name": "Request Throughput",
-            "role": "auxiliary", "direction": "higher_is_better", "raw_unit": "req/s",
-            "display_kind": "number", "display_unit": "req/s", "display_precision": 2, "contract_version": 1
+            "kind": "quality", "direction": "higher_is_better", "raw_unit": "req/s",
+            "display_kind": "number", "display_unit": "req/s", "display_precision": 2
           },
           "usage.input_tokens": {
-            "semantic_id": "diagnostic.count.items", "metric_name": "Input Tokens", "role": "diagnostic",
-            "direction": "none", "display_kind": "number", "display_precision": 0, "contract_version": 1
+            "semantic_id": "diagnostic.count.items", "metric_name": "Input Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
           },
           "usage.output_tokens": {
-            "semantic_id": "diagnostic.count.items", "metric_name": "Output Tokens", "role": "diagnostic",
-            "direction": "none", "display_kind": "number", "display_precision": 0, "contract_version": 1
+            "semantic_id": "diagnostic.count.items", "metric_name": "Output Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
           },
           "usage.total_tokens": {
-            "semantic_id": "diagnostic.count.items", "metric_name": "Total Tokens", "role": "diagnostic",
-            "direction": "none", "display_kind": "number", "display_precision": 0, "contract_version": 1
+            "semantic_id": "diagnostic.count.items", "metric_name": "Total Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
           }
         }
       },

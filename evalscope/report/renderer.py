@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from typing import Dict, List, Optional
 
-from evalscope.api.metric.semantics import MetricRole
+from evalscope.api.metric.semantics import MetricKind
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.metrics.semantics import format_metric_labels, format_metric_value
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
@@ -301,7 +301,7 @@ def gen_html_report_file(
 
             for metric in rpt.metrics:
                 semantics = metric.semantics
-                is_diagnostic = semantics is not None and semantics.role is MetricRole.DIAGNOSTIC
+                is_diagnostic = semantics is not None and semantics.kind is MetricKind.DIAGNOSTIC
                 for cat in metric.categories:
                     # Category name is stored as a tuple; join for display
                     cat_display = ' / '.join(cat.name) if cat.name else ''

@@ -24,14 +24,13 @@ afterEach(cleanup)
 const ACCURACY: MetricSemantics = {
   semantic_id: 'quality.accuracy.ratio',
   metric_name: 'Accuracy',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 1 },
   display_kind: 'percent',
   display_multiplier: 100,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 /** WER: a bounded ratio where lower is better. */
@@ -53,7 +52,6 @@ function makeReport(score: number, semantics: MetricSemantics = ACCURACY): Repor
       score,
       semantics,
     }],
-    quality_ratio: score,
   }
 }
 
@@ -65,7 +63,6 @@ function makeMixedReport(): ReportSummary {
       { dataset_name: 'gsm8k', identity: { name: 'accuracy', aggregation: 'mean', dimensions: {} }, score: 0.9, semantics: ACCURACY },
       { dataset_name: 'librispeech', identity: { name: 'wer', aggregation: 'mean', dimensions: {} }, score: 0.07, semantics: WER },
     ],
-    quality_ratio: 0.915,
   }
 }
 

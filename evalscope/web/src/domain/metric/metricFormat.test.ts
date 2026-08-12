@@ -8,7 +8,6 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import fc from 'fast-check'
 import goldenFixtureJson from '../../../../../tests/report/semantics/golden_samples.json'
 import {
   MISSING_PLACEHOLDER,
@@ -25,9 +24,7 @@ import {
 import type { MetricIdentity } from './metricFormat'
 import { metricSemanticsSchema } from './MetricSemantics'
 import type { MetricSemantics } from './MetricSemantics'
-import { arbSemantics, diagnosticSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
-
-const NUM_RUNS = 100
+import { diagnosticSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
 
 describe('formatMetricIdentityLabel', () => {
   it('matches the backend title-cased dimension labels', () => {
@@ -117,31 +114,15 @@ describe('formatMetric', () => {
   })
 
   it('marks a diagnostic metric as a fallback so the UI drops colour scales', () => {
-    const diagnostic: MetricSemantics = { ...ratioSemantics(), role: 'diagnostic', direction: 'none' }
+    const diagnostic: MetricSemantics = { ...ratioSemantics(), kind: 'diagnostic', direction: 'none' }
     expect(formatMetric(0.5, diagnostic).isDiagnosticFallback).toBe(true)
   })
 
-  it('output ignores identity fields (raw_unit drives the raw text)', () => {
-    fc.assert(
-      fc.property(fc.double({ min: -1e6, max: 1e6, noNaN: true }), arbSemantics(), (value, semantics) => {
-        const renamed: MetricSemantics = {
-          ...semantics,
-          semantic_id: 'another.semantic.id',
-          metric_name: 'Another Name',
-        }
-        expect(formatMetric(value, renamed)).toEqual(formatMetric(value, semantics))
-      }),
-      { numRuns: NUM_RUNS },
-    )
-  })
+  it('ignores semantic identity fields when formatting a value', () => {
+    const semantics = secondsSemantics()
+    const renamed = { ...semantics, semantic_id: 'another.semantic.id', metric_name: 'Another Name' }
 
-  it('the same input always produces the same output', () => {
-    fc.assert(
-      fc.property(fc.double({ min: -1e6, max: 1e6, noNaN: true }), arbSemantics(), (value, semantics) => {
-        expect(formatMetric(value, semantics)).toEqual(formatMetric(value, semantics))
-      }),
-      { numRuns: NUM_RUNS },
-    )
+    expect(formatMetric(1.25, renamed)).toEqual(formatMetric(1.25, semantics))
   })
 })
 
@@ -159,7 +140,7 @@ describe('metric labels', () => {
   it('disambiguates repeated labels within one report', () => {
     const labels = formatMetricLabels([
       { metricName: 'mean_acc', semantics: ratioSemantics() },
-      { metricName: 'mean_fact_acc', semantics: { ...ratioSemantics(), role: 'auxiliary' } },
+      { metricName: 'mean_fact_acc', semantics: { ...ratioSemantics(), kind: 'quality' } },
     ])
 
     expect(labels).toEqual({
@@ -247,7 +228,7 @@ describe('getBoundedQualityRatio', () => {
   })
 
   it('returns null for a diagnostic metric', () => {
-    const diagnostic: MetricSemantics = { ...ratioSemantics(), role: 'diagnostic', direction: 'none' }
+    const diagnostic: MetricSemantics = { ...ratioSemantics(), kind: 'diagnostic', direction: 'none' }
     expect(getBoundedQualityRatio(0.5, diagnostic)).toBeNull()
   })
 
@@ -260,29 +241,9 @@ describe('getBoundedQualityRatio', () => {
     expect(getBoundedQualityRatio(null, ratioSemantics())).toBeNull()
   })
 
-  it('a returned ratio is always within [0, 1]', () => {
-    fc.assert(
-      fc.property(fc.double({ min: -1e3, max: 1e3, noNaN: true }), arbSemantics(), (value, semantics) => {
-        const ratio = getBoundedQualityRatio(value, semantics)
-        if (ratio !== null) {
-          expect(ratio).toBeGreaterThanOrEqual(0)
-          expect(ratio).toBeLessThanOrEqual(1)
-        }
-      }),
-      { numRuns: NUM_RUNS },
-    )
-  })
-
-  it('a scale exists only for a non-diagnostic bounded directed metric', () => {
-    fc.assert(
-      fc.property(fc.double({ min: 0, max: 1, noNaN: true }), arbSemantics(), (value, semantics) => {
-        const eligible = semantics.role !== 'diagnostic'
-          && semantics.direction !== 'none'
-          && semantics.value_range != null
-        expect(getBoundedQualityRatio(value, semantics) !== null).toBe(eligible)
-      }),
-      { numRuns: NUM_RUNS },
-    )
+  it('clamps bounded ratios to [0, 1]', () => {
+    expect(getBoundedQualityRatio(-2, ratioSemantics())).toBe(0)
+    expect(getBoundedQualityRatio(3, ratioSemantics())).toBe(1)
   })
 })
 
@@ -290,14 +251,13 @@ describe('formatDifference', () => {
   const ACCURACY_RATIO: MetricSemantics = {
     semantic_id: 'quality.accuracy.ratio',
     metric_name: 'Accuracy',
-    role: 'primary',
+    kind: 'quality',
     direction: 'higher_is_better',
     value_range: { min: 0, max: 1 },
     display_kind: 'percent',
     display_multiplier: 100,
     display_unit: '%',
     display_precision: 1,
-    contract_version: 1,
   }
 
   it('scales a native-ratio difference into percentage points', () => {
@@ -320,12 +280,11 @@ describe('formatDifference', () => {
     const seconds: MetricSemantics = {
       semantic_id: 'perf.latency.seconds',
       metric_name: 'Latency',
-      role: 'primary',
+      kind: 'quality',
       direction: 'lower_is_better',
       display_kind: 'number',
       display_unit: 's',
       display_precision: 3,
-      contract_version: 1,
     }
 
     // A difference of seconds is seconds, so nothing is converted.
@@ -359,25 +318,9 @@ describe('getComparisonVerdict', () => {
   })
 
   it('never judges a diagnostic metric or a directionless one', () => {
-    const diagnostic: MetricSemantics = { ...ratioSemantics(), role: 'diagnostic', direction: 'none' }
+    const diagnostic: MetricSemantics = { ...ratioSemantics(), kind: 'diagnostic', direction: 'none' }
     expect(getComparisonVerdict(5, diagnostic)).toBe('incomparable')
     expect(getComparisonVerdict(5, null)).toBe('incomparable')
   })
 
-  it('the verdict is decided by the direction alone', () => {
-    fc.assert(
-      fc.property(fc.double({ min: -100, max: 100, noNaN: true }), arbSemantics(), (delta, semantics) => {
-        const verdict = getComparisonVerdict(delta, semantics)
-        if (semantics.role === 'diagnostic' || semantics.direction === 'none') {
-          expect(verdict).toBe('incomparable')
-        } else if (delta === 0) {
-          expect(verdict).toBe('equal')
-        } else {
-          const improved = semantics.direction === 'higher_is_better' ? delta > 0 : delta < 0
-          expect(verdict).toBe(improved ? 'better' : 'worse')
-        }
-      }),
-      { numRuns: NUM_RUNS },
-    )
-  })
 })

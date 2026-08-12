@@ -17,7 +17,6 @@ from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
-from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report import ReportKey, ReportRef, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -206,14 +205,6 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
             semantics=metric.semantics,
         ) for r, metric in zip(report_list, primary_metrics) if metric
     ]
-    quality_ratio = None
-    quality_group = None
-    if len(report_list) == 1 and len(primary_metric_refs) == 1:
-        metric = primary_metrics[0]
-        quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
-        if quality_ratio is not None:
-            quality_group = (report_list[0].dataset_name, metric.semantics.semantic_id)
-
     return {
         'run_id': ref.run_id,
         'model_id': ref.model_id,
@@ -225,12 +216,7 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         'num_samples': total_num,
         'timestamp': timestamp,
         'primary_metrics': [ref.model_dump(mode='json') for ref in primary_metric_refs],
-        # Ranking and filtering key only, never rendered: a direction-aware 0-1 quality ratio, so
-        # a low WER ranks as well as a high accuracy and a 0-100 scale is not treated as 100x
-        # better than a ratio. `None` means the run's metrics admit no such scale.
-        'quality_ratio': quality_ratio,
-        '_quality_group': quality_group,
-        # keep individual scores for per-dataset filtering
+        # Keep individual dataset names for per-dataset filtering.
         '_datasets': dataset_names,
     }
 
@@ -271,9 +257,7 @@ def list_reports():
         search     (str):   fuzzy search on model/dataset name
         models     (str):   semicolon-separated model filter
         datasets   (str):   semicolon-separated dataset filter
-        score_min  (float): minimum score (0-1)
-        score_max  (float): maximum score (0-1)
-        sort_by    (str):   score / model / dataset / time (default: time)
+        sort_by    (str):   model / dataset / time (default: time)
         sort_order (str):   asc / desc (default: desc)
         page       (int):   page number (default: 1)
         page_size  (int):   items per page (default: 20)
@@ -282,6 +266,16 @@ def list_reports():
         root = _root_path()
         if not root or not os.path.isdir(root):
             return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
+
+        removed_score_params = sorted({'score_min', 'score_max'} & set(request.args))
+        sort_by = request.args.get('sort_by', 'time')
+        sort_order = request.args.get('sort_order', 'desc')
+        if removed_score_params:
+            return jsonify({'error': f"unsupported query parameters: {', '.join(removed_score_params)}"}), 400
+        if sort_by not in {'model', 'dataset', 'time'}:
+            return jsonify({'error': f'unsupported sort_by: {sort_by}'}), 400
+        if sort_order not in {'asc', 'desc'}:
+            return jsonify({'error': f'unsupported sort_order: {sort_order}'}), 400
 
         # --- Scan & load metadata ---
         items = []
@@ -312,20 +306,7 @@ def list_reports():
             ds_set = {d.strip().lower() for d in datasets_filter.split(';') if d.strip()}
             items = [it for it in items if any(d.lower() in ds_set for d in it['_datasets'])]
 
-        # A normalized score is comparable only within one dataset and semantic contract. Applying
-        # it across unrelated benchmarks would manufacture a global leaderboard from unlike tasks.
-        quality_groups = {it['_quality_group'] for it in items}
-        score_comparable = bool(items) and None not in quality_groups and len(quality_groups) == 1
-        score_min = request.args.get('score_min', type=float)
-        score_max = request.args.get('score_max', type=float)
-        if score_comparable and score_min is not None:
-            items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] >= score_min]
-        if score_comparable and score_max is not None:
-            items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] <= score_max]
-
         # --- Sort ---
-        sort_by = request.args.get('sort_by', 'time')
-        sort_order = request.args.get('sort_order', 'desc')
         reverse = sort_order == 'desc'
 
         sort_key_map = {
@@ -333,13 +314,8 @@ def list_reports():
             'dataset': lambda x: x['dataset_name'].lower(),
             'time': lambda x: x['timestamp'],
         }
-        if sort_by == 'score' and score_comparable:
-            items.sort(key=lambda item: item['quality_ratio'], reverse=reverse)
-        else:
-            if sort_by == 'score':
-                sort_by = 'time'
-            key_fn = sort_key_map.get(sort_by, sort_key_map['time'])
-            items.sort(key=key_fn, reverse=reverse)
+        key_fn = sort_key_map[sort_by]
+        items.sort(key=key_fn, reverse=reverse)
 
         # --- Paginate ---
         page = max(1, request.args.get('page', 1, type=int))
@@ -351,7 +327,6 @@ def list_reports():
         # Strip internal keys before returning
         for it in page_items:
             it.pop('_datasets', None)
-            it.pop('_quality_group', None)
 
         return jsonify({
             'reports': page_items,
@@ -361,7 +336,6 @@ def list_reports():
             'filters': {
                 'available_models': available_models,
                 'available_datasets': available_datasets,
-                'score_comparable': score_comparable,
             },
         }), 200
 

@@ -17,6 +17,7 @@ _EXACT_ALIASES = {name: alias.canonical_name for name, alias in LEGACY_METRIC_AL
 # that reinterpret an ambiguous score remain exclusive to v1 report migration.
 _SAFE_PRODUCER_ALIASES = {
     'acc': 'accuracy',
+    'bertscore': 'bert_score',
     'f1_score': 'f1',
     'em': 'exact_match',
 }

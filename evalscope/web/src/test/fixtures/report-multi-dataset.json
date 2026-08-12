@@ -30,7 +30,7 @@
           "semantics": {
             "semantic_id": "quality.accuracy.ratio",
             "metric_name": "Accuracy",
-            "role": "primary",
+            "kind": "quality",
             "direction": "higher_is_better",
             "raw_unit": null,
             "value_range": {
@@ -40,8 +40,7 @@
             "display_kind": "percent",
             "display_multiplier": 100.0,
             "display_unit": "%",
-            "display_precision": 1,
-            "contract_version": 1
+            "display_precision": 1
           }
         }
       ],
@@ -82,7 +81,7 @@
           "semantics": {
             "semantic_id": "quality.score.points_100",
             "metric_name": "Score",
-            "role": "primary",
+            "kind": "quality",
             "direction": "higher_is_better",
             "raw_unit": null,
             "value_range": {
@@ -92,8 +91,7 @@
             "display_kind": "percent",
             "display_multiplier": 1.0,
             "display_unit": "%",
-            "display_precision": 1,
-            "contract_version": 1
+            "display_precision": 1
           }
         }
       ],
@@ -129,15 +127,14 @@
           "semantics": {
             "semantic_id": "perf.throughput.tokens_per_second",
             "metric_name": "Token Throughput",
-            "role": "primary",
+            "kind": "quality",
             "direction": "higher_is_better",
             "raw_unit": "tok/s",
             "value_range": null,
             "display_kind": "number",
             "display_multiplier": null,
             "display_unit": "tok/s",
-            "display_precision": 2,
-            "contract_version": 1
+            "display_precision": 2
           }
         }
       ],

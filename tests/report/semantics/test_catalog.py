@@ -11,7 +11,7 @@ validator enforces.
 import pytest
 from pydantic import ValidationError
 
-from evalscope.api.metric.semantics import MetricDirection, MetricRole
+from evalscope.api.metric.semantics import MetricDirection, MetricKind
 from evalscope.metrics.semantics import catalog as catalog_module
 from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS
 from evalscope.metrics.semantics.entry import MetricEntry
@@ -31,7 +31,7 @@ class TestImportTimeValidation:
             MetricEntry()
 
     def test_illegal_entry_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # role=primary with direction=none violates the contract and must not resolve.
+        # kind=quality with direction=none violates the contract and must not resolve.
         monkeypatch.setitem(
             METRIC_DEFINITIONS,
             'bogus_metric',
@@ -48,11 +48,11 @@ class TestImportTimeValidation:
 class TestGsm8kAccuracy:
     """GSM8K's canonical accuracy definition has the expected base quality contract."""
 
-    def test_accuracy_resolves_to_auxiliary_accuracy_before_attribution(self) -> None:
+    def test_accuracy_resolves_to_quality_semantics(self) -> None:
         semantics = METRIC_DEFINITIONS['accuracy'].resolve('accuracy')
 
         assert semantics.semantic_id == 'quality.accuracy.ratio'
-        assert semantics.role is MetricRole.AUXILIARY
+        assert semantics.kind is MetricKind.QUALITY
         assert semantics.direction is MetricDirection.HIGHER_IS_BETTER
 
 

@@ -1,7 +1,7 @@
 import plotly.graph_objects as go
 import pytest
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricRole
+from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.report import Category, Metric, Report, ReportRef, Subset
 from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
@@ -40,7 +40,7 @@ def _hydrated(report: Report) -> Report:
 
 def test_build_report_meta_exposes_primary_metric_identity(monkeypatch) -> None:
     identity = MetricIdentity(name='output_throughput', aggregation='mean')
-    semantics = SEMANTIC_BASELINES['perf.throughput.tokens_per_second'].model_copy(update={'role': MetricRole.PRIMARY})
+    semantics = SEMANTIC_BASELINES['perf.throughput.tokens_per_second']
     report = Report(
         dataset_name='throughput_suite',
         dataset_pretty_name='Throughput Suite',
@@ -72,16 +72,16 @@ def test_build_report_meta_exposes_primary_metric_identity(monkeypatch) -> None:
     }]
     assert metadata['dataset_name'] == 'throughput_suite'
     assert metadata['dataset_pretty_name'] == 'Throughput Suite'
-    assert metadata['_quality_group'] is None
+    assert set(('quality_ratio', '_quality_group')).isdisjoint(metadata)
     assert set(('metric_name', 'score', 'dataset_scores')).isdisjoint(metadata)
 
 
-def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypatch) -> None:
+def test_build_report_meta_picks_the_primary_identity_not_the_first_metric(monkeypatch) -> None:
     """The declared structured identity, not metric order, selects the conclusion."""
     accuracy_identity = MetricIdentity(name='accuracy', aggregation='mean')
     normalized_identity = MetricIdentity(name='normalized_score', aggregation='mean')
-    accuracy_semantics = SEMANTIC_BASELINES['quality.accuracy.ratio'].model_copy(update={'role': MetricRole.AUXILIARY})
-    normalized_semantics = SEMANTIC_BASELINES['quality.score.ratio'].model_copy(update={'role': MetricRole.PRIMARY})
+    accuracy_semantics = SEMANTIC_BASELINES['quality.accuracy.ratio']
+    normalized_semantics = SEMANTIC_BASELINES['quality.score.ratio']
     report = Report(
         dataset_name='document_suite',
         model_name='test-model',
@@ -109,7 +109,7 @@ def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypat
     assert report.primary_metric.score == 0.9
     assert metadata['primary_metrics'][0]['identity'] == normalized_identity.model_dump()
     assert metadata['primary_metrics'][0]['score'] == 0.9
-    assert metadata['_quality_group'] == ('document_suite', 'quality.score.ratio')
+    assert set(('quality_ratio', '_quality_group')).isdisjoint(metadata)
     payload = _report_to_service_dict(report)
     assert payload['primary_metric_identity'] == normalized_identity.model_dump()
     assert set(('score', 'metric_name', 'dataset_scores')).isdisjoint(payload)
@@ -128,12 +128,11 @@ def test_build_report_meta_does_not_rank_multiple_datasets(monkeypatch) -> None:
     metadata = _build_report_meta(ReportRef(run_id='run', model_id='test-model'), '/tmp')
 
     assert len(metadata['primary_metrics']) == 2
-    assert metadata['quality_ratio'] is None
-    assert metadata['_quality_group'] is None
+    assert set(('quality_ratio', '_quality_group')).isdisjoint(metadata)
 
 
 def _semantic_report(dataset_name: str, score: float, semantic_id: str) -> Report:
-    semantics = SEMANTIC_BASELINES[semantic_id].model_copy(update={'role': MetricRole.PRIMARY})
+    semantics = SEMANTIC_BASELINES[semantic_id]
     identity = MetricIdentity(name=dataset_name, aggregation='mean')
     return Report(
         dataset_name=dataset_name,

@@ -52,7 +52,6 @@ function makeReport(overrides: Partial<ReportSummary> = {}): ReportSummary {
     num_samples: 128,
     timestamp: '2026-07-01T12:00:00',
     primary_metrics: [],
-    quality_ratio: null,
     ...overrides,
   }
 }

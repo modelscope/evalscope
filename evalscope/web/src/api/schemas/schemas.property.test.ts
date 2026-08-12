@@ -72,7 +72,6 @@ const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
     num_samples: fc.nat(),
     timestamp: fc.string(),
     primary_metrics: fc.constant([]),
-    quality_ratio: fc.oneof(fc.double({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }), fc.constant(null)),
   },
   {
     requiredKeys: [
@@ -83,7 +82,6 @@ const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
       'num_samples',
       'timestamp',
       'primary_metrics',
-      'quality_ratio',
     ],
   },
 )

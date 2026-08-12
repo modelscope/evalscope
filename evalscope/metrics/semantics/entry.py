@@ -16,7 +16,7 @@ from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 #: Location the baseline table is declared at, used in error messages.
 BASELINE_TABLE_LOCATION = 'evalscope/metrics/semantics/baselines.py::SEMANTIC_BASELINES'
 
-#: Supported differences from a named baseline. Semantic identity, role and display kind belong
+#: Supported differences from a named baseline. Semantic identity, kind and display kind belong
 #: to the baseline vocabulary rather than to each catalog entry.
 _ENTRY_OVERRIDE_FIELDS = (
     'metric_name',

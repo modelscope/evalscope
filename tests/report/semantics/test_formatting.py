@@ -11,7 +11,7 @@ from evalscope.api.metric.semantics import (
     MetricDirection,
     MetricDisplayKind,
     MetricIdentity,
-    MetricRole,
+    MetricKind,
     MetricSemantics,
     ValueRange,
 )
@@ -31,7 +31,7 @@ def make_percent_semantics(
     multiplier: float = 100.0,
     precision: int = 1,
     unit: Optional[str] = '%',
-    role: MetricRole = MetricRole.PRIMARY,
+    kind: MetricKind = MetricKind.QUALITY,
     direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
     value_range: ValueRange = RATIO_RANGE,
 ) -> MetricSemantics:
@@ -39,7 +39,7 @@ def make_percent_semantics(
     return MetricSemantics(
         semantic_id='quality.accuracy.ratio',
         metric_name='Accuracy',
-        role=role,
+        kind=kind,
         direction=direction,
         value_range=value_range,
         display_kind=MetricDisplayKind.PERCENT,
@@ -53,14 +53,14 @@ def make_number_semantics(
     precision: int = 3,
     display_unit: Optional[str] = 's',
     raw_unit: Optional[str] = 's',
-    role: MetricRole = MetricRole.PRIMARY,
+    kind: MetricKind = MetricKind.QUALITY,
     direction: MetricDirection = MetricDirection.LOWER_IS_BETTER,
 ) -> MetricSemantics:
     """Build a number-rendered declaration with overridable display fields."""
     return MetricSemantics(
         semantic_id='perf.latency.seconds',
         metric_name='Latency',
-        role=role,
+        kind=kind,
         direction=direction,
         raw_unit=raw_unit,
         display_kind=MetricDisplayKind.NUMBER,
@@ -90,7 +90,7 @@ class TestRoundTiesPositive:
     )
     def test_rounds_halves_toward_positive_infinity(self, value: float, expected: str) -> None:
         semantics = make_number_semantics(
-            precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
+            precision=0, display_unit=None, raw_unit=None, kind=MetricKind.DIAGNOSTIC, direction=MetricDirection.NONE
         )
         assert format_metric_value(value, semantics) == expected
 
@@ -152,7 +152,7 @@ class TestFormatNumber:
 
     def test_zero_precision_drops_the_decimal_point(self) -> None:
         semantics = make_number_semantics(
-            precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
+            precision=0, display_unit=None, raw_unit=None, kind=MetricKind.DIAGNOSTIC, direction=MetricDirection.NONE
         )
         assert format_metric_value(12.0, semantics) == '12'
 
@@ -212,7 +212,7 @@ class TestMetricLabels:
 
     def test_diagnostic_and_missing_semantics_keep_final_name(self) -> None:
         diagnostic = make_number_semantics(
-            role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE, display_unit=None, raw_unit=None
+            kind=MetricKind.DIAGNOSTIC, direction=MetricDirection.NONE, display_unit=None, raw_unit=None
         )
 
         assert format_metric_label('judge_failed', diagnostic) == 'judge_failed'
@@ -221,7 +221,7 @@ class TestMetricLabels:
     def test_duplicate_display_names_are_disambiguated(self) -> None:
         labels = format_metric_labels([
             ('mean_acc', make_percent_semantics()),
-            ('mean_fact_acc', make_percent_semantics(role=MetricRole.AUXILIARY)),
+            ('mean_fact_acc', make_percent_semantics()),
         ])
 
         assert labels == {
@@ -231,9 +231,9 @@ class TestMetricLabels:
 
 
 def test_formatting_reads_only_display_fields() -> None:
-    """Role, direction, ranges and identifiers must not influence the rendered text."""
+    """Kind, direction, ranges and identifiers must not influence the rendered text."""
     base = make_percent_semantics()
-    diagnostic = make_percent_semantics(role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE)
+    diagnostic = make_percent_semantics(kind=MetricKind.DIAGNOSTIC, direction=MetricDirection.NONE)
     lower_is_better = make_percent_semantics(direction=MetricDirection.LOWER_IS_BETTER)
 
     assert format_metric_value(0.4321, base) == format_metric_value(0.4321, diagnostic)

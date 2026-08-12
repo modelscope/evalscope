@@ -22,28 +22,26 @@ afterEach(cleanup)
 const POINTS_100: MetricSemantics = {
   semantic_id: 'quality.score.points_100',
   metric_name: 'Score',
-  role: 'auxiliary',
+  kind: 'quality',
   direction: 'higher_is_better',
   value_range: { min: 0, max: 100 },
   display_kind: 'percent',
   display_multiplier: 1,
   display_unit: '%',
   display_precision: 1,
-  contract_version: 1,
 }
 
 /** Unbounded throughput in its native unit. */
 const THROUGHPUT: MetricSemantics = {
   semantic_id: 'perf.throughput.tokens_per_second',
   metric_name: 'Token Throughput',
-  role: 'primary',
+  kind: 'quality',
   direction: 'higher_is_better',
   raw_unit: 'tok/s',
   value_range: null,
   display_kind: 'number',
   display_unit: 'tok/s',
   display_precision: 2,
-  contract_version: 1,
 }
 
 describe('DetailsTab metric semantics', () => {
