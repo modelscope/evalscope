@@ -201,4 +201,31 @@ describe('ComparePage', () => {
     expect(improvedDelta).toHaveClass('text-[var(--success)]')
     expect(improvedDelta.closest('td')?.getAttribute('style')).toContain('var(--success)')
   })
+
+  it('separates different primary metrics for the same dataset', async () => {
+    const mixedReports = [
+      { ...makeReport(runNames[0], 0.8), _reportRef: runNames[0] },
+      { ...makeReport(runNames[1], 0.9), _reportRef: runNames[1] },
+      { ...makeReport(runNames[2], 0.2, 'lower_is_better'), _reportRef: runNames[2] },
+      { ...makeReport(runNames[3], 0.1, 'lower_is_better'), _reportRef: runNames[3] },
+    ]
+    useReportCacheMock.mockReturnValue({
+      loadMultiReports: vi.fn(async () => mixedReports),
+      loading: false,
+      reportCache: Object.fromEntries(mixedReports.map((report) => [report._reportRef, {
+        report_list: [report],
+        datasets: ['gsm8k'],
+        task_config: {},
+      }])),
+    })
+
+    await renderPage()
+
+    expect(screen.getByRole('columnheader', { name: /gsm8k.*Accuracy ↑/ })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /gsm8k.*WER ↓/ })).toBeInTheDocument()
+    expect(screen.getByText('20%')).toBeInTheDocument()
+    expect(screen.getByText('10%')).toBeInTheDocument()
+    expect(screen.queryByText(/80 pp/)).not.toBeInTheDocument()
+    expect(screen.queryByText('0 pp')).not.toBeInTheDocument()
+  })
 })

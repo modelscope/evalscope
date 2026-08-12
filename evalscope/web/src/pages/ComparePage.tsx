@@ -14,7 +14,9 @@ import {
   MAX_COMPARE_SLOTS,
   togglePredictionSelection,
 } from '@/domain/compare/selection'
+import { metricComparisonKey } from '@/domain/compare/scoreMatrix'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { formatMetricIdentityLabel } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Button from '@/components/ui/Button'
@@ -104,38 +106,72 @@ export default function ComparePage() {
     }
 
     const byReport: Record<string, Record<string, number>> = {}
+    const datasetsByReport: Record<string, Set<string>> = {}
     const labelsByDataset: Record<string, string> = {}
-    //  Each dataset's primary metric decides how its row is formatted and which end is "best".
-    const semanticsByDataset: Record<string, MetricSemantics | undefined> = {}
+    const groups: Record<string, {
+      id: string
+      datasetId: string
+      metricLabel: string
+      semantics: MetricSemantics | undefined
+    }> = {}
     for (const r of reports) {
       const key = (r as ReportData & { _reportRef?: string })._reportRef ?? r.model_name
       if (!byReport[key]) byReport[key] = {}
+      if (!datasetsByReport[key]) datasetsByReport[key] = new Set()
       const primary = primaryMetricOf(r)
       if (!primary) continue
-      byReport[key][r.dataset_name] = primary.score
+      const groupId = JSON.stringify([
+        r.dataset_name,
+        metricComparisonKey(primary.identity, primary.semantics),
+      ])
+      byReport[key][groupId] = primary.score
+      datasetsByReport[key].add(r.dataset_name)
       labelsByDataset[r.dataset_name] = datasetLabel(r)
-      if (primary?.semantics) {
-        semanticsByDataset[r.dataset_name] = primary.semantics
+      groups[groupId] = {
+        id: groupId,
+        datasetId: r.dataset_name,
+        metricLabel: formatMetricIdentityLabel(primary.identity, primary.semantics, primary.legacy_name),
+        semantics: primary.semantics,
       }
     }
 
     const reportKeys = reportNames.filter((n) => byReport[n])
-    const dsLists = reportKeys.map((k) => new Set(Object.keys(byReport[k])))
+    const dsLists = reportKeys.map((k) => datasetsByReport[k])
     const common = dsLists.length
       ? [...dsLists.reduce((a, b) => new Set([...a].filter((x) => b.has(x))))]
       : []
-    common.sort()
+    const commonSet = new Set(common)
+    const scoreGroups = Object.values(groups)
+      .filter((group) => commonSet.has(group.datasetId))
+      .sort((left, right) => (
+        left.datasetId.localeCompare(right.datasetId)
+        || left.metricLabel.localeCompare(right.metricLabel)
+        || left.id.localeCompare(right.id)
+      ))
+    const semanticsByGroup: Record<string, MetricSemantics | undefined> = {}
 
-    const rows: Record<string, unknown>[] = common.map((ds) => {
-      const row: Record<string, unknown> = { dataset: labelsByDataset[ds] || ds, dataset_id: ds }
-      const scores = reportKeys.map((k) => byReport[k][ds] ?? 0)
-      // "Best" follows the metric's direction: a low WER wins, a high accuracy wins.
-      const lowerIsBetter = semanticsByDataset[ds]?.direction === 'lower_is_better'
-      const bestScore = lowerIsBetter ? Math.min(...scores) : Math.max(...scores)
-      reportKeys.forEach((k, i) => {
-        row[k] = scores[i]
-        row[`${k}_best`] = scores[i] === bestScore && scores.length > 1
+    const rows: Record<string, unknown>[] = scoreGroups.map((group) => {
+      const row: Record<string, unknown> = {
+        dataset: labelsByDataset[group.datasetId] || group.datasetId,
+        dataset_id: group.id,
+        source_dataset_id: group.datasetId,
+        metric: group.metricLabel,
+      }
+      const availableScores = reportKeys.flatMap((key) => {
+        const score = byReport[key][group.id]
+        return typeof score === 'number' && Number.isFinite(score) ? [score] : []
       })
+      const lowerIsBetter = group.semantics?.direction === 'lower_is_better'
+      const bestScore = availableScores.length > 0
+        ? lowerIsBetter ? Math.min(...availableScores) : Math.max(...availableScores)
+        : null
+      reportKeys.forEach((key) => {
+        const score = byReport[key][group.id]
+        if (typeof score !== 'number' || !Number.isFinite(score)) return
+        row[key] = score
+        row[`${key}_best`] = score === bestScore && availableScores.length > 1
+      })
+      semanticsByGroup[group.id] = group.semantics
       return row
     })
 
@@ -144,7 +180,7 @@ export default function ComparePage() {
       ...reportKeys.map((k) => ({ key: k, label: displayNames[k] })),
     ]
 
-    return { scoreTableData: rows, scoreTableColumns: columns, displayNames, scoreSemantics: semanticsByDataset }
+    return { scoreTableData: rows, scoreTableColumns: columns, displayNames, scoreSemantics: semanticsByGroup }
   }, [reports, reportNames, t])
 
   // ------------------------------------------------------------------ //

@@ -28,13 +28,20 @@ interface Props {
  * Headline figures of one dataset report: the primary metric's name, score, sample count and
  * semantics. `null` when the report declares no primary metric.
  */
-function primarySummaryOf(report: ReportData): { name: string; score: number; num: number; semantics?: MetricSemantics | null } | null {
+function primarySummaryOf(report: ReportData): {
+  name: string
+  label: string
+  score: number
+  num: number
+  semantics?: MetricSemantics | null
+} | null {
   const metric = primaryMetricOf(report)
   if (!metric) {
     return null
   }
   return {
     name: metricIdentityKey(metric.identity),
+    label: formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name),
     score: metric.score,
     num: metric.categories?.reduce((sum, category) => sum + category.num, 0) ?? 0,
     semantics: metric.semantics,
@@ -65,6 +72,8 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         DatasetId: r.dataset_name,
         Score: primary?.score ?? null,
         Metric: primary?.name ?? '',
+        MetricLabel: primary?.label ?? '',
+        Semantics: primary?.semantics ?? null,
         Samples: primary?.num ?? 0,
       }
     })
@@ -111,10 +120,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
             className="truncate text-xs text-[var(--text-muted)] sm:text-sm"
             title={metricName}
           >
-            {(() => {
-              const metric = primaries.find((primary) => primary && metricIdentityKey(primary.identity) === metricName)
-              return metric ? formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name) : metricName
-            })()}
+            {String(row.MetricLabel || metricName)}
           </span>
         )
       },
@@ -126,9 +132,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       render: (row: Record<string, unknown>) => {
         const score = row.Score == null ? null : Number(row.Score)
         const metricName = String(row.Metric ?? '')
-        const semantics = primaries.find(
-          (primary) => primary && metricIdentityKey(primary.identity) === metricName,
-        )?.semantics
+        const semantics = row.Semantics as MetricSemantics | null
         return (
           <ScoreBar
             score={score}

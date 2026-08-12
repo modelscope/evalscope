@@ -226,15 +226,16 @@ class EmbeddingResultAnalyzer(BaseResultAnalyzer):
 
         return {
             EmbCol.CONCURRENCY.key: 'INF' if concurrency == -1 else str(int(concurrency)),
-            EmbCol.RATE.key: _cell('Rate', rate) if rate != -1 else 'INF',
-            EmbCol.RPS.key: _cell('RPS', rps) if rps is not None else 'N/A',
-            EmbCol.AVG_LATENCY.key: _cell('Avg Lat.(s)', avg_latency) if avg_latency is not None else 'N/A',
-            EmbCol.P99_LATENCY.key: _cell('P99 Lat.(s)', p99_latency) if p99_latency is not None else 'N/A',
-            EmbCol.AVG_INPUT_TPS.key: _cell('Avg Inp.TPS', avg_input_tps) if avg_input_tps is not None else 'N/A',
-            EmbCol.P99_INPUT_TPS.key: _cell('P99 Inp.TPS', p99_input_tps),
-            EmbCol.AVG_INPUT_TOKENS.key: _cell('Avg Inp.Tok', avg_input_tokens)
+            EmbCol.RATE.key: _cell(Metrics.REQUEST_RATE, rate) if rate != -1 else 'INF',
+            EmbCol.RPS.key: _cell(Metrics.REQUEST_THROUGHPUT, rps) if rps is not None else 'N/A',
+            EmbCol.AVG_LATENCY.key: _cell(Metrics.AVERAGE_LATENCY, avg_latency) if avg_latency is not None else 'N/A',
+            EmbCol.P99_LATENCY.key: _cell(PercentileMetrics.LATENCY, p99_latency) if p99_latency is not None else 'N/A',
+            EmbCol.AVG_INPUT_TPS.key: _cell(Metrics.INPUT_TOKEN_THROUGHPUT, avg_input_tps)
+            if avg_input_tps is not None else 'N/A',
+            EmbCol.P99_INPUT_TPS.key: _cell(PercentileMetrics.INPUT_THROUGHPUT, p99_input_tps),
+            EmbCol.AVG_INPUT_TOKENS.key: _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, avg_input_tokens)
             if avg_input_tokens is not None else 'N/A',
-            EmbCol.SUCCESS_RATE.key: _cell('Success Rate', success_rate, include_unit=True)
+            EmbCol.SUCCESS_RATE.key: _cell('success_rate', success_rate, include_unit=True)
             if success_rate is not None else 'N/A',
         }
 
@@ -391,7 +392,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 _cell(Metrics.TOTAL_REQUESTS, summary.total_requests),
                 _cell(Metrics.REQUEST_THROUGHPUT, summary.request_throughput),
                 _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, summary.output_token_throughput),
-                _cell('Success Rate', summary.success_rate, include_unit=True),
+                _cell('success_rate', summary.success_rate, include_unit=True),
             ]
             if has_traces:
                 n = trace_summary.n_traces if trace_summary and not trace_summary.is_empty() else '-'

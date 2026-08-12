@@ -8,12 +8,39 @@
  * unit tests rather than through the table.
  */
 
-import { formatDifference, getComparisonVerdict } from '@/domain/metric'
-import type { MetricSemantics } from '@/domain/metric'
+import { formatDifference, getComparisonVerdict, metricIdentityKey } from '@/domain/metric'
+import type { MetricIdentity, MetricSemantics } from '@/domain/metric'
 
 /** Weakest and strongest background tint applied to a non-zero delta. */
 const MIN_TINT = 0.06
 const MAX_EXTRA_TINT = 0.24
+
+/**
+ * Stable key for values that may share one comparison scale.
+ *
+ * Identity distinguishes metrics such as accuracy and WER. The complete semantics tuple also
+ * prevents benchmark-specific overrides from sharing direction, formatting or range by accident.
+ */
+export function metricComparisonKey(
+  identity: MetricIdentity,
+  semantics: MetricSemantics | null | undefined,
+): string {
+  return JSON.stringify([
+    metricIdentityKey(identity),
+    semantics?.semantic_id ?? null,
+    semantics?.metric_name ?? null,
+    semantics?.role ?? null,
+    semantics?.direction ?? null,
+    semantics?.raw_unit ?? null,
+    semantics?.value_range?.min ?? null,
+    semantics?.value_range?.max ?? null,
+    semantics?.display_kind ?? null,
+    semantics?.display_multiplier ?? null,
+    semantics?.display_unit ?? null,
+    semantics?.display_precision ?? null,
+    semantics?.contract_version ?? null,
+  ])
+}
 
 /**
  * Background tint for a delta cell, scaled by how large the delta is relative to
@@ -70,11 +97,16 @@ export function computeDeltaRanges(
 ): Record<string, number> {
   const ranges: Record<string, number> = {}
   for (const row of rows) {
-    const baseline = Number(row[baselineKey])
-    ranges[String(row.dataset_id)] = Math.max(
-      0,
-      ...reportKeys.map((report) => Math.abs(Number(row[report]) - baseline)),
-    )
+    const baseline = row[baselineKey]
+    if (typeof baseline !== 'number' || !Number.isFinite(baseline)) {
+      ranges[String(row.dataset_id)] = 0
+      continue
+    }
+    const deltas = reportKeys.flatMap((report) => {
+      const score = row[report]
+      return typeof score === 'number' && Number.isFinite(score) ? [Math.abs(score - baseline)] : []
+    })
+    ranges[String(row.dataset_id)] = Math.max(0, ...deltas)
   }
   return ranges
 }

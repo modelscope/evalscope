@@ -110,4 +110,29 @@ describe('OverviewTab dataset score view', () => {
     expect(screen.queryByText('Worst Dataset')).not.toBeInTheDocument()
     expect(screen.getByText('Total Samples')).toBeInTheDocument()
   })
+
+  it('keeps each dataset semantics when the same identity has different contracts', () => {
+    const primary = multi[0].metrics.find((metric) => (
+      metric.identity.name === multi[0].primary_metric_identity?.name
+    ))!
+    const werSemantics = {
+      ...primary.semantics!,
+      semantic_id: 'quality.wer.ratio',
+      metric_name: 'WER',
+      direction: 'lower_is_better' as const,
+    }
+    const speech = {
+      ...multi[0],
+      name: 'speech-wer',
+      dataset_name: 'speech',
+      metrics: [{ ...primary, score: 0.07, semantics: werSemantics }],
+    }
+
+    renderOverview([multi[0], speech])
+
+    expect(screen.getByText('Accuracy ↑')).toBeInTheDocument()
+    expect(screen.getByText('WER ↓')).toBeInTheDocument()
+    expect(screen.getByText('7%')).toBeInTheDocument()
+    expect(screen.queryByText('Average Score')).not.toBeInTheDocument()
+  })
 })

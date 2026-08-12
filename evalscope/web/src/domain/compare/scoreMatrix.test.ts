@@ -121,4 +121,15 @@ describe('computeDeltaRanges', () => {
   it('returns an empty map for no rows', () => {
     expect(computeDeltaRanges([], ['a'], 'a')).toEqual({})
   })
+
+  it('ignores missing scores and leaves a row without the selected baseline unscaled', () => {
+    const sparseRows = [
+      { dataset_id: 'accuracy', a: 0.8, b: 0.9 },
+      { dataset_id: 'wer', b: 0.2, c: 0.1 },
+    ]
+
+    const ranges = computeDeltaRanges(sparseRows, ['a', 'b', 'c'], 'a')
+    expect(ranges.accuracy).toBeCloseTo(0.1)
+    expect(ranges.wer).toBe(0)
+  })
 })

@@ -4,8 +4,16 @@ import io
 import unittest
 from rich.console import Console
 
+from evalscope.metrics.semantics import format_perf_value
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult, PercentileRow
-from evalscope.perf.utils.rich_display import AnalysisResult, DualConsole, LLMSummaryRenderer
+from evalscope.perf.utils.rich_display import (
+    AnalysisResult,
+    DualConsole,
+    EmbCol,
+    EmbeddingResultAnalyzer,
+    LLMSummaryRenderer,
+)
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary, TraceMetricStats
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput, WorkloadThroughputRow
 
@@ -133,6 +141,46 @@ class TestOverviewTable(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Traces', text)
         self.assertIn('3', text)
+
+
+class TestEmbeddingResultAnalyzer(unittest.TestCase):
+
+    def test_formats_rows_with_registry_field_keys(self):
+        summary = _make_summary(
+            request_rate=1.23456,
+            request_throughput=2.34567,
+            avg_latency=1.23456,
+            input_token_throughput=500.678,
+            avg_input_tokens=123.456,
+        )
+        percentiles = PercentileResult(rows=[
+            PercentileRow(percentile='99%', latency=3.45678, input_throughput=400.678),
+        ])
+
+        row = EmbeddingResultAnalyzer()._build_row(summary, percentiles)
+
+        expected = {
+            EmbCol.RATE.key: format_perf_value(summary.request_rate, Metrics.REQUEST_RATE, include_unit=False),
+            EmbCol.RPS.key: format_perf_value(
+                summary.request_throughput, Metrics.REQUEST_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.AVG_LATENCY.key: format_perf_value(
+                summary.avg_latency, Metrics.AVERAGE_LATENCY, include_unit=False
+            ),
+            EmbCol.P99_LATENCY.key: format_perf_value(3.45678, PercentileMetrics.LATENCY, include_unit=False),
+            EmbCol.AVG_INPUT_TPS.key: format_perf_value(
+                summary.input_token_throughput, Metrics.INPUT_TOKEN_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.P99_INPUT_TPS.key: format_perf_value(
+                400.678, PercentileMetrics.INPUT_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.AVG_INPUT_TOKENS.key: format_perf_value(
+                summary.avg_input_tokens, Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, include_unit=False
+            ),
+            EmbCol.SUCCESS_RATE.key: format_perf_value(summary.success_rate, 'success_rate', include_unit=True),
+        }
+        for key, value in expected.items():
+            self.assertEqual(row[key], value)
 
 
 class TestPerRequestMetrics(unittest.TestCase):

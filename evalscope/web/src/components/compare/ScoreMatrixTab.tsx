@@ -1,5 +1,4 @@
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { ArrowDown, ArrowUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatMetric, getBoundedQualityRatio, getComparisonVerdict } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
@@ -32,7 +31,7 @@ export default function ScoreMatrixTab({
   reportNames: string[]
   scoreTableColumns: { key: string; label: string }[]
   scoreTableData: Record<string, unknown>[]
-  /** Dataset name -> semantics of that dataset's primary metric. */
+  /** Dataset/metric comparison key -> semantics of that primary metric. */
   scoreSemantics: Record<string, MetricSemantics | undefined>
   displayNames: Record<string, string>
   displayLabels: Record<string, string>
@@ -58,11 +57,12 @@ export default function ScoreMatrixTab({
     isBest: boolean,
     isBaseline: boolean,
   ): ReactNode => {
-    if (score == null) {
+    if (score == null || !Number.isFinite(score)) {
       return <span className="text-[var(--text-dim)]">—</span>
     }
-    const delta = baselineScore == null ? 0 : score - baselineScore
-    const verdict = getComparisonVerdict(delta, semantics)
+    const hasBaseline = baselineScore != null && Number.isFinite(baselineScore)
+    const delta = hasBaseline ? score - baselineScore : null
+    const verdict = delta == null ? 'incomparable' : getComparisonVerdict(delta, semantics)
 
     return (
       <div
@@ -86,7 +86,7 @@ export default function ScoreMatrixTab({
                 : 'text-[var(--danger)]',
           )}
         >
-          {isBaseline ? t('compare.baseline') : signedDifference(delta, semantics)}
+          {isBaseline ? t('compare.baseline') : delta == null ? '—' : signedDifference(delta, semantics)}
         </span>
       </div>
     )
@@ -98,10 +98,12 @@ export default function ScoreMatrixTab({
     semantics: MetricSemantics | undefined,
     rangeKey: string,
   ): CSSProperties => {
-    if (score == null) return { backgroundColor: 'var(--bg-deep)' }
+    if (score == null || !Number.isFinite(score)) return { backgroundColor: 'var(--bg-deep)' }
     const ratio = getBoundedQualityRatio(score, semantics)
-    const delta = baselineScore == null ? 0 : score - baselineScore
+    const hasBaseline = baselineScore != null && Number.isFinite(baselineScore)
     if (comparisonMode === 'baseline') {
+      if (!hasBaseline) return { backgroundColor: 'var(--bg-deep)' }
+      const delta = score - baselineScore
       return { backgroundColor: comparisonDeltaBackground(delta, deltaRanges[rangeKey] ?? 0, semantics) }
     }
     if (ratio == null) return { backgroundColor: 'var(--bg-deep)', color: 'var(--text)' }
@@ -113,7 +115,7 @@ export default function ScoreMatrixTab({
       <PlotlyChart
         src={getCompareChartUrl(rootPath, reportNames, 'radar')}
         fallbackTable={{
-          columns: scoreTableColumns.map((column) => column.key),
+          columns: ['dataset', 'metric', ...reportKeys],
           rows: scoreTableData,
           scoreColumns: reportKeys,
           semantics: undefined,
@@ -177,27 +179,21 @@ export default function ScoreMatrixTab({
                   </th>
                   {dataRows.map((row) => {
                     const datasetId = String(row.dataset_id)
+                    const sourceDatasetId = String(row.source_dataset_id ?? row.dataset)
                     const semantics = scoreSemantics[datasetId]
                     const hintKey = directionHintKey(semantics)
                     return (
                       <th
                         key={datasetId}
-                        title={datasetId}
+                        title={`${sourceDatasetId} · ${String(row.metric)}`}
                         className="min-w-[120px] border-l border-[var(--border-strong)] px-3 py-2 text-center type-table-xs !normal-case whitespace-nowrap first:border-l-0"
                       >
                         <span className="flex flex-col items-center justify-center gap-0.5">
                           <span>{String(row.dataset)}</span>
-                          {hintKey && (
-                            <span
-                              aria-label={t(hintKey)}
-                              title={t(hintKey)}
-                              className="text-[var(--text-dim)]"
-                            >
-                              {semantics?.direction === 'lower_is_better'
-                                ? <ArrowDown aria-hidden="true" size={11} strokeWidth={2.5} />
-                                : <ArrowUp aria-hidden="true" size={11} strokeWidth={2.5} />}
-                            </span>
-                          )}
+                          <span className="text-[var(--text-dim)]">
+                            {String(row.metric)}
+                            {hintKey && <span className="sr-only" aria-label={t(hintKey)} />}
+                          </span>
                         </span>
                       </th>
                     )
@@ -229,8 +225,10 @@ export default function ScoreMatrixTab({
                     </td>
                     {dataRows.map((row) => {
                       const ds = String(row.dataset_id)
-                      const score = row ? (row[rk] as number) : null
-                      const baselineScore = row ? (row[baselineReport] as number) : null
+                      const score = typeof row[rk] === 'number' ? row[rk] as number : null
+                      const baselineScore = typeof row[baselineReport] === 'number'
+                        ? row[baselineReport] as number
+                        : null
                       const isBest = row ? !!(row[`${rk}_best`]) : false
                       const semantics = scoreSemantics[ds]
                       return (
