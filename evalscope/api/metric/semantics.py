@@ -50,8 +50,8 @@ KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset({
 This is the vocabulary of the identity's aggregation axis, which is *not* the aggregator registry:
 a registered aggregator writes its own ``name`` into every aggregate it produces, adapters that
 override ``aggregate_scores`` pass their own, and ``migrate_legacy_identity`` rewrites a few more.
-``mean_and_pass_at_k`` and friends are deliberately absent -- those aggregators inject
-``{metric}_pass@{k}`` value keys and then delegate to ``Mean``, so they emit ``mean``.
+``mean_and_pass_at_k`` and friends are deliberately absent: they emit the explicit
+``pass_at_k``, ``pass_hat_k`` and ``vote_at_k`` identities alongside the ordinary mean.
 
 It is enforced by a test rather than by this model: an aggregation name can be assembled from data,
 and refusing to build an identity would abort a whole run over a presentation detail. Adding an

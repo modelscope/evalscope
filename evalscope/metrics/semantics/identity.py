@@ -6,12 +6,22 @@ resolver.
 """
 
 import re
+from pydantic import ValidationError
 from typing import Callable, Dict, FrozenSet, Match, NamedTuple, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
 from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
 
 _EXACT_ALIASES = {name: alias.canonical_name for name, alias in LEGACY_METRIC_ALIASES.items()}
+
+# Producer-side aliases are intentionally narrow. These spellings are exact synonyms; mappings
+# that reinterpret an ambiguous score remain exclusive to v1 report migration.
+_SAFE_PRODUCER_ALIASES = {
+    'acc': 'accuracy',
+    'f1_score': 'f1',
+    'F1': 'f1',
+    'em': 'exact_match',
+}
 
 _AGGREGATION_ALIASES = {
     'avg': 'mean',
@@ -36,6 +46,37 @@ _NON_NAME = re.compile(r'[^a-z0-9]+')
 def _snake_case(value: str) -> str:
     value = _SNAKE_BOUNDARY.sub('_', value).lower()
     return _NON_NAME.sub('_', value).strip('_')
+
+
+def canonicalize_producer_identity(
+    metric_name: str,
+    aggregation: Optional[str],
+    dimensions: Optional[Dict[str, Scalar]] = None,
+) -> MetricIdentity:
+    """Canonicalize producer syntax without inferring what a metric measures.
+
+    New producers must express structural axes through ``aggregation`` and ``dimensions``.
+    Ambiguous or empty names are kept reportable under ``legacy_metric`` with their original
+    spelling, so resolving them can only produce diagnostic semantics.
+    """
+    original_name = metric_name
+    canonical_name = _SAFE_PRODUCER_ALIASES.get(metric_name, _snake_case(metric_name))
+    raw_aggregation = aggregation or 'identity'
+    canonical_aggregation = _AGGREGATION_ALIASES.get(raw_aggregation, _snake_case(raw_aggregation))
+    identity_dimensions = dict(dimensions or {})
+
+    try:
+        return MetricIdentity(
+            name=canonical_name,
+            aggregation=canonical_aggregation,
+            dimensions=identity_dimensions,
+        )
+    except (ValueError, ValidationError):
+        return MetricIdentity(
+            name='legacy_metric',
+            aggregation=canonical_aggregation or 'identity',
+            dimensions={**identity_dimensions, 'original_name': original_name},
+        )
 
 
 class _BenchmarkRule(NamedTuple):

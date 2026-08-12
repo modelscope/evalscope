@@ -288,42 +288,29 @@ def test_agg_score_keeps_unnormalizable_names_reportable(metric_name: str) -> No
     score = AggScore(score=0.5, metric_name=metric_name, aggregation='mean')
 
     assert score.identity == MetricIdentity(
-        name='legacy_metric', aggregation='identity', dimensions={'original_name': metric_name}
+        name='legacy_metric', aggregation='mean', dimensions={'original_name': metric_name}
     )
 
 
-@pytest.mark.parametrize(
-    ('metric_name', 'reinterpreted_as'),
-    [
-        ('total_score', 'judge_score'),
-        ('gpt_score', 'judge_score'),
-        ('avg_score', 'judge_score'),
-        ('score', 'normalized_score'),
-        ('overall', 'normalized_score'),
-    ],
-)
-def test_agg_score_logs_ambiguous_name_reassignment(
-    metric_name: str, reinterpreted_as: str, caplog_evalscope: pytest.LogCaptureFixture
-) -> None:
-    """Renames that change the measured concept are visible, not hidden behind a DeprecationWarning."""
+@pytest.mark.parametrize('metric_name', ['score', 'overall', 'total_score'])
+def test_agg_score_isolates_forbidden_ambiguous_names(metric_name: str) -> None:
     score = AggScore(score=1.0, metric_name=metric_name, aggregation='mean')
 
-    assert score.metric_name == reinterpreted_as
-    warnings_text = '\n'.join(record.getMessage() for record in caplog_evalscope.records)
-    assert metric_name in warnings_text
-    assert reinterpreted_as in warnings_text
-
-
-def test_agg_score_migrates_general_qa_overlap_metrics() -> None:
-    with pytest.warns(DeprecationWarning, match='legacy metric identity'):
-        bleu = AggScore(score=0.5, metric_name='bleu-4', aggregation='mean')
-    with pytest.warns(DeprecationWarning, match='legacy metric identity'):
-        rouge = AggScore(score=0.5, metric_name='Rouge-L-R', aggregation='mean')
-
-    assert bleu.identity == MetricIdentity(name='bleu', aggregation='mean', dimensions={'ngram': 4})
-    assert rouge.identity == MetricIdentity(
-        name='rouge', aggregation='mean', dimensions={
-            'statistic': 'recall',
-            'variant': 'l'
-        }
+    assert score.identity == MetricIdentity(
+        name='legacy_metric', aggregation='mean', dimensions={'original_name': metric_name}
     )
+
+
+@pytest.mark.parametrize('metric_name', ['gpt_score', 'avg_score'])
+def test_agg_score_does_not_reinterpret_valid_ambiguous_names(metric_name: str) -> None:
+    score = AggScore(score=1.0, metric_name=metric_name, aggregation='mean')
+
+    assert score.identity == MetricIdentity(name=metric_name, aggregation='mean')
+
+
+def test_agg_score_only_normalizes_overlap_metric_syntax() -> None:
+    bleu = AggScore(score=0.5, metric_name='bleu-4', aggregation='mean')
+    rouge = AggScore(score=0.5, metric_name='Rouge-L-R', aggregation='mean')
+
+    assert bleu.identity == MetricIdentity(name='bleu_4', aggregation='mean')
+    assert rouge.identity == MetricIdentity(name='rouge_l_r', aggregation='mean')
