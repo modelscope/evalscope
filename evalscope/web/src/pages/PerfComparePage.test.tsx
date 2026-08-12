@@ -58,12 +58,22 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
     display_precision: 2,
     contract_version: 1,
   }
+  const throughputSemantics = {
+    semantic_id: 'perf.throughput.tokens_per_second',
+    metric_name: 'Output Throughput',
+    role: 'auxiliary' as const,
+    direction: 'higher_is_better' as const,
+    display_kind: 'number' as const,
+    display_unit: 'tok/s',
+    display_precision: 2,
+    contract_version: 1,
+  }
   const columns: PerfDetailResponse['summary_columns'] = [
     { key: 'avg_latency', label: 'Average latency (s)', semantics: latencySemantics },
     { key: 'p90_latency', label: 'P90 latency (s)', semantics: latencySemantics },
     { key: 'p95_latency', label: 'P95 latency (s)', semantics: latencySemantics },
     { key: 'p99_latency', label: 'P99 latency (s)', semantics: latencySemantics },
-    { key: 'output_token_throughput', label: 'Output throughput (tokens/s)', semantics: latencySemantics },
+    { key: 'output_token_throughput', label: 'Output throughput (tokens/s)', semantics: throughputSemantics },
   ]
   const base: PerfDetailResponse = {
     path: 'run-a',
@@ -74,6 +84,7 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
     basic_info: { 'Total requests': String(sampleCount) },
     summary_columns: columns,
     summary_rows: [[1.2, 2.0, 2.5, 3.0, 500]],
+    summary_sample_counts: [sampleCount],
     total_requests: sampleCount,
     best_config: { concurrency: '10' },
     recommendations: [],

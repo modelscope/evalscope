@@ -1,11 +1,4 @@
-/**
- * The perf schemas must declare `metric_semantics`.
- *
- * This is a regression test for a silent failure mode: zod's
- * `z.object` strips keys a schema does not mention, so an undeclared `metric_semantics` is dropped
- * during parsing. Nothing throws — the perf UI simply loses every direction and unit and falls
- * back to raw numbers, which looks plausible and is wrong.
- */
+/** Ensure Zod preserves semantics at both wire locations: the run-list map and detail columns. */
 
 import { describe, expect, it } from 'vitest'
 
@@ -47,6 +40,7 @@ describe('perf schemas keep metric semantics next to stable fields', () => {
         { key: 'avg_latency', label: 'Avg Lat.(s)', semantics: LATENCY },
       ],
       summary_rows: [['8', 1.2]],
+      summary_sample_counts: [1],
       total_requests: 1,
       best_config: {},
       recommendations: [],

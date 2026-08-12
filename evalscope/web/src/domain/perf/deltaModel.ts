@@ -179,13 +179,28 @@ function configIdentity(config: Record<string, string>): string {
 function matchingWideRows(
   baseline: PerfDetailResponse,
   candidate: PerfDetailResponse,
-): { baseline: (string | number)[]; candidate: (string | number)[] } | null {
+): {
+  baseline: (string | number)[]
+  baselineIndex: number
+  candidate: (string | number)[]
+  candidateIndex: number
+} | null {
   const candidates = new Map(
-    candidate.summary_rows.map((row) => [configIdentity(wideRowConfig(candidate, row)), row]),
+    candidate.summary_rows.map((row, index) => [
+      configIdentity(wideRowConfig(candidate, row)),
+      { row, index },
+    ]),
   )
-  for (const row of baseline.summary_rows) {
+  for (const [baselineIndex, row] of baseline.summary_rows.entries()) {
     const match = candidates.get(configIdentity(wideRowConfig(baseline, row)))
-    if (match) return { baseline: row, candidate: match }
+    if (match) {
+      return {
+        baseline: row,
+        baselineIndex,
+        candidate: match.row,
+        candidateIndex: match.index,
+      }
+    }
   }
   return null
 }
@@ -242,8 +257,12 @@ function pickNewest(runs: PerfDetailResponse[]): PerfDetailResponse {
   return runs.reduce((newest, run) => (timestampOf(run) > timestampOf(newest) ? run : newest))
 }
 
-/** Extract the number of requests for a run (used as its sample count). */
-function getSampleCount(run: PerfDetailResponse): number {
+/** Extract the request count for one summary row, or the run total when no row is selected. */
+function getSampleCount(run: PerfDetailResponse, rowIndex?: number): number {
+  if (rowIndex !== undefined) {
+    const rowCount = run.summary_sample_counts[rowIndex]
+    return Number.isFinite(rowCount) ? rowCount : 0
+  }
   return Number.isFinite(run.total_requests) ? run.total_requests : 0
 }
 
@@ -259,9 +278,13 @@ function wideConfig(run: PerfDetailResponse): Record<string, string> {
   return config
 }
 
-function selectedWideConfig(run: PerfDetailResponse, row?: (string | number)[]): Record<string, string> {
+function selectedWideConfig(
+  run: PerfDetailResponse,
+  row?: (string | number)[],
+  rowIndex?: number,
+): Record<string, string> {
   if (!row) return wideConfig(run)
-  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run)) }
+  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run, rowIndex)) }
 }
 
 /**
@@ -344,11 +367,13 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
 
   const matchedRows = matchingWideRows(baseline, candidate)
   const oneSideMissing = baseline.summary_rows.length === 0 || candidate.summary_rows.length === 0
+  const baselineRowIndex = matchedRows?.baselineIndex ?? (oneSideMissing && baseline.summary_rows.length ? 0 : undefined)
+  const candidateRowIndex = matchedRows?.candidateIndex ?? (oneSideMissing && candidate.summary_rows.length ? 0 : undefined)
   const baselineMetrics = matchedRows || oneSideMissing
-    ? toMetricMap(baseline, matchedRows?.baseline ?? baseline.summary_rows[0])
+    ? toMetricMap(baseline, baselineRowIndex === undefined ? undefined : baseline.summary_rows[baselineRowIndex])
     : new Map<string, number | null>()
   const candidateMetrics = matchedRows || oneSideMissing
-    ? toMetricMap(candidate, matchedRows?.candidate ?? candidate.summary_rows[0])
+    ? toMetricMap(candidate, candidateRowIndex === undefined ? undefined : candidate.summary_rows[candidateRowIndex])
     : new Map<string, number | null>()
 
   // Union of metric keys, baseline order first then candidate-only keys.
@@ -368,12 +393,12 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   )
 
   const sampleCounts: Record<string, number> = {
-    [baseline.path]: getSampleCount(baseline),
-    [candidate.path]: getSampleCount(candidate),
+    [baseline.path]: getSampleCount(baseline, baselineRowIndex),
+    [candidate.path]: getSampleCount(candidate, candidateRowIndex),
   }
 
-  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline)
-  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate)
+  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline, baselineRowIndex)
+  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate, candidateRowIndex)
   const configLabels = new Map<string, string>([['number_of_requests', 'Number of requests']])
   for (const run of [baseline, candidate]) {
     for (const column of run.summary_columns) {

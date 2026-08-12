@@ -76,6 +76,7 @@ export const perfDetailResponseSchema = z.object({
   basic_info: z.record(z.string(), z.string()),
   summary_columns: z.array(perfSummaryColumnSchema),
   summary_rows: z.array(z.array(tableCellSchema)),
+  summary_sample_counts: z.array(z.number()),
   total_requests: z.number(),
   best_config: z.record(z.string(), z.string()),
   recommendations: z.array(z.string()),

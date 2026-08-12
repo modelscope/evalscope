@@ -355,6 +355,7 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'basic_info': basic_info,
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
+        'summary_sample_counts': [run.summary.total_requests for run in runs],
         'total_requests': sum(run.summary.total_requests for run in runs),
         'best_config': dict(build_best_config(runs)),
         'recommendations': build_recommendations(runs),

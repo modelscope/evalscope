@@ -72,6 +72,7 @@ function makeRun(
     basic_info: {},
     summary_columns: DEFAULT_COLUMNS,
     summary_rows: [row],
+    summary_sample_counts: [100],
     total_requests: 100,
     best_config: {},
     recommendations: [],
@@ -127,6 +128,7 @@ describe('buildCompareModel', () => {
         ['4', 'INF', 5, 0.5, 0.7, 100],
         ['8', 'INF', 10, 1, 1.2, 100],
       ],
+      summary_sample_counts: [100, 100],
     })
     const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 11, 0.9, 1.1, 100])
 
@@ -142,10 +144,12 @@ describe('buildCompareModel', () => {
   it('keeps missing metrics as incomputable and records explicit sample counts', () => {
     const baseline = makeRun('old', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1], {
       summary_columns: DEFAULT_COLUMNS.slice(0, 4),
+      summary_sample_counts: [20],
       total_requests: 20,
     })
     const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 12], {
       summary_columns: DEFAULT_COLUMNS.slice(0, 3),
+      summary_sample_counts: [30],
       total_requests: 30,
     })
 
@@ -170,6 +174,26 @@ describe('buildCompareModel', () => {
       { key: 'Conc.', baseline: '8', candidate: '16' },
       { key: 'Number of requests', baseline: '100', candidate: '120' },
     ])
+  })
+
+  it('uses request counts from the matched summary rows', () => {
+    const baseline = makeRun('old', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1, 1.2, 100], {
+      summary_rows: [
+        ['4', 'INF', 5, 0.5, 0.7, 100],
+        ['8', 'INF', 10, 1, 1.2, 100],
+      ],
+      summary_sample_counts: [200, 20],
+      total_requests: 220,
+    })
+    const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 12, 0.8, 1.1, 100], {
+      summary_sample_counts: [25],
+      total_requests: 225,
+    })
+
+    const model = buildCompareModel([baseline, candidate], 'old')
+
+    expect(model.sampleCounts).toEqual({ old: 20, new: 25 })
+    expect(model.configDiff).toContainEqual({ key: 'Number of requests', baseline: '20', candidate: '25' })
   })
 })
 

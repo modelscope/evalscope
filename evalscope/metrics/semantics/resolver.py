@@ -299,9 +299,8 @@ def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
     direction or unit and logs where to declare it.
 
     Args:
-        field_keys: Field keys present in the response. They may come from any of the three perf
-            key spaces (the perf name constants, the stable API paths, or the archive summary
-            table labels); all three are declared in ``evalscope.metrics.semantics.perf``.
+        field_keys: Field keys present in the response. They come from perf name constants or
+            stable API paths declared in ``evalscope.metrics.semantics.perf``.
 
     Returns:
         Field key -> serialized ``MetricSemantics``, one entry per requested key.

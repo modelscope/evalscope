@@ -89,6 +89,7 @@
   "summary_rows": [
     [10, "INF", 5.43, 1.842, 512.0, 100.0]
   ],
+  "summary_sample_counts": [100],
   "total_requests": 100,
   "best_config": {
     "Concurrency": "10",

@@ -328,8 +328,7 @@ export default function PerfComparePage() {
                           data-deemphasized={deEmphasized ? 'true' : 'false'}
                         >
                           <td className="type-body-sm px-3 py-2 text-left text-[var(--text)]">
-                            {/* The field key is the label: the backend already names the field in
-                                the form the perf tables use, so no spec lookup is needed. */}
+                            {/* Stable keys drive comparison; labels are display-only. */}
                             <span className="block font-medium">{delta.metricLabel}</span>
                           </td>
                           <td

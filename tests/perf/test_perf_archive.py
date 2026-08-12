@@ -127,6 +127,7 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(latency['label'], 'Avg Lat.(s)')
         self.assertEqual(latency['semantics']['semantic_id'], 'perf.latency.seconds')
         self.assertEqual(body['total_requests'], 2)
+        self.assertEqual(body['summary_sample_counts'], [2])
         self.assertNotIn('metric_semantics', body)
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')

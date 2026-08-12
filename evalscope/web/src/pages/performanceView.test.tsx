@@ -197,6 +197,7 @@ describe('PerfReportDetailPage', () => {
         { key: 'request_throughput', label: 'RPS', semantics: detailFixture.summary_columns[2].semantics },
       ],
       summary_rows: [['2', 'INF', '1.9256']],
+      summary_sample_counts: [100],
     })
     fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))
 
