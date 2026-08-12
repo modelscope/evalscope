@@ -364,8 +364,7 @@ def test_asyncio_loop_thread_drains_task_finalizer_callbacks_before_loop_close()
     assert owner_loop.is_closed()
 
 
-def test_asyncio_loop_runner_keeps_timed_out_generation_registered() -> None:
-    owner_loop = AsyncioLoopRunner.run(_current_loop())
+def test_asyncio_loop_runner_replaces_timed_out_worker_handle() -> None:
     blocker_started = threading.Event()
     release_blocker = threading.Event()
 
@@ -373,21 +372,38 @@ def test_asyncio_loop_runner_keeps_timed_out_generation_registered() -> None:
         blocker_started.set()
         release_blocker.wait()
 
-    owner_loop.call_soon_threadsafe(_block_owner_loop)
-    assert blocker_started.wait(timeout=1)
+    def _start_blocked_loop() -> tuple[str, AsyncioLoopThread, asyncio.AbstractEventLoop, bool]:
+        owner_loop = AsyncioLoopRunner.run(_current_loop())
+        handle = AsyncioLoopRunner._local.handle
+        owner_loop.call_soon_threadsafe(_block_owner_loop)
+        assert blocker_started.wait(timeout=1)
 
-    AsyncioLoopRunner.shutdown_for_thread(join_timeout=0.01)
-    handle = AsyncioLoopRunner._local.handle
-    assert handle is not None
-    assert handle in AsyncioLoopRunner._all_handles
-    assert handle.owns(owner_loop)
+        AsyncioLoopRunner.shutdown_for_thread(join_timeout=0.01)
+        released = getattr(AsyncioLoopRunner._local, 'handle', None) is None
+        return threading.current_thread().name, handle, owner_loop, released
 
-    release_blocker.set()
-    AsyncioLoopRunner.shutdown_for_thread(join_timeout=1)
+    def _run_on_reused_worker() -> tuple[str, AsyncioLoopThread, asyncio.AbstractEventLoop]:
+        owner_loop = AsyncioLoopRunner.run(_current_loop())
+        return threading.current_thread().name, AsyncioLoopRunner._local.handle, owner_loop
 
-    assert AsyncioLoopRunner._local.handle is None
-    assert handle not in AsyncioLoopRunner._all_handles
-    assert owner_loop.is_closed()
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first_thread, timed_out_handle, first_loop, released = executor.submit(_start_blocked_loop).result()
+        try:
+            second_thread, replacement_handle, second_loop = executor.submit(_run_on_reused_worker).result()
+
+            assert released
+            assert first_thread == second_thread
+            assert replacement_handle is not timed_out_handle
+            assert second_loop is not first_loop
+            assert timed_out_handle in AsyncioLoopRunner._all_handles
+            assert timed_out_handle.owns(first_loop)
+        finally:
+            release_blocker.set()
+            assert timed_out_handle.stop(join_timeout=1)
+            executor.submit(AsyncioLoopRunner.shutdown_for_thread).result()
+
+    assert first_loop.is_closed()
+    assert second_loop.is_closed()
 
 
 def test_asyncio_loop_runner_keeps_worker_handle_registered_after_shutdown_all() -> None:
