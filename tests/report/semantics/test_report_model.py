@@ -132,6 +132,45 @@ def test_v2_round_trip_uses_persisted_semantics_without_resolution() -> None:
     assert restored == original
 
 
+def test_persisted_v2_role_contract_migrates_on_read_only() -> None:
+    data = _report().to_dict()
+    data['primary_metric_identity'] = None
+    for metric in data['metrics']:
+        semantics = metric['semantics']
+        semantics['role'] = 'primary' if metric['identity']['name'] == 'f1' else 'auxiliary'
+        semantics['contract_version'] = 1
+        semantics.pop('kind')
+
+    report = Report.from_dict(data)
+
+    assert report.primary_metric_identity == MetricIdentity(name='f1', aggregation='mean')
+    assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
+    for metric in report.to_dict()['metrics']:
+        assert 'role' not in metric['semantics']
+        assert 'contract_version' not in metric['semantics']
+
+
+def test_transitional_v1_fields_migrate_to_current_report_shape() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'general_mcq',
+        'metric_schema_version': 1,
+        'primary_metric_name': 'mean_acc',
+        'metrics': [{
+            'name': 'mean_acc',
+            'semantic_id': 'quality.accuracy.ratio',
+            'score': 0.8,
+            'categories': [],
+        }],
+    })
+
+    assert report.primary_metric_identity == MetricIdentity(name='accuracy', aggregation='mean')
+    metric = report.metrics[0]
+    assert metric.semantics.semantic_id == 'quality.accuracy.ratio'
+    assert 'semantic_id' not in report.to_dict()['metrics'][0]
+    assert 'metric_schema_version' not in report.to_dict()
+    assert 'primary_metric_name' not in report.to_dict()
+
+
 def test_v1_report_migrates_without_changing_values() -> None:
     report = Report.from_dict({
         'dataset_name': 'conll2003',

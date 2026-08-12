@@ -31,9 +31,21 @@ def migrate_legacy_report_identity(metric_name: str, benchmark_name: Optional[st
 
 def migrate_legacy_metric_payload(data: Any, benchmark_name: Optional[str] = None) -> Any:
     """Convert one v1 metric dictionary into the persisted v2 shape."""
-    if not isinstance(data, dict) or 'identity' in data:
+    if not isinstance(data, dict):
         return data
     migrated = dict(data)
+    migrated.pop('semantic_id', None)
+    if 'identity' in migrated:
+        semantics = migrated.get('semantics')
+        if isinstance(semantics, dict):
+            normalized_semantics = dict(semantics)
+            role = normalized_semantics.pop('role', None)
+            normalized_semantics.pop('contract_version', None)
+            if 'kind' not in normalized_semantics and role is not None:
+                normalized_semantics['kind'] = 'diagnostic' if role == 'diagnostic' else 'quality'
+            migrated['semantics'] = normalized_semantics
+        return migrated
+
     old_name = migrated.pop('name', 'legacy_metric')
     identity = migrate_legacy_report_identity(old_name, benchmark_name)
     migrated['identity'] = identity.model_dump()
@@ -53,19 +65,42 @@ def migrate_legacy_report_payload(data: Any) -> Any:
         return data
     migrated = dict(data)
     migrated.pop('num', None)
-    metrics = migrated.get('metrics', [])
-    has_v2_metrics = bool(metrics) and all(
-        hasattr(metric, 'identity') or isinstance(metric, dict) and 'identity' in metric for metric in metrics
-    )
-    if migrated.get('schema_version') == 2 or has_v2_metrics:
-        migrated.setdefault('schema_version', 2)
-        return migrated
-
-    dataset_name = migrated.get('dataset_name')
     migrated.pop('score', None)
+    migrated.pop('metric_schema_version', None)
+    legacy_primary_name = migrated.pop('primary_metric_name', None)
+    metrics = migrated.get('metrics', [])
+    role_primary_identity = _legacy_primary_identity(metrics, None)
+    dataset_name = migrated.get('dataset_name')
     migrated['schema_version'] = 2
     migrated['metrics'] = [migrate_legacy_metric_payload(metric, benchmark_name=dataset_name) for metric in metrics]
+
+    if migrated.get('primary_metric_identity') is None:
+        primary_identity = _legacy_primary_identity(migrated['metrics'], legacy_primary_name) or role_primary_identity
+        if primary_identity is not None:
+            migrated['primary_metric_identity'] = primary_identity
     return migrated
+
+
+def _legacy_primary_identity(metrics: Any, legacy_primary_name: Any) -> Optional[Dict[str, Any]]:
+    """Recover a persisted primary identity from fields removed from the v2 wire format."""
+    if not isinstance(metrics, list):
+        return None
+
+    if isinstance(legacy_primary_name, str) and legacy_primary_name:
+        matches = [
+            metric.get('identity') for metric in metrics if isinstance(metric, dict) and
+            (metric.get('legacy_name') == legacy_primary_name or metric.get('name') == legacy_primary_name)
+        ]
+        if len(matches) == 1 and isinstance(matches[0], dict):
+            return matches[0]
+
+    role_matches = [
+        metric.get('identity') for metric in metrics if isinstance(metric, dict)
+        and isinstance(metric.get('semantics'), dict) and metric['semantics'].get('role') == 'primary'
+    ]
+    if len(role_matches) == 1 and isinstance(role_matches[0], dict):
+        return role_matches[0]
+    return None
 
 
 @lru_cache(maxsize=None)
