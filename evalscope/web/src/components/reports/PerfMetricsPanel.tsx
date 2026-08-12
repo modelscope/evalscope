@@ -36,7 +36,7 @@ function PercTable({
   semantics,
   accentCol = 'var(--accent)',
 }: PercTableProps) {
-  const fmt = (value: number | null) => formatPerfValue(value, semantics)
+  const fmt = (value: number | null | undefined) => formatPerfValue(value, semantics)
 
   const cols: { label: string; key: keyof PercentileStats; accent?: boolean }[] = [
     { label: 'Mean', key: 'mean', accent: true },

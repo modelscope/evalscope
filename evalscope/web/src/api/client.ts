@@ -97,12 +97,43 @@ async function parseJson<T>(res: Response): Promise<T> {
 }
 
 /**
+ * Recursively replace every `null` with `undefined`.
+ *
+ * The Python backend expresses "no value" as an explicit JSON `null`: Pydantic
+ * `model_dump()` emits `null` for `Optional[...] = None` fields, and pandas
+ * `DataFrame.to_json()` emits `null` for `NaN`/`None` cells. Normalising `null`
+ * to an absent value at this single trust boundary lets every schema field
+ * declared with `.optional()` accept the backend's nulls, so new optional
+ * fields do not each need an explicit `.nullable()`.
+ */
+function nullToUndefined(value: unknown): unknown {
+  if (value === null) return undefined
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      value[i] = nullToUndefined(value[i])
+    }
+    return value
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    for (const key of Object.keys(obj)) {
+      obj[key] = nullToUndefined(obj[key])
+    }
+    return obj
+  }
+  return value
+}
+
+/**
  * Run a parsed value through a zod schema, converting validation failures into
  * a typed {@link DomainError} (`kind='validation'`) so consumers never receive
  * unvalidated data and no uncaught exception escapes.
+ *
+ * Backend nulls are normalised to `undefined` first (see {@link nullToUndefined})
+ * so `.optional()` fields tolerate the explicit nulls the API emits.
  */
 function validate<T>(schema: ZodType<T>, data: unknown): T {
-  const result = schema.safeParse(data)
+  const result = schema.safeParse(nullToUndefined(data))
   if (!result.success) {
     throw new DomainError('validation', `Response validation failed: ${result.error.message}`)
   }

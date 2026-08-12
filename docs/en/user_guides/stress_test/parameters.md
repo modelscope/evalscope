@@ -280,7 +280,7 @@ Replay behaviour is tuned via `--dataset-args`:
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--tokenizer-path` | `str` | Tokenizer weights path<br>Used to calculate the number of tokens in input and output<br>Usually located in the same directory as model weights | `None` |
+| `--tokenizer-path` | `str` | Tokenizer weights path<br>Used to calculate the number of tokens in input and output<br>Usually located in the same directory as model weights<br>When benchmarking a chat endpoint, the tokenizer must ship a chat template (see the note below) | `None` |
 | `--frequency-penalty` | `float` | frequency_penalty value | - |
 | `--logprobs` | `bool` | Whether to return logarithmic probabilities | - |
 | `--max-tokens` | `int` or `int int` | Maximum number of tokens that can be generated<br>• A single integer: fixed value, e.g. `--max-tokens 2048`<br>• Two integers: `min max`, sampled uniformly at random per request, e.g. `--max-tokens 512 2048` | `2048` |
@@ -293,6 +293,12 @@ Replay behaviour is tuned via `--dataset-args`:
 | `--top-p` | `float` | Top-p sampling | - |
 | `--top-k` | `int` | Top-k sampling | - |
 | `--extra-args` | `str` | Additional parameters to be passed in the request body<br>JSON string format<br>Example: `'{"ignore_eos": true}'` | - |
+
+### Tokenizer and chat template
+
+When benchmarking a `chat/completions` endpoint, `--apply-chat-template` is on by default and the client applies the chat template before counting tokens, so client-side lengths line up with the `usage.prompt_tokens` reported by the service; the tokenizer given to `--tokenizer-path` must therefore ship a Jinja chat template. DeepSeek-V3.2 / V4 provide `encoding` scripts instead, and base / pretrain checkpoints have no template either — those fail with an error that lists the available options.
+
+Two things to watch out for: without `--tokenizer-path`, `--min-prompt-length` / `--max-prompt-length` filter by characters instead of tokens; and borrowing another model's tokenizer does not fail, but a mismatched vocabulary silently distorts token counts.
 
 ## Output
 

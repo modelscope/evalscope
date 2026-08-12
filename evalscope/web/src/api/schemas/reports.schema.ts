@@ -55,8 +55,9 @@ export const metricDataSchema = z.object({
 export const percentileStatsSchema = z.object({
   mean: z.number(),
   // pandas uses sample standard deviation (ddof=1), which is undefined for a
-  // single observation. The backend serializes that NaN as JSON null.
-  std: z.number().nullable(),
+  // single observation. The backend serializes that NaN as JSON null, which the
+  // API client normalizes to undefined before validation - hence nullish.
+  std: z.number().nullish(),
   min: z.number(),
   '25%': z.number(),
   '50%': z.number(),

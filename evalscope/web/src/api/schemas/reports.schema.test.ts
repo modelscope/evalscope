@@ -64,4 +64,19 @@ describe('loadReportResponseSchema real report compatibility', () => {
 
     expect(result.success).toBe(true)
   })
+
+  it('accepts a reasoning block with an absent reasoning_tokens (backend null is normalised to undefined by the API client before validation)', () => {
+    // ContentReasoning.reasoning_tokens is `Optional[int] = None` on the Python side, which
+    // serializes as an explicit JSON `null`. The API client's nullToUndefined() converts it
+    // to `undefined` before schema validation, so the schema only needs .optional().
+    const result = chatMessageSchema.safeParse({
+      role: 'assistant',
+      content: [
+        { type: 'reasoning', reasoning: 'thinking it through...', reasoning_tokens: undefined },
+        { type: 'text', text: 'final answer' },
+      ],
+    })
+
+    expect(result.success).toBe(true)
+  })
 })

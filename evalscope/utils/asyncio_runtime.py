@@ -7,6 +7,7 @@ from concurrent.futures import Future
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Awaitable, Callable, Coroutine, List, Optional, TypeVar
+from weakref import WeakSet
 
 from evalscope.utils.logger import get_logger
 
@@ -96,6 +97,7 @@ class AsyncioLoopThread:
     """
 
     __slots__ = (
+        '__weakref__',
         '_name',
         '_health_label',
         '_state_lock',
@@ -315,7 +317,9 @@ class AsyncioLoopRunner:
 
     _local = threading.local()
     _all_handles_lock = threading.Lock()
-    _all_handles: List[AsyncioLoopThread] = []
+    # Timed-out handles stay discoverable for late close callbacks while their
+    # loop thread exits, then disappear automatically once no owner retains them.
+    _all_handles: WeakSet[AsyncioLoopThread] = WeakSet()
 
     @classmethod
     def _get_handle(cls) -> AsyncioLoopThread:
@@ -326,7 +330,7 @@ class AsyncioLoopRunner:
         handle = AsyncioLoopThread(name=f'EvalLoop[{owner_name}]', health_label=owner_name)
         cls._local.handle = handle
         with cls._all_handles_lock:
-            cls._all_handles.append(handle)
+            cls._all_handles.add(handle)
         return handle
 
     @classmethod
@@ -337,18 +341,20 @@ class AsyncioLoopRunner:
 
     @classmethod
     def shutdown_for_thread(cls, join_timeout: float = 5.0) -> None:
-        """Stop and release the loop bound to the calling thread, if any."""
+        """Stop and release the loop bound to the calling thread, if any.
+
+        A timed-out handle is detached from the worker so its next task can
+        create a fresh loop, while the old loop continues shutting down.
+        """
         handle: Optional[AsyncioLoopThread] = getattr(cls._local, 'handle', None)
         if handle is None:
             return
-        if not handle.stop(join_timeout=join_timeout):
-            return
+        stopped = handle.stop(join_timeout=join_timeout)
         cls._local.handle = None
+        if not stopped:
+            return
         with cls._all_handles_lock:
-            try:
-                cls._all_handles.remove(handle)
-            except ValueError:
-                pass
+            cls._all_handles.discard(handle)
 
     @classmethod
     def shutdown_all(cls, join_timeout: float = 5.0) -> None:
