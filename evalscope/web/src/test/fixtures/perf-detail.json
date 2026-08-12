@@ -14,19 +14,82 @@
     "Total requests": "100"
   },
   "summary_columns": [
-    "Metric",
-    "Value"
+    {
+      "key": "concurrency",
+      "label": "Conc.",
+      "semantics": null
+    },
+    {
+      "key": "request_rate",
+      "label": "Rate",
+      "semantics": null
+    },
+    {
+      "key": "request_throughput",
+      "label": "RPS",
+      "semantics": {
+        "semantic_id": "perf.throughput.requests_per_second",
+        "metric_name": "Request Throughput",
+        "role": "auxiliary",
+        "direction": "higher_is_better",
+        "raw_unit": "req/s",
+        "display_kind": "number",
+        "display_unit": "req/s",
+        "display_precision": 2,
+        "contract_version": 1
+      }
+    },
+    {
+      "key": "avg_latency",
+      "label": "Avg Lat.(s)",
+      "semantics": {
+        "semantic_id": "perf.latency.seconds",
+        "metric_name": "Latency",
+        "role": "auxiliary",
+        "direction": "lower_is_better",
+        "raw_unit": "s",
+        "display_kind": "number",
+        "display_unit": "s",
+        "display_precision": 3,
+        "contract_version": 1
+      }
+    },
+    {
+      "key": "output_token_throughput",
+      "label": "Gen. tok/s",
+      "semantics": {
+        "semantic_id": "perf.throughput.tokens_per_second",
+        "metric_name": "Token Throughput",
+        "role": "auxiliary",
+        "direction": "higher_is_better",
+        "raw_unit": "tok/s",
+        "display_kind": "number",
+        "display_unit": "tok/s",
+        "display_precision": 2,
+        "contract_version": 1
+      }
+    },
+    {
+      "key": "success_rate",
+      "label": "Success Rate",
+      "semantics": {
+        "semantic_id": "quality.score.points_100",
+        "metric_name": "Success Rate",
+        "role": "auxiliary",
+        "direction": "higher_is_better",
+        "value_range": { "min": 0, "max": 100 },
+        "display_kind": "percent",
+        "display_multiplier": 1,
+        "display_unit": "%",
+        "display_precision": 1,
+        "contract_version": 1
+      }
+    }
   ],
   "summary_rows": [
-    ["Concurrency", 10],
-    ["Number of requests", 100],
-    ["Success rate", 1.0],
-    ["Average latency (s)", 1.842],
-    ["Average TTFT (s)", 0.214],
-    ["Average TPOT (s)", 0.031],
-    ["Output throughput (tokens/s)", 512.0],
-    ["Request throughput (req/s)", 5.43]
+    [10, "INF", 5.43, 1.842, 512.0, 100.0]
   ],
+  "total_requests": 100,
   "best_config": {
     "Concurrency": "10",
     "Request rate": "closed-loop",

@@ -23,7 +23,7 @@ const LATENCY: MetricSemantics = {
   contract_version: 1,
 }
 
-describe('perf schemas keep the semantics map', () => {
+describe('perf schemas keep metric semantics next to stable fields', () => {
   it('preserves metric_semantics on the run list', () => {
     const parsed = listPerfRunsResponseSchema.parse({
       runs: [],
@@ -34,7 +34,7 @@ describe('perf schemas keep the semantics map', () => {
     expect(parsed.metric_semantics?.best_latency).toEqual(LATENCY)
   })
 
-  it('preserves metric_semantics on the run detail, keyed by the summary label', () => {
+  it('preserves structured columns on the run detail', () => {
     const parsed = perfDetailResponseSchema.parse({
       path: 'runs/a',
       model: 'm',
@@ -42,18 +42,24 @@ describe('perf schemas keep the semantics map', () => {
       dataset: 'openqa',
       generated_at: '2026-06-01T00:00:00Z',
       basic_info: {},
-      summary_columns: ['Conc.', 'Avg Lat.(s)'],
+      summary_columns: [
+        { key: 'concurrency', label: 'Conc.', semantics: null },
+        { key: 'avg_latency', label: 'Avg Lat.(s)', semantics: LATENCY },
+      ],
       summary_rows: [['8', 1.2]],
+      total_requests: 1,
       best_config: {},
       recommendations: [],
       num_runs: 1,
       is_embedding: false,
       has_html: false,
-      // The backend keys this by the label it returned, not by a canonical name.
-      metric_semantics: { 'Avg Lat.(s)': LATENCY },
     })
 
-    expect(parsed.metric_semantics?.['Avg Lat.(s)']).toEqual(LATENCY)
+    expect(parsed.summary_columns[1]).toEqual({
+      key: 'avg_latency',
+      label: 'Avg Lat.(s)',
+      semantics: LATENCY,
+    })
   })
 
   it('still parses a response from a backend that sends no semantics', () => {

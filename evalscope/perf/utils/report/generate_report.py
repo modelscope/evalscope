@@ -144,7 +144,7 @@ def gen_perf_html_report(
         generated_at=current_time().strftime('%Y-%m-%d %H:%M:%S'),
         evalscope_version=_evalscope_version,
         basic_info=build_basic_info(first_args, runs, is_emb),
-        summary_columns=summary_columns,
+        summary_columns=[column['label'] for column in summary_columns],
         summary_rows=summary_rows,
         best_config=build_best_config(runs),
         recommendations=build_recommendations(runs),

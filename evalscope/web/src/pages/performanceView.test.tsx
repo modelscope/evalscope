@@ -191,7 +191,11 @@ describe('PerfReportDetailPage', () => {
   it('replaces the unlimited-rate sentinel in the overview summary', async () => {
     await renderDetail({
       ...detailFixture,
-      summary_columns: ['Conc.', 'Rate', 'RPS'],
+      summary_columns: [
+        { key: 'concurrency', label: 'Conc.', semantics: null },
+        { key: 'request_rate', label: 'Rate', semantics: null },
+        { key: 'request_throughput', label: 'RPS', semantics: detailFixture.summary_columns[2].semantics },
+      ],
       summary_rows: [['2', 'INF', '1.9256']],
     })
     fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))

@@ -12,10 +12,32 @@ underscored helpers.
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Dict, List
+from typing import Any, Dict, List
 
-from evalscope.metrics.semantics import format_perf_value
-from evalscope.perf.utils.perf_constants import Metrics
+from evalscope.metrics.semantics import format_perf_value, resolve_perf_semantics
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
+
+_CONFIG_COLUMNS = [
+    ('concurrency', 'Conc.', None),
+    ('request_rate', 'Rate', None),
+]
+_COMMON_METRIC_COLUMNS = [
+    ('request_throughput', 'RPS', Metrics.REQUEST_THROUGHPUT),
+    ('avg_latency', 'Avg Lat.(s)', Metrics.AVERAGE_LATENCY),
+    ('p99_latency', 'P99 Lat.(s)', PercentileMetrics.LATENCY),
+]
+_EMBEDDING_METRIC_COLUMNS = [
+    ('input_token_throughput', 'Avg Inp.TPS', Metrics.INPUT_TOKEN_THROUGHPUT),
+    ('avg_input_tokens', 'Avg Inp.Tok', Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST),
+]
+_GENERATION_METRIC_COLUMNS = [
+    ('avg_ttft', 'Avg TTFT(ms)', Metrics.AVERAGE_TIME_TO_FIRST_TOKEN),
+    ('p99_ttft', 'P99 TTFT(ms)', PercentileMetrics.TTFT),
+    ('avg_tpot', 'Avg TPOT(ms)', Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN),
+    ('p99_tpot', 'P99 TPOT(ms)', PercentileMetrics.TPOT),
+    ('output_token_throughput', 'Gen. tok/s', Metrics.OUTPUT_TOKEN_THROUGHPUT),
+]
+_SUCCESS_COLUMN = ('success_rate', 'Success Rate', 'success_rate')
 
 
 def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
@@ -60,63 +82,51 @@ def build_basic_info(
 
 def build_summary_table(runs: list, is_embedding_flag: bool):
     """Build the cross-run summary table. Returns *(columns, rows)*."""
+    specs = _CONFIG_COLUMNS + _COMMON_METRIC_COLUMNS
     if is_embedding_flag:
-        columns = [
-            'Conc.',
-            'Rate',
-            'RPS',
-            'Avg Lat.(s)',
-            'P99 Lat.(s)',
-            'Avg Inp.TPS',
-            'Avg Inp.Tok',
-            'Success Rate',
-        ]
+        specs += _EMBEDDING_METRIC_COLUMNS + [_SUCCESS_COLUMN]
         rows = []
         for r in runs:
             s = r.summary
             rate = s.request_rate
             rows.append([
                 'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else _cell('Rate', rate),
-                _cell('RPS', s.request_throughput),
-                _cell('Avg Lat.(s)', s.avg_latency),
-                _cell('P99 Lat.(s)', r.get_p99('latency')),
-                _cell('Avg Inp.TPS', s.input_token_throughput),
-                _cell('Avg Inp.Tok', s.avg_input_tokens),
-                _cell('Success Rate', r.success_rate, include_unit=True),
+                'INF' if rate == -1 else _cell(Metrics.REQUEST_RATE, rate),
+                _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput),
+                _cell(Metrics.AVERAGE_LATENCY, s.avg_latency),
+                _cell(PercentileMetrics.LATENCY, r.get_p99('latency')),
+                _cell(Metrics.INPUT_TOKEN_THROUGHPUT, s.input_token_throughput),
+                _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens),
+                _cell('success_rate', r.success_rate, include_unit=True),
             ])
     else:
-        columns = [
-            'Conc.',
-            'Rate',
-            'RPS',
-            'Avg Lat.(s)',
-            'P99 Lat.(s)',
-            'Avg TTFT(ms)',
-            'P99 TTFT(ms)',
-            'Avg TPOT(ms)',
-            'P99 TPOT(ms)',
-            'Gen. tok/s',
-            'Success Rate',
-        ]
+        specs += _GENERATION_METRIC_COLUMNS + [_SUCCESS_COLUMN]
         rows = []
         for r in runs:
             s = r.summary
             rate = s.request_rate
             rows.append([
                 'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else _cell('Rate', rate),
-                _cell('RPS', s.request_throughput),
-                _cell('Avg Lat.(s)', s.avg_latency),
-                _cell('P99 Lat.(s)', r.get_p99('latency')),
-                _cell('Avg TTFT(ms)', s.avg_ttft),
-                _cell('P99 TTFT(ms)', r.get_p99('ttft')),
-                _cell('Avg TPOT(ms)', s.avg_tpot),
-                _cell('P99 TPOT(ms)', r.get_p99('tpot')),
-                _cell('Gen. tok/s', s.output_token_throughput),
-                _cell('Success Rate', r.success_rate, include_unit=True),
+                'INF' if rate == -1 else _cell(Metrics.REQUEST_RATE, rate),
+                _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput),
+                _cell(Metrics.AVERAGE_LATENCY, s.avg_latency),
+                _cell(PercentileMetrics.LATENCY, r.get_p99('latency')),
+                _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft),
+                _cell(PercentileMetrics.TTFT, r.get_p99('ttft')),
+                _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot),
+                _cell(PercentileMetrics.TPOT, r.get_p99('tpot')),
+                _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput),
+                _cell('success_rate', r.success_rate, include_unit=True),
             ])
 
+    semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
+    columns: List[Dict[str, Any]] = [
+        {
+            'key': key,
+            'label': label,
+            'semantics': semantics.get(field_key) if field_key is not None else None,
+        } for key, label, field_key in specs
+    ]
     return columns, rows
 
 
@@ -167,7 +177,7 @@ def build_recommendations(runs: list) -> List[str]:
     if last.success_rate < 95:
         recs.append(
             f'Success rate at highest load ({last.name}) is '
-            f'{_cell("Success Rate", last.success_rate, include_unit=True)}. '
+            f'{_cell("success_rate", last.success_rate, include_unit=True)}. '
             'Check system resources or reduce the load.'
         )
 

@@ -22,7 +22,6 @@ from typing import Dict, List, Optional
 from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
-from evalscope.metrics.semantics import resolve_perf_semantics
 from evalscope.perf.utils.perf_constants import Metrics
 from evalscope.perf.utils.report.summary import (
     build_basic_info,
@@ -356,36 +355,13 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'basic_info': basic_info,
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
-        # Keyed by what this response actually exposes: the metric column labels of a wide summary
-        # table, or the row labels of a vertical one. A consumer looks a field up by the same
-        # identifier it reads the value under.
-        'metric_semantics': resolve_perf_semantics(_summary_metric_keys(summary_columns, summary_rows)),
+        'total_requests': sum(run.summary.total_requests for run in runs),
         'best_config': dict(build_best_config(runs)),
         'recommendations': build_recommendations(runs),
         'num_runs': len(runs),
         'is_embedding': is_emb,
         'has_html': os.path.isfile(os.path.join(run_dir, 'perf_report.html')),
-    }
-
-
-def _summary_metric_keys(summary_columns: List[str], summary_rows: List[list]) -> List[str]:
-    """Return the identifiers the summary table exposes its numbers under.
-
-    ``build_summary_table`` produces two shapes. A *wide* table has one column per metric, so the
-    identifiers are the column labels. A *vertical* table has ``Metric`` / ``Value`` columns, so
-    the identifiers are the first cell of each row.
-
-    Args:
-        summary_columns: Column labels of the summary table.
-        summary_rows: Rows of the summary table.
-
-    Returns:
-        The metric identifiers, in table order.
-    """
-    normalized = [str(column).strip().lower() for column in summary_columns[:2]]
-    if normalized == ['metric', 'value']:
-        return [str(row[0]) for row in summary_rows if row]
-    return [str(column) for column in summary_columns]
+}
 
 
 def list_run_items(root: str, rel_path: str) -> List[dict]:

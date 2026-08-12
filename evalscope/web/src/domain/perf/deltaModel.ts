@@ -37,8 +37,10 @@ export type DeltaVerdict = 'improvement' | 'regression' | 'neutral' | 'incomputa
 
 /** Per-metric comparison entry between baseline and candidate. */
 export interface MetricDelta {
-  /** Implementation-level metric name (the summary-row label). */
+  /** Stable implementation-level metric key. */
   metricKey: string
+  /** Human-readable label supplied by the API. */
+  metricLabel: string
   /** Baseline value, formatted for display. */
   baseline: FormattedMetric
   /** Candidate value, formatted for display. */
@@ -143,90 +145,29 @@ function toNumeric(value: unknown): number | null {
 interface WideMetricColumn {
   key: string
   columnIndex: number
-  /** Original column label, which is the key the backend declares semantics under. */
-  label: string
-}
-
-const WIDE_METRIC_KEYS: Record<string, string> = {
-  rps: 'rps',
-  'avg lat s': 'latency',
-  'p99 lat s': 'p99_latency_s',
-  'avg ttft ms': 'ttft_ms',
-  'p99 ttft ms': 'p99_ttft_ms',
-  'avg tpot ms': 'tpot_ms',
-  'p99 tpot ms': 'p99_tpot_ms',
-  'gen tok s': 'throughput',
-  'success rate': 'success_rate',
-}
-
-function normalizeColumn(column: string): string {
-  return column.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
-}
-
-function isVerticalSummary(run: PerfDetailResponse): boolean {
-  const columns = run.summary_columns.map(normalizeColumn)
-  return columns[0] === 'metric' && columns[1] === 'value'
+  semantics: MetricSemantics
 }
 
 function getWideMetricColumns(run: PerfDetailResponse): WideMetricColumn[] {
   return run.summary_columns.flatMap((column, columnIndex) => {
-    const key = WIDE_METRIC_KEYS[normalizeColumn(column)]
-    return key ? [{ key, columnIndex, label: column }] : []
+    return column.semantics ? [{ key: column.key, columnIndex, semantics: column.semantics }] : []
   })
 }
 
-/**
- * Map each canonical metric key back to the label the backend keyed its semantics by.
- *
- * A wide summary table is canonicalized here (`Avg Lat.(s)` -> `latency`) so deltas have stable
- * keys, but the API declares semantics under the label it returned. Without this mapping the
- * lookup would silently miss and every perf metric would lose its direction and unit.
- */
-function semanticsKeyByMetricKey(run: PerfDetailResponse): Record<string, string> {
-  if (isVerticalSummary(run)) {
-    // A vertical table is keyed by its row labels, which are already the semantics keys.
-    return {}
-  }
-  const mapping: Record<string, string> = {}
-  for (const { key, label } of getWideMetricColumns(run)) {
-    mapping[key] = label
-  }
-  return mapping
-}
-
-/**
- * Build an ordered metric map from a run's summary rows.
- *
- * Each row is `[metricName, value, ...]`; the first cell is the key and the
- * second is the (possibly non-numeric) value. Insertion order is preserved so
- * deltas follow the baseline's natural metric order.
- */
 function toMetricMap(run: PerfDetailResponse, wideRow?: (string | number)[]): Map<string, number | null> {
   const map = new Map<string, number | null>()
-  const rows = Array.isArray(run.summary_rows) ? run.summary_rows : []
-  if (!isVerticalSummary(run)) {
-    for (const { key, columnIndex } of getWideMetricColumns(run)) {
-      map.set(key, wideRow ? toNumeric(wideRow[columnIndex]) : null)
-    }
-    return map
-  }
-  for (const row of rows) {
-    if (!Array.isArray(row) || row.length === 0) continue
-    const key = String(row[0])
-    if (key.length === 0 || map.has(key)) continue
-    map.set(key, toNumeric(row[1]))
+  for (const { key, columnIndex } of getWideMetricColumns(run)) {
+    map.set(key, wideRow ? toNumeric(wideRow[columnIndex]) : null)
   }
   return map
 }
 
 function wideRowConfig(run: PerfDetailResponse, row: (string | number)[]): Record<string, string> {
   const metricIndexes = new Set(getWideMetricColumns(run).map(({ columnIndex }) => columnIndex))
-  const aliases: Record<string, string> = { conc: 'Concurrency', concurrency: 'Concurrency', rate: 'Request rate' }
   const config: Record<string, string> = {}
   run.summary_columns.forEach((column, index) => {
     if (metricIndexes.has(index)) return
-    const normalized = normalizeColumn(column)
-    config[aliases[normalized] ?? column.trim()] = String(row[index] ?? '').trim()
+    config[column.key] = String(row[index] ?? '').trim()
   })
   return config
 }
@@ -239,9 +180,6 @@ function matchingWideRows(
   baseline: PerfDetailResponse,
   candidate: PerfDetailResponse,
 ): { baseline: (string | number)[]; candidate: (string | number)[] } | null {
-  if (isVerticalSummary(baseline) || isVerticalSummary(candidate)) return null
-  if (baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()) return null
-
   const candidates = new Map(
     candidate.summary_rows.map((row) => [configIdentity(wideRowConfig(candidate, row)), row]),
   )
@@ -255,6 +193,7 @@ function matchingWideRows(
 /** Build a single `MetricDelta` for one metric key across both runs. */
 function buildMetricDelta(
   metricKey: string,
+  metricLabel: string,
   baselineValue: number | null,
   candidateValue: number | null,
   semantics: MetricSemantics | null | undefined,
@@ -278,7 +217,7 @@ function buildMetricDelta(
     ? 'incomputable'
     : rawVerdict === 'equal' ? 'neutral' : rawVerdict === 'better' ? 'improvement' : 'regression'
 
-  return { metricKey, baseline, candidate, absoluteDelta, percentDelta, verdict }
+  return { metricKey, metricLabel, baseline, candidate, absoluteDelta, percentDelta, verdict }
 }
 
 /** Parse a run timestamp into epoch millis; unparseable timestamps sort as "oldest". */
@@ -305,50 +244,24 @@ function pickNewest(runs: PerfDetailResponse[]): PerfDetailResponse {
 
 /** Extract the number of requests for a run (used as its sample count). */
 function getSampleCount(run: PerfDetailResponse): number {
-  const rows = Array.isArray(run.summary_rows) ? run.summary_rows : []
-  for (const row of rows) {
-    if (!Array.isArray(row) || row.length < 2) continue
-    if (String(row[0]).toLowerCase() === 'number of requests') {
-      const n = toNumeric(row[1])
-      if (n !== null) return n
-    }
-  }
-  for (const [key, value] of Object.entries(run.basic_info ?? {})) {
-    if (normalizeColumn(key) !== 'total requests') continue
-    const fromBasic = toNumeric(value)
-    if (fromBasic !== null) return fromBasic
-  }
-  return 0
+  return Number.isFinite(run.total_requests) ? run.total_requests : 0
 }
 
-function wideConfig(run: PerfDetailResponse): Record<string, string> | null {
-  if (isVerticalSummary(run) || run.summary_rows.length === 0) return null
-
+function wideConfig(run: PerfDetailResponse): Record<string, string> {
   const metricIndexes = new Set(getWideMetricColumns(run).map(({ columnIndex }) => columnIndex))
-  const labels: Record<string, string> = {
-    'conc': 'Concurrency',
-    'rate': 'Request rate',
-  }
   const config: Record<string, string> = {}
   run.summary_columns.forEach((column, index) => {
     if (metricIndexes.has(index)) return
-    const normalized = normalizeColumn(column)
-    const label = labels[normalized]
-    if (!label) return
     const values = Array.from(new Set(run.summary_rows.map((row) => String(row[index] ?? '')).filter(Boolean)))
-    config[label] = values.join(', ')
+    config[column.key] = values.join(', ')
   })
-  config['Number of requests'] = String(getSampleCount(run))
+  config.number_of_requests = String(getSampleCount(run))
   return config
 }
 
-function selectedWideConfig(run: PerfDetailResponse, row?: (string | number)[]): Record<string, string> | null {
+function selectedWideConfig(run: PerfDetailResponse, row?: (string | number)[]): Record<string, string> {
   if (!row) return wideConfig(run)
-  return { ...wideRowConfig(run, row), 'Number of requests': String(getSampleCount(run)) }
-}
-
-function comparisonConfig(run: PerfDetailResponse): Record<string, string> {
-  return wideConfig(run) ?? (run.best_config ?? {})
+  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run)) }
 }
 
 /**
@@ -376,15 +289,6 @@ function computeConfigDiff(
     diff.push({ key, baseline: baselineValue, candidate: candidateValue })
   }
   return diff
-}
-
-/** Trimmed, case-insensitive workload identity for a run (its dataset). */
-function workloadIdentity(run: PerfDetailResponse): string {
-  const config = wideConfig(run)
-  const workload = config
-    ? Object.entries(config).sort(([a], [b]) => a.localeCompare(b))
-    : []
-  return JSON.stringify([(run?.dataset ?? '').trim().toLowerCase(), workload])
 }
 
 /** Empty model returned when there are no runs to compare. */
@@ -427,23 +331,25 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   const others = runs.filter((run) => run !== baseline)
   const candidate = others.length > 0 ? pickNewest(others) : baseline
 
-  // Semantics come from the runs themselves: the API attaches a field key -> semantics map, so
-  // the direction, unit and precision of a perf field are never inferred from its name here.
-  const semanticsByField: Record<string, MetricSemantics | undefined> = {
-    ...candidate.metric_semantics,
-    ...baseline.metric_semantics,
+  const semanticsByField = new Map<string, MetricSemantics>()
+  const labelsByField = new Map<string, string>()
+  for (const run of [baseline, candidate]) {
+    for (const column of run.summary_columns) {
+      if (column.semantics) {
+        semanticsByField.set(column.key, column.semantics)
+        labelsByField.set(column.key, column.label)
+      }
+    }
   }
-  // A wide table's metric keys are canonicalized locally, so translate back to the label the
-  // backend keyed its semantics by before looking one up.
-  const labelByKey = { ...semanticsKeyByMetricKey(candidate), ...semanticsKeyByMetricKey(baseline) }
-  const semanticsOf = (key: string): MetricSemantics | undefined =>
-    semanticsByField[key] ?? semanticsByField[labelByKey[key] ?? '']
 
-  const comparesWideRows = !isVerticalSummary(baseline) || !isVerticalSummary(candidate)
-  const matchedRows = comparesWideRows ? matchingWideRows(baseline, candidate) : null
-  const canCompare = !comparesWideRows || matchedRows !== null
-  const baselineMetrics = canCompare ? toMetricMap(baseline, matchedRows?.baseline) : new Map<string, number | null>()
-  const candidateMetrics = canCompare ? toMetricMap(candidate, matchedRows?.candidate) : new Map<string, number | null>()
+  const matchedRows = matchingWideRows(baseline, candidate)
+  const oneSideMissing = baseline.summary_rows.length === 0 || candidate.summary_rows.length === 0
+  const baselineMetrics = matchedRows || oneSideMissing
+    ? toMetricMap(baseline, matchedRows?.baseline ?? baseline.summary_rows[0])
+    : new Map<string, number | null>()
+  const candidateMetrics = matchedRows || oneSideMissing
+    ? toMetricMap(candidate, matchedRows?.candidate ?? candidate.summary_rows[0])
+    : new Map<string, number | null>()
 
   // Union of metric keys, baseline order first then candidate-only keys.
   const metricKeys: string[] = [...baselineMetrics.keys()]
@@ -452,7 +358,13 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
   }
 
   const deltas = metricKeys.map((key) =>
-    buildMetricDelta(key, baselineMetrics.get(key) ?? null, candidateMetrics.get(key) ?? null, semanticsOf(key)),
+    buildMetricDelta(
+      key,
+      labelsByField.get(key) ?? key,
+      baselineMetrics.get(key) ?? null,
+      candidateMetrics.get(key) ?? null,
+      semanticsByField.get(key),
+    ),
   )
 
   const sampleCounts: Record<string, number> = {
@@ -460,11 +372,20 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
     [candidate.path]: getSampleCount(candidate),
   }
 
-  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline) ?? comparisonConfig(baseline)
-  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate) ?? comparisonConfig(candidate)
-  const configDiff = computeConfigDiff(baselineConfig, candidateConfig)
+  const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline)
+  const candidateConfig = selectedWideConfig(candidate, matchedRows?.candidate)
+  const configLabels = new Map<string, string>([['number_of_requests', 'Number of requests']])
+  for (const run of [baseline, candidate]) {
+    for (const column of run.summary_columns) {
+      if (!column.semantics) configLabels.set(column.key, column.label)
+    }
+  }
+  const configDiff = computeConfigDiff(baselineConfig, candidateConfig).map((entry) => ({
+    ...entry,
+    key: configLabels.get(entry.key) ?? entry.key,
+  }))
   const workloadMismatch = baseline !== candidate && (
-    comparesWideRows ? matchedRows === null : workloadIdentity(baseline) !== workloadIdentity(candidate)
+    matchedRows === null || baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()
   )
 
   return {

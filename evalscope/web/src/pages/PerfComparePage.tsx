@@ -159,7 +159,7 @@ export default function PerfComparePage() {
   const chartFallback = {
     columns: ['Metric', 'Baseline', 'Candidate', 'Absolute delta', 'Percent delta'],
     rows: (model?.deltas ?? []).map((delta) => ({
-      Metric: delta.metricKey,
+      Metric: delta.metricLabel,
       Baseline: delta.baseline.primary,
       Candidate: delta.candidate.primary,
       'Absolute delta': delta.absoluteDelta.primary,
@@ -330,7 +330,7 @@ export default function PerfComparePage() {
                           <td className="type-body-sm px-3 py-2 text-left text-[var(--text)]">
                             {/* The field key is the label: the backend already names the field in
                                 the form the perf tables use, so no spec lookup is needed. */}
-                            <span className="block font-medium">{delta.metricKey}</span>
+                            <span className="block font-medium">{delta.metricLabel}</span>
                           </td>
                           <td
                             className="type-body-sm tabular-nums px-3 py-2 text-right whitespace-nowrap text-[var(--text)]"

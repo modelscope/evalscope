@@ -98,6 +98,7 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
       basic_info: {},
       summary_columns: [],
       summary_rows: [],
+      total_requests: 0,
       best_config: {},
       recommendations: [],
       num_runs: 0,

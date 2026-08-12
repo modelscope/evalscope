@@ -22,6 +22,12 @@ const tableCellSchema = z.union([z.string(), z.number()])
  */
 const metricSemanticsMapSchema = z.record(z.string(), metricSemanticsSchema).optional()
 
+const perfSummaryColumnSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  semantics: metricSemanticsSchema.nullable(),
+})
+
 // ------------------------------------------------------------------ //
 // Perf run archive (GET /api/v1/perf/list)                            //
 // ------------------------------------------------------------------ //
@@ -68,16 +74,14 @@ export const perfDetailResponseSchema = z.object({
   dataset: z.string(),
   generated_at: z.string(),
   basic_info: z.record(z.string(), z.string()),
-  summary_columns: z.array(z.string()),
+  summary_columns: z.array(perfSummaryColumnSchema),
   summary_rows: z.array(z.array(tableCellSchema)),
+  total_requests: z.number(),
   best_config: z.record(z.string(), z.string()),
   recommendations: z.array(z.string()),
   num_runs: z.number(),
   is_embedding: z.boolean(),
   has_html: z.boolean(),
-  // Keyed by the identifiers the summary table exposes: its metric column labels for a wide
-  // table, or its row labels for a vertical one.
-  metric_semantics: metricSemanticsMapSchema,
 })
 
 // ------------------------------------------------------------------ //

@@ -18,6 +18,7 @@ import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { ExternalLink, Lightbulb } from 'lucide-react'
+import type { PerfDetailResponse } from '@/api/types'
 
 type TabKey = 'overview' | 'charts' | 'runs'
 
@@ -30,14 +31,16 @@ function omitKeys(info: Record<string, string>, keys: string[]): Record<string, 
 // ------------------------------------------------------------------ //
 // Overview building blocks                                            //
 // ------------------------------------------------------------------ //
-function formatSummaryCell(column: string, cell: string | number, t: (key: string) => string): string {
-  if (column.trim().toLowerCase() === 'rate' && String(cell).trim().toUpperCase() === 'INF') {
+type SummaryColumn = PerfDetailResponse['summary_columns'][number]
+
+function formatSummaryCell(column: SummaryColumn, cell: string | number, t: (key: string) => string): string {
+  if (column.key === 'request_rate' && String(cell).trim().toUpperCase() === 'INF') {
     return t('perf.archive.closedLoop')
   }
   return String(cell)
 }
 
-function SummaryTable({ columns, rows, t }: { columns: string[]; rows: (string | number)[][]; t: (key: string) => string }) {
+function SummaryTable({ columns, rows, t }: { columns: SummaryColumn[]; rows: (string | number)[][]; t: (key: string) => string }) {
   if (columns.length === 0) return null
   return (
     <div className="overflow-x-auto">
@@ -46,10 +49,10 @@ function SummaryTable({ columns, rows, t }: { columns: string[]; rows: (string |
           <tr>
             {columns.map((c) => (
               <th
-                key={c}
+                key={c.key}
                 className="type-table-xs px-3 py-2 text-right first:text-left whitespace-nowrap border-b border-[var(--border)]"
               >
-                {c}
+                {c.label}
               </th>
             ))}
           </tr>
@@ -73,8 +76,8 @@ function SummaryTable({ columns, rows, t }: { columns: string[]; rows: (string |
   )
 }
 
-function rowsToRecords(columns: string[], rows: (string | number)[][]): Record<string, unknown>[] {
-  return rows.map((row) => Object.fromEntries(columns.map((column, index) => [column, row[index]])))
+function rowsToRecords(columns: SummaryColumn[], rows: (string | number)[][]): Record<string, unknown>[] {
+  return rows.map((row) => Object.fromEntries(columns.map((column, index) => [column.label, row[index]])))
 }
 
 // ------------------------------------------------------------------ //
@@ -216,13 +219,13 @@ export default function PerfReportDetailPage() {
       <PerfChartGroup
         title={t('perf.archive.latencyGroup')}
         charts={latencyCharts}
-        fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
+        fallbackTable={{ columns: data.summary_columns.map((column) => column.label), rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
         getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
       />
       <PerfChartGroup
         title={t('perf.archive.throughputGroup')}
         charts={THROUGHPUT_CHARTS}
-        fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
+        fallbackTable={{ columns: data.summary_columns.map((column) => column.label), rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
         getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
       />
     </div>
