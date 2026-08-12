@@ -361,7 +361,7 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'num_runs': len(runs),
         'is_embedding': is_emb,
         'has_html': os.path.isfile(os.path.join(run_dir, 'perf_report.html')),
-}
+    }
 
 
 def list_run_items(root: str, rel_path: str) -> List[dict]:

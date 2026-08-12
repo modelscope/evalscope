@@ -6,7 +6,7 @@ resolver.
 """
 
 import re
-from typing import Callable, Dict, FrozenSet, Match, NamedTuple, Optional, Pattern, Tuple
+from typing import Callable, Dict, Match, NamedTuple, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
 from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
@@ -18,7 +18,6 @@ _EXACT_ALIASES = {name: alias.canonical_name for name, alias in LEGACY_METRIC_AL
 _SAFE_PRODUCER_ALIASES = {
     'acc': 'accuracy',
     'f1_score': 'f1',
-    'F1': 'f1',
     'em': 'exact_match',
 }
 
@@ -59,7 +58,8 @@ def canonicalize_producer_identity(
     spelling, so resolving them can only produce diagnostic semantics.
     """
     original_name = metric_name
-    canonical_name = _SAFE_PRODUCER_ALIASES.get(metric_name, _snake_case(metric_name))
+    snake_name = _snake_case(metric_name)
+    canonical_name = _SAFE_PRODUCER_ALIASES.get(snake_name, snake_name)
     raw_aggregation = aggregation or 'identity'
     canonical_aggregation = _AGGREGATION_ALIASES.get(raw_aggregation, _snake_case(raw_aggregation))
     identity_dimensions = dict(dimensions or {})
@@ -340,18 +340,6 @@ def migrate_legacy_identity(
         aggregation=canonical_aggregation,
         dimensions=identity_dimensions,
     )
-
-
-def legacy_aliases_reassigning_meaning() -> FrozenSet[str]:
-    """Legacy spellings whose canonical target names a *different* concept than the source.
-
-    Every other alias only re-spells what was already measured (``acc`` -> ``accuracy``,
-    ``Bleu_4`` -> ``bleu[ngram=4]``). These five instead reinterpret an ambiguous score: a bare
-    ``score`` becomes a normalized score and the various judge totals become a judge score.
-    Producers are told about it out loud, because a third-party adapter that emits one of these
-    names has its metric renamed in the report and needs to pick an explicit name instead.
-    """
-    return frozenset({'score', 'overall', 'total_score', 'gpt_score', 'avg_score'})
 
 
 def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str] = None) -> bool:

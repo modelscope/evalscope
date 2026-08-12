@@ -120,13 +120,11 @@ def build_summary_table(runs: list, is_embedding_flag: bool):
             ])
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
-    columns: List[Dict[str, Any]] = [
-        {
-            'key': key,
-            'label': label,
-            'semantics': semantics.get(field_key) if field_key is not None else None,
-        } for key, label, field_key in specs
-    ]
+    columns: List[Dict[str, Any]] = [{
+        'key': key,
+        'label': label,
+        'semantics': semantics.get(field_key) if field_key is not None else None,
+    } for key, label, field_key in specs]
     return columns, rows
 
 

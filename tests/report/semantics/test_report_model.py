@@ -334,6 +334,16 @@ def test_agg_score_degrades_unknown_non_canonical_names(metric_name: str, expect
     assert score.identity == expected
 
 
+@pytest.mark.parametrize(
+    ('metric_name', 'canonical_name'),
+    [('acc', 'accuracy'), ('ACC', 'accuracy'), ('f1_score', 'f1'), ('F1', 'f1'), ('em', 'exact_match')],
+)
+def test_agg_score_accepts_only_safe_producer_aliases(metric_name: str, canonical_name: str) -> None:
+    score = AggScore(score=0.5, metric_name=metric_name, aggregation='mean')
+
+    assert score.identity == MetricIdentity(name=canonical_name, aggregation='mean')
+
+
 @pytest.mark.parametrize('metric_name', ['', '123', '!!!'])
 def test_agg_score_keeps_unnormalizable_names_reportable(metric_name: str) -> None:
     """Nothing snake-caseable left: the value stays reportable and keeps its original spelling."""
