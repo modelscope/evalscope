@@ -3,7 +3,7 @@
 
 ## 概述
 
-SWE-bench Lite 是 SWE-bench 的一个聚焦子集，包含来自 11 个热门 Python 仓库的 300 个 Issue-Pull Request 对。它为评估自动化软件工程能力提供了一个更易上手的切入点。
+SWE-bench Lite 是 SWE-bench 的一个聚焦子集，包含来自 11 个热门 Python 仓库的 300 个 Issue-Pull Request 对。它为评估自动化软件工程能力提供了一个更易上手的入口。
 
 ## 任务描述
 
@@ -23,9 +23,9 @@ SWE-bench Lite 是 SWE-bench 的一个聚焦子集，包含来自 11 个热门 P
 ## 评估说明
 
 - 评估前需先安装 `pip install swebench==4.1.0`
-- 每个仓库的 Docker 镜像会自动构建或拉取
+- 会为每个仓库自动构建或拉取 Docker 镜像
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 是用于初步模型对比的常用基准变体
+- 是用于初步模型对比的常用基准测试变体
 
 
 ## 属性
@@ -63,8 +63,8 @@ SWE-bench Lite 是 SWE-bench 的一个聚焦子集，包含来自 11 个热门 P
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
 | `inference_dataset_id` | `str` | `princeton-nlp/SWE-bench_oracle` | 用于获取推理上下文的 Oracle 数据集 ID。 |
-| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 docker 镜像。可选项：['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像所用的 DockerHub 用户/组织命名空间。 |
+| `force_arch` | `str` | `` | 可选地强制为特定架构拉取/构建 docker 镜像。选项：['', 'arm64', 'x86_64'] |
+| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法
 

@@ -1,6 +1,5 @@
 # MMMU-PRO
 
-
 ## 概述
 
 MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 AI 模型在多种模态下的真实理解能力。它在原始 MMMU 基准的基础上进行了关键改进，使评估更具挑战性和现实性。
@@ -15,7 +14,7 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 ## 主要特性
 
 - MMMU 的增强版本，提供更严格的评估
-- 覆盖 30 个学科：会计、生物、化学、计算机科学、经济学、物理等
+- 覆盖 30 个学科：会计学、生物学、化学、计算机科学、经济学、物理学等
 - 提供多种数据集格式：
   - `standard (4 options)`：传统的 4 选项格式
   - `standard (10 options)`：扩展的 10 选项格式，用于更难的评估
@@ -30,19 +29,17 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 - 使用思维链（Chain-of-Thought, CoT）提示进行推理
 - 包含丰富的元数据，如题目难度和学科信息
 
-
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `mmmu_pro` |
-| **数据集ID** | [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary) |
+| **数据集 ID** | [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
-
 
 ## 数据统计
 
@@ -52,7 +49,7 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 | 提示词长度（平均） | 521.89 字符 |
 | 提示词长度（最小/最大） | 249 / 3749 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -87,7 +84,7 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 | `Public_Health` | 58 | 716.98 | 282 | 2510 |
 | `Sociology` | 54 | 416.48 | 279 | 708 |
 
-**图像统计数据：**
+**图像统计信息：**
 
 | 指标 | 值 |
 |--------|-------|
@@ -95,7 +92,6 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 | 每样本图像数 | 最小: 1, 最大: 35, 平均: 1.18 |
 | 分辨率范围 | 43x50 - 2560x2545 |
 | 格式 | png |
-
 
 ## 样例示例
 
@@ -155,7 +151,6 @@ Answer the following multiple choice question. The last line of your response sh
 |-----------|------|---------|-------------|
 | `dataset_format` | `str` | `standard (4 options)` | 数据集格式变体。可选值：['standard (4 options)', 'standard (10 options)', 'vision'] |
 
-
 ## 使用方法
 
 ### 使用 CLI
@@ -182,7 +177,7 @@ task_cfg = TaskConfig(
     datasets=['mmmu_pro'],
     dataset_args={
         'mmmu_pro': {
-            # subset_list: ['Accounting', 'Agriculture', 'Architecture_and_Engineering']  # 可选，评估指定子集
+            # subset_list: ['Accounting', 'Agriculture', 'Architecture_and_Engineering']  # 可选，评估特定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

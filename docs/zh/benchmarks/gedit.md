@@ -34,13 +34,12 @@ GEdit-Bench（Grounded Edit Benchmark）是一个基于真实世界使用场景�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `gedit` |
-| **数据集ID** | [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary) |
+| **数据集 ID** | [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary) |
 | **论文** | N/A |
 | **标签** | `ImageEditing` |
 | **指标** | `semantic_consistency`, `perceptual_similarity`, `normalized_score` |
-| **默认Shots数** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估划分** | `train` |
-
 
 ## 数据统计
 
@@ -70,11 +69,10 @@ GEdit-Bench（Grounded Edit Benchmark）是一个基于真实世界使用场景�
 
 | 指标 | 值 |
 |--------|-------|
-| 图像总数 | 606 |
+| 总图像数 | 606 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 384x640 - 416x672 |
 | 格式 | png |
-
 
 ## 样例示例
 
@@ -118,7 +116,7 @@ GEdit-Bench（Grounded Edit Benchmark）是一个基于真实世界使用场景�
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `language` | `str` | `en` | 指令语言。可选值：['en', 'cn']。可选值：['en', 'cn'] |
+| `language` | `str` | `en` | 指令语言。选项：['en', 'cn']。选项：['en', 'cn'] |
 
 ## 使用方法
 
@@ -146,7 +144,7 @@ task_cfg = TaskConfig(
     datasets=['gedit'],
     dataset_args={
         'gedit': {
-            # subset_list: ['background_change', 'color_alter', 'material_alter']  # 可选，用于评估特定子集
+            # subset_list: ['background_change', 'color_alter', 'material_alter']  # 可选，评估特定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

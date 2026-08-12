@@ -6,24 +6,24 @@ MusicTrivia 是一个精心策划的多项选择题基准测试，用于评估 A
 
 ## 任务描述
 
-- **任务类型**：多项选择题问答
+- **任务类型**：多项选择题问答（Multiple-Choice Question Answering）
 - **输入**：与音乐相关的常识问题及多个选项
 - **输出**：选择正确答案
 - **领域**：古典音乐、现代音乐、音乐史
 
 ## 主要特点
 
-- 全面覆盖音乐领域
-- 包含关于作曲家、时期和艺术家的问题
-- 测试事实记忆和领域知识
-- 经过质量与准确性筛选
+- 全面覆盖各类音乐领域
+- 包含关于作曲家、音乐时期和艺术家的问题
+- 考察事实记忆与领域知识
+- 精心筛选以确保质量和准确性
 - 各主题难度均衡
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估
+- 默认配置使用 **0-shot** 评估方式
 - 主要指标：**准确率（Accuracy）**
-- 在 **test** 数据划分上进行评估
+- 在 **test** 数据集划分上进行评估
 - 使用标准的单答案多项选择题模板
 
 ## 属性
@@ -31,13 +31,12 @@ MusicTrivia 是一个精心策划的多项选择题基准测试，用于评估 A
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `music_trivia` |
-| **数据集ID** | [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary) |
-| **论文** | N/A |
+| **数据集 ID** | [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary) |
+| **论文** | 无 |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
-| **评估划分** | `test` |
-
+| **默认示例数量** | 0-shot |
+| **评估数据划分** | `test` |
 
 ## 数据统计
 
@@ -85,7 +84,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

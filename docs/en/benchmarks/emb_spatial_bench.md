@@ -47,19 +47,19 @@ EmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of
 | Metric | Value |
 |--------|-------|
 | Total Samples | 3,640 |
-| Prompt Length (Mean) | 428.34 chars |
-| Prompt Length (Min/Max) | 324 / 549 chars |
+| Prompt Length (Mean) | 369.34 chars |
+| Prompt Length (Min/Max) | 265 / 490 chars |
 
 **Per-Subset Statistics:**
 
 | Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
 |--------|---------|-------------|------------|------------|
-| `close` | 612 | 352.54 | 333 | 385 |
-| `far` | 594 | 351.68 | 324 | 385 |
-| `above` | 596 | 464.61 | 419 | 545 |
-| `under` | 602 | 463.35 | 409 | 549 |
-| `left` | 616 | 467.86 | 418 | 545 |
-| `right` | 620 | 468.47 | 411 | 540 |
+| `close` | 612 | 293.54 | 274 | 326 |
+| `far` | 594 | 292.68 | 265 | 326 |
+| `above` | 596 | 405.61 | 360 | 486 |
+| `under` | 602 | 404.35 | 350 | 490 |
+| `left` | 616 | 408.86 | 359 | 486 |
+| `right` | 620 | 409.47 | 352 | 481 |
 
 **Image Statistics:**
 
@@ -79,22 +79,16 @@ EmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of
 {
   "input": [
     {
-      "id": "e50e4e4c",
+      "id": "3f406c29",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~35.2KB]"
         },
         {
-          "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nAmong the listed objects, which one is closest to your current location in the image?\n\nA) table\nB) towel\nC) door\nD) basket"
+          "text": "Among the listed objects, which one is closest to your current location in the image?\n(A) table\n(B) towel\n(C) door\n(D) basket\nAnswer with only the letter of the correct option. The last line of your response should be of the format: ANSWER: [LETTER] where LETTER is one of A, B, C, D."
         }
       ]
     }
-  ],
-  "choices": [
-    "table",
-    "towel",
-    "door",
-    "basket"
   ],
   "target": "D",
   "id": 0,

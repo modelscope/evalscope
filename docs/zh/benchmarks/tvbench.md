@@ -115,7 +115,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `video_dir` | `str` | `` | 可选的本地目录，包含 TVBench 视频文件。可以是扁平结构或按子集分组的结构。 |
+| `video_dir` | `str` | `` | 可选的本地目录，包含 TVBench 视频文件。目录结构可以是扁平的，也可以按子集组织。 |
 
 ## 使用方法
 

@@ -2,14 +2,14 @@
 
 ## 概述
 
-MedMCQA 是一个大规模多项选择题问答数据集，旨在解决真实世界中的医学入学考试题目。该数据集包含超过 19.4 万道题目，涵盖印度医学入学考试（AIIMS、NEET-PG）中的各类医学主题。
+MedMCQA 是一个大规模的多项选择题问答数据集，旨在解决真实世界中的医学入学考试题目。该数据集包含超过 19.4 万道题目，涵盖印度医学入学考试（AIIMS、NEET-PG）中的各类医学主题。
 
 ## 任务描述
 
-- **任务类型**：医学知识多项选择问答
+- **任务类型**：医学知识多项选择题问答（MCQA）
 - **输入**：一道包含 4 个选项的医学问题
 - **输出**：正确答案对应的字母
-- **领域**：临床医学、基础医学、医疗保健
+- **领域**：临床医学、基础科学、医疗保健
 
 ## 主要特点
 
@@ -31,13 +31,13 @@ MedMCQA 是一个大规模多项选择题问答数据集，旨在解决真实世
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `med_mcqa` |
-| **数据集ID** | [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary) |
+| **数据集 ID** | [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
-| **评估划分** | `validation` |
-| **训练划分** | `train` |
+| **评估集** | `validation` |
+| **训练集** | `train` |
 
 ## 数据统计
 

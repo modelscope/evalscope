@@ -3,13 +3,13 @@
 
 ## 概述
 
-SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式（agentic-mode）评估。SWE-bench Verified Mini 是一个精简的 50 样本子集，在保持与完整 Verified 集合相同的性能分布、测试通过率和难度的同时，仅需 5GB 存储空间（而非 130GB）。模型必须通过多轮代理循环自主探索、编辑代码并提交补丁。
+SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式（agentic-mode）评估。SWE-bench Verified Mini 是一个精简的 50 样本子集，在保持与完整 Verified 集合相同性能分布、测试通过率和难度的同时，仅需 5GB 存储空间（而非 130GB）。模型必须通过多轮代理循环自主探索、编辑并提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / 缺陷修复（代理模式）
 - **输入**：GitHub issue 描述（无 oracle 文件上下文）
-- **输出**：代码补丁（以 `git diff` 格式收集，来自自主编辑后的结果）
+- **输出**：代码补丁（diff 格式），通过 `git diff` 在自主编辑后收集
 - **规模**：50 个样本（完整 Verified 集合为 500 个）
 
 ## 主要特性
@@ -29,9 +29,9 @@ SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式�
 
 ## 代理模式
 
-该基准测试在每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+该基准测试在每个实例的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed`、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 后跟补丁内容来提交其 `git diff` 补丁。
 
-默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅包含一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
+默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅包含一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略期望每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
 
 ## 属性
 
@@ -43,7 +43,7 @@ SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -125,7 +125,7 @@ SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式�
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 {question}
 ```
@@ -137,7 +137,7 @@ SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式�
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
 | `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。选项：['', 'arm64', 'x86_64'] |
-| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
+| `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像的 DockerHub 用户/组织命名空间。 |
 
 ## 使用方法
 

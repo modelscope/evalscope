@@ -3,21 +3,21 @@
 
 ## 概述
 
-GPQA（Graduate-Level Google-Proof Q&A）Diamond 是一个包含 198 道多项选择题的高难度基准测试，题目由生物学、物理学和化学领域的专家编写。这些问题设计得极为困难，需要具备博士级别的专业知识才能正确作答。
+GPQA（Graduate-Level Google-Proof Q&A）Diamond 是一个极具挑战性的基准测试，包含 198 道由生物学、物理学和化学领域的专家编写的多项选择题。这些问题设计得极为困难，需要博士级别的专业知识才能正确作答。
 
 ## 任务描述
 
 - **任务类型**：专家级多项选择问答
-- **输入**：研究生水平的科学问题，包含 4 个选项
+- **输入**：研究生水平的科学问题，附带 4 个选项
 - **输出**：单个正确答案字母（A、B、C 或 D）
 - **领域**：生物学、物理学、化学
 
 ## 主要特点
 
 - 198 道题目均由相关领域的博士专家编写并验证
-- 题目“无法通过谷歌搜索轻易查到”（Google-proof）
+- 题目“无法通过 Google 轻易查到”——难以通过简单搜索获得答案
 - 旨在测试深层次的领域知识与推理能力
-- Diamond 子集代表最高质量的问题
+- Diamond 子集代表了最高质量的问题
 - 人类专家平均准确率约为 65%，非专家约为 34%
 
 ## 评估说明
@@ -33,11 +33,11 @@ GPQA（Graduate-Level Google-Proof Q&A）Diamond 是一个包含 198 道多项�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `gpqa_diamond` |
-| **数据集ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |
+| **数据集 ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `train` |
 
 

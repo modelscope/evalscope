@@ -7,17 +7,17 @@ DeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准
 
 ## 任务描述
 
-- **任务类型**：智能体驱动的软件工程
+- **任务类型**：智能体软件工程
 - **输入**：包含任务元数据和验证器资源的 DeepSWE 任务目录
 - **输出**：由 Pier 内置智能体生成的代码仓库补丁
-- **评分方式**：二值验证器奖励，以 `acc` 指标形式提供
+- **评分方式**：二值验证器奖励，以 `acc` 形式暴露
 
 ## 评估说明
 
 - 要求 **Python>=3.12**、Docker，以及执行 `pip install evalscope[deep_swe]`
-- 默认数据集为 ModelScope 上的 `evalscope/deep-swe`
+- 数据集默认使用 ModelScope 上的 `evalscope/deep-swe`
 - DeepSWE 在 EvalScope 中通过 Pier 的 Docker 环境运行
-- 对于不支持 Responses API 的 OpenAI 兼容模型提供商，请使用 `pier_agent_kwargs={'model_class': 'litellm'}`
+- 对于不支持 Responses API 的 OpenAI 兼容提供商，请使用 `pier_agent_kwargs={'model_class': 'litellm'}`
 
 ## 属性
 
@@ -28,7 +28,7 @@ DeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准
 | **论文** | 无 |
 | **标签** | `Agent`, `Coding`, `MultiTurn` |
 | **指标** | `accuracy` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -83,10 +83,10 @@ DeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `task_ids` | `list` | `[]` | 可选，指定要评估的 DeepSWE 任务 ID 列表。 |
-| `languages` | `list` | `[]` | 可选，根据清单元数据过滤任务语言。 |
-| `categories` | `list` | `[]` | 可选，根据清单元数据过滤任务类别。 |
-| `sample_seed` | `int` | `` | 可选，在限制样本数量前应用的确定性打乱种子。 |
+| `task_ids` | `list` | `[]` | 可选的 DeepSWE 任务 ID 列表，用于指定评估范围。 |
+| `languages` | `list` | `[]` | 可选的任务语言过滤器，基于清单元数据。 |
+| `categories` | `list` | `[]` | 可选的任务类别过滤器，基于清单元数据。 |
+| `sample_seed` | `int` | `` | 可选的确定性打乱种子，在限制样本数量前应用。 |
 | `pier_agent_kwargs` | `dict` | `{}` | 传递给 Pier AgentConfig.kwargs 的额外关键字参数。 |
 
 ## 使用方法

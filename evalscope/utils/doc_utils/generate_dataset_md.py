@@ -243,7 +243,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
     return adapter_meta
 
 
-def compute_adapter_statistics(adapter) -> Dict[str, Any]:
+def compute_adapter_statistics(adapter) -> Optional[Dict[str, Any]]:
     """Compute statistics for a DataAdapter (all samples are included)."""
     from evalscope.utils.doc_utils.benchmark_stats import compute_benchmark_statistics
 
@@ -252,10 +252,10 @@ def compute_adapter_statistics(adapter) -> Dict[str, Any]:
         return stats.to_dict()
     except Exception as e:
         print(f'Warning: Failed to compute statistics for {adapter.name}: {e}')
-        return {}
+        return None
 
 
-def get_adapter_sample_example(adapter, max_length: int = 500) -> Dict[str, Any]:
+def get_adapter_sample_example(adapter, max_length: int = 500) -> Optional[Dict[str, Any]]:
     """Get sample example from a DataAdapter."""
     from evalscope.utils.doc_utils.benchmark_stats import get_sample_example
 
@@ -272,6 +272,7 @@ def get_adapter_sample_example(adapter, max_length: int = 500) -> Dict[str, Any]
             }
     except Exception as e:
         print(f'Warning: Failed to get sample example for {adapter.name}: {e}')
+        return None
     return {}
 
 
@@ -394,10 +395,15 @@ def _update_single_benchmark(
         # Compute statistics if requested and not exists (or forced)
         if compute_stats and (force or not entry.get('statistics')):
             print(f'  [{name}] Computing statistics...')
-            entry['statistics'] = compute_adapter_statistics(adapter)
-            entry['sample_example'] = get_adapter_sample_example(adapter)
-            has_changes = True
-            print(f'  [{name}] Statistics computed')
+            statistics = compute_adapter_statistics(adapter)
+            sample_example = get_adapter_sample_example(adapter)
+            if statistics is None or sample_example is None:
+                print(f'  [{name}] Statistics failed; keeping the existing cache')
+            else:
+                entry['statistics'] = statistics
+                entry['sample_example'] = sample_example
+                has_changes = True
+                print(f'  [{name}] Statistics computed')
         elif not compute_stats:
             print(f'  [{name}] Skipping statistics computation')
         else:

@@ -2,41 +2,41 @@
 
 ## 概述
 
-Copious 语料库是一个用于生物多样性实体识别的黄金标准语料库，包含从生物多样性遗产图书馆（Biodiversity Heritage Library）下载的 668 篇文档，涵盖超过 26,000 个句子和 28,000 多个实体，涉及分类学和生态学信息。
+Copious 语料库是一个用于生物多样性实体识别的黄金标准语料库，包含从生物多样性遗产图书馆（Biodiversity Heritage Library）下载的 668 篇文档，涵盖超过 26,000 个句子和 28,000 多个实体，内容涉及分类学和生态学信息。
 
 ## 任务描述
 
-- **任务类型**: 生物多样性命名实体识别（NER）
-- **输入**: 生物多样性文献文本
-- **输出**: 识别出的生物多样性实体范围
-- **领域**: 生物多样性、生态学、分类学
+- **任务类型**：生物多样性命名实体识别（NER）
+- **输入**：生物多样性文献文本
+- **输出**：识别出的生物多样性实体片段
+- **领域**：生物多样性、生态学、分类学
 
 ## 主要特点
 
 - 来自生物多样性遗产图书馆的 668 篇文档
 - 超过 26,000 个句子
 - 超过 28,000 个实体标注
-- 五种生物多样性特定实体类型
+- 五种生物多样性专用实体类型
 - 生物多样性 NLP 的黄金标准
 
 ## 评估说明
 
 - 默认配置使用 **5-shot** 评估
 - 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
-- 实体类型：TAXON（分类单元）、GEOGRAPHICAL_LOCATION（地理位置）、HABITAT（生境）、PERSON（人物）、TEMPORAL_EXPRESSION（时间表达）
+- 实体类型：TAXON（分类单元）、GEOGRAPHICAL_LOCATION（地理位置）、HABITAT（栖息地）、PERSON（人物）、TEMPORAL_EXPRESSION（时间表达）
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `copious` |
-| **数据集ID** | [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary) |
+| **数据集 ID** | [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
 | **指标** | `precision`, `recall`, `f1`, `accuracy` |
-| **默认样本数** | 5-shot |
-| **评估划分** | `test` |
-| **训练划分** | `train` |
+| **默认示例数** | 5-shot |
+| **评估集** | `test` |
+| **训练集** | `train` |
 
 
 ## 数据统计
@@ -534,7 +534,6 @@ Copious 语料库是一个用于生物多样性实体识别的黄金标准语料
       "O",
       "O",
       "O",
-      "O",
       "B-TAXON",
       "I-TAXON",
       "I-TAXON",
@@ -895,64 +894,64 @@ Copious 语料库是一个用于生物多样性实体识别的黄金标准语料
 }
 ```
 
-*注意：部分内容因展示需要已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
 **提示模板：**
 ```text
-You are a named entity recognition system that identifies the following entity types:
+你是一个命名实体识别系统，能够识别以下类型的实体：
 {entities}
 
-Process the provided text and mark all named entities with XML-style tags.
+请处理提供的文本，并使用 XML 风格的标签标记所有命名实体。
 
-For example:
+例如：
 <person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
 
-Available entity tags: {entity_list}
+可用的实体标签：{entity_list}
 
-INSTRUCTIONS:
-1. Wrap your entire response in <response>...</response> tags.
-2. Inside these tags, include the original text with entity tags inserted.
-3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
-4. Tag ALL entities you can identify using the exact tag names provided.
-5. Do not include explanations, just the tagged text.
-6. If entity spans overlap, choose the most specific entity type.
-7. Ensure every opening tag has a matching closing tag.
+说明：
+1. 将你的完整回复用 <response>...</response> 标签包裹。
+2. 在这些标签内，插入带有实体标签的原始文本。
+3. 不得以任何方式修改原始文本（保留空格、标点、大小写等）。
+4. 使用提供的确切标签名称标记所有你能识别的实体。
+5. 不要包含解释，仅返回带标签的文本。
+6. 如果实体范围重叠，请选择最具体的实体类型。
+7. 确保每个开始标签都有对应的结束标签。
 
-Text to process:
+待处理文本：
 {text}
 
 ```
 
 <details>
-<summary>Few-shot 模板</summary>
+<summary>少样本（Few-shot）模板</summary>
 
 ```text
-Here are some examples of named entity recognition:
+以下是命名实体识别的一些示例：
 
 {fewshot}
 
-You are a named entity recognition system that identifies the following entity types:
+你是一个命名实体识别系统，能够识别以下类型的实体：
 {entities}
 
-Process the provided text and mark all named entities with XML-style tags.
+请处理提供的文本，并使用 XML 风格的标签标记所有命名实体。
 
-For example:
+例如：
 <person>John Smith</person> works at <organization>Google</organization> in <location>Mountain View</location>.
 
-Available entity tags: {entity_list}
+可用的实体标签：{entity_list}
 
-INSTRUCTIONS:
-1. Wrap your entire response in <response>...</response> tags.
-2. Inside these tags, include the original text with entity tags inserted.
-3. Do not change the original text in any way (preserve spacing, punctuation, case, etc.).
-4. Tag ALL entities you can identify using the exact tag names provided.
-5. Do not include explanations, just the tagged text.
-6. If entity spans overlap, choose the most specific entity type.
-7. Ensure every opening tag has a matching closing tag.
+说明：
+1. 将你的完整回复用 <response>...</response> 标签包裹。
+2. 在这些标签内，插入带有实体标签的原始文本。
+3. 不得以任何方式修改原始文本（保留空格、标点、大小写等）。
+4. 使用提供的确切标签名称标记所有你能识别的实体。
+5. 不要包含解释，仅返回带标签的文本。
+6. 如果实体范围重叠，请选择最具体的实体类型。
+7. 确保每个开始标签都有对应的结束标签。
 
-Text to process:
+待处理文本：
 {text}
 
 ```

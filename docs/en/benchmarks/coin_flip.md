@@ -45,11 +45,38 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 3,333 |
+| Prompt Length (Mean) | 500.15 chars |
+| Prompt Length (Min/Max) | 453 / 551 chars |
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "05503706",
+      "content": [
+        {
+          "text": "\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n"
+        }
+      ]
+    }
+  ],
+  "target": "NO",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "answer": "NO"
+  }
+}
+```
+
+*Note: Some content was truncated for display.*
 
 ## Prompt Template
 

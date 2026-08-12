@@ -37,31 +37,59 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 | **论文** | N/A |
 | **标签** | `Reasoning`, `Yes/No` |
 | **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
-| **默认示例数** | 0-shot |
-| **评估划分** | `test` |
-| **训练划分** | `validation` |
+| **默认示例数量** | 0-shot |
+| **评估分割** | `test` |
+| **训练分割** | `validation` |
+| **聚合方式** | `f1` |
 
 
 ## 数据统计
 
-*统计数据暂不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 3,333 |
+| 提示词长度（平均） | 500.15 字符 |
+| 提示词长度（最小/最大） | 453 / 551 字符 |
 
 ## 样例示例
 
-*样例示例暂不可用。*
+**子集**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "05503706",
+      "content": [
+        {
+          "text": "\nSolve the following coin flip problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\nQ: A coin is heads up. rushawn flips the coin. yerania ... [TRUNCATED] ...  the coin. jostin does not flip the coin.  Is the coin still heads up?\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer YES or NO to the problem.\n\nReasoning:\n"
+        }
+      ]
+    }
+  ],
+  "target": "NO",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "answer": "NO"
+  }
+}
+```
+
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
 **提示模板：**
 ```text
 
-请逐步解决以下硬币翻转问题。你的回答最后一行必须是 "ANSWER: [ANSWER]"（不含引号）的形式，其中 [ANSWER] 是问题的答案。
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-请记住，在回答末尾单独一行写出答案，格式为 "ANSWER: [ANSWER]"（不含引号），其中 [ANSWER] 是 YES 或 NO。
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer YES or NO to the problem.
 
-推理过程：
+Reasoning:
 
 ```
 
@@ -69,18 +97,18 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 <summary>Few-shot 模板</summary>
 
 ```text
-以下是解决类似问题的一些示例：
+Here are some examples of how to solve similar problems:
 
 {fewshot}
 
 
-请逐步解决以下硬币翻转问题。你的回答最后一行必须是 "ANSWER: [ANSWER]"（不含引号）的形式，其中 [ANSWER] 是问题的答案。
+Solve the following coin flip problem step by step. The last line of your response should be of the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer to the problem.
 
 {question}
 
-请记住，在回答末尾单独一行写出答案，格式为 "ANSWER: [ANSWER]"（不含引号），其中 [ANSWER] 是 YES 或 NO。
+Remember to put your answer on its own line at the end in the form "ANSWER: [ANSWER]" (without quotes) where [ANSWER] is the answer YES or NO to the problem.
 
-推理过程：
+Reasoning:
 
 ```
 

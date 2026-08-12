@@ -1,32 +1,31 @@
 # MGSM
 
-
 ## 概述
 
-MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于评估语言模型多语言数学推理能力的基准测试。它将 GSM8K 扩展至 11 种类型学上差异显著的语言，以检验模型是否能在不同语言中执行思维链（chain-of-thought）推理。
+MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于评估语言模型多语言数学推理能力的基准测试。它将 GSM8K 扩展至 11 种类型学上多样化的语言，以检验模型是否能在不同语言中执行思维链（chain-of-thought）推理。
 
 ## 任务描述
 
 - **任务类型**：多语言数学应用题求解
 - **输入**：11 种语言之一的小学数学应用题
 - **输出**：包含逐步推理过程和数值答案的解答
-- **支持语言**：英语、西班牙语、法语、德语、俄语、中文、日语、泰语、斯瓦希里语、孟加拉语、泰卢固语
+- **语言**：英语、西班牙语、法语、德语、俄语、中文、日语、泰语、斯瓦希里语、孟加拉语、泰卢固语
 
 ## 主要特点
 
-- 每种语言包含 250 道题目（均从 GSM8K 翻译而来）
-- 覆盖 11 种类型学多样、分属不同语系的语言
+- 每种语言包含 250 道题目（从 GSM8K 翻译而来）
+- 覆盖 11 种类型学上多样化的语言，涵盖不同语系
 - 测试模型的多语言思维链推理能力
-- 各语言版本题目内容一致，便于跨语言比较
+- 各语言使用相同的问题内容，便于跨语言比较
 - 旨在评估与语言无关的数学推理能力
 
 ## 评估说明
 
 - 默认配置使用 **4-shot** 示例
-- 答案需用 `\boxed{}` 包裹以便正确提取
-- 可通过 `subset_list` 指定评估特定语言（例如 `['en', 'zh', 'ja']`）
-- 支持跨语言性能对比
-- 少样本（few-shot）示例来自同语言的训练集（train split）
+- 答案应使用 `\boxed{}` 格式包裹，以便正确提取
+- 可通过 `subset_list` 参数指定评估特定语言（例如 `['en', 'zh', 'ja']`）
+- 支持跨语言性能比较
+- 少样本（few-shot）示例从同语言的训练集（train split）中抽取
 
 ## 属性
 
@@ -37,10 +36,9 @@ MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于�
 | **论文** | N/A |
 | **标签** | `Math`, `MultiLingual`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认少样本数** | 4-shot |
+| **默认少样本数量** | 4-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |
-
 
 ## 数据统计
 
@@ -50,7 +48,7 @@ MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于�
 | 提示词长度（平均） | 1742.98 字符 |
 | 提示词长度（最小/最大） | 791 / 2464 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -88,14 +86,14 @@ MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
 **提示模板：**
 ```text
 {question}
-Please reason step by step, and put your final answer within \boxed{{}}.
+Please reason step by step, and put your final answer within \boxed{}.
 
 
 ```
@@ -109,7 +107,7 @@ Here are some examples of how to solve similar problems:
 {fewshot}
 
 {question}
-Please reason step by step, and put your final answer within \boxed{{}}.
+Please reason step by step, and put your final answer within \boxed{}.
 
 
 ```
@@ -142,7 +140,7 @@ task_cfg = TaskConfig(
     datasets=['mgsm'],
     dataset_args={
         'mgsm': {
-            # subset_list: ['en', 'es', 'fr']  # 可选，用于指定评估特定子集
+            # subset_list: ['en', 'es', 'fr']  # 可选，用于评估特定子集
         }
     },
     limit=10,  # 正式评估时请删除此行

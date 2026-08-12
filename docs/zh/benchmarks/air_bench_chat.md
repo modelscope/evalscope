@@ -48,12 +48,12 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `air_bench_chat` |
-| **数据集ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
+| **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `InstructionFollowing`, `QA` |
 | **指标** | `judge_score`, `win_rate` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -66,7 +66,7 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 
 **各子集统计信息：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
 | `speech_QA` | 400 | 64.33 | 23 | 148 |
 | `speech_dialogue_QA` | 400 | 77.03 | 29 | 206 |
@@ -132,8 +132,8 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `tasks` | `list` | `None` | 可选的 Chat 任务名称列表（从 ['music_QA', 'music_generation_analysis_QA', 'sound_QA', 'sound_generation_QA', 'speech_QA', 'speech_and_music_QA', 'speech_and_sound_QA', 'speech_dialogue_QA'] 中选择）。默认评估所有任务。 |
-| `do_swap` | `bool` | `True` | 若为 True（默认），每个样本会以参考答案与模型预测顺序互换的方式评估两次，然后取平均分。禁用此选项可节省一半裁判成本，但会引入位置偏差。 |
+| `tasks` | `list` | `None` | 可选的 Chat 任务名称列表（子集包括 ['music_QA', 'music_generation_analysis_QA', 'sound_QA', 'sound_generation_QA', 'speech_QA', 'speech_and_music_QA', 'speech_and_sound_QA', 'speech_dialogue_QA']）。默认评估所有任务。 |
+| `do_swap` | `bool` | `True` | 若为 True（默认），每个样本会评判两次（交换参考答案与模型预测的顺序），然后取平均分。禁用可节省一半裁判成本，但会引入位置偏差。 |
 
 ## 使用方法
 

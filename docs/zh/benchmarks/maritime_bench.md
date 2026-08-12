@@ -7,17 +7,17 @@ MaritimeBench 是一个用于评估 AI 模型在中文海事相关多项选择�
 ## 任务描述
 
 - **任务类型**：海事知识多项选择问答（中文）
-- **输入**：一道包含四个选项（A-D）的海事相关问题
-- **输出**：正确答案字母，格式为方括号内 [A/B/C/D]
+- **输入**：一道包含 4 个选项（A-D）的海事相关问题
+- **输出**：正确答案的字母，格式为方括号内 [A/B/C/D]
 - **语言**：中文
 
 ## 主要特点
 
 - 面向海事领域的专业问题
 - 中文语言评估
-- 多个子集覆盖不同海事主题
-- 考察专业海事知识
-- 采用标准化中文考试格式
+- 包含多个覆盖不同海事主题的子集
+- 考察专业的海事知识
+- 采用标准化的中文考试格式
 
 ## 评估说明
 
@@ -31,13 +31,12 @@ MaritimeBench 是一个用于评估 AI 模型在中文海事相关多项选择�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `maritime_bench` |
-| **数据集ID** | [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary) |
+| **数据集 ID** | [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
-
+| **评估划分** | `test` |
 
 ## 数据统计
 
@@ -73,7 +72,7 @@ MaritimeBench 是一个用于评估 AI 模型在中文海事相关多项选择�
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 请回答单选题。要求只输出选项，不输出解释，将选项放在[]里，直接输出答案。示例：
 
@@ -92,7 +91,7 @@ D. 扭应力
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

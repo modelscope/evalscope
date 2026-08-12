@@ -3,20 +3,20 @@
 
 ## 概述
 
-SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生成代码以解决现实科学研究问题方面的能力。它涵盖 5 个主要领域（物理学、数学、材料科学、生物学和化学）中的 16 个子领域。
+SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生成代码以解决真实科学研究问题方面的能力。它涵盖 5 个主要领域（物理、数学、材料科学、生物学和化学）中的 16 个子领域。
 
 ## 任务描述
 
 - **任务类型**：科学代码生成
 - **输入**：包含多个子问题的多步骤科学问题
 - **输出**：解决每个子问题的 Python 代码
-- **领域**：物理学、数学、材料科学、生物学、化学
+- **领域**：物理、数学、材料科学、生物学、化学
 
-## 关键特性
+## 主要特点
 
-- 问题源自真实研究场景
+- 问题源自真实科研场景
 - 覆盖 5 个科学领域的 16 个子领域
-- 多步骤问题，涉及知识回忆、推理和综合
+- 多步骤问题，涉及知识回忆、推理与综合
 - 可选提供科学背景信息
 - 需要沙箱环境以安全执行代码
 
@@ -25,8 +25,8 @@ SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生
 - 代码执行**需要沙箱环境**
 - 请参考 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 - 跟踪两个指标：
-  - `main_problem_pass_rate`：完整问题被解决的比例
-  - `subproblem_pass_rate`：各个子问题的成功率
+  - `main_problem_pass_rate`：完整问题解决率
+  - `subproblem_pass_rate`：单个子问题成功率
 - 配置 `provide_background` 以包含科学背景上下文
 - 使用自定义 Docker 镜像 `scicode-benchmark:latest`（首次运行时会根据捆绑的 Dockerfile 在本地自动构建）
 
@@ -219,7 +219,7 @@ SciCode 是一个具有挑战性的基准测试，旨在评估语言模型在生
 
 ## 提示模板
 
-**提示模板：**
+**系统提示：**
 ```text
 
 PROBLEM DESCRIPTION:
@@ -240,6 +240,35 @@ For each subproblem provided you must solve it as follows:
  2. Implement a function to solve the problem provided, using the provided header and return line
 
 The response must be formatted as ```python```
+
+```
+
+**提示模板：**
+```text
+
+Implement code to solve the following subproblem, using the description, function header, and return line provided.
+
+Remember that you may use functions that you generated previously as solutions to previous subproblems to implement your answer.
+
+Remember that you MUST NOT include code to import dependencies.
+
+Remember to ensure your response is in the format of ```python``` and includes necessary background as a comment at the top.
+
+SUBPROBLEM DESCRIPTION:
+{step_description_prompt}
+
+FUNCTION HEADER:
+{function_header}
+
+RETURN LINE:
+{return_line}
+
+Example:
+```python
+# Background: [Here, insert the necessary scientific knowledge required for the next step.]
+
+[Insert the Python code here based on the provided function header and dependencies.]
+```
 
 ```
 

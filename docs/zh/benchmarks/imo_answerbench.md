@@ -8,7 +8,7 @@ IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题�
 
 - **任务类型**：奥林匹克数学问题求解
 - **输入**：IMO 备选题中的数学问题
-- **输出**：分步解答及最终答案
+- **输出**：包含逐步推导过程及最终答案的完整解答
 - **难度**：国际奥林匹克级别
 
 ## 主要特点
@@ -19,12 +19,12 @@ IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题�
 - 答案形式多样，从简单整数到复杂的 LaTeX 表达式（如区间、集合、分数等）
 - 代表当前数学问题求解基准中最高难度水平
 
-## 评估说明
+## 评测说明
 
-- 默认配置采用 **0-shot** 评估方式
-- 答案需用 `\boxed{}` 包裹以便正确提取
+- 默认配置采用 **0-shot** 评测方式
+- 答案需用 `\boxed{}` 包裹，以便正确提取
 - 对复杂答案采用基于 LLM-as-judge 的数值等价性检查
-- 结果可按类别（代数、组合、几何、数论）细分
+- 结果可按类别（代数、组合、几何、数论）细分统计
 - 许多答案涉及符号表达式，需进行数学等价性判断
 
 ## 属性
@@ -37,7 +37,7 @@ IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题�
 | **标签** | `Math`, `Reasoning` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `train` |
+| **评测划分** | `train` |
 
 ## 数据统计
 
@@ -101,7 +101,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets imo_answerbench \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # 正式评测时请删除此行
 ```
 
 ### 使用 Python
@@ -117,10 +117,10 @@ task_cfg = TaskConfig(
     datasets=['imo_answerbench'],
     dataset_args={
         'imo_answerbench': {
-            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # 可选，用于评估特定子集
+            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # 可选，用于评测特定子集
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评测时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

@@ -3,7 +3,7 @@
 
 ## 概述
 
-MMMLU（Multilingual Massive Multitask Language Understanding，多语言大规模多任务语言理解）是 MMLU 基准测试的多语言扩展版本。该基准在 14 种语言中评估语言模型的多语言知识与推理能力，涵盖原始 MMLU 基准中的 57 个学科。
+MMMLU（Multilingual Massive Multitask Language Understanding，多语言大规模多任务语言理解）是 MMLU 基准测试的多语言扩展版本。它在 14 种语言中评估语言模型的多语言知识与推理能力，涵盖原始 MMLU 基准中的 57 个学科。
 
 ## 任务描述
 
@@ -15,19 +15,18 @@ MMMLU（Multilingual Massive Multitask Language Understanding，多语言大规�
 
 ## 主要特点
 
-- 完整翻译了原始 MMLU 基准测试为多语言版本
-- 覆盖 14 种类型学上多样化的语言，涵盖主要语系
+- 完整 MMLU 基准的多语言翻译
+- 覆盖主要语系的 14 种类型学上多样化的语言
 - 测试跨语言知识迁移与多语言推理能力
-- 学科覆盖范围与原始 MMLU 相同（57 个学科）
-- 包含低资源语言（如斯瓦希里语、约鲁巴语）
+- 与原始 MMLU 相同的学科覆盖范围（57 个学科）
+- 包含低资源语言（例如斯瓦希里语、约鲁巴语）
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估（仅测试集）
-- 使用 `subset_list` 参数可评估特定语言（例如 `['ZH_CN', 'JA_JP', 'FR_FR']`）
+- 使用 `subset_list` 评估特定语言（例如 `['ZH_CN', 'JA_JP', 'FR_FR']`）
 - 结果按语言子集分组
 - 支持跨语言性能比较
-
 
 ## 属性
 
@@ -39,8 +38,7 @@ MMMLU（Multilingual Massive Multitask Language Understanding，多语言大规�
 | **标签** | `Knowledge`, `MCQ`, `MultiLingual` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
-
+| **评估分割** | `test` |
 
 ## 数据统计
 

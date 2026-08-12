@@ -3,27 +3,27 @@
 
 ## 概述
 
-BC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含10,000篇PubMed摘要的语料库，其中84,355个化学实体提及均由专家手动标注，用于化学命名实体识别任务。
+BC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含 10,000 篇 PubMed 摘要的语料库，其中包含 84,355 个化学实体提及，均由专家手动标注，用于化学命名实体识别任务。
 
 ## 任务描述
 
 - **任务类型**：化学命名实体识别（NER）
-- **输入**：来自PubMed摘要的科学文本
+- **输入**：来自 PubMed 摘要的科学文本
 - **输出**：识别出的化学化合物名称片段
 - **领域**：化学、药理学、药物发现
 
 ## 主要特点
 
-- 包含10,000篇PubMed摘要
-- 包含84,355个化学实体提及
-- 由专家进行人工标注
-- 来源于BioCreative IV挑战赛
+- 10,000 篇 PubMed 摘要
+- 84,355 个化学实体提及
+- 专家手动标注
+- 来自 BioCreative IV 挑战赛的基准数据集
 - 覆盖全面的化学化合物类型
 
 ## 评估说明
 
 - 默认配置使用 **5-shot** 评估
-- 评估指标：精确率（Precision）、召回率（Recall）、F1分数（F1-Score）、准确率（Accuracy）
+- 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
 - 实体类型：CHEMICAL（化学物质和药物名称）
 
 ## 属性
@@ -35,9 +35,9 @@ BC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含10,000篇PubMed摘�
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
 | **指标** | `precision`, `recall`, `f1`, `accuracy` |
-| **默认Shots数** | 5-shot |
-| **评估划分** | `test` |
-| **训练划分** | `train` |
+| **默认示例数量** | 5-shot |
+| **评估分割** | `test` |
+| **训练分割** | `train` |
 
 ## 数据统计
 
@@ -127,7 +127,7 @@ BC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含10,000篇PubMed摘�
 }
 ```
 
-*注：部分内容为显示目的已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -158,7 +158,7 @@ Text to process:
 ```
 
 <details>
-<summary>Few-shot 模板</summary>
+<summary>少样本（Few-shot）模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -193,7 +193,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -204,7 +204,7 @@ evalscope eval \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 使用Python
+### 使用 Python
 
 ```python
 from evalscope import run_task

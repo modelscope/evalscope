@@ -15,8 +15,8 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 ## 主要特性
 
 - 从 BigCodeBench 中精选出的 148 个具有挑战性的任务
-- 需要复杂的推理和多种工具的协同使用
-- 提供两种评估模式：Complete（基于文档字符串）和 Instruct（基于自然语言指令）
+- 要求复杂的推理能力和多工具协同使用
+- 提供两种评估模式：Complete（文档字符串补全）和 Instruct（自然语言指令）
 - 使用 `unittest.TestCase` 进行全面的正确性验证
 - 支持 pass@k 指标计算
 
@@ -25,8 +25,8 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 - **需要沙箱环境**：要求预装 70 多个 Python 库的沙箱环境
 - 通过 `split` 参数可选择两种模式：`complete`（文档字符串补全）或 `instruct`（自然语言指令）
 - 每个问题默认超时时间为 240 秒
-- 启用 `calibrate` 选项会将 `code_prompt` 添加到生成结果前，以对齐函数签名
-- 沙箱环境配置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
+- 启用 `calibrate` 选项会在生成代码前添加 `code_prompt`，以对齐函数签名
+- 沙箱环境设置详见 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
 ## 属性
 
@@ -88,14 +88,14 @@ BigCodeBench-Hard 是 BigCodeBench 的一个精选子集，包含 148 个更贴�
 |-----------|------|---------|-------------|
 | `split` | `str` | `instruct` | 评估模式："complete"（文档字符串补全）或 "instruct"（自然语言指令）。可选值：['complete', 'instruct'] |
 | `version` | `str` | `default` | 数据集版本。使用 "default" 表示最新可用版本。 |
-| `calibrate` | `bool` | `True` | 是否在生成结果前添加 `code_prompt` 以对齐函数签名。 |
+| `calibrate` | `bool` | `True` | 是否在解决方案前添加 `code_prompt` 以对齐函数签名。 |
 | `docker_build_context` | `str` | `` | 可选的本地 Docker 构建上下文。设置后将覆盖默认沙箱镜像。 |
 | `dockerfile` | `str` | `Dockerfile` | `docker_build_context` 内的 Dockerfile 路径。 |
 | `force_rebuild` | `bool` | `False` | 是否强制重建可选的本地 Docker 镜像。 |
 
 ## 沙箱配置
 
-该基准测试需要沙箱环境来执行代码。
+此基准测试需要沙箱环境来执行代码。
 
 ```json
 {

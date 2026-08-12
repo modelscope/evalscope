@@ -9,17 +9,16 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 
 - 基准测试 ID：`toolathlon`
 - 支持模式：官方服务私有模式（official service private mode）
-- EvalScope 负责控制模型端点、任务选择、作业参数、轮询、结果下载和报告
+- EvalScope 负责控制模型端点、任务选择、作业参数、轮询、结果下载和报告生成
 - 官方 Toolathlon 服务负责控制 MCP 环境、任务容器、智能体循环执行和评分
-- 使用官方公开评估服务时，无需安装 Toolathlon、MCP 应用账户或 Toolathlon Python 包
+- 使用官方公共评估服务时，无需安装 Toolathlon、MCP 应用账户或 Toolathlon Python 包
 - 私有模式下需要一个本地或内网的 OpenAI 兼容端点
 - EvalScope 将一个远程 Toolathlon 作业视为一个本地样本；生成的数据统计计数的是封装作业数量，而 `task_list` 和 `limit` 控制该作业内部提交的 Toolathlon 任务
-- 所附带的 Toolathlon-Verified 任务列表源自官方仓库提交记录
-  `b7bbac3f9a1f381b095c878debe1a47dd164ad85`
+- 所附带的 Toolathlon-Verified 任务列表源自官方仓库提交记录 `b7bbac3f9a1f381b095c878debe1a47dd164ad85`
 
 ## 使用指南
 
-有关公开服务限制、私有模式数据流、自托管服务设置以及 EvalScope 配置示例，请参阅 Toolathlon 使用指南：
+有关公共服务限制、私有模式数据流、自托管服务设置以及 EvalScope 配置示例，请参阅 Toolathlon 使用指南：
 
 - https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolathlon.html
 
@@ -105,7 +104,7 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 | `model_params` | `dict` | `{}` | 额外模型参数，将转发给 Toolathlon，并在 TaskConfig.generation_config 之后合并。 |
 | `job_id` | `str` | `` | 可选的 Toolathlon 作业 ID。可用于恢复未完成的官方服务作业。 |
 | `force_redownload` | `bool` | `False` | 强制重新下载 Toolathlon 结果压缩包。 |
-| `override_output_dir` | `bool` | `False` | 当 Toolathlon 输出目录已存在文件时清空该目录。 |
+| `override_output_dir` | `bool` | `False` | 当 Toolathlon 输出目录已存在文件时，是否清空目录。 |
 | `skip_container_restart` | `bool` | `False` | 跳过 Toolathlon 容器重启。仅用于小型调试任务子集。 |
 | `trust_env_in_httpx` | `bool` | `False` | 允许 httpx 使用代理环境变量。 |
 | `timeout_seconds` | `int` | `14400` | 等待 Toolathlon 官方服务作业的最大时间（秒）。 |

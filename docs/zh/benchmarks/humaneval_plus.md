@@ -3,26 +3,26 @@
 
 ## 概述
 
-HumanEval Plus 是 OpenAI HumanEval 基准测试的一个严格扩展版本，旨在解决代码生成评估中较高的假阳性率问题。它通过数万个自动生成的输入大幅扩充了原始测试用例，以暴露边缘情况下的错误和功能缺陷。
+HumanEval Plus 是 OpenAI HumanEval 基准测试的一个严格扩展版本，旨在解决代码生成评估中较高的假阳性率问题。它在原始测试用例的基础上，增加了数万个自动生成的输入，以暴露边缘情况下的错误和功能缺陷。
 
 ## 任务描述
 
 - **任务类型**：代码生成（Python）
-- **输入**：包含文档字符串的函数签名，描述预期行为
+- **输入**：包含描述预期行为 docstring 的函数签名
 - **输出**：完整的 Python 函数实现
-- **测试覆盖**：相比原始 HumanEval 大幅增强
+- **测试覆盖**：相比原始 HumanEval 大幅扩展
 
 ## 主要特性
 
 - 包含原始 HumanEval 的 164 道题目，并配备增强版测试套件
 - 每道题目额外增加数万个测试用例
-- 基于大语言模型（LLM）和变异（mutation-based）方法生成测试输入
-- 能够发现原始 HumanEval 所遗漏的边缘情况和漏洞
+- 基于大语言模型（LLM）和变异（mutation）技术生成测试输入
+- 能够发现原始 HumanEval 所遗漏的边缘情况和 bug
 - 提供更严格、更准确的正确性评估
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估方式
+- 默认配置使用 **0-shot** 评估
 - **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱环境执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
 - 支持 `pass@k` 指标计算
 - 默认超时时间为 300 秒，以适应庞大的测试套件
@@ -37,8 +37,8 @@ HumanEval Plus 是 OpenAI HumanEval 基准测试的一个严格扩展版本，�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认Shots** | 0-shot |
-| **评估划分** | `test` |
+| **默认 Shots** | 0-shot |
+| **评估分割** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
 
@@ -86,7 +86,7 @@ Read the following function signature and docstring, and fully implement the fun
 
 ## 沙箱配置
 
-此基准测试需要在沙箱环境中执行代码。
+此基准测试需要沙箱环境来执行代码。
 
 ```json
 {

@@ -3,7 +3,7 @@
 
 ## 概述
 
-BC2GM（BioCreative II Gene Mention）数据集是一个广泛用于基因提及识别的语料库，包含来自MEDLINE摘要的20,000个句子，其中的基因和蛋白质名称均由领域专家手动标注。
+BC2GM（BioCreative II Gene Mention）数据集是一个广泛使用的基因提及识别语料库，包含来自MEDLINE摘要的20,000个句子，其中的基因和蛋白质名称均由领域专家手动标注。
 
 ## 任务描述
 
@@ -14,17 +14,18 @@ BC2GM（BioCreative II Gene Mention）数据集是一个广泛用于基因提及
 
 ## 主要特点
 
-- 包含来自MEDLINE摘要的20,000个句子
+- 包含20,000个来自MEDLINE摘要的句子
 - 由专家标注的基因和蛋白质提及
-- 来源于BioCreative II挑战赛的基准数据集
+- 源自BioCreative II挑战赛的基准数据集
 - 广泛用于生物医学NER评估
-- 高质量的手动标注
+- 高质量的人工标注
 
 ## 评估说明
 
 - 默认配置使用 **5-shot** 评估
 - 评估指标：精确率（Precision）、召回率（Recall）、F1分数（F1-Score）、准确率（Accuracy）
 - 实体类型：GENE（基因和蛋白质名称）
+
 
 ## 属性
 
@@ -35,9 +36,10 @@ BC2GM（BioCreative II Gene Mention）数据集是一个广泛用于基因提及
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
 | **指标** | `precision`, `recall`, `f1`, `accuracy` |
-| **默认Shots数** | 5-shot |
-| **评估集划分** | `test` |
-| **训练集划分** | `train` |
+| **默认示例数** | 5-shot |
+| **评估划分** | `test` |
+| **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -146,7 +148,7 @@ Text to process:
 ```
 
 <details>
-<summary>Few-shot模板</summary>
+<summary>少样本提示模板</summary>
 
 ```text
 Here are some examples of named entity recognition:
@@ -181,7 +183,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用CLI
+### 使用命令行接口（CLI）
 
 ```bash
 evalscope eval \

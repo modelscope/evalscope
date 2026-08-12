@@ -34,7 +34,7 @@ ACEBench 评估大语言模型在真实场景中使用工具的能力：选择�
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `MultiTurn` |
 | **指标** | `accuracy`, `process_acc` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `normal` |
 
 ## 数据统计
@@ -45,7 +45,7 @@ ACEBench 评估大语言模型在真实场景中使用工具的能力：选择�
 | 提示词长度（平均） | 6032.98 字符 |
 | 提示词长度（最小/最大） | 2295 / 11835 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -75,11 +75,11 @@ ACEBench 评估大语言模型在真实场景中使用工具的能力：选择�
 {
   "input": [
     {
-      "id": "9d3a77c8",
+      "id": "9198db95",
       "content": "You are an AI assistant with the role name \"assistant.\" Based on the provided API specifications and conversation history from steps 1 to t, generate the API requests that the assistant should call in step t+1. The API requests should be outp ... [TRUNCATED 3788 chars] ... '}, 'effects': {'description': 'List of audio effects to apply.', 'type': 'array', 'items': {'type': 'string', 'enum': ['reverb', 'echo', 'distortion']}}}, 'required': ['frequency', 'gain']}}}, 'required': ['microphone', 'performanceTime']}}]"
     },
     {
-      "id": "8389aaec",
+      "id": "61cfd720",
       "content": "Conversation history 1..t:\nuser: I have been fascinated recently with total solar eclipses. I am planning my next travel and would like to know when the next total solar eclipse will be visible in Greece, specifically in Athens, over the next five years.\n"
     }
   ],
@@ -285,9 +285,9 @@ ACEBench 评估大语言模型在真实场景中使用工具的能力：选择�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `language` | `str` | `en` | 要评估的数据集语言，可选 `en` 或 `zh`。 |
-| `user_model` | `str` | `` | 在 `agent_multi_turn` rollout 中扮演用户的模型，例如 `gpt-4o`。若未设置，这些 rollout 将失败并得零分。 |
-| `user_model_api_url` | `str` | `` | `user_model` 的基础 URL。默认为 `MODELSCOPE_API_BASE`。 |
-| `user_model_api_key` | `str` | `` | `user_model` 的 API 密钥。默认为 `MODELSCOPE_SDK_TOKEN`。 |
+| `user_model` | `str` | `` | 在 `agent_multi_turn` rollout 中扮演用户的模型，例如 `gpt-4o`。若未设置，这些 rollout 将失败并得分为零。 |
+| `user_model_api_url` | `str` | `` | `user_model` 的基础 URL，默认为 `MODELSCOPE_API_BASE`。 |
+| `user_model_api_key` | `str` | `` | `user_model` 的 API 密钥，默认为 `MODELSCOPE_SDK_TOKEN`。 |
 | `max_dialog_turns` | `int` | `40` | 智能体 rollout 的最大步数。 |
 
 ## 使用方法

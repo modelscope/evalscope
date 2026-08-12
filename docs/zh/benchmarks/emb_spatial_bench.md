@@ -34,12 +34,12 @@ EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `emb_spatial_bench` |
-| **数据集 ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |
+| **数据集ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-short.33/) |
 | **标签** | `MCQ`, `MultiModal`, `Reasoning` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评测划分** | `test` |
 
 
 ## 数据统计
@@ -47,25 +47,25 @@ EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空�
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 3,640 |
-| 提示词长度（平均） | 428.34 字符 |
-| 提示词长度（最小/最大） | 324 / 549 字符 |
+| 提示词长度（平均） | 369.34 字符 |
+| 提示词长度（最小/最大） | 265 / 490 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
-| `close` | 612 | 352.54 | 333 | 385 |
-| `far` | 594 | 351.68 | 324 | 385 |
-| `above` | 596 | 464.61 | 419 | 545 |
-| `under` | 602 | 463.35 | 409 | 549 |
-| `left` | 616 | 467.86 | 418 | 545 |
-| `right` | 620 | 468.47 | 411 | 540 |
+| `close` | 612 | 293.54 | 274 | 326 |
+| `far` | 594 | 292.68 | 265 | 326 |
+| `above` | 596 | 405.61 | 360 | 486 |
+| `under` | 602 | 404.35 | 350 | 490 |
+| `left` | 616 | 408.86 | 359 | 486 |
+| `right` | 620 | 409.47 | 352 | 481 |
 
-**图像统计数据：**
+**图像统计信息：**
 
 | 指标 | 值 |
 |--------|-------|
-| 总图像数 | 3,640 |
+| 图像总数 | 3,640 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 300x300 - 1296x968 |
 | 格式 | jpeg |
@@ -79,22 +79,16 @@ EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空�
 {
   "input": [
     {
-      "id": "e50e4e4c",
+      "id": "3f406c29",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~35.2KB]"
         },
         {
-          "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nAmong the listed objects, which one is closest to your current location in the image?\n\nA) table\nB) towel\nC) door\nD) basket"
+          "text": "Among the listed objects, which one is closest to your current location in the image?\n(A) table\n(B) towel\n(C) door\n(D) basket\nAnswer with only the letter of the correct option. The last line of your response should be of the format: ANSWER: [LETTER] where LETTER is one of A, B, C, D."
         }
       ]
     }
-  ],
-  "choices": [
-    "table",
-    "towel",
-    "door",
-    "basket"
   ],
   "target": "D",
   "id": 0,
@@ -129,7 +123,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets emb_spatial_bench \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # 正式评测时请删除此行
 ```
 
 ### 使用 Python
@@ -145,10 +139,10 @@ task_cfg = TaskConfig(
     datasets=['emb_spatial_bench'],
     dataset_args={
         'emb_spatial_bench': {
-            # subset_list: ['close', 'far', 'above']  # 可选，用于评估特定子集
+            # subset_list: ['close', 'far', 'above']  # 可选，用于评测特定子集
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评测时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

@@ -2,38 +2,38 @@
 
 ## 概述
 
-ArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准测试，通过三种任务形式（排序、完形填空和下一段预测）评估大语言模型是否能够对新颖的科学文本进行推理。
+ArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准测试，通过三种任务形式（排序、完形填空和下一段预测）评估大语言模型是否能够对最新科学文本进行推理。
 
 ## 任务描述
 
 - **任务类型**：多项选择科学文本推理
-- **输入**：近期 arXiv 文本片段，附带四个选项
+- **输入**：近期 arXiv 文本片段及四个选项
 - **输出**：单个正确答案字母（A、B、C 或 D）
 - **领域**：计算机科学、定量金融、数学、物理学、统计学、定量生物学、经济学以及电气工程/系统科学
 - **版本**：2024b、2025a 和 2026a 的滚动快照
 
-## 主要特性
+## 主要特点
 
 - 时间感知的基准快照可减少因数据污染导致的性能高估
-- 覆盖多个 arXiv 领域及科学写作风格
+- 覆盖多个 arXiv 领域和科学写作风格
 - 在 SCP 框架下包含排序（sequencing）、完形填空（cloze）和预测（prediction）三种格式
-- 紧凑的 `-50` 子集适用于成本可控的 API 评估
+- 紧凑型 `-50` 子集适用于成本受限的 API 评估
 - 完整子集以 `arxivrollbench_full` 形式提供
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 默认的 `arxivrollbench` 基准使用紧凑的 `-50` 数据集
-- 使用 `arxivrollbench_full` 可获取完整的公开子集
+- 默认的 `arxivrollbench` 基准使用紧凑型 `-50` 数据集
+- 使用 `arxivrollbench_full` 获取完整的公开子集
 - 每个子集均从 `liangzid` 命名空间下的公开 ModelScope 镜像加载
-- 答案被归一化为 A-D，并以准确率（accuracy）进行评估
+- 答案被标准化为 A-D，并以准确率（accuracy）进行评估
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `arxivrollbench_full` |
-| **数据集 ID** | [liangzid/arxivrollbench-full](https://modelscope.cn/datasets/liangzid/arxivrollbench-full/summary) |
+| **数据集ID** | [liangzid/arxivrollbench-full](https://modelscope.cn/datasets/liangzid/arxivrollbench-full/summary) |
 | **论文** | [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41098) |
 | **标签** | `Knowledge`, `MCQ`, `Reasoning` |
 | **指标** | `accuracy` |
@@ -49,7 +49,7 @@ ArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准测试，�
 | 提示词长度（平均） | 1499.93 字符 |
 | 提示词长度（最小/最大） | 307 / 28864 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|

@@ -38,18 +38,67 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 | **论文** | N/A |
 | **标签** | `Hallucination`, `MultiModal`, `Yes/No` |
 | **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `N/A` |
 | **聚合方式** | `f1` |
 
 
 ## 数据统计
 
-*统计数据暂不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 9,000 |
+| 提示词长度（平均） | 79.4 字符 |
+| 提示词长度（最小/最大） | 75 / 87 字符 |
+
+**各子集统计数据：**
+
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+|--------|---------|-------------|------------|------------|
+| `popular` | 3,000 | 79.27 | 75 | 87 |
+| `adversarial` | 3,000 | 79.36 | 75 | 87 |
+| `random` | 3,000 | 79.59 | 75 | 87 |
+
+**图像统计信息：**
+
+| 指标 | 值 |
+|--------|-------|
+| 总图像数 | 9,000 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 500x243 - 640x640 |
+| 格式 | jpeg |
+
 
 ## 样例示例
 
-*样例示例暂不可用。*
+**子集**: `popular`
+
+```json
+{
+  "input": [
+    {
+      "id": "8847a5a3",
+      "content": [
+        {
+          "text": "Is there a snowboard in the image?\nPlease answer YES or NO without an explanation."
+        },
+        {
+          "image": "[BASE64_IMAGE: png, ~87.2KB]"
+        }
+      ]
+    }
+  ],
+  "target": "YES",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "id": "3000",
+    "answer": "YES",
+    "category": "popular",
+    "question_id": "1"
+  }
+}
+```
 
 ## 提示模板
 
@@ -83,6 +132,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['pope'],
+    dataset_args={
+        'pope': {
+            # subset_list: ['popular', 'adversarial', 'random']  # 可选，用于评估特定子集
+        }
+    },
     limit=10,  # 正式评估时请删除此行
 )
 

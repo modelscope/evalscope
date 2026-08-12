@@ -14,7 +14,7 @@ SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型�
 
 ## 主要特点
 
-- 覆盖 50 多个学术领域的 26,000+ 道题目
+- 覆盖 50 多个学术领域的 26,000+ 道问题
 - 每题提供 10 个选项（比标准的 4 选项更具挑战性）
 - 广泛覆盖以下领域：
   - 科学：数学、物理、化学、生物
@@ -25,7 +25,7 @@ SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型�
 
 ## 评估说明
 
-- 默认评估使用 **train** 划分（唯一可用划分）
+- 默认使用 **train** 划分进行评估（唯一可用划分）
 - 主要指标：多项选择题的 **准确率（Accuracy）**
 - 仅支持 0-shot 或 5-shot 评估
 - 使用思维链（Chain-of-Thought, CoT）提示
@@ -36,11 +36,11 @@ SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `super_gpqa` |
-| **数据集ID** | [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) |
+| **数据集 ID** | [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估划分** | `train` |
 
 

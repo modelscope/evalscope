@@ -3,20 +3,20 @@
 
 ## 概述
 
-MMLU（Massive Multitask Language Understanding，大规模多任务语言理解）是一个综合性评估基准，旨在衡量模型在预训练阶段获得的知识。该基准涵盖 STEM、人文学科、社会科学及其他领域的 57 个学科，难度范围从基础到专业级别。
+MMLU（Massive Multitask Language Understanding，大规模多任务语言理解）是一个综合性评估基准，旨在衡量模型在预训练阶段所获得的知识。它涵盖 STEM、人文学科、社会科学及其他领域的 57 个学科，难度从基础到专业级别不等。
 
 ## 任务描述
 
 - **任务类型**：多项选择题问答（Multiple-Choice Question Answering）
 - **输入**：包含四个选项（A、B、C、D）的问题
 - **输出**：单个正确答案的字母
-- **学科**：57 个学科，分为 4 个类别（STEM、人文学科、社会科学、其他）
+- **学科范围**：57 个学科，分为 4 个类别（STEM、人文学科、社会科学、其他）
 
 ## 主要特点
 
 - 覆盖从基础到高级专业水平的多样化知识领域
-- 同时测试事实性知识和推理能力
-- 包含抽象代数、解剖学、天文学、商业伦理等学科
+- 同时考察事实性知识和推理能力
+- 包含抽象代数、解剖学、天文学、商业伦理等多个学科
 - 是衡量大语言模型知识广度的标准基准
 
 ## 评估说明
@@ -31,11 +31,11 @@ MMLU（Massive Multitask Language Understanding，大规模多任务语言理解
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `mmlu` |
-| **数据集ID** | [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary) |
+| **数据集 ID** | [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数（Shots）** | 5-shot |
+| **默认示例数量** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `dev` |
 
@@ -48,7 +48,7 @@ MMLU（Massive Multitask Language Understanding，大规模多任务语言理解
 | 提示词长度（平均） | 3212.2 字符 |
 | 提示词长度（最小/最大） | 985 / 14626 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -138,7 +138,7 @@ MMLU（Massive Multitask Language Understanding，大规模多任务语言理解
 }
 ```
 
-*注：部分内容为显示目的已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 
@@ -153,7 +153,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

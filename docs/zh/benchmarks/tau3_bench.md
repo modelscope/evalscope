@@ -3,20 +3,20 @@
 
 ## 概述
 
-τ³-bench（Tau Cubed Bench）是 tau-bench 系列的 v1.0.0 版本。它在 τ²-bench 的基础上新增了知识检索领域、原生语音/音频评估，并对现有领域的 75 多项任务进行了修复。
+τ³-bench（Tau Cubed Bench）是 tau-bench 系列的 v1.0.0 版本。它在 τ²-bench 的基础上新增了知识检索领域、原生语音/音频评估，并对现有领域的 75+ 项任务进行了修复。
 
 ## 任务描述
 
-- **任务类型**：支持可选知识检索的对话代理评估
+- **任务类型**：对话智能体评估（可选知识检索）
 - **输入**：包含复杂目标和多步骤要求的用户场景
-- **输出**：遵循策略指南的代理 API 工具调用动作
+- **输出**：智能体通过 API 工具调用执行动作，遵循策略指南
 - **领域**：航空、零售、电信、银行知识
 
-## 主要特性
+## 核心特性
 
 - 新增 `banking_knowledge` 领域，包含 97 项任务和 698 份政策/流程文档（RAG）
 - 对航空 / 零售 / 银行领域的 75+ 项任务进行了质量修复
-- 可插拔的检索管道：BM25、稠密嵌入（OpenAI / Qwen）、grep、沙箱 shell、重排序器
+- 可插拔检索管道：BM25、稠密嵌入（OpenAI / Qwen）、grep、沙箱 shell、重排序器
 - LLM 模拟用户交互，支持多轮对话与工具调用
 
 ## 评估说明
@@ -26,13 +26,13 @@
 - **不能与 `tau2_bench` 共存于同一环境**（PyPI 包名同为 `tau2`，但版本不同）。请二选一。
 - **用户模型配置**：需设置用户模拟模型
 - **检索配置（仅限 banking_knowledge）**：默认使用 `bm25`（离线）。可通过 `extra_params.retrieval_config` 切换。其他配置可能需要额外依赖：
-  - `bm25` → 包含在 `[knowledge]` 额外依赖中（无需 API 密钥）
+  - `bm25` → 包含在 `[knowledge]` 附加依赖中（无需 API 密钥）
   - `openai_embeddings*` → 需设置 `OPENAI_API_KEY`
   - `qwen_embeddings*` → 需设置 `OPENROUTER_API_KEY`
   - `*_reranker` → 同样需要 `OPENAI_API_KEY`
   - `terminal_use` / `alltools*` → 需要 Anthropic `sandbox-runtime`（npm）以及 ripgrep / bwrap / socat（详见 tau2 README）
-- **主要指标**：基于任务完成奖励的 **准确率（Accuracy）**
-- 使用 **pass^k** 聚合方式（`mean_and_pass_hat_k`）进行鲁棒性评估：即 *所有* `k` 次尝试均成功的概率，定义参见 τ-bench 论文。这比 `pass@k`（只要求 `k` 次尝试中至少一次成功）更严格。设置 `repeats=k` 即可启用。
+- 主要指标：基于任务完成奖励的 **准确率（Accuracy）**
+- 使用 **pass^k** 聚合方式（`mean_and_pass_hat_k`）进行鲁棒性评估：即 *所有* `k` 次任务尝试均成功的概率（定义见 τ-bench 论文）。这比 `pass@k`（仅需 `k` 次中至少一次成功）更严格。设置 `repeats=k` 即可启用。
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau3_bench.html)
 
 
@@ -46,7 +46,7 @@
 | **标签** | `Agent`, `FunctionCalling`, `Reasoning` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 | **聚合方式** | `mean_and_pass_hat_k` |
 
 
@@ -58,7 +58,7 @@
 | 提示词长度（平均） | 39.22 字符 |
 | 提示词长度（最小/最大） | 0 / 661 字符 |
 
-**各子集统计信息：**
+**各子集统计：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -69,7 +69,7 @@
 
 ## 样例示例
 
-**子集**：`airline`
+**子集**: `airline`
 
 ```json
 {

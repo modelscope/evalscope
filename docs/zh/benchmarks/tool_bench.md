@@ -3,7 +3,7 @@
 
 ## 概述
 
-ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用工具和执行函数调用能力的基准测试。它通过包含真实工具使用场景的任务，并与标准答案进行对比，来衡量模型表现。
+ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用工具和执行函数调用能力的基准测试。它通过与真实工具使用场景相符的任务，并结合标准答案进行对比，来衡量模型表现。
 
 ## 任务描述
 
@@ -16,16 +16,16 @@ ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用�
 
 - 静态评估（不实际执行工具）
 - 同时测试工具选择和参数生成能力
-- 包含域内和域外评估划分
-- 提供多种评估指标以全面衡量性能
-- 测试规划与动作执行能力
+- 包含域内和域外的评估划分
+- 提供多种评估指标以实现全面评估
+- 测试模型的规划与动作执行能力
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估
-- 五项指标：Act.EM、Plan.EM、F1、HalluRate、Rouge-L
+- 默认配置采用 **0-shot** 评估方式
+- 使用五种指标：Act.EM、Plan.EM、F1、HalluRate、Rouge-L
 - F1 分数为主要评估指标
-- HalluRate 衡量工具幻觉频率
+- HalluRate 衡量工具幻觉（hallucination）频率
 - 详细设置请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/toolbench.html)
 
 ## 属性
@@ -33,11 +33,11 @@ ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `tool_bench` |
-| **数据集ID** | [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary) |
+| **数据集 ID** | [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary) |
 | **论文** | N/A |
 | **标签** | `FunctionCalling`, `Reasoning` |
 | **指标** | `Act.EM`, `Plan.EM`, `f1`, `HalluRate`, `Rouge-L` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -132,7 +132,7 @@ ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用�
 }
 ```
 
-*注：部分内容为显示目的已被截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -148,7 +148,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets tool_bench \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # 正式评估时请移除此行
 ```
 
 ### 使用 Python
@@ -164,10 +164,10 @@ task_cfg = TaskConfig(
     datasets=['tool_bench'],
     dataset_args={
         'tool_bench': {
-            # subset_list: ['in_domain', 'out_of_domain']  # 可选，用于评估特定子集
+            # subset_list: ['in_domain', 'out_of_domain']  # 可选，用于指定评估特定子集
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评估时请移除此行
 )
 
 run_task(task_cfg=task_cfg)

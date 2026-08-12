@@ -38,17 +38,51 @@ KINA（Knowledge Index of Noah's Ark，诺亚方舟知识指数）是一个高�
 | **论文** | [Paper](https://www.2077ai.com/kina) |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数（Shots）** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
 
 ## 数据统计
 
-*统计数据暂不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 899 |
+| 提示词长度（平均） | 3280.88 字符 |
+| 提示词长度（最小/最大） | 482 / 22536 字符 |
 
 ## 样例示例
 
-*样例示例暂不可用。*
+**子集**: `default`
+
+```json
+{
+  "input": [
+    {
+      "id": "4750dae8",
+      "content": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\n\nUnder con ... [TRUNCATED 1998 chars] ...  it more economically sustainable under concentrate-restricted conditions.\nJ) Choose barn-dried hay because its intact fiber structure significantly increases milk fat percentage, making it more suitable for producing high-fat dairy products."
+    }
+  ],
+  "choices": [
+    "Silage, because anaerobic fermentation preserves soluble carbohydrates, true protein, and vitamins effectively, resulting in higher metabolizable energy density, superior palatability, and greater dry matter intake(DMI), thereby helping sustain milk yield when dietary concentrate is limited.",
+    "Barn-dried hay, as it promotes higher DMI, enabling adequate nutrient intake and improving nitrogen utilization efficiency despite its lower crude protein concentration.",
+    "Both forages are functionally equivalent and can be substituted on an equal dry matter basis, as they are both classified as roughages and exert no significant differential effect on lactation performance.",
+    "Barn-dried hay, owing to its physically effective fiber structure and high lignin content, which enhance rumination activity and mitigate the risk of subacute ruminal acidosis.",
+    "Silage, due to its high moisture content, which reduces voluntary water consumption and contributes to on-farm water conservation.",
+    "Choose barn-dried hay because it contains no moisture, has a high dry matter content, and is therefore more \"nutrient-concentrated\" than wet silage.",
+    "Choose silage because it contains probiotics that can directly improve gut health in dairy cows and serve as a protein source to replace concentrate.",
+    "Choose silage. In southern China's rainy climate, hay is prone to mold growth and aflatoxin contamination, whereas silage avoids this risk and ensures raw milk safety-particularly important when concentrate supply is limited and reliance on safe forage is critical.",
+    "Choose silage because it can be produced locally(e.g., whole-plant corn), harvested and stored mechanically, and offers lower cost per unit of nutrient compared to purchased high-quality hay, making it more economically sustainable under concentrate-restricted conditions.",
+    "Choose barn-dried hay because its intact fiber structure significantly increases milk fat percentage, making it more suitable for producing high-fat dairy products."
+  ],
+  "target": "B",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "index": 0,
+    "discipline": "Agronomy/Animal Husbandry/Animal Nutrition and Feed Science"
+  }
+}
+```
 
 ## 提示模板
 

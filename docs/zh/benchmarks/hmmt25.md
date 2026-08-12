@@ -1,9 +1,8 @@
 # HMMT25
 
-
 ## 概述
 
-HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源自2025年2月举办的哈佛-麻省理工数学竞赛（Harvard-MIT Mathematics Tournament, HMMT），该赛事是全球最具声望且难度最高的高中数学竞赛之一。
+HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源自2025年2月举办的哈佛-麻省理工数学竞赛（Harvard-MIT Mathematics Tournament, HMMT），这是全球最负盛名且难度最高的高中数学竞赛之一。
 
 ## 任务描述
 
@@ -14,7 +13,7 @@ HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源�
 
 ## 主要特点
 
-- 题目来自 HMMT 2025 年 2 月比赛
+- 题目来自 HMMT 2025 年 2 月竞赛
 - 四大核心领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）
 - 高难度的竞赛级题目
 - 考察高级数学推理能力
@@ -22,9 +21,9 @@ HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源�
 
 ## 评测说明
 
-- 默认配置采用 **0-shot** 评测方式
-- 答案需用 `\boxed{}` 格式包裹，以便正确提取
-- 使用数值准确率作为评估指标
+- 默认配置使用 **0-shot** 评测
+- 答案应使用 `\boxed{}` 格式包裹，以便正确提取
+- 使用数值准确率（numeric accuracy）作为评估指标
 - 题目覆盖多个数学领域
 
 ## 属性
@@ -36,9 +35,8 @@ HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源�
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认示例数（Shots）** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评测划分** | `train` |
-
 
 ## 数据统计
 

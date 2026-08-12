@@ -46,11 +46,60 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 9,000 |
+| Prompt Length (Mean) | 79.4 chars |
+| Prompt Length (Min/Max) | 75 / 87 chars |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `popular` | 3,000 | 79.27 | 75 | 87 |
+| `adversarial` | 3,000 | 79.36 | 75 | 87 |
+| `random` | 3,000 | 79.59 | 75 | 87 |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 9,000 |
+| Images per Sample | min: 1, max: 1, mean: 1 |
+| Resolution Range | 500x243 - 640x640 |
+| Formats | jpeg |
+
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `popular`
+
+```json
+{
+  "input": [
+    {
+      "id": "8847a5a3",
+      "content": [
+        {
+          "text": "Is there a snowboard in the image?\nPlease answer YES or NO without an explanation."
+        },
+        {
+          "image": "[BASE64_IMAGE: png, ~87.2KB]"
+        }
+      ]
+    }
+  ],
+  "target": "YES",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "id": "3000",
+    "answer": "YES",
+    "category": "popular",
+    "question_id": "1"
+  }
+}
+```
 
 ## Prompt Template
 

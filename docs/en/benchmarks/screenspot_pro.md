@@ -47,11 +47,74 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 1,581 |
+| Prompt Length (Mean) | 319.22 chars |
+| Prompt Length (Min/Max) | 295 / 395 chars |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `CAD` | 261 | 313.18 | 296 | 344 |
+| `Creative` | 341 | 318.02 | 296 | 395 |
+| `Dev` | 299 | 329.79 | 296 | 392 |
+| `OS` | 196 | 317.57 | 297 | 382 |
+| `Office` | 230 | 320.76 | 296 | 372 |
+| `Scientific` | 254 | 314.44 | 295 | 353 |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 1,581 |
+| Images per Sample | min: 1, max: 1, mean: 1 |
+| Resolution Range | 1920x1080 - 6016x3384 |
+| Formats | png |
+
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `CAD`
+
+```json
+{
+  "input": [
+    {
+      "id": "2d87e94f",
+      "content": [
+        {
+          "image": "[BASE64_IMAGE: png, ~933.3KB]"
+        },
+        {
+          "text": "Identify the UI element for the instruction and give a single click point. Coordinates must be normalized to the range 0 to 1 relative to the image size. Do not output a bounding box.\nInstruction: Mark dimensions\nEnd your reply with the final answer on its own last line, formatted exactly as: Answer: [x, y]"
+        }
+      ]
+    }
+  ],
+  "target": "[0.1672, 0.0435, 0.1802, 0.1019]",
+  "id": 0,
+  "group_id": 0,
+  "subset_key": "CAD",
+  "metadata": {
+    "id": "inventor_windows_0",
+    "sent_size": [
+      3840,
+      1080
+    ],
+    "bbox_norm": [
+      0.1671875,
+      0.04351851851851852,
+      0.18020833333333333,
+      0.10185185185185185
+    ],
+    "ui_type": "text",
+    "application": "inventor",
+    "platform": "windows"
+  }
+}
+```
 
 ## Prompt Template
 

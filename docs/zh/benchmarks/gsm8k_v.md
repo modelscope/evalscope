@@ -1,9 +1,8 @@
 # GSM8K-V
 
-
 ## 概述
 
-GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它系统地将每个 GSM8K 数学文字题转换为其视觉对应形式。该基准支持在多模态数学评估中对同一问题的不同模态进行清晰的项内比较。
+GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它将每个 GSM8K 数学文字题系统性地转化为其视觉对应形式。该基准支持在多模态数学评估中对同一问题的不同模态进行清晰的对比。
 
 ## 任务描述
 
@@ -12,11 +11,11 @@ GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它系统地将
 - **输出**：以 \boxed{} 格式给出的数值答案
 - **领域**：视觉数学推理、场景理解、算术
 
-## 主要特性
+## 主要特点
 
-- 对 GSM8K 文本问题进行视觉化转换
+- 将 GSM8K 文本问题转化为视觉形式
 - 采用多图像输入格式完整呈现问题
-- 支持文本与视觉模态的对比分析
+- 支持文本与视觉模态之间的对比
 - 按问题类型和子类别进行分类
 - 保留原始问题的难度等级
 
@@ -24,9 +23,9 @@ GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它系统地将
 
 - 默认评估使用 **train** 划分
 - 主要指标：**准确率（Accuracy）**，通过数值比较计算
-- 答案必须仅包含数字，并置于 \boxed{} 中
+- 答案应仅包含数字，并置于 \boxed{} 中
 - 鼓励在最终答案前提供逐步推理过程
-- 元数据包含原始文本问题用于对比
+- 元数据包含原始文本问题以供对比
 
 ## 属性
 
@@ -37,7 +36,7 @@ GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它系统地将
 | **论文** | N/A |
 | **标签** | `Math`, `MultiModal`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `train` |
 
 ## 数据统计
@@ -59,7 +58,7 @@ GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它系统地将
 
 ## 样例示例
 
-**子集**: `default`
+**子集**：`default`
 
 ```json
 {
@@ -112,7 +111,7 @@ When providing your final answer:
 - If the answer can be expressed as a whole number (integer), provide it as an integer
 Problem: {question}
 
-Please think step by step. After your reasoning, put your final answer within \boxed{{}} with the number only.
+Please think step by step. After your reasoning, put your final answer within \boxed{} with the number only.
 
 ```
 

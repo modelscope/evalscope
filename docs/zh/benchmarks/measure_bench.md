@@ -46,11 +46,61 @@ MeasureBench 是一个全面的基准测试，用于评估视觉语言模型（V
 
 ## 数据统计
 
-*统计数据不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 2,442 |
+| 提示词长度（平均） | 150.9 字符 |
+| 提示词长度（最小/最大） | 126 / 215 字符 |
+
+**各子集统计：**
+
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+|--------|---------|-------------|------------|------------|
+| `real_world` | 1,272 | 153.83 | 131 | 215 |
+| `synthetic_test` | 1,170 | 147.71 | 126 | 192 |
+
+**图像统计：**
+
+| 指标 | 值 |
+|--------|-------|
+| 图像总数 | 2,442 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 108x79 - 3025x1599 |
+| 格式 | jpeg, png |
+
 
 ## 样例示例
 
-*样例示例不可用。*
+**子集**: `real_world`
+
+```json
+{
+  "input": [
+    {
+      "id": "1341f508",
+      "content": [
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~75.8KB]"
+        },
+        {
+          "text": "What is the reading of the instrument?\nProvide your final answer on the last line in the format: Answer: <value> <unit>. For example: Answer: 42.5 A"
+        }
+      ]
+    }
+  ],
+  "target": "",
+  "id": 0,
+  "group_id": 0,
+  "subset_key": "ammeter",
+  "metadata": {
+    "question_id": "ammeter_0",
+    "image_type": "ammeter",
+    "design": "dial",
+    "evaluator": "interval_matching",
+    "evaluator_kwargs": "{\"interval\": [9.5, 9.7], \"units\": [\"A\", \"Ampere\"]}"
+  }
+}
+```
 
 ## 提示模板
 
@@ -80,6 +130,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['measure_bench'],
+    dataset_args={
+        'measure_bench': {
+            # subset_list: ['real_world', 'synthetic_test']  # 可选，用于评估特定子集
+        }
+    },
     limit=10,  # 正式评估时请删除此行
 )
 

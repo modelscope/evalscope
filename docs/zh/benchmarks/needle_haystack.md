@@ -7,17 +7,17 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 
 ## 任务描述
 
-- **任务类型**: 长上下文信息检索
-- **输入**: 包含目标信息的长文档 + 检索问题
-- **输出**: 提取的目标信息（needle）
-- **领域**: 长上下文理解、信息检索
+- **任务类型**：长上下文信息检索
+- **输入**：包含嵌入目标信息的长文档 + 检索问题
+- **输出**：提取的目标信息（needle）
+- **领域**：长上下文理解、信息检索
 
 ## 主要特性
 
 - 在不同上下文长度（1K–32K+ tokens）下测试检索能力
 - 在不同文档深度（0%–100%）下测试检索能力
-- 支持英文和中文语料
-- 可生成具有可配置参数的合成样本
+- 支持英文和中文语料库
+- 可通过配置参数生成合成样本
 - 可生成性能热力图可视化结果
 
 ## 评估说明
@@ -36,7 +36,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 |----------|-------|
 | **基准测试名称** | `needle_haystack` |
 | **数据集ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |
-| **论文** | N/A |
+| **论文** | 无 |
 | **标签** | `LongContext`, `Retrieval` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
@@ -60,7 +60,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 
 ## 样例示例
 
-**子集**: `english`
+**子集**：`english`
 
 ```json
 {
@@ -89,12 +89,12 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 
 ## 提示模板
 
-**系统提示（System Prompt）:**
+**系统提示（System Prompt）：**
 ```text
 You are a helpful AI bot that answers questions for a user. Keep your response short and direct
 ```
 
-**提示模板（Prompt Template）:**
+**提示模板（Prompt Template）：**
 ```text
 Please read the following text and answer the question below.
 
@@ -121,8 +121,8 @@ Don't give information outside the document or repeat your findings.
 | `document_depth_percent_min` | `int` | `0` | needle 插入的最小深度百分比。 |
 | `document_depth_percent_max` | `int` | `100` | needle 插入的最大深度百分比。 |
 | `document_depth_percent_intervals` | `int` | `10` | 最小与最大深度百分比之间的间隔数量。 |
-| `tokenizer_path` | `str` | `Qwen/Qwen3-0.6B` | 用于分词的 tokenizer 检查点路径。 |
-| `show_score` | `bool` | `False` | 在热力图输出图像上显示数值分数。 |
+| `tokenizer_path` | `str` | `Qwen/Qwen3-0.6B` | 用于分词的 tokenizer 模型路径。 |
+| `show_score` | `bool` | `False` | 是否在热力图输出图像上显示数值分数。 |
 
 ## 使用方法
 

@@ -37,7 +37,7 @@ BBH（BIG-Bench Hard）是从 BIG-Bench 基准测试中精选出的 23 项具有
 | **论文** | N/A |
 | **标签** | `Reasoning` |
 | **指标** | `accuracy` |
-| **默认样本数** | 3-shot |
+| **默认少样本数量** | 3-shot |
 | **评估划分** | `test` |
 
 ## 数据统计
@@ -48,7 +48,7 @@ BBH（BIG-Bench Hard）是从 BIG-Bench 基准测试中精选出的 23 项具有
 | 提示词长度（平均） | 3307.29 字符 |
 | 提示词长度（最小/最大） | 1060 / 7885 字符 |
 
-**各子集统计信息：**
+**各子集统计数据：**
 
 | 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -128,7 +128,7 @@ A: Let's think step by step. Put your final answer in the format of "So the answ
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行接口（CLI）
 
 ```bash
 evalscope eval \

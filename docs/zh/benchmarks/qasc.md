@@ -2,19 +2,19 @@
 
 ## 概述
 
-QASC（Question Answering via Sentence Composition，基于句子组合的问答）是一个专注于多跳句子组合的问答数据集。它包含 9,980 道面向小学科学知识的 8 选项多项选择题，要求模型组合多个事实才能得出正确答案。
+QASC（Question Answering via Sentence Composition，基于句子组合的问题回答）是一个专注于多跳句子组合的问题回答数据集。它包含 9,980 个面向小学科学的 8 选 1 多项选择题，要求模型组合多个事实才能得出正确答案。
 
 ## 任务描述
 
 - **任务类型**：多跳科学问答（多项选择）
-- **输入**：一道包含 8 个选项的科学问题
+- **输入**：包含 8 个选项的科学问题
 - **输出**：正确答案对应的字母
 - **重点**：句子组合与多跳推理
 
 ## 主要特点
 
-- 包含 9,980 道小学科学问题
-- 采用 8 选项多项选择格式
+- 包含 9,980 个小学科学问题
+- 采用 8 选 1 的多项选择格式
 - 需要组合两个事实才能作答
 - 测试模型在科学知识上的多跳推理能力
 - 每个问题均标注了支持性事实
@@ -35,9 +35,8 @@ QASC（Question Answering via Sentence Composition，基于句子组合的问答
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
-
 
 ## 数据统计
 
@@ -89,7 +88,7 @@ Answer the following multiple choice question. The entire content of your respon
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

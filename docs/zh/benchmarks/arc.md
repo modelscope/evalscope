@@ -3,28 +3,28 @@
 
 ## 概述
 
-ARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能力的基准测试。它包含来自 3 至 9 年级标准化考试的多项选择题，并根据难度划分为 Easy（简单）集和 Challenge（挑战）集。
+ARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能力的基准测试。它包含来自 3 至 9 年级的多项选择题科学问题，并根据难度分为 Easy（简单）集和 Challenge（挑战）集。
 
 ## 任务描述
 
 - **任务类型**：多项选择科学问答
-- **输入**：一道包含 3–5 个选项的科学问题
+- **输入**：一道包含 3-5 个选项的科学问题
 - **输出**：正确答案的字母（A、B、C、D 或 E）
 - **难度级别**：ARC-Easy 和 ARC-Challenge
 
 ## 主要特点
 
-- 包含 7,787 道来自标准化考试的科学问题（涵盖 3–9 年级）
-- ARC-Easy：可通过检索或词汇共现回答的问题
+- 包含 7,787 道来自标准化考试的科学问题（年级 3-9）
+- ARC-Easy：可通过检索或词语共现回答的问题
 - ARC-Challenge：需要更深层次推理的问题
-- 问题覆盖物理、化学、生物和地球科学
+- 问题涵盖物理、化学、生物和地球科学
 - 旨在测试事实性知识与推理能力
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 提供两个子集：`ARC-Easy` 和 `ARC-Challenge`
-- 挑战集常用于排行榜比较
+- Challenge 子集常用于排行榜比较
 - 支持使用训练集样例进行 few-shot 评估
 
 ## 属性
@@ -32,13 +32,13 @@ ARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `arc` |
-| **数据集ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |
+| **数据集 ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认 shots** | 0-shot |
-| **评估划分** | `test` |
-| **训练划分** | `train` |
+| **默认 Shots** | 0-shot |
+| **评估分割** | `test` |
+| **训练分割** | `train` |
 
 ## 数据统计
 
@@ -50,7 +50,7 @@ ARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能�
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
 | `ARC-Easy` | 2,376 | 409.9 | 253 | 1157 |
 | `ARC-Challenge` | 1,172 | 453.91 | 253 | 1111 |
@@ -119,7 +119,7 @@ task_cfg = TaskConfig(
     datasets=['arc'],
     dataset_args={
         'arc': {
-            # subset_list: ['ARC-Easy', 'ARC-Challenge']  # 可选，用于指定评估特定子集
+            # subset_list: ['ARC-Easy', 'ARC-Challenge']  # 可选，用于评估特定子集
         }
     },
     limit=10,  # 正式评估时请删除此行

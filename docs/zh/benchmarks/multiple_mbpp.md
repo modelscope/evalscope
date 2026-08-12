@@ -23,8 +23,8 @@ MultiPL-E MBPP 是一个源自 MBPP（Mostly Basic Python Programming）的多�
 ## 评估说明
 
 - **需要沙箱**：需使用沙箱环境以确保代码安全执行
-- 默认使用 **test** 切分进行评估
-- 主要指标：**Accuracy**（准确率），采用 **pass@k** 聚合方式
+- 默认评估使用 **test** 划分
+- 主要指标：**准确率（Accuracy）**，采用 **pass@k** 聚合方式
 - 每个测试用例超时时间：30 秒
 - 沙箱环境设置请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)
 
@@ -33,12 +33,12 @@ MultiPL-E MBPP 是一个源自 MBPP（Mostly Basic Python Programming）的多�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `multiple_mbpp` |
-| **数据集ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |
+| **数据集 ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
-| **评估切分** | `test` |
+| **默认示例数（Shots）** | 0-shot |
+| **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |
 
 
@@ -75,7 +75,7 @@ MultiPL-E MBPP 是一个源自 MBPP（Mostly Basic Python Programming）的多�
 
 ## 样例示例
 
-**子集**: `mbpp-cpp`
+**子集**：`mbpp-cpp`
 
 ```json
 {

@@ -15,15 +15,15 @@ RealWorldQA 是由 XAI 贡献的一项基准测试，旨在评估多模态 AI �
 ## 主要特点
 
 - 包含 700 多张来自现实场景的图像
-- 包含车辆拍摄的图像（驾驶场景）
-- 问题具有可验证的真值答案
+- 包含车载摄像头拍摄的图像（驾驶场景）
+- 问题具有可验证的标准答案
 - 测试空间理解与物理推理能力
 - 评估 AI 在实际应用中的理解能力
 
 ## 评估说明
 
 - 默认配置采用 **0-shot** 评估方式
-- 答案应遵循 "ANSWER: [ANSWER]" 格式
+- 答案需遵循 "ANSWER: [ANSWER]" 格式
 - 使用逐步推理提示（step-by-step reasoning prompting）
 - 采用简单准确率（accuracy）作为评估指标
 - 在实际、现实世界的场景中测试模型能力
@@ -34,12 +34,12 @@ RealWorldQA 是由 XAI 贡献的一项基准测试，旨在评估多模态 AI �
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `real_world_qa` |
-| **数据集ID** | [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary) |
+| **数据集 ID** | [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
 | **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
-| **评估分割** | `test` |
+| **评估划分** | `test` |
 
 
 ## 数据统计
@@ -88,7 +88,7 @@ RealWorldQA 是由 XAI 贡献的一项基准测试，旨在评估多模态 AI �
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -103,7 +103,7 @@ Remember to put your answer on its own line at the end in the form "ANSWER: [ANS
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

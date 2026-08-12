@@ -10,7 +10,6 @@
     "metrics": [
       "mer"
     ],
-    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test_meeting",
     "train_split": "",
@@ -144,6 +143,6 @@
     "content_hash": "aa6114dac37a6710279e4cc9f7d8be1c",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:30.418105",
+  "updated_at": "2026-06-23T19:06:06.244822+08:00",
   "translation_updated_at": "2026-06-23T19:06:21+08:00"
 }

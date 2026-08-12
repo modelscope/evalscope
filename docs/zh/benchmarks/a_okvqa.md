@@ -3,7 +3,7 @@
 
 ## 概述
 
-A-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答中常识推理和外部世界知识的基准测试。它超越了仅依赖图像内容的基础 VQA 任务，要求模型利用广泛的世界常识和事实性知识。
+A-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答（VQA）中常识推理与外部世界知识能力的基准测试。它超越了仅依赖图像内容的基础VQA任务，要求模型利用广泛的世界常识和事实性知识进行推理。
 
 ## 任务描述
 
@@ -14,19 +14,18 @@ A-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答中常识推理和
 
 ## 主要特点
 
-- 要求进行超出直接视觉观察的常识推理
+- 要求模型进行超出直接视觉观察的常识推理
 - 结合视觉理解与外部世界知识
 - 包含多项选择题和开放式问题两种格式
 - 问题附带解释推理过程的理由（rationales）
-- 相比标准 VQA 基准更具挑战性
+- 相比标准VQA基准更具挑战性
 
 ## 评估说明
 
-- 默认使用 **验证集**（validation split）进行评估
-- 主要指标：多项选择题的 **准确率**（Accuracy）
+- 默认使用 **验证集（validation）** 进行评估
+- 主要指标：多项选择题的 **准确率（Accuracy）**
 - 使用思维链（Chain-of-Thought, CoT）提示以提升推理能力
-- 问题需要基于图像中不可直接观察到的信息进行推理
-
+- 问题需要基于图像之外的知识进行推理
 
 ## 属性
 
@@ -37,7 +36,7 @@ A-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答中常识推理和
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 
 
@@ -113,7 +112,7 @@ Answer the following multiple choice question. The last line of your response sh
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

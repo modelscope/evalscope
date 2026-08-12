@@ -42,16 +42,79 @@ ScreenSpot-Pro 是一个 GUI 定位基准测试，基于专业桌面软件的真
 | **标签** | `Agent`, `Grounding`, `MultiModal` |
 | **指标** | `accuracy`, `text_acc`, `icon_acc` |
 | **默认示例数** | 0-shot |
-| **评估切分** | `train` |
+| **评估划分** | `train` |
 
 
 ## 数据统计
 
-*统计数据不可用。*
+| 指标 | 值 |
+|--------|-------|
+| 总样本数 | 1,581 |
+| 提示词长度（平均） | 319.22 字符 |
+| 提示词长度（最小/最大） | 295 / 395 字符 |
+
+**各子集统计：**
+
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+|--------|---------|-------------|------------|------------|
+| `CAD` | 261 | 313.18 | 296 | 344 |
+| `Creative` | 341 | 318.02 | 296 | 395 |
+| `Dev` | 299 | 329.79 | 296 | 392 |
+| `OS` | 196 | 317.57 | 297 | 382 |
+| `Office` | 230 | 320.76 | 296 | 372 |
+| `Scientific` | 254 | 314.44 | 295 | 353 |
+
+**图像统计：**
+
+| 指标 | 值 |
+|--------|-------|
+| 总图像数 | 1,581 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 1920x1080 - 6016x3384 |
+| 格式 | png |
+
 
 ## 样例示例
 
-*样例示例不可用。*
+**子集**: `CAD`
+
+```json
+{
+  "input": [
+    {
+      "id": "2d87e94f",
+      "content": [
+        {
+          "image": "[BASE64_IMAGE: png, ~933.3KB]"
+        },
+        {
+          "text": "Identify the UI element for the instruction and give a single click point. Coordinates must be normalized to the range 0 to 1 relative to the image size. Do not output a bounding box.\nInstruction: Mark dimensions\nEnd your reply with the final answer on its own last line, formatted exactly as: Answer: [x, y]"
+        }
+      ]
+    }
+  ],
+  "target": "[0.1672, 0.0435, 0.1802, 0.1019]",
+  "id": 0,
+  "group_id": 0,
+  "subset_key": "CAD",
+  "metadata": {
+    "id": "inventor_windows_0",
+    "sent_size": [
+      3840,
+      1080
+    ],
+    "bbox_norm": [
+      0.1671875,
+      0.04351851851851852,
+      0.18020833333333333,
+      0.10185185185185185
+    ],
+    "ui_type": "text",
+    "application": "inventor",
+    "platform": "windows"
+  }
+}
+```
 
 ## 提示模板
 
@@ -81,6 +144,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['screenspot_pro'],
+    dataset_args={
+        'screenspot_pro': {
+            # subset_list: ['CAD', 'Creative', 'Dev']  # 可选，用于评估特定子集
+        }
+    },
     limit=10,  # 正式评估时请删除此行
 )
 

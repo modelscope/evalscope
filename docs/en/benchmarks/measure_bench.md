@@ -47,11 +47,61 @@ MeasureBench is a comprehensive benchmark for evaluating the ability of vision-l
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 2,442 |
+| Prompt Length (Mean) | 150.9 chars |
+| Prompt Length (Min/Max) | 126 / 215 chars |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `real_world` | 1,272 | 153.83 | 131 | 215 |
+| `synthetic_test` | 1,170 | 147.71 | 126 | 192 |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 2,442 |
+| Images per Sample | min: 1, max: 1, mean: 1 |
+| Resolution Range | 108x79 - 3025x1599 |
+| Formats | jpeg, png |
+
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `real_world`
+
+```json
+{
+  "input": [
+    {
+      "id": "1341f508",
+      "content": [
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~75.8KB]"
+        },
+        {
+          "text": "What is the reading of the instrument?\nProvide your final answer on the last line in the format: Answer: <value> <unit>. For example: Answer: 42.5 A"
+        }
+      ]
+    }
+  ],
+  "target": "",
+  "id": 0,
+  "group_id": 0,
+  "subset_key": "ammeter",
+  "metadata": {
+    "question_id": "ammeter_0",
+    "image_type": "ammeter",
+    "design": "dial",
+    "evaluator": "interval_matching",
+    "evaluator_kwargs": "{\"interval\": [9.5, 9.7], \"units\": [\"A\", \"Ampere\"]}"
+  }
+}
+```
 
 ## Prompt Template
 

@@ -16,7 +16,7 @@ Maritime-OCR-Bench 是一个全面的评估基准，用于衡量多模态大模�
 ## 评估指标
 
 每种任务类型采用专门的评分方法：
-- VQA/parsing：多维度文本相似度（编辑距离、字符级 F1、LCS F1、表格感知相似度）
+- VQA/parsing：多维文本相似度（编辑距离、字符级 F1、最长公共子序列 F1、表格感知相似度）
 - IE：文本覆盖率 + JSON 严格性（0.5 * coverage + 0.5 * json_strict）
 - json1/json2：DIoU 布局得分 + 文本得分（0.7 * diou + 0.3 * text）
 

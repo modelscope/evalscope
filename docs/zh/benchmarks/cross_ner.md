@@ -9,7 +9,7 @@ CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖�
 - **任务类型**：跨领域命名实体识别（NER）
 - **输入**：来自五个专业领域的文本
 - **输出**：领域特定的实体片段
-- **领域**：AI、Literature、Music、Politics、Science
+- **领域**：AI、文学、音乐、政治、科学
 
 ## 主要特点
 
@@ -31,14 +31,13 @@ CrossNER 是一个完全标注的命名实体识别（NER）数据集，涵盖�
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `cross_ner` |
-| **数据集ID** | [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary) |
-| **论文** | N/A |
+| **数据集 ID** | [extraordinarylab/cross-ner](https://modelscope.cn/datasets/extraordinarylab/cross-ner/summary) |
+| **论文** | 无 |
 | **标签** | `Knowledge`, `NER` |
 | **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |
-
 
 ## 数据统计
 
@@ -188,7 +187,7 @@ Text to process:
 
 ## 使用方法
 
-### 使用 CLI
+### 使用命令行（CLI）
 
 ```bash
 evalscope eval \

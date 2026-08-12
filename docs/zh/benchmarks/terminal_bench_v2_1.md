@@ -3,31 +3,30 @@
 
 ## 概述
 
-Terminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任务中的 bug、调整了超时设置，并增强了对奖励作弊（reward hacking）的防范。建议在新评估中优先使用此版本而非 v2.0。
+Terminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任务中的 bug、调整了超时设置，并增强了对奖励作弊（reward hacking）的防范。建议在新评估中优先使用 v2.1 而非 v2.0。
 
 ## 任务描述
 
 - **任务类型**：命令行智能体评估
 - **输入**：终端任务规范
-- **输出**：通过智能体动作完成任务
+- **输出**：通过智能体操作完成任务
 - **领域**：系统管理、编译、调试、文件操作
 
 ## 主要特性
 
-- 对 Terminal-Bench 2.0 进行验证并修复了 26 项任务
+- Terminal-Bench 2.0 的验证版，包含 26 项任务修复
 - 提升了对奖励作弊的鲁棒性
-- 在隔离的容器环境中执行
-- 采用二值评分（0/1）并支持自动验证
-- 支持多种智能体类型（如 terminus-2、claude-code、codex 等）
+- 隔离的容器化执行环境
+- 二元评分（0/1），支持自动验证
+- 支持多种智能体类型（terminus-2、claude-code、codex 等）
 
 ## 评估说明
 
-- 需要 **Python>=3.12** 并运行 `pip install evalscope[terminal_bench]`
+- 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`
 - 支持的环境选项：docker、daytona、e2b、modal
 - 可配置智能体类型和超时设置
 - 最大交互轮次可配置（默认：200）
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
-
 
 ## 属性
 
@@ -62,8 +61,8 @@ Terminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |
-| `agent_name` | `str` | `terminus-2` | Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
-| `timeout_multiplier` | `float` | `1.0` | 超时倍数。若出现超时错误，可考虑增大该值。 |
+| `agent_name` | `str` | `terminus-2` | 在 Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
+| `timeout_multiplier` | `float` | `1.0` | 超时倍率。若出现超时错误，可考虑增大该值。 |
 | `max_turns` | `int` | `200` | 智能体完成任务的最大交互轮次。 |
 | `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外参数。支持的键包括：override_cpus、override_memory_mb、override_storage_mb、override_gpus、force_build、delete、env 等。 |
 

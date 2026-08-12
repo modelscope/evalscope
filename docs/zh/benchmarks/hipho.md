@@ -42,7 +42,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 | **标签** | `Math`, `MultiModal`, `QA`, `Reasoning` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -90,7 +90,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 {
   "input": [
     {
-      "id": "b441ea36",
+      "id": "9ec40cee",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."

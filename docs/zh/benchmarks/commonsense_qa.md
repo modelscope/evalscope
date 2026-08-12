@@ -2,7 +2,7 @@
 
 ## 概述
 
-CommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能力的基准测试。这些问题的设计要求模型具备问题中未明确说明的背景知识。
+CommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能力的基准测试。这些问题旨在考察模型是否具备问题中未明确说明的背景常识知识。
 
 ## 任务描述
 
@@ -17,25 +17,25 @@ CommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能�
 - 需要多种类型的常识知识
 - 每个问题提供 5 个选项
 - 测试对日常概念及其关系的推理能力
-- 经过人工验证的问题
+- 所有问题均经过人工验证
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 使用简单的多项选择提示方式
 - 在验证集（validation split）上进行评估
-- 使用简单的准确率（accuracy）指标
+- 使用简单准确率（accuracy）作为评估指标
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `commonsense_qa` |
-| **数据集ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |
+| **数据集 ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `MCQ`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 
 
@@ -75,7 +75,7 @@ CommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能�
 
 ## 提示模板
 
-**提示模板:**
+**提示模板：**
 ```text
 Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
 

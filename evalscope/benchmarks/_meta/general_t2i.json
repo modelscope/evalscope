@@ -10,7 +10,6 @@
     "metrics": [
       "PickScore"
     ],
-    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -45,6 +44,6 @@
     "content_hash": "11adc0f3faaa1ea504eda82e4b776fd7",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:30.385455",
+  "updated_at": "2026-07-02T19:24:57.898727",
   "translation_updated_at": "2026-07-02T19:26:43"
 }

@@ -3,13 +3,13 @@
 
 ## 概述
 
-BC5CDR 语料库是为 BioCreative V 挑战赛开发的手动标注资源，包含 1,500 篇 PubMed 文章，涵盖超过 4,400 个化学物质提及、5,800 个疾病提及以及 3,100 个化学物质-疾病相互作用。
+BC5CDR 语料库是一个为 BioCreative V 挑战赛开发的手动标注资源，包含 1,500 篇 PubMed 文章，其中包含超过 4,400 个化学物质提及、5,800 个疾病提及以及 3,100 个化学-疾病相互作用。
 
 ## 任务描述
 
 - **任务类型**：生物医学命名实体识别（NER）
 - **输入**：PubMed 文章文本
-- **输出**：识别出的化学物质和疾病实体跨度
+- **输出**：识别出的化学物质和疾病实体范围
 - **领域**：药理学、医学信息学、毒理学
 
 ## 主要特点
@@ -17,7 +17,7 @@ BC5CDR 语料库是为 BioCreative V 挑战赛开发的手动标注资源，包�
 - 1,500 篇带有专家标注的 PubMed 文章
 - 4,400+ 个化学物质提及
 - 5,800+ 个疾病提及
-- 3,100+ 个化学物质-疾病相互作用
+- 3,100+ 个化学-疾病相互作用
 - 来自 BioCreative V 挑战赛的基准数据集
 
 ## 评估说明
@@ -25,6 +25,7 @@ BC5CDR 语料库是为 BioCreative V 挑战赛开发的手动标注资源，包�
 - 默认配置使用 **5-shot** 评估
 - 评估指标：精确率（Precision）、召回率（Recall）、F1 分数（F1-Score）、准确率（Accuracy）
 - 实体类型：CHEMICAL（化学物质）、DISEASE（疾病）
+
 
 ## 属性
 
@@ -35,9 +36,10 @@ BC5CDR 语料库是为 BioCreative V 挑战赛开发的手动标注资源，包�
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
 | **指标** | `precision`, `recall`, `f1`, `accuracy` |
-| **默认示例数** | 5-shot |
-| **评估划分** | `test` |
-| **训练划分** | `train` |
+| **默认示例数量** | 5-shot |
+| **评估集** | `test` |
+| **训练集** | `train` |
+
 
 ## 数据统计
 
@@ -146,7 +148,7 @@ Text to process:
 ```
 
 <details>
-<summary>少样本模板</summary>
+<summary>少样本（Few-shot）模板</summary>
 
 ```text
 Here are some examples of named entity recognition:

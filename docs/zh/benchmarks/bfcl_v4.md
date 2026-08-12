@@ -3,29 +3,29 @@
 
 ## 概述
 
-BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测试，用于评估大语言模型（LLMs）在智能体场景下的函数调用能力。该基准测试将网络搜索、内存操作和格式敏感性作为构建智能体应用的基础模块进行评估。
+BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测试，用于评估大语言模型（LLM）在智能体场景下的函数调用能力。它通过测试网络搜索、内存操作和格式敏感性等核心模块，为构建智能体应用提供基础能力评估。
 
 ## 任务描述
 
 - **任务类型**：智能体函数调用评估
 - **输入**：需要调用函数完成网络搜索、内存操作等任务的场景
-- **输出**：包含正确参数的函数调用
-- **能力覆盖**：网络搜索、内存读写、格式处理
+- **输出**：带有正确参数的函数调用
+- **能力范围**：网络搜索、内存读写、格式处理
 
 ## 核心特性
 
 - 全面的智能体评估框架
-- 测试 LLM 智能体的核心构建模块（搜索、内存、格式）
+- 测试 LLM 智能体的核心构建模块（搜索、内存、格式化）
 - 多维度评分类别，支持细粒度分析
-- 同时支持原生函数调用（FC）模型与非 FC 模型
+- 同时支持原生函数调用（FC）模型和非 FC 模型
 - 可选集成 SerpAPI 实现网络搜索功能
 
 ## 评估说明
 
 - **安装要求**：`pip install bfcl-eval==2025.10.27.1`
-- 主要指标：各子集的 **准确率（Accuracy）**
+- 主要指标：各类别下的 **准确率（Accuracy）**
 - 根据模型能力设置 `is_fc_model` 参数
-- （可选）设置 `SERPAPI_API_KEY` 以启用网络搜索任务
+- 可选：配置 `SERPAPI_API_KEY` 以启用网络搜索任务
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/bfcl_v4.html)
 
 
@@ -34,12 +34,12 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `bfcl_v4` |
-| **数据集 ID** | [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) |
+| **数据集ID** | [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `train` |
+| **评估划分** | `train` |
 
 
 ## 数据统计
@@ -52,7 +52,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 
 **各子集统计数据：**
 
-| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
 | `irrelevance` | 240 | 85.98 | 55 | 203 |
 | `live_irrelevance` | 884 | 198.72 | 36 | 10805 |
@@ -141,7 +141,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 |-----------|------|---------|-------------|
 | `underscore_to_dot` | `bool` | `True` | 在评估时将函数名中的下划线转换为点号。 |
 | `is_fc_model` | `bool` | `True` | 指示被评估模型是否原生支持函数调用。 |
-| `SERPAPI_API_KEY` | `str | null` | `None` | 启用 BFCL V4 中网络搜索功能的 SerpAPI 密钥；设为 null 则禁用网络搜索。 |
+| `SERPAPI_API_KEY` | `str | null` | `None` | 启用 BFCL V4 中网络搜索功能的 SerpAPI 密钥。设为 null 则禁用网络搜索。 |
 
 ## 使用方法
 
@@ -153,7 +153,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets bfcl_v4 \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # 正式评估时请移除此行
 ```
 
 ### 通过 Python 使用
@@ -173,7 +173,7 @@ task_cfg = TaskConfig(
             # extra_params: {}  # 使用默认额外参数
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评估时请移除此行
 )
 
 run_task(task_cfg=task_cfg)

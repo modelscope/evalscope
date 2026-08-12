@@ -3,7 +3,7 @@
 
 ## 概述
 
-τ²-bench（Tau Squared Bench）是对原始 τ-bench 的扩展和增强，用于在特定领域场景中评估对话式 AI 代理，并新增了对电信领域的支持。
+τ²-bench（Tau Squared Bench）是对原始 τ-bench 的扩展和增强版本，用于在特定领域场景中评估对话式 AI 代理，并新增了对电信领域的支持。
 
 ## 任务描述
 
@@ -12,7 +12,7 @@
 - **输出**：代理根据策略指南通过 API 工具调用执行操作
 - **领域**：航空、零售、电信
 
-## 核心特性
+## 主要特性
 
 - 扩展领域覆盖范围（在航空和零售基础上新增电信领域）
 - 提升任务复杂度与评估标准
@@ -36,12 +36,12 @@
 |----------|-------|
 | **基准测试名称** | `tau2_bench` |
 | **数据集ID** | [evalscope/tau2-bench-data](https://modelscope.cn/datasets/evalscope/tau2-bench-data/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `Reasoning` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `test` |
-| **聚合方式** | `mean_and_pass_hat_k` |
+| **聚合方法** | `mean_and_pass_hat_k` |
 
 
 ## 数据统计
@@ -144,7 +144,7 @@ task_cfg = TaskConfig(
     datasets=['tau2_bench'],
     dataset_args={
         'tau2_bench': {
-            # subset_list: ['airline', 'retail', 'telecom']  # 可选，用于评估特定子集
+            # subset_list: ['airline', 'retail', 'telecom']  # 可选，用于评估指定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

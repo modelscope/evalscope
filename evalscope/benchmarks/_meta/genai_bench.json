@@ -9,7 +9,6 @@
     "metrics": [
       "VQAScore"
     ],
-    "primary_metric": null,
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -82,6 +81,6 @@
     "content_hash": "8fdbe7059142053c90208f37a441fdd1",
     "needs_translation": false
   },
-  "updated_at": "2026-08-06T23:03:30.388435",
+  "updated_at": "2026-01-28T17:31:32.514638",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

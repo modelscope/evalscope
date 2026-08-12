@@ -3,21 +3,21 @@
 
 ## 概述
 
-SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-mode）评估，后者是从 SWE-bench 中人工验证筛选出的 500 个样本子集。与单轮 oracle 变体不同，模型必须在每个实例专属的 Docker 容器内，通过多轮代理循环自主探索代码仓库、执行 shell 命令、编辑源文件，并最终提交补丁。
+SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-mode）评估，后者是从 SWE-bench 中人工验证筛选出的 500 个样本子集。与提供 oracle 文件上下文的单轮变体不同，模型必须在每个实例专属的 Docker 容器内，通过多轮代理循环自主探索代码仓库、执行 shell 命令、编辑源文件，并最终提交补丁。
 
 ## 任务描述
 
 - **任务类型**：自动化软件工程 / 缺陷修复（代理模式）
-- **输入**：GitHub issue 描述（不含 oracle 文件上下文）
-- **输出**：通过 `git diff` 获取的代码补丁（diff 格式），在模型自主编辑后收集
-- **代码仓库**：12 个流行的 Python 项目（如 Django、Flask、Requests 等）
+- **输入**：GitHub issue 描述（无 oracle 文件上下文）
+- **输出**：自主编辑后通过 `git diff` 收集的代码补丁（diff 格式）
+- **涉及仓库**：12 个流行的 Python 项目（如 Django、Flask、Requests 等）
 
 ## 主要特性
 
-- 500 个人工验证的 Issue-Pull Request 对
-- 多轮代理循环（兼容 mini-swe-agent 的 `swebench.yaml` 配置）
+- 包含 500 个人工验证的 Issue-Pull Request 对
+- 支持多轮代理循环（兼容 mini-swe-agent 的 `swebench.yaml` 配置）
 - 每个实例使用独立的 SWE-bench Docker 容器作为执行沙箱
-- 基于哨兵值（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
+- 基于哨兵（sentinel）的补丁提交协议（`COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT`）
 - 同时支持函数调用（`toolcall`）和基于文本（`backticks`）的动作协议
 
 ## 评估说明
@@ -26,11 +26,11 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 - 每个仓库的 Docker 镜像会自动构建或拉取
 - 每个实例的最终补丁验证超时时间为 1800 秒（30 分钟）
 - 详细设置说明请参阅 [使用文档](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench.html)
-- 支持本地镜像构建和远程镜像拉取
+- 支持本地构建镜像和远程拉取镜像两种方式
 
 ## 代理模式
 
-该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵值 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
+该基准测试在每个实例专属的 SWE-bench Docker 容器内驱动一个多轮代理循环（与 mini-swe-agent 的 `swebench.yaml` 配置一致）。模型通过发出 `bash` 命令来探索 `/testbed` 目录、编辑源文件，并最终通过打印哨兵字符串 `COMPLETE_TASK_AND_SUBMIT_FINAL_OUTPUT` 及其后的补丁内容来提交 `git diff` 补丁。
 
 默认的 `swe_bench_toolcall` 策略使用 OpenAI 函数调用，仅提供一个 `bash` 工具。不支持函数调用的模型可通过 `NativeAgentConfig.strategy` 选择 `swe_bench_backticks` 策略；该策略要求每轮输出一个 ` ```mswea_bash_command ``` ` 代码块。
 
@@ -126,7 +126,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 
 ## 提示模板
 
-**提示模板**:
+**提示模板:**
 ```text
 {question}
 ```
@@ -137,7 +137,7 @@ SWE-bench Verified Agentic 是对 SWE-bench Verified 的代理模式（agentic-m
 |-----------|------|---------|-------------|
 | `build_docker_images` | `bool` | `True` | 为每个样本在本地构建 Docker 镜像。 |
 | `pull_remote_images_if_available` | `bool` | `True` | 在构建前尝试拉取已存在的远程 Docker 镜像。 |
-| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的目标架构。可选项：['', 'arm64', 'x86_64'] |
+| `force_arch` | `str` | `` | 可选地强制指定镜像构建/拉取的架构。可选项：['', 'arm64', 'x86_64'] |
 | `dockerhub_username` | `str` | `swebench` | 远程 SWE-bench 镜像在 DockerHub 上的用户/组织命名空间。 |
 
 ## 使用方法

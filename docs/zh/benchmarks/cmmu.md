@@ -1,26 +1,26 @@
 # CMMU
 
 
-## Overview
+## 概述
 
-CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学科（数学、生物、物理、化学、地理、政治和历史）中的领域知识。该基准测试针对中文教育场景下的多模态理解能力进行评测。
+CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学科（数学、生物、物理、化学、地理、政治和历史）中的领域特定知识。该基准测试在中文教育背景下考察多模态理解能力。
 
-## Task Description
+## 任务描述
 
 - **任务类型**：中文多模态教育问答
 - **输入**：图像 + 中文问题
-- **输出**：答案（单选题、多选题或填空题）
+- **输出**：答案（单选、多选或填空）
 - **语言**：中文
 
-## Key Features
+## 主要特点
 
 - 覆盖七个基础学科
-- 多种题型（单选题、多选题、填空题）
+- 多种题型（单选、多选、填空）
 - 中文 K-12 教育内容
-- 测试领域特定的视觉推理能力
-- 多样化的题目格式
+- 考察领域特定的视觉推理能力
+- 题目形式多样
 
-## Evaluation Notes
+## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 在验证集（validation split）上进行评估
@@ -28,30 +28,30 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 - 使用思维链（Chain-of-thought）提示进行推理
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `cmmu` |
-| **Dataset ID** | [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary) |
-| **Paper** | N/A |
-| **Tags** | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
-| **Metrics** | `accuracy` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `val` |
+| **基准测试名称** | `cmmu` |
+| **数据集ID** | [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary) |
+| **论文** | N/A |
+| **标签** | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
+| **评估划分** | `val` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 1,800 |
-| Prompt Length (Mean) | 282.54 chars |
-| Prompt Length (Min/Max) | 139 / 1404 chars |
+| 总样本数 | 1,800 |
+| 提示词长度（平均） | 282.54 字符 |
+| 提示词长度（最小/最大） | 139 / 1404 字符 |
 
-**Per-Subset Statistics:**
+**各子集统计数据：**
 
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
 |--------|---------|-------------|------------|------------|
 | `biology` | 270 | 284.66 | 140 | 854 |
 | `chemistry` | 265 | 343.22 | 143 | 1404 |
@@ -61,19 +61,19 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 | `physics` | 270 | 317.33 | 162 | 710 |
 | `politics` | 177 | 245.96 | 154 | 740 |
 
-**Image Statistics:**
+**图像统计数据：**
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Images | 1,800 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 121x20 - 2327x1809 |
-| Formats | gif, jpeg, png |
+| 图像总数 | 1,800 |
+| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 121x20 - 2327x1809 |
+| 图像格式 | gif, jpeg, png |
 
 
-## Sample Example
+## 样例示例
 
-**Subset**: `biology`
+**子集**: `biology`
 
 ```json
 {
@@ -113,11 +113,11 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 }
 ```
 
-*注：部分内容为显示方便已截断。*
+*注：部分内容为显示需要已截断。*
 
-## Prompt Template
+## 提示模板
 
-**Prompt Template:**
+**提示模板：**
 ```text
 回答下面的单项选择题，请选出其中的正确答案。你的回答的最后一行应该是这样的格式："答案：[LETTER]"（不带引号），其中 [LETTER] 是 {letters} 中的一个。请在回答前进行一步步思考。
 
@@ -127,9 +127,9 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 
 ```
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -140,7 +140,7 @@ evalscope eval \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### Using Python
+### 使用 Python
 
 ```python
 from evalscope import run_task
@@ -153,7 +153,7 @@ task_cfg = TaskConfig(
     datasets=['cmmu'],
     dataset_args={
         'cmmu': {
-            # subset_list: ['biology', 'chemistry', 'geography']  # 可选，用于评估指定子集
+            # subset_list: ['biology', 'chemistry', 'geography']  # 可选，用于评估特定子集
         }
     },
     limit=10,  # 正式评估时请删除此行
