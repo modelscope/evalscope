@@ -46,6 +46,20 @@ def test_generator_preserves_scores() -> None:
     assert [metric.score for metric in report.metrics] == [0.8, 0.75]
 
 
+def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
+    """A report whose primary metric cannot be resolved still reports its real sample count.
+
+    Counting one metric is what avoids double-counting a shared sample set; that holds for any
+    single metric, so dropping the primary must not turn the sample count into zero.
+    """
+    report = _report()
+    assert report.num == 10
+
+    report.primary_metric_identity = None
+    assert report.primary_metric is None
+    assert report.num == 10
+
+
 def test_v2_serialization_contains_no_v1_metric_fields() -> None:
     data = _report().to_dict()
     assert data['schema_version'] == 2

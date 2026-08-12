@@ -1,15 +1,12 @@
 import type { HTMLAttributes } from 'react'
-import { cn } from '@/lib/utils'
+import Callout from './Callout'
 
+/**
+ * Danger-variant {@link Callout} with no icon.
+ *
+ * Kept as its own name because "a failed read on this surface" is by far the most
+ * common notice in the app, and the shorter call reads better at those sites.
+ */
 export default function ErrorAlert({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      role="alert"
-      className={cn(
-        'rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-sm text-[var(--danger)]',
-        className,
-      )}
-      {...props}
-    />
-  )
+  return <Callout variant="danger" className={className} {...props} />
 }

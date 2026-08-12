@@ -3,16 +3,12 @@ import fc from 'fast-check'
 
 import { checkLocaleKeys, type LocaleMap } from './localeKeyCheck'
 
-// Feature: frontend-refactor-2026-07, Property 30: Locale key symmetric-difference detection
-//
 // For any base and target locale key maps, `checkLocaleKeys` must return the
 // symmetric difference between their leaf-key sets: `missing` is exactly the set
 // of keys present in `base` but absent from `target`, and `extra` is exactly the
 // set of keys present in `target` but absent from `base`. The check depends only
 // on its two inputs (it never reads token drift state), so its result is
 // independent of any token drift outcome.
-//
-// Validates: Requirements 17.5
 
 /**
  * Independent reference implementation of leaf-key flattening. Written from
@@ -55,7 +51,7 @@ const nestedLocaleMap: fc.Arbitrary<LocaleMap> = fc.letrec<{ node: string | Loca
   map: fc.dictionary(segment, tie('node'), { maxKeys: 4 }),
 })).map as fc.Arbitrary<LocaleMap>
 
-describe('checkLocaleKeys (Property 30: locale key symmetric difference)', () => {
+describe('checkLocaleKeys (locale key symmetric difference)', () => {
   it('returns missing/extra equal to the independently computed symmetric difference', () => {
     fc.assert(
       fc.property(nestedLocaleMap, nestedLocaleMap, (base, target) => {

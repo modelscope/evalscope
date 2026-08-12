@@ -246,21 +246,21 @@ class MetricSemantics(BaseModel):
 
     @model_validator(mode='after')
     def _check_role_direction_display(self) -> Self:
-        # R1: scored roles must declare an optimization direction.
+        # Scored roles must declare an optimization direction.
         if self.role in (MetricRole.PRIMARY, MetricRole.AUXILIARY) and self.direction == MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
                 f"role='{self.role.value}' requires a direction other than 'none'"
             )
 
-        # R2: diagnostic metrics carry no optimization direction.
+        # Diagnostic metrics carry no optimization direction.
         if self.role == MetricRole.DIAGNOSTIC and self.direction != MetricDirection.NONE:
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
                 f"role='diagnostic' requires direction='none', got '{self.direction.value}'"
             )
 
-        # R3: percent display needs an explicit range and multiplier.
+        # Percent display needs an explicit range and multiplier.
         if self.display_kind == MetricDisplayKind.PERCENT:
             missing = [
                 name for name, value in (('value_range', self.value_range),
@@ -272,7 +272,7 @@ class MetricSemantics(BaseModel):
                     f"{' and '.join(missing)}"
                 )
 
-        # R4: reject non-positive scaling and negative precision.
+        # Reject non-positive scaling and negative precision.
         # value_range finiteness / min < max is already guaranteed by ValueRange, so it is
         # not re-checked here (that branch was unreachable).
         if self.display_multiplier is not None and (

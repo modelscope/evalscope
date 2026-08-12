@@ -1,8 +1,8 @@
 /**
  * Static constraints on the metric domain.
  *
- * Feature: metric-semantics-governance, Property 42: the frontend contains no metric-name
- * inference. These assertions read the source tree rather than exercising behaviour, because the
+ * The frontend contains no metric-name inference. These assertions read the source tree rather
+ * than exercising behaviour, because the
  * property being protected is the *absence* of a mechanism: once a name table or a `metrics[0]`
  * shortcut reappears anywhere, metric semantics silently have two sources of truth again.
  */
@@ -64,7 +64,7 @@ describe('metric domain public surface', () => {
   })
 })
 
-describe('Property 42: no metric name inference in the frontend', () => {
+describe('no metric name inference in the frontend', () => {
   const files = sourceFiles(SRC_ROOT)
 
   it('finds source files to scan', () => {

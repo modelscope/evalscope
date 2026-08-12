@@ -1,9 +1,7 @@
 """Unit tests for the semantics-driven metric formatting.
 
-Feature: metric-semantics-governance
-
-Covers requirements 13.9 and 20.2: one formatting rule set, driven only by the display fields
-of ``MetricSemantics``, shared by the CLI, the HTML report, the reports API and the Web UI.
+One formatting rule set, driven only by the display fields of ``MetricSemantics``, is shared by
+the CLI, the HTML report, the reports API and the Web UI.
 """
 
 import pytest

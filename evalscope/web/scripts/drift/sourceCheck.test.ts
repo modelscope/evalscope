@@ -22,6 +22,7 @@ function fixture(files: Record<string, string>): string {
 const CSS = `@utility {
   .type-body-sm { @apply text-sm; }
   .type-title-md { @apply text-base font-bold; }
+  .type-table-xs { @apply text-xs font-semibold uppercase text-[var(--text-muted)]; }
 }`
 
 /** A tree that satisfies every rule, used as the base for each negative case. */
@@ -40,6 +41,7 @@ describe('checkSource', () => {
       undefinedTypeClasses: [],
       unusedComponents: [],
       unroutedPages: [],
+      redundantTokenClasses: [],
     })
   })
 
@@ -82,5 +84,38 @@ describe('checkSource', () => {
 
     // Tests do not make a component reachable from the production application.
     expect(result.unusedComponents).toEqual(['components/ui/Orphan.tsx'])
+  })
+
+  it('reports a property re-stated next to the token that already sets it', () => {
+    const result = checkSource(fixture({
+      ...CLEAN,
+      'components/ui/Button.tsx':
+        'export default function Button() { return <button className="type-table-xs uppercase" /> }\n',
+    }))
+
+    expect(result.ok).toBe(false)
+    expect(result.redundantTokenClasses).toEqual(['components/ui/Button.tsx: type-table-xs + uppercase'])
+  })
+
+  it('allows overriding a token property with a different value', () => {
+    const result = checkSource(fixture({
+      ...CLEAN,
+      'components/ui/Button.tsx':
+        'export default function Button() { return <button className="type-table-xs text-[var(--text)]" /> }\n',
+    }))
+
+    // A different colour is a deliberate override, not a redundant restatement.
+    expect(result.redundantTokenClasses).toEqual([])
+    expect(result.ok).toBe(true)
+  })
+
+  it('detects a redundant property inside a template-literal class list', () => {
+    const result = checkSource(fixture({
+      ...CLEAN,
+      'components/ui/Button.tsx':
+        'export default function Button() { return <button className={`type-table-xs font-semibold ${x}`} /> }\n',
+    }))
+
+    expect(result.redundantTokenClasses).toEqual(['components/ui/Button.tsx: type-table-xs + font-semibold'])
   })
 })

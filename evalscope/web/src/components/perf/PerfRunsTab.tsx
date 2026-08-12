@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { listPerfRunDetails, getPerfRequests, getPerfChartUrl } from '@/api/perf'
 import type { PerfRunItem } from '@/api/types'
 import Card from '@/components/ui/Card'
+import LabelledField from '@/components/ui/LabelledField'
 import Skeleton from '@/components/ui/Skeleton'
 import DataTable from '@/components/common/DataTable'
 import EmptyState from '@/components/common/EmptyState'
@@ -32,16 +34,6 @@ function toRecords(columns: string[], rows: (string | number)[][]): Record<strin
   return rows.map((row) => Object.fromEntries(columns.map((c, i) => [c, row[i]])))
 }
 
-/** A single labelled workload parameter (concurrency, request count, rate). */
-function WorkloadField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-1.5 min-w-0">
-      <span className="type-table-xs uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
-      <span className="type-body-sm tabular-nums text-[var(--text)] break-words">{value}</span>
-    </div>
-  )
-}
-
 /**
  * Per-run drill-down: run selector + percentile table/charts + per-request
  * records (parsed from benchmark_data.db) as a table and Plotly charts.
@@ -51,7 +43,6 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
 
   // The user's pick is remembered against the run list it was made in, so a new
   // list falls back to its own first run without an effect resetting state.
-  const [pickedRun, setPickedRun] = useState<{ scope: string; dirName: string } | null>(null)
   const [status, setStatus] = useState<StatusFilter>('all')
   const [page, setPage] = useState(1)
 
@@ -69,9 +60,10 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
   // names an existing run falls back to the first one rather than leaving the
   // panel blank with no way to recover.
   const runScope = `${rootPath}\0${path}`
-  const pickIsLoaded = pickedRun?.scope === runScope
-    && runs.some((r) => r.dir_name === pickedRun.dirName)
-  const selected = pickIsLoaded ? pickedRun.dirName : (runs[0]?.dir_name ?? '')
+  const [pickedRun, setSelected] = useScopedState<string | null>(runScope, null)
+  const selected = pickedRun !== null && runs.some((r) => r.dir_name === pickedRun)
+    ? pickedRun
+    : (runs[0]?.dir_name ?? '')
 
   const run = useMemo(() => runs.find((r) => r.dir_name === selected) ?? null, [runs, selected])
 
@@ -101,7 +93,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
   const requestError = requestsResource.error
 
   const handleSelectRun = (dirName: string) => {
-    setPickedRun({ scope: runScope, dirName })
+    setSelected(dirName)
     setPage(1)
     setStatus('all')
   }
@@ -161,9 +153,9 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
       {/* Workload context for the selected run. */}
       {workload && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <WorkloadField label={t('perf.archive.concurrency')} value={workload.concurrency} />
-          <WorkloadField label={t('perf.archive.numberOfRequests')} value={workload.numberOfRequests} />
-          <WorkloadField label={t('perf.archive.requestRate')} value={workload.rateLabel} />
+          <LabelledField label={t('perf.archive.concurrency')} value={workload.concurrency} numeric />
+          <LabelledField label={t('perf.archive.numberOfRequests')} value={workload.numberOfRequests} numeric />
+          <LabelledField label={t('perf.archive.requestRate')} value={workload.rateLabel} numeric />
         </div>
       )}
 

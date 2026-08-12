@@ -248,75 +248,52 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         )
 
         agg_scores = [
+            AggScore(metric_name='puzzle_acc', score=puzzle_acc, num=total_puzzle_num, metadata={'type': 'puzzle_acc'}),
+            AggScore(metric_name='cell_acc', score=cell_acc, num=total_cell_num, metadata={'type': 'cell_acc'}),
             AggScore(
-                aggregation='identity',
-                metric_name='puzzle_acc',
-                score=puzzle_acc,
-                num=total_puzzle_num,
-                metadata={'type': 'puzzle_acc'}
-            ),
-            AggScore(
-                aggregation='identity',
-                metric_name='cell_acc',
-                score=cell_acc,
-                num=total_cell_num,
-                metadata={'type': 'cell_acc'}
-            ),
-            AggScore(
-                aggregation='identity',
                 metric_name='easy_puzzle_acc',
                 score=easy_puzzle_acc,
                 num=total_easy_puzzle_num,
                 metadata={'type': 'easy_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='hard_puzzle_acc',
                 score=hard_puzzle_acc,
                 num=total_hard_puzzle_num,
                 metadata={'type': 'hard_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='small_puzzle_acc',
                 score=small_puzzle_acc,
                 num=total_small_puzzle_num,
                 metadata={'type': 'small_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='medium_puzzle_acc',
                 score=medium_puzzle_acc,
                 num=total_medium_puzzle_num,
                 metadata={'type': 'medium_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='large_puzzle_acc',
                 score=large_puzzle_acc,
                 num=total_large_puzzle_num,
                 metadata={'type': 'large_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='xl_puzzle_acc',
                 score=xl_puzzle_acc,
                 num=total_xl_puzzle_num,
                 metadata={'type': 'xl_puzzle_acc'}
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='avg_reason_lens',
                 score=avg_reason_lens,
                 num=total_puzzle_num,
                 metadata={'type': 'avg_reason_lens'}
             ),
             AggScore(
-                aggregation='identity',
-                metric_name='no_answer_num',
-                score=no_answer_num,
-                num=no_answer_num,
-                metadata={'type': 'no_answer_num'}
+                metric_name='no_answer_num', score=no_answer_num, num=no_answer_num, metadata={'type': 'no_answer_num'}
             )
         ]
         return agg_scores

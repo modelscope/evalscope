@@ -1,15 +1,11 @@
-// Feature: frontend-refactor-2026-07, buildCompareModel (perf) property tests.
-//
 // Merged property coverage for the perf comparison model. Each property keeps
 // its own fixtures scoped inside its describe block:
-//   - Property 15: delta summary field completeness;
-//   - Property 16: delta sign matches the metric direction;
-//   - Property 17: default baseline is the oldest run;
-//   - Property 18: low-sample tier boundaries;
-//   - Property 20: missing-data metrics de-emphasized, computable ones kept;
-//   - Property 21: symmetric config diff computation.
-//
-// Validates: Requirements 9.1, 9.2, 9.4, 9.5, 9.6, 9.7, 9.8, 9.13, 9.14
+//   - delta summary field completeness;
+//   - delta sign matches the metric direction;
+//   - default baseline is the oldest run;
+//   - low-sample tier boundaries;
+//   - missing-data metrics de-emphasized, computable ones kept;
+//   - symmetric config diff computation.
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
@@ -24,7 +20,7 @@ import {
   type SampleTier,
 } from './deltaModel'
 
-/* ─── Property 21: symmetric config diff computation ──────────── */
+/* ─── symmetric config diff computation ──────────── */
 
 /**
  * Semantics the backend attaches to a perf run response, keyed by field key.
@@ -107,7 +103,7 @@ const FIXTURE_SEMANTICS: Record<string, MetricSemantics> = {
   },
 }
 
-describe('buildCompareModel — symmetric config diff (Property 21: symmetric config diff computation)', () => {
+describe('buildCompareModel — symmetric config diff computation', () => {
   /** How a single config key relates across the two runs. */
   type KeyKind = 'same' | 'diff' | 'baseline-only' | 'candidate-only'
 
@@ -229,9 +225,9 @@ describe('buildCompareModel — symmetric config diff (Property 21: symmetric co
   })
 })
 
-/* ─── Property 17: default baseline is the oldest run ─────────── */
+/* ─── default baseline is the oldest run ─────────── */
 
-describe('buildCompareModel default baseline (Property 17: default baseline is the oldest run)', () => {
+describe('buildCompareModel default baseline is the oldest run', () => {
   /** Build a minimal `PerfDetailResponse` carrying just the fields the model reads. */
   function makeRun(
     path: string,
@@ -305,9 +301,9 @@ describe('buildCompareModel default baseline (Property 17: default baseline is t
   })
 })
 
-/* ─── Property 16: delta sign matches the metric direction ────── */
+/* ─── delta sign matches the metric direction ────── */
 
-describe('buildCompareModel verdict direction (Property 16: Delta sign matches the metric direction)', () => {
+describe('buildCompareModel verdict direction matches the metric direction', () => {
   /**
    * Metric label whose `resolvePerfMetricSpec` direction is `higher-is-better`
    * (no latency/ttft/tpot/time/delay/duration keyword).
@@ -437,15 +433,15 @@ describe('buildCompareModel verdict direction (Property 16: Delta sign matches t
   })
 })
 
-/* ─── Property 15: delta summary field completeness ───────────── */
+/* ─── delta summary field completeness ───────────── */
 
-describe('buildCompareModel — delta field completeness (Property 15: Delta summary field completeness)', () => {
+describe('buildCompareModel — delta field completeness', () => {
   /** The four verdicts buildCompareModel may emit. */
   const VERDICTS: DeltaVerdict[] = ['improvement', 'regression', 'neutral', 'incomputable']
 
   /**
    * Assert a value is a fully-formed FormattedMetric: an object exposing string
-   * `primary` and `raw` fields (Property 15 requires these on every delta cell).
+   * `primary` and `raw` fields, which are required on every delta cell.
    */
   function assertFormattedMetric(field: unknown): asserts field is FormattedMetric {
     if (typeof field !== 'object' || field === null) {
@@ -642,9 +638,9 @@ describe('buildCompareModel — delta field completeness (Property 15: Delta sum
   })
 })
 
-/* ─── Property 20: missing-data de-emphasis ───────────────────── */
+/* ─── missing-data de-emphasis ───────────────────── */
 
-describe('buildCompareModel — missing-data de-emphasis (Property 20: missing-data metrics are de-emphasized while computable metrics are preserved)', () => {
+describe('buildCompareModel — missing-data metrics are de-emphasized while computable metrics are preserved', () => {
   /** Non-numeric cell tokens: toNumeric() returns null for each (missing value). */
   const NON_NUMERIC_TOKENS = ['N/A', '-', 'error', 'null', '']
 
@@ -859,9 +855,9 @@ describe('buildCompareModel — missing-data de-emphasis (Property 20: missing-d
   })
 })
 
-/* ─── Property 18: low-sample tier boundaries ─────────────────── */
+/* ─── low-sample tier boundaries ─────────────────── */
 
-describe('classifySampleSize — low-sample tier boundaries (Property 18: low-sample tier boundaries)', () => {
+describe('classifySampleSize — low-sample tier boundaries', () => {
   /** The two tier thresholds, mirrored here independently of the implementation. */
   const CRITICAL_THRESHOLD = 30
   const WARN_THRESHOLD = 100

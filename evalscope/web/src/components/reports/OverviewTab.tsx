@@ -6,16 +6,13 @@ import { getCompareChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import {
-  formatMetric,
   formatMetricIdentityLabel,
-  getBoundedQualityRatio,
-  getValuePosition,
   metricIdentityKey,
 } from '@/domain/metric'
-import { scoreColor } from '@/utils/colorScale'
 import type { MetricSemantics } from '@/domain/metric'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
+import ScoreBar from '@/components/ui/ScoreBar'
 import ReportSummaryStats from './ReportSummaryStats'
 import JsonViewer from '@/components/ui/JsonViewer'
 
@@ -132,36 +129,12 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         const semantics = primaries.find(
           (primary) => primary && metricIdentityKey(primary.identity) === metricName,
         )?.semantics
-        // The bar length is the value's own position in its own range, so two different metrics
-        // never draw the same length: an F1 of 91.2% is long, a WER of 4.3% is short. The colour
-        // carries the quality, so that short WER bar is green. Sizing by quality instead is what
-        // used to make those two bars look identical.
-        const position = getValuePosition(score, semantics)
-        const quality = getBoundedQualityRatio(score, semantics)
         return (
-          <div className="flex items-center justify-end gap-3">
-            {position != null && (
-              // The track grows to fill the column instead of leaving a gap beside a fixed-width
-              // bar, which also makes the length difference between two rows easier to read.
-              <div className="hidden h-1.5 min-w-9 flex-1 overflow-hidden rounded-full bg-[var(--border)] sm:block">
-                <div
-                  role="progressbar"
-                  aria-label={`${String(row.Dataset)} ${metricName}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(position * 100)}
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${position * 100}%`, background: scoreColor(quality ?? position) }}
-                />
-              </div>
-            )}
-            <span
-              className="min-w-14 shrink-0 text-right font-mono text-xs font-semibold tabular-nums sm:text-sm"
-              style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
-            >
-              {formatMetric(score, semantics).primary}
-            </span>
-          </div>
+          <ScoreBar
+            score={score}
+            semantics={semantics}
+            ariaLabel={`${String(row.Dataset)} ${metricName}`}
+          />
         )
       },
     },

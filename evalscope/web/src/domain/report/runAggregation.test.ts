@@ -1,7 +1,7 @@
 /**
  * Aggregating runs by what they measure, rather than listing them by when they happened.
  *
- * Feature: dashboard redesign. These tests pin the properties that make the aggregation safe to
+ * These tests pin the properties that make the aggregation safe to
  * present: a cell's spread is computed only among points sharing one metric, cross-cell ordering
  * uses a normalized spread and refuses to synthesize one for an unbounded metric, and a single run
  * is never reported as stable.

@@ -299,22 +299,9 @@ class KimiVerifierAdapter(FunctionCallAdapter):
         accept_rate = accept_correct / accept_total if accept_total else 0.0
 
         return [
+            AggScore(metric_name='param_immutable_reject_rate', score=reject_rate, num=reject_total, metadata={}),
+            AggScore(metric_name='param_default_accept_rate', score=accept_rate, num=accept_total, metadata={}),
             AggScore(
-                aggregation='identity',
-                metric_name='param_immutable_reject_rate',
-                score=reject_rate,
-                num=reject_total,
-                metadata={}
-            ),
-            AggScore(
-                aggregation='identity',
-                metric_name='param_default_accept_rate',
-                score=accept_rate,
-                num=accept_total,
-                metadata={}
-            ),
-            AggScore(
-                aggregation='identity',
                 metric_name='inference_error_rate',
                 score=inference_errors / total if total else 0.0,
                 num=total,

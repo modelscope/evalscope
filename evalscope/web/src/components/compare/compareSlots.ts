@@ -17,8 +17,8 @@ export interface MergedPrediction {
 /** Per-model view filter, relative to the score threshold. */
 export type PerModelFilter = 'any' | 'above' | 'below'
 
-/** Locale translate contract, narrowed to what the compare surfaces need. */
-export type Translate = (path: string, vars?: Record<string, string | number>) => string
+/** Locale translate contract, re-exported so compare modules keep one import site. */
+export type { Translate } from '@/contexts/LocaleContext'
 
 /** The colour tokens of one compare slot. */
 export interface SlotPalette {

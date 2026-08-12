@@ -1,10 +1,8 @@
 """Golden-sample tests for the shared metric formatting contract.
 
-Feature: metric-semantics-governance
-
 ``tests/report/semantics/golden_samples.json`` is read by this module and by the vitest suite
 ``evalscope/web/src/domain/metric/metricFormat.test.ts``, so both implementations of the formatting
-rules are pinned to the same expected strings (requirements 13.9, 20.2).
+rules are pinned to the same expected strings.
 
 The sample model and its loader live here rather than in the shipped package: they are test
 scaffolding, and the only production consumer of the contract is ``format_metric_value``.
@@ -131,5 +129,5 @@ class TestGoldenSampleCoverage:
 
 @pytest.mark.parametrize('sample', SAMPLES, ids=sample_ids())
 def test_backend_matches_golden_primary_text(sample: GoldenSample) -> None:
-    """Requirements 13.9, 20.2: the backend display text equals the shared expectation."""
+    """The backend display text equals the shared expectation."""
     assert format_metric_value(sample.value, sample.semantics) == sample.expected_primary

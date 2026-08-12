@@ -25,6 +25,8 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 - Answers should follow "ANSWER: YES/NO" format
 - Five metrics: accuracy, precision, recall, F1, yes_ratio
 - Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
+- Only accuracy divides by the full sample count; an answer that is not exactly YES/NO is excluded from
+  precision, recall and F1, so those three read high when answers are badly formatted
 - Supports few-shot evaluation with reasoning examples
 
 ## Properties
@@ -39,7 +41,6 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `validation` |
-| **Aggregation** | `f1` |
 
 
 ## Data Statistics

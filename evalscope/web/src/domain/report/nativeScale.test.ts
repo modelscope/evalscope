@@ -1,7 +1,7 @@
 /**
  * A metric must be rendered on its own scale.
  *
- * Feature: metric-semantics-governance. Regression test for a bug where report scores were
+ * Regression test for a bug where report scores were
  * formatted through a fixed "0-1 ratio" contract. A benchmark reporting an official 0-100 scale
  * (arena_hard's WeightedScorePercent) then rendered as `8725%`, and a lower-is-better metric was
  * coloured and ranked as if higher were better. The guard is that a value is only ever formatted

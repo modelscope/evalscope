@@ -8,7 +8,7 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 ## 任务描述
 
 - **任务类型**：物体幻觉检测（是非问答）
-- **输入**：图像 + 问题 “图像中是否有 [物体]？”
+- **输入**：图像 + 问题 “Is there a [object] in the image?”（图像中是否存在[物体]？）
 - **输出**：YES 或 NO
 - **重点**：衡量准确率与幻觉率
 
@@ -23,12 +23,11 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 五个指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数（F1 score）、肯定回答比例（yes_ratio）
-- 准确率是主要指标；精确率、召回率、F1 和 yes_ratio 提供辅助诊断信息
+- 五个评估指标：accuracy（准确率）、precision（精确率）、recall（召回率）、F1 score（F1分数）、yes_ratio（“是”的比例）
+- F1 分数为主要指标；准确率、精确率和召回率为辅助指标；yes_ratio 用于诊断
 - 包含三个子集：`popular`、`adversarial`、`random`
-- `popular` 和 `adversarial` 子集更具挑战性
+- “Popular” 和 “adversarial” 子集更具挑战性
 - yes_ratio 反映模型倾向于回答 “yes” 的程度
-
 
 ## 属性
 
@@ -46,18 +45,18 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 
 ## 数据统计
 
-*统计数据不可用。*
+*统计数据暂不可用。*
 
 ## 样例示例
 
-*样例示例不可用。*
+*样例示例暂不可用。*
 
 ## 提示模板
 
 **提示模板：**
 ```text
 {question}
-请仅回答 YES 或 NO，无需解释。
+Please answer YES or NO without an explanation.
 ```
 
 ## 使用方法

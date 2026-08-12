@@ -1,6 +1,6 @@
 """Tests for the perf field semantics.
 
-* ``TestPerfFieldCoverage`` -- Property 21: every public perf field key has an entry and every
+* ``TestPerfFieldCoverage`` -- every public perf field key has an entry and every
   key comes from the perf name constants.
 * ``TestPerfDirections`` -- latency is lower_is_better, throughput is higher_is_better.
 * ``TestPerfDiagnostics`` -- counts, cache and failure details carry no direction.
@@ -67,8 +67,7 @@ DIAGNOSTIC_FIELDS = (
 
 
 class TestPerfFieldCoverage:
-    """Feature: metric-semantics-governance, Property 21: the perf semantics map covers every
-    public field key, and every declared key is one of the perf name constants."""
+    """The perf semantics map covers every public field key and only uses perf name constants."""
 
     def test_every_public_field_is_declared(self) -> None:
         missing = sorted(PUBLIC_FIELD_KEYS - set(PERF_SEMANTICS))

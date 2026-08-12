@@ -289,12 +289,14 @@ class Report(BaseModel):
     @computed_field
     @property
     def num(self) -> int:
-        """Total sample count derived from the primary metric's subsets.
+        """Total sample count derived from one metric's subsets.
 
-        Using a single metric avoids double-counting datasets that evaluate several metrics over
-        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples).
+        Counting a single metric avoids double-counting datasets that evaluate several metrics over
+        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Any one
+        metric satisfies that, so a report whose primary metric could not be resolved still reports
+        its real sample count instead of zero.
         """
-        metric = self._find_primary_metric()
+        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
         if metric is None:
             return 0
         return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)

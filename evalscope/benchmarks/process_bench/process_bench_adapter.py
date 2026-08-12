@@ -171,21 +171,13 @@ class ProcessBenchAdapter(DefaultDataAdapter):
         if correct_scores:
             agg_list.append(
                 AggScore(
-                    aggregation='identity',
-                    metric_name='correct_acc',
-                    score=sum(correct_scores) / len(correct_scores),
-                    num=len(correct_scores)
+                    metric_name='correct_acc', score=sum(correct_scores) / len(correct_scores), num=len(correct_scores)
                 )
             )
 
         if error_scores:
             agg_list.append(
-                AggScore(
-                    aggregation='identity',
-                    metric_name='error_acc',
-                    score=sum(error_scores) / len(error_scores),
-                    num=len(error_scores)
-                )
+                AggScore(metric_name='error_acc', score=sum(error_scores) / len(error_scores), num=len(error_scores))
             )
 
         # Calculate simple F1 score
@@ -193,7 +185,6 @@ class ProcessBenchAdapter(DefaultDataAdapter):
             from evalscope.metrics import simple_f1_score
             agg_list.append(
                 AggScore(
-                    aggregation='identity',
                     metric_name='simple_f1_score',
                     score=simple_f1_score((correct_scores, error_scores)),
                     num=len(correct_scores) + len(error_scores)

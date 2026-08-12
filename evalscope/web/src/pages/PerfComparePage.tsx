@@ -9,6 +9,7 @@ import { buildCompareModel, classifySampleSize } from '@/domain/perf/deltaModel'
 import type { DeltaVerdict, PerfCompareModel, SampleTier } from '@/domain/perf/deltaModel'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Badge from '@/components/ui/Badge'
+import Callout from '@/components/ui/Callout'
 import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
@@ -209,7 +210,7 @@ export default function PerfComparePage() {
               <div className="flex flex-col gap-1 min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Badge>{t('perf.archive.baselineBadge')}</Badge>
-                  <span className="type-table-xs uppercase tracking-wider text-[var(--text-muted)]">
+                  <span className="type-table-xs">
                     {t('perf.archive.effectiveBaseline')}
                   </span>
                 </div>
@@ -247,42 +248,45 @@ export default function PerfComparePage() {
 
             {/* Warnings — informational, never blocking */}
             {model.workloadMismatch && (
-              <div
-                className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--warning-border)] bg-[var(--warning-bg)] type-body-sm text-[var(--text)]"
+              <Callout
+                variant="warning"
+                icon={<AlertTriangle size={15} className="text-[var(--yellow)]" />}
+                className="rounded-[var(--radius-sm)]"
                 data-testid="workload-mismatch"
               >
-                <AlertTriangle size={15} className="text-[var(--yellow)] shrink-0 mt-0.5" />
-                <span>{t('perf.archive.workloadMismatch')}</span>
-              </div>
+                {t('perf.archive.workloadMismatch')}
+              </Callout>
             )}
 
             {sampleTier !== 'ok' && (
-              <div
+              <Callout
+                variant="warning"
+                icon={
+                  <AlertTriangle
+                    size={15}
+                    className={sampleTier === 'critical' ? 'text-[var(--danger)]' : 'text-[var(--yellow)]'}
+                  />
+                }
                 className={
                   sampleTier === 'critical'
-                    ? 'flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--danger-border)] bg-[var(--danger-bg)] type-body-sm text-[var(--text)]'
-                    : 'flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--warning-border)] bg-[var(--warning-bg)] type-body-sm text-[var(--text)]'
+                    ? 'rounded-[var(--radius-sm)] border-[var(--danger-border)] bg-[var(--danger-bg)] text-[var(--text)]'
+                    : 'rounded-[var(--radius-sm)]'
                 }
                 data-testid={sampleTier === 'critical' ? 'low-sample-critical' : 'low-sample-warn'}
               >
-                <AlertTriangle
-                  size={15}
-                  className={sampleTier === 'critical' ? 'text-[var(--danger)] shrink-0 mt-0.5' : 'text-[var(--yellow)] shrink-0 mt-0.5'}
-                />
-                <span>
-                  {sampleTier === 'critical' ? t('perf.archive.lowSampleCritical') : t('perf.archive.lowSampleWarn')}
-                </span>
-              </div>
+                {sampleTier === 'critical' ? t('perf.archive.lowSampleCritical') : t('perf.archive.lowSampleWarn')}
+              </Callout>
             )}
 
             {showMissingHint && (
-              <div
-                className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--warning-border)] bg-[var(--warning-bg)] type-body-sm text-[var(--text)]"
+              <Callout
+                variant="warning"
+                icon={<Info size={15} className="text-[var(--yellow)]" />}
+                className="rounded-[var(--radius-sm)]"
                 data-testid="missing-perf-data"
               >
-                <Info size={15} className="text-[var(--yellow)] shrink-0 mt-0.5" />
-                <span>{t('perf.archive.missingPerfData')}</span>
-              </div>
+                {t('perf.archive.missingPerfData')}
+              </Callout>
             )}
 
             {/* Delta summary table */}
@@ -301,7 +305,7 @@ export default function PerfComparePage() {
                       ].map((label, i) => (
                         <th
                           key={label}
-                          className={`type-table-xs uppercase tracking-wider px-3 py-2 whitespace-nowrap border-b border-[var(--border)] text-[var(--text-muted)] ${i === 0 ? 'text-left' : 'text-right'}`}
+                          className={`type-table-xs px-3 py-2 whitespace-nowrap border-b border-[var(--border)] ${i === 0 ? 'text-left' : 'text-right'}`}
                         >
                           {label}
                         </th>
@@ -310,9 +314,6 @@ export default function PerfComparePage() {
                   </thead>
                   <tbody>
                     {model.deltas.map((delta) => {
-                      // The field key is the label: the backend already names the field in the
-                      // form the perf tables use, so no spec lookup is needed.
-                      const metricLabel = delta.metricKey
                       const level = percentileLevel(delta.metricKey)
                       const lowSample = level !== null && percentileDeEmphasized(sampleTier, level)
                       const incomputable = delta.verdict === 'incomputable'
@@ -327,10 +328,9 @@ export default function PerfComparePage() {
                           data-deemphasized={deEmphasized ? 'true' : 'false'}
                         >
                           <td className="type-body-sm px-3 py-2 text-left text-[var(--text)]">
-                            <span className="block font-medium">{metricLabel}</span>
-                            {metricLabel !== delta.metricKey && (
-                              <span className="block type-caption-mono text-[var(--text-muted)]">{delta.metricKey}</span>
-                            )}
+                            {/* The field key is the label: the backend already names the field in
+                                the form the perf tables use, so no spec lookup is needed. */}
+                            <span className="block font-medium">{delta.metricKey}</span>
                           </td>
                           <td
                             className="type-body-sm tabular-nums px-3 py-2 text-right whitespace-nowrap text-[var(--text)]"
@@ -386,7 +386,7 @@ export default function PerfComparePage() {
                         ].map((label, i) => (
                           <th
                             key={label}
-                            className={`type-table-xs uppercase tracking-wider px-3 py-2 whitespace-nowrap border-b border-[var(--border)] text-[var(--text-muted)] ${i === 0 ? 'text-left' : 'text-right'}`}
+                            className={`type-table-xs px-3 py-2 whitespace-nowrap border-b border-[var(--border)] ${i === 0 ? 'text-left' : 'text-right'}`}
                           >
                             {label}
                           </th>
@@ -418,13 +418,14 @@ export default function PerfComparePage() {
 
       {/* Sparse-vs-trend hint for the visualization */}
       {details !== null && vizMode === 'sparse' && (
-        <div
-          className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card2)] type-body-sm text-[var(--text-muted)]"
+        <Callout
+          variant="info"
+          icon={<Info size={15} className="text-[var(--accent)]" />}
+          className="rounded-[var(--radius-sm)]"
           data-testid="sparse-hint"
         >
-          <Info size={15} className="text-[var(--accent)] shrink-0 mt-0.5" />
-          <span>{t('perf.archive.sparseCompareHint')}</span>
-        </div>
+          {t('perf.archive.sparseCompareHint')}
+        </Callout>
       )}
 
       <PerfChartGroup

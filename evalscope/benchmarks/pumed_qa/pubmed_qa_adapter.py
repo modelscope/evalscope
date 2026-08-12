@@ -198,10 +198,6 @@ class PubMedQAAdapter(DefaultDataAdapter):
         overall_metrics = compute_metrics(sample_scores)
         agg_scores = []
         for metric_name, value in overall_metrics.items():
-            agg_scores.append(
-                AggScore(
-                    aggregation='identity', metric_name=metric_name, score=value, num=len(sample_scores), metadata={}
-                )
-            )
+            agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))
 
         return agg_scores

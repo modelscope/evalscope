@@ -1,7 +1,4 @@
-"""Unit tests for the public API surface of ``evalscope.metrics.semantics``.
-
-Feature: metric-semantics-governance
-"""
+"""Unit tests for the public API surface of ``evalscope.metrics.semantics``."""
 import ast
 import subprocess
 import sys
@@ -77,7 +74,7 @@ class TestNoImportCycle:
     """Both import orders must succeed, in a fresh interpreter each time.
 
     ``evalscope.report.report`` reaches the semantics package through function-local lazy
-    imports, so neither module may need the other at import time (requirement 4.1).
+    imports, so neither module may need the other at import time.
     """
 
     def _import_in_subprocess(self, statement: str) -> None:

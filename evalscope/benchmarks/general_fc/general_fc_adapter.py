@@ -194,8 +194,6 @@ class GeneralFCAdapter(FunctionCallAdapter):
 
         agg_scores: List[AggScore] = []
         for name, value in metrics.items():
-            agg_scores.append(
-                AggScore(aggregation='identity', metric_name=name, score=value, num=total_count, metadata={})
-            )
+            agg_scores.append(AggScore(metric_name=name, score=value, num=total_count, metadata={}))
 
         return agg_scores

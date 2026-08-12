@@ -1,7 +1,4 @@
-"""Unit and property tests for the MetricSemantics contract model.
-
-Feature: metric-semantics-governance
-"""
+"""Unit and property tests for the MetricSemantics contract model."""
 import pytest
 import strategies
 from hypothesis import given
@@ -67,7 +64,7 @@ class TestMetricSemanticsValid:
 class TestMetricSemanticsValidation:
 
     @pytest.mark.parametrize('role', [MetricRole.PRIMARY, MetricRole.AUXILIARY])
-    def test_r1_scored_role_requires_direction(self, role: MetricRole) -> None:
+    def test_scored_role_requires_direction(self, role: MetricRole) -> None:
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(**_accuracy_kwargs(role=role, direction=MetricDirection.NONE))
 
@@ -75,7 +72,7 @@ class TestMetricSemanticsValidation:
         assert 'quality.accuracy.ratio' in message
         assert 'Accuracy' in message
 
-    def test_r2_diagnostic_rejects_direction(self) -> None:
+    def test_diagnostic_rejects_direction(self) -> None:
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(
                 semantic_id='diagnostic.count.items',
@@ -89,7 +86,7 @@ class TestMetricSemanticsValidation:
         assert 'Steps' in message
 
     @pytest.mark.parametrize('missing', ['value_range', 'display_multiplier'])
-    def test_r4_percent_requires_range_and_multiplier(self, missing: str) -> None:
+    def test_percent_requires_range_and_multiplier(self, missing: str) -> None:
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(**_accuracy_kwargs(**{missing: None}))
 
@@ -98,7 +95,7 @@ class TestMetricSemanticsValidation:
         assert missing in message
 
     @pytest.mark.parametrize('bounds', [(1.0, 1.0), (2.0, 1.0), (0.0, float('inf')), (float('nan'), 1.0)])
-    def test_r5_rejects_invalid_value_range(self, bounds: tuple) -> None:
+    def test_rejects_invalid_value_range(self, bounds: tuple) -> None:
         minimum, maximum = bounds
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(**_accuracy_kwargs(value_range={'min': minimum, 'max': maximum}))
@@ -106,7 +103,7 @@ class TestMetricSemanticsValidation:
         assert 'value_range' in str(excinfo.value)
 
     @pytest.mark.parametrize('multiplier', [0.0, -1.0, float('inf'), float('nan')])
-    def test_r5_rejects_invalid_multiplier(self, multiplier: float) -> None:
+    def test_rejects_invalid_multiplier(self, multiplier: float) -> None:
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(**_accuracy_kwargs(display_multiplier=multiplier))
 
@@ -114,7 +111,7 @@ class TestMetricSemanticsValidation:
         assert 'quality.accuracy.ratio' in message
         assert 'display_multiplier' in message
 
-    def test_r5_rejects_negative_precision(self) -> None:
+    def test_rejects_negative_precision(self) -> None:
         with pytest.raises(ValidationError) as excinfo:
             MetricSemantics(**_accuracy_kwargs(display_precision=-1))
 
@@ -133,14 +130,12 @@ class TestMetricSemanticsProperties:
 
     @given(kwargs=strategies.role_direction_kwargs())
     def test_role_and_direction_are_consistent(self, kwargs: Dict[str, Any]) -> None:
-        """Feature: metric-semantics-governance, Property 1: 角色与方向一致性.
+        """Verify role and direction consistency.
 
         For any MetricSemantics field combination, construction succeeds if and only if
         (role in {primary, auxiliary} and direction != none) or
         (role == diagnostic and direction == none); on failure the error message contains
         both semantic_id and metric_name.
-
-        **Validates: Requirements 1.3, 1.4**
         """
         role: MetricRole = kwargs['role']
         direction: MetricDirection = kwargs['direction']
@@ -161,13 +156,11 @@ class TestMetricSemanticsProperties:
 
     @given(kwargs=strategies.valid_semantics_kwargs())
     def test_enum_domain_values_are_accepted(self, kwargs: Dict[str, Any]) -> None:
-        """Feature: metric-semantics-governance, Property 2: 枚举取值域封闭.
+        """Verify that values inside the closed enum domains are accepted.
 
         Accepting half of the property: any value inside the three closed enum domains
         (role, direction, display_kind) builds a MetricSemantics, whether it is passed as
         the enum member or as its raw string value.
-
-        **Validates: Requirements 1.2**
         """
         from_members = MetricSemantics(**kwargs)
 
@@ -184,13 +177,11 @@ class TestMetricSemanticsProperties:
 
     @given(case=strategies.invalid_enum_kwargs())
     def test_out_of_domain_enum_values_are_rejected(self, case: Tuple[Dict[str, Any], str]) -> None:
-        """Feature: metric-semantics-governance, Property 2: 枚举取值域封闭.
+        """Verify that values outside the closed enum domains are rejected.
 
         Rejecting half of the property: for any role, direction or display_kind value outside
         its legal enum set, constructing MetricSemantics fails and the reported error points at
         that field.
-
-        **Validates: Requirements 1.2**
         """
         kwargs, field_name = case
 
@@ -201,12 +192,10 @@ class TestMetricSemanticsProperties:
 
     @given(kwargs=strategies.valid_semantics_kwargs(display_kinds=st.just(MetricDisplayKind.PERCENT)))
     def test_percent_with_range_and_multiplier_is_accepted(self, kwargs: Dict[str, Any]) -> None:
-        """Feature: metric-semantics-governance, Property 4: 百分比展示必填字段.
+        """Verify that percent declarations with the required display fields are accepted.
 
         Accepting half of the property: for any percent declaration carrying both value_range
         and display_multiplier, construction succeeds and both fields survive unchanged.
-
-        **Validates: Requirements 1.6**
         """
         semantics = MetricSemantics(**kwargs)
 
@@ -216,13 +205,11 @@ class TestMetricSemanticsProperties:
 
     @given(case=strategies.percent_missing_display_field_kwargs())
     def test_percent_missing_display_fields_is_rejected(self, case: Tuple[Dict[str, Any], List[str]]) -> None:
-        """Feature: metric-semantics-governance, Property 4: 百分比展示必填字段.
+        """Verify that percent declarations missing display fields are rejected.
 
         Rejecting half of the property: for any percent declaration missing value_range,
         display_multiplier or both, construction fails and the error message names the
         semantic_id together with every missing field.
-
-        **Validates: Requirements 1.6**
         """
         kwargs, dropped = case
         assert kwargs['display_kind'] == MetricDisplayKind.PERCENT
@@ -239,12 +226,10 @@ class TestMetricSemanticsProperties:
     def test_number_display_kind_is_not_subject_to_the_percent_rule(
         self, case: Tuple[Dict[str, Any], List[str]]
     ) -> None:
-        """Feature: metric-semantics-governance, Property 4: 百分比展示必填字段.
+        """Verify that number declarations are not subject to the percent display rule.
 
         Scope of the property: the very same declarations become valid once display_kind is
         'number', so the rule applies to percent display only.
-
-        **Validates: Requirements 1.6**
         """
         kwargs, _ = case
         kwargs['display_kind'] = MetricDisplayKind.NUMBER

@@ -144,9 +144,32 @@ def test_hallusion_dynamic_prefix_becomes_dimensions() -> None:
                 'scope': 'all'
             }),
         ),
+        (
+            'omni_doc_bench',
+            'table_TEDS_EN',
+            MetricIdentity(name='table_teds', aggregation='identity', dimensions={'language': 'en'}),
+        ),
+        (
+            'omni_doc_bench',
+            'text_block_Edit_dist_CH',
+            MetricIdentity(name='text_block_edit_dist', aggregation='identity', dimensions={'language': 'ch'}),
+        ),
+        (
+            # `overall` is the legacy spelling of the per-language normalized score.
+            'omni_doc_bench',
+            'overall_EN',
+            MetricIdentity(name='normalized_score', aggregation='identity', dimensions={'language': 'en'}),
+        ),
     ],
 )
 def test_known_dynamic_benchmark_names_migrate_without_guessing(
     benchmark: str, legacy_name: str, expected: MetricIdentity
 ) -> None:
     assert migrate_legacy_identity(legacy_name, 'identity', benchmark_name=benchmark) == expected
+
+
+def test_omni_doc_bench_language_suffix_only_applies_to_that_benchmark() -> None:
+    """The `_EN` / `_CH` rule is benchmark-scoped, so it must not rewrite other vocabularies."""
+    identity = migrate_legacy_identity('table_TEDS_EN', 'identity', benchmark_name='some_other_bench')
+    assert identity.dimensions == {}
+    assert identity.name == 'table_teds_en'

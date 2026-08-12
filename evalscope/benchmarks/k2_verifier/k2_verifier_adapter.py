@@ -179,10 +179,7 @@ class K2VerifierAdapter(FunctionCallAdapter):
             'count_finish_reason_tool_calls': finish_reason_tool_call_count,
             'count_successful_tool_call': successful_tool_call_count,
         }
-        return [
-            AggScore(aggregation='identity', metric_name=name, score=val, num=total, metadata={})
-            for name, val in metrics.items()
-        ]
+        return [AggScore(metric_name=name, score=val, num=total, metadata={}) for name, val in metrics.items()]
 
 
 def _sanitize_assistant_tool_call_args(messages: List[Dict[str, Any]]) -> None:

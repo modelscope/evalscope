@@ -23,7 +23,9 @@ hand-written eyebrow class strings.
 ### Typography utility classes (defined in `src/index.css`)
 
 Apply via Tailwind class — these cover every DESIGN.md `{typography.*}` token. Never re-derive
-`text-xs font-semibold uppercase tracking-wider …` by hand:
+`text-xs font-semibold uppercase tracking-wider …` by hand, and never re-state a property the
+token already sets (`type-table-xs uppercase tracking-wider text-[var(--text-muted)]` is three
+redundant classes):
 
 | Class | Token |
 |---|---|
@@ -33,7 +35,7 @@ Apply via Tailwind class — these cover every DESIGN.md `{typography.*}` token.
 | `.type-body-sm-strong` | `{typography.body-sm-strong}` — 14px / medium |
 | `.type-body-xs` | `{typography.body-xs}` — 12px / regular |
 | `.type-label-xs` | `{typography.label-xs}` — 12px / semibold / UPPERCASE / tracking-wider / text-muted |
-| `.type-table-xs` | `{typography.table-xs}` — 10px / semibold / UPPERCASE / tracking-wider / text-dim |
+| `.type-table-xs` | `{typography.table-xs}` — 12px / semibold / UPPERCASE / tracking-wider / text-muted |
 | `.type-caption-mono` | `{typography.caption-mono}` — 12px / mono / tabular-nums |
 | `.type-code` | `{typography.code}` — 13px / mono |
 | `.type-button-sm` | `{typography.button-sm}` — 12px / medium |

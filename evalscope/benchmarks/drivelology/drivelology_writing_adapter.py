@@ -210,8 +210,8 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         """
         if not sample_scores:
             return [
-                AggScore(aggregation='identity', metric_name='judge_score', score=0.0, num=0, metadata={}),
-                AggScore(aggregation='identity', metric_name='bert_score', score=0.0, num=0, metadata={})
+                AggScore(metric_name='judge_score', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='bert_score', score=0.0, num=0, metadata={})
             ]
 
         # Extract scores
@@ -224,7 +224,6 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
         return [
             AggScore(
-                aggregation='identity',
                 metric_name='judge_score',
                 score=avg_gpt_score,
                 num=len(sample_scores),
@@ -234,7 +233,6 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                 }
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='bert_score',
                 score=avg_bert_score,
                 num=len(sample_scores),

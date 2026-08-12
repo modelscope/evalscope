@@ -1,11 +1,7 @@
-// Feature: frontend-refactor-2026-07, compareModel (report compare) property tests.
-//
 // Merged property coverage for the report comparison model:
-//   - Property 8: run display label is composed of model and dataset;
-//   - Property 9: sorting/filtering preserves the selected set;
-//   - Property 10: comparison selection cap.
-//
-// Validates: Requirements 5.6, 5.7, 5.8, 5.9, 8.9
+//   - run display label is composed of model and dataset;
+//   - sorting/filtering preserves the selected set;
+//   - comparison selection cap.
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
@@ -21,9 +17,9 @@ import {
   togglePredictionSelection,
 } from './selection'
 
-/* Property 8: run display label composition */
+/* Run display label composition */
 
-describe('buildDisplayLabel (Property 8: run display label is composed of model and dataset)', () => {
+describe('buildDisplayLabel composes the model and dataset', () => {
   /** Separator the production code places between the model and dataset parts. */
   const LABEL_SEPARATOR = ' · '
 
@@ -128,9 +124,9 @@ describe('compatibilityReason', () => {
   })
 })
 
-/* Property 9: selection preserved across reorder/filter */
+/* Selection preserved across reorder/filter */
 
-describe('preserveSelectionAcrossReorder (Property 9: retain selection across reorder)', () => {
+describe('preserveSelectionAcrossReorder retains selection across reorder', () => {
   // A selection of run ids of size 0..8. Uses a small id alphabet so that
   // reorderings and filters frequently overlap the selection.
   const runId = fc.string({ minLength: 1, maxLength: 4 })
@@ -219,9 +215,9 @@ describe('preserveSelectionAcrossReorder (Property 9: retain selection across re
   })
 })
 
-/* Property 10: comparison selection */
+/* Comparison selection */
 
-describe('addToSelection (Property 10: compare selection is an unbounded set)', () => {
+describe('addToSelection treats compare selection as an unbounded set', () => {
   // A set of unique run ids of size 0..8, so we exercise small and large
   // selections alike: selection is deliberately not capped.
   const uniqueSelection = fc.uniqueArray(fc.string(), { minLength: 0, maxLength: 8 })

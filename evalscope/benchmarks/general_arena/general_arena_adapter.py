@@ -335,9 +335,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             for model_name, score_val in models.items():
                 if model_name == self.baseline:
                     continue
-                agg_scores.append(
-                    AggScore(aggregation='identity', score=score_val, metric_name=metric_name, num=len(sample_scores))
-                )
+                agg_scores.append(AggScore(score=score_val, metric_name=metric_name, num=len(sample_scores)))
 
         return agg_scores
 

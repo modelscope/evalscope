@@ -17,29 +17,29 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 - 涉及二元推理（翻转/不翻转）决策
 - 要求仔细关注操作者行为的影响
 - 评估系统性的逻辑推理能力
-- 答案清晰明确，无歧义
+- 答案清晰明确、无歧义
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估方式
-- 答案格式应为 "ANSWER: YES/NO"
-- 提供五项指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数和 YES 比例（yes_ratio）
-- 准确率是主要指标；其余指标用于辅助诊断
-- 支持通过提供推理示例进行 few-shot 评估
+- 默认配置使用 **0-shot** 评估
+- 答案应遵循 "ANSWER: YES/NO" 格式
+- 使用五个指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数和 YES 比例（yes_ratio）
+- 准确率是主要指标；其他指标用于辅助诊断
+- 仅准确率以全部样本数为分母；若答案不是严格意义上的 YES/NO，则不会计入精确率、召回率和 F1 的计算，因此当答案格式错误较多时，这三个指标可能虚高
+- 支持带推理示例的 few-shot 评估
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `coin_flip` |
-| **数据集ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |
+| **数据集 ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |
 | **论文** | N/A |
 | **标签** | `Reasoning`, `Yes/No` |
 | **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **训练划分** | `validation` |
-| **聚合方式** | `f1` |
 
 
 ## 数据统计
@@ -59,7 +59,7 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 
 {question}
 
-请记住，在回答末尾单独一行以 "ANSWER: [ANSWER]"（不含引号）的形式给出答案，其中 [ANSWER] 应为 YES 或 NO。
+请记住，在回答末尾单独一行写出答案，格式为 "ANSWER: [ANSWER]"（不含引号），其中 [ANSWER] 是 YES 或 NO。
 
 推理过程：
 
@@ -69,7 +69,7 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 <summary>Few-shot 模板</summary>
 
 ```text
-以下是一些解决类似问题的示例：
+以下是解决类似问题的一些示例：
 
 {fewshot}
 
@@ -78,7 +78,7 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 
 {question}
 
-请记住，在回答末尾单独一行以 "ANSWER: [ANSWER]"（不含引号）的形式给出答案，其中 [ANSWER] 应为 YES 或 NO。
+请记住，在回答末尾单独一行写出答案，格式为 "ANSWER: [ANSWER]"（不含引号），其中 [ANSWER] 是 YES 或 NO。
 
 推理过程：
 

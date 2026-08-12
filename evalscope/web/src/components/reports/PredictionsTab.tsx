@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Hash, List, ArrowUp, ArrowDown, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import type { PredictionRow, ReportData } from '@/api/types'
 import { getPredictions, getDataFrame } from '@/api/reports'
 import Select from '@/components/ui/Select'
@@ -29,8 +30,6 @@ const EMPTY_PREDICTIONS: PredictionRow[] = []
 
 export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset }: Props) {
   const { t } = useLocale()
-  // The user's pick is remembered against the subset list it was made in.
-  const [pickedSubset, setPickedSubset] = useState<{ scope: string; name: string } | null>(null)
   const [mode, setMode] = useState('All')
   const [threshold, setThreshold] = useState(0.99)
   const [page, setPage] = useState(1)
@@ -65,9 +64,12 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   // Follow the requested subset when it exists, otherwise open on the first one.
   const subsetScope = `${rootPath}\0${reportName}\0${datasetName}`
   const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (subsets[0] ?? '')
-  const pickIsLoaded = pickedSubset?.scope === subsetScope && subsets.includes(pickedSubset.name)
-  const selectedSubset = pickIsLoaded ? pickedSubset.name : defaultSubset
-  const setSelectedSubset = (name: string) => setPickedSubset({ scope: subsetScope, name })
+  // A pick only holds while it is still one of the subsets on offer: the list can
+  // come back without it after a rescan.
+  const [pickedSubset, setSelectedSubset] = useScopedState<string | null>(subsetScope, null)
+  const selectedSubset = pickedSubset !== null && subsets.includes(pickedSubset)
+    ? pickedSubset
+    : defaultSubset
 
   const predictionsResource = useAsyncResource(
     (signal) => getPredictions(rootPath, reportName, datasetName, selectedSubset, signal),

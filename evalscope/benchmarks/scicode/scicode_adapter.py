@@ -188,13 +188,11 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
                         subproblem_solved += 1
         agg_scores = [
             AggScore(
-                aggregation='identity',
                 metric_name='main_problem_pass_rate',
                 score=main_problem_solved / main_problem_count if main_problem_count > 0 else 0.0,
                 num=main_problem_count,
             ),
             AggScore(
-                aggregation='identity',
                 metric_name='subproblem_pass_rate',
                 score=subproblem_solved / subproblem_count if subproblem_count > 0 else 0.0,
                 num=subproblem_count,

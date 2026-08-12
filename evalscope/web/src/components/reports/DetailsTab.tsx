@@ -13,6 +13,7 @@ import {
 } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
+import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
 import type { PerfMetrics } from '@/api/types'
@@ -121,28 +122,14 @@ export default function DetailsTab({
         const score = Number(row.Score ?? 0)
         // Each row names its own metric, so a report mixing metrics formats each row correctly.
         const rowSemantics = semanticsByMetric[String(row.Metric ?? '')] ?? semantics
-        // Subsets of one dataset share a metric, so a bar is comparable across these rows. Its
-        // length is the value's own position in its range and is never inverted; the colour is
-        // what says whether that value is good. A low error rate is therefore a short green bar.
-        const position = getValuePosition(score, rowSemantics)
-        const quality = getBoundedQualityRatio(score, rowSemantics)
+        // Subsets of one dataset share a metric, so a bar is comparable across these rows.
         return (
-          <div className="flex items-center gap-2">
-            {position != null && (
-              <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${position * 100}%`, background: scoreColor(quality ?? position) }}
-                />
-              </div>
-            )}
-            <span
-              className="font-mono font-medium tabular-nums"
-              style={{ color: quality == null ? 'var(--text)' : scoreColor(quality) }}
-            >
-              {formatMetric(score, rowSemantics).primary}
-            </span>
-          </div>
+          <ScoreBar
+            score={score}
+            semantics={rowSemantics}
+            ariaLabel={`${String(row.Subset ?? '')} ${String(row.Metric ?? '')}`.trim()}
+            track="fixed"
+          />
         )
       },
     },

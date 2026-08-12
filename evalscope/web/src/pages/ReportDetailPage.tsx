@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import type { ReportData } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
@@ -31,7 +32,6 @@ export default function ReportDetailPage() {
   )
 
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
-  const [pickedDataset, setPickedDataset] = useState<{ scope: string; name: string } | null>(null)
   const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
   // A change of inputs aborts the previous request and drops its late response,
@@ -46,12 +46,13 @@ export default function ReportDetailPage() {
   const error = report.error
 
   // Open on the report's first dataset, while still letting the user switch; the
-  // pick is scoped to the report it was made on.
+  // pick is scoped to the report it was made on, and only holds while it still
+  // names one of the datasets the report carries.
   const datasetScope = `${rootPath}\0${reportName}`
-  const pickIsLoaded = pickedDataset?.scope === datasetScope
-    && Boolean(data?.datasets.includes(pickedDataset.name))
-  const activeDataset = pickIsLoaded ? pickedDataset.name : (data?.datasets[0] ?? '')
-  const setActiveDataset = (name: string) => setPickedDataset({ scope: datasetScope, name })
+  const [pickedDataset, setActiveDataset] = useScopedState<string | null>(datasetScope, null)
+  const activeDataset = pickedDataset !== null && Boolean(data?.datasets.includes(pickedDataset))
+    ? pickedDataset
+    : (data?.datasets[0] ?? '')
 
   const reportList = useMemo<ReportData[]>(() => data?.report_list ?? [], [data])
 

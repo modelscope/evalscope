@@ -1,7 +1,7 @@
 /**
  * The perf schemas must declare `metric_semantics`.
  *
- * Feature: metric-semantics-governance. This is a regression test for a silent failure mode: zod's
+ * This is a regression test for a silent failure mode: zod's
  * `z.object` strips keys a schema does not mention, so an undeclared `metric_semantics` is dropped
  * during parsing. Nothing throws — the perf UI simply loses every direction and unit and falls
  * back to raw numbers, which looks plausible and is wrong.

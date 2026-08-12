@@ -43,14 +43,14 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 - Default configuration uses **0-shot** evaluation
 - Five metrics: accuracy, precision, recall, F1 score, yes_ratio
-- Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
+- F1 score is the primary metric; accuracy, precision, and recall are auxiliary, and yes_ratio is diagnostic
 - Three subsets: `popular`, `adversarial`, `random`
 - "Popular" and "adversarial" subsets are more challenging
 - yes_ratio indicates model's tendency to answer "yes"
 """,
         dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric=MetricSelector(name='f1'),
         aggregation='f1',
         subset_list=['popular', 'adversarial', 'random'],
         default_subset='Full',
@@ -136,10 +136,6 @@ class PopeAdapter(VisionLanguageAdapter):
         overall_metrics = compute_metrics(sample_scores)
         agg_scores = []
         for metric_name, value in overall_metrics.items():
-            agg_scores.append(
-                AggScore(
-                    aggregation='identity', metric_name=metric_name, score=value, num=len(sample_scores), metadata={}
-                )
-            )
+            agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))
 
         return agg_scores

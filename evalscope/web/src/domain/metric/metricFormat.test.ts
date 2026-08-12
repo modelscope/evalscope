@@ -1,11 +1,10 @@
 /**
  * Tests for the metric formatting primitives.
  *
- * Feature: metric-semantics-governance
- * - Property 27: formatMetric depends only on the display fields.
- * - Property 28: the frontend and the backend format the golden samples identically.
- * - Property 32: a colour scale is available exactly when the metric is a bounded quality metric.
- * - Property 38: a comparison verdict follows the metric's direction.
+ * - formatMetric depends only on the display fields.
+ * - the frontend and the backend format the golden samples identically.
+ * - a colour scale is available exactly when the metric is a bounded quality metric.
+ * - a comparison verdict follows the metric's direction.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -121,7 +120,7 @@ describe('formatMetric', () => {
     expect(formatMetric(0.5, diagnostic).isDiagnosticFallback).toBe(true)
   })
 
-  it('Property 27: output ignores identity fields (raw_unit drives the raw text)', () => {
+  it('output ignores identity fields (raw_unit drives the raw text)', () => {
     fc.assert(
       fc.property(fc.double({ min: -1e6, max: 1e6, noNaN: true }), arbSemantics(), (value, semantics) => {
         const renamed: MetricSemantics = {
@@ -135,7 +134,7 @@ describe('formatMetric', () => {
     )
   })
 
-  it('Property 27: the same input always produces the same output', () => {
+  it('the same input always produces the same output', () => {
     fc.assert(
       fc.property(fc.double({ min: -1e6, max: 1e6, noNaN: true }), arbSemantics(), (value, semantics) => {
         expect(formatMetric(value, semantics)).toEqual(formatMetric(value, semantics))
@@ -170,7 +169,7 @@ describe('metric labels', () => {
 })
 
 describe('golden samples', () => {
-  it('Property 28: matches the backend formatter character for character', () => {
+  it('matches the backend formatter character for character', () => {
     for (const sample of goldenSamples as Array<{ semantics: MetricSemantics | null; value: number | null; expected_primary: string }>) {
       expect(formatMetric(sample.value, sample.semantics).primary).toBe(sample.expected_primary)
     }
@@ -221,7 +220,7 @@ describe('getBoundedQualityRatio', () => {
     expect(getBoundedQualityRatio(null, ratioSemantics())).toBeNull()
   })
 
-  it('Property 32: a returned ratio is always within [0, 1]', () => {
+  it('a returned ratio is always within [0, 1]', () => {
     fc.assert(
       fc.property(fc.double({ min: -1e3, max: 1e3, noNaN: true }), arbSemantics(), (value, semantics) => {
         const ratio = getBoundedQualityRatio(value, semantics)
@@ -234,7 +233,7 @@ describe('getBoundedQualityRatio', () => {
     )
   })
 
-  it('Property 32: a scale exists only for a non-diagnostic bounded directed metric', () => {
+  it('a scale exists only for a non-diagnostic bounded directed metric', () => {
     fc.assert(
       fc.property(fc.double({ min: 0, max: 1, noNaN: true }), arbSemantics(), (value, semantics) => {
         const eligible = semantics.role !== 'diagnostic'
@@ -325,7 +324,7 @@ describe('getComparisonVerdict', () => {
     expect(getComparisonVerdict(5, null)).toBe('incomparable')
   })
 
-  it('Property 38: the verdict is decided by the direction alone', () => {
+  it('the verdict is decided by the direction alone', () => {
     fc.assert(
       fc.property(fc.double({ min: -100, max: 100, noNaN: true }), arbSemantics(), (delta, semantics) => {
         const verdict = getComparisonVerdict(delta, semantics)

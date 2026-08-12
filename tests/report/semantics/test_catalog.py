@@ -1,7 +1,7 @@
 """Tests for the central metric semantics catalog.
 
 ``catalog.py`` calls ``_validate_catalog()`` at import time, which resolves **every** entry through
-the full ``MetricSemantics`` contract. A dangling baseline or an entry violating R1-R4 therefore
+the full ``MetricSemantics`` contract. A dangling baseline or an invalid entry therefore
 makes the module unimportable and this file error at collection. Tests that merely re-assert
 "every entry resolves" / "no baseline dangles" cannot fail independently and were removed; what is
 left exercises the failure path explicitly (via monkeypatch) and pins concrete semantic choices no
@@ -25,7 +25,7 @@ class TestImportTimeValidation:
             catalog_module._validate_catalog()
 
     def test_illegal_entry_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        # role=primary with direction=none violates R1 and must not resolve.
+        # role=primary with direction=none violates the contract and must not resolve.
         monkeypatch.setitem(
             METRIC_DEFINITIONS,
             'bogus_metric',

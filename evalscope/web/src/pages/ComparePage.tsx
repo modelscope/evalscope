@@ -3,6 +3,7 @@ import { AlertCircle } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useReportCache, useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPredictions } from '@/api/reports'
 import type { ReportData } from '@/api/types'
@@ -17,6 +18,7 @@ import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import type { MetricSemantics } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Button from '@/components/ui/Button'
+import Callout from '@/components/ui/Callout'
 import Card from '@/components/ui/Card'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
@@ -74,7 +76,6 @@ export default function ComparePage() {
   const [selectedSubset, setSelectedSubset] = useState('')
   const [perModelFilter, setPerModelFilter] = useState<Record<string, PerModelFilter>>({})
   const [threshold, setThreshold] = useState(0.99)
-  const [pickedPage, setPickedPage] = useState<{ scope: string; page: number }>({ scope: '', page: 1 })
 
   // Sync root path
   useEffect(() => {
@@ -238,8 +239,7 @@ export default function ComparePage() {
   // A fresh set of samples starts at the first one: the page number is scoped to
   // the sample set it was chosen in, so new data reverts to page 1 by comparison.
   const pageScope = `${rootPath}\0${selectedDs}\0${selectedSubset}\0${predictionReportNames.join(';')}`
-  const page = pickedPage.scope === pageScope ? pickedPage.page : 1
-  const setPage = (next: number) => setPickedPage({ scope: pageScope, page: next })
+  const [page, setPage] = useScopedState(pageScope, 1)
 
   // Filtered predictions using per-model constraints
   const filtered = useMemo(() => {
@@ -361,18 +361,18 @@ export default function ComparePage() {
         <div className="flex min-w-0 flex-col gap-4">
           {/* Incompatible runs notice — selection is preserved */}
           {incompatibilityReason && (
-            <div
-              role="status"
-              className="flex items-start gap-3 rounded-[var(--radius)] border border-[var(--warning-border)] bg-[var(--warning-bg)] px-4 py-3"
+            <Callout
+              variant="warning"
+              icon={<AlertCircle size={18} className="text-[var(--warning-color)]" />}
+              className="gap-3"
             >
-              <AlertCircle size={18} className="mt-0.5 shrink-0 text-[var(--warning-color)]" />
               <div className="flex flex-col gap-0.5">
                 <p className="text-sm font-medium text-[var(--text)]">{t('compare.incompatible')}</p>
                 <p className="text-xs text-[var(--text-muted)]">
                   {t(incompatibilityReason)} · {t('compare.incompatibleHint')}
                 </p>
               </div>
-            </div>
+            </Callout>
           )}
 
           {scoreLoadError && (
@@ -467,7 +467,3 @@ export default function ComparePage() {
     </div>
   )
 }
-
-// ------------------------------------------------------------------ //
-// Report Selection Rail                                               //
-// ------------------------------------------------------------------ //

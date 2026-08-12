@@ -195,7 +195,6 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
             legacy_name, language = metric_name.rsplit('_', 1)
             agg_scores.append(
                 AggScore(
-                    aggregation='identity',
                     dimensions={'language': language.lower()},
                     score=agg_result,
                     metric_name=LEGACY_METRIC_NAMES[legacy_name],

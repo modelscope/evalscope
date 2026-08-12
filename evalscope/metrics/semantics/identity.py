@@ -177,6 +177,18 @@ def migrate_legacy_identity(
                 identity_dimensions.setdefault('question_type', _snake_case(scope))
                 raw_aggregation = 'mean'
 
+    if benchmark_name == 'omni_doc_bench':
+        # The legacy TSV evaluator reports every metric once per language, spelled as an `_EN` /
+        # `_CH` suffix on the metric name. Language is an axis of the same metric, so it becomes a
+        # dimension and the remaining stem is left to `_canonical_base_name`, which snake-cases
+        # `table_TEDS` into `table_teds` and aliases `overall` to `normalized_score`. This mirrors
+        # the adapter's own LEGACY_METRIC_NAMES mapping, so a migrated report and a fresh run
+        # produce the same identities.
+        language_suffix = re.fullmatch(r'(?P<metric>.+)_(?P<language>EN|CH)', raw_name)
+        if language_suffix:
+            raw_name = language_suffix.group('metric')
+            identity_dimensions.setdefault('language', language_suffix.group('language').lower())
+
     if benchmark_name == 'openai_mrcr':
         if raw_name == 'overall_mrcr_score':
             raw_name = 'mrcr_score'
@@ -272,6 +284,7 @@ def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str]
         'hallusion_bench': r'.+_[afq]Acc',
         'longmemeval': r'.+_acc',
         'locomo': r'.+_f1',
+        'omni_doc_bench': r'.+_(?:EN|CH)',
         'openai_mrcr': r'(?:overall|\d+-\d+)_mrcr_score',
         'wide_search': r'(?:avg|pass|max)@\d+_[^/]+/[^/]+',
     }

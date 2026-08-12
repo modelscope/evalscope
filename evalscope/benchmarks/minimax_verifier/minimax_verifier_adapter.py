@@ -300,7 +300,4 @@ class MiniMaxVerifierAdapter(FunctionCallAdapter):
             ('repeat_ngram_pass_rate', rate(rep_valid, rep_checked), rep_checked),
             ('scenario_check_pass_rate', rate(sc_valid, sc_checked), sc_checked),
         ]
-        return [
-            AggScore(aggregation='identity', metric_name=name, score=score, num=num, metadata={})
-            for name, score, num in metrics
-        ]
+        return [AggScore(metric_name=name, score=score, num=num, metadata={}) for name, score, num in metrics]

@@ -1,7 +1,7 @@
 /**
  * The result cells always show concrete metric/score pairs, aligned row by row.
  *
- * Feature: metric-semantics-governance. These pin two contracts that regressed before:
+ * These tests pin two contracts that regressed before:
  * a run's numbers are never replaced by a note about them, and the dataset name is never repeated
  * inside the Result column when a Dataset column already carries it. The renderers emit one line
  * per dataset at a shared line height, which is what keeps the columns aligned.

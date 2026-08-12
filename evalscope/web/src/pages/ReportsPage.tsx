@@ -5,6 +5,7 @@ import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { formatReportRef, parseReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 import { useCompareSelection, useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useBatchDelete } from '@/hooks/useBatchDelete'
 import * as reportsApi from '@/api/reports'
 import type { ListReportsResponse, ReportSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
@@ -52,8 +53,6 @@ export default function ReportsPage() {
   // ---- Local state ----
   const [filters, setFilters] = useState<ReportFilters>(defaultFilters)
   const [page, setPage] = useState(1)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -115,7 +114,7 @@ export default function ReportsPage() {
       filters.sortOrder,
       page,
     ],
-    { enabled: Boolean(rootPath), fallbackMessage: 'Failed to load reports' },
+    { enabled: Boolean(rootPath), fallbackMessage: t('common.loadError') },
   )
 
   const reports = listing.data?.reports ?? EMPTY_REPORTS
@@ -124,10 +123,6 @@ export default function ReportsPage() {
   const availableDatasets = listing.data?.filters.available_datasets ?? EMPTY_FACETS
   const loading = listing.loading
   const hasLoaded = listing.data !== undefined || Boolean(listing.error)
-
-  // Deleting reports its own failure; a load failure comes from the resource.
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const error = deleteError ?? (listing.error || null)
 
   // ---- Selection helpers ----
   const currentPageNames = useMemo(
@@ -191,32 +186,17 @@ export default function ReportsPage() {
     }
   }, [selectedForCompare, rootPath])
 
-  const requestDeleteSelected = useCallback(() => {
-    if (selectedForCompare.length === 0 || deleting) return
-    setConfirmOpen(true)
-  }, [selectedForCompare, deleting])
-
   const reloadListing = listing.reload
-  const confirmDeleteSelected = useCallback(async () => {
-    if (deleting || selectedForCompare.length === 0) return
-    setDeleting(true)
-    setDeleteError(null)
-    const deleted: string[] = []
-    try {
-      for (const name of selectedForCompare) {
-        await reportsApi.deleteReport(rootPath, name)
-        deleted.push(name)
-      }
-      clearCompareSelection()
-    } catch (err) {
-      setCompareSelection(selectedForCompare.filter((n) => !deleted.includes(n)))
-      setDeleteError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
-    } finally {
-      setDeleting(false)
-      setConfirmOpen(false)
-      reloadListing()
-    }
-  }, [deleting, selectedForCompare, rootPath, clearCompareSelection, setCompareSelection, reloadListing, t])
+  const deletion = useBatchDelete<string>({
+    items: selectedForCompare,
+    deleteItem: (ref) => reportsApi.deleteReport(rootPath, ref),
+    onSettled: setCompareSelection,
+    reload: reloadListing,
+    formatError: (msg) => t('reports.deleteFailed', { msg }),
+  })
+
+  // Deleting reports its own failure; a load failure comes from the resource.
+  const error = deletion.error ?? (listing.error || null)
 
   const pendingDeleteItems = useMemo(
     () =>
@@ -342,21 +322,21 @@ export default function ReportsPage() {
         onViewHtml={handleViewHtml}
         onCompare={handleCompare}
         onClear={clearCompareSelection}
-        onDelete={requestDeleteSelected}
-        deleting={deleting}
+        onDelete={deletion.request}
+        deleting={deletion.deleting}
       />
 
       <ConfirmDialog
-        open={confirmOpen}
+        open={deletion.confirmOpen}
         danger
-        busy={deleting}
+        busy={deletion.deleting}
         title={t('reports.deleteConfirmTitle')}
         message={t('reports.deleteConfirm', { n: selectedForCompare.length })}
         items={pendingDeleteItems}
         confirmLabel={t('reports.delete')}
         cancelLabel={t('common.cancel')}
-        onConfirm={confirmDeleteSelected}
-        onCancel={() => setConfirmOpen(false)}
+        onConfirm={deletion.confirm}
+        onCancel={deletion.cancel}
       />
     </div>
   )

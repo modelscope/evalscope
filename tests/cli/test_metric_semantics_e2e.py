@@ -117,7 +117,7 @@ def _build_report(benchmark: str, primary_metric: Optional[MetricSelector], agg_
 
 @pytest.mark.parametrize('scenario,benchmark,primary_metric,agg_scores,expected_semantic_id', SCENARIOS)
 class TestSemanticsEndToEnd:
-    """Feature: metric-semantics-governance, Property 41: every surface agrees."""
+    """Every metric display surface agrees on the resolved semantics."""
 
     def test_primary_metric_resolves_to_the_expected_semantics(
         self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id

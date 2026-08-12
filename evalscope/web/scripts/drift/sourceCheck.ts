@@ -16,6 +16,9 @@ import { fileURLToPath } from 'node:url'
  * 3. **Misplaced pages.** `pages/` is for route targets. A tab or panel parked
  *    there reads as a route that does not exist, and is invisible to anyone
  *    tracing the router.
+ * 4. **Redundant token re-derivation.** A `type-*` utility already sets its own
+ *    properties. Re-stating one of them alongside it is dead text that silently
+ *    stops matching the token once the token changes.
  */
 
 export interface SourceCheckResult {
@@ -26,6 +29,8 @@ export interface SourceCheckResult {
   unusedComponents: string[]
   /** Modules under `pages/` that the router never renders. */
   unroutedPages: string[]
+  /** `"<file>: <token> + <duplicate>"` for each property re-stated next to its token. */
+  redundantTokenClasses: string[]
 }
 
 /** Files that legitimately live in `pages/` without being a route target. */
@@ -91,13 +96,42 @@ export function checkSource(srcRoot: string): SourceCheckResult {
     if (!appSource.includes(`@/${moduleName}'`)) unroutedPages.push(rel)
   }
 
+  // ── 4. Properties re-stated next to the token that already sets them ────
+  // Only an exact duplicate class counts. `type-table-xs text-[var(--text)]` is a
+  // deliberate colour override and must stay allowed; `type-table-xs uppercase`
+  // is not, because the token already applies `uppercase`.
+  const tokenAtoms = new Map<string, Set<string>>()
+  for (const match of css.matchAll(/\.(type-[\w-]+)\s*\{\s*@apply\s+([^;]+);/g)) {
+    tokenAtoms.set(match[1], new Set(match[2].trim().split(/\s+/)))
+  }
+  const redundantTokenClasses: string[] = []
+  for (const file of sources) {
+    const text = contents.get(file) ?? ''
+    // Each literal class list written in the file: a plain string, a template
+    // literal, or the entries of an array that is later joined.
+    for (const attr of text.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\}|\{\[([^\]]*)\])/g)) {
+      const classes = (attr[1] ?? attr[2] ?? attr[3] ?? '').split(/[\s'",]+/).filter(Boolean)
+      for (const cls of classes) {
+        const atoms = tokenAtoms.get(cls)
+        if (!atoms) continue
+        for (const other of classes) {
+          if (other !== cls && atoms.has(other)) {
+            redundantTokenClasses.push(`${relative(srcRoot, file)}: ${cls} + ${other}`)
+          }
+        }
+      }
+    }
+  }
+
   return {
     ok: undefinedTypeClasses.length === 0
       && unusedComponents.length === 0
-      && unroutedPages.length === 0,
+      && unroutedPages.length === 0
+      && redundantTokenClasses.length === 0,
     undefinedTypeClasses,
     unusedComponents,
     unroutedPages: unroutedPages.sort(),
+    redundantTokenClasses: redundantTokenClasses.sort(),
   }
 }
 
@@ -117,6 +151,10 @@ export function formatSourceReport(result: SourceCheckResult): string {
   }
   if (result.unroutedPages.length > 0) {
     lines.push(`  pages/ modules not reachable from the router: ${result.unroutedPages.join(', ')}`)
+  }
+  if (result.redundantTokenClasses.length > 0) {
+    lines.push('  properties re-stated next to the type-* token that already sets them:')
+    for (const entry of result.redundantTokenClasses) lines.push(`    ${entry}`)
   }
   return lines.join('\n')
 }

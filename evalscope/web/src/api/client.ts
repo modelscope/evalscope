@@ -9,8 +9,6 @@
  * Failures are normalised to {@link DomainError} categories:
  * `http-4xx` / `http-5xx` for HTTP error statuses, `network` for transport
  * failures, and `aborted` when a request is cancelled via its signal.
- *
- * See design section 11 and Requirement 13.
  */
 import type { ZodType } from 'zod'
 

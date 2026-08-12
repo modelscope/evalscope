@@ -188,10 +188,10 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
         """
         if not sample_scores:
             return [
-                AggScore(aggregation='identity', metric_name='f1_weighted', score=0.0, num=0, metadata={}),
-                AggScore(aggregation='identity', metric_name='f1_micro', score=0.0, num=0, metadata={}),
-                AggScore(aggregation='identity', metric_name='f1_macro', score=0.0, num=0, metadata={}),
-                AggScore(aggregation='identity', metric_name='exact_match', score=0.0, num=0, metadata={})
+                AggScore(metric_name='f1_weighted', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='f1_micro', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='f1_macro', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='exact_match', score=0.0, num=0, metadata={})
             ]
 
         # Initialize category statistics
@@ -259,7 +259,6 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
         # Return list of aggregate scores
         return [
             AggScore(
-                aggregation='identity',
                 metric_name='f1_weighted',
                 score=f1_weighted,
                 num=num_samples,
@@ -268,9 +267,7 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
                     for cat, f1 in category_f1.items()
                 }}
             ),
-            AggScore(aggregation='identity', metric_name='f1_micro', score=f1_micro, num=num_samples, metadata={}),
-            AggScore(aggregation='identity', metric_name='f1_macro', score=f1_macro, num=num_samples, metadata={}),
-            AggScore(
-                aggregation='identity', metric_name='exact_match', score=exact_match, num=num_samples, metadata={}
-            )
+            AggScore(metric_name='f1_micro', score=f1_micro, num=num_samples, metadata={}),
+            AggScore(metric_name='f1_macro', score=f1_macro, num=num_samples, metadata={}),
+            AggScore(metric_name='exact_match', score=exact_match, num=num_samples, metadata={})
         ]

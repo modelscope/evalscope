@@ -60,18 +60,26 @@ export function buildTraceContext(
   trace: AgentTrace,
   groups: StepGroup[]
 ): TraceContext {
-  const toolMsgByCallId = new Map<string, ChatMessage>()
-  for (const m of messages) {
-    if (m.role === 'tool' && typeof m.tool_call_id === 'string') {
-      toolMsgByCallId.set(m.tool_call_id, m)
-    }
-  }
+  const toolMsgByCallId = buildToolMessageIndex(messages)
 
   const toolResultEvByCallId = new Map<string, AgentTraceEvent>()
   for (const ev of trace.events) {
     if (ev.type !== 'tool_result') continue
     const id = typeof ev.payload?.id === 'string' ? ev.payload.id : null
     if (id) toolResultEvByCallId.set(id, ev)
+  }
+
+  // Back-fill observations that name no call themselves. A `textual_block`
+  // strategy returns its observation as a plain user message (the model does not
+  // speak the `tool` role), so the only link to the call is the `tool_result`
+  // event: its `payload.id` is the call and its `message_id` is the observation.
+  // Without this the output renders as a user turn instead of the tool's result.
+  const messageById = new Map<string, ChatMessage>()
+  for (const m of messages) if (m.id) messageById.set(m.id, m)
+  for (const [callId, ev] of toolResultEvByCallId) {
+    if (toolMsgByCallId.has(callId) || !ev.message_id) continue
+    const observation = messageById.get(ev.message_id)
+    if (observation) toolMsgByCallId.set(callId, observation)
   }
 
   const consumedToolMsgIds = new Set<string>()
@@ -84,6 +92,116 @@ export function buildTraceContext(
   }
 
   return { toolMsgByCallId, toolResultEvByCallId, consumedToolMsgIds }
+}
+
+/** One tool call together with whatever answered it. */
+export interface ToolCallEntry {
+  id: string
+  function: string
+  arguments: unknown
+  /** Resolved tool/observation message, if any. */
+  result?: ChatMessage
+  /** `latency_ms` from the matching `tool_result` event, if any. */
+  latencyMs?: number | null
+}
+
+/**
+ * Where a call id's answer can be found.
+ *
+ * A subset of {@link TraceContext}, so a view with no trace at all can still link
+ * calls to results using only the message list.
+ */
+export interface ToolCallLinks {
+  toolMsgByCallId: Map<string, ChatMessage>
+  toolResultEvByCallId?: Map<string, AgentTraceEvent>
+}
+
+/** Index tool messages by the call they answer. */
+export function buildToolMessageIndex(messages: ChatMessage[]): Map<string, ChatMessage> {
+  const byCallId = new Map<string, ChatMessage>()
+  for (const message of messages) {
+    if (message.role !== 'tool') continue
+    for (const callId of toolCallIds(message)) byCallId.set(callId, message)
+  }
+  return byCallId
+}
+
+/**
+ * Link an assistant turn's tool calls to the results that answered them.
+ *
+ * The assistant's own `tool_calls` are authoritative when present. Only when a
+ * turn has none do the step's `tool_call` events stand in, which is what keeps a
+ * recorder that reports calls solely as trace events from losing them.
+ *
+ * Resolution goes through `links` rather than the step's own events on purpose:
+ * some recorders emit `tool_call` on one step and the matching `tool_result` on
+ * the next, so a per-step lookup would fail to pair them.
+ */
+export function resolveToolCalls(
+  assistant: ChatMessage | null,
+  toolCallEvents: AgentTraceEvent[],
+  links: ToolCallLinks,
+): ToolCallEntry[] {
+  const latencyOf = (callId: string): number | null =>
+    links.toolResultEvByCallId?.get(callId)?.latency_ms ?? null
+
+  const declared = assistant?.tool_calls ?? []
+  if (declared.length > 0) {
+    return declared.map((call) => ({
+      id: call.id,
+      function: call.function,
+      arguments: call.arguments,
+      result: links.toolMsgByCallId.get(call.id),
+      latencyMs: latencyOf(call.id),
+    }))
+  }
+
+  return toolCallEvents.map((event) => {
+    const id = typeof event.payload.id === 'string' ? event.payload.id : ''
+    return {
+      id,
+      function: typeof event.payload.name === 'string' ? event.payload.name : '',
+      arguments: event.payload.arguments,
+      result: id ? links.toolMsgByCallId.get(id) : undefined,
+      latencyMs: id ? latencyOf(id) : null,
+    }
+  })
+}
+
+/**
+ * Tool messages in a step that no call in that step claimed.
+ *
+ * A message is dropped when it is an environment reset (rendered separately),
+ * when this step's own entries already inlined it, or when another step's
+ * assistant claimed it — the last case being why cross-step consumption has to be
+ * known here rather than decided per step.
+ */
+export function resolveResidualTools(
+  group: StepGroup,
+  entries: ToolCallEntry[],
+  resetMessageIds: Set<string>,
+  consumedToolMsgIds: Set<string> = new Set(),
+): ChatMessage[] {
+  const linked = new Set<string>()
+  for (const entry of entries) if (entry.result?.id) linked.add(entry.result.id)
+
+  return group.tools.filter((message) => {
+    if (message.id && resetMessageIds.has(message.id)) return false
+    // A message with no id cannot be matched to a call, so it is shown rather
+    // than silently dropped.
+    if (!message.id) return true
+    if (linked.has(message.id)) return false
+    return !consumedToolMsgIds.has(message.id)
+  })
+}
+
+/** Message ids this step reset the environment with. */
+export function resetMessageIdsOf(group: StepGroup): Set<string> {
+  return new Set(
+    group.traceEvents
+      .filter((event) => event.type === 'env_reset' && event.message_id)
+      .map((event) => event.message_id as string),
+  )
 }
 
 export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {

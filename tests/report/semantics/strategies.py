@@ -1,7 +1,5 @@
 """Reusable Hypothesis strategies for metric semantics property tests.
 
-Feature: metric-semantics-governance
-
 This module is the single generator source shared by every property test under
 ``tests/report/semantics/``. Strategies are grouped as:
 

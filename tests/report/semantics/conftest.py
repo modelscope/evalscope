@@ -1,7 +1,5 @@
 """Shared Hypothesis configuration for metric semantics property tests.
 
-Feature: metric-semantics-governance
-
 All property tests under ``tests/report/semantics/`` run with a single profile so that every
 property is exercised with at least ``MIN_PROPERTY_EXAMPLES`` generated inputs.
 """

@@ -161,14 +161,12 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
         """Aggregate scores with overall and per-task category accuracy."""
         total = len(sample_scores)
         if total == 0:
-            return [AggScore(aggregation='identity', metric_name='accuracy', score=0.0, num=0)]
+            return [AggScore(metric_name='accuracy', score=0.0, num=0)]
 
         total_correct = sum(ss.score.main_value for ss in sample_scores)
         overall_acc = total_correct / total
 
-        agg_scores: List[AggScore] = [
-            AggScore(aggregation='identity', metric_name='accuracy', score=overall_acc, num=total)
-        ]
+        agg_scores: List[AggScore] = [AggScore(metric_name='accuracy', score=overall_acc, num=total)]
 
         # Per-task category accuracy
         group_totals: Dict[str, int] = defaultdict(int)
@@ -182,7 +180,6 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
             task_acc = group_correct[task_name] / group_totals[task_name]
             agg_scores.append(
                 AggScore(
-                    aggregation='identity',
                     metric_name='accuracy',
                     dimensions={'task': task_name},
                     score=task_acc,

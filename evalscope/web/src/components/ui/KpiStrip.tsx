@@ -104,7 +104,7 @@ function InlineCell({ item, last }: { item: KpiItem; last: boolean }) {
       >
         {item.value}
       </div>
-      <div className="type-table-xs mt-0.5 uppercase tracking-wider text-[var(--text-muted)]">{item.label}</div>
+      <div className="type-table-xs mt-0.5">{item.label}</div>
     </div>
   )
 }

@@ -8,7 +8,7 @@
  * workload-mismatch flag.
  *
  * It has no dependency on React, the DOM, the network, the system clock or
- * randomness, so it is the target of the property tests in tasks 13.2–13.7. The
+ * randomness, so it is covered by property-based tests. The
  * rendering (delta table, baseline swap, low-sample de-emphasis, mismatch hint)
  * lives in the component layer; this module only produces the data
  * contract.

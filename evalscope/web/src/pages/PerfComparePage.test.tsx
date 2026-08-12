@@ -1,8 +1,7 @@
 // Component tests for the Performance_Compare_View.
 //
 // These cover the behaviour that lives in the PerfComparePage component layer
-// (rather than in the pure `compareModel` domain logic, which is covered by the
-// property tests in tasks 13.2-13.7):
+// (rather than in the pure `compareModel` domain logic, which has its own property tests):
 //   - the baseline swap is persisted to the URL `baseline` query param so it
 //     survives re-render and the effective-baseline marker follows it;
 //   - low sample sizes (n < 30) surface a strong warning and de-emphasize the

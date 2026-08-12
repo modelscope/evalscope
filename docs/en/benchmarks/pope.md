@@ -24,7 +24,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 - Default configuration uses **0-shot** evaluation
 - Five metrics: accuracy, precision, recall, F1 score, yes_ratio
-- Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
+- F1 score is the primary metric; accuracy, precision, and recall are auxiliary, and yes_ratio is diagnostic
 - Three subsets: `popular`, `adversarial`, `random`
 - "Popular" and "adversarial" subsets are more challenging
 - yes_ratio indicates model's tendency to answer "yes"

@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPerfDetail, getPerfChartUrl, getPerfHistoryReportUrl } from '@/api/perf'
 import Breadcrumb from '@/components/ui/Breadcrumb'
@@ -9,6 +10,7 @@ import Tabs from '@/components/ui/Tabs'
 import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiStrip from '@/components/ui/KpiStrip'
+import LabelledField from '@/components/ui/LabelledField'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import PerfRunsTab from '@/components/perf/PerfRunsTab'
@@ -18,20 +20,6 @@ import { resolveProvider } from '@/domain/perf/providerResolution'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 
 type TabKey = 'overview' | 'charts' | 'runs'
-
-/**
- * A single, individually-labelled identity field. `Provider` and `Protocol`
- * are rendered as two of these so the two never collapse into one combined
- * field.
- */
-function IdentityField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-1.5 min-w-0">
-      <span className="type-table-xs uppercase tracking-wider text-[var(--text-muted)]">{label}</span>
-      <span className="type-body-sm text-[var(--text)] break-words">{value}</span>
-    </div>
-  )
-}
 
 /** Return a shallow copy of `info` with the given keys removed. */
 function omitKeys(info: Record<string, string>, keys: string[]): Record<string, string> {
@@ -59,7 +47,7 @@ function SummaryTable({ columns, rows, t }: { columns: string[]; rows: (string |
             {columns.map((c) => (
               <th
                 key={c}
-                className="type-table-xs uppercase tracking-wider px-3 py-2 text-right first:text-left whitespace-nowrap border-b border-[var(--border)] text-[var(--text-muted)]"
+                className="type-table-xs px-3 py-2 text-right first:text-left whitespace-nowrap border-b border-[var(--border)]"
               >
                 {c}
               </th>
@@ -100,8 +88,6 @@ export default function PerfReportDetailPage() {
   const path = get('path') ?? ''
   const rootPath = get('root_path') ?? ctxRoot
 
-  const [pickedTab, setPickedTab] = useState<{ scope: string; tab: TabKey } | null>(null)
-
   const detail = useAsyncResource(
     (signal) => getPerfDetail(rootPath, path, signal),
     [rootPath, path],
@@ -122,8 +108,8 @@ export default function PerfReportDetailPage() {
   // Front-load the per-run (DB) views for single-run reports, while still letting
   // the user switch tabs; the pick is scoped to the report it was made on.
   const tabScope = `${rootPath}\0${path}\0${data?.num_runs ?? ''}`
-  const activeTab: TabKey = pickedTab?.scope === tabScope ? pickedTab.tab : (singleRun && data ? 'runs' : 'overview')
-  const setActiveTab = (tab: TabKey) => setPickedTab({ scope: tabScope, tab })
+  const [pickedTab, setActiveTab] = useScopedState<TabKey | null>(tabScope, null)
+  const activeTab: TabKey = pickedTab ?? (singleRun && data ? 'runs' : 'overview')
 
   // Charts available for this run mode (embedding runs have no TTFT/TPOT).
   const latencyCharts = useMemo(
@@ -263,8 +249,8 @@ export default function PerfReportDetailPage() {
           <h1 className="type-title-md text-[var(--text)] break-words">{data.model || data.dataset || '—'}</h1>
           {/* Provider and Protocol as two independent, individually-labelled fields. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <IdentityField label={t('perf.archive.provider')} value={identity.provider} />
-            <IdentityField label={t('perf.archive.protocol')} value={identity.protocol} />
+            <LabelledField label={t('perf.archive.provider')} value={identity.provider} />
+            <LabelledField label={t('perf.archive.protocol')} value={identity.protocol} />
           </div>
           <div className="type-caption-mono text-[var(--text-muted)]">
             {data.dataset} · {data.num_runs}{' '}

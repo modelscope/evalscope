@@ -1,9 +1,7 @@
 """Unit tests for the common metric semantics baseline table.
 
-Feature: metric-semantics-governance
-
-Every entry is a ``MetricSemantics`` literal built at import time, so the contract rules R1-R4 are
-already enforced before any test runs: a diagnostic baseline carrying a direction, or a percent
+Every entry is a ``MetricSemantics`` literal built at import time, so the contract rules are already
+enforced before any test runs: a diagnostic baseline carrying a direction, or a percent
 baseline missing its range, would make this module unimportable. Tests re-asserting those rules
 cannot fail independently and were removed. What remains pins the things no validator checks --
 which baselines must exist, the key/``semantic_id`` correspondence, the naming convention, and the
@@ -21,7 +19,7 @@ from evalscope.api.metric.semantics import (
 )
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 
-#: Baselines the catalog and the legacy mapping are allowed to reference (requirement 2.1).
+#: Baselines the catalog and the legacy mapping are allowed to reference.
 REQUIRED_BASELINE_IDS: List[str] = [
     'quality.accuracy.ratio',
     'quality.f1.ratio',
@@ -59,7 +57,7 @@ class TestBaselineTableShape:
     def test_baseline_revalidates_against_the_contract(self, baseline_id: str) -> None:
         semantics = SEMANTIC_BASELINES[baseline_id]
 
-        # Re-running the model validators proves the declaration satisfies R1-R5 and that a
+        # Re-running the model validators proves the declaration satisfies the contract and that a
         # serialized baseline can be rebuilt from report.json without loss.
         assert MetricSemantics.model_validate(semantics.model_dump()) == semantics
         assert semantics.contract_version == METRIC_CONTRACT_VERSION
@@ -77,7 +75,7 @@ class TestDisplayDeclarations:
         if semantics.display_kind != MetricDisplayKind.PERCENT:
             pytest.skip(f'{baseline_id} is not rendered as percent')
 
-        # `value_range` / `display_multiplier` are already required by R3; only the unit is a
+        # `value_range` / `display_multiplier` are already required by the model; only the unit is a
         # convention this table has to keep on its own.
         assert semantics.display_unit == '%'
 

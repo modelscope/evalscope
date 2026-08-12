@@ -6,8 +6,7 @@
 // identical display text on both surfaces — including the "cannot be merged" case, where neither
 // surface may invent a single number.
 //
-// Feature: metric-semantics-governance, Property 41 (frontend side): every view shows the same
-// metric name, direction and formatted value.
+// Every view shows the same metric name, direction and formatted value.
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render } from '@testing-library/react'

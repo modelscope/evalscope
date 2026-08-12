@@ -37,6 +37,8 @@ CoinFlip is a symbolic reasoning benchmark that tests LLMs' ability to track bin
 - Answers should follow "ANSWER: YES/NO" format
 - Five metrics: accuracy, precision, recall, F1, yes_ratio
 - Accuracy is the primary metric; precision, recall, F1, and yes_ratio provide supporting diagnostics
+- Only accuracy divides by the full sample count; an answer that is not exactly YES/NO is excluded from
+  precision, recall and F1, so those three read high when answers are badly formatted
 - Supports few-shot evaluation with reasoning examples
 """
 
@@ -67,7 +69,6 @@ Here are some examples of how to solve similar problems:
         dataset_id='extraordinarylab/coin-flip',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
         primary_metric=MetricSelector(name='accuracy'),
-        aggregation='f1',
         few_shot_num=0,
         train_split='validation',
         eval_split='test',
@@ -147,10 +148,6 @@ class CoinFlipAdapter(DefaultDataAdapter):
 
         agg_scores = []
         for metric_name, value in overall_metrics.items():
-            agg_scores.append(
-                AggScore(
-                    aggregation='identity', metric_name=metric_name, score=value, num=len(sample_scores), metadata={}
-                )
-            )
+            agg_scores.append(AggScore(metric_name=metric_name, score=value, num=len(sample_scores), metadata={}))
 
         return agg_scores
