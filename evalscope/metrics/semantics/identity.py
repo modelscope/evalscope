@@ -6,7 +6,7 @@ resolver.
 """
 
 import re
-from typing import Dict, Optional, Tuple
+from typing import Callable, Dict, FrozenSet, Match, NamedTuple, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
 
@@ -32,6 +32,7 @@ _EXACT_ALIASES = {
     'gpt_score': 'judge_score',
     'avg_score': 'judge_score',
     'HalluRate': 'hallucination_rate',
+    'bertscore': 'bert_score',
     'total_wall_time_s': 'total_wall_time',
     'total_model_time_s': 'total_model_time',
     'total_tool_time_s': 'total_tool_time',
@@ -64,6 +65,146 @@ _NON_NAME = re.compile(r'[^a-z0-9]+')
 def _snake_case(value: str) -> str:
     value = _SNAKE_BOUNDARY.sub('_', value).lower()
     return _NON_NAME.sub('_', value).strip('_')
+
+
+class _BenchmarkRule(NamedTuple):
+    """How one benchmark's historical metric-name shape maps onto a v2 identity.
+
+    ``pattern`` is the single source of truth for both jobs this knowledge is needed for:
+    :func:`migrate_legacy_identity` uses its match groups to rewrite the identity, and
+    :func:`is_known_dynamic_legacy_name` uses the same pattern to decide whether a non-catalogued
+    spelling belongs to a supported family. Declaring it once is what keeps the two from drifting.
+    """
+
+    pattern: Pattern[str]
+    """Full-match pattern over the raw metric name."""
+
+    apply: Callable[[Match[str], Dict[str, Scalar], str], Tuple[str, str]]
+    """``(match, dimensions, aggregation) -> (raw_name, aggregation)``, mutating ``dimensions``."""
+
+    before_scope_split: bool = True
+    """Whether the rule runs before the generic ``scope/metric`` split.
+
+    ``hallusion_bench`` runs after it: a name such as ``scope/Overall_aAcc`` must have its scope
+    stripped first, otherwise the level would absorb the scope prefix.
+    """
+
+
+def _scoped_suffix_rule(suffix: str, canonical_name: str) -> _BenchmarkRule:
+    """Build the ``{scope}_{suffix}`` rule shared by longmemeval and locomo.
+
+    Both benchmarks report one metric per question type plus two roll-ups, spelled as a prefix on
+    the metric name. ``overall`` is a plain mean over all questions, ``task_averaged`` is a macro
+    mean over the question types, and anything else names a single question type.
+
+    Args:
+        suffix: Metric suffix the benchmark uses (``acc`` / ``f1``).
+        canonical_name: Canonical metric name the suffix stands for.
+
+    Returns:
+        The rule for that benchmark.
+    """
+
+    def apply(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+        scope = match.group('scope')
+        if scope == 'overall':
+            dimensions.setdefault('scope', 'overall')
+            return canonical_name, 'mean'
+        if scope == 'task_averaged':
+            dimensions.setdefault('scope', 'question_types')
+            return canonical_name, 'macro_mean'
+        dimensions.setdefault('question_type', _snake_case(scope))
+        return canonical_name, 'mean'
+
+    return _BenchmarkRule(pattern=re.compile(rf'(?P<scope>.+)_{suffix}'), apply=apply)
+
+
+def _apply_overlap_aggregation(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """General-QA/VQA: recover the aggregation, keeping the name for ``_canonical_base_name``.
+
+    Historical reports stored post-aggregation overlap metric names without the ``mean_`` prefix,
+    so the aggregation has to come from the benchmark contract instead of the spelling.
+    """
+    return match.string, 'mean' if aggregation == 'identity' else aggregation
+
+
+def _apply_language_suffix(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """OmniDocBench: the legacy TSV evaluator reports every metric once per language.
+
+    Language is an axis of the same metric, so the ``_EN`` / ``_CH`` suffix becomes a dimension and
+    the remaining stem is left to ``_canonical_base_name``, which snake-cases ``table_TEDS`` into
+    ``table_teds`` and aliases ``overall`` to ``normalized_score``. This mirrors the adapter's own
+    LEGACY_METRIC_NAMES mapping, so a migrated report and a fresh run produce the same identities.
+    """
+    dimensions.setdefault('language', match.group('language').lower())
+    return match.group('metric'), aggregation
+
+
+def _apply_mrcr_scope(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """OpenAI-MRCR: either the overall roll-up or one context-length bucket."""
+    if match.group('minimum') is None:
+        dimensions.setdefault('scope', 'overall')
+    else:
+        dimensions.setdefault('min_tokens', int(match.group('minimum')))
+        dimensions.setdefault('max_tokens', int(match.group('maximum')))
+    return 'mrcr_score', 'mean'
+
+
+def _apply_wide_search(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """WideSearch: ``{kind}@{k}_{scope}/{metric}``, optionally prefixed by a row/item target."""
+    raw_name = match.group('metric')
+    dimensions.setdefault('k', int(match.group('k')))
+    dimensions.setdefault('scope', _snake_case(match.group('scope')))
+    if raw_name.startswith(('row_', 'item_')):
+        target, raw_name = raw_name.split('_', 1)
+        dimensions.setdefault('target', target)
+    return raw_name, {'avg': 'mean', 'pass': 'pass_at_k', 'max': 'max'}[match.group('kind')]
+
+
+def _apply_hallusion_target(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """HallusionBench: accuracy per aggregation bucket and per scoring target.
+
+    The level prefix is optional because the benchmark spells both forms: ``Overall_aAcc`` in a
+    stored report and the bare ``aAcc`` in ``metric_list``. Without the bare form the three
+    targets would all degrade to the same ``accuracy`` identity and lose which one they measure.
+    """
+    level = match.group('level')
+    if level:
+        dimensions.setdefault('level', _snake_case(level))
+    dimensions.setdefault('target', {'a': 'answer', 'f': 'figure', 'q': 'question'}[match.group('target')])
+    return 'accuracy', 'mean'
+
+
+#: Benchmark -> its historical metric-name rule. One entry per benchmark, one pattern per entry.
+_BENCHMARK_RULES: Dict[str, _BenchmarkRule] = {
+    'general_qa': _BenchmarkRule(
+        pattern=re.compile(rf'(?:{_BLEU_N.pattern}|{_ROUGE_VARIANT.pattern})'),
+        apply=_apply_overlap_aggregation,
+    ),
+    'general_vqa': _BenchmarkRule(
+        pattern=re.compile(rf'(?:{_BLEU_N.pattern}|{_ROUGE_VARIANT.pattern})'),
+        apply=_apply_overlap_aggregation,
+    ),
+    'longmemeval': _scoped_suffix_rule('acc', 'accuracy'),
+    'locomo': _scoped_suffix_rule('f1', 'f1'),
+    'omni_doc_bench': _BenchmarkRule(
+        pattern=re.compile(r'(?P<metric>.+)_(?P<language>EN|CH)'),
+        apply=_apply_language_suffix,
+    ),
+    'openai_mrcr': _BenchmarkRule(
+        pattern=re.compile(r'(?:overall|(?P<minimum>\d+)-(?P<maximum>\d+))_mrcr_score'),
+        apply=_apply_mrcr_scope,
+    ),
+    'wide_search': _BenchmarkRule(
+        pattern=re.compile(r'(?P<kind>avg|pass|max)@(?P<k>\d+)_(?P<scope>[^/]+)/(?P<metric>[^/]+)'),
+        apply=_apply_wide_search,
+    ),
+    'hallusion_bench': _BenchmarkRule(
+        pattern=re.compile(r'(?:(?P<level>.+)_)?(?P<target>[afq])Acc'),
+        apply=_apply_hallusion_target,
+        before_scope_split=False,
+    ),
+}
 
 
 def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
@@ -139,96 +280,21 @@ def migrate_legacy_identity(
     raw_name = metric_name
     raw_aggregation = aggregation or 'identity'
 
-    if (
-        benchmark_name in {'general_qa', 'general_vqa'}
-        and (_BLEU_N.fullmatch(raw_name) or _ROUGE_VARIANT.fullmatch(raw_name)) and raw_aggregation == 'identity'
-    ):
-        # Historical General-QA/VQA reports stored post-aggregation overlap metric names
-        # without the `mean_` prefix. Recover the aggregation from the benchmark contract.
-        raw_aggregation = 'mean'
-
-    if benchmark_name == 'longmemeval':
-        match = re.fullmatch(r'(?P<scope>.+)_acc', raw_name)
+    rule = _BENCHMARK_RULES.get(benchmark_name or '')
+    if rule is not None and rule.before_scope_split:
+        match = rule.pattern.fullmatch(raw_name)
         if match:
-            scope = match.group('scope')
-            raw_name = 'accuracy'
-            if scope == 'overall':
-                identity_dimensions.setdefault('scope', 'overall')
-                raw_aggregation = 'mean'
-            elif scope == 'task_averaged':
-                identity_dimensions.setdefault('scope', 'question_types')
-                raw_aggregation = 'macro_mean'
-            else:
-                identity_dimensions.setdefault('question_type', _snake_case(scope))
-                raw_aggregation = 'mean'
-
-    if benchmark_name == 'locomo':
-        match = re.fullmatch(r'(?P<scope>.+)_f1', raw_name)
-        if match:
-            scope = match.group('scope')
-            raw_name = 'f1'
-            if scope == 'overall':
-                identity_dimensions.setdefault('scope', 'overall')
-                raw_aggregation = 'mean'
-            elif scope == 'task_averaged':
-                identity_dimensions.setdefault('scope', 'question_types')
-                raw_aggregation = 'macro_mean'
-            else:
-                identity_dimensions.setdefault('question_type', _snake_case(scope))
-                raw_aggregation = 'mean'
-
-    if benchmark_name == 'omni_doc_bench':
-        # The legacy TSV evaluator reports every metric once per language, spelled as an `_EN` /
-        # `_CH` suffix on the metric name. Language is an axis of the same metric, so it becomes a
-        # dimension and the remaining stem is left to `_canonical_base_name`, which snake-cases
-        # `table_TEDS` into `table_teds` and aliases `overall` to `normalized_score`. This mirrors
-        # the adapter's own LEGACY_METRIC_NAMES mapping, so a migrated report and a fresh run
-        # produce the same identities.
-        language_suffix = re.fullmatch(r'(?P<metric>.+)_(?P<language>EN|CH)', raw_name)
-        if language_suffix:
-            raw_name = language_suffix.group('metric')
-            identity_dimensions.setdefault('language', language_suffix.group('language').lower())
-
-    if benchmark_name == 'openai_mrcr':
-        if raw_name == 'overall_mrcr_score':
-            raw_name = 'mrcr_score'
-            raw_aggregation = 'mean'
-            identity_dimensions.setdefault('scope', 'overall')
-        else:
-            token_range = re.fullmatch(r'(?P<minimum>\d+)-(?P<maximum>\d+)_mrcr_score', raw_name)
-            if token_range:
-                raw_name = 'mrcr_score'
-                raw_aggregation = 'mean'
-                identity_dimensions.setdefault('min_tokens', int(token_range.group('minimum')))
-                identity_dimensions.setdefault('max_tokens', int(token_range.group('maximum')))
-
-    if benchmark_name == 'wide_search':
-        wide_search = re.fullmatch(r'(?P<kind>avg|pass|max)@(?P<k>\d+)_(?P<scope>[^/]+)/(?P<metric>[^/]+)', raw_name)
-        if wide_search:
-            raw_name = wide_search.group('metric')
-            raw_aggregation = {
-                'avg': 'mean',
-                'pass': 'pass_at_k',
-                'max': 'max',
-            }[wide_search.group('kind')]
-            identity_dimensions.setdefault('k', int(wide_search.group('k')))
-            identity_dimensions.setdefault('scope', _snake_case(wide_search.group('scope')))
-            if raw_name.startswith(('row_', 'item_')):
-                target, raw_name = raw_name.split('_', 1)
-                identity_dimensions.setdefault('target', target)
+            raw_name, raw_aggregation = rule.apply(match, identity_dimensions, raw_aggregation)
 
     scope_match = _SCOPE_METRIC.fullmatch(raw_name)
     if scope_match:
         identity_dimensions.setdefault('scope', _snake_case(scope_match.group('scope')))
         raw_name = scope_match.group('name')
 
-    hallusion = re.fullmatch(r'(?P<level>.+)_(?P<target>[afq])Acc', raw_name)
-    if benchmark_name == 'hallusion_bench' and hallusion:
-        target = {'a': 'answer', 'f': 'figure', 'q': 'question'}[hallusion.group('target')]
-        identity_dimensions.setdefault('level', _snake_case(hallusion.group('level')))
-        identity_dimensions.setdefault('target', target)
-        raw_name = 'accuracy'
-        raw_aggregation = 'mean'
+    if rule is not None and not rule.before_scope_split:
+        match = rule.pattern.fullmatch(raw_name)
+        if match:
+            raw_name, raw_aggregation = rule.apply(match, identity_dimensions, raw_aggregation)
 
     dynamic = _DYNAMIC_K.fullmatch(raw_name)
     if dynamic:
@@ -266,9 +332,16 @@ def migrate_legacy_identity(
     )
 
 
-def legacy_aliases() -> Tuple[str, ...]:
-    """Exact aliases whose non-snake spelling is accepted only on migration paths."""
-    return tuple(_EXACT_ALIASES)
+def legacy_aliases_reassigning_meaning() -> FrozenSet[str]:
+    """Legacy spellings whose canonical target names a *different* concept than the source.
+
+    Every other alias only re-spells what was already measured (``acc`` -> ``accuracy``,
+    ``Bleu_4`` -> ``bleu[ngram=4]``). These five instead reinterpret an ambiguous score: a bare
+    ``score`` becomes a normalized score and the various judge totals become a judge score.
+    Producers are told about it out loud, because a third-party adapter that emits one of these
+    names has its metric renamed in the report and needs to pick an explicit name instead.
+    """
+    return frozenset({'score', 'overall', 'total_score', 'gpt_score', 'avg_score'})
 
 
 def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str] = None) -> bool:
@@ -280,13 +353,5 @@ def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str]
     scope_metric = _SCOPE_METRIC.fullmatch(metric_name)
     if scope_metric and scope_metric.group('name') in {'success_rate', 'precision', 'recall', 'f1'}:
         return True
-    benchmark_patterns = {
-        'hallusion_bench': r'.+_[afq]Acc',
-        'longmemeval': r'.+_acc',
-        'locomo': r'.+_f1',
-        'omni_doc_bench': r'.+_(?:EN|CH)',
-        'openai_mrcr': r'(?:overall|\d+-\d+)_mrcr_score',
-        'wide_search': r'(?:avg|pass|max)@\d+_[^/]+/[^/]+',
-    }
-    pattern = benchmark_patterns.get(benchmark_name or '')
-    return bool(pattern and re.fullmatch(pattern, metric_name))
+    rule = _BENCHMARK_RULES.get(benchmark_name or '')
+    return rule is not None and rule.pattern.fullmatch(metric_name) is not None

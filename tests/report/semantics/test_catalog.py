@@ -10,9 +10,10 @@ validator enforces.
 
 import pytest
 
-from evalscope.api.metric.semantics import MetricDirection, MetricEntry, MetricRole
+from evalscope.api.metric.semantics import MetricDirection, MetricRole
 from evalscope.metrics.semantics import catalog as catalog_module
 from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS
+from evalscope.metrics.semantics.entry import MetricEntry
 
 
 class TestImportTimeValidation:

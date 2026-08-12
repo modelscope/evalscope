@@ -92,7 +92,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
         description=DESCRIPTION,
         dataset_id='evalscope/CC-OCR-V2',
         subset_list=SUBSET_LIST,
-        metric_list=['score'],
+        metric_list=['normalized_score'],
         eval_split='test',
         paper_url='https://arxiv.org/abs/2605.03903',
     )
@@ -206,8 +206,8 @@ class CCOCRV2Adapter(VisionLanguageAdapter):
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        score.value = {'score': score_sample(filtered_prediction, reference, task_state.metadata or {})}
-        score.main_score_name = 'score'
+        score.value = {'normalized_score': score_sample(filtered_prediction, reference, task_state.metadata or {})}
+        score.main_score_name = 'normalized_score'
         return score
 
 

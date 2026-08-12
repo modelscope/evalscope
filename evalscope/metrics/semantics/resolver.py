@@ -14,12 +14,11 @@ from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
-from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from evalscope.api.metric.semantics import (
     MetricDirection,
     MetricDisplayKind,
-    MetricEntry,
     MetricIdentity,
     MetricRole,
     MetricSelector,
@@ -32,8 +31,10 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_DEFINITIONS,
     METRIC_NAME_TABLE_LOCATION,
 )
+from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.formatting import DIAGNOSTIC_FALLBACK_PRECISION
 from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.perf import PERF_SEMANTICS
 from evalscope.utils import get_logger
 
 if TYPE_CHECKING:
@@ -60,11 +61,13 @@ __all__ = [
     'ResolvedSemantics',
     'SemanticsResolver',
     'SemanticsSource',
+    'attach_perf_semantics',
     'attribute_metric_roles',
     'catalog_entry_location',
     'diagnostic_fallback',
     'get_semantics_resolver',
     'hydrate_report_semantics',
+    'resolve_perf_semantics',
 ]
 
 
@@ -251,31 +254,19 @@ def attribute_metric_roles(
 class SemanticsResolver:
     """Resolve canonical metric identities into base ``MetricSemantics``.
 
-    The resolver is stateless apart from the tables it reads, so a single instance can be shared;
-    use :func:`get_semantics_resolver` for the process-wide one. Tables are injectable to keep
-    the resolution logic testable without touching the shipped catalog.
+    The resolver is stateless apart from the shipped tables it reads, so a single instance can be
+    shared; use :func:`get_semantics_resolver` for the process-wide one. Tests that need a
+    different table monkeypatch the table itself rather than injecting it here.
     """
 
-    def __init__(
-        self,
-        name_table: Optional[Mapping[str, MetricEntry]] = None,
-        aggregation_table: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
-        override_table: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
-        perf_fields: Optional[Mapping[str, MetricEntry]] = None,
-    ) -> None:
+    def __init__(self, perf_fields: Optional[Mapping[str, MetricEntry]] = None) -> None:
         """Build a resolver.
 
         Args:
-            name_table: Canonical metric name -> entry. Defaults to ``METRIC_DEFINITIONS``.
-            aggregation_table: ``(metric, aggregation)`` semantic overrides.
-            override_table: ``(benchmark, metric)`` -> entry. Defaults to the collision table.
-            perf_fields: Perf field key -> entry. Defaults to the perf table, imported lazily so
-                this module stays importable before that table exists.
+            perf_fields: Perf field key -> entry, overriding ``PERF_SEMANTICS``. Only used to
+                exercise the undeclared-field degradation path.
         """
-        self._names = METRIC_DEFINITIONS if name_table is None else name_table
-        self._aggregations = AGGREGATION_SEMANTICS if aggregation_table is None else aggregation_table
-        self._overrides = BENCHMARK_METRIC_OVERRIDES if override_table is None else override_table
-        self._perf_fields = perf_fields
+        self._perf_fields = PERF_SEMANTICS if perf_fields is None else perf_fields
 
     def resolve(
         self,
@@ -297,15 +288,15 @@ class SemanticsResolver:
         metric_name = identity.name
 
         # 1. Benchmark level collision override.
-        entry = self._overrides.get((benchmark_name, metric_name))
+        entry = BENCHMARK_METRIC_OVERRIDES.get((benchmark_name, metric_name))
         if entry is not None:
             semantics = entry.resolve(metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.BENCHMARK_OVERRIDE)
 
         # 2. Aggregation-specific override, then the canonical name table.
-        entry = self._aggregations.get((metric_name, identity.aggregation))
+        entry = AGGREGATION_SEMANTICS.get((metric_name, identity.aggregation))
         if entry is None:
-            entry = self._names.get(metric_name)
+            entry = METRIC_DEFINITIONS.get(metric_name)
         if entry is not None:
             semantics = entry.resolve(metric_name)
             if semantics.role is MetricRole.PRIMARY:
@@ -339,7 +330,7 @@ class SemanticsResolver:
         Returns:
             The resolution, never ``None`` and never raising.
         """
-        entry = self._perf_field_entries().get(field_key)
+        entry = self._perf_fields.get(field_key)
         if entry is not None:
             return ResolvedSemantics(semantics=entry.resolve(field_key), source=SemanticsSource.METRIC_NAME)
 
@@ -349,26 +340,55 @@ class SemanticsResolver:
             audit_messages=[_undeclared_perf_field_message(field_key)],
         )
 
-    def _perf_field_entries(self) -> Mapping[str, MetricEntry]:
-        """Return the perf tables, imported lazily and tolerating their absence.
-
-        Perf data reaches the API under three key spaces, all merged here: the display names of
-        the perf constants (percentile and summary JSON), the stable API paths (in-report perf and
-        the run list), and the archive summary table's column labels.
-        """
-        if self._perf_fields is not None:
-            return self._perf_fields
-        try:
-            from evalscope.metrics.semantics.perf import PERF_SEMANTICS
-        except ImportError:
-            return {}
-        return PERF_SEMANTICS
-
 
 @lru_cache(maxsize=1)
 def get_semantics_resolver() -> SemanticsResolver:
     """Return the process-wide resolver reading the shipped tables."""
     return SemanticsResolver()
+
+
+def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
+    """Resolve the semantics of the perf fields a service response is about to return.
+
+    A field with no declaration degrades to a diagnostic, which renders the stored value without a
+    direction or unit and logs where to declare it.
+
+    Args:
+        field_keys: Field keys present in the response. They may come from any of the three perf
+            key spaces (the perf name constants, the stable API paths, or the archive summary
+            table labels); all three are declared in ``evalscope.metrics.semantics.perf``.
+
+    Returns:
+        Field key -> serialized ``MetricSemantics``, one entry per requested key.
+    """
+    resolver = get_semantics_resolver()
+    semantics: Dict[str, dict] = {}
+    for field_key in field_keys:
+        resolved = resolver.resolve_perf_field(field_key)
+        resolved.log_audit_messages()
+        semantics[field_key] = resolved.semantics.model_dump(mode='json')
+    return semantics
+
+
+def attach_perf_semantics(perf_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Attach the complete semantics map to an embedded report perf payload."""
+    payload = dict(perf_metrics)
+    summary = payload.get('summary')
+    if not isinstance(summary, dict):
+        return payload
+
+    field_keys = ['n_samples']
+    for key in ('latency', 'ttft', 'tpot'):
+        if key in summary:
+            field_keys.append(key)
+    throughput = summary.get('throughput')
+    if isinstance(throughput, dict):
+        field_keys.extend(f'throughput.{key}' for key in throughput if f'throughput.{key}' in PERF_SEMANTICS)
+    usage = summary.get('usage')
+    if isinstance(usage, dict):
+        field_keys.extend(f'usage.{key}' for key in usage if f'usage.{key}' in PERF_SEMANTICS)
+    payload['metric_semantics'] = resolve_perf_semantics(field_keys)
+    return payload
 
 
 def hydrate_report_semantics(report: 'Report') -> 'Report':

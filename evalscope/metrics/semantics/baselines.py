@@ -13,9 +13,13 @@ Conventions enforced here:
   own ``MetricEntry``.
 - Bounded ratios in [0, 1] render as percent with ``display_multiplier=100``; official 0-100
   scales render as percent with ``display_multiplier=1``.
+
+The two helpers below carry the shared display fields, so a baseline states only what makes it
+different from the others. That is why the table can be read as a vocabulary rather than as a
+wall of repeated display settings, and why a change to how percentages render is one edit.
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
 from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics, ValueRange
 
@@ -28,326 +32,181 @@ _POINTS_100_RANGE = ValueRange(min=0.0, max=100.0)
 #: Decimals used by every percent-rendered baseline.
 _PERCENT_PRECISION = 1
 
+
+def _percent(
+    semantic_id: str,
+    metric_name: str,
+    direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
+    role: MetricRole = MetricRole.PRIMARY,
+    value_range: ValueRange = _RATIO_RANGE,
+    display_multiplier: float = 100.0,
+) -> MetricSemantics:
+    """Declare a bounded metric rendered as a percentage.
+
+    Args:
+        semantic_id: Identifier of the declaration; must equal its key in the table.
+        metric_name: Display name of the metric.
+        direction: Optimization direction. Error rates pass ``LOWER_IS_BETTER``.
+        role: Display tier. A diagnostic must also pass ``direction=NONE``.
+        value_range: Bounds of the stored value. Official 0-100 scales pass
+            ``_POINTS_100_RANGE``.
+        display_multiplier: Scale applied for display only: ``100`` for a ``[0, 1]`` ratio, ``1``
+            for a value already expressed in points.
+
+    Returns:
+        The validated baseline declaration.
+    """
+    return MetricSemantics(
+        semantic_id=semantic_id,
+        metric_name=metric_name,
+        role=role,
+        direction=direction,
+        value_range=value_range,
+        display_kind=MetricDisplayKind.PERCENT,
+        display_multiplier=display_multiplier,
+        display_unit='%',
+        display_precision=_PERCENT_PRECISION,
+    )
+
+
+def _plain_number(
+    semantic_id: str,
+    metric_name: str,
+    display_precision: int,
+    direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
+    role: MetricRole = MetricRole.PRIMARY,
+    raw_unit: Optional[str] = None,
+    display_unit: Optional[str] = None,
+) -> MetricSemantics:
+    """Declare an unbounded metric rendered as a plain number.
+
+    Args:
+        semantic_id: Identifier of the declaration; must equal its key in the table.
+        metric_name: Display name of the metric.
+        display_precision: Decimals of the displayed value.
+        direction: Optimization direction. Latencies pass ``LOWER_IS_BETTER``.
+        role: Display tier. A diagnostic must also pass ``direction=NONE``.
+        raw_unit: Unit of the stored value, when it has one.
+        display_unit: Unit appended after a space, when the displayed value carries one.
+
+    Returns:
+        The validated baseline declaration.
+    """
+    return MetricSemantics(
+        semantic_id=semantic_id,
+        metric_name=metric_name,
+        role=role,
+        direction=direction,
+        raw_unit=raw_unit,
+        value_range=None,
+        display_kind=MetricDisplayKind.NUMBER,
+        display_unit=display_unit,
+        display_precision=display_precision,
+    )
+
+
 SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
     # --- quality: bounded ratios, higher is better ---------------------------------------
-    'quality.accuracy.ratio': MetricSemantics(
-        semantic_id='quality.accuracy.ratio',
-        metric_name='Accuracy',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.f1.ratio': MetricSemantics(
-        semantic_id='quality.f1.ratio',
-        metric_name='F1',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.precision.ratio': MetricSemantics(
-        semantic_id='quality.precision.ratio',
-        metric_name='Precision',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.recall.ratio': MetricSemantics(
-        semantic_id='quality.recall.ratio',
-        metric_name='Recall',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.exact_match.ratio': MetricSemantics(
-        semantic_id='quality.exact_match.ratio',
-        metric_name='Exact Match',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.pass_at_k.ratio': MetricSemantics(
-        semantic_id='quality.pass_at_k.ratio',
-        metric_name='Pass@k',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.score.ratio': MetricSemantics(
-        semantic_id='quality.score.ratio',
-        metric_name='Score',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.coverage.ratio': MetricSemantics(
-        semantic_id='quality.coverage.ratio',
-        metric_name='Coverage',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.win_rate.ratio': MetricSemantics(
-        semantic_id='quality.win_rate.ratio',
-        metric_name='Win Rate',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.iou.ratio': MetricSemantics(
-        semantic_id='quality.iou.ratio',
-        metric_name='IoU',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
+    'quality.accuracy.ratio': _percent('quality.accuracy.ratio', 'Accuracy'),
+    'quality.f1.ratio': _percent('quality.f1.ratio', 'F1'),
+    'quality.precision.ratio': _percent('quality.precision.ratio', 'Precision'),
+    'quality.recall.ratio': _percent('quality.recall.ratio', 'Recall'),
+    'quality.exact_match.ratio': _percent('quality.exact_match.ratio', 'Exact Match'),
+    'quality.pass_at_k.ratio': _percent('quality.pass_at_k.ratio', 'Pass@k'),
+    'quality.score.ratio': _percent('quality.score.ratio', 'Score'),
+    'quality.coverage.ratio': _percent('quality.coverage.ratio', 'Coverage'),
+    'quality.win_rate.ratio': _percent('quality.win_rate.ratio', 'Win Rate'),
+    'quality.iou.ratio': _percent('quality.iou.ratio', 'IoU'),
     # --- quality: text generation overlap and similarity ----------------------------------
-    'quality.bleu.ratio': MetricSemantics(
-        semantic_id='quality.bleu.ratio',
-        metric_name='BLEU',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.rouge.ratio': MetricSemantics(
-        semantic_id='quality.rouge.ratio',
-        metric_name='ROUGE',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.meteor.ratio': MetricSemantics(
-        semantic_id='quality.meteor.ratio',
-        metric_name='METEOR',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.similarity.ratio': MetricSemantics(
-        semantic_id='quality.similarity.ratio',
-        metric_name='Similarity',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
+    'quality.bleu.ratio': _percent('quality.bleu.ratio', 'BLEU'),
+    'quality.rouge.ratio': _percent('quality.rouge.ratio', 'ROUGE'),
+    'quality.meteor.ratio': _percent('quality.meteor.ratio', 'METEOR'),
+    'quality.similarity.ratio': _percent('quality.similarity.ratio', 'Similarity'),
     #: CIDEr is a consensus score that is not bounded by 1, so it renders as a plain number.
-    'quality.cider.unbounded': MetricSemantics(
-        semantic_id='quality.cider.unbounded',
-        metric_name='CIDEr',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=None,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit=None,
-        display_precision=3,
-    ),
+    'quality.cider.unbounded': _plain_number('quality.cider.unbounded', 'CIDEr', display_precision=3),
     # --- quality: bounded error rates, lower is better -----------------------------------
-    'quality.wer.ratio': MetricSemantics(
-        semantic_id='quality.wer.ratio',
-        metric_name='WER',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.LOWER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.cer.ratio': MetricSemantics(
-        semantic_id='quality.cer.ratio',
-        metric_name='CER',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.LOWER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'quality.mer.ratio': MetricSemantics(
-        semantic_id='quality.mer.ratio',
-        metric_name='MER',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.LOWER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
+    'quality.wer.ratio': _percent('quality.wer.ratio', 'WER', MetricDirection.LOWER_IS_BETTER),
+    'quality.cer.ratio': _percent('quality.cer.ratio', 'CER', MetricDirection.LOWER_IS_BETTER),
+    'quality.mer.ratio': _percent('quality.mer.ratio', 'MER', MetricDirection.LOWER_IS_BETTER),
     #: Share of failed or hallucinated outcomes: a graded result, unlike the diagnostic
     #: parse-status shares, so it keeps a direction.
-    'quality.error_rate.ratio': MetricSemantics(
-        semantic_id='quality.error_rate.ratio',
-        metric_name='Error Rate',
+    'quality.error_rate.ratio': _percent(
+        'quality.error_rate.ratio',
+        'Error Rate',
+        MetricDirection.LOWER_IS_BETTER,
         role=MetricRole.AUXILIARY,
-        direction=MetricDirection.LOWER_IS_BETTER,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
     ),
     # --- quality: official scales and unbounded judge scores ------------------------------
-    'quality.score.points_100': MetricSemantics(
-        semantic_id='quality.score.points_100',
-        metric_name='Score',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
+    'quality.score.points_100': _percent(
+        'quality.score.points_100',
+        'Score',
         value_range=_POINTS_100_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
         display_multiplier=1.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
     ),
-    'quality.judge_score.unbounded': MetricSemantics(
-        semantic_id='quality.judge_score.unbounded',
-        metric_name='Judge Score',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=None,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit=None,
+    'quality.judge_score.unbounded': _plain_number(
+        'quality.judge_score.unbounded',
+        'Judge Score',
         display_precision=2,
     ),
     #: Score assigned by a scoring model (aesthetic / preference / alignment scorers) whose
     #: scale is defined by the model rather than by the benchmark.
-    'quality.model_score.unbounded': MetricSemantics(
-        semantic_id='quality.model_score.unbounded',
-        metric_name='Model Score',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        value_range=None,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit=None,
+    'quality.model_score.unbounded': _plain_number(
+        'quality.model_score.unbounded',
+        'Model Score',
         display_precision=4,
     ),
     # --- perf: latency, lower is better ---------------------------------------------------
-    'perf.latency.seconds': MetricSemantics(
-        semantic_id='perf.latency.seconds',
-        metric_name='Latency',
-        role=MetricRole.PRIMARY,
+    'perf.latency.seconds': _plain_number(
+        'perf.latency.seconds',
+        'Latency',
+        display_precision=3,
         direction=MetricDirection.LOWER_IS_BETTER,
         raw_unit='s',
-        display_kind=MetricDisplayKind.NUMBER,
         display_unit='s',
-        display_precision=3,
     ),
-    'perf.latency.milliseconds': MetricSemantics(
-        semantic_id='perf.latency.milliseconds',
-        metric_name='Latency',
-        role=MetricRole.PRIMARY,
+    'perf.latency.milliseconds': _plain_number(
+        'perf.latency.milliseconds',
+        'Latency',
+        display_precision=2,
         direction=MetricDirection.LOWER_IS_BETTER,
         raw_unit='ms',
-        display_kind=MetricDisplayKind.NUMBER,
         display_unit='ms',
-        display_precision=2,
     ),
     # --- perf: throughput, higher is better -----------------------------------------------
-    'perf.throughput.tokens_per_second': MetricSemantics(
-        semantic_id='perf.throughput.tokens_per_second',
-        metric_name='Token Throughput',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
+    'perf.throughput.tokens_per_second': _plain_number(
+        'perf.throughput.tokens_per_second',
+        'Token Throughput',
+        display_precision=2,
         raw_unit='tok/s',
-        display_kind=MetricDisplayKind.NUMBER,
         display_unit='tok/s',
-        display_precision=2,
     ),
-    'perf.throughput.requests_per_second': MetricSemantics(
-        semantic_id='perf.throughput.requests_per_second',
-        metric_name='Request Throughput',
-        role=MetricRole.PRIMARY,
-        direction=MetricDirection.HIGHER_IS_BETTER,
-        raw_unit='req/s',
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit='req/s',
+    'perf.throughput.requests_per_second': _plain_number(
+        'perf.throughput.requests_per_second',
+        'Request Throughput',
         display_precision=2,
+        raw_unit='req/s',
+        display_unit='req/s',
     ),
     # --- diagnostic: never carries a direction nor a comparison group ----------------------
-    'diagnostic.count.items': MetricSemantics(
-        semantic_id='diagnostic.count.items',
-        metric_name='Count',
-        role=MetricRole.DIAGNOSTIC,
-        direction=MetricDirection.NONE,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit=None,
+    'diagnostic.count.items': _plain_number(
+        'diagnostic.count.items',
+        'Count',
         display_precision=0,
-    ),
-    'diagnostic.parse_status.ratio': MetricSemantics(
-        semantic_id='diagnostic.parse_status.ratio',
-        metric_name='Parse Status',
-        role=MetricRole.DIAGNOSTIC,
         direction=MetricDirection.NONE,
-        value_range=_RATIO_RANGE,
-        display_kind=MetricDisplayKind.PERCENT,
-        display_multiplier=100.0,
-        display_unit='%',
-        display_precision=_PERCENT_PRECISION,
-    ),
-    'diagnostic.unspecified': MetricSemantics(
-        semantic_id='diagnostic.unspecified',
-        metric_name='Unspecified',
         role=MetricRole.DIAGNOSTIC,
-        direction=MetricDirection.NONE,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_unit=None,
+    ),
+    'diagnostic.parse_status.ratio': _percent(
+        'diagnostic.parse_status.ratio',
+        'Parse Status',
+        MetricDirection.NONE,
+        role=MetricRole.DIAGNOSTIC,
+    ),
+    'diagnostic.unspecified': _plain_number(
+        'diagnostic.unspecified',
+        'Unspecified',
         display_precision=4,
+        direction=MetricDirection.NONE,
+        role=MetricRole.DIAGNOSTIC,
     ),
 }
 """Baseline identifier -> semantics. Keys equal the declared ``semantic_id``."""

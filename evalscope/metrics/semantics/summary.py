@@ -1,7 +1,8 @@
 """Primary metric references of a report collection.
 
-``Report`` rendering and the reports list API share this model so that the "report detail" and
-"report list" views describe a report's primary metric the same way.
+The reports list API describes each run through one of these per dataset, so the "report list"
+view names a run's primary metric with the same identity and semantics the report detail view
+reads off the report itself.
 
 Hard rule for v1: nothing here aggregates scores across benchmarks. A collection is presented as
 one reference per dataset -- ``dataset -> metric -> score``, each in its own native scale -- and

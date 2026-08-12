@@ -14,11 +14,15 @@ Directions follow what the field measures, not how it reads:
 
 Report v2 persists the resolved entries next to embedded perf values; perf archive APIs resolve
 the same registry for their own wire shapes. No numeric value is touched.
+
+This module is data only, so ``resolver`` can read it at import time. The functions that bind
+these entries to a service payload live in ``resolver`` and are re-exported from the package.
 """
 
-from typing import Any, Dict, Iterable
+from typing import Dict
 
-from evalscope.api.metric.semantics import MetricEntry, MetricRole
+from evalscope.api.metric.semantics import MetricRole
+from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 PERF_SEMANTICS: Dict[str, MetricEntry] = {
@@ -271,50 +275,4 @@ PERF_SEMANTICS.update({
 })
 """Archive summary table column label -> catalog entry."""
 
-__all__ = ['PERF_SEMANTICS', 'attach_perf_semantics', 'resolve_perf_semantics']
-
-
-def attach_perf_semantics(perf_metrics: Dict[str, Any]) -> Dict[str, Any]:
-    """Attach the complete semantics map to an embedded report perf payload."""
-    payload = dict(perf_metrics)
-    summary = payload.get('summary')
-    if not isinstance(summary, dict):
-        return payload
-
-    field_keys = ['n_samples']
-    for key in ('latency', 'ttft', 'tpot'):
-        if key in summary:
-            field_keys.append(key)
-    throughput = summary.get('throughput')
-    if isinstance(throughput, dict):
-        field_keys.extend(f'throughput.{key}' for key in throughput if f'throughput.{key}' in PERF_SEMANTICS)
-    usage = summary.get('usage')
-    if isinstance(usage, dict):
-        field_keys.extend(f'usage.{key}' for key in usage if f'usage.{key}' in PERF_SEMANTICS)
-    payload['metric_semantics'] = resolve_perf_semantics(field_keys)
-    return payload
-
-
-def resolve_perf_semantics(field_keys: Iterable[str]) -> Dict[str, dict]:
-    """Resolve the semantics of the perf fields a service response is about to return.
-
-    A field with no declaration degrades to a diagnostic, which renders the stored value without a
-    direction or unit and logs where to declare it.
-
-    Args:
-        field_keys: Field keys present in the response. They may come from any of the three perf
-            key spaces (the perf name constants, the stable API paths, or the archive summary
-            table labels); all three are declared in this module.
-
-    Returns:
-        Field key -> serialized ``MetricSemantics``, one entry per requested key.
-    """
-    from evalscope.metrics.semantics.resolver import get_semantics_resolver
-
-    resolver = get_semantics_resolver()
-    semantics: Dict[str, dict] = {}
-    for field_key in field_keys:
-        resolved = resolver.resolve_perf_field(field_key)
-        resolved.log_audit_messages()
-        semantics[field_key] = resolved.semantics.model_dump(mode='json')
-    return semantics
+__all__ = ['PERF_SEMANTICS']

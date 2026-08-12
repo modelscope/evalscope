@@ -4,7 +4,7 @@ import { formatTimestamp } from '@/utils/formatUtils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
-import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 interface ReportsTableProps {
@@ -82,7 +82,7 @@ export default function ReportsTable({
             const isSelected = selectedSet.has(ref)
             const model = report.model_name || report.model_id
             const dataset = datasetLabel(report)
-            const metricRefs = primaryMetricsOf(report)
+            const metricRefs = report.primary_metrics
             return (
               <tr
                 key={ref}

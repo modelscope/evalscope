@@ -18,6 +18,10 @@ inside ``evalscope.report`` import these names through a function-local lazy imp
 stays importable on its own and no ``report`` <-> ``metrics.semantics`` import cycle can form.
 Nothing in this package imports ``evalscope.report`` at module level.
 
+Inside the package the dependency order is strictly one-way, so no module here needs a lazy
+import: ``api.metric.semantics`` (contract) <- ``baselines`` <- ``entry`` <- ``catalog`` /
+``perf`` (data) <- ``resolver``.
+
 The surface is exactly what production imports. Everything else -- the catalog tables, the
 baseline table, the resolver internals and private formatting helpers -- stays in its owning
 module, so tests import those directly from ``catalog.py`` / ``baselines.py`` / ``resolver.py`` /
@@ -25,13 +29,21 @@ module, so tests import those directly from ``catalog.py`` / ``baselines.py`` / 
 """
 
 from evalscope.metrics.semantics.formatting import format_metric_label, format_metric_labels, format_metric_value
-from evalscope.metrics.semantics.resolver import get_semantics_resolver, hydrate_report_semantics
+from evalscope.metrics.semantics.resolver import (
+    attach_perf_semantics,
+    get_semantics_resolver,
+    hydrate_report_semantics,
+    resolve_perf_semantics,
+)
 from evalscope.metrics.semantics.summary import PrimaryMetricRef
 
 __all__ = [
     # resolution
     'get_semantics_resolver',
     'hydrate_report_semantics',
+    # perf field semantics binding
+    'attach_perf_semantics',
+    'resolve_perf_semantics',
     # primary metric references
     'PrimaryMetricRef',
     # formatting

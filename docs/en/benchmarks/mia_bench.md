@@ -23,7 +23,7 @@ MIA-Bench is a multimodal instruction-following benchmark designed to evaluate v
 ## Evaluation Notes
 
 - Default evaluation uses the **test** split (400 samples)
-- Primary metric: **total_score** (mean of per-sample normalized 0–1 total scores)
+- Primary metric: **judge_score** (mean of per-sample normalized 0–1 total scores)
 - Requires a capable LLM judge (e.g., GPT-4o, Qwen-Max) configured via `judge_model_args`
 - Judge strategy should be set to `JudgeStrategy.LLM`
 

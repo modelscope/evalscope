@@ -47,20 +47,20 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 - 11 editing task categories
 - LLM-based evaluation for semantic consistency and perceptual quality
 - Supports both English and Chinese instructions
-- Comprehensive scoring: Semantic Consistency, Perceptual Quality, Overall
+- Comprehensive scoring: `semantic_consistency`, `perceptual_similarity`, `normalized_score`
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
 - Evaluates on **train** split (contains test samples)
-- Metrics: **Semantic Consistency**, **Perceptual Similarity** (via LLM judge)
-- Overall score: geometric mean of SC and PQ scores
+- Metrics: **semantic_consistency**, **perceptual_similarity** (via LLM judge)
+- `normalized_score` is the official Overall: the geometric mean of the SC and PQ scores
 - Configure language via `extra_params['language']` (en/cn)
 """,
         tags=[Tags.IMAGE_EDITING],
         subset_list=SUBSET_LIST,
-        metric_list=['Semantic Consistency', 'Perceptual Similarity'],
-        primary_metric=MetricSelector(name='semantic_consistency'),
+        metric_list=['semantic_consistency', 'perceptual_similarity', 'normalized_score'],
+        primary_metric=MetricSelector(name='normalized_score'),
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -161,8 +161,13 @@ class GEditAdapter(ImageEditAdapter):
         PQ_score = min(PQ_dict['score'])
         O_score = math.sqrt(SC_score * PQ_score)
 
-        score.value = {'Semantic Consistency': SC_score, 'Perceptual Quality': PQ_score, 'Overall': O_score}
-        score.main_score_name = 'Overall'
+        # `normalized_score` is the official Overall: the geometric mean of SC and PQ.
+        score.value = {
+            'semantic_consistency': SC_score,
+            'perceptual_similarity': PQ_score,
+            'normalized_score': O_score,
+        }
+        score.main_score_name = 'normalized_score'
         score.metadata = {
             'SC_dict': SC_dict,
             'PQ_dict': PQ_dict,

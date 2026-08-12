@@ -9,7 +9,7 @@
 
 import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
 import type { MetricIdentity, MetricSemantics } from '@/domain/metric'
-import type { ReportData, ReportSummary } from '@/api/types'
+import type { ReportData } from '@/api/types'
 
 /** One metric of a dataset report, as returned by the API. */
 export type ReportMetric = ReportData['metrics'][number]
@@ -81,9 +81,4 @@ export function directionHintKey(semantics: MetricSemantics | null | undefined):
 export function metricLabel(ref: PrimaryMetricRef | null | undefined): string {
   if (!ref) return ''
   return formatMetricIdentityLabel(ref.identity, ref.semantics)
-}
-
-/** Primary metrics of a run. */
-export function primaryMetricsOf(report: ReportSummary): PrimaryMetricRef[] {
-  return report.primary_metrics
 }

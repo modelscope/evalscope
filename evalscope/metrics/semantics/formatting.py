@@ -45,6 +45,12 @@ Golden sample schema
     expected_raw     str            expected ``FormattedMetric.raw`` of the frontend primitive.
                                    The unscaled text is a frontend-only concern (it backs the
                                    value tooltips), so no backend function produces it.
+    identity         object         optional ``MetricIdentity.model_dump(mode='json')``. Present
+                                   only on samples that pin the label path.
+    expected_label   str            expected output of ``format_metric_label(identity, semantics,
+                                   legacy_name)`` and of the frontend
+                                   ``formatMetricIdentityLabel``. Required with ``identity``.
+    legacy_name      str            optional original v1 spelling a diagnostic label falls back to
 
 Consumers must ignore unknown keys: ``id`` and ``description`` are metadata. Samples deliberately
 stay inside the plain-decimal range (no exponential notation) so the expected strings are
@@ -52,6 +58,7 @@ unambiguous on both sides.
 """
 
 import math
+import re
 from collections import Counter
 from decimal import ROUND_FLOOR, Decimal
 from typing import Any, Dict, Iterable, Optional, Tuple, Union
@@ -77,6 +84,9 @@ _DIRECTION_ARROWS = {
 }
 
 _DIMENSION_DISPLAY_ORDER = {'target': 0, 'level': 1, 'scope': 2, 'ngram': 3, 'variant': 3, 'statistic': 4}
+
+#: First word character of each word, matching the frontend's ``/\b\w/`` label rule.
+_WORD_START = re.compile(r'\b\w')
 
 __all__ = [
     'MISSING_PLACEHOLDER',
@@ -129,9 +139,15 @@ def _join_unit(text: str, unit: Optional[str], separator: str) -> str:
 
 
 def _format_dimension(value: Union[str, int, float, bool]) -> str:
+    r"""Render one dimension value for a metric label.
+
+    Only the first letter of each word is raised. ``str.title()`` would also lower the rest, which
+    turns an acronym such as ``table_TEDS`` into ``Table Teds`` and makes this diverge from the
+    frontend ``formatMetricIdentityLabel``, whose ``/\b\w/`` replacement leaves the tail alone.
+    """
     if isinstance(value, bool):
         return 'Yes' if value else 'No'
-    return str(value).replace('_', ' ').title()
+    return _WORD_START.sub(lambda match: match.group(0).upper(), str(value).replace('_', ' '))
 
 
 def format_metric_label(

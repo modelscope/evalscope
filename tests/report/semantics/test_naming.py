@@ -41,11 +41,22 @@ def test_selector_does_not_match_boolean_to_numeric_dimension() -> None:
     assert not selector.matches(identity)
 
 
-def test_frozen_identity_dimensions_cannot_mutate() -> None:
+def test_frozen_identity_rejects_field_assignment() -> None:
     identity = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'target': 'answer'})
 
-    with pytest.raises(TypeError, match='immutable'):
-        identity.dimensions['target'] = 'figure'
+    with pytest.raises(ValidationError):
+        identity.dimensions = {'target': 'figure'}
+
+
+def test_identity_equality_and_hash_ignore_dimension_order() -> None:
+    # `dimensions` is a plain dict; what makes an identity stable is that equality and hash are
+    # derived from the normalized `sort_key`, not from the mapping's insertion order.
+    left = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'target': 'answer', 'level': 'overall'})
+    right = MetricIdentity(name='accuracy', aggregation='mean', dimensions={'level': 'overall', 'target': 'answer'})
+
+    assert left == right
+    assert hash(left) == hash(right)
+    assert len({left, right}) == 1
 
 
 @pytest.mark.parametrize('field,value', [('name', 'F1'), ('name', 'pass@1'), ('aggregation', 'Macro Mean')])

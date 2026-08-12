@@ -2,8 +2,9 @@
 
 This module defines the single authoritative data contract describing how one final
 report metric is interpreted and displayed (direction, unit, display rules, role).
-It is intentionally data-free: the semantics catalog, the legacy mapping table and
-the resolver live under ``evalscope.metrics.semantics``.
+It is data-free and depends on no table: the baseline table, the catalog entry model,
+the legacy mapping table and the resolver all live under ``evalscope.metrics.semantics``
+and import this module, never the other way round.
 """
 
 import json
@@ -11,7 +12,7 @@ import math
 import re
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Dict, FrozenSet, Optional, Tuple, Union
 from typing_extensions import Self
 
 METRIC_CONTRACT_VERSION = 1
@@ -19,6 +20,37 @@ METRIC_CONTRACT_VERSION = 1
 
 Scalar = Union[str, int, float, bool]
 _CANONICAL_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*$')
+
+KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset({
+    # No aggregation: the value is reported as a single number.
+    'identity',
+    # Averages.
+    'mean',
+    'macro_mean',
+    'micro_mean',
+    'weighted_mean',
+    'clipped_mean',
+    # k-sample aggregations. The k itself is `dimensions.k`, never part of this name.
+    'pass_at_k',
+    'pass_hat_k',
+    'vote_at_k',
+    'max',
+    # Benchmark-owned aggregations, computed inside an adapter's `aggregate_scores`.
+    'official',
+    'rate',
+})
+"""Aggregation names that may appear in a :class:`MetricIdentity`.
+
+This is the vocabulary of the identity's aggregation axis, which is *not* the aggregator registry:
+a registered aggregator writes its own ``name`` into every aggregate it produces, adapters that
+override ``aggregate_scores`` pass their own, and ``migrate_legacy_identity`` rewrites a few more.
+``mean_and_pass_at_k`` and friends are deliberately absent -- those aggregators inject
+``{metric}_pass@{k}`` value keys and then delegate to ``Mean``, so they emit ``mean``.
+
+It is enforced by a test rather than by this model: an aggregation name can be assembled from data,
+and refusing to build an identity would abort a whole run over a presentation detail. Adding an
+aggregation therefore means adding it here, deliberately.
+"""
 
 
 def _scalar_key(value: Scalar) -> Tuple[str, Scalar]:
@@ -28,32 +60,6 @@ def _scalar_key(value: Scalar) -> Tuple[str, Scalar]:
     if isinstance(value, (int, float)):
         return 'number', value
     return 'string', value
-
-
-class _FrozenDimensions(dict):
-    """JSON-dict representation whose contents cannot mutate after validation."""
-
-    @staticmethod
-    def _reject_mutation(*args, **kwargs) -> None:
-        raise TypeError('metric identity dimensions are immutable')
-
-    __setitem__ = _reject_mutation
-    __delitem__ = _reject_mutation
-    __ior__ = _reject_mutation
-    clear = _reject_mutation
-    pop = _reject_mutation
-    popitem = _reject_mutation
-    setdefault = _reject_mutation
-    update = _reject_mutation
-
-    def __hash__(self) -> int:
-        return hash(tuple(self.items()))
-
-    def __copy__(self) -> '_FrozenDimensions':
-        return self
-
-    def __deepcopy__(self, memo: Dict[int, Any]) -> '_FrozenDimensions':
-        return self
 
 
 def _validate_canonical_name(value: str, field_name: str) -> str:
@@ -96,7 +102,7 @@ class MetricIdentity(BaseModel):
                 # negative zero) so backend and frontend identity keys stay identical.
                 value = int(value)
             normalized[key] = value
-        return _FrozenDimensions(normalized)
+        return normalized
 
     @property
     def sort_key(self) -> Tuple[str, str, Tuple[Tuple[str, Tuple[str, Scalar]], ...]]:
@@ -290,102 +296,3 @@ class MetricSemantics(BaseModel):
             )
 
         return self
-
-
-#: Location the baseline table is declared at, used in error messages.
-BASELINE_TABLE_LOCATION = 'evalscope/metrics/semantics/baselines.py::SEMANTIC_BASELINES'
-
-
-def lookup_baseline(baseline_id: str) -> MetricSemantics:
-    """Resolve a baseline identifier into its ``MetricSemantics``.
-
-    The baseline table lives in ``evalscope.metrics.semantics.baselines`` and is imported
-    lazily here so this contract module stays data-free and free of an import cycle. Tests
-    that need a different table monkeypatch ``SEMANTIC_BASELINES`` rather than injecting a hook.
-
-    Args:
-        baseline_id: Key of the baseline entry, for example ``quality.accuracy.ratio``.
-
-    Returns:
-        The baseline semantics declaration.
-
-    Raises:
-        ValueError: If the baseline is not declared in the baseline table.
-    """
-    from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
-    baseline = SEMANTIC_BASELINES.get(baseline_id)
-    if baseline is None:
-        raise ValueError(f"unknown baseline '{baseline_id}': declare it at {BASELINE_TABLE_LOCATION}")
-    return baseline
-
-
-#: Fields of ``MetricEntry`` that override the referenced baseline when not ``None``.
-#: Derived from the contract so a newly added ``MetricSemantics`` field is never silently
-#: dropped from the override set (``contract_version`` is fixed, not overridable).
-_ENTRY_OVERRIDE_FIELDS = tuple(name for name in MetricSemantics.model_fields if name != 'contract_version')
-
-#: Fields a baseline-free entry must declare itself.
-_ENTRY_REQUIRED_WITHOUT_BASELINE = ('semantic_id', 'role', 'direction')
-
-
-class MetricEntry(BaseModel):
-    """Declarative catalog entry: a baseline reference plus optional field overrides."""
-
-    model_config = ConfigDict(frozen=True, extra='forbid')
-
-    baseline: Optional[str] = Field(default=None)
-    """Key into the baseline table. ``None`` means this entry is a full override."""
-
-    semantic_id: Optional[str] = Field(default=None)
-    metric_name: Optional[str] = Field(default=None)
-    role: Optional[MetricRole] = Field(default=None)
-    direction: Optional[MetricDirection] = Field(default=None)
-    raw_unit: Optional[str] = Field(default=None)
-    value_range: Optional[ValueRange] = Field(default=None)
-    display_kind: Optional[MetricDisplayKind] = Field(default=None)
-    display_multiplier: Optional[float] = Field(default=None)
-    display_unit: Optional[str] = Field(default=None)
-    display_precision: Optional[int] = Field(default=None)
-
-    @model_validator(mode='after')
-    def _check_full_override_is_complete(self) -> Self:
-        if self.baseline is not None:
-            return self
-
-        missing = [name for name in _ENTRY_REQUIRED_WITHOUT_BASELINE if getattr(self, name) is None]
-        if missing:
-            raise ValueError(
-                f"metric entry without 'baseline' must declare {', '.join(missing)}; "
-                f'either set baseline (see {BASELINE_TABLE_LOCATION}) or complete the override'
-            )
-        return self
-
-    def resolve(self, final_metric_name: str) -> MetricSemantics:
-        """Materialize this entry into a validated ``MetricSemantics``.
-
-        The referenced baseline provides the base values, every non-``None`` entry field
-        overrides it, and ``metric_name`` falls back to the final report metric name when
-        neither the entry nor the baseline declares one. Reconstructing ``MetricSemantics``
-        re-runs the full contract validation.
-
-        Args:
-            final_metric_name: Final report metric name this entry is keyed by.
-
-        Returns:
-            The resolved semantics of ``final_metric_name``.
-
-        Raises:
-            ValueError: If the referenced baseline is unknown.
-            pydantic.ValidationError: If the merged declaration violates the contract.
-        """
-        fields: Dict[str, Any] = {}
-        if self.baseline is not None:
-            fields.update(lookup_baseline(self.baseline).model_dump())
-
-        for name in _ENTRY_OVERRIDE_FIELDS:
-            value = getattr(self, name)
-            if value is not None:
-                fields[name] = value
-
-        fields.setdefault('metric_name', final_metric_name)
-        return MetricSemantics(**fields)

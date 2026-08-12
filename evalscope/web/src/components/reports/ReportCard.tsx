@@ -6,7 +6,7 @@ import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
 import { formatTimestamp } from '@/utils/formatUtils'
 import type { ReportSummary } from '@/api/types'
-import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 interface ReportCardProps {
@@ -22,7 +22,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
 
   const ref = formatReportRef(reportRefFromSummary(report))
   const formattedDate = formatTimestamp(report.timestamp)
-  const metricRefs = primaryMetricsOf(report)
+  const metricRefs = report.primary_metrics
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()

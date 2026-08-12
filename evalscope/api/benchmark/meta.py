@@ -147,8 +147,19 @@ class BenchmarkMeta:
         self._validate_primary_metric()
 
     def _normalize_metric_list(self) -> None:
-        """Normalize unambiguous legacy scorer aliases at the adapter boundary."""
-        aliases = {'acc', 'f1_score', 'F1', 'em', 'winrate', 'gpt_score', 'total_score', 'avg_score'}
+        """Normalize unambiguous legacy scorer aliases at the adapter boundary.
+
+        Only pure re-spellings are listed. An entry here must keep ``get_metric()`` working, since
+        a declared name is looked up in the metric registry: ``acc`` and ``exact_match`` are both
+        registered, and the rest name no scorer at all because their adapter computes its own
+        metrics. A name whose canonical form is *not* registered while the alias is would break
+        that lookup, so it must not be added.
+
+        Aliases that reassign meaning (``total_score`` -> ``judge_score``) are deliberately absent:
+        built-in adapters now emit canonical names directly, so listing them here would only hide
+        the reassignment warning a third-party adapter needs to see.
+        """
+        aliases = {'acc', 'f1_score', 'F1', 'em'}
         normalized = []
         for entry in self.metric_list:
             raw_name = entry if isinstance(entry, str) else next(iter(entry), '')

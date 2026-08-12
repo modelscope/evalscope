@@ -43,11 +43,11 @@ MIA-Bench is a multimodal instruction-following benchmark designed to evaluate v
 ## Evaluation Notes
 
 - Default evaluation uses the **test** split (400 samples)
-- Primary metric: **total_score** (mean of per-sample normalized 0–1 total scores)
+- Primary metric: **judge_score** (mean of per-sample normalized 0–1 total scores)
 - Requires a capable LLM judge (e.g., GPT-4o, Qwen-Max) configured via `judge_model_args`
 - Judge strategy should be set to `JudgeStrategy.LLM`
 """,
-        metric_list=['total_score'],
+        metric_list=['judge_score'],
         eval_split='test',
     )
 )
@@ -114,8 +114,8 @@ class MIABenchAdapter(VisionLanguageAdapter):
 
         if not components:
             logger.warning('No components found in sample metadata; assigning zero score.')
-            score.value = {'total_score': 0.0}
-            score.main_score_name = 'total_score'
+            score.value = {'judge_score': 0.0}
+            score.main_score_name = 'judge_score'
             return score
 
         # Build judge prompt
@@ -134,14 +134,15 @@ class MIABenchAdapter(VisionLanguageAdapter):
         # Parse scores
         score_dict = parse_mia_score(component_type, judge_response)
 
-        # Build score.value: total_score + per-component scores with unique keys
-        score_value: Dict[str, float] = {'total_score': score_dict.get('total_score', 0.0)}
+        # Build score.value: the judge score + per-component scores with unique keys. The parser
+        # still reports its own `total_score` key; only the emitted metric name is canonical.
+        score_value: Dict[str, float] = {'judge_score': score_dict.get('total_score', 0.0)}
         for i, ctype in enumerate(component_type):
             key = f'component_{i + 1}_{ctype}'
             score_value[key] = score_dict.get(ctype, 0.0)
 
         score.value = score_value
-        score.main_score_name = 'total_score'
+        score.main_score_name = 'judge_score'
         score.explanation = f'LLM judge response:\n{judge_response}'
         score.metadata = {
             'source': 'llm_judge',

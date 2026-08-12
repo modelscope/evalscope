@@ -52,8 +52,8 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 
 - The default evaluation split is `main`.
 - Configure `judge_model_args` for rubric scoring.
-- `normalized_score` is the primary weighted score (`total_score / max_score`); `pass_rate` is the unweighted
-  proportion of fully passed rubrics; `total_score` is the raw sum of passed rubric weights.
+- `normalized_score` is the primary weighted score (raw total / max score); `pass_rate` is the unweighted
+  proportion of fully passed rubrics; `judge_score` is the raw sum of passed rubric weights, reported as a diagnostic.
 - Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,
   PDF, and spreadsheet tools required by the tasks.
 """
@@ -80,7 +80,7 @@ Your final message may summarize what you produced, but files requested by the t
         default_subset='default',
         eval_split='main',
         prompt_template='{question}',
-        metric_list=['normalized_score', 'pass_rate', 'total_score'],
+        metric_list=['normalized_score', 'pass_rate', 'judge_score'],
         primary_metric=MetricSelector(name='normalized_score'),
     )
 )
@@ -214,7 +214,7 @@ class JobBenchAdapter(AgentLoopAdapter):
             value={
                 'normalized_score': 0.0,
                 'pass_rate': 0.0,
-                'total_score': 0.0,
+                'judge_score': 0.0,
             },
             metadata={
                 'official_score_computed': False,
@@ -245,7 +245,9 @@ class JobBenchAdapter(AgentLoopAdapter):
             value={
                 'normalized_score': float(scorecard['normalized_score']),
                 'pass_rate': float(scorecard['pass_rate']),
-                'total_score': float(scorecard['total_score']),
+                # Raw sum of passed rubric weights: an intermediate judge value, reassigned to a
+                # diagnostic through BENCHMARK_METRIC_OVERRIDES.
+                'judge_score': float(scorecard['total_score']),
             },
             metadata={
                 'judge_model': self.llm_judge.model_id,

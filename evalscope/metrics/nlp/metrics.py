@@ -150,7 +150,7 @@ class ANLS(Metric):
         return res
 
 
-@register_metric(name='bertscore')
+@register_metric(name=['bert_score', 'bertscore'])
 class BertScore(SingletonMetric):
 
     def _init_once(self, model_id_or_path: str = 'google-bert/bert-base-chinese', **kwargs):

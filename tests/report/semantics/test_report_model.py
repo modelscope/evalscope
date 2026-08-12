@@ -244,6 +244,57 @@ def test_agg_score_keeps_deprecated_aggregation_name_compatibility() -> None:
     assert AggScore(score=1.0, metric_name='accuracy').aggregation == 'identity'
 
 
+@pytest.mark.parametrize(
+    ('metric_name', 'expected'),
+    [
+        ('MyCustomMetric', MetricIdentity(name='my_custom_metric', aggregation='mean')),
+        ('weird.metric', MetricIdentity(name='weird_metric', aggregation='mean')),
+        ('Third Party Score', MetricIdentity(name='third_party_score', aggregation='mean')),
+    ],
+)
+def test_agg_score_degrades_unknown_non_canonical_names(metric_name: str, expected: MetricIdentity) -> None:
+    """A third-party metric name must be usable, not fatal.
+
+    Raising here would abort the whole run for any adapter that spells a metric in CamelCase, and
+    would make the resolver's diagnostic degradation unreachable for exactly those metrics.
+    """
+    score = AggScore(score=0.5, metric_name=metric_name, aggregation='mean')
+
+    assert score.identity == expected
+
+
+@pytest.mark.parametrize('metric_name', ['', '123', '!!!'])
+def test_agg_score_keeps_unnormalizable_names_reportable(metric_name: str) -> None:
+    """Nothing snake-caseable left: the value stays reportable and keeps its original spelling."""
+    score = AggScore(score=0.5, metric_name=metric_name, aggregation='mean')
+
+    assert score.identity == MetricIdentity(
+        name='legacy_metric', aggregation='identity', dimensions={'original_name': metric_name}
+    )
+
+
+@pytest.mark.parametrize(
+    ('metric_name', 'reinterpreted_as'),
+    [
+        ('total_score', 'judge_score'),
+        ('gpt_score', 'judge_score'),
+        ('avg_score', 'judge_score'),
+        ('score', 'normalized_score'),
+        ('overall', 'normalized_score'),
+    ],
+)
+def test_agg_score_logs_ambiguous_name_reassignment(
+    metric_name: str, reinterpreted_as: str, caplog_evalscope: pytest.LogCaptureFixture
+) -> None:
+    """Renames that change the measured concept are visible, not hidden behind a DeprecationWarning."""
+    score = AggScore(score=1.0, metric_name=metric_name, aggregation='mean')
+
+    assert score.metric_name == reinterpreted_as
+    warnings_text = '\n'.join(record.getMessage() for record in caplog_evalscope.records)
+    assert metric_name in warnings_text
+    assert reinterpreted_as in warnings_text
+
+
 def test_agg_score_migrates_general_qa_overlap_metrics() -> None:
     with pytest.warns(DeprecationWarning, match='legacy metric identity'):
         bleu = AggScore(score=0.5, metric_name='bleu-4', aggregation='mean')

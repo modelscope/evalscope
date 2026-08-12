@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 /**
  * Structural drift checks over `src/`.
  *
- * These guard the three failure modes that reviews kept catching by hand:
+ * These guard the four failure modes that reviews kept catching by hand:
  *
  * 1. **Phantom typography classes.** `type-*` utilities are declared in
  *    `index.css`; a typo such as `type-title-sm` silently renders as no class at
@@ -33,9 +33,6 @@ export interface SourceCheckResult {
   redundantTokenClasses: string[]
 }
 
-/** Files that legitimately live in `pages/` without being a route target. */
-const PAGE_ALLOWLIST = new Set<string>([])
-
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
@@ -51,7 +48,7 @@ const isTest = (path: string) => /\.(test|spec)\.tsx?$/.test(path)
  * Run every structural check against a source tree.
  *
  * @param srcRoot - Absolute path of the `src` directory.
- * @returns The findings; `ok` is true only when all three lists are empty.
+ * @returns The findings; `ok` is true only when all four lists are empty.
  */
 export function checkSource(srcRoot: string): SourceCheckResult {
   const files = walk(srcRoot)
@@ -91,7 +88,6 @@ export function checkSource(srcRoot: string): SourceCheckResult {
   for (const file of sources) {
     if (!file.startsWith(pagesDir)) continue
     const rel = relative(srcRoot, file)
-    if (PAGE_ALLOWLIST.has(rel)) continue
     const moduleName = rel.replace(/\.tsx?$/, '')
     if (!appSource.includes(`@/${moduleName}'`)) unroutedPages.push(rel)
   }

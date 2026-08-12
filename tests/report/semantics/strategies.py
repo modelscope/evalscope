@@ -15,9 +15,10 @@ import string
 from hypothesis import strategies as st
 from typing import Any, Dict, List, Optional, Tuple
 
-from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricEntry, MetricRole, ValueRange
+from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, ValueRange
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, METRIC_DEFINITIONS
+from evalscope.metrics.semantics.entry import MetricEntry
 
 #: Roles that carry an optimization direction.
 SCORED_ROLES: Tuple[MetricRole, ...] = (MetricRole.PRIMARY, MetricRole.AUXILIARY)

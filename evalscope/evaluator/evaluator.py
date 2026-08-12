@@ -534,7 +534,7 @@ class DefaultEvaluator(Evaluator):
         if self.task_config.collect_perf:
             perf_metrics = self.perf_collector.get_perf_dict()
             if perf_metrics:
-                from evalscope.metrics.semantics.perf import attach_perf_semantics
+                from evalscope.metrics.semantics import attach_perf_semantics
                 report.perf_metrics = attach_perf_semantics(perf_metrics)
 
         # Save the complete report to file

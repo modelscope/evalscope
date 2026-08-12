@@ -54,6 +54,7 @@ class Mean(Aggregator):
         return aggregated_scores
 
 
+@register_aggregation(name='clipped_mean')
 class ClippedMean(Mean):
 
     name = 'clipped_mean'

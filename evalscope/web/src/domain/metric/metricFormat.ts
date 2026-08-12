@@ -34,10 +34,12 @@ export const MISSING_PLACEHOLDER = '—'
 const DIAGNOSTIC_FALLBACK_PRECISION = 4
 
 /**
- * Decimals of the raw text, matching the backend's `RAW_VALUE_PRECISION`.
+ * Decimals of the raw text.
  *
  * The raw text never applies `display_multiplier`: it shows the stored value with its `raw_unit`,
- * so a tooltip or an export exposes what was actually recorded.
+ * so a tooltip or an export exposes what was actually recorded. It is a frontend-only concern --
+ * no backend surface renders an unscaled value -- which is why this constant has no backend
+ * counterpart and the golden samples pin it through `expected_raw`.
  */
 const RAW_VALUE_PRECISION = 4
 

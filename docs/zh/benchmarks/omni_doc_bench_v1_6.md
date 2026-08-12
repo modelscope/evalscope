@@ -3,33 +3,33 @@
 
 ## 概述
 
-OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、公式、表格、版面布局和阅读顺序。此适配器严格限定使用官方 v1.6 版本的数据和评分协议。
+OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、公式、表格、版面布局和阅读顺序。本适配器严格限定使用官方 v1.6 版本的数据和评分协议。
 
 ## 任务描述
 
 - **任务类型**：端到端文档解析
 - **输入**：完整的文档页面图像
-- **输出**：包含页面文本、公式、表格及阅读顺序的 Markdown 内容
-- **领域**：多语言学术、金融、教科书、报纸、杂志和演示文稿类文档
+- **输出**：包含页面文本、公式、表格和阅读顺序的 Markdown 格式内容
+- **领域**：多语言学术、金融、教科书、报纸、杂志及演示文稿类文档
 
 ## 主要特性
 
-- 使用来自 ModelScope 的最新 `OpenDataLab/OmniDocBench` 版本
-- 包含 1,651 页：1,355 个基础页面，外加 100 个公式复杂页、99 个版面复杂页和 97 个表格复杂页
+- 使用 ModelScope 上最新的 `OpenDataLab/OmniDocBench` 数据版本
+- 包含 1,651 页文档：1,355 页基础页面，外加 100 页公式复杂页面、99 页版面复杂页面和 97 页表格复杂页面
 - 采用官方 v1.6 数据格式；不支持其他版本及旧版 TSV 格式
-- 在可复用的 ms-enclave Docker 沙箱中，使用官方 v1.6 评估器对每页独立评分
+- 每页独立评分，使用官方 v1.6 评测器，在可复用的 ms-enclave Docker 沙箱中执行
 
-## 评估说明
+## 评测说明
 
-- 使用 MGAM `quick_match`、公式 CDM、表格 TEDS/TEDS-S、编辑距离（Edit distance）以及阅读顺序评估方法。
-- EvalScope 对各页面指标取平均值，并仅基于聚合后的文本、公式和表格组件计算 Overall 分数。
-- 所有指标均采用 EvalScope 报告要求的 0–1 评分范围。官方百分比形式可通过将分数乘以 100 获得。
-- 编辑距离（Edit-distance）分数越低越好；CDM、TEDS、TEDS-S 和 Overall 分数越高越好。
+- 使用 MGAM `quick_match`、公式 CDM、表格 TEDS/TEDS-S、编辑距离（Edit Distance）以及阅读顺序评估方法。
+- EvalScope 对每页指标取平均值，并仅基于聚合后的文本、公式和表格组件计算 Overall 分数。
+- 所有指标均采用 EvalScope 报告要求的 0–1 评分范围。如需官方百分比形式，可将分数乘以 100。
+- 编辑距离分数越低越好；CDM、TEDS、TEDS-S 和 Overall 分数越高越好。
 - 需要支持 amd64 架构的 Docker 环境及 `evalscope[sandbox]` 依赖。
 - 默认镜像已固定；允许覆盖自定义镜像，但不兼容的镜像将在评分阶段失败。
 - 沙箱池默认使用一个容器；仅在内存充足时才建议增加 `sandbox.pool_size`。
-- 官方镜像体积较大；请确保在评估前预留足够的磁盘空间和内存。
-- 本基准测试的分数不可与旧版 `omni_doc_bench` 集成直接比较。
+- 官方镜像体积较大，请确保评测前有足够的磁盘空间和内存。
+- 本版本得分不可与旧版 `omni_doc_bench` 集成直接比较。
 
 ## 属性
 
@@ -39,9 +39,9 @@ OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、�
 | **数据集ID** | [OpenDataLab/OmniDocBench](https://modelscope.cn/datasets/OpenDataLab/OmniDocBench/summary) |
 | **论文** | [Paper](https://github.com/opendatalab/OmniDocBench) |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `overall` |
+| **指标** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `normalized_score` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评测划分** | `test` |
 
 
 ## 数据统计
@@ -56,7 +56,7 @@ OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、�
 
 | 指标 | 值 |
 |--------|-------|
-| 图像总数 | 1,651 |
+| 总图像数 | 1,651 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 570x829 - 10142x14342 |
 | 格式 | jpeg, png |
@@ -64,7 +64,7 @@ OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、�
 
 ## 样例示例
 
-**子集**：`default`
+**子集**: `default`
 
 ```json
 {
@@ -126,7 +126,7 @@ OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、�
 
 ## 沙箱配置
 
-此基准测试需要沙箱环境以执行代码。
+此基准测试需要沙箱环境来执行代码。
 
 ```json
 {
@@ -156,7 +156,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets omni_doc_bench_v1_6 \
     --sandbox '{"enabled": true}' \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # 正式评测时请删除此行
 ```
 
 ### 使用 Python
@@ -171,7 +171,7 @@ task_cfg = TaskConfig(
     api_key='EMPTY_TOKEN',
     datasets=['omni_doc_bench_v1_6'],
     sandbox={'enabled': True},
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # 正式评测时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

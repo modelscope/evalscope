@@ -22,6 +22,7 @@ import {
   metricIdentityKey,
   roundHalfUp,
 } from './metricFormat'
+import type { MetricIdentity } from './metricFormat'
 import { metricSemanticsSchema } from './MetricSemantics'
 import type { MetricSemantics } from './MetricSemantics'
 import { arbSemantics, diagnosticSemantics, ratioSemantics, secondsSemantics } from './__arbitraries__'
@@ -169,8 +170,21 @@ describe('metric labels', () => {
 })
 
 describe('golden samples', () => {
+  /** One entry of `tests/report/semantics/golden_samples.json`, the shared formatting contract. */
+  interface GoldenSample {
+    id: string
+    semantics: MetricSemantics | null
+    value: number | null
+    expected_primary: string
+    expected_raw: string
+    /** Present only on samples that pin the label path. */
+    identity?: MetricIdentity
+    expected_label?: string
+    legacy_name?: string
+  }
+
   it('matches the backend formatter character for character', () => {
-    for (const sample of goldenSamples as Array<{ semantics: MetricSemantics | null; value: number | null; expected_primary: string }>) {
+    for (const sample of goldenSamples as GoldenSample[]) {
       expect(formatMetric(sample.value, sample.semantics).primary).toBe(sample.expected_primary)
     }
   })
@@ -181,6 +195,27 @@ describe('golden samples', () => {
     )
     expect(kinds.has('percent')).toBe(true)
     expect(kinds.has('number')).toBe(true)
+  })
+
+  it('renders the same label as the backend', () => {
+    // `formatMetricIdentityLabel` and the backend `format_metric_label` are a second pair of
+    // parallel implementations. Without this the two can drift -- they already had, over the
+    // casing of an acronym in a dimension value.
+    const labelled = (goldenSamples as GoldenSample[]).filter(
+      (sample) => sample.identity != null && sample.expected_label != null,
+    )
+    expect(labelled.length).toBeGreaterThan(0)
+    for (const sample of labelled) {
+      expect(formatMetricIdentityLabel(sample.identity!, sample.semantics, sample.legacy_name)).toBe(
+        sample.expected_label,
+      )
+    }
+  })
+
+  it('matches the backend raw text, which no backend surface renders', () => {
+    for (const sample of goldenSamples as GoldenSample[]) {
+      expect(formatMetric(sample.value, sample.semantics).raw).toBe(sample.expected_raw)
+    }
   })
 
   it('validates every backend contract sample through the canonical Zod schema', () => {

@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
-from evalscope.metrics.semantics.perf import resolve_perf_semantics
+from evalscope.metrics.semantics import resolve_perf_semantics
 from evalscope.perf.utils.perf_constants import Metrics
 from evalscope.perf.utils.report.summary import (
     build_basic_info,

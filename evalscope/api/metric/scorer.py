@@ -1,6 +1,5 @@
-import re
 import warnings
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, model_validator
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from evalscope.api.metric.semantics import MetricIdentity
@@ -128,30 +127,53 @@ class AggScore(BaseModel):
 
     @model_validator(mode='after')
     def _normalize_legacy_identity_fields(self) -> 'AggScore':
-        """Normalize known adapter aliases before an aggregate leaves the metric layer."""
-        from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
-        from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
+        """Normalize known adapter aliases before an aggregate leaves the metric layer.
 
-        canonical_pattern = re.compile(r'^[a-z][a-z0-9_]*$')
-        if (
-            not canonical_pattern.fullmatch(self.metric_name) and self.metric_name not in LEGACY_METRIC_MIGRATIONS
-            and not is_known_dynamic_legacy_name(self.metric_name)
-        ):
-            raise ValueError(
-                f'unknown non-canonical metric_name={self.metric_name!r}; declare a legacy migration or use snake_case'
+        An unknown non-canonical spelling is *not* an error: it is snake-cased into a usable
+        identity and left undeclared, so the resolver degrades it to ``diagnostic.unspecified``
+        and logs where to declare it. Rejecting it here would make any third-party adapter that
+        emits a CamelCase or dotted metric name fail the whole run, and would make the resolver's
+        documented degradation path unreachable for exactly the metrics it exists for.
+        """
+        from evalscope.metrics.semantics.identity import legacy_aliases_reassigning_meaning, migrate_legacy_identity
+
+        original_name = self.metric_name
+        try:
+            identity = migrate_legacy_identity(original_name, self.aggregation, self.dimensions)
+        except (ValueError, ValidationError):
+            # Nothing snake-caseable is left (empty, digits-only, punctuation-only). Keep the
+            # value reportable under a placeholder name and preserve the original spelling as a
+            # dimension so the report still says what was measured.
+            logger.warning(
+                f'metric_name={original_name!r} cannot be normalized into a canonical identity; '
+                f'reporting it as legacy_metric[original_name={original_name!r}]'
+            )
+            identity = MetricIdentity(
+                name='legacy_metric',
+                aggregation='identity',
+                dimensions={
+                    **self.dimensions, 'original_name': original_name
+                },
             )
 
-        identity = migrate_legacy_identity(self.metric_name, self.aggregation, self.dimensions)
-        if (self.metric_name, self.aggregation, self.dimensions) != (
+        if original_name in legacy_aliases_reassigning_meaning():
+            # A rename that changes the measured concept, so it is logged at warning level rather
+            # than through a DeprecationWarning that Python hides by default.
+            logger.warning(
+                f'metric_name={original_name!r} is ambiguous and was reinterpreted as '
+                f"'{identity.name}'; emit an explicit metric name to keep your own semantics"
+            )
+        elif (original_name, self.aggregation, self.dimensions) != (
             identity.name,
             identity.aggregation,
             identity.dimensions,
         ):
             warnings.warn(
-                f"legacy metric identity '{self.metric_name}' is deprecated; emit {identity.key}",
+                f"legacy metric identity '{original_name}' is deprecated; emit {identity.key}",
                 DeprecationWarning,
                 stacklevel=3,
             )
+
         self.metric_name = identity.name
         self.aggregation = identity.aggregation
         self.dimensions = identity.dimensions

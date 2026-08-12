@@ -8,11 +8,15 @@ historical reports; aliases in it never participate in v2 resolution.
 
 from typing import Dict, Tuple
 
-from evalscope.api.metric.semantics import BASELINE_TABLE_LOCATION, MetricEntry
+from evalscope.api.metric.semantics import MetricDirection
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
+from evalscope.metrics.semantics.entry import BASELINE_TABLE_LOCATION, MetricEntry
 
 #: Where to declare a canonical metric name, used in audit and validation messages.
 METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_DEFINITIONS'
+
+#: Where to declare a read-old alias, used in validation messages.
+LEGACY_MIGRATION_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::LEGACY_METRIC_MIGRATIONS'
 
 #: Where to declare a benchmark level collision override, used in validation messages.
 BENCHMARK_OVERRIDE_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::BENCHMARK_METRIC_OVERRIDES'
@@ -296,9 +300,11 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'is_correct',
         'large_puzzle_acc',
         'law_acc',
+        'math_acc',
         'medium_puzzle_acc',
         'multi_choice_acc',
         'number_acc',
+        'numeric_match',
         'official_mean_all_answers_correct',
         'overall_a_acc',
         'overall_f_acc',
@@ -356,7 +362,16 @@ _CANONICAL_NAMES_BY_BASELINE = {
     ),
     'quality.mer.ratio': ('mer', ),
     'quality.meteor.ratio': ('meteor', ),
-    'quality.model_score.unbounded': ('hps_v2_1_score', 'pick_score'),
+    'quality.model_score.unbounded': (
+        'blipv2_score',
+        'clipscore',
+        'fga_blip2_score',
+        'hps_v2_1_score',
+        'hpsv2_score',
+        'image_reward_score',
+        'mps',
+        'pick_score',
+    ),
     'quality.pass_at_k.ratio': (
         'main_problem_pass_rate',
         'pass_1',
@@ -391,6 +406,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'perceptual_similarity',
         'sem_score',
         'semantic_consistency',
+        'ssim',
         'table_teds',
         'table_teds_structure_only',
     ),
@@ -408,16 +424,36 @@ METRIC_DEFINITIONS.update({
     'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'total_wall_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+    # Peak signal-to-noise ratio is reported in decibels and has no upper bound (the
+    # implementation caps a perfect match at 100.0), so it renders as a plain number with a unit
+    # rather than as a percentage.
+    'psnr': MetricEntry(
+        baseline='quality.model_score.unbounded',
+        metric_name='PSNR',
+        raw_unit='dB',
+        display_unit='dB',
+        display_precision=2,
+    ),
+    # LPIPS is a perceptual *distance*: a smaller value means the images are more alike, which is
+    # the opposite of every other scorer sharing this baseline.
+    'lpips': MetricEntry(
+        baseline='quality.model_score.unbounded',
+        metric_name='LPIPS',
+        direction=MetricDirection.LOWER_IS_BETTER,
+    ),
 })
 
-AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {}
-
-# Aggregations whose meaning differs from the base metric are explicit overrides. Any ``k`` is
-# represented by ``dimensions.k`` and therefore needs no catalog enumeration.
-for _metric_name in ('accuracy', 'pass_rate', 'pass_at_k'):
-    AGGREGATION_SEMANTICS[(_metric_name, 'pass_at_k')] = MetricEntry(baseline='quality.pass_at_k.ratio')
-    AGGREGATION_SEMANTICS[(_metric_name, 'pass_hat_k')] = MetricEntry(baseline='quality.pass_at_k.ratio')
-    AGGREGATION_SEMANTICS[(_metric_name, 'vote_at_k')] = MetricEntry(baseline='quality.accuracy.ratio')
+AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
+    # An `accuracy` aggregated by pass@k / pass^k measures a pass ratio, not accuracy, so the
+    # display name and semantics follow the aggregation rather than the base metric. Any `k` is
+    # represented by `dimensions.k` and therefore needs no catalog enumeration.
+    #
+    # Only genuine meaning changes belong here. `pass_rate` / `pass_at_k` already resolve to
+    # `quality.pass_at_k.ratio` through METRIC_DEFINITIONS, and `vote_at_k` does not change what
+    # any of these metrics measures, so neither is restated.
+    ('accuracy', 'pass_at_k'): MetricEntry(baseline='quality.pass_at_k.ratio'),
+    ('accuracy', 'pass_hat_k'): MetricEntry(baseline='quality.pass_at_k.ratio'),
+}
 
 BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
@@ -441,7 +477,7 @@ def _validate_catalog() -> None:
     for name, entry in LEGACY_METRIC_MIGRATIONS.items():
         if entry.baseline is not None and entry.baseline not in SEMANTIC_BASELINES:
             raise ValueError(
-                f"metric name '{name}' in {METRIC_NAME_TABLE_LOCATION} references unknown baseline "
+                f"metric name '{name}' in {LEGACY_MIGRATION_TABLE_LOCATION} references unknown baseline "
                 f"'{entry.baseline}'; declare it at {BASELINE_TABLE_LOCATION}"
             )
         entry.resolve(name)
@@ -467,6 +503,7 @@ __all__ = [
     'AGGREGATION_SEMANTICS',
     'BENCHMARK_METRIC_OVERRIDES',
     'LEGACY_METRIC_MIGRATIONS',
+    'LEGACY_MIGRATION_TABLE_LOCATION',
     'METRIC_DEFINITIONS',
     'METRIC_NAME_TABLE_LOCATION',
 ]

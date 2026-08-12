@@ -32,7 +32,7 @@ The paper's **Mixed-audio = mean(speech_and_sound, speech_and_music)**.
 
 - The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.
 - To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository — disable it via `extra_params={'do_swap': False}` to halve judge cost.
-- Reported metric `gpt_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
+- Reported metric `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
 
 ```{warning}
 The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.

@@ -3,7 +3,7 @@ import os
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
-from evalscope.metrics.semantics.perf import resolve_perf_semantics
+from evalscope.metrics.semantics import resolve_perf_semantics
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer

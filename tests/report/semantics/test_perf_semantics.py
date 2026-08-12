@@ -10,7 +10,8 @@ import pytest
 from typing import Dict, FrozenSet
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole
-from evalscope.metrics.semantics.perf import PERF_SEMANTICS, attach_perf_semantics, resolve_perf_semantics
+from evalscope.metrics.semantics import attach_perf_semantics, resolve_perf_semantics
+from evalscope.metrics.semantics.perf import PERF_SEMANTICS
 from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 

@@ -472,5 +472,244 @@
     "value": 12.345,
     "expected_primary": "12.35 %",
     "expected_raw": "12.345 %"
+  },
+  {
+    "id": "label-no-dimensions",
+    "description": "Display name plus the direction arrow, no dimensions.",
+    "semantics": {
+      "semantic_id": "quality.accuracy.ratio",
+      "metric_name": "Accuracy",
+      "role": "primary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {}
+    },
+    "value": 0.8567,
+    "expected_primary": "85.7%",
+    "expected_raw": "0.8567",
+    "expected_label": "Accuracy ↑"
+  },
+  {
+    "id": "label-lower-is-better",
+    "description": "A lower_is_better metric carries a down arrow.",
+    "semantics": {
+      "semantic_id": "quality.wer.ratio",
+      "metric_name": "WER",
+      "role": "primary",
+      "direction": "lower_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "wer",
+      "aggregation": "mean",
+      "dimensions": {}
+    },
+    "value": 0.043,
+    "expected_primary": "4.3%",
+    "expected_raw": "0.043",
+    "expected_label": "WER ↓"
+  },
+  {
+    "id": "label-single-dimension",
+    "description": "One dimension is appended after a middle dot.",
+    "semantics": {
+      "semantic_id": "quality.accuracy.ratio",
+      "metric_name": "Accuracy",
+      "role": "primary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "threshold": 0.5
+      }
+    },
+    "value": 0.5,
+    "expected_primary": "50%",
+    "expected_raw": "0.5",
+    "expected_label": "Accuracy ↑ · 0.5"
+  },
+  {
+    "id": "label-dimension-order",
+    "description": "target/level/scope sort ahead of ngram/variant/statistic.",
+    "semantics": {
+      "semantic_id": "quality.rouge.ratio",
+      "metric_name": "ROUGE",
+      "role": "primary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "rouge",
+      "aggregation": "mean",
+      "dimensions": {
+        "statistic": "recall",
+        "variant": "l"
+      }
+    },
+    "value": 0.612,
+    "expected_primary": "61.2%",
+    "expected_raw": "0.612",
+    "expected_label": "ROUGE ↑ · L · Recall"
+  },
+  {
+    "id": "label-boolean-dimension",
+    "description": "A boolean dimension renders as Yes / No, never as True / False.",
+    "semantics": {
+      "semantic_id": "quality.accuracy.ratio",
+      "metric_name": "Accuracy",
+      "role": "primary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall",
+        "strict": true
+      }
+    },
+    "value": 0.5,
+    "expected_primary": "50%",
+    "expected_raw": "0.5",
+    "expected_label": "Accuracy ↑ · Overall · Yes"
+  },
+  {
+    "id": "label-uppercase-dimension",
+    "description": "Only the first letter of each word is raised, so an acronym keeps its case.",
+    "semantics": {
+      "semantic_id": "quality.similarity.ratio",
+      "metric_name": "Similarity",
+      "role": "primary",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "table_teds",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "table_TEDS"
+      }
+    },
+    "value": 0.77,
+    "expected_primary": "77%",
+    "expected_raw": "0.77",
+    "expected_label": "Similarity ↑ · Table TEDS"
+  },
+  {
+    "id": "label-diagnostic-keeps-legacy-name",
+    "description": "A diagnostic keeps the original v1 spelling instead of a generic label.",
+    "semantics": {
+      "semantic_id": "diagnostic.unspecified",
+      "metric_name": "Weird.Metric",
+      "role": "diagnostic",
+      "direction": "none",
+      "raw_unit": null,
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": null,
+      "display_unit": null,
+      "display_precision": 4,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "legacy_metric",
+      "aggregation": "identity",
+      "dimensions": {
+        "original_name": "Weird.Metric"
+      }
+    },
+    "value": 12.5,
+    "expected_primary": "12.5",
+    "expected_raw": "12.5",
+    "expected_label": "Weird.Metric",
+    "legacy_name": "Weird.Metric"
+  },
+  {
+    "id": "label-diagnostic-without-legacy-name",
+    "description": "Without a legacy name a diagnostic falls back to the identity key.",
+    "semantics": {
+      "semantic_id": "diagnostic.unspecified",
+      "metric_name": "total_tokens",
+      "role": "diagnostic",
+      "direction": "none",
+      "raw_unit": null,
+      "value_range": null,
+      "display_kind": "number",
+      "display_multiplier": null,
+      "display_unit": null,
+      "display_precision": 4,
+      "contract_version": 1
+    },
+    "identity": {
+      "name": "total_tokens",
+      "aggregation": "mean",
+      "dimensions": {}
+    },
+    "value": 1234.0,
+    "expected_primary": "1234",
+    "expected_raw": "1234",
+    "expected_label": "total_tokens:mean"
   }
 ]

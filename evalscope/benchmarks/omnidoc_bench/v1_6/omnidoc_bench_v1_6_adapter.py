@@ -75,7 +75,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         description=DESCRIPTION,
         dataset_id='OpenDataLab/OmniDocBench',
         paper_url='https://github.com/opendatalab/OmniDocBench',
-        metric_list=[*PAGE_METRICS, 'overall'],
+        metric_list=[*PAGE_METRICS, 'normalized_score'],
         primary_metric=MetricSelector(name='normalized_score'),
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
@@ -200,7 +200,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             aggregated.append(
                 AggScore(
                     score=overall,
-                    metric_name='overall',
+                    metric_name='normalized_score',
                     aggregation='official',
                     num=len(sample_scores),
                     ids=[sample_score.sample_id for sample_score in sample_scores],

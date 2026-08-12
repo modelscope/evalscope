@@ -337,7 +337,7 @@ class Report(BaseModel):
         from evalscope.metrics.semantics import hydrate_report_semantics
         report = hydrate_report_semantics(report)
         if report.perf_metrics:
-            from evalscope.metrics.semantics.perf import attach_perf_semantics
+            from evalscope.metrics.semantics import attach_perf_semantics
             report.perf_metrics = attach_perf_semantics(report.perf_metrics)
         return report
 

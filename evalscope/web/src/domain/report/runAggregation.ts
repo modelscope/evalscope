@@ -1,7 +1,7 @@
 import { metricIdentityKey } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
-import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
+import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 /**
@@ -177,7 +177,7 @@ export function aggregateRuns(
   }
 
   for (const report of reports) {
-    for (const ref of primaryMetricsOf(report)) {
+    for (const ref of report.primary_metrics) {
       if (ref.score == null) continue
       push(
         {
