@@ -64,4 +64,19 @@ describe('loadReportResponseSchema real report compatibility', () => {
 
     expect(result.success).toBe(true)
   })
+
+  it('accepts a reasoning block with a null reasoning_tokens, as emitted when the backend has no token count', () => {
+    // ContentReasoning.reasoning_tokens is `Optional[int] = None` on the Python side, which
+    // serializes as an explicit JSON `null` rather than an absent key. Reasoning models that
+    // don't report a token count (e.g. via completion_tokens_details) hit this on every turn.
+    const result = chatMessageSchema.safeParse({
+      role: 'assistant',
+      content: [
+        { type: 'reasoning', reasoning: 'thinking it through...', reasoning_tokens: null },
+        { type: 'text', text: 'final answer' },
+      ],
+    })
+
+    expect(result.success).toBe(true)
+  })
 })

@@ -146,7 +146,7 @@ export const contentBlockSchema = z.object({
   type: z.enum(['text', 'reasoning', 'image', 'audio', 'video', 'data']),
   text: z.string().optional(),
   reasoning: z.string().optional(),
-  reasoning_tokens: z.number().optional(),
+  reasoning_tokens: z.number().nullable().optional(),
   image: z.string().optional(),
   audio: z.string().optional(),
   video: z.string().optional(),
