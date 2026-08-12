@@ -1,8 +1,6 @@
-[
-  {
-    "id": "percent-ratio-basic",
-    "description": "Bounded ratio rendered as percent: multiplier 100, one decimal, no space before %.",
-    "semantics": {
+{
+  "semantics": {
+    "accuracy": {
       "semantic_id": "quality.accuracy.ratio",
       "metric_name": "Accuracy",
       "role": "primary",
@@ -18,14 +16,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.8567,
-    "expected_primary": "85.7%",
-    "expected_raw": "0.8567"
-  },
-  {
-    "id": "percent-ratio-positive-tie",
-    "description": "Exact .5 tie at precision 0 must round toward positive infinity (13, not banker's 12).",
-    "semantics": {
+    "accuracy_precision_0": {
       "semantic_id": "quality.accuracy.ratio",
       "metric_name": "Accuracy",
       "role": "primary",
@@ -41,60 +32,7 @@
       "display_precision": 0,
       "contract_version": 1
     },
-    "value": 0.125,
-    "expected_primary": "13%",
-    "expected_raw": "0.125"
-  },
-  {
-    "id": "percent-ratio-zero",
-    "description": "Zero renders as '0%', never '0.0%'.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "value": 0.0,
-    "expected_primary": "0%",
-    "expected_raw": "0"
-  },
-  {
-    "id": "percent-ratio-upper-bound",
-    "description": "Upper bound of a ratio renders as '100%'.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "value": 1.0,
-    "expected_primary": "100%",
-    "expected_raw": "1"
-  },
-  {
-    "id": "percent-ratio-trailing-zero-trimmed",
-    "description": "Trailing zeros of the rounded value are dropped: 90.0 renders as '90%'.",
-    "semantics": {
+    "f1": {
       "semantic_id": "quality.f1.ratio",
       "metric_name": "F1",
       "role": "primary",
@@ -110,14 +48,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.9,
-    "expected_primary": "90%",
-    "expected_raw": "0.9"
-  },
-  {
-    "id": "percent-official-points-100",
-    "description": "Official 0-100 scale: multiplier 1, so the stored value is not rescaled.",
-    "semantics": {
+    "points_100": {
       "semantic_id": "quality.score.points_100",
       "metric_name": "Score",
       "role": "primary",
@@ -133,14 +64,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 87.25,
-    "expected_primary": "87.3%",
-    "expected_raw": "87.25"
-  },
-  {
-    "id": "percent-lower-is-better-wer",
-    "description": "Direction never changes formatting: a lower-is-better ratio renders like any percent.",
-    "semantics": {
+    "wer": {
       "semantic_id": "quality.wer.ratio",
       "metric_name": "WER",
       "role": "primary",
@@ -156,14 +80,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.0432,
-    "expected_primary": "4.3%",
-    "expected_raw": "0.0432"
-  },
-  {
-    "id": "percent-diagnostic-parse-status",
-    "description": "Diagnostic percent metric: formatting is unchanged, only color scales are disabled.",
-    "semantics": {
+    "parse_status": {
       "semantic_id": "diagnostic.parse_status.ratio",
       "metric_name": "Parse Status",
       "role": "diagnostic",
@@ -179,14 +96,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.9876,
-    "expected_primary": "98.8%",
-    "expected_raw": "0.9876"
-  },
-  {
-    "id": "number-seconds",
-    "description": "Number with a unit gets a single space before the unit; raw text keeps raw_unit.",
-    "semantics": {
+    "seconds": {
       "semantic_id": "perf.latency.seconds",
       "metric_name": "Latency",
       "role": "primary",
@@ -199,34 +109,7 @@
       "display_precision": 3,
       "contract_version": 1
     },
-    "value": 1.23456,
-    "expected_primary": "1.235 s",
-    "expected_raw": "1.2346 s"
-  },
-  {
-    "id": "number-seconds-rounds-to-zero",
-    "description": "A value below the display precision renders as '0', never '-0' nor '0.000'.",
-    "semantics": {
-      "semantic_id": "perf.latency.seconds",
-      "metric_name": "Latency",
-      "role": "primary",
-      "direction": "lower_is_better",
-      "raw_unit": "s",
-      "value_range": null,
-      "display_kind": "number",
-      "display_multiplier": null,
-      "display_unit": "s",
-      "display_precision": 3,
-      "contract_version": 1
-    },
-    "value": 0.0001234,
-    "expected_primary": "0 s",
-    "expected_raw": "0.0001 s"
-  },
-  {
-    "id": "number-milliseconds",
-    "description": "Millisecond latency at two decimals with trailing zeros trimmed.",
-    "semantics": {
+    "milliseconds": {
       "semantic_id": "perf.latency.milliseconds",
       "metric_name": "Latency",
       "role": "primary",
@@ -239,14 +122,7 @@
       "display_precision": 2,
       "contract_version": 1
     },
-    "value": 250.0,
-    "expected_primary": "250 ms",
-    "expected_raw": "250 ms"
-  },
-  {
-    "id": "number-seconds-displayed-as-milliseconds",
-    "description": "A number display multiplier converts stored seconds to displayed milliseconds.",
-    "semantics": {
+    "ttft_ms": {
       "semantic_id": "perf.latency.seconds",
       "metric_name": "TTFT",
       "role": "primary",
@@ -259,14 +135,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.700828,
-    "expected_primary": "700.8 ms",
-    "expected_raw": "0.7008 s"
-  },
-  {
-    "id": "number-throughput-tokens-per-second",
-    "description": "Composite unit label is appended verbatim after one space.",
-    "semantics": {
+    "token_throughput": {
       "semantic_id": "perf.throughput.tokens_per_second",
       "metric_name": "Token Throughput",
       "role": "primary",
@@ -279,14 +148,7 @@
       "display_precision": 2,
       "contract_version": 1
     },
-    "value": 1234.5678,
-    "expected_primary": "1234.57 tok/s",
-    "expected_raw": "1234.5678 tok/s"
-  },
-  {
-    "id": "number-without-unit",
-    "description": "display_unit null: no unit and no trailing space.",
-    "semantics": {
+    "judge_score": {
       "semantic_id": "quality.judge_score.unbounded",
       "metric_name": "Judge Score",
       "role": "primary",
@@ -299,34 +161,7 @@
       "display_precision": 2,
       "contract_version": 1
     },
-    "value": 7.5,
-    "expected_primary": "7.5",
-    "expected_raw": "7.5"
-  },
-  {
-    "id": "number-negative-without-unit",
-    "description": "Negative non-ties keep their sign and round to the nearest value.",
-    "semantics": {
-      "semantic_id": "quality.judge_score.unbounded",
-      "metric_name": "Judge Score",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": null,
-      "display_kind": "number",
-      "display_multiplier": null,
-      "display_unit": null,
-      "display_precision": 2,
-      "contract_version": 1
-    },
-    "value": -3.456,
-    "expected_primary": "-3.46",
-    "expected_raw": "-3.456"
-  },
-  {
-    "id": "number-diagnostic-count",
-    "description": "Diagnostic count at precision 0 and without unit.",
-    "semantics": {
+    "count": {
       "semantic_id": "diagnostic.count.items",
       "metric_name": "Count",
       "role": "diagnostic",
@@ -339,53 +174,7 @@
       "display_precision": 0,
       "contract_version": 1
     },
-    "value": 12.0,
-    "expected_primary": "12",
-    "expected_raw": "12"
-  },
-  {
-    "id": "missing-value-with-semantics",
-    "description": "Missing value renders as the em dash placeholder even when semantics exist.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "value": null,
-    "expected_primary": "—",
-    "expected_raw": "—"
-  },
-  {
-    "id": "diagnostic-fallback-ratio",
-    "description": "No semantics: the raw value is shown at 4 decimals without any unit.",
-    "semantics": null,
-    "value": 0.87654321,
-    "expected_primary": "0.8765",
-    "expected_raw": "0.8765"
-  },
-  {
-    "id": "diagnostic-fallback-integer",
-    "description": "No semantics: an integral value keeps no decimals.",
-    "semantics": null,
-    "value": 42.0,
-    "expected_primary": "42",
-    "expected_raw": "42"
-  },
-  {
-    "id": "number-decimal-tie",
-    "description": "A decimal tie is preserved across languages instead of inheriting binary floating-point drift.",
-    "semantics": {
+    "diagnostic_precision_2": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Value",
       "role": "diagnostic",
@@ -398,14 +187,7 @@
       "display_precision": 2,
       "contract_version": 1
     },
-    "value": 1.005,
-    "expected_primary": "1.01",
-    "expected_raw": "1.005"
-  },
-  {
-    "id": "number-negative-half-tie",
-    "description": "Negative half ties round toward positive infinity on both the backend and frontend.",
-    "semantics": {
+    "diagnostic_precision_0": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Value",
       "role": "diagnostic",
@@ -418,22 +200,7 @@
       "display_precision": 0,
       "contract_version": 1
     },
-    "value": -0.5,
-    "expected_primary": "0",
-    "expected_raw": "-0.5"
-  },
-  {
-    "id": "diagnostic-fallback-missing-value",
-    "description": "Neither semantics nor value: the placeholder wins over the fallback precision.",
-    "semantics": null,
-    "value": null,
-    "expected_primary": "—",
-    "expected_raw": "—"
-  },
-  {
-    "id": "percent_kind_with_non_percent_unit",
-    "description": "percent display_kind glues its unit even when that unit is not '%': the separator comes from display_kind on both sides, never from the unit string.",
-    "semantics": {
+    "percent_pp": {
       "semantic_id": "quality.score.ratio",
       "metric_name": "Change",
       "role": "auxiliary",
@@ -449,14 +216,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "value": 0.5,
-    "expected_primary": "50pp",
-    "expected_raw": "0.5"
-  },
-  {
-    "id": "number_kind_with_percent_unit",
-    "description": "number display_kind separates its unit with one space even when the unit is '%': an already-0-100 value that is not declared percent must not lose the space.",
-    "semantics": {
+    "number_percent": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Cache Hit Rate",
       "role": "diagnostic",
@@ -469,103 +229,7 @@
       "display_precision": 2,
       "contract_version": 1
     },
-    "value": 12.345,
-    "expected_primary": "12.35 %",
-    "expected_raw": "12.345 %"
-  },
-  {
-    "id": "label-no-dimensions",
-    "description": "Display name plus the direction arrow, no dimensions.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "identity": {
-      "name": "accuracy",
-      "aggregation": "mean",
-      "dimensions": {}
-    },
-    "value": 0.8567,
-    "expected_primary": "85.7%",
-    "expected_raw": "0.8567",
-    "expected_label": "Accuracy ↑"
-  },
-  {
-    "id": "label-lower-is-better",
-    "description": "A lower_is_better metric carries a down arrow.",
-    "semantics": {
-      "semantic_id": "quality.wer.ratio",
-      "metric_name": "WER",
-      "role": "primary",
-      "direction": "lower_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "identity": {
-      "name": "wer",
-      "aggregation": "mean",
-      "dimensions": {}
-    },
-    "value": 0.043,
-    "expected_primary": "4.3%",
-    "expected_raw": "0.043",
-    "expected_label": "WER ↓"
-  },
-  {
-    "id": "label-single-dimension",
-    "description": "One dimension is appended after a middle dot.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "identity": {
-      "name": "accuracy",
-      "aggregation": "mean",
-      "dimensions": {
-        "threshold": 0.5
-      }
-    },
-    "value": 0.5,
-    "expected_primary": "50%",
-    "expected_raw": "0.5",
-    "expected_label": "Accuracy ↑ · 0.5"
-  },
-  {
-    "id": "label-dimension-order",
-    "description": "target/level/scope sort ahead of ngram/variant/statistic.",
-    "semantics": {
+    "rouge": {
       "semantic_id": "quality.rouge.ratio",
       "metric_name": "ROUGE",
       "role": "primary",
@@ -581,55 +245,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "identity": {
-      "name": "rouge",
-      "aggregation": "mean",
-      "dimensions": {
-        "statistic": "recall",
-        "variant": "l"
-      }
-    },
-    "value": 0.612,
-    "expected_primary": "61.2%",
-    "expected_raw": "0.612",
-    "expected_label": "ROUGE ↑ · L · Recall"
-  },
-  {
-    "id": "label-boolean-dimension",
-    "description": "A boolean dimension renders as Yes / No, never as True / False.",
-    "semantics": {
-      "semantic_id": "quality.accuracy.ratio",
-      "metric_name": "Accuracy",
-      "role": "primary",
-      "direction": "higher_is_better",
-      "raw_unit": null,
-      "value_range": {
-        "min": 0.0,
-        "max": 1.0
-      },
-      "display_kind": "percent",
-      "display_multiplier": 100.0,
-      "display_unit": "%",
-      "display_precision": 1,
-      "contract_version": 1
-    },
-    "identity": {
-      "name": "accuracy",
-      "aggregation": "mean",
-      "dimensions": {
-        "scope": "overall",
-        "strict": true
-      }
-    },
-    "value": 0.5,
-    "expected_primary": "50%",
-    "expected_raw": "0.5",
-    "expected_label": "Accuracy ↑ · Overall · Yes"
-  },
-  {
-    "id": "label-uppercase-dimension",
-    "description": "Only the first letter of each word is raised, so an acronym keeps its case.",
-    "semantics": {
+    "similarity": {
       "semantic_id": "quality.similarity.ratio",
       "metric_name": "Similarity",
       "role": "primary",
@@ -645,22 +261,7 @@
       "display_precision": 1,
       "contract_version": 1
     },
-    "identity": {
-      "name": "table_teds",
-      "aggregation": "mean",
-      "dimensions": {
-        "scope": "table_TEDS"
-      }
-    },
-    "value": 0.77,
-    "expected_primary": "77%",
-    "expected_raw": "0.77",
-    "expected_label": "Similarity ↑ · Table TEDS"
-  },
-  {
-    "id": "label-diagnostic-keeps-legacy-name",
-    "description": "A diagnostic keeps the original v1 spelling instead of a generic label.",
-    "semantics": {
+    "legacy_diagnostic": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Weird.Metric",
       "role": "diagnostic",
@@ -673,23 +274,7 @@
       "display_precision": 4,
       "contract_version": 1
     },
-    "identity": {
-      "name": "legacy_metric",
-      "aggregation": "identity",
-      "dimensions": {
-        "original_name": "Weird.Metric"
-      }
-    },
-    "value": 12.5,
-    "expected_primary": "12.5",
-    "expected_raw": "12.5",
-    "expected_label": "Weird.Metric",
-    "legacy_name": "Weird.Metric"
-  },
-  {
-    "id": "label-diagnostic-without-legacy-name",
-    "description": "Without a legacy name a diagnostic falls back to the identity key.",
-    "semantics": {
+    "total_tokens": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "total_tokens",
       "role": "diagnostic",
@@ -701,15 +286,293 @@
       "display_unit": null,
       "display_precision": 4,
       "contract_version": 1
+    }
+  },
+  "samples": [
+    {
+      "id": "percent-ratio-basic",
+      "semantics_ref": "accuracy",
+      "value": 0.8567,
+      "expected_primary": "85.7%",
+      "expected_raw": "0.8567"
     },
-    "identity": {
-      "name": "total_tokens",
-      "aggregation": "mean",
-      "dimensions": {}
+    {
+      "id": "percent-ratio-positive-tie",
+      "semantics_ref": "accuracy_precision_0",
+      "value": 0.125,
+      "expected_primary": "13%",
+      "expected_raw": "0.125"
     },
-    "value": 1234.0,
-    "expected_primary": "1234",
-    "expected_raw": "1234",
-    "expected_label": "total_tokens:mean"
-  }
-]
+    {
+      "id": "percent-ratio-zero",
+      "semantics_ref": "accuracy",
+      "value": 0.0,
+      "expected_primary": "0%",
+      "expected_raw": "0"
+    },
+    {
+      "id": "percent-ratio-upper-bound",
+      "semantics_ref": "accuracy",
+      "value": 1.0,
+      "expected_primary": "100%",
+      "expected_raw": "1"
+    },
+    {
+      "id": "percent-ratio-trailing-zero-trimmed",
+      "semantics_ref": "f1",
+      "value": 0.9,
+      "expected_primary": "90%",
+      "expected_raw": "0.9"
+    },
+    {
+      "id": "percent-official-points-100",
+      "semantics_ref": "points_100",
+      "value": 87.25,
+      "expected_primary": "87.3%",
+      "expected_raw": "87.25"
+    },
+    {
+      "id": "percent-lower-is-better-wer",
+      "semantics_ref": "wer",
+      "value": 0.0432,
+      "expected_primary": "4.3%",
+      "expected_raw": "0.0432"
+    },
+    {
+      "id": "percent-diagnostic-parse-status",
+      "semantics_ref": "parse_status",
+      "value": 0.9876,
+      "expected_primary": "98.8%",
+      "expected_raw": "0.9876"
+    },
+    {
+      "id": "number-seconds",
+      "semantics_ref": "seconds",
+      "value": 1.23456,
+      "expected_primary": "1.235 s",
+      "expected_raw": "1.2346 s"
+    },
+    {
+      "id": "number-seconds-rounds-to-zero",
+      "semantics_ref": "seconds",
+      "value": 0.0001234,
+      "expected_primary": "0 s",
+      "expected_raw": "0.0001 s"
+    },
+    {
+      "id": "number-milliseconds",
+      "semantics_ref": "milliseconds",
+      "value": 250.0,
+      "expected_primary": "250 ms",
+      "expected_raw": "250 ms"
+    },
+    {
+      "id": "number-seconds-displayed-as-milliseconds",
+      "semantics_ref": "ttft_ms",
+      "value": 0.700828,
+      "expected_primary": "700.8 ms",
+      "expected_raw": "0.7008 s"
+    },
+    {
+      "id": "number-throughput-tokens-per-second",
+      "semantics_ref": "token_throughput",
+      "value": 1234.5678,
+      "expected_primary": "1234.57 tok/s",
+      "expected_raw": "1234.5678 tok/s"
+    },
+    {
+      "id": "number-without-unit",
+      "semantics_ref": "judge_score",
+      "value": 7.5,
+      "expected_primary": "7.5",
+      "expected_raw": "7.5"
+    },
+    {
+      "id": "number-negative-without-unit",
+      "semantics_ref": "judge_score",
+      "value": -3.456,
+      "expected_primary": "-3.46",
+      "expected_raw": "-3.456"
+    },
+    {
+      "id": "number-diagnostic-count",
+      "semantics_ref": "count",
+      "value": 12.0,
+      "expected_primary": "12",
+      "expected_raw": "12"
+    },
+    {
+      "id": "missing-value-with-semantics",
+      "semantics_ref": "accuracy",
+      "value": null,
+      "expected_primary": "—",
+      "expected_raw": "—"
+    },
+    {
+      "id": "diagnostic-fallback-ratio",
+      "semantics_ref": null,
+      "value": 0.87654321,
+      "expected_primary": "0.8765",
+      "expected_raw": "0.8765"
+    },
+    {
+      "id": "diagnostic-fallback-integer",
+      "semantics_ref": null,
+      "value": 42.0,
+      "expected_primary": "42",
+      "expected_raw": "42"
+    },
+    {
+      "id": "number-decimal-tie",
+      "semantics_ref": "diagnostic_precision_2",
+      "value": 1.005,
+      "expected_primary": "1.01",
+      "expected_raw": "1.005"
+    },
+    {
+      "id": "number-negative-half-tie",
+      "semantics_ref": "diagnostic_precision_0",
+      "value": -0.5,
+      "expected_primary": "0",
+      "expected_raw": "-0.5"
+    },
+    {
+      "id": "diagnostic-fallback-missing-value",
+      "semantics_ref": null,
+      "value": null,
+      "expected_primary": "—",
+      "expected_raw": "—"
+    },
+    {
+      "id": "percent_kind_with_non_percent_unit",
+      "semantics_ref": "percent_pp",
+      "value": 0.5,
+      "expected_primary": "50pp",
+      "expected_raw": "0.5"
+    },
+    {
+      "id": "number_kind_with_percent_unit",
+      "semantics_ref": "number_percent",
+      "value": 12.345,
+      "expected_primary": "12.35 %",
+      "expected_raw": "12.345 %"
+    },
+    {
+      "id": "label-no-dimensions",
+      "semantics_ref": "accuracy",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "mean",
+        "dimensions": {}
+      },
+      "value": 0.8567,
+      "expected_primary": "85.7%",
+      "expected_raw": "0.8567",
+      "expected_label": "Accuracy ↑"
+    },
+    {
+      "id": "label-lower-is-better",
+      "semantics_ref": "wer",
+      "identity": {
+        "name": "wer",
+        "aggregation": "mean",
+        "dimensions": {}
+      },
+      "value": 0.043,
+      "expected_primary": "4.3%",
+      "expected_raw": "0.043",
+      "expected_label": "WER ↓"
+    },
+    {
+      "id": "label-single-dimension",
+      "semantics_ref": "accuracy",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "mean",
+        "dimensions": {
+          "threshold": 0.5
+        }
+      },
+      "value": 0.5,
+      "expected_primary": "50%",
+      "expected_raw": "0.5",
+      "expected_label": "Accuracy ↑ · 0.5"
+    },
+    {
+      "id": "label-dimension-order",
+      "semantics_ref": "rouge",
+      "identity": {
+        "name": "rouge",
+        "aggregation": "mean",
+        "dimensions": {
+          "statistic": "recall",
+          "variant": "l"
+        }
+      },
+      "value": 0.612,
+      "expected_primary": "61.2%",
+      "expected_raw": "0.612",
+      "expected_label": "ROUGE ↑ · L · Recall"
+    },
+    {
+      "id": "label-boolean-dimension",
+      "semantics_ref": "accuracy",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "mean",
+        "dimensions": {
+          "scope": "overall",
+          "strict": true
+        }
+      },
+      "value": 0.5,
+      "expected_primary": "50%",
+      "expected_raw": "0.5",
+      "expected_label": "Accuracy ↑ · Overall · Yes"
+    },
+    {
+      "id": "label-uppercase-dimension",
+      "semantics_ref": "similarity",
+      "identity": {
+        "name": "table_teds",
+        "aggregation": "mean",
+        "dimensions": {
+          "scope": "table_TEDS"
+        }
+      },
+      "value": 0.77,
+      "expected_primary": "77%",
+      "expected_raw": "0.77",
+      "expected_label": "Similarity ↑ · Table TEDS"
+    },
+    {
+      "id": "label-diagnostic-keeps-legacy-name",
+      "semantics_ref": "legacy_diagnostic",
+      "identity": {
+        "name": "legacy_metric",
+        "aggregation": "identity",
+        "dimensions": {
+          "original_name": "Weird.Metric"
+        }
+      },
+      "legacy_name": "Weird.Metric",
+      "value": 12.5,
+      "expected_primary": "12.5",
+      "expected_raw": "12.5",
+      "expected_label": "Weird.Metric"
+    },
+    {
+      "id": "label-diagnostic-without-legacy-name",
+      "semantics_ref": "total_tokens",
+      "identity": {
+        "name": "total_tokens",
+        "aggregation": "mean",
+        "dimensions": {}
+      },
+      "value": 1234.0,
+      "expected_primary": "1234",
+      "expected_raw": "1234",
+      "expected_label": "total_tokens:mean"
+    }
+  ]
+}

@@ -14,10 +14,8 @@ def test_html_uses_semantic_labels_values_and_raw_name_tooltips(
         'dataset_name': 'gsm8k',
         'dataset_pretty_name': 'GSM8K',
         'model_name': 'fixture-model',
-        'primary_metric_name': 'mean_acc',
         'metrics': [{
             'name': 'mean_acc',
-            'semantic_id': 'quality.accuracy.ratio',
             'categories': [{
                 'name': ['default'],
                 'subsets': [{

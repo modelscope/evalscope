@@ -21,14 +21,12 @@ from evalscope.api.metric.semantics import (
     MetricSelector,
     MetricSemantics,
 )
-from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.catalog import (
     AGGREGATION_SEMANTICS,
     BENCHMARK_METRIC_OVERRIDES,
     METRIC_DEFINITIONS,
     METRIC_NAME_TABLE_LOCATION,
 )
-from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.perf import PERF_SEMANTICS
 from evalscope.utils import get_logger
 
@@ -57,9 +55,6 @@ __all__ = [
 
 class SemanticsSource(str, Enum):
     """Which level of the fixed priority chain produced a resolution."""
-
-    REPORT_ANCHOR = 'report_anchor'
-    """A ``semantic_id`` anchor stored in the report, materialized from the baseline table."""
 
     BENCHMARK_OVERRIDE = 'benchmark_override'
     """A ``(benchmark, metric)`` collision override in the catalog."""
@@ -188,49 +183,18 @@ def attribute_metric_roles(
 
 
 class SemanticsResolver:
-    """Resolve canonical metric identities into base ``MetricSemantics``.
-
-    The resolver is stateless apart from its table references, so production can share the
-    process-wide :func:`get_semantics_resolver` instance. Tests and extensions can inject table
-    mappings explicitly without mutating module globals.
-    """
-
-    def __init__(
-        self,
-        perf_fields: Optional[Mapping[str, MetricEntry]] = None,
-        metric_definitions: Optional[Mapping[str, MetricEntry]] = None,
-        aggregation_semantics: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
-        benchmark_overrides: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
-        baselines: Optional[Mapping[str, MetricSemantics]] = None,
-    ) -> None:
-        """Build a resolver.
-
-        Args:
-            perf_fields: Perf field key -> entry, overriding ``PERF_SEMANTICS``.
-            metric_definitions: Canonical metric name -> entry, overriding ``METRIC_DEFINITIONS``.
-            aggregation_semantics: ``(metric, aggregation)`` -> entry overrides.
-            benchmark_overrides: ``(benchmark, metric)`` -> collision overrides.
-            baselines: Semantic anchor table used while reading historical reports.
-        """
-        self._perf_fields = PERF_SEMANTICS if perf_fields is None else perf_fields
-        self._metric_definitions = METRIC_DEFINITIONS if metric_definitions is None else metric_definitions
-        self._aggregation_semantics = AGGREGATION_SEMANTICS if aggregation_semantics is None else aggregation_semantics
-        self._benchmark_overrides = BENCHMARK_METRIC_OVERRIDES if benchmark_overrides is None else benchmark_overrides
-        self._baselines = SEMANTIC_BASELINES if baselines is None else baselines
+    """Resolve canonical metric identities into base ``MetricSemantics`` from the shipped tables."""
 
     def resolve(
         self,
         benchmark_name: str,
         identity: MetricIdentity,
-        embedded_semantic_id: Optional[str] = None,
     ) -> ResolvedSemantics:
         """Resolve one identity without assigning its report-level role.
 
         Args:
             benchmark_name: Benchmark (dataset) the metric belongs to.
             identity: Canonical identity emitted by an aggregator.
-            embedded_semantic_id: ``semantic_id`` anchor stored in the report. It is used when the
-                current catalog has no declaration for ``final_metric_name``.
         Returns:
             The resolution, never ``None`` and never raising. An undeclared name degrades to the
             diagnostic fallback and carries the audit messages naming where to declare it.
@@ -238,26 +202,20 @@ class SemanticsResolver:
         metric_name = identity.name
 
         # 1. Benchmark level collision override.
-        entry = self._benchmark_overrides.get((benchmark_name, metric_name))
+        entry = BENCHMARK_METRIC_OVERRIDES.get((benchmark_name, metric_name))
         if entry is not None:
             semantics = entry.resolve(metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.BENCHMARK_OVERRIDE)
 
         # 2. Aggregation-specific override, then the canonical name table.
-        entry = self._aggregation_semantics.get((metric_name, identity.aggregation))
+        entry = AGGREGATION_SEMANTICS.get((metric_name, identity.aggregation))
         if entry is None:
-            entry = self._metric_definitions.get(metric_name)
+            entry = METRIC_DEFINITIONS.get(metric_name)
         if entry is not None:
             semantics = entry.resolve(metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.METRIC_NAME)
 
-        # 3. Report anchor: retain a historical declaration whose name is no longer catalogued.
-        if embedded_semantic_id is not None:
-            baseline = self._baselines.get(embedded_semantic_id)
-            if baseline is not None:
-                return ResolvedSemantics(semantics=baseline, source=SemanticsSource.REPORT_ANCHOR)
-
-        # 4. Diagnostic fallback: the value is shown as stored and the gap is logged.
+        # 3. Diagnostic fallback: the value is shown as stored and the gap is logged.
         return ResolvedSemantics(
             semantics=diagnostic_fallback(metric_name),
             source=SemanticsSource.DIAGNOSTIC_FALLBACK,
@@ -275,7 +233,7 @@ class SemanticsResolver:
         Returns:
             The resolution, never ``None`` and never raising.
         """
-        entry = self._perf_fields.get(field_key)
+        entry = PERF_SEMANTICS.get(field_key)
         if entry is not None:
             return ResolvedSemantics(semantics=entry.resolve(field_key), source=SemanticsSource.METRIC_NAME)
 

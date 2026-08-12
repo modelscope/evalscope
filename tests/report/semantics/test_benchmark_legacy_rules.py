@@ -70,6 +70,7 @@ from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, m
         ('Bleu_4', 'general_qa', 'macro_mean', 'bleu:macro_mean[ngram=4]'),
         # A rule only applies to its own benchmark.
         ('overall_acc', 'unrelated_bench', 'identity', 'overall_acc:identity'),
+        ('table_TEDS_EN', 'unrelated_bench', 'identity', 'table_teds_en:identity'),
         ('Overall_aAcc', None, 'identity', 'overall_a_acc:identity'),
     ],
 )

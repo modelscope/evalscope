@@ -9,12 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector, MetricSemantics
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
-from evalscope.metrics.semantics.resolver import (
-    AUDIT_MESSAGE_PREFIX,
-    SemanticsResolver,
-    attribute_metric_roles,
-    get_semantics_resolver,
-)
+from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX, attribute_metric_roles, get_semantics_resolver
 from evalscope.utils import get_logger
 
 if TYPE_CHECKING:
@@ -40,10 +35,9 @@ def migrate_legacy_metric_payload(data: Any, benchmark_name: Optional[str] = Non
         return data
     migrated = dict(data)
     old_name = migrated.pop('name', 'legacy_metric')
-    semantic_id = migrated.pop('semantic_id', None)
     migrated['identity'] = migrate_legacy_report_identity(old_name, benchmark_name).model_dump()
     migrated['legacy_name'] = old_name
-    migrated.setdefault('semantics', MetricSemantics.diagnostic(old_name, semantic_id).model_dump())
+    migrated.setdefault('semantics', MetricSemantics.diagnostic(old_name).model_dump())
     return migrated
 
 
@@ -53,7 +47,6 @@ def migrate_legacy_report_payload(data: Any) -> Any:
         return data
     migrated = dict(data)
     migrated.pop('num', None)
-    migrated.pop('metric_schema_version', None)
     metrics = migrated.get('metrics', [])
     has_v2_metrics = bool(metrics) and all(
         hasattr(metric, 'identity') or isinstance(metric, dict) and 'identity' in metric for metric in metrics
@@ -63,16 +56,9 @@ def migrate_legacy_report_payload(data: Any) -> Any:
         return migrated
 
     dataset_name = migrated.get('dataset_name')
-    primary_name = migrated.pop('primary_metric_name', None)
     migrated.pop('score', None)
     migrated['schema_version'] = 2
-    migrated_metrics = []
-    for metric_data in metrics:
-        item = migrate_legacy_metric_payload(metric_data, benchmark_name=dataset_name)
-        migrated_metrics.append(item)
-        if primary_name == item.get('legacy_name'):
-            migrated['primary_metric_identity'] = item['identity']
-    migrated['metrics'] = migrated_metrics
+    migrated['metrics'] = [migrate_legacy_metric_payload(metric, benchmark_name=dataset_name) for metric in metrics]
     return migrated
 
 
@@ -104,28 +90,20 @@ def _meta_primary_metric(benchmark_name: str) -> Optional[MetricSelector]:
     return MetricSelector(name=identity.name)
 
 
-def hydrate_report_semantics(report: 'Report', resolver: Optional[SemanticsResolver] = None) -> 'Report':
+def hydrate_report_semantics(report: 'Report') -> 'Report':
     """Resolve and persist the semantics of a historical report in place."""
     metrics = list(getattr(report, 'metrics', None) or [])
     if not metrics:
         return report
 
     benchmark_name = getattr(report, 'dataset_name', '') or ''
-    active_resolver = resolver or get_semantics_resolver()
+    active_resolver = get_semantics_resolver()
     selector = _meta_primary_metric(benchmark_name)
-    persisted_primary = getattr(report, 'primary_metric_identity', None)
-    if persisted_primary is not None:
-        selector = MetricSelector(
-            name=persisted_primary.name,
-            aggregation=persisted_primary.aggregation,
-            dimensions=persisted_primary.dimensions,
-        )
 
     identities = [metric.identity for metric in metrics]
     semantics_by_identity: Dict[str, MetricSemantics] = {}
     for metric in metrics:
-        embedded_semantic_id = metric.semantics.semantic_id if metric.semantics else None
-        resolved = active_resolver.resolve(benchmark_name, metric.identity, embedded_semantic_id=embedded_semantic_id)
+        resolved = active_resolver.resolve(benchmark_name, metric.identity)
         resolved.log_audit_messages()
         semantics_by_identity[metric.identity.key] = resolved.semantics
         if not resolved.degraded and resolved.semantics.role is not MetricRole.DIAGNOSTIC:

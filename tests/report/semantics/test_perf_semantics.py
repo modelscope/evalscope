@@ -123,11 +123,6 @@ class TestResolvePerfField:
 
         assert resolved.degraded
         assert resolved.semantics.role is MetricRole.DIAGNOSTIC
-
-    def test_undeclared_field_reports_where_to_declare_it(self) -> None:
-        resolved = SemanticsResolver(perf_fields={}).resolve_perf_field(Metrics.AVERAGE_LATENCY)
-
-        assert resolved.degraded
         assert 'PERF_SEMANTICS' in '\n'.join(resolved.audit_messages)
 
 

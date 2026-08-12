@@ -5,8 +5,6 @@ from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector
-from evalscope.metrics.semantics.entry import MetricEntry
-from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Report
 
@@ -100,23 +98,6 @@ def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
     assert 'score' not in report.to_dict()
 
 
-def test_generator_accepts_an_injected_semantics_resolver() -> None:
-    resolver = SemanticsResolver(
-        metric_definitions={'vendor_metric': MetricEntry(baseline='quality.accuracy.ratio')},
-        aggregation_semantics={},
-        benchmark_overrides={},
-    )
-    report = ReportGenerator.generate_report(
-        {'test': [AggScore(score=0.75, metric_name='vendor_metric', aggregation='mean', num=1)]},
-        'model',
-        _StubAdapter('third_party', MetricSelector(name='vendor_metric')),
-        semantics_resolver=resolver,
-    )
-
-    assert report.primary_metric is not None
-    assert report.primary_metric.semantics.semantic_id == 'quality.accuracy.ratio'
-
-
 def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
     """A report whose primary metric cannot be resolved still reports its real sample count.
 
@@ -150,14 +131,11 @@ def test_v2_round_trip_uses_persisted_semantics_without_resolution() -> None:
 
 def test_v1_report_migrates_without_changing_values() -> None:
     report = Report.from_dict({
-        'metric_schema_version': 1,
         'dataset_name': 'conll2003',
-        'primary_metric_name': 'mean_f1_score',
         'score': 0.8,
         'metrics': [{
             'name': 'mean_f1_score',
             'score': 0.8,
-            'semantic_id': 'quality.f1.ratio',
             'categories': [],
         }],
     })
@@ -181,25 +159,6 @@ def test_unknown_legacy_metric_is_preserved_as_diagnostic() -> None:
     assert metric.score == 3.5
     assert metric.role is MetricRole.DIAGNOSTIC
     assert report.primary_metric is None
-
-
-def test_unknown_legacy_metric_uses_persisted_semantic_anchor() -> None:
-    report = Report.from_dict({
-        'dataset_name': 'third_party',
-        'metrics': [{
-            'name': 'vendor_metric',
-            'score': 0.75,
-            'semantic_id': 'quality.accuracy.ratio',
-            'categories': [],
-        }],
-    })
-
-    metric = report.metrics[0]
-    assert metric.identity == MetricIdentity(name='vendor_metric', aggregation='identity')
-    assert metric.score == 0.75
-    assert metric.semantics.semantic_id == 'quality.accuracy.ratio'
-    assert metric.role is MetricRole.PRIMARY
-    assert metric.legacy_name is None
 
 
 def test_unknown_noncanonical_legacy_name_uses_isolated_diagnostic_identity() -> None:

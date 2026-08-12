@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
-import goldenSamples from '../../../../../tests/report/semantics/golden_samples.json'
+import goldenFixtureJson from '../../../../../tests/report/semantics/golden_samples.json'
 import {
   MISSING_PLACEHOLDER,
   formatDifference,
@@ -173,10 +173,9 @@ describe('golden samples', () => {
   // Which branches the shared fixture must exercise is asserted once, on the backend side, in
   // `tests/report/semantics/test_golden_samples.py::TestGoldenSampleCoverage`. This suite only
   // checks that the TypeScript implementation agrees with the pinned expectations.
-  /** One entry of `tests/report/semantics/golden_samples.json`, the shared formatting contract. */
-  interface GoldenSample {
+  interface GoldenSampleSpec {
     id: string
-    semantics: MetricSemantics | null
+    semantics_ref: string | null
     value: number | null
     expected_primary: string
     expected_raw: string
@@ -186,8 +185,19 @@ describe('golden samples', () => {
     legacy_name?: string
   }
 
+  interface GoldenFixture {
+    semantics: Record<string, MetricSemantics>
+    samples: GoldenSampleSpec[]
+  }
+
+  const goldenFixture = goldenFixtureJson as unknown as GoldenFixture
+  const goldenSamples = goldenFixture.samples.map((sample) => ({
+    ...sample,
+    semantics: sample.semantics_ref === null ? null : goldenFixture.semantics[sample.semantics_ref],
+  }))
+
   it('matches the backend formatter character for character', () => {
-    for (const sample of goldenSamples as GoldenSample[]) {
+    for (const sample of goldenSamples) {
       expect(formatMetric(sample.value, sample.semantics).primary).toBe(sample.expected_primary)
     }
   })
@@ -196,7 +206,7 @@ describe('golden samples', () => {
     // `formatMetricIdentityLabel` and the backend `format_metric_label` are a second pair of
     // parallel implementations. Without this the two can drift -- they already had, over the
     // casing of an acronym in a dimension value.
-    const labelled = (goldenSamples as GoldenSample[]).filter(
+    const labelled = goldenSamples.filter(
       (sample) => sample.identity != null && sample.expected_label != null,
     )
     expect(labelled.length).toBeGreaterThan(0)
@@ -208,21 +218,21 @@ describe('golden samples', () => {
   })
 
   it('matches the backend raw text, which no backend surface renders', () => {
-    for (const sample of goldenSamples as GoldenSample[]) {
+    for (const sample of goldenSamples) {
       expect(formatMetric(sample.value, sample.semantics).raw).toBe(sample.expected_raw)
     }
   })
 
   it('validates every backend contract sample through the canonical Zod schema', () => {
-    for (const sample of goldenSamples) {
-      if (sample.semantics !== null) metricSemanticsSchema.parse(sample.semantics)
+    for (const semantics of Object.values(goldenFixture.semantics)) {
+      metricSemanticsSchema.parse(semantics)
     }
   })
 
   it('keeps the Zod field set aligned with the backend Pydantic wire contract', () => {
-    const backendContract = goldenSamples.find((sample) => sample.semantics !== null)?.semantics
+    const backendContract = Object.values(goldenFixture.semantics)[0]
     expect(backendContract).toBeTruthy()
-    expect(Object.keys(metricSemanticsSchema.shape).sort()).toEqual(Object.keys(backendContract!).sort())
+    expect(Object.keys(metricSemanticsSchema.shape).sort()).toEqual(Object.keys(backendContract).sort())
   })
 })
 

@@ -1,8 +1,9 @@
 """Golden-sample tests for the shared metric formatting contract.
 
 ``tests/report/semantics/golden_samples.json`` is read by this module and by the vitest suite
-``evalscope/web/src/domain/metric/metricFormat.test.ts``, so both implementations of the formatting
-rules are pinned to the same expected strings.
+``evalscope/web/src/domain/metric/metricFormat.test.ts``. Semantics payloads are declared once in
+its registry and samples refer to them by key, so both implementations stay pinned to the same
+wire contracts and expected strings without repeating each contract in every case.
 
 The sample model and its loader live here rather than in the shipped package: they are test
 scaffolding, and the only production consumer of the contract is ``format_metric_value``.
@@ -25,19 +26,13 @@ from evalscope.metrics.semantics.formatting import MISSING_PLACEHOLDER, format_m
 GOLDEN_SAMPLES_PATH = Path(__file__).with_name('golden_samples.json')
 
 
-class GoldenSample(BaseModel):
-    """One entry of ``golden_samples.json``, the backend/frontend formatting contract."""
+class GoldenSampleSpec(BaseModel):
+    """One compact sample entry before its semantics reference is resolved."""
 
     model_config = ConfigDict(frozen=True, extra='forbid')
 
     id: str
-    """Stable identifier, unique inside the file."""
-
-    description: str = Field(default='')
-    """Human readable note. Not part of the assertion contract."""
-
-    semantics: Optional[MetricSemantics] = Field(default=None)
-    """Semantics payload, or ``None`` to exercise the diagnostic fallback."""
+    semantics_ref: Optional[str] = Field(default=None)
 
     identity: Optional[MetricIdentity] = Field(default=None)
     """Identity the label is rendered from. ``None`` means the sample only pins value formatting."""
@@ -55,21 +50,49 @@ class GoldenSample(BaseModel):
     """Expected ``FormattedMetric.raw`` of the frontend primitive."""
 
     expected_label: Optional[str] = Field(default=None)
-    """Expected label of ``identity``, shared with the frontend ``formatMetricIdentityLabel``."""
+
+
+class GoldenFixture(BaseModel):
+    """Shared semantics registry and compact formatting cases."""
+
+    model_config = ConfigDict(frozen=True, extra='forbid')
+
+    semantics: Dict[str, MetricSemantics]
+    samples: List[GoldenSampleSpec]
+
+
+class GoldenSample(BaseModel):
+    """Materialized sample consumed by the backend assertions."""
+
+    model_config = ConfigDict(frozen=True, extra='forbid')
+
+    id: str
+    semantics: Optional[MetricSemantics] = None
+    identity: Optional[MetricIdentity] = None
+    legacy_name: Optional[str] = None
+    value: Optional[float] = None
+    expected_primary: str
+    expected_raw: str
+    expected_label: Optional[str] = None
 
 
 def load_golden_samples() -> List[GoldenSample]:
     """Load and validate the shared formatting golden samples, in file order."""
     with open(GOLDEN_SAMPLES_PATH, 'r', encoding='utf-8') as stream:
-        payload = json.load(stream)
-    return [GoldenSample(**sample) for sample in payload]
+        fixture = GoldenFixture(**json.load(stream))
+    return [
+        GoldenSample(
+            **sample.model_dump(exclude={'semantics_ref'}),
+            semantics=fixture.semantics[sample.semantics_ref] if sample.semantics_ref else None,
+        ) for sample in fixture.samples
+    ]
 
 
 SAMPLES: List[GoldenSample] = load_golden_samples()
 
 
-def load_raw_samples() -> List[Dict[str, Any]]:
-    """Read the golden samples file without model validation."""
+def load_raw_fixture() -> Dict[str, Any]:
+    """Read the golden fixture without model validation."""
     with open(GOLDEN_SAMPLES_PATH, 'r', encoding='utf-8') as stream:
         return json.load(stream)
 
@@ -93,11 +116,8 @@ class TestGoldenSampleFile:
 
     def test_semantics_payloads_are_json_dumps_of_the_contract(self) -> None:
         """The payload must equal ``MetricSemantics.model_dump(mode='json')`` so TS can consume it."""
-        for raw in load_raw_samples():
-            payload = raw['semantics']
-            if payload is None:
-                continue
-            assert payload == MetricSemantics(**payload).model_dump(mode='json'), f"sample {raw['id']}"
+        for key, payload in load_raw_fixture()['semantics'].items():
+            assert payload == MetricSemantics(**payload).model_dump(mode='json'), f'semantics {key}'
 
     def test_label_samples_declare_an_identity(self) -> None:
         """``expected_label`` is meaningless without the identity it is rendered from."""
@@ -106,7 +126,7 @@ class TestGoldenSampleFile:
 
     def test_identity_payloads_are_json_dumps_of_the_contract(self) -> None:
         """The payload must equal ``MetricIdentity.model_dump(mode='json')`` so TS can consume it."""
-        for raw in load_raw_samples():
+        for raw in load_raw_fixture()['samples']:
             payload = raw.get('identity')
             if payload is None:
                 continue
