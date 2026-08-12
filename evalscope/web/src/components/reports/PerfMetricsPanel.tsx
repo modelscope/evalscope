@@ -48,7 +48,7 @@ interface PercTableProps {
 }
 
 function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: PercTableProps) {
-  const fmt = (v: number | null) => fmtRaw(v === null ? null : v * scale, scale === 1000 ? 1 : 3)
+  const fmt = (v: number | null | undefined) => fmtRaw(v == null ? null : v * scale, scale === 1000 ? 1 : 3)
 
   const cols: { label: string; key: keyof PercentileStats; accent?: boolean }[] = [
     { label: 'Mean', key: 'mean', accent: true },
@@ -86,7 +86,7 @@ function PercTable({ stats, unit, accentCol = 'var(--accent)', scale = 1 }: Perc
                 c.accent ? 'text-[var(--text)] font-medium' : 'text-[var(--text-muted)]',
               )}
             >
-              {fmt(stats[c.key])}{stats[c.key] === null ? '' : unit}
+              {fmt(stats[c.key])}{stats[c.key] == null ? '' : unit}
             </td>
           ))}
         </tr>
