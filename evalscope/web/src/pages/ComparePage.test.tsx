@@ -5,10 +5,12 @@ import { MemoryRouter } from 'react-router-dom'
 import type { LoadReportResponse, ReportData } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 
-const useReportsMock = vi.hoisted(() => vi.fn())
+const useScanMock = vi.hoisted(() => vi.fn())
+const useReportCacheMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@/contexts/ReportsContext', () => ({
-  useReports: useReportsMock,
+  useScan: useScanMock,
+  useReportCache: useReportCacheMock,
 }))
 
 vi.mock('@/components/charts/PlotlyChart', () => ({
@@ -17,7 +19,7 @@ vi.mock('@/components/charts/PlotlyChart', () => ({
   ),
 }))
 
-vi.mock('@/components/single/ChatView', () => ({
+vi.mock('@/components/chat/ChatView', () => ({
   default: () => <div>Prediction</div>,
 }))
 
@@ -97,9 +99,8 @@ async function renderPage() {
 
 beforeEach(() => {
   localStorage.setItem('evalscope-locale', 'en')
-  useReportsMock.mockReturnValue({
-    rootPath: 'outputs',
-    setRootPath: vi.fn(),
+  useScanMock.mockReturnValue({ rootPath: 'outputs', scanToken: 0, setRootPath: vi.fn(), triggerScan: vi.fn() })
+  useReportCacheMock.mockReturnValue({
     loadMultiReports: vi.fn(async () => reports),
     loading: false,
     reportCache,
@@ -184,9 +185,7 @@ describe('ComparePage', () => {
       ...makeReport(runNames[index], score, 'lower_is_better'),
       _reportRef: runNames[index],
     }))
-    useReportsMock.mockReturnValue({
-      rootPath: 'outputs',
-      setRootPath: vi.fn(),
+    useReportCacheMock.mockReturnValue({
       loadMultiReports: vi.fn(async () => lowerReports),
       loading: false,
       reportCache: Object.fromEntries(lowerReports.map((report) => [report._reportRef, {

@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import TopNav from '@/components/nav/TopNav'
 import PathBar from '@/components/ui/PathBar'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 
 // Result routes share a single global "scan this directory" control.
@@ -11,7 +11,7 @@ const SCAN_ROUTES = new Set(['/dashboard', '/reports', '/performance'])
 export default function MainLayout() {
   const location = useLocation()
   const { t } = useLocale()
-  const { rootPath, triggerScan } = useReports()
+  const { rootPath, triggerScan } = useScan()
   const [visible, setVisible] = useState(true)
   const prevPath = useRef(location.pathname)
 

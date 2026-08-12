@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { useLocale } from '@/contexts/LocaleContext'
+import { formatTimestamp } from '@/utils/formatUtils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { DatasetLines, MetricLines, ScoreLines } from '@/components/reports/metricCells'
 import type { ReportSummary } from '@/api/types'
@@ -18,10 +19,6 @@ interface ReportsTableProps {
   onToggleSelect: (ref: string) => void
   /** Navigate to a run's detail view by reference. */
   onRowClick: (ref: string) => void
-}
-
-function formatTimestamp(ts: string): string {
-  return ts.replace('T', ' ').slice(0, 16)
 }
 
 /**
@@ -128,7 +125,7 @@ export default function ReportsTable({
                   </span>
                 </td>
                 <td className="px-4 py-3 text-[var(--text-muted)] font-mono text-xs whitespace-nowrap">
-                  {report.timestamp ? formatTimestamp(report.timestamp) : '—'}
+                  {formatTimestamp(report.timestamp) || '—'}
                 </td>
               </tr>
             )

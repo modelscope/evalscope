@@ -469,28 +469,6 @@ body {
 .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 
-/* KPI gradient cards */
-.kpi-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
-}
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--gradient-surface);
-  pointer-events: none;
-}
-.kpi-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border-strong);
-}
-
 /* ------------------------------------------------------------------ */
 /* Touch targets — DESIGN.md §Touch Targets (Req 7.4, 12.5, 12.7)      */
 /* On coarse pointers, expand a control's tappable region to >=44x44   */

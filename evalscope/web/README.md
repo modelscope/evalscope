@@ -13,10 +13,11 @@ hand-written eyebrow class strings.
 | Import | Purpose | DESIGN.md ref |
 |---|---|---|
 | `import ScoreBadge from '@/components/ui/ScoreBadge'` | Bold percentage / boolean pill | `{components.score-badge}` |
-| `import KpiCard from '@/components/ui/KpiCard'` | Dashboard hero metric tile | `{components.kpi-card}` |
+| `import KpiStrip from '@/components/ui/KpiStrip'` | Page-opening counter strip (`hero` / `dense` / `inline` densities) | `{components.kpi-strip}` |
 | `import Eyebrow from '@/components/ui/Eyebrow'` | UPPERCASE section eyebrow label | `{typography.label-xs}` |
 | `import ChatBubble from '@/components/ui/ChatBubble'` | 5-role chat surface (user / bot / tool / reasoning / system) | `{components.chat-bubble}` |
 | `import EmptyState from '@/components/common/EmptyState'` | Empty / welcome state — 64×64 icon tile + 2 lines | `{components.empty-state}` |
+| `import MarkdownRenderer from '@/components/ui/MarkdownRenderer'` | Markdown + math + syntax-highlighted code | — |
 | `import PathBar from '@/components/ui/PathBar'` | Dashboard "scan this directory" input row | `{components.path-bar}` |
 
 ### Typography utility classes (defined in `src/index.css`)
@@ -49,8 +50,22 @@ gradient (`hsl(score × 120, 70%, 45%)`).
 - No inline `style={{ background: 'var(--xxx)' }}` when a Tailwind class would do.
 - No hand-written hex literals or `rgba(129,109,248,…)` glows — go through `--shadow-glow*`.
 - `text-[var(--text-dim)]` requires an inline `// text-dim allowed` comment per DESIGN.md §Text.
-- Prediction comparison tops out at 3 model slots (`MAX_COMPARE_SLOTS` in `domain/compare/compareModel.ts`) — adding
+- Prediction comparison tops out at 3 model slots (`MAX_COMPARE_SLOTS` in `domain/compare/selection.ts`) — adding
   a 4th brand color violates DESIGN.md §Compare Slots. Run selection and score comparison are unbounded.
+
+### Layering
+
+| Directory | Holds |
+|---|---|
+| `src/domain/` | Pure data logic — no React, DOM, network or clock. Enforced by `no-restricted-imports` in `eslint.config.js`. |
+| `src/components/ui/` | Design-system primitives with no business semantics (Button, Table, Skeleton, MarkdownRenderer, VirtualList…). |
+| `src/components/common/` | Composites that do carry business semantics (`DataTable` reads `MetricSemantics`, `EmptyStateSystem` knows the routes). |
+| `src/components/<feature>/` | Feature components: `chat`, `compare`, `reports`, `perf`, `tasks`, `eval`, `dashboard`, `charts`, `nav`. |
+| `src/pages/` | Route targets only — one file per entry in `App.tsx`. A tab or panel belongs to its feature directory. |
+| `src/hooks/` | Cross-feature React hooks (`useAsyncResource` owns every data read). |
+
+`npm run drift` enforces the mechanical parts of this: undefined `type-*` classes, design-system
+components with no importer, and `pages/` modules the router never renders.
 
 ---
 

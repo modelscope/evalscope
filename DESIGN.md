@@ -366,7 +366,7 @@ Antialiasing is forced (`-webkit-font-smoothing: antialiased`). No web font is l
 
 | Token | Size | Weight | Tracking | Use |
 |---|---|---|---|---|
-| `{typography.display-xl}` | 24px | 700 | tight | KPI value, hero number (dashboard `{components.kpi-card}`). |
+| `{typography.display-xl}` | 24px | 700 | tight | Hero number where a single figure is the whole message. |
 | `{typography.title-md}` | 16px | 700 | normal | Card-title model name, group-header titles, brand wordmark. |
 | `{typography.body-sm}` | 14px | 400 / 500 | normal | Default body text, button-md label, table-cell text, paragraph copy. |
 | `{typography.label-xs}` | 12px | 600 | wider | **UPPERCASE** card-section header, form label, badge text — the brand's signature eyebrow. |
@@ -476,7 +476,7 @@ The *visual* chrome may be smaller than the *hit area*, and only the hit area is
 
 - **Backdrop-blur**: 12 px on `{colors.surface-glass}` for the sticky top-nav. This is the only blur effect in the system.
 - **Hairline gradient line**: The top of the nav draws a 1-px `transparent → {colors.accent} → transparent` line at 40 % opacity. The closest the design comes to "decoration."
-- **Card lift**: Hover lifts L1/L2 cards `-2px` (`{components.card-hover}`) or `-3px` (`{components.kpi-card}`), simultaneously upgrading their shadow ladder one step.
+- **Card lift**: Hover lifts L1/L2 cards `-2px` (`{components.card-hover}`), simultaneously upgrading their shadow ladder one step.
 - **Gradient text**: `.gradient-text` and `.gradient-text-accent` utilities apply `{gradients.brand}` / `{gradients.accent}` to text via `background-clip: text`. Use sparingly — reserved for hero brand moments, never for body or table cells.
 
 ### Shapes
@@ -534,8 +534,9 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 **`{components.card-hover}`** — utility applied to clickable cards.
 - Adds `-2 px translateY` on hover, upgrades shadow to `{shadows.lg}` (L4), strengthens border to `{colors.border-strong}`. All transitions in `{tokens.transition}`.
 
-**`{components.kpi-card}`** — the dashboard hero metric tile.
-- Same chrome as `{components.card}` but layered with `{gradients.surface}` (subtle violet wash, 5-8 % alpha) via `::before`. Hosts a 40 × 40 `{rounded.md}` icon tile filled with `{colors.accent-dim}` and inked in `{colors.accent}`. Hover lifts `-3 px` and ramps to L4 shadow. Stagger-animated on first paint (60 ms steps).
+**`{components.kpi-strip}`** — the counter strip that opens a page.
+- One joined surface, not a row of free-floating tiles: the counters are the same kind of quantity, so separating them into individually lifting cards would assert a distinction that does not exist. Chrome is `{components.card}` (`{colors.bg-card}` fill, 1-px `{colors.border}`, `{rounded.md}`, `{shadows.sm}`) wrapping hairline-divided cells; the strip clips its corners so the dividers never break the outline. A cell is 20-px padded (`{spacing.xl}`) in the `hero` density and holds an optional 32 × 32 `{rounded.sm}` icon tile filled `{colors.accent-dim}` / inked `{colors.accent}`, a `{typography.title-md}` value and a `{typography.body-xs}` label. Interactive cells are buttons and tint to `{colors.bg-card2}` on hover — the strip itself never lifts or transforms.
+- Two denser variants share the same contract: `dense` (in-panel metric overview — 2/3/4-up grid of gap-px cells, 18-px value, 10-px label, optional per-cell accent colour) and `inline` (identity/config row — flexible cells with a 140-px floor that wrap, `{typography.body-sm-strong}` value over a `{typography.table-xs}` uppercase label, no icons).
 
 **`{components.card-glass}`** — the glassmorphic surface used by the top-nav.
 - `{colors.surface-glass}` background + 12-px backdrop-blur. Always combined with a 1-px hairline border. Reserve for sticky-positioned surfaces — diffuse blur is performance-sensitive.
@@ -595,7 +596,7 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 
 ### Signature Components
 
-**`{components.kpi-card}`** — see *Cards & Containers* above.
+**`{components.kpi-strip}`** — see *Cards & Containers* above.
 
 **`{components.eval-run-card}`** — a full-width borderless button-styled card row.
 - Two rows of content: bold model name + colored score pill on the right; second row has a mono timestamp + a wrap of `{components.score-chip}` entries (one per benchmark). Hover only changes border tint (no lift).
@@ -670,19 +671,19 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
   - **disabled:** *n/a* — non-interactive cards have no disabled state; a disabled clickable card falls back to the button disabled contract.
   - **error:** *n/a* — error is expressed by the content inside (e.g. `{components.empty-state}` load-error), not the card shell.
 
-#### KPI strip / `{components.kpi-card}` — hero metric tiles
+#### KPI strip / `{components.kpi-strip}` — page-opening counters
 
 - **Responsive contract:**
   - **Mobile < 640 & Small 640–767:** 2-up grid (`grid-cols-2`).
-  - **Tablet 768–1023:** 2-up grid retained; tiles full-width of their column.
-  - **Desktop 1024–1279 & Wide ≥ 1280:** 4-up grid (`lg:grid-cols-4`). Each tile keeps `{rounded.md}` and 20-px padding at every breakpoint; the value uses `tabular-nums` and wraps per R-WRAP rather than truncating.
+  - **Tablet 768–1023:** 2-up grid retained; cells full-width of their column.
+  - **Desktop 1024–1279 & Wide ≥ 1280:** 4-up grid (`lg:grid-cols-4`). Each cell keeps 20-px padding at every breakpoint; the value uses `tabular-nums` and truncates with the full text carried in `title` rather than reflowing the strip.
 - **State contract:**
-  - **default:** `{components.card}` chrome + `{gradients.surface}` wash; 40 × 40 accent icon tile.
-  - **hover:** lifts −3 px, ramps to L4 shadow.
-  - **focus:** per R-FOCUS when the tile is interactive; *n/a* for display-only tiles.
+  - **default:** `{components.card}` chrome around hairline-divided cells; optional 32 × 32 accent icon tile per cell.
+  - **hover:** interactive cells tint to `{colors.bg-card2}`; the strip does not lift or transform.
+  - **focus:** per R-FOCUS when the cell is interactive; *n/a* for display-only cells.
   - **active:** *n/a* unless linked, then follows the clickable-card active contract.
   - **disabled:** *n/a*.
-  - **error:** *n/a* — a metric with no value renders the missing-value placeholder inside the tile (see [Metric Display Contract](#metrics)), not a tile error state.
+  - **error:** *n/a* — a metric with no value renders the missing-value placeholder inside the cell (see [Metric Display Contract](#metrics)), not a cell error state.
 
 #### `{components.tabs}` — pill-container tabs
 
@@ -769,7 +770,7 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
 
 > These `ex-*` surfaces mirror the brand-native primitives for downstream consumers (kits, mockups, Stitch generation). Each references existing components so a re-skin re-skins all surfaces consistently.
 
-**`ex-metric-tile`** — Dashboard KPI tile. Re-uses `{components.kpi-card}` with accent icon tile + tabular value + uppercase label.
+**`ex-metric-tile`** — Dashboard KPI cell. Re-uses one cell of `{components.kpi-strip}` with accent icon tile + tabular value + label.
 - Properties: `backgroundColor`, `iconTint`, `rounded`, `padding`, `valueTypography`, `labelTypography`.
 
 **`ex-eval-run-row`** — A row in the eval timeline. Re-uses `{components.eval-run-card}` chrome.

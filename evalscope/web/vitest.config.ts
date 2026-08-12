@@ -15,8 +15,9 @@ export default mergeConfig(
       // Deterministic setup: fake timers, fixed system time and a fixed
       // fast-check seed, plus network access disabled.
       setupFiles: ['./src/test/setup.ts'],
-      // Only treat co-located test/spec files as tests.
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      // Co-located test/spec files, both for the app and for the drift scripts
+      // (a script's test lives next to the script it exercises).
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'scripts/**/*.{test,spec}.ts'],
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html', 'lcov'],

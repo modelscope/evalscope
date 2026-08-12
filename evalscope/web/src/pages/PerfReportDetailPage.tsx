@@ -1,17 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import { getPerfDetail, getPerfChartUrl, getPerfHistoryReportUrl } from '@/api/perf'
-import type { PerfDetailResponse } from '@/api/types'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
+import KpiStrip from '@/components/ui/KpiStrip'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
-import PerfRunsTab from './PerfRunsTab'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS, formatFull } from '@/utils/perf'
+import PerfRunsTab from '@/components/perf/PerfRunsTab'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 
@@ -40,27 +42,9 @@ function omitKeys(info: Record<string, string>, keys: string[]): Record<string, 
 // ------------------------------------------------------------------ //
 // Overview building blocks                                            //
 // ------------------------------------------------------------------ //
-function KpiStrip({ info }: { info: Record<string, string> }) {
-  const entries = Object.entries(info)
-  if (entries.length === 0) return null
-  return (
-    <div className="flex flex-wrap bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
-      {entries.map(([k, v], i) => (
-        <div
-          key={k}
-          className={`flex-1 min-w-[140px] px-4 py-3 ${i < entries.length - 1 ? 'border-r border-[var(--border)]' : ''}`}
-        >
-          <div className="type-body-sm-strong text-[var(--text)] tabular-nums">{v}</div>
-          <div className="type-table-xs uppercase tracking-wider text-[var(--text-muted)] mt-0.5">{k}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function formatSummaryCell(column: string, cell: string | number, t: (key: string) => string): string {
   if (column.trim().toLowerCase() === 'rate' && String(cell).trim().toUpperCase() === 'INF') {
-    return t('performance.closedLoop')
+    return t('perf.archive.closedLoop')
   }
   return String(cell)
 }
@@ -111,15 +95,21 @@ function rowsToRecords(columns: string[], rows: (string | number)[][]): Record<s
 export default function PerfReportDetailPage() {
   const { t } = useLocale()
   const { get } = useQueryParams()
-  const { rootPath: ctxRoot } = useReports()
+  const { rootPath: ctxRoot } = useScan()
 
   const path = get('path') ?? ''
   const rootPath = get('root_path') ?? ctxRoot
 
-  const [data, setData] = useState<PerfDetailResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<TabKey>('overview')
+  const [pickedTab, setPickedTab] = useState<{ scope: string; tab: TabKey } | null>(null)
+
+  const detail = useAsyncResource(
+    (signal) => getPerfDetail(rootPath, path, signal),
+    [rootPath, path],
+    { enabled: Boolean(path), fallbackMessage: t('common.loadError') },
+  )
+  const data = detail.data ?? null
+  const loading = detail.loading
+  const error = detail.error
 
   // Single-run sweeps have no meaningful trend curve; hide the Charts tab and
   // steer users to the per-run percentile / per-request (DB) views instead.
@@ -129,30 +119,11 @@ export default function PerfReportDetailPage() {
   // metadata → known-host → Custom fallback priority.
   const identity = useMemo(() => resolveProvider(data ?? {}), [data])
 
-  useEffect(() => {
-    if (!path) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await getPerfDetail(rootPath, path, controller.signal)
-        if (!controller.signal.aborted) {
-          setData(res)
-          // Front-load the per-run (DB) views for single-run reports.
-          if ((res.num_runs ?? 0) <= 1) setActiveTab('runs')
-        }
-      } catch (err) {
-        if (!controller.signal.aborted) setError(String(err))
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    load()
-    return () => {
-      controller.abort()
-    }
-  }, [rootPath, path])
+  // Front-load the per-run (DB) views for single-run reports, while still letting
+  // the user switch tabs; the pick is scoped to the report it was made on.
+  const tabScope = `${rootPath}\0${path}\0${data?.num_runs ?? ''}`
+  const activeTab: TabKey = pickedTab?.scope === tabScope ? pickedTab.tab : (singleRun && data ? 'runs' : 'overview')
+  const setActiveTab = (tab: TabKey) => setPickedTab({ scope: tabScope, tab })
 
   // Charts available for this run mode (embedding runs have no TTFT/TPOT).
   const latencyCharts = useMemo(
@@ -201,13 +172,13 @@ export default function PerfReportDetailPage() {
 
   const tabs = singleRun
     ? [
-        { key: 'overview', label: t('performance.overview'), panelId: 'perf-overview-panel' },
-        { key: 'runs', label: t('performance.runsTab'), panelId: 'perf-runs-panel' },
+        { key: 'overview', label: t('perf.archive.overview'), panelId: 'perf-overview-panel' },
+        { key: 'runs', label: t('perf.archive.runsTab'), panelId: 'perf-runs-panel' },
       ]
     : [
-        { key: 'overview', label: t('performance.overview'), panelId: 'perf-overview-panel' },
-        { key: 'charts', label: t('performance.charts'), panelId: 'perf-charts-panel' },
-        { key: 'runs', label: t('performance.runsTab'), panelId: 'perf-runs-panel' },
+        { key: 'overview', label: t('perf.archive.overview'), panelId: 'perf-overview-panel' },
+        { key: 'charts', label: t('perf.archive.charts'), panelId: 'perf-charts-panel' },
+        { key: 'runs', label: t('perf.archive.runsTab'), panelId: 'perf-runs-panel' },
       ]
 
   const overviewPanel = (
@@ -215,15 +186,20 @@ export default function PerfReportDetailPage() {
       {singleRun && (
         <div className="flex items-start gap-2 px-4 py-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-card2)] type-body-sm text-[var(--text-muted)]">
           <Lightbulb size={15} className="text-[var(--accent)] shrink-0 mt-0.5" />
-          <span>{t('performance.singleRunHint')}</span>
+          <span>{t('perf.archive.singleRunHint')}</span>
         </div>
       )}
-      <KpiStrip info={omitKeys(data.basic_info, ['Provider', 'Protocol', 'API URL', 'API Host'])} />
-      <Card title={singleRun ? t('performance.runSummary') : t('performance.summaryTable')}>
+      <KpiStrip
+        layout="inline"
+        items={Object.entries(
+          omitKeys(data.basic_info, ['Provider', 'Protocol', 'API URL', 'API Host']),
+        ).map(([label, value]) => ({ label, value }))}
+      />
+      <Card title={singleRun ? t('perf.archive.runSummary') : t('perf.archive.summaryTable')}>
         <SummaryTable columns={data.summary_columns} rows={data.summary_rows} t={t} />
       </Card>
       {Object.keys(data.best_config).length > 0 && (
-        <Card title={singleRun ? t('performance.runConfig') : t('performance.bestConfig')}>
+        <Card title={singleRun ? t('perf.archive.runConfig') : t('perf.archive.bestConfig')}>
           <div className="flex flex-col gap-2">
             {Object.entries(data.best_config).map(([k, v]) => (
               <div key={k} className="flex items-center justify-between gap-4 type-body-sm">
@@ -235,7 +211,7 @@ export default function PerfReportDetailPage() {
         </Card>
       )}
       {data.recommendations.length > 0 && (
-        <Card title={t('performance.recommendations')}>
+        <Card title={t('perf.archive.recommendations')}>
           <ul className="flex flex-col gap-2">
             {data.recommendations.map((rec, i) => (
               <li key={i} className="flex items-start gap-2 type-body-sm text-[var(--text)]">
@@ -252,13 +228,13 @@ export default function PerfReportDetailPage() {
   const chartsPanel = (
     <div className="flex flex-col gap-4">
       <PerfChartGroup
-        title={t('performance.latencyGroup')}
+        title={t('perf.archive.latencyGroup')}
         charts={latencyCharts}
         fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
         getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
       />
       <PerfChartGroup
-        title={t('performance.throughputGroup')}
+        title={t('perf.archive.throughputGroup')}
         charts={THROUGHPUT_CHARTS}
         fallbackTable={{ columns: data.summary_columns, rows: rowsToRecords(data.summary_columns, data.summary_rows) }}
         getChartUrl={(chart) => getPerfChartUrl(rootPath, path, chart)}
@@ -287,13 +263,13 @@ export default function PerfReportDetailPage() {
           <h1 className="type-title-md text-[var(--text)] break-words">{data.model || data.dataset || '—'}</h1>
           {/* Provider and Protocol as two independent, individually-labelled fields. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <IdentityField label={t('performance.provider')} value={identity.provider} />
-            <IdentityField label={t('performance.protocol')} value={identity.protocol} />
+            <IdentityField label={t('perf.archive.provider')} value={identity.provider} />
+            <IdentityField label={t('perf.archive.protocol')} value={identity.protocol} />
           </div>
           <div className="type-caption-mono text-[var(--text-muted)]">
             {data.dataset} · {data.num_runs}{' '}
-            {t(data.num_runs === 1 ? 'performance.runSingular' : 'performance.runs')} ·{' '}
-            {formatFull(data.generated_at)}
+            {t(data.num_runs === 1 ? 'perf.archive.runSingular' : 'perf.archive.runs')} ·{' '}
+            {formatTimestamp(data.generated_at, 'seconds')}
           </div>
         </div>
         <a
@@ -303,7 +279,7 @@ export default function PerfReportDetailPage() {
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] border border-[var(--border-md)] text-sm text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors shrink-0"
         >
           <ExternalLink size={14} />
-          {t('performance.viewFullHtml')}
+          {t('perf.archive.viewFullHtml')}
         </a>
       </div>
 

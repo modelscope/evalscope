@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Clock, Cpu, FileText, Gauge } from 'lucide-react'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
 import { listPerfRuns } from '@/api/perf'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import { formatDifference, formatMetric, type MetricSemantics } from '@/domain/metric'
 import Skeleton from '@/components/ui/Skeleton'
+import KpiStrip, { KPI_HERO_CONTAINER, KPI_HERO_CELL, type KpiItem } from '@/components/ui/KpiStrip'
 import Tabs from '@/components/ui/Tabs'
 import SearchInput from '@/components/ui/SearchInput'
 import EmptyState from '@/components/common/EmptyState'
@@ -18,7 +20,7 @@ import type { SortState } from '@/components/dashboard/AggregatedResults'
 import { aggregateRuns } from '@/domain/report/runAggregation'
 import { parseReportRef } from '@/domain/report/reportRef'
 import type { AggregatedRow, CellKind, CellPoint } from '@/domain/report/runAggregation'
-import { formatFull } from '@/utils/perf'
+import { formatTimestamp } from '@/utils/formatUtils'
 
 /**
  * Which kinds of run the table shows.
@@ -27,6 +29,11 @@ import { formatFull } from '@/utils/perf'
  * added to it -- nothing produces a cell of kind "all".
  */
 type KindFilter = CellKind | 'all'
+
+/** Stable placeholders so an unresolved read keeps a single identity per collection. */
+const EMPTY_REPORTS: ReportSummary[] = []
+const EMPTY_PERF_RUNS: PerfRunSummary[] = []
+const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
 
 /** Tab order, and the panel each one drives. */
 const KIND_TABS: { key: KindFilter; labelKey: string; panelId: string }[] = [
@@ -45,29 +52,20 @@ const KIND_TABS: { key: KindFilter; labelKey: string; panelId: string }[] = [
  */
 export default function DashboardPage() {
   const { t } = useLocale()
-  const { rootPath, scanToken } = useReports()
+  const { rootPath, scanToken } = useScan()
   const navigate = useNavigate()
 
-  const [loading, setLoading] = useState(false)
-  const [scanned, setScanned] = useState(false)
-  const [reports, setReports] = useState<ReportSummary[]>([])
-  const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
-  const [perfSemantics, setPerfSemantics] = useState<Record<string, MetricSemantics>>({})
-  const [loadError, setLoadError] = useState('')
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortState>({ key: 'lastRun', descending: true })
 
-  // Fetch eval + perf whenever the global scan token or root changes.
-  useEffect(() => {
-    if (!rootPath) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setLoadError('')
+  // Fetch eval + perf whenever the global scan token or root changes. Settled,
+  // not all-or-nothing: one side failing must not hide the other's runs.
+  const overview = useAsyncResource(
+    async (signal) => {
       const [evalRes, perfRes] = await Promise.allSettled([
         (async () => {
-          const reports: ReportSummary[] = []
+          const collected: ReportSummary[] = []
           let page = 1
           while (true) {
             const response = await listReports({
@@ -76,33 +74,38 @@ export default function DashboardPage() {
               pageSize: 100,
               sortBy: 'time',
               sortOrder: 'desc',
-              signal: controller.signal,
+              signal,
             })
-            reports.push(...response.reports)
-            if (reports.length >= response.total || response.reports.length === 0) return reports
+            collected.push(...response.reports)
+            if (collected.length >= response.total || response.reports.length === 0) return collected
             page += 1
           }
         })(),
-        listPerfRuns(rootPath, controller.signal),
+        listPerfRuns(rootPath, signal),
       ])
-      if (controller.signal.aborted) return
-      if (evalRes.status === 'fulfilled') setReports(evalRes.value)
-      if (perfRes.status === 'fulfilled') {
-        setPerfRuns(perfRes.value.runs)
-        setPerfSemantics(perfRes.value.metric_semantics ?? {})
+
+      const failure = evalRes.status === 'rejected'
+        ? evalRes.reason
+        : perfRes.status === 'rejected' ? perfRes.reason : null
+
+      return {
+        reports: evalRes.status === 'fulfilled' ? evalRes.value : EMPTY_REPORTS,
+        perfRuns: perfRes.status === 'fulfilled' ? perfRes.value.runs : EMPTY_PERF_RUNS,
+        perfSemantics: perfRes.status === 'fulfilled' ? (perfRes.value.metric_semantics ?? {}) : {},
+        failure: failure instanceof Error ? failure.message : failure ? t('common.loadError') : '',
       }
-      if (evalRes.status === 'rejected' || perfRes.status === 'rejected') {
-        const reason = evalRes.status === 'rejected' ? evalRes.reason : perfRes.status === 'rejected' ? perfRes.reason : null
-        setLoadError(reason instanceof Error ? reason.message : t('common.loadError'))
-      }
-      setScanned(true)
-      setLoading(false)
-    }
-    load()
-    return () => {
-      controller.abort()
-    }
-  }, [rootPath, scanToken, t])
+    },
+    [rootPath, scanToken],
+    { enabled: Boolean(rootPath), fallbackMessage: t('common.loadError') },
+  )
+
+  const reports = overview.data?.reports ?? EMPTY_REPORTS
+  const perfRuns = overview.data?.perfRuns ?? EMPTY_PERF_RUNS
+  const perfSemantics = overview.data?.perfSemantics ?? EMPTY_SEMANTICS
+  const loading = overview.loading
+  // A partial failure is reported by the resolved value; a total one by the hook.
+  const loadError = overview.error || (overview.data?.failure ?? '')
+  const scanned = overview.data !== undefined
 
   // The table is driven by this: every score ever recorded, grouped by what it measures.
   const rows = useMemo(
@@ -146,8 +149,34 @@ export default function DashboardPage() {
     const today = new Date()
     const time = value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     if (value.toDateString() === today.toDateString()) return `${t('dashboard.today')}, ${time}`
-    return formatFull(kpi.latest)
+    return formatTimestamp(kpi.latest, 'seconds')
   }, [kpi.latest, t])
+
+  const kpiItems = useMemo<KpiItem[]>(() => [
+    {
+      icon: <FileText size={17} strokeWidth={2} />,
+      value: String(kpi.evals),
+      label: t('dashboard.totalEvaluations'),
+      onClick: () => navigate('/reports'),
+    },
+    {
+      icon: <Gauge size={17} strokeWidth={2} />,
+      value: String(kpi.perfs),
+      label: t('dashboard.totalPerfRuns'),
+      onClick: () => navigate('/performance'),
+    },
+    {
+      icon: <Cpu size={17} strokeWidth={2} />,
+      value: String(kpi.models),
+      label: t('dashboard.modelsEvaluated'),
+    },
+    {
+      icon: <Clock size={17} strokeWidth={2} />,
+      value: latestRunLabel,
+      label: t('dashboard.latestRun'),
+      title: kpi.latest ? formatTimestamp(kpi.latest, 'seconds') : undefined,
+    },
+  ], [kpi, latestRunLabel, navigate, t])
 
   const recentChange = useMemo(() => {
     return visibleRows
@@ -219,9 +248,9 @@ export default function DashboardPage() {
       {loadError && <ErrorAlert className="rounded-[var(--radius-sm)]">{loadError}</ErrorAlert>}
 
       {loading && !scanned ? (
-        <div className="grid grid-cols-2 overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] lg:grid-cols-4">
+        <div className={KPI_HERO_CONTAINER}>
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="border-[var(--border)] p-5 lg:border-r lg:last:border-r-0">
+            <div key={index} className={KPI_HERO_CELL}>
               <Skeleton width={32} height={32} className="mb-2" />
               <Skeleton width={60} height={24} className="mb-1" />
               <Skeleton width={100} height={14} />
@@ -229,31 +258,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] shadow-[var(--shadow-sm)] lg:grid-cols-4">
-          <SummaryItem
-            icon={<FileText size={17} strokeWidth={2} />}
-            value={String(kpi.evals)}
-            label={t('dashboard.totalEvaluations')}
-            onClick={() => navigate('/reports')}
-          />
-          <SummaryItem
-            icon={<Gauge size={17} strokeWidth={2} />}
-            value={String(kpi.perfs)}
-            label={t('dashboard.totalPerfRuns')}
-            onClick={() => navigate('/performance')}
-          />
-          <SummaryItem
-            icon={<Cpu size={17} strokeWidth={2} />}
-            value={String(kpi.models)}
-            label={t('dashboard.modelsEvaluated')}
-          />
-          <SummaryItem
-            icon={<Clock size={17} strokeWidth={2} />}
-            value={latestRunLabel}
-            label={t('dashboard.latestRun')}
-            title={kpi.latest ? formatFull(kpi.latest) : undefined}
-          />
-        </div>
+        <KpiStrip items={kpiItems} />
       )}
 
       {loading && !scanned ? (
@@ -321,45 +326,4 @@ function parseSort(value: string): SortState {
 function formatSignedDifference(value: number, semantics: MetricSemantics | null): string {
   const formatted = formatDifference(value, semantics).primary
   return value > 0 ? `+${formatted}` : formatted
-}
-
-function SummaryItem({
-  icon,
-  value,
-  label,
-  onClick,
-  title,
-}: {
-  icon: ReactNode
-  value: string
-  label: string
-  onClick?: () => void
-  title?: string
-}) {
-  const content = (
-    <>
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--accent-dim)] text-[var(--accent)]">
-        {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate type-title-sm font-semibold text-[var(--text)]" title={title}>
-          {value}
-        </span>
-        <span className="block truncate type-body-xs text-[var(--text-muted)]">{label}</span>
-      </span>
-    </>
-  )
-
-  const className =
-    'flex min-w-0 items-center gap-3 border-b border-r border-[var(--border)] p-5 text-left transition-colors even:border-r-0 lg:border-b-0 lg:even:border-r lg:last:border-r-0'
-
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={`${className} hover:bg-[var(--bg-card2)]`}>
-        {content}
-      </button>
-    )
-  }
-
-  return <div className={className}>{content}</div>
 }

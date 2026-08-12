@@ -1,19 +1,17 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type SyntheticEvent } from 'react'
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { listBenchmarks } from '@/api/eval'
-import Button from '@/components/ui/Button'
-import Card from '@/components/ui/Card'
 import Field from '@/components/ui/Field'
 import { inputClass } from '@/components/ui/formStyles'
 import {
-  computeFirstInvalid,
+  collectNumericErrors,
   validateDatasetArgs,
-  validateNumeric,
   FORM_MESSAGE_KEYS,
 } from '@/domain/form/validation'
-import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useFormErrors } from '@/hooks/useFormErrors'
 import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
+import TaskFormShell from '@/components/tasks/TaskFormShell'
+import { useTaskForm } from '@/components/tasks/useTaskForm'
 
 interface Props {
   onSubmit: (config: Record<string, unknown>) => void
@@ -27,6 +25,9 @@ interface Props {
    */
   initialModel?: string
 }
+
+/** Stable placeholder so an unresolved suggestion list keeps a single identity. */
+const EMPTY_NAMES: string[] = []
 
 /** Stable field ids, reused as label/error association targets and focus targets. */
 const IDS = {
@@ -89,7 +90,6 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
   const [datasets, setDatasets] = useState(initialDataset ?? '')
   const [limit, setLimit] = useState('5')
   const [evalBatchSize, setEvalBatchSize] = useState('16')
-  const [showMore, setShowMore] = useState(false)
   const [repeats, setRepeats] = useState('1')
   const [timeout, setTimeout_] = useState('60')
   const [stream, setStream] = useState(false)
@@ -104,10 +104,93 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
   const [sandboxImage, setSandboxImage] = useState('')
   const [sandboxPoolSize, setSandboxPoolSize] = useState('')
 
-  const { setErrors, errorFor: errMsg, clearError: clearErr } = useFormErrors()
+  const { errorFor: errMsg, clearError: clearErr, showMore, toggleMore, submitHandler } = useTaskForm({
+    domOrder: DOM_ORDER,
+    moreParamsIds: MORE_PARAMS_IDS,
+  })
+
+  const validate = (): Record<string, string> => {
+    const errors: Record<string, string> = {}
+
+    if (!model.trim()) errors[IDS.model] = FORM_MESSAGE_KEYS.required
+    if (!datasets.trim()) errors[IDS.datasets] = FORM_MESSAGE_KEYS.required
+
+    Object.assign(errors, collectNumericErrors([
+      { id: IDS.limit, value: limit, min: 1 },
+      { id: IDS.batchSize, value: evalBatchSize, min: 1 },
+      { id: IDS.repeats, value: repeats, min: 1 },
+      { id: IDS.timeout, value: timeout, min: 0 },
+      { id: IDS.temperature, value: temperature, min: 0, max: 2, step: 0.1 },
+      { id: IDS.topP, value: topP, min: 0, max: 1, step: 0.1 },
+      { id: IDS.maxTokens, value: maxTokens, min: 1 },
+      { id: IDS.topK, value: topK, min: 1 },
+      ...(sandboxEnabled
+        ? [{ id: IDS.sandboxPool, value: sandboxPoolSize, min: 1, step: 1 }]
+        : []),
+    ]))
+
+    // Dataset_Args JSON validation without mutating the raw input.
+    if (datasetArgs.trim()) {
+      const result = validateDatasetArgs(datasetArgs)
+      if (!result.ok) errors[IDS.datasetArgs] = result.messageKey
+    }
+
+    return errors
+  }
+
+  const buildConfig = () => {
+    const config: Record<string, unknown> = {
+      model,
+      datasets: datasets.split(',').map((s) => s.trim()).filter(Boolean),
+      limit: limit ? Number(limit) : undefined,
+      eval_batch_size: evalBatchSize ? Number(evalBatchSize) : undefined,
+    }
+    if (apiUrl) config.api_url = apiUrl
+    if (apiKey) config.api_key = apiKey
+    if (repeats && Number(repeats) > 1) config.repeats = Number(repeats)
+    if (timeout) config.timeout = Number(timeout)
+    if (stream) config.stream = true
+    // Wrap generation params into generation_config dict
+    const genConfig: Record<string, unknown> = {}
+    if (temperature) genConfig.temperature = Number(temperature)
+    if (topP) genConfig.top_p = Number(topP)
+    if (maxTokens) genConfig.max_tokens = Number(maxTokens)
+    if (topK) genConfig.top_k = Number(topK)
+    if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
+    // Re-parsed rather than carried over from validation: submission only runs
+    // once validation passed, so this cannot fail here.
+    if (datasetArgs.trim()) {
+      const parsed = validateDatasetArgs(datasetArgs)
+      if (parsed.ok) config.dataset_args = parsed.value
+    }
+    if (sandboxEnabled) {
+      const sandbox: Record<string, unknown> = {
+        enabled: true,
+        engine: sandboxEngine,
+      }
+
+      if (sandboxUrl.trim()) {
+        sandbox.manager_config = {
+          base_url: sandboxUrl.trim(),
+        }
+      }
+
+      if (sandboxImage.trim()) {
+        sandbox.default_config = {
+          image: sandboxImage.trim(),
+        }
+      }
+
+      if (sandboxPoolSize.trim()) {
+        sandbox.pool_size = Number(sandboxPoolSize)
+      }
+
+      config.sandbox = sandbox
+    }
+    onSubmit(config)
+  }
 
   // Dataset autocomplete
-  const [benchmarkNames, setBenchmarkNames] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [activeSuggestion, setActiveSuggestion] = useState(-1)
@@ -122,19 +205,19 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
     applyInitial()
   }, [initialDataset, initialModel])
 
-  useEffect(() => {
-    const controller = new AbortController()
-    listBenchmarks(undefined, undefined, controller.signal)
-      .then((res) => {
-        const names = [
-          ...(res.text ?? []).map((b) => b.name),
-          ...(res.multimodal ?? []).map((b) => b.name),
-        ]
-        setBenchmarkNames(names)
-      })
-      .catch(() => {})
-    return () => controller.abort()
-  }, [])
+  // Dataset autocomplete suggestions. A failure here only costs the suggestions,
+  // so the field stays usable and no error is surfaced.
+  const benchmarks = useAsyncResource(
+    async (signal) => {
+      const res = await listBenchmarks(undefined, undefined, signal)
+      return [
+        ...(res.text ?? []).map((b) => b.name),
+        ...(res.multimodal ?? []).map((b) => b.name),
+      ]
+    },
+    [],
+  )
+  const benchmarkNames = benchmarks.data ?? EMPTY_NAMES
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -196,114 +279,116 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
     }
   }
 
-  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const newErrors: Record<string, string> = {}
-
-    // Required text fields.
-    if (!model.trim()) newErrors[IDS.model] = FORM_MESSAGE_KEYS.required
-    if (!datasets.trim()) newErrors[IDS.datasets] = FORM_MESSAGE_KEYS.required
-
-    // Numeric fields with min/max/step constraints. Empty optional
-    // fields are skipped; non-empty values are validated.
-    const numericChecks: Array<{ id: string; value: string; min?: number; max?: number; step?: number }> = [
-      { id: IDS.limit, value: limit, min: 1 },
-      { id: IDS.batchSize, value: evalBatchSize, min: 1 },
-      { id: IDS.repeats, value: repeats, min: 1 },
-      { id: IDS.timeout, value: timeout, min: 0 },
-      { id: IDS.temperature, value: temperature, min: 0, max: 2, step: 0.1 },
-      { id: IDS.topP, value: topP, min: 0, max: 1, step: 0.1 },
-      { id: IDS.maxTokens, value: maxTokens, min: 1 },
-      { id: IDS.topK, value: topK, min: 1 },
-    ]
-    for (const check of numericChecks) {
-      if (check.value.trim() === '') continue
-      const err = validateNumeric(Number(check.value), check.min, check.max, check.step)
-      if (err) newErrors[check.id] = err.messageKey
-    }
-    if (sandboxEnabled && sandboxPoolSize.trim() !== '') {
-      const err = validateNumeric(Number(sandboxPoolSize), 1, undefined, 1)
-      if (err) {
-        newErrors[IDS.sandboxPool] = err.messageKey
-      }
-    }
-
-    // Dataset_Args JSON validation without mutating the raw input.
-    let parsedDatasetArgs: Record<string, unknown> | undefined
-    if (datasetArgs.trim()) {
-      const result = validateDatasetArgs(datasetArgs)
-      if (!result.ok) {
-        newErrors[IDS.datasetArgs] = result.messageKey
-      } else {
-        parsedDatasetArgs = result.value
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      // Move focus to the first invalid field in DOM order.
-      const firstInvalid = computeFirstInvalid(DOM_ORDER, Object.keys(newErrors))
-      if (firstInvalid) {
-        if (MORE_PARAMS_IDS.includes(firstInvalid) && !showMore) {
-          setShowMore(true)
-        }
-        // Defer focus so a newly-expanded section is mounted first.
-        requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
-      }
-      return
-    }
-    setErrors({})
-
-    const config: Record<string, unknown> = {
-      model,
-      datasets: datasets.split(',').map((s) => s.trim()).filter(Boolean),
-      limit: limit ? Number(limit) : undefined,
-      eval_batch_size: evalBatchSize ? Number(evalBatchSize) : undefined,
-    }
-    if (apiUrl) config.api_url = apiUrl
-    if (apiKey) config.api_key = apiKey
-    if (repeats && Number(repeats) > 1) config.repeats = Number(repeats)
-    if (timeout) config.timeout = Number(timeout)
-    if (stream) config.stream = true
-    // Wrap generation params into generation_config dict
-    const genConfig: Record<string, unknown> = {}
-    if (temperature) genConfig.temperature = Number(temperature)
-    if (topP) genConfig.top_p = Number(topP)
-    if (maxTokens) genConfig.max_tokens = Number(maxTokens)
-    if (topK) genConfig.top_k = Number(topK)
-    if (Object.keys(genConfig).length > 0) config.generation_config = genConfig
-    if (parsedDatasetArgs) config.dataset_args = parsedDatasetArgs
-    if (sandboxEnabled) {
-      const sandbox: Record<string, unknown> = {
-        enabled: true,
-        engine: sandboxEngine,
-      }
-
-      if (sandboxUrl.trim()) {
-        sandbox.manager_config = {
-          base_url: sandboxUrl.trim(),
-        }
-      }
-
-      if (sandboxImage.trim()) {
-        sandbox.default_config = {
-          image: sandboxImage.trim(),
-        }
-      }
-
-      if (sandboxPoolSize.trim()) {
-        sandbox.pool_size = Number(sandboxPoolSize)
-      }
-
-      config.sandbox = sandbox
-    }
-    onSubmit(config)
-  }
+  /** Fields behind the "more parameters" disclosure. */
+  const MORE_PARAMS = (
+    <>
+        <Field id={IDS.repeats} name="repeats" labelKey="eval.repeats" error={errMsg(IDS.repeats)}>
+          {(aria) => (
+            <input {...aria} type="number" min={1} value={repeats} onChange={(e) => { setRepeats(e.target.value); clearErr(IDS.repeats) }} className={inputClass(errMsg(IDS.repeats))} />
+          )}
+        </Field>
+        <Field id={IDS.timeout} name="timeout" labelKey="eval.timeout" error={errMsg(IDS.timeout)}>
+          {(aria) => (
+            <input {...aria} type="number" min={0} value={timeout} onChange={(e) => { setTimeout_(e.target.value); clearErr(IDS.timeout) }} className={inputClass(errMsg(IDS.timeout))} />
+          )}
+        </Field>
+        <Field id={IDS.stream} name="stream" labelKey="eval.stream">
+          {(aria) => (
+            <input
+              {...aria}
+              type="checkbox"
+              checked={stream}
+              onChange={(e) => setStream(e.target.checked)}
+              className="size-11 accent-[var(--accent)] cursor-pointer"
+            />
+          )}
+        </Field>
+        <Field id={IDS.temperature} name="temperature" labelKey="eval.temperature" error={errMsg(IDS.temperature)}>
+          {(aria) => (
+            <input {...aria} type="number" min={0} max={2} step="0.1" value={temperature} onChange={(e) => { setTemperature(e.target.value); clearErr(IDS.temperature) }} className={inputClass(errMsg(IDS.temperature))} />
+          )}
+        </Field>
+        <Field id={IDS.topP} name="top_p" labelKey="eval.topP" error={errMsg(IDS.topP)}>
+          {(aria) => (
+            <input {...aria} type="number" min={0} max={1} step="0.1" value={topP} onChange={(e) => { setTopP(e.target.value); clearErr(IDS.topP) }} className={inputClass(errMsg(IDS.topP))} />
+          )}
+        </Field>
+        <Field id={IDS.maxTokens} name="max_tokens" labelKey="eval.maxTokens" error={errMsg(IDS.maxTokens)}>
+          {(aria) => (
+            <input {...aria} type="number" min={1} value={maxTokens} onChange={(e) => { setMaxTokens(e.target.value); clearErr(IDS.maxTokens) }} className={inputClass(errMsg(IDS.maxTokens))} />
+          )}
+        </Field>
+        <Field id={IDS.topK} name="top_k" labelKey="eval.topK" error={errMsg(IDS.topK)}>
+          {(aria) => (
+            <input {...aria} type="number" min={1} value={topK} onChange={(e) => { setTopK(e.target.value); clearErr(IDS.topK) }} className={inputClass(errMsg(IDS.topK))} />
+          )}
+        </Field>
+        <Field id={IDS.datasetArgs} name="dataset_args" labelKey="eval.datasetArgs" error={errMsg(IDS.datasetArgs)} className="md:col-span-2">
+          {(aria) => (
+            <textarea
+              {...aria}
+              value={datasetArgs}
+              onChange={(e) => { setDatasetArgs(e.target.value); clearErr(IDS.datasetArgs) }}
+              className={inputClass(errMsg(IDS.datasetArgs), 'h-20 resize-y')}
+              style={{ fontFamily: 'var(--font-mono)' }}
+              placeholder='{"gsm8k": {"few_shot_num": 4}}'
+            />
+          )}
+        </Field>
+        <hr className="md:col-span-3 my-2" />
+        <h3 className="md:col-span-3 font-semibold">{t('eval.sandbox')}</h3>
+        <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">
+          {(aria) => (
+            <input
+              {...aria}
+              type="checkbox"
+              checked={sandboxEnabled}
+              onChange={(e) => setSandboxEnabled(e.target.checked)}
+              className="size-11 accent-[var(--accent)] cursor-pointer"
+            />
+          )}
+        </Field>
+        {sandboxEnabled && (
+          <>
+            <Field id={IDS.sandboxEngine} name="sandbox_engine" labelKey="eval.sandboxEngine">
+              {(aria) => (
+                <select {...aria} value={sandboxEngine} onChange={(e) => setSandboxEngine(e.target.value)} className={inputClass()}>
+                  <option value="docker">docker</option>
+                  <option value="volcengine">volcengine</option>
+                </select>
+              )}
+            </Field>
+            <Field id={IDS.sandboxUrl} name="sandbox_url" labelKey="eval.sandboxUrl">
+              {(aria) => (
+                <input {...aria} value={sandboxUrl} onChange={(e) => setSandboxUrl(e.target.value)} className={inputClass()} />
+              )}
+            </Field>
+            <Field id={IDS.sandboxImage} name="sandbox_image" labelKey="eval.sandboxImage">
+              {(aria) => (
+                <input {...aria} value={sandboxImage} onChange={(e) => setSandboxImage(e.target.value)} className={inputClass()} />
+              )}
+            </Field>
+            <Field id={IDS.sandboxPool} name="sandbox_pool" labelKey="eval.sandboxPool" error={errMsg(IDS.sandboxPool)}>
+              {(aria) => (
+                <input {...aria} type="number" min={1} step={1} value={sandboxPoolSize} onChange={(e) => { setSandboxPoolSize(e.target.value); clearErr(IDS.sandboxPool) }} className={inputClass(errMsg(IDS.sandboxPool))} />
+              )}
+            </Field>
+          </>
+        )}
+    </>
+  )
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ModelField
+    <TaskFormShell
+      onSubmit={submitHandler(validate, buildConfig)}
+      moreParamsLabel={t('eval.moreParams')}
+      showMore={showMore}
+      onToggleMore={toggleMore}
+      submitLabel={t('eval.startEval')}
+      disabled={disabled}
+      moreParams={MORE_PARAMS}
+    >
+      <ModelField
           id={IDS.model}
           value={model}
           error={errMsg(IDS.model)}
@@ -365,121 +450,6 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
             <input {...aria} type="number" min={1} value={evalBatchSize} onChange={(e) => { setEvalBatchSize(e.target.value); clearErr(IDS.batchSize) }} className={inputClass(errMsg(IDS.batchSize))} />
           )}
         </Field>
-      </div>
-
-      {/* More params toggle */}
-      <button
-        type="button"
-        onClick={() => setShowMore(!showMore)}
-        className="flex items-center gap-1 text-xs text-[var(--accent)] hover:underline cursor-pointer"
-      >
-        {t('eval.moreParams')}
-        {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-      </button>
-
-      {showMore && (
-        <Card className="!p-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-            <Field id={IDS.repeats} name="repeats" labelKey="eval.repeats" error={errMsg(IDS.repeats)}>
-              {(aria) => (
-                <input {...aria} type="number" min={1} value={repeats} onChange={(e) => { setRepeats(e.target.value); clearErr(IDS.repeats) }} className={inputClass(errMsg(IDS.repeats))} />
-              )}
-            </Field>
-            <Field id={IDS.timeout} name="timeout" labelKey="eval.timeout" error={errMsg(IDS.timeout)}>
-              {(aria) => (
-                <input {...aria} type="number" min={0} value={timeout} onChange={(e) => { setTimeout_(e.target.value); clearErr(IDS.timeout) }} className={inputClass(errMsg(IDS.timeout))} />
-              )}
-            </Field>
-            <Field id={IDS.stream} name="stream" labelKey="eval.stream">
-              {(aria) => (
-                <input
-                  {...aria}
-                  type="checkbox"
-                  checked={stream}
-                  onChange={(e) => setStream(e.target.checked)}
-                  className="size-11 accent-[var(--accent)] cursor-pointer"
-                />
-              )}
-            </Field>
-            <Field id={IDS.temperature} name="temperature" labelKey="eval.temperature" error={errMsg(IDS.temperature)}>
-              {(aria) => (
-                <input {...aria} type="number" min={0} max={2} step="0.1" value={temperature} onChange={(e) => { setTemperature(e.target.value); clearErr(IDS.temperature) }} className={inputClass(errMsg(IDS.temperature))} />
-              )}
-            </Field>
-            <Field id={IDS.topP} name="top_p" labelKey="eval.topP" error={errMsg(IDS.topP)}>
-              {(aria) => (
-                <input {...aria} type="number" min={0} max={1} step="0.1" value={topP} onChange={(e) => { setTopP(e.target.value); clearErr(IDS.topP) }} className={inputClass(errMsg(IDS.topP))} />
-              )}
-            </Field>
-            <Field id={IDS.maxTokens} name="max_tokens" labelKey="eval.maxTokens" error={errMsg(IDS.maxTokens)}>
-              {(aria) => (
-                <input {...aria} type="number" min={1} value={maxTokens} onChange={(e) => { setMaxTokens(e.target.value); clearErr(IDS.maxTokens) }} className={inputClass(errMsg(IDS.maxTokens))} />
-              )}
-            </Field>
-            <Field id={IDS.topK} name="top_k" labelKey="eval.topK" error={errMsg(IDS.topK)}>
-              {(aria) => (
-                <input {...aria} type="number" min={1} value={topK} onChange={(e) => { setTopK(e.target.value); clearErr(IDS.topK) }} className={inputClass(errMsg(IDS.topK))} />
-              )}
-            </Field>
-            <Field id={IDS.datasetArgs} name="dataset_args" labelKey="eval.datasetArgs" error={errMsg(IDS.datasetArgs)} className="md:col-span-2">
-              {(aria) => (
-                <textarea
-                  {...aria}
-                  value={datasetArgs}
-                  onChange={(e) => { setDatasetArgs(e.target.value); clearErr(IDS.datasetArgs) }}
-                  className={inputClass(errMsg(IDS.datasetArgs), 'h-20 resize-y')}
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                  placeholder='{"gsm8k": {"few_shot_num": 4}}'
-                />
-              )}
-            </Field>
-            <hr className="md:col-span-3 my-2" />
-            <h3 className="md:col-span-3 font-semibold">{t('eval.sandbox')}</h3>
-            <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">
-              {(aria) => (
-                <input
-                  {...aria}
-                  type="checkbox"
-                  checked={sandboxEnabled}
-                  onChange={(e) => setSandboxEnabled(e.target.checked)}
-                  className="size-11 accent-[var(--accent)] cursor-pointer"
-                />
-              )}
-            </Field>
-            {sandboxEnabled && (
-              <>
-                <Field id={IDS.sandboxEngine} name="sandbox_engine" labelKey="eval.sandboxEngine">
-                  {(aria) => (
-                    <select {...aria} value={sandboxEngine} onChange={(e) => setSandboxEngine(e.target.value)} className={inputClass()}>
-                      <option value="docker">docker</option>
-                      <option value="volcengine">volcengine</option>
-                    </select>
-                  )}
-                </Field>
-                <Field id={IDS.sandboxUrl} name="sandbox_url" labelKey="eval.sandboxUrl">
-                  {(aria) => (
-                    <input {...aria} value={sandboxUrl} onChange={(e) => setSandboxUrl(e.target.value)} className={inputClass()} />
-                  )}
-                </Field>
-                <Field id={IDS.sandboxImage} name="sandbox_image" labelKey="eval.sandboxImage">
-                  {(aria) => (
-                    <input {...aria} value={sandboxImage} onChange={(e) => setSandboxImage(e.target.value)} className={inputClass()} />
-                  )}
-                </Field>
-                <Field id={IDS.sandboxPool} name="sandbox_pool" labelKey="eval.sandboxPool" error={errMsg(IDS.sandboxPool)}>
-                  {(aria) => (
-                    <input {...aria} type="number" min={1} step={1} value={sandboxPoolSize} onChange={(e) => { setSandboxPoolSize(e.target.value); clearErr(IDS.sandboxPool) }} className={inputClass(errMsg(IDS.sandboxPool))} />
-                  )}
-                </Field>
-              </>
-            )}
-          </div>
-        </Card>
-      )}
-
-      <Button type="submit" variant="primary" disabled={disabled} className="btn-glow">
-        {t('eval.startEval')}
-      </Button>
-    </form>
+    </TaskFormShell>
   )
 }

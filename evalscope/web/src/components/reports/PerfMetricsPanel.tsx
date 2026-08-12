@@ -4,6 +4,7 @@ import type { PerfMetrics, PercentileStats } from '@/api/types'
 import { cn } from '@/lib/utils'
 import { formatMetric } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
+import KpiStrip from '@/components/ui/KpiStrip'
 
 function formatPerfValue(
   value: number | null | undefined,
@@ -201,35 +202,6 @@ function TokenTable({ usage, labels, semantics }: TokenTableProps) {
   )
 }
 
-// ── Overview KPI strip ────────────────────────────────────────────────────────
-
-function KpiStrip({
-  items,
-}: {
-  items: { label: string; value: string; color: string }[]
-}) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-px bg-[var(--border)] border border-[var(--border)] rounded-[var(--radius-sm)] overflow-hidden">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="min-w-0 bg-[var(--bg-card)] px-3 py-2.5"
-        >
-          <div
-            className="text-lg font-semibold tabular-nums leading-tight"
-            style={{ color: item.color }}
-          >
-            {item.value}
-          </div>
-          <div className="text-[10px] text-[var(--text-muted)] mt-0.5 break-words">
-            {item.label}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // ── Separator ─────────────────────────────────────────────────────────────────
 
 function Sep() {
@@ -277,7 +249,7 @@ export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps)
     <div className="flex flex-col gap-4">
 
       {/* Overview strip */}
-      <KpiStrip items={kpis} />
+      <KpiStrip items={kpis} layout="dense" />
 
       <Sep />
 

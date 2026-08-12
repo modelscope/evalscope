@@ -42,23 +42,58 @@ function sourceFiles(dir: string): string[] {
 /**
  * Collect every fully literal translation key used in the source tree.
  *
- * Keys assembled at runtime -- `` t(`dashboard.sort_${key}`) `` -- cannot be resolved statically and
- * are not collected. Their namespaces are covered by the dictionary-parity check below, which
- * compares whole key sets rather than individual lookups.
+ * Covers `t('a.b')` and the `labelKey` prop / field, which `Field` and the tab
+ * descriptors resolve through the same dictionary.
+ *
+ * Keys assembled at runtime -- `` t(`dashboard.sort_${key}`) -- cannot be
+ * resolved this way; `literalPrefixesInSource` covers those instead.
  */
 function literalKeysInSource(): Map<string, string[]> {
   const keys = new Map<string, string[]>()
+  const patterns = [
+    // `t('namespace.key')`, single or double quoted, optionally followed by interpolation vars.
+    /\bt\(\s*['"]([\w.]+)['"]/g,
+    // `labelKey="namespace.key"` as a JSX prop, and `labelKey: 'namespace.key'` in a descriptor.
+    /\blabelKey[=:]\s*['"]([\w.]+)['"]/g,
+  ]
   for (const file of sourceFiles(SRC_ROOT)) {
     const content = readFileSync(file, 'utf8')
-    // `t('namespace.key')`, single or double quoted, optionally followed by interpolation vars.
-    for (const match of content.matchAll(/\bt\(\s*['"]([\w.]+)['"]/g)) {
-      const key = match[1]
-      const where = keys.get(key) ?? []
-      where.push(relative(SRC_ROOT, file))
-      keys.set(key, where)
+    for (const pattern of patterns) {
+      for (const match of content.matchAll(pattern)) {
+        const key = match[1]
+        const where = keys.get(key) ?? []
+        where.push(relative(SRC_ROOT, file))
+        keys.set(key, where)
+      }
     }
   }
   return keys
+}
+
+/**
+ * Collect the static prefix of every runtime-assembled key.
+ *
+ * `` t(`perf.archive.status_${s}`) `` yields `perf.archive.status_`. The suffix is
+ * unknowable statically, but the prefix is not: if no declared key begins with it,
+ * every branch of that lookup renders a raw path. This is the gap a namespace
+ * rename falls into -- the en/zh parity check below cannot see it, because a
+ * rename applied to both locales keeps them in perfect step with each other while
+ * both drift away from the call site.
+ */
+function literalPrefixesInSource(): Map<string, string[]> {
+  const prefixes = new Map<string, string[]>()
+  for (const file of sourceFiles(SRC_ROOT)) {
+    const content = readFileSync(file, 'utf8')
+    for (const match of content.matchAll(/\bt\(\s*`([\w.]*[\w.])\$\{/g)) {
+      const prefix = match[1]
+      // A prefix with no dot is a whole-namespace lookup; there is nothing to check.
+      if (!prefix.includes('.')) continue
+      const where = prefixes.get(prefix) ?? []
+      where.push(relative(SRC_ROOT, file))
+      prefixes.set(prefix, where)
+    }
+  }
+  return prefixes
 }
 
 describe('translation keys referenced by components exist', () => {
@@ -70,6 +105,22 @@ describe('translation keys referenced by components exist', () => {
       }
     }
     expect(unresolved).toEqual([])
+  })
+
+  it('resolves the static prefix of every runtime-assembled key', () => {
+    const flatten = (dict: Dict, prefix = ''): string[] =>
+      Object.entries(dict).flatMap(([key, value]) =>
+        typeof value === 'string' ? [`${prefix}${key}`] : flatten(value as Dict, `${prefix}${key}.`),
+      )
+    const declared = flatten(localeDictionaries.en)
+
+    const orphaned: string[] = []
+    for (const [prefix, files] of literalPrefixesInSource()) {
+      if (!declared.some((key) => key.startsWith(prefix))) {
+        orphaned.push(`${prefix}*  (${files.join(', ')})`)
+      }
+    }
+    expect(orphaned).toEqual([])
   })
 
   it('does not reach for the standalone HTML report dictionary', () => {

@@ -17,7 +17,7 @@ import type { MetricSemantics } from '@/domain/metric'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import ReportSummaryStats from './ReportSummaryStats'
-import JsonViewer from '@/components/common/JsonViewer'
+import JsonViewer from '@/components/ui/JsonViewer'
 
 interface Props {
   reports: ReportData[]

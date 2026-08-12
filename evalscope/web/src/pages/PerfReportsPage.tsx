@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { getPerfHistoryReportUrl, listPerfRuns, deletePerfRun } from '@/api/perf'
-import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyStateSystem, { type ResolvedEmptyStateAction } from '@/components/common/EmptyStateSystem'
@@ -15,14 +15,19 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import SelectionTray from '@/components/reports/SelectionTray'
 import { formatMetric } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { formatFull } from '@/utils/perf'
+import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
-import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/compareModel'
+import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/selection'
 
 /** Locale translate contract (kept minimal so cards can format metrics). */
 type Translate = (key: string, vars?: Record<string, string | number>) => string
 
 type SortKey = 'time' | 'rps' | 'latency'
+
+/** Stable placeholders so an unresolved read keeps a single identity. */
+const EMPTY_RUNS: PerfRunSummary[] = []
+const EMPTY_SELECTION: string[] = []
+const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
 
 /** Format the avg input/output token pair as e.g. `10000→300t`; `—` when absent. */
 function formatIoTokens(run: PerfRunSummary): string {
@@ -62,7 +67,7 @@ function PerfRunCard({
       <SelectionCheckbox
         checked={selected}
         onClick={onToggle}
-        label={`${t('performance.selectRun')}: ${run.model || run.dataset || '—'}`}
+        label={`${t('perf.archive.selectRun')}: ${run.model || run.dataset || '—'}`}
         className="shrink-0 cursor-pointer"
       />
       <button
@@ -78,20 +83,20 @@ function PerfRunCard({
             {identity.provider} · {identity.protocol}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {t('performance.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
+            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatFull(run.timestamp)}
+            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatTimestamp(run.timestamp, 'seconds')}
           </span>
         </div>
         <div className="hidden min-w-0 flex-col gap-0.5 lg:flex">
           <span className="type-body-sm text-[var(--text)] break-words">{run.dataset || '—'}</span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {t('performance.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
+            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
         </div>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] lg:block">
-          {formatFull(run.timestamp)}
+          {formatTimestamp(run.timestamp, 'seconds')}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
           {formatIoTokens(run)}
@@ -118,7 +123,7 @@ export default function PerfReportsPage() {
   const { t } = useLocale()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { rootPath, scanToken, setRootPath } = useReports()
+  const { rootPath, scanToken, setRootPath } = useScan()
 
   // Sync root_path from URL on mount (e.g. when navigating back from a detail
   // or compare page, which carry the active root in their breadcrumbs).
@@ -127,13 +132,19 @@ export default function PerfReportsPage() {
     if (urlRoot) setRootPath(urlRoot)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [runs, setRuns] = useState<PerfRunSummary[]>([])
-  const [perfSemantics, setPerfSemantics] = useState<Record<string, MetricSemantics | undefined>>({})
-  const [loading, setLoading] = useState(false)
-  const [hasLoaded, setHasLoaded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  // Bumped to re-trigger the fetch effect when the user retries from an empty state.
-  const [reloadToken, setReloadToken] = useState(0)
+  const runsResource = useAsyncResource(
+    (signal) => listPerfRuns(rootPath, signal),
+    [rootPath, scanToken],
+    { enabled: Boolean(rootPath), fallbackMessage: 'Failed to load perf runs' },
+  )
+  const runs = runsResource.data?.runs ?? EMPTY_RUNS
+  const perfSemantics = runsResource.data?.metric_semantics ?? EMPTY_SEMANTICS
+  const loading = runsResource.loading
+  const hasLoaded = runsResource.data !== undefined || Boolean(runsResource.error)
+
+  // Deleting reports its own failure; a load failure comes from the resource.
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const error = deleteError ?? (runsResource.error || null)
 
   // List controls (symmetric with the Evaluations page).
   const [query, setQuery] = useState('')
@@ -142,10 +153,21 @@ export default function PerfReportsPage() {
   // Multi-select for cross-run comparison (page-local; independent of eval Compare).
   // Unbounded: the perf compare view overlays any number of runs, and the same
   // selection drives batch delete.
-  const [selected, setSelected] = useState<string[]>([])
+  // A new root or a rescan describes a different set of runs, so a selection made
+  // under the old scope is dropped by comparison rather than by an effect. A plain
+  // reload keeps the same scope, and with it the selection.
+  const selectionScope = `${rootPath}\0${scanToken}`
+  const [picked, setPicked] = useState<{ scope: string; paths: string[] }>({ scope: '', paths: [] })
+  const selected = picked.scope === selectionScope ? picked.paths : EMPTY_SELECTION
+  const setSelected = useCallback(
+    (next: string[] | ((prev: string[]) => string[])) => setPicked((prev) => {
+      const base = prev.scope === selectionScope ? prev.paths : EMPTY_SELECTION
+      return { scope: selectionScope, paths: typeof next === 'function' ? next(base) : next }
+    }),
+    [selectionScope],
+  )
   const [deleting, setDeleting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const selectionScope = useRef('')
 
   const toggleSelect = (path: string) => {
     if (selected.includes(path)) {
@@ -182,7 +204,7 @@ export default function PerfReportsPage() {
   const confirmDeleteSelected = async () => {
     if (deleting || selected.length === 0) return
     setDeleting(true)
-    setError(null)
+    setDeleteError(null)
     const deleted: string[] = []
     try {
       for (const path of selected) {
@@ -192,11 +214,11 @@ export default function PerfReportsPage() {
       setSelected([])
     } catch (err) {
       setSelected((prev) => prev.filter((p) => !deleted.includes(p)))
-      setError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
+      setDeleteError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
     } finally {
       setDeleting(false)
       setConfirmOpen(false)
-      setReloadToken((n) => n + 1)
+      runsResource.reload()
     }
   }
 
@@ -205,48 +227,17 @@ export default function PerfReportsPage() {
       selected.map((path) => {
         const run = runs.find((r) => r.path === path)
         if (!run) return path
-        return `${run.model || run.dataset || path} · ${formatFull(run.timestamp)}`
+        return `${run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
       }),
     [selected, runs],
   )
 
-  useEffect(() => {
-    if (!rootPath) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await listPerfRuns(rootPath, controller.signal)
-        if (!controller.signal.aborted) {
-          setRuns(res.runs)
-          setPerfSemantics((res as { metric_semantics?: Record<string, MetricSemantics> }).metric_semantics ?? {})
-          const nextScope = `${rootPath}\0${scanToken}`
-          if (selectionScope.current !== nextScope) {
-            selectionScope.current = nextScope
-            setSelected([])
-          }
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !(isDomainError(err) && err.kind === 'aborted')) {
-          setError(err instanceof Error ? err.message : 'Failed to load perf runs')
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-          setHasLoaded(true)
-        }
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [rootPath, scanToken, reloadToken])
-
   // In-view recovery: retry re-fetches, clear-filters resets the search query;
   // other empty-state actions (create task, browse benchmarks) navigate.
+  const reloadRuns = runsResource.reload
   const handleEmptyAction = useCallback((action: ResolvedEmptyStateAction) => {
     if (action.navigateTo === '#retry') {
-      setReloadToken((n) => n + 1)
+      reloadRuns()
       return true
     }
     if (action.navigateTo === '#clear-filters') {
@@ -254,7 +245,7 @@ export default function PerfReportsPage() {
       return true
     }
     return false
-  }, [])
+  }, [reloadRuns])
 
   const openRun = (run: PerfRunSummary) => {
     navigate(`/perf-report?path=${encodeURIComponent(run.path)}&root_path=${encodeURIComponent(rootPath)}`)
@@ -306,7 +297,7 @@ export default function PerfReportsPage() {
           <EmptyStateSystem
             reason={error ? 'load-error' : 'no-data'}
             context={{ view: 'performance', retryTo: '#retry' }}
-            hint={!error && hasLoaded ? t('performance.noRunsHint') : undefined}
+            hint={!error && hasLoaded ? t('perf.archive.noRunsHint') : undefined}
             onAction={handleEmptyAction}
           />
         </div>
@@ -317,7 +308,7 @@ export default function PerfReportsPage() {
             <SearchInput
               value={query}
               onChange={setQuery}
-              placeholder={t('performance.searchPlaceholder')}
+              placeholder={t('perf.archive.searchPlaceholder')}
               className="w-full sm:w-72 [&>input]:h-10 [&>input]:py-0"
             />
             <div className="flex h-10 w-fit items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] p-0.5">
@@ -332,7 +323,7 @@ export default function PerfReportsPage() {
                       : 'text-[var(--text-muted)] hover:text-[var(--text)]',
                   ].join(' ')}
                 >
-                  {t(`performance.sort_${k}`)}
+                  {t(`perf.archive.sort_${k}`)}
                 </button>
               ))}
             </div>
@@ -345,10 +336,10 @@ export default function PerfReportsPage() {
                 <span>{t('reports.columns.model')}</span>
                 <span>{t('reports.columns.dataset')}</span>
                 <span>{t('reports.columns.time')}</span>
-                <span>{t('performance.ioTokens')}</span>
-                <span>{t('performance.sort_rps')}</span>
-                <span>{t('performance.sort_latency')}</span>
-                <span>{t('performance.successColumn')}</span>
+                <span>{t('perf.archive.ioTokens')}</span>
+                <span>{t('perf.archive.sort_rps')}</span>
+                <span>{t('perf.archive.sort_latency')}</span>
+                <span>{t('perf.archive.successColumn')}</span>
                 <span />
               </div>
               <div className="divide-y divide-[var(--border)]">

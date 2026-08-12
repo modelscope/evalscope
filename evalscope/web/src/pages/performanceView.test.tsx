@@ -24,7 +24,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ReportsProvider } from '@/contexts/ReportsContext'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
 import { DomainError } from '@/api/errors'
 import { loadFixture } from '@/test/loadFixture'
 import type {
@@ -35,7 +35,7 @@ import type {
 } from '@/api/types'
 
 import PerfReportDetailPage from './PerfReportDetailPage'
-import PerfRunsTab from './PerfRunsTab'
+import PerfRunsTab from '@/components/perf/PerfRunsTab'
 import PerfReportsPage from './PerfReportsPage'
 
 // The perf API module is entirely mocked: the URL builders return stable
@@ -267,7 +267,7 @@ function LocationProbe() {
 }
 
 function RescanHarness() {
-  const { triggerScan } = useReports()
+  const { triggerScan } = useScan()
   return <button onClick={() => triggerScan()}>Rescan fixture</button>
 }
 

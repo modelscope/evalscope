@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Hash, List, ArrowUp, ArrowDown, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
+import { Hash, List, ArrowUp, ArrowDown, HelpCircle, Search, MessageSquare, AlertCircle } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import type { PredictionRow, ReportData } from '@/api/types'
-import { isDomainError } from '@/api/errors'
 import { getPredictions, getDataFrame } from '@/api/reports'
 import Select from '@/components/ui/Select'
+import SegmentedControl, { type SegmentedOption } from '@/components/ui/SegmentedControl'
+import ScoreThresholdInput from '@/components/ui/ScoreThresholdInput'
+import Tooltip from '@/components/ui/Tooltip'
+import SampleNavigator from '@/components/reports/SampleNavigator'
 
-import ChatView from '@/components/single/ChatView'
+import ChatView from '@/components/chat/ChatView'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import ErrorAlert from '@/components/ui/ErrorAlert'
@@ -19,14 +23,14 @@ interface Props {
   initialSubset?: string
 }
 
+/** Stable placeholders so an unresolved read does not produce a new array each render. */
+const EMPTY_SUBSETS: string[] = []
+const EMPTY_PREDICTIONS: PredictionRow[] = []
+
 export default function PredictionsTab({ reportName, datasetName, rootPath, initialSubset }: Props) {
   const { t } = useLocale()
-  const [subsets, setSubsets] = useState<string[]>([])
-  const [selectedSubset, setSelectedSubset] = useState('')
-  const [predictions, setPredictions] = useState<PredictionRow[]>([])
-  const [loading, setLoading] = useState(false)
-  const [loadError, setLoadError] = useState('')
-  const [reloadToken, setReloadToken] = useState(0)
+  // The user's pick is remembered against the subset list it was made in.
+  const [pickedSubset, setPickedSubset] = useState<{ scope: string; name: string } | null>(null)
   const [mode, setMode] = useState('All')
   const [threshold, setThreshold] = useState(0.99)
   const [page, setPage] = useState(1)
@@ -40,58 +44,42 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   const indexInputRef = useRef<HTMLInputElement>(null)
   const msgIdInputRef = useRef<HTMLInputElement>(null)
 
-  // Load subsets when dataset changes
-  useEffect(() => {
-    if (!datasetName || !reportName) return
-    const controller = new AbortController()
-
-    const loadSubsets = async () => {
-      setLoadError('')
-      try {
-        const dfRes = await getDataFrame(rootPath, reportName, 'dataset', datasetName, controller.signal)
-        if (controller.signal.aborted) return
-        const subNames: string[] = []
-        for (const row of dfRes.data) {
-          const catCol = Object.keys(row).find((k) => k.startsWith('Cat.'))
-          if (catCol && row[catCol] === '-') continue
-          const name = String(row['Subset'] ?? '')
-          if (name && !subNames.includes(name)) subNames.push(name)
-        }
-        setSubsets(subNames)
-        const target = initialSubset && subNames.includes(initialSubset) ? initialSubset : (subNames[0] ?? '')
-        setSelectedSubset(target)
-        setPredictions([])
-      } catch (e) {
-        if (controller.signal.aborted || (isDomainError(e) && e.kind === 'aborted')) return
-        setLoadError(e instanceof Error ? e.message : t('common.loadError'))
-        console.error('Failed to load subsets:', e)
+  // Which subsets this dataset was scored on.
+  const subsetsResource = useAsyncResource(
+    async (signal) => {
+      const frame = await getDataFrame(rootPath, reportName, 'dataset', datasetName, signal)
+      const names: string[] = []
+      for (const row of frame.data) {
+        const catCol = Object.keys(row).find((k) => k.startsWith('Cat.'))
+        if (catCol && row[catCol] === '-') continue
+        const name = String(row['Subset'] ?? '')
+        if (name && !names.includes(name)) names.push(name)
       }
-    }
-    loadSubsets()
-    return () => controller.abort()
-  }, [datasetName, reportName, rootPath, initialSubset, t])
+      return names
+    },
+    [rootPath, reportName, datasetName],
+    { enabled: Boolean(datasetName && reportName), fallbackMessage: t('common.loadError') },
+  )
+  const subsets = subsetsResource.data ?? EMPTY_SUBSETS
 
-  // Load predictions when subset changes
-  useEffect(() => {
-    if (!selectedSubset || !reportName || !datasetName) return
-    const controller = new AbortController()
-    const loadPredictions = async () => {
-      setLoading(true)
-      setLoadError('')
-      try {
-        const res = await getPredictions(rootPath, reportName, datasetName, selectedSubset, controller.signal)
-        if (!controller.signal.aborted) setPredictions(res.predictions)
-      } catch (e) {
-        if (controller.signal.aborted || (isDomainError(e) && e.kind === 'aborted')) return
-        console.error('Failed to load predictions:', e)
-        setLoadError(e instanceof Error ? e.message : t('common.loadError'))
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    loadPredictions()
-    return () => controller.abort()
-  }, [rootPath, reportName, datasetName, selectedSubset, reloadToken, t])
+  // Follow the requested subset when it exists, otherwise open on the first one.
+  const subsetScope = `${rootPath}\0${reportName}\0${datasetName}`
+  const defaultSubset = initialSubset && subsets.includes(initialSubset) ? initialSubset : (subsets[0] ?? '')
+  const pickIsLoaded = pickedSubset?.scope === subsetScope && subsets.includes(pickedSubset.name)
+  const selectedSubset = pickIsLoaded ? pickedSubset.name : defaultSubset
+  const setSelectedSubset = (name: string) => setPickedSubset({ scope: subsetScope, name })
+
+  const predictionsResource = useAsyncResource(
+    (signal) => getPredictions(rootPath, reportName, datasetName, selectedSubset, signal),
+    [rootPath, reportName, datasetName, selectedSubset],
+    {
+      enabled: Boolean(selectedSubset && reportName && datasetName),
+      fallbackMessage: t('common.loadError'),
+    },
+  )
+  const predictions = predictionsResource.data?.predictions ?? EMPTY_PREDICTIONS
+  const loading = predictionsResource.loading
+  const loadError = subsetsResource.error || predictionsResource.error
 
   // The threshold is a view-only filter (above/below), not a pass/fail verdict,
   // and it never leaves this view.
@@ -119,21 +107,10 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
     reset()
   }, [mode, threshold, selectedSubset])
 
-  // Keyboard navigation (skip when search inputs are focused)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key === 'ArrowLeft' && page > 1) {
-        setPage(p => p - 1)
-        setHighlightMsgId(undefined)
-      } else if (e.key === 'ArrowRight' && page < totalPages) {
-        setPage(p => p + 1)
-        setHighlightMsgId(undefined)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [page, totalPages])
+  const goToSample = useCallback((next: number) => {
+    setPage(next)
+    setHighlightMsgId(undefined)
+  }, [])
 
   // --- Search handlers ---
   const handleIndexSearch = useCallback(() => {
@@ -170,15 +147,14 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
 
   const subsetOptions = subsets.map((s) => ({ value: s, label: s }))
 
-  // Filter button config. Labels describe the view filter (above/below the
-  // threshold), not a pass/fail outcome.
-  const filterBtns = [
-    { key: 'All', label: t('common.all'), icon: <List size={13} />, count: predictions.length },
-    { key: 'Above', label: t('prediction.aboveFilter'), icon: <ArrowUp size={13} />, count: aboveCount },
-    { key: 'Below', label: t('prediction.belowFilter'), icon: <ArrowDown size={13} />, count: belowCount },
-  ] as const
+  // Filter options describe the view filter (above/below the threshold), not a
+  // pass/fail outcome.
+  const filterOptions: SegmentedOption<string>[] = [
+    { value: 'All', label: t('common.all'), icon: <List size={13} />, count: predictions.length },
+    { value: 'Above', label: t('prediction.aboveFilter'), icon: <ArrowUp size={13} />, count: aboveCount },
+    { value: 'Below', label: t('prediction.belowFilter'), icon: <ArrowDown size={13} />, count: belowCount },
+  ]
 
-  const navBtnBase = 'bg-transparent border border-[var(--border)] rounded-full min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--text)] transition-colors'
   const searchInputBase = 'pl-7 pr-2 py-[0.3rem] text-[0.8rem] w-[120px] bg-[var(--bg-deep)] rounded-[var(--radius-sm)] text-[var(--text)] outline-none transition-colors'
 
   return (
@@ -198,51 +174,21 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         </div>
 
         {/* Right: Score Threshold + ? icon */}
-        <div className="flex items-center gap-[0.4rem] shrink-0 pb-[2px]">
-          <label htmlFor="prediction-score-threshold" className="text-xs text-[var(--text-muted)] whitespace-nowrap">
-            {t('single.scoreThreshold')}
-          </label>
-          <input
+        <div className="flex shrink-0 items-end gap-[0.4rem] pb-[2px]">
+          <ScoreThresholdInput
             id="prediction-score-threshold"
-            name="prediction-score-threshold"
-            type="number"
             value={threshold}
-            step={0.01}
-            min={0}
-            max={1}
-            onChange={(e) => setThreshold(Number(e.target.value))}
-            className="w-20 px-2 py-1 text-sm rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--accent)]"
+            onChange={setThreshold}
+            label={t('single.scoreThreshold')}
           />
-          <span
-            className="relative inline-flex cursor-help text-[var(--text-dim)]"
-            onMouseEnter={e => {
-              const tip = document.createElement('div')
-              tip.id = '__threshold_tip'
-              tip.textContent = t('prediction.thresholdHint')
-              Object.assign(tip.style, {
-                position: 'fixed',
-                background: 'var(--bg-card)',
-                color: 'var(--text)',
-                border: '1px solid var(--border)',
-                borderRadius: '6px',
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.72rem',
-                lineHeight: '1.5',
-                maxWidth: '220px',
-                zIndex: '9999',
-                pointerEvents: 'none',
-                boxShadow: 'var(--shadow)',
-                whiteSpace: 'normal',
-              })
-              document.body.appendChild(tip)
-              const rect = e.currentTarget.getBoundingClientRect()
-              tip.style.left = `${Math.min(rect.left, window.innerWidth - 240)}px`
-              tip.style.top = `${rect.bottom + 6}px`
-            }}
-            onMouseLeave={() => document.getElementById('__threshold_tip')?.remove()}
+          {/* text-dim allowed: non-essential help affordance per DESIGN.md §Text */}
+          <Tooltip
+            content={t('prediction.thresholdHint')}
+            label={t('prediction.thresholdHint')}
+            className="mb-2 cursor-help text-[var(--text-dim)]"
           >
             <HelpCircle size={14} />
-          </span>
+          </Tooltip>
         </div>
       </div>
 
@@ -257,7 +203,7 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           {selectedSubset && (
             <button
               type="button"
-              onClick={() => setReloadToken((value) => value + 1)}
+              onClick={predictionsResource.reload}
               className="min-h-11 rounded-[var(--radius-sm)] border border-current px-3 font-medium"
             >
               {t('common.retry')}
@@ -270,27 +216,13 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
         <>
           {/* ── Row 2: actions — filters (left) + search box (right) ── */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            {/* Left: All / Pass / Fail button group */}
-            <div className="inline-flex rounded-[var(--radius)] border border-[var(--border-md)] overflow-hidden">
-              {filterBtns.map(({ key, label, icon, count }, idx) => {
-                const isActive = mode === key
-                return (
-                  <button
-                    key={key}
-                    onClick={() => { setMode(key); setPage(1) }}
-                    className={[
-                      'flex items-center gap-[0.4rem] px-4 py-2 text-sm font-medium border-0 cursor-pointer transition-colors',
-                      idx < filterBtns.length - 1 ? 'border-r border-[var(--border-md)]' : '',
-                      isActive ? 'bg-[var(--accent)] text-[var(--bg)]' : 'bg-[var(--bg-card2)] text-[var(--text-muted)]',
-                    ].join(' ')}
-                  >
-                    {icon}
-                    <span>{label}</span>
-                    <span className="opacity-65 text-[0.8rem]">{count}</span>
-                  </button>
-                )
-              })}
-            </div>
+            {/* Left: All / Above / Below filter group */}
+            <SegmentedControl
+              options={filterOptions}
+              value={mode}
+              onChange={(next) => { setMode(next); setPage(1) }}
+              ariaLabel={t('prediction.aboveFilter')}
+            />
 
             {/* Right: search-jump box */}
             <div className="flex items-center gap-2">
@@ -339,44 +271,24 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
           </div>
 
           {/* Row 2: Sample nav */}
-          <div className="flex items-center gap-3">
-            {/* Left arrow */}
-            <button
-              aria-label={t('prediction.previousSample')}
-              onClick={() => { setPage(p => Math.max(1, p - 1)); setHighlightMsgId(undefined) }}
-              disabled={page <= 1}
-              className={`${navBtnBase} ${page <= 1 ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <ChevronLeft size={16} />
-            </button>
-
+          <SampleNavigator page={page} total={totalPages} onPageChange={goToSample}>
             {/* Sample X / Y with hash icon */}
-            <span className="flex items-center gap-[0.3rem] text-[var(--text-muted)] text-sm tabular-nums">
+            <span className="flex items-center gap-[0.3rem] text-sm tabular-nums text-[var(--text-muted)]">
               <Hash size={13} className="opacity-50" />
               Sample {page} / {totalPages}
               {row && (
-                <span className="text-xs opacity-50 ml-1">
+                <span className="ml-1 text-xs opacity-50">
                   (index: {row.Index})
                 </span>
               )}
             </span>
-
-            {/* Right arrow */}
-            <button
-              aria-label={t('prediction.nextSample')}
-              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); setHighlightMsgId(undefined) }}
-              disabled={page >= totalPages}
-              className={`${navBtnBase} ${page >= totalPages ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          </SampleNavigator>
 
           {/* Content area */}
           {row && (
             <div className="transition-all duration-200">
               {highlightMsgId && (
-                <p className="mb-2 type-caption text-[var(--text-muted)]" role="status">
+                <p className="type-body-xs mb-2 text-[var(--text-muted)]" role="status">
                   {t('prediction.messageLocated', { id: highlightMsgId })}
                 </p>
               )}

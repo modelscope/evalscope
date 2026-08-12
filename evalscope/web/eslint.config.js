@@ -33,8 +33,7 @@ export default defineConfig([
   },
   {
     files: [
-      'src/domain/compare/compareModel.ts',
-      'src/domain/perf/compareModel.ts',
+      'src/domain/**/*.ts',
     ],
     rules: {
       'no-restricted-imports': [

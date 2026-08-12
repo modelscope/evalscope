@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { listBenchmarks } from '@/api/eval'
 import type { BenchmarkEntry } from '@/api/types'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import Skeleton from '@/components/ui/Skeleton'
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import SearchInput from '@/components/ui/SearchInput'
 import Badge from '@/components/ui/Badge'
 import Pagination from '@/components/ui/Pagination'
 import { BookOpen, X, Database, Layers, FlaskConical, Tag, ExternalLink } from 'lucide-react'
 
 type TabKey = 'all' | 'text' | 'multimodal' | 'agent' | 'aigc'
+
+/** Stable placeholder so an unresolved catalog does not produce a new array each render. */
+const EMPTY_BENCHMARKS: BenchmarkEntry[] = []
 
 // Category -> small badge shown on cards. `llm` shows no badge (it is the default).
 const CATEGORY_BADGE: Partial<Record<BenchmarkEntry['category'], { label: string; variant: 'warning' | 'danger' | 'success' }>> = {
@@ -38,8 +43,6 @@ function stripMarkdown(md: string): string {
 export default function BenchmarksPage() {
   const { t, locale } = useLocale()
   const [tab, setTab] = useState<TabKey>('all')
-  const [loading, setLoading] = useState(true)
-  const [allBenchmarks, setAllBenchmarks] = useState<BenchmarkEntry[]>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -62,27 +65,21 @@ export default function BenchmarksPage() {
     paper_url: e.paper_url ?? (e.meta as Record<string, unknown>)?.paper_url as string | null ?? null,
   })
 
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      try {
-        const res = await listBenchmarks(undefined, true, controller.signal)
-        if (controller.signal.aborted) return
-        const textList = (res.text ?? []).map((e) => normalize(e, 'llm'))
-        const mmList = (res.multimodal ?? []).map((e) => normalize(e, 'vlm'))
-        const agentList = (res.agent ?? []).map((e) => normalize(e, 'agent'))
-        const aigcList = (res.aigc ?? []).map((e) => normalize(e, 'aigc'))
-        setAllBenchmarks([...textList, ...mmList, ...agentList, ...aigcList])
-      } catch {
-        /* ignore */
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [])
+  const catalog = useAsyncResource(
+    async (signal) => {
+      const res = await listBenchmarks(undefined, true, signal)
+      return [
+        ...(res.text ?? []).map((e) => normalize(e, 'llm')),
+        ...(res.multimodal ?? []).map((e) => normalize(e, 'vlm')),
+        ...(res.agent ?? []).map((e) => normalize(e, 'agent')),
+        ...(res.aigc ?? []).map((e) => normalize(e, 'aigc')),
+      ]
+    },
+    [],
+    { fallbackMessage: t('common.loadError') },
+  )
+  const allBenchmarks = catalog.data ?? EMPTY_BENCHMARKS
+  const loading = catalog.loading
 
   // Debounce search
   useEffect(() => {
@@ -190,10 +187,13 @@ export default function BenchmarksPage() {
     { key: 'aigc', label: `${t('benchmarks.aigc')} (${aigcCount})` },
   ]
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return <Skeleton lines={6} height={16} />
 
   return (
     <div className="page-enter space-y-5">
+      {/* A failed catalog read would otherwise render as "no benchmarks match". */}
+      {catalog.error && <ErrorAlert className="rounded-[var(--radius-sm)]">{catalog.error}</ErrorAlert>}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t('benchmarks.title')}</h1>

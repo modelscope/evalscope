@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
 import { datasetLabel } from '@/domain/report/primaryMetrics'
 import { formatReportRef, parseReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
-import { useReports } from '@/contexts/ReportsContext'
+import { useCompareSelection, useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import * as reportsApi from '@/api/reports'
-import { isDomainError } from '@/api/errors'
 import type { ListReportsResponse, ReportSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
@@ -23,9 +23,13 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   addToSelection,
   preserveSelectionAcrossReorder,
-} from '@/domain/compare/compareModel'
+} from '@/domain/compare/selection'
 
 const PAGE_SIZE = 20
+
+/** Stable placeholders so an unresolved listing keeps a single identity. */
+const EMPTY_REPORTS: ReportSummary[] = []
+const EMPTY_FACETS: string[] = []
 
 const defaultFilters: ReportFilters = {
   search: '',
@@ -42,27 +46,12 @@ export default function ReportsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const {
-    rootPath,
-    scanToken,
-    setRootPath,
-    selectedForCompare,
-    setCompareSelection,
-    clearCompareSelection,
-  } = useReports()
+  const { rootPath, scanToken, setRootPath } = useScan()
+  const { selectedForCompare, setCompareSelection, clearCompareSelection } = useCompareSelection()
 
   // ---- Local state ----
   const [filters, setFilters] = useState<ReportFilters>(defaultFilters)
   const [page, setPage] = useState(1)
-  const [reports, setReports] = useState<ReportSummary[]>([])
-  const [total, setTotal] = useState(0)
-  const [availableModels, setAvailableModels] = useState<string[]>([])
-  const [availableDatasets, setAvailableDatasets] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [hasLoaded, setHasLoaded] = useState(false)
-  // Bumped to re-trigger the fetch effect when the user retries from an empty state.
-  const [reloadToken, setReloadToken] = useState(0)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -98,47 +87,47 @@ export default function ReportsPage() {
   }, [])
 
   // Fetch reports on root/scan/filter/page change. When any dependency changes
-  // the previous in-flight request is aborted; its late/aborted
-  // response is dropped so only the newest request updates the UI.
-  useEffect(() => {
-    if (!rootPath) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res: ListReportsResponse = await reportsApi.listReports({
-          rootPath,
-          search: debouncedSearch || undefined,
-          models: filters.models.length ? filters.models : undefined,
-          datasets: filters.datasets.length ? filters.datasets : undefined,
-          scoreMin: filters.scoreMin > 0 ? filters.scoreMin : undefined,
-          scoreMax: filters.scoreMax < 1 ? filters.scoreMax : undefined,
-          sortBy: filters.sortBy,
-          sortOrder: filters.sortOrder,
-          page,
-          pageSize: PAGE_SIZE,
-          signal: controller.signal,
-        })
-        if (controller.signal.aborted) return
-        setReports(res.reports)
-        setTotal(res.total)
-        setAvailableModels(res.filters.available_models)
-        setAvailableDatasets(res.filters.available_datasets)
-      } catch (err) {
-        // A superseded request aborts; drop its outcome without surfacing an error.
-        if (controller.signal.aborted || (isDomainError(err) && err.kind === 'aborted')) return
-        setError(err instanceof Error ? err.message : 'Failed to load reports')
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-          setHasLoaded(true)
-        }
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [rootPath, scanToken, debouncedSearch, filters.models, filters.datasets, filters.scoreMin, filters.scoreMax, filters.sortBy, filters.sortOrder, page, reloadToken])
+  // the previous in-flight request is aborted; its late/aborted response is
+  // dropped so only the newest request updates the UI.
+  const listing = useAsyncResource(
+    (signal): Promise<ListReportsResponse> => reportsApi.listReports({
+      rootPath,
+      search: debouncedSearch || undefined,
+      models: filters.models.length ? filters.models : undefined,
+      datasets: filters.datasets.length ? filters.datasets : undefined,
+      scoreMin: filters.scoreMin > 0 ? filters.scoreMin : undefined,
+      scoreMax: filters.scoreMax < 1 ? filters.scoreMax : undefined,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+      page,
+      pageSize: PAGE_SIZE,
+      signal,
+    }),
+    [
+      rootPath,
+      scanToken,
+      debouncedSearch,
+      filters.models,
+      filters.datasets,
+      filters.scoreMin,
+      filters.scoreMax,
+      filters.sortBy,
+      filters.sortOrder,
+      page,
+    ],
+    { enabled: Boolean(rootPath), fallbackMessage: 'Failed to load reports' },
+  )
+
+  const reports = listing.data?.reports ?? EMPTY_REPORTS
+  const total = listing.data?.total ?? 0
+  const availableModels = listing.data?.filters.available_models ?? EMPTY_FACETS
+  const availableDatasets = listing.data?.filters.available_datasets ?? EMPTY_FACETS
+  const loading = listing.loading
+  const hasLoaded = listing.data !== undefined || Boolean(listing.error)
+
+  // Deleting reports its own failure; a load failure comes from the resource.
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const error = deleteError ?? (listing.error || null)
 
   // ---- Selection helpers ----
   const currentPageNames = useMemo(
@@ -207,10 +196,11 @@ export default function ReportsPage() {
     setConfirmOpen(true)
   }, [selectedForCompare, deleting])
 
+  const reloadListing = listing.reload
   const confirmDeleteSelected = useCallback(async () => {
     if (deleting || selectedForCompare.length === 0) return
     setDeleting(true)
-    setError(null)
+    setDeleteError(null)
     const deleted: string[] = []
     try {
       for (const name of selectedForCompare) {
@@ -220,13 +210,13 @@ export default function ReportsPage() {
       clearCompareSelection()
     } catch (err) {
       setCompareSelection(selectedForCompare.filter((n) => !deleted.includes(n)))
-      setError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
+      setDeleteError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
     } finally {
       setDeleting(false)
       setConfirmOpen(false)
-      setReloadToken((n) => n + 1)
+      reloadListing()
     }
-  }, [deleting, selectedForCompare, rootPath, clearCompareSelection, setCompareSelection, t])
+  }, [deleting, selectedForCompare, rootPath, clearCompareSelection, setCompareSelection, reloadListing, t])
 
   const pendingDeleteItems = useMemo(
     () =>
@@ -257,7 +247,7 @@ export default function ReportsPage() {
   // other actions fall through to real navigation.
   const handleEmptyAction = useCallback((action: ResolvedEmptyStateAction) => {
     if (action.navigateTo === '#retry') {
-      setReloadToken((n) => n + 1)
+      reloadListing()
       return true
     }
     if (action.navigateTo === '#clear-filters') {
@@ -266,7 +256,7 @@ export default function ReportsPage() {
       return true
     }
     return false
-  }, [])
+  }, [reloadListing])
 
   return (
     <div className="page-enter mx-auto flex w-full max-w-7xl flex-col gap-5">

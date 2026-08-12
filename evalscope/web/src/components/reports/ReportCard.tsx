@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
+import { formatTimestamp } from '@/utils/formatUtils'
 import type { ReportSummary } from '@/api/types'
 import { datasetLabel, primaryMetricsOf } from '@/domain/report/primaryMetrics'
 import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
@@ -16,15 +17,11 @@ interface ReportCardProps {
   onClick: (ref: string) => void
 }
 
-function formatTimestamp(ts: string): string {
-  return ts.replace('T', ' ').slice(0, 16)
-}
-
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
   const ref = formatReportRef(reportRefFromSummary(report))
-  const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
+  const formattedDate = formatTimestamp(report.timestamp)
   const metricRefs = primaryMetricsOf(report)
 
   const handleDetailClick = (e: MouseEvent) => {

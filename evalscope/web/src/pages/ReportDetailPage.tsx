@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
-import { isDomainError } from '@/api/errors'
-import type { LoadReportResponse, ReportData } from '@/api/types'
+import type { ReportData } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
@@ -30,39 +30,28 @@ export default function ReportDetailPage() {
     [runId, modelId],
   )
 
-  const [data, setData] = useState<LoadReportResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
-  const [activeDataset, setActiveDataset] = useState('')
+  const [pickedDataset, setPickedDataset] = useState<{ scope: string; name: string } | null>(null)
   const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
-  // Load report when the detail inputs change. A change aborts the previous
-  // request and drops its late/aborted response so only the newest
-  // request updates the view.
-  useEffect(() => {
-    if (!reportName) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await apiLoadReport(rootPath, reportName, controller.signal)
-        if (controller.signal.aborted) return
-        setData(res)
-        if (res.datasets.length > 0) {
-          setActiveDataset(res.datasets[0])
-        }
-      } catch (err) {
-        if (controller.signal.aborted || (isDomainError(err) && err.kind === 'aborted')) return
-        setError(String(err))
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [rootPath, reportName])
+  // A change of inputs aborts the previous request and drops its late response,
+  // so only the newest one updates the view.
+  const report = useAsyncResource(
+    (signal) => apiLoadReport(rootPath, reportName, signal),
+    [rootPath, reportName],
+    { enabled: Boolean(reportName), fallbackMessage: t('common.loadError') },
+  )
+  const data = report.data ?? null
+  const loading = report.loading
+  const error = report.error
+
+  // Open on the report's first dataset, while still letting the user switch; the
+  // pick is scoped to the report it was made on.
+  const datasetScope = `${rootPath}\0${reportName}`
+  const pickIsLoaded = pickedDataset?.scope === datasetScope
+    && Boolean(data?.datasets.includes(pickedDataset.name))
+  const activeDataset = pickIsLoaded ? pickedDataset.name : (data?.datasets[0] ?? '')
+  const setActiveDataset = (name: string) => setPickedDataset({ scope: datasetScope, name })
 
   const reportList = useMemo<ReportData[]>(() => data?.report_list ?? [], [data])
 

@@ -2,7 +2,7 @@ import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import PlotlyChart from '@/components/charts/PlotlyChart'
 import type { DataTableModel } from '@/components/common/DataTableFallback'
-import { CHART_TITLES } from '@/utils/perf'
+import { CHART_TITLES } from '@/domain/perf/charts'
 
 interface PerfChartGroupProps {
   title: string

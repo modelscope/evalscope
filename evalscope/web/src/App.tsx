@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import MainLayout from '@/layouts/MainLayout'
 import ErrorBoundary from '@/components/common/ErrorBoundary'
 import { lazy, Suspense } from 'react'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
+import Skeleton from '@/components/ui/Skeleton'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
@@ -20,7 +20,7 @@ const BenchmarksPage = lazy(() => import('@/pages/BenchmarksPage'))
 
 function AppRoutes() {
   return (
-    <Suspense fallback={<LoadingSpinner />}>
+    <Suspense fallback={<Skeleton lines={6} height={16} className="p-6" />}>
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />

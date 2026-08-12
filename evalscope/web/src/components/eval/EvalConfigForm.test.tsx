@@ -19,7 +19,7 @@ import { LocaleProvider } from '@/contexts/LocaleContext'
 
 vi.mock('@/api/eval', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/eval')>()
-  return { ...actual, listBenchmarks: vi.fn().mockResolvedValue({ text: [], multimodal: [] }) }
+  return { ...actual, listBenchmarks: vi.fn(() => new Promise(() => {})) }
 })
 
 import EvalConfigForm from './EvalConfigForm'
