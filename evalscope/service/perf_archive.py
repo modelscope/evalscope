@@ -324,6 +324,8 @@ def list_run_summaries(root: str) -> List[dict]:
 
 def build_run_detail(root: str, rel_path: str) -> dict:
     """Build native-render metadata for a single perf-run directory."""
+    from evalscope.perf.utils.report.perf_data import RunLoader
+
     run_dir = resolve_run_dir(root, rel_path)
     if run_dir is None:
         raise PerfArchiveError('Invalid path', 400)
@@ -336,7 +338,8 @@ def build_run_detail(root: str, rel_path: str) -> dict:
     identity = _build_identity_metadata(first_args)
     api_type = first_args.get('api', '')
     is_emb = is_embedding(api_type)
-    summary_columns, summary_rows = build_summary_table(runs, is_emb)
+    request_counts = [RunLoader.count_request_samples(os.path.join(run_dir, run.dir_name)) for run in runs]
+    summary_columns, summary_rows = build_summary_table(runs, is_emb, request_counts)
 
     basic_info = dict(build_basic_info(first_args, runs, is_emb))
     if identity.get('provider'):
@@ -355,7 +358,6 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'basic_info': basic_info,
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
-        'summary_sample_counts': [run.summary.total_requests for run in runs],
         'total_requests': sum(run.summary.total_requests for run in runs),
         'best_config': dict(build_best_config(runs)),
         'recommendations': build_recommendations(runs),

@@ -60,14 +60,14 @@ def _make_db(sub_dir: str, *, n_success: int, n_failed: int) -> None:
             'CREATE TABLE result ('
             'start_time REAL, completed_time REAL, latency REAL, '
             'first_chunk_latency REAL, prompt_tokens INTEGER, completion_tokens INTEGER, '
-            'inter_token_latencies TEXT, time_per_output_token REAL, success INTEGER)'
+            'inter_token_latencies TEXT, time_per_output_token REAL, success INTEGER, is_stream INTEGER)'
         )
-        rows = [(0.0, 1.0, 0.5, 0.1, 10, 20, '[]', 0.01, 1) for _ in range(n_success)]
-        rows += [(0.0, 1.0, 0.5, None, 10, 0, '[]', None, 0) for _ in range(n_failed)]
+        rows = [(0.0, 1.0, 0.5, 0.1, 10, 20, '[]', 0.01, 1, 1) for _ in range(n_success)]
+        rows += [(0.0, 1.0, 0.5, None, 10, 0, '[]', None, 0, 1) for _ in range(n_failed)]
         conn.executemany(
             'INSERT INTO result (start_time, completed_time, latency, first_chunk_latency, '
-            'prompt_tokens, completion_tokens, inter_token_latencies, time_per_output_token, success) '
-            'VALUES (?,?,?,?,?,?,?,?,?)',
+            'prompt_tokens, completion_tokens, inter_token_latencies, time_per_output_token, success, is_stream) '
+            'VALUES (?,?,?,?,?,?,?,?,?,?)',
             rows,
         )
         conn.commit()
@@ -126,8 +126,12 @@ class TestPerfArchive(unittest.TestCase):
         latency = next(column for column in body['summary_columns'] if column['key'] == 'avg_latency')
         self.assertEqual(latency['label'], 'Avg Lat.(s)')
         self.assertEqual(latency['semantics']['semantic_id'], 'perf.latency.seconds')
+        self.assertIsInstance(body['summary_rows'][0]['values']['avg_latency'], (int, float))
+        self.assertEqual(body['summary_rows'][0]['sample_counts']['avg_latency'], self.n_success)
+        self.assertEqual(body['summary_rows'][0]['sample_counts']['p99_ttft'], self.n_success)
+        self.assertEqual(body['summary_rows'][0]['sample_counts']['success_rate'], self.n_total)
         self.assertEqual(body['total_requests'], 2)
-        self.assertEqual(body['summary_sample_counts'], [2])
+        self.assertNotIn('summary_sample_counts', body)
         self.assertNotIn('metric_semantics', body)
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')

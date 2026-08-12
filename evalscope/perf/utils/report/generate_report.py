@@ -25,6 +25,7 @@ from .summary import (
     build_recommendations,
     build_summary_items,
     build_summary_table,
+    format_summary_rows,
     is_embedding,
 )
 
@@ -132,6 +133,7 @@ def gen_perf_html_report(
 
     # ── Summary table ───────────────────────────────────────────────────────
     summary_columns, summary_rows = build_summary_table(runs, is_emb)
+    summary_rows = format_summary_rows(summary_columns, summary_rows)
 
     # ── Template rendering ──────────────────────────────────────────────────
     env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)

@@ -51,6 +51,8 @@ export interface MetricDelta {
   percentDelta: FormattedMetric
   /** Direction-aware, informational verdict. */
   verdict: DeltaVerdict
+  /** Effective observations used by this metric on each side. */
+  sampleCounts: { baseline: number; candidate: number }
 }
 
 /**
@@ -125,49 +127,31 @@ const PERCENT_DELTA_SEMANTICS: MetricSemantics = {
   contract_version: 1,
 }
 
-/**
- * Coerce a raw summary-row cell into a finite number, or `null` when it cannot
- * be interpreted as one (missing value → incomputable delta).
- */
-function toNumeric(value: unknown): number | null {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null
-  }
-  if (typeof value === 'string') {
-    const trimmed = value.trim().replace(/,/g, '').replace(/%$/, '')
-    if (trimmed.length === 0) return null
-    const parsed = Number(trimmed)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-  return null
-}
+type SummaryRow = PerfDetailResponse['summary_rows'][number]
 
-interface WideMetricColumn {
-  key: string
-  columnIndex: number
-  semantics: MetricSemantics
-}
+interface WideMetricColumn { key: string; semantics: MetricSemantics }
 
 function getWideMetricColumns(run: PerfDetailResponse): WideMetricColumn[] {
-  return run.summary_columns.flatMap((column, columnIndex) => {
-    return column.semantics ? [{ key: column.key, columnIndex, semantics: column.semantics }] : []
+  return run.summary_columns.flatMap((column) => {
+    return column.semantics ? [{ key: column.key, semantics: column.semantics }] : []
   })
 }
 
-function toMetricMap(run: PerfDetailResponse, wideRow?: (string | number)[]): Map<string, number | null> {
+function toMetricMap(run: PerfDetailResponse, wideRow?: SummaryRow): Map<string, number | null> {
   const map = new Map<string, number | null>()
-  for (const { key, columnIndex } of getWideMetricColumns(run)) {
-    map.set(key, wideRow ? toNumeric(wideRow[columnIndex]) : null)
+  for (const { key } of getWideMetricColumns(run)) {
+    const value = wideRow?.values[key]
+    map.set(key, typeof value === 'number' && Number.isFinite(value) ? value : null)
   }
   return map
 }
 
-function wideRowConfig(run: PerfDetailResponse, row: (string | number)[]): Record<string, string> {
-  const metricIndexes = new Set(getWideMetricColumns(run).map(({ columnIndex }) => columnIndex))
+function wideRowConfig(run: PerfDetailResponse, row: SummaryRow): Record<string, string> {
+  const metricKeys = new Set(getWideMetricColumns(run).map(({ key }) => key))
   const config: Record<string, string> = {}
-  run.summary_columns.forEach((column, index) => {
-    if (metricIndexes.has(index)) return
-    config[column.key] = String(row[index] ?? '').trim()
+  run.summary_columns.forEach((column) => {
+    if (metricKeys.has(column.key)) return
+    config[column.key] = String(row.values[column.key] ?? '').trim()
   })
   return config
 }
@@ -180,9 +164,9 @@ function matchingWideRows(
   baseline: PerfDetailResponse,
   candidate: PerfDetailResponse,
 ): {
-  baseline: (string | number)[]
+  baseline: SummaryRow
   baselineIndex: number
-  candidate: (string | number)[]
+  candidate: SummaryRow
   candidateIndex: number
 } | null {
   const candidates = new Map(
@@ -212,6 +196,7 @@ function buildMetricDelta(
   baselineValue: number | null,
   candidateValue: number | null,
   semantics: MetricSemantics | null | undefined,
+  sampleCounts: { baseline: number; candidate: number },
 ): MetricDelta {
   const baseline = formatMetric(baselineValue, semantics)
   const candidate = formatMetric(candidateValue, semantics)
@@ -232,7 +217,7 @@ function buildMetricDelta(
     ? 'incomputable'
     : rawVerdict === 'equal' ? 'neutral' : rawVerdict === 'better' ? 'improvement' : 'regression'
 
-  return { metricKey, metricLabel, baseline, candidate, absoluteDelta, percentDelta, verdict }
+  return { metricKey, metricLabel, baseline, candidate, absoluteDelta, percentDelta, verdict, sampleCounts }
 }
 
 /** Parse a run timestamp into epoch millis; unparseable timestamps sort as "oldest". */
@@ -257,34 +242,31 @@ function pickNewest(runs: PerfDetailResponse[]): PerfDetailResponse {
   return runs.reduce((newest, run) => (timestampOf(run) > timestampOf(newest) ? run : newest))
 }
 
-/** Extract the request count for one summary row, or the run total when no row is selected. */
-function getSampleCount(run: PerfDetailResponse, rowIndex?: number): number {
-  if (rowIndex !== undefined) {
-    const rowCount = run.summary_sample_counts[rowIndex]
-    return Number.isFinite(rowCount) ? rowCount : 0
-  }
-  return Number.isFinite(run.total_requests) ? run.total_requests : 0
+/** Extract a metric's effective sample count from one summary row. */
+function getSampleCount(run: PerfDetailResponse, metricKey: string, rowIndex?: number): number {
+  const rowCount = rowIndex === undefined ? undefined : run.summary_rows[rowIndex]?.sample_counts[metricKey]
+  return typeof rowCount === 'number' && Number.isFinite(rowCount) ? rowCount : 0
 }
 
 function wideConfig(run: PerfDetailResponse): Record<string, string> {
-  const metricIndexes = new Set(getWideMetricColumns(run).map(({ columnIndex }) => columnIndex))
+  const metricKeys = new Set(getWideMetricColumns(run).map(({ key }) => key))
   const config: Record<string, string> = {}
-  run.summary_columns.forEach((column, index) => {
-    if (metricIndexes.has(index)) return
-    const values = Array.from(new Set(run.summary_rows.map((row) => String(row[index] ?? '')).filter(Boolean)))
+  run.summary_columns.forEach((column) => {
+    if (metricKeys.has(column.key)) return
+    const values = Array.from(new Set(run.summary_rows.map((row) => String(row.values[column.key] ?? '')).filter(Boolean)))
     config[column.key] = values.join(', ')
   })
-  config.number_of_requests = String(getSampleCount(run))
+  config.number_of_requests = String(run.total_requests)
   return config
 }
 
 function selectedWideConfig(
   run: PerfDetailResponse,
-  row?: (string | number)[],
+  row?: SummaryRow,
   rowIndex?: number,
 ): Record<string, string> {
   if (!row) return wideConfig(run)
-  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run, rowIndex)) }
+  return { ...wideRowConfig(run, row), number_of_requests: String(getSampleCount(run, 'success_rate', rowIndex)) }
 }
 
 /**
@@ -389,12 +371,16 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
       baselineMetrics.get(key) ?? null,
       candidateMetrics.get(key) ?? null,
       semanticsByField.get(key),
+      {
+        baseline: getSampleCount(baseline, key, baselineRowIndex),
+        candidate: getSampleCount(candidate, key, candidateRowIndex),
+      },
     ),
   )
 
   const sampleCounts: Record<string, number> = {
-    [baseline.path]: getSampleCount(baseline, baselineRowIndex),
-    [candidate.path]: getSampleCount(candidate, candidateRowIndex),
+    [baseline.path]: getSampleCount(baseline, 'success_rate', baselineRowIndex),
+    [candidate.path]: getSampleCount(candidate, 'success_rate', candidateRowIndex),
   }
 
   const baselineConfig = selectedWideConfig(baseline, matchedRows?.baseline, baselineRowIndex)
@@ -410,7 +396,9 @@ export function buildCompareModel(runs: PerfDetailResponse[], baselineId: string
     key: configLabels.get(entry.key) ?? entry.key,
   }))
   const workloadMismatch = baseline !== candidate && (
-    matchedRows === null || baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()
+    matchedRows === null
+    || baseline.dataset.trim().toLowerCase() !== candidate.dataset.trim().toLowerCase()
+    || sampleCounts[baseline.path] !== sampleCounts[candidate.path]
   )
 
   return {

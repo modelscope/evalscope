@@ -83,8 +83,16 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
     generated_at: '2026-06-01T00:00:00Z',
     basic_info: { 'Total requests': String(sampleCount) },
     summary_columns: columns,
-    summary_rows: [[1.2, 2.0, 2.5, 3.0, 500]],
-    summary_sample_counts: [sampleCount],
+    summary_rows: [{
+      values: {
+        avg_latency: 1.2,
+        p90_latency: 2.0,
+        p95_latency: 2.5,
+        p99_latency: 3.0,
+        output_token_throughput: 500,
+      },
+      sample_counts: Object.fromEntries(columns.map((column) => [column.key, sampleCount])),
+    }],
     total_requests: sampleCount,
     best_config: { concurrency: '10' },
     recommendations: [],

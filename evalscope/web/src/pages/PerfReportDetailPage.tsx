@@ -17,6 +17,7 @@ import PerfRunsTab from '@/components/perf/PerfRunsTab'
 import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
+import { formatMetric } from '@/domain/metric'
 import { ExternalLink, Lightbulb } from 'lucide-react'
 import type { PerfDetailResponse } from '@/api/types'
 
@@ -32,15 +33,17 @@ function omitKeys(info: Record<string, string>, keys: string[]): Record<string, 
 // Overview building blocks                                            //
 // ------------------------------------------------------------------ //
 type SummaryColumn = PerfDetailResponse['summary_columns'][number]
+type SummaryRow = PerfDetailResponse['summary_rows'][number]
 
-function formatSummaryCell(column: SummaryColumn, cell: string | number, t: (key: string) => string): string {
-  if (column.key === 'request_rate' && String(cell).trim().toUpperCase() === 'INF') {
+function formatSummaryCell(column: SummaryColumn, cell: number, t: (key: string) => string): string {
+  if (column.key === 'request_rate' && cell === -1) {
     return t('perf.archive.closedLoop')
   }
-  return String(cell)
+  if (column.key === 'concurrency') return cell === -1 ? 'INF' : String(cell)
+  return formatMetric(cell, column.semantics).primary
 }
 
-function SummaryTable({ columns, rows, t }: { columns: SummaryColumn[]; rows: (string | number)[][]; t: (key: string) => string }) {
+function SummaryTable({ columns, rows, t }: { columns: SummaryColumn[]; rows: SummaryRow[]; t: (key: string) => string }) {
   if (columns.length === 0) return null
   return (
     <div className="overflow-x-auto">
@@ -60,12 +63,12 @@ function SummaryTable({ columns, rows, t }: { columns: SummaryColumn[]; rows: (s
         <tbody>
           {rows.map((row, ri) => (
             <tr key={ri} className={ri < rows.length - 1 ? 'border-b border-[var(--border)]' : ''}>
-              {row.map((cell, ci) => (
+              {columns.map((column) => (
                 <td
-                  key={ci}
+                  key={column.key}
                   className="type-body-sm tabular-nums px-3 py-2 text-right first:text-left whitespace-nowrap text-[var(--text)]"
                 >
-                  {formatSummaryCell(columns[ci] ?? '', cell, t)}
+                  {formatSummaryCell(column, row.values[column.key], t)}
                 </td>
               ))}
             </tr>
@@ -76,8 +79,8 @@ function SummaryTable({ columns, rows, t }: { columns: SummaryColumn[]; rows: (s
   )
 }
 
-function rowsToRecords(columns: SummaryColumn[], rows: (string | number)[][]): Record<string, unknown>[] {
-  return rows.map((row) => Object.fromEntries(columns.map((column, index) => [column.label, row[index]])))
+function rowsToRecords(columns: SummaryColumn[], rows: SummaryRow[]): Record<string, unknown>[] {
+  return rows.map((row) => Object.fromEntries(columns.map((column) => [column.label, row.values[column.key]])))
 }
 
 // ------------------------------------------------------------------ //

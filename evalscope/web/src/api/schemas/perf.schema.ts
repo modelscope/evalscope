@@ -28,6 +28,11 @@ const perfSummaryColumnSchema = z.object({
   semantics: metricSemanticsSchema.nullable(),
 })
 
+const perfSummaryRowSchema = z.object({
+  values: z.record(z.string(), z.number()),
+  sample_counts: z.record(z.string(), z.number()),
+})
+
 // ------------------------------------------------------------------ //
 // Perf run archive (GET /api/v1/perf/list)                            //
 // ------------------------------------------------------------------ //
@@ -75,8 +80,7 @@ export const perfDetailResponseSchema = z.object({
   generated_at: z.string(),
   basic_info: z.record(z.string(), z.string()),
   summary_columns: z.array(perfSummaryColumnSchema),
-  summary_rows: z.array(z.array(tableCellSchema)),
-  summary_sample_counts: z.array(z.number()),
+  summary_rows: z.array(perfSummaryRowSchema),
   total_requests: z.number(),
   best_config: z.record(z.string(), z.string()),
   recommendations: z.array(z.string()),

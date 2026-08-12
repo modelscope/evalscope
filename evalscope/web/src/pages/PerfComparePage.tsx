@@ -34,8 +34,8 @@ function tierRank(tier: SampleTier): number {
 }
 
 /** Worst (lowest-sample) tier across the baseline and candidate sample counts. */
-function worstSampleTier(counts: Record<string, number>): SampleTier {
-  const tiers = Object.values(counts).map(classifySampleSize)
+function worstSampleTier(counts: number[]): SampleTier {
+  const tiers = counts.map(classifySampleSize)
   return tiers.reduce<SampleTier>((worst, tier) => (tierRank(tier) > tierRank(worst) ? tier : worst), 'ok')
 }
 
@@ -151,7 +151,10 @@ export default function PerfComparePage() {
   const candidateRun = model ? byPath.get(model.candidateId) : undefined
   const canSwap = Boolean(model && model.candidateId && model.candidateId !== model.baselineId)
 
-  const sampleTier: SampleTier = model ? worstSampleTier(model.sampleCounts) : 'ok'
+  const percentileSampleCounts = (model?.deltas ?? [])
+    .filter((delta) => percentileLevel(delta.metricKey) !== null)
+    .flatMap((delta) => Object.values(delta.sampleCounts))
+  const sampleTier: SampleTier = worstSampleTier(percentileSampleCounts)
   // A run missing performance data has no summary rows.
   const hasEmptyRun = (details ?? []).some((d) => !Array.isArray(d.summary_rows) || d.summary_rows.length === 0)
   const showMissingHint = missingCount > 0 || hasEmptyRun || Boolean(model?.deltas.some((d) => d.verdict === 'incomputable'))
@@ -315,7 +318,8 @@ export default function PerfComparePage() {
                   <tbody>
                     {model.deltas.map((delta) => {
                       const level = percentileLevel(delta.metricKey)
-                      const lowSample = level !== null && percentileDeEmphasized(sampleTier, level)
+                      const metricSampleTier = worstSampleTier(Object.values(delta.sampleCounts))
+                      const lowSample = level !== null && percentileDeEmphasized(metricSampleTier, level)
                       const incomputable = delta.verdict === 'incomputable'
                       // De-emphasize incomputable deltas and low-sample percentiles,
                       // but keep raw values available via the cell tooltip.

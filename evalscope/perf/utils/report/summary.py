@@ -12,7 +12,7 @@ underscored helpers.
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value, resolve_perf_semantics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
@@ -80,44 +80,76 @@ def build_basic_info(
     return info
 
 
-def build_summary_table(runs: list, is_embedding_flag: bool):
-    """Build the cross-run summary table. Returns *(columns, rows)*."""
+def _summary_specs(is_embedding_flag: bool) -> list:
+    """Return ordered summary-column specifications for the API type."""
     specs = _CONFIG_COLUMNS + _COMMON_METRIC_COLUMNS
     if is_embedding_flag:
         specs += _EMBEDDING_METRIC_COLUMNS + [_SUCCESS_COLUMN]
-        rows = []
-        for r in runs:
-            s = r.summary
-            rate = s.request_rate
-            rows.append([
-                'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else _cell(Metrics.REQUEST_RATE, rate),
-                _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput),
-                _cell(Metrics.AVERAGE_LATENCY, s.avg_latency),
-                _cell(PercentileMetrics.LATENCY, r.get_p99('latency')),
-                _cell(Metrics.INPUT_TOKEN_THROUGHPUT, s.input_token_throughput),
-                _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens),
-                _cell('success_rate', r.success_rate, include_unit=True),
-            ])
     else:
         specs += _GENERATION_METRIC_COLUMNS + [_SUCCESS_COLUMN]
-        rows = []
-        for r in runs:
-            s = r.summary
-            rate = s.request_rate
-            rows.append([
-                'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else _cell(Metrics.REQUEST_RATE, rate),
-                _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput),
-                _cell(Metrics.AVERAGE_LATENCY, s.avg_latency),
-                _cell(PercentileMetrics.LATENCY, r.get_p99('latency')),
-                _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft),
-                _cell(PercentileMetrics.TTFT, r.get_p99('ttft')),
-                _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot),
-                _cell(PercentileMetrics.TPOT, r.get_p99('tpot')),
-                _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput),
-                _cell('success_rate', r.success_rate, include_unit=True),
-            ])
+    return specs
+
+
+def _summary_values(run: Any, is_embedding_flag: bool) -> Dict[str, float]:
+    """Return unformatted summary values keyed by stable API field names."""
+    summary = run.summary
+    values = {
+        'concurrency': summary.concurrency,
+        'request_rate': summary.request_rate,
+        'request_throughput': summary.request_throughput,
+        'avg_latency': summary.avg_latency,
+        'p99_latency': run.get_p99('latency'),
+    }
+    if is_embedding_flag:
+        values.update({
+            'input_token_throughput': summary.input_token_throughput,
+            'avg_input_tokens': summary.avg_input_tokens,
+        })
+    else:
+        values.update({
+            'avg_ttft': summary.avg_ttft,
+            'p99_ttft': run.get_p99('ttft'),
+            'avg_tpot': summary.avg_tpot,
+            'p99_tpot': run.get_p99('tpot'),
+            'output_token_throughput': summary.output_token_throughput,
+        })
+    values['success_rate'] = run.success_rate
+    return values
+
+
+def _summary_sample_counts(run: Any, request_counts: Optional[Dict[str, int]] = None) -> Dict[str, int]:
+    """Return the effective observation count for every summary metric."""
+    summary = run.summary
+    request_counts = request_counts or {}
+    total = request_counts.get('total', summary.total_requests)
+    successful = request_counts.get('successful', summary.succeed_requests)
+    stream_successful = request_counts.get('stream_successful')
+    if stream_successful is None:
+        stream_successful = min(successful, summary.stream_requests) if summary.stream_requests > 0 else successful
+    generation_successful = stream_successful if stream_successful > 0 else successful
+
+    return {
+        'request_throughput': successful,
+        'avg_latency': successful,
+        'p99_latency': successful,
+        'input_token_throughput': successful,
+        'avg_input_tokens': successful,
+        'avg_ttft': generation_successful,
+        'p99_ttft': generation_successful,
+        'avg_tpot': generation_successful,
+        'p99_tpot': generation_successful,
+        'output_token_throughput': successful,
+        'success_rate': total,
+    }
+
+
+def build_summary_table(
+    runs: list,
+    is_embedding_flag: bool,
+    request_counts: Optional[List[Optional[Dict[str, int]]]] = None,
+) -> tuple:
+    """Build a structured, unformatted cross-run summary table."""
+    specs = _summary_specs(is_embedding_flag)
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
     columns: List[Dict[str, Any]] = [{
@@ -125,7 +157,34 @@ def build_summary_table(runs: list, is_embedding_flag: bool):
         'label': label,
         'semantics': semantics.get(field_key) if field_key is not None else None,
     } for key, label, field_key in specs]
+    rows = [{
+        'values': _summary_values(run, is_embedding_flag),
+        'sample_counts': _summary_sample_counts(run, request_counts[index] if request_counts else None),
+    } for index, run in enumerate(runs)]
     return columns, rows
+
+
+def format_summary_rows(columns: list, rows: list) -> List[List[str]]:
+    """Format structured summary rows for the standalone HTML report."""
+    all_specs = (
+        _CONFIG_COLUMNS + _COMMON_METRIC_COLUMNS + _EMBEDDING_METRIC_COLUMNS + _GENERATION_METRIC_COLUMNS
+        + [_SUCCESS_COLUMN]
+    )
+    field_keys = {key: field_key for key, _, field_key in all_specs}
+    formatted_rows: List[List[str]] = []
+    for row in rows:
+        formatted_row = []
+        for column in columns:
+            key = column['key']
+            value = row['values'][key]
+            if key in ('concurrency', 'request_rate') and value == -1:
+                formatted_row.append('INF')
+            elif key == 'concurrency':
+                formatted_row.append(str(int(value)))
+            else:
+                formatted_row.append(_cell(field_keys[key], value, include_unit=key == 'success_rate'))
+        formatted_rows.append(formatted_row)
+    return formatted_rows
 
 
 def build_best_config(runs: list) -> OrderedDict:

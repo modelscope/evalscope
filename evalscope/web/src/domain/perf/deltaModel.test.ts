@@ -40,6 +40,7 @@ const SUCCESS: MetricSemantics = {
 }
 
 type SummaryColumn = PerfDetailResponse['summary_columns'][number]
+type SummaryRow = PerfDetailResponse['summary_rows'][number]
 
 const configColumn = (key: string, label: string): SummaryColumn => ({ key, label, semantics: null })
 const metricColumn = (key: string, label: string, semantics: MetricSemantics): SummaryColumn => ({
@@ -57,12 +58,20 @@ const DEFAULT_COLUMNS = [
   metricColumn('success_rate', 'Success Rate', SUCCESS),
 ]
 
+function makeRow(values: (string | number)[], sampleCount: number, columns: SummaryColumn[] = DEFAULT_COLUMNS): SummaryRow {
+  const numericValues = Object.fromEntries(columns.map((column, index) => [column.key, values[index] === 'INF' ? -1 : values[index]]))
+  const metricKeys = [...columns.filter((column) => column.semantics).map((column) => column.key), 'success_rate']
+  const sampleCounts = Object.fromEntries(metricKeys.map((key) => [key, sampleCount]))
+  return { values: numericValues as Record<string, number>, sample_counts: sampleCounts }
+}
+
 function makeRun(
   path: string,
   generatedAt: string,
   row: (string | number)[],
   overrides: Partial<PerfDetailResponse> = {},
 ): PerfDetailResponse {
+  const columns = overrides.summary_columns ?? DEFAULT_COLUMNS
   return {
     path,
     model: 'model',
@@ -70,9 +79,8 @@ function makeRun(
     dataset: 'openqa',
     generated_at: generatedAt,
     basic_info: {},
-    summary_columns: DEFAULT_COLUMNS,
-    summary_rows: [row],
-    summary_sample_counts: [100],
+    summary_columns: columns,
+    summary_rows: [makeRow(row, 100, columns)],
     total_requests: 100,
     best_config: {},
     recommendations: [],
@@ -125,10 +133,9 @@ describe('buildCompareModel', () => {
   it('compares only rows with the same stable workload configuration', () => {
     const baseline = makeRun('old', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1, 1.2, 100], {
       summary_rows: [
-        ['4', 'INF', 5, 0.5, 0.7, 100],
-        ['8', 'INF', 10, 1, 1.2, 100],
+        makeRow(['4', 'INF', 5, 0.5, 0.7, 100], 100),
+        makeRow(['8', 'INF', 10, 1, 1.2, 100], 100),
       ],
-      summary_sample_counts: [100, 100],
     })
     const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 11, 0.9, 1.1, 100])
 
@@ -144,12 +151,12 @@ describe('buildCompareModel', () => {
   it('keeps missing metrics as incomputable and records explicit sample counts', () => {
     const baseline = makeRun('old', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1], {
       summary_columns: DEFAULT_COLUMNS.slice(0, 4),
-      summary_sample_counts: [20],
+      summary_rows: [makeRow(['8', 'INF', 10, 1], 20, DEFAULT_COLUMNS.slice(0, 4))],
       total_requests: 20,
     })
     const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 12], {
       summary_columns: DEFAULT_COLUMNS.slice(0, 3),
-      summary_sample_counts: [30],
+      summary_rows: [makeRow(['8', 'INF', 12], 30, DEFAULT_COLUMNS.slice(0, 3))],
       total_requests: 30,
     })
 
@@ -179,14 +186,13 @@ describe('buildCompareModel', () => {
   it('uses request counts from the matched summary rows', () => {
     const baseline = makeRun('old', '2026-06-01T00:00:00Z', ['8', 'INF', 10, 1, 1.2, 100], {
       summary_rows: [
-        ['4', 'INF', 5, 0.5, 0.7, 100],
-        ['8', 'INF', 10, 1, 1.2, 100],
+        makeRow(['4', 'INF', 5, 0.5, 0.7, 100], 200),
+        makeRow(['8', 'INF', 10, 1, 1.2, 100], 20),
       ],
-      summary_sample_counts: [200, 20],
       total_requests: 220,
     })
     const candidate = makeRun('new', '2026-06-02T00:00:00Z', ['8', 'INF', 12, 0.8, 1.1, 100], {
-      summary_sample_counts: [25],
+      summary_rows: [makeRow(['8', 'INF', 12, 0.8, 1.1, 100], 25)],
       total_requests: 225,
     })
 

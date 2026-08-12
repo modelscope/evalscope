@@ -215,6 +215,33 @@ class RunLoader:
             return 0
 
     @staticmethod
+    def count_request_samples(run_dir: str) -> Optional[dict]:
+        """Count total, successful, and successful streaming requests."""
+        db_path = os.path.join(run_dir, 'benchmark_data.db')
+        if not os.path.exists(db_path):
+            return None
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    'SELECT COUNT(*), '
+                    'SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END), '
+                    'SUM(CASE WHEN success = 1 AND is_stream = 1 THEN 1 ELSE 0 END) '
+                    'FROM result'
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    return None
+                return {
+                    'total': int(row[0] or 0),
+                    'successful': int(row[1] or 0),
+                    'stream_successful': int(row[2] or 0),
+                }
+        except Exception as exc:
+            logger.warning(f'Failed to count request samples in {db_path}: {exc}')
+            return None
+
+    @staticmethod
     def query_requests(
         run_dir: str,
         *,

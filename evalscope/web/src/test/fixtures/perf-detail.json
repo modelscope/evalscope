@@ -87,9 +87,23 @@
     }
   ],
   "summary_rows": [
-    [10, "INF", 5.43, 1.842, 512.0, 100.0]
+    {
+      "values": {
+        "concurrency": 10,
+        "request_rate": -1,
+        "request_throughput": 5.43,
+        "avg_latency": 1.842,
+        "output_token_throughput": 512.0,
+        "success_rate": 100.0
+      },
+      "sample_counts": {
+        "request_throughput": 100,
+        "avg_latency": 100,
+        "output_token_throughput": 100,
+        "success_rate": 100
+      }
+    }
   ],
-  "summary_sample_counts": [100],
   "total_requests": 100,
   "best_config": {
     "Concurrency": "10",
