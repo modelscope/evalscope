@@ -1,5 +1,4 @@
 import copy
-import warnings
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from pydantic import BaseModel
@@ -174,16 +173,10 @@ class BenchmarkMeta:
         self.metric_list = normalized
 
     def _normalize_primary_metric(self) -> None:
-        """Accept the deprecated string form while storing only a selector."""
+        """Normalize the common string shorthand to a selector."""
         if not isinstance(self.primary_metric, str):
             return
-        legacy_name = self.primary_metric
-        warnings.warn(
-            f"benchmark '{self.name}': string primary_metric is deprecated; use MetricSelector",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        identity = migrate_legacy_identity(legacy_name, self.aggregation, benchmark_name=self.name)
+        identity = migrate_legacy_identity(self.primary_metric, self.aggregation, benchmark_name=self.name)
         self.primary_metric = MetricSelector(name=identity.name)
 
     def _metric_names(self) -> List[str]:

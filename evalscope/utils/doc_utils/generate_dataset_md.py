@@ -223,7 +223,6 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         'paper_url': getattr(meta, 'paper_url', None),
         'tags': list(getattr(meta, 'tags', [])) if getattr(meta, 'tags', None) else [],
         'metrics': list(getattr(meta, 'metric_list', [])) if getattr(meta, 'metric_list', None) else [],
-        'primary_metric': serialized_primary_metric,
         'few_shot_num': getattr(meta, 'few_shot_num', 0),
         'eval_split': getattr(meta, 'eval_split', ''),
         'train_split': getattr(meta, 'train_split', '') or '',
@@ -237,6 +236,8 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
         'category': get_category_from_adapter_class(adapter_cls),
     }
+    if serialized_primary_metric is not None:
+        adapter_meta['primary_metric'] = serialized_primary_metric
     if agent_config is not None:
         adapter_meta['agent_config'] = agent_config
     return adapter_meta

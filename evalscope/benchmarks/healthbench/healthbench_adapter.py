@@ -6,7 +6,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.function_utils import retry_call
@@ -140,7 +139,7 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
             'context_awareness',
             'completeness',
         ],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         aggregation='clipped_mean',
         few_shot_num=0,
         train_split=None,

@@ -4,7 +4,6 @@ from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from .utils import aggregate_official_scores, build_grader_prompt, parse_judge_response, rule_fallback_score
@@ -55,7 +54,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
         description=DESCRIPTION,
         dataset_id=DEEPSEARCHQA_DATASET_ID,
         metric_list=['f1', 'precision', 'recall'],
-        primary_metric=MetricSelector(name='f1'),
+        primary_metric='f1',
         few_shot_num=0,
         train_split=None,
         eval_split='eval',

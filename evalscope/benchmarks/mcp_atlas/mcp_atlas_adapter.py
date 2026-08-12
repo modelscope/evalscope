@@ -10,7 +10,6 @@ from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.constants import Tags
@@ -45,7 +44,7 @@ logger = get_logger()
         eval_split='train',
         prompt_template='{question}',
         metric_list=['coverage_score', 'pass'],
-        primary_metric=MetricSelector(name='pass'),
+        primary_metric='pass',
         extra_params=EXTRA_PARAMS,
         paper_url='https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf',
     )

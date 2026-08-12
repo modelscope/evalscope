@@ -7,7 +7,6 @@ from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
 from evalscope.api.metric import SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_METRICS, compute_caption_scores
 from evalscope.constants import HubType, Tags
@@ -51,7 +50,7 @@ with multiple reference captions.
         'https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
-        primary_metric=MetricSelector(name='cider'),
+        primary_metric='cider',
         eval_split='validation',
         prompt_template=DEFAULT_PROMPT,
         extra_params={

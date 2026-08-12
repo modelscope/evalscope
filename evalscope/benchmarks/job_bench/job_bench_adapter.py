@@ -12,7 +12,6 @@ from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
@@ -81,7 +80,7 @@ Your final message may summarize what you produced, but files requested by the t
         eval_split='main',
         prompt_template='{question}',
         metric_list=['normalized_score', 'pass_rate', 'judge_score'],
-        primary_metric=MetricSelector(name='normalized_score'),
+        primary_metric='normalized_score',
     )
 )
 class JobBenchAdapter(AgentLoopAdapter):

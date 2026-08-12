@@ -10,7 +10,6 @@ from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, d
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -76,7 +75,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         dataset_id='OpenDataLab/OmniDocBench',
         paper_url='https://github.com/opendatalab/OmniDocBench',
         metric_list=[*PAGE_METRICS, 'normalized_score'],
-        primary_metric=MetricSelector(name='normalized_score'),
+        primary_metric='normalized_score',
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         review_timeout=REVIEW_TIMEOUT,

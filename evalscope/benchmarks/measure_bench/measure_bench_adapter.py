@@ -7,7 +7,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -64,7 +63,7 @@ ANSWER_FORMAT_SUFFIX = (
         paper_url='https://arxiv.org/abs/2510.26865',
         subset_list=['real_world', 'synthetic_test'],
         metric_list=['acc', 'number_acc', 'unit_acc'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         eval_split='real_world',
     )
 )

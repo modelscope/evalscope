@@ -5,7 +5,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -112,7 +111,7 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
             'puzzle_acc', 'cell_acc', 'easy_puzzle_acc', 'hard_puzzle_acc', 'small_puzzle_acc', 'medium_puzzle_acc',
             'large_puzzle_acc', 'xl_puzzle_acc', 'avg_reason_lens', 'no_answer_num'
         ],
-        primary_metric=MetricSelector(name='puzzle_acc'),
+        primary_metric='puzzle_acc',
     )
 )
 class ZebraLogicBenchAdapter(DefaultDataAdapter):

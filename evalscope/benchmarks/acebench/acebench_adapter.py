@@ -8,7 +8,6 @@ from evalscope.api.dataset import Dataset, DatasetDict, Sample
 from evalscope.api.evaluator import InferenceResult, TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, Model, ModelOutput, get_model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
@@ -97,7 +96,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         subset_list=list(ACEBENCH_CATEGORIES),
         default_subset='en',
         metric_list=['acc', 'process_acc'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         eval_split='normal',
         extra_params={
             'language': {

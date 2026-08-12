@@ -5,7 +5,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -123,7 +122,7 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
         subset_list=SUBSET_LIST,
         dataset_id='AI-ModelScope/Chinese-SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
-        primary_metric=MetricSelector(name='is_correct'),
+        primary_metric='is_correct',
         few_shot_num=0,
         train_split=None,
         eval_split='train',

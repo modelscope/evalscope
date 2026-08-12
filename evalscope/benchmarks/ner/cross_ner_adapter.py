@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Set, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, NERAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.ner.cross_ner_entities import ai, literature, music, politics, science
 from evalscope.constants import Tags
@@ -49,7 +48,7 @@ CrossNER is a fully-labeled collection of named entity recognition (NER) data sp
         train_split='train',
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-        primary_metric=MetricSelector(name='f1'),
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

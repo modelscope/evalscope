@@ -20,6 +20,17 @@ def test_runtime_update_revalidates_primary_metric() -> None:
         meta._update({'primary_metric': 'missing'})
 
 
+def test_string_primary_metric_is_first_class_shorthand() -> None:
+    meta = BenchmarkMeta(
+        name='single_name_selector',
+        dataset_id='local',
+        metric_list=['accuracy'],
+        primary_metric='accuracy',
+    )
+
+    assert meta.primary_metric == MetricSelector(name='accuracy')
+
+
 def test_legacy_metric_list_aliases_are_normalized_at_the_adapter_boundary() -> None:
     meta = BenchmarkMeta(
         name='legacy_adapter',
@@ -60,6 +71,7 @@ def test_doc_metadata_extraction_does_not_instantiate_adapter() -> None:
     extracted = extract_benchmark_meta(meta, RuntimeOnlyAdapter)
 
     assert extracted['metrics'] == ['accuracy']
+    assert 'primary_metric' not in extracted
     assert extracted['category'] == 'llm'
 
 

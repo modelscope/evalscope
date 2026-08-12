@@ -6,7 +6,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -108,7 +107,7 @@ logger = get_logger()
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['binary-classification'],
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         aggregation='f1',
         few_shot_num=0,
         eval_split='test',

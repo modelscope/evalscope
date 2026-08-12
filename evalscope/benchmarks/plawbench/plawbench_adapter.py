@@ -6,7 +6,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.function_utils import retry_call
@@ -116,7 +115,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
         default_subset='case_analysis',
         eval_split='test',
         metric_list=['acc', 'conclusion_acc', 'fact_acc', 'reasoning_acc', 'law_acc'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         aggregation='mean',
         prompt_template='{question}',
         extra_params=_EXTRA_PARAMS,

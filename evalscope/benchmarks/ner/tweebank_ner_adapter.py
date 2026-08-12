@@ -1,5 +1,4 @@
 from evalscope.api.benchmark import BenchmarkMeta, NERAdapter
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
@@ -43,7 +42,7 @@ Tweebank-NER is an English Twitter corpus created by annotating the syntacticall
         train_split='train',
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
-        primary_metric=MetricSelector(name='f1'),
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

@@ -6,7 +6,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -66,7 +65,7 @@ PROMPT_TEMPLATE = (
         paper_url='https://arxiv.org/abs/2504.07981',
         subset_list=['CAD', 'Creative', 'Dev', 'OS', 'Office', 'Scientific'],
         metric_list=['acc', 'text_acc', 'icon_acc'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         eval_split='train',
     )
 )

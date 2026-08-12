@@ -18,7 +18,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
@@ -99,7 +98,7 @@ def _decode_maybe_json(value: Any) -> Any:
             'repeat_ngram_pass_rate',
             'scenario_check_pass_rate',
         ],
-        primary_metric=MetricSelector(name='tool_calls_match_rate'),
+        primary_metric='tool_calls_match_rate',
         aggregation='mean',
         subset_list=['default'],
         eval_split='test',

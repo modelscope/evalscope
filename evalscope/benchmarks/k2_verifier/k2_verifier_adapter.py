@@ -7,7 +7,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
@@ -55,7 +54,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
             'count_finish_reason_tool_calls',
             'count_successful_tool_call',
         ],
-        primary_metric=MetricSelector(name='trigger_similarity'),
+        primary_metric='trigger_similarity',
         aggregation='f1',
         subset_list=['k2_thinking'],
         eval_split='test',

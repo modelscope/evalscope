@@ -4,7 +4,6 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -68,7 +67,7 @@ Here are some examples of how to solve similar problems:
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/coin-flip',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
-        primary_metric=MetricSelector(name='accuracy'),
+        primary_metric='accuracy',
         few_shot_num=0,
         train_split='validation',
         eval_split='test',

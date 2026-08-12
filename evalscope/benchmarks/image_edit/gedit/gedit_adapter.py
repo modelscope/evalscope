@@ -8,7 +8,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import FileConstants, Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -60,7 +59,7 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
         tags=[Tags.IMAGE_EDITING],
         subset_list=SUBSET_LIST,
         metric_list=['semantic_consistency', 'perceptual_similarity', 'normalized_score'],
-        primary_metric=MetricSelector(name='normalized_score'),
+        primary_metric='normalized_score',
         few_shot_num=0,
         train_split=None,
         eval_split='train',

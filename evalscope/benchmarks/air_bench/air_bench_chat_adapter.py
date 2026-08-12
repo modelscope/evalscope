@@ -21,7 +21,6 @@ from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -108,7 +107,7 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
         metric_list=['judge_score', 'win_rate'],
-        primary_metric=MetricSelector(name='judge_score'),
+        primary_metric='judge_score',
         few_shot_num=0,
         train_split=None,
         prompt_template='{question}',

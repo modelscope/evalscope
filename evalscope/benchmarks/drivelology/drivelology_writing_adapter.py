@@ -6,7 +6,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -89,7 +88,7 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
         }, {
             'judge_score': {}
         }],
-        primary_metric=MetricSelector(name='judge_score'),
+        primary_metric='judge_score',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

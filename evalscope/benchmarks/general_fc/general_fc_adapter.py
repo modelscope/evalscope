@@ -7,7 +7,6 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
@@ -53,7 +52,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
             'schema_accuracy',
             'tool_call_f1',
         ],
-        primary_metric=MetricSelector(name='tool_call_f1'),
+        primary_metric='tool_call_f1',
         aggregation='f1',
         eval_split='test',
     )

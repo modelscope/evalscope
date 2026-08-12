@@ -13,7 +13,6 @@ from evalscope.api.dataset import DatasetDict, Sample, build_dataset_dict_from_r
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
-from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, JudgeStrategy, Tags
@@ -89,7 +88,7 @@ parallel execution, reporting, and dashboard trace review.
         tags=[Tags.AGENT, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
         metric_list=['judge_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],
-        primary_metric=MetricSelector(name='judge_score'),
+        primary_metric='judge_score',
         aggregation='mean',
         eval_split='test',
         subset_list=_DEFAULT_SPLITS,
