@@ -101,6 +101,10 @@ The report list page provides more refined report management and filtering capab
 
 **Pagination**: The report list supports paginated browsing, displaying 20 records per page.
 
+```{tip}
+If the same model was evaluated across several separate runs (e.g. different datasets added over time), you can combine those reports into one. See [Merge and Rename Reports](report_merge.md).
+```
+
 ### Single Model Evaluation Details
 
 Click any evaluation report to enter the details page and view a single model's detailed performance on each dataset. The details page consists of a report header, dataset navigation, and three functional tabs.
