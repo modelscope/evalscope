@@ -166,7 +166,10 @@ class TestMetricListNormalization:
         """An alias no adapter declares only pretends the compatibility shim is still needed."""
         declared: Set[str] = set()
         entries = re.compile(r'metric_list\s*=\s*\[([^\]]*)\]', re.S)
-        for path in Path('evalscope/benchmarks').rglob('*.py'):
+        # Resolved off the installed package, not the working directory: a relative path makes this
+        # gate fail from any other cwd, and pass vacuously wherever the directory is simply absent.
+        benchmarks_root = Path(evalscope.__file__).parent / 'benchmarks'
+        for path in benchmarks_root.rglob('*.py'):
             for block in entries.finditer(path.read_text(encoding='utf-8')):
                 declared.update(re.findall(r"'([^']+)'", block.group(1)))
 

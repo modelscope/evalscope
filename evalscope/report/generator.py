@@ -6,7 +6,7 @@ from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.identity import migrate_legacy_identity
-from evalscope.metrics.semantics.resolver import attribute_metric_roles
+from evalscope.metrics.semantics.resolver import SemanticsResolver, attribute_metric_roles
 from evalscope.report.report import *
 
 if TYPE_CHECKING:
@@ -18,7 +18,14 @@ if TYPE_CHECKING:
 class ReportGenerator:
 
     @staticmethod
-    def gen_collection_report(df: DataFrame, all_dataset_name: str, model_name: str) -> Report:
+    def gen_collection_report(
+        df: DataFrame,
+        all_dataset_name: str,
+        model_name: str,
+        semantics_resolver: Optional[SemanticsResolver] = None,
+    ) -> Report:
+        """Build a collection report, optionally using an injected semantics resolver."""
+        active_resolver = semantics_resolver or get_semantics_resolver()
         metrics_list = []
         for metric_name, group_metric in df.groupby('metric', sort=False):
             categories = []
@@ -31,7 +38,7 @@ class ReportGenerator:
                     subsets.append(Subset(name=f'{dataset_name}/{subset_name}', score=float(avg_score), num=int(num)))
                 categories.append(Category(name=category_name, subsets=subsets))
             identity = migrate_legacy_identity(metric_name, 'mean', benchmark_name=all_dataset_name)
-            semantics = get_semantics_resolver().resolve(all_dataset_name, identity).semantics
+            semantics = active_resolver.resolve(all_dataset_name, identity).semantics
             metrics_list.append(Metric(identity=identity, categories=categories, semantics=semantics))
         identities = [metric.identity for metric in metrics_list]
         semantics = {metric.identity.key: metric.semantics for metric in metrics_list}
@@ -51,12 +58,13 @@ class ReportGenerator:
         score_dict: Dict[str, List['AggScore']],
         model_name: str,
         data_adapter: 'DataAdapter',
+        semantics_resolver: Optional[SemanticsResolver] = None,
     ) -> Report:
         """
         Generate a report for a specific dataset based on provided subset scores.
 
         Args:
-            subset_score_map (dict): A mapping from subset names to a list of score dictionaries.
+            score_dict: A mapping from subset names to aggregated scores.
             ```
             {
                 'subset_name': [
@@ -66,12 +74,15 @@ class ReportGenerator:
                 ...
             }
             ```
-            data_adapter (DataAdapter): An adapter object for data handling.
+            model_name: Name written into the report.
+            data_adapter: Adapter providing benchmark metadata and primary metric selection.
+            semantics_resolver: Optional resolver override for tests or extensions. Production
+                uses the process-wide resolver when omitted.
 
         Returns:
             Report: A structured report object containing metrics, categories, and subsets.
 
-            >>> report = gen_report(subset_score_map, "My Report", data_adapter, dataset_name="Dataset", model_name="Model")
+            >>> report = ReportGenerator.generate_report(score_dict, 'Model', data_adapter)
         """  # noqa: E501
 
         dataset_name = data_adapter.name
@@ -126,6 +137,7 @@ class ReportGenerator:
             benchmark_name=dataset_name,
             identities=identities,
             selector=data_adapter.primary_metric,
+            resolver=semantics_resolver,
         )
 
         metrics_list = []
@@ -163,6 +175,7 @@ class ReportGenerator:
         benchmark_name: str,
         identities: List[MetricIdentity],
         selector: Optional[MetricSelector],
+        resolver: Optional[SemanticsResolver] = None,
     ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[MetricIdentity]]:
         """Resolve the semantics of every metric this report will contain.
 
@@ -178,11 +191,11 @@ class ReportGenerator:
         Returns:
             Identity key -> semantics mapping and the uniquely selected primary identity.
         """
-        resolver = get_semantics_resolver()
+        active_resolver = resolver or get_semantics_resolver()
 
         semantics_by_identity: Dict[str, 'MetricSemantics'] = {}
         for identity in identities:
-            resolved = resolver.resolve(benchmark_name, identity)
+            resolved = active_resolver.resolve(benchmark_name, identity)
             resolved.log_audit_messages()
             semantics_by_identity[identity.key] = resolved.semantics
         return attribute_metric_roles(identities, semantics_by_identity, selector)

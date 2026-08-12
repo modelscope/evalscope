@@ -117,8 +117,13 @@ def test_is_known_uses_the_same_patterns(metric_name: str, benchmark_name: Optio
     assert is_known_dynamic_legacy_name(metric_name, benchmark_name) is expected
 
 
-def test_every_declared_rule_is_reachable_from_both_entry_points() -> None:
-    """No rule may be declared without both consumers honouring it."""
+def test_every_declared_rule_is_covered_by_the_cases_above() -> None:
+    """A rule added to the table must come with cases pinning how it reads a legacy name.
+
+    Only the key set is asserted: whether each rule behaves is what the parametrized cases above
+    check, and the ``_BenchmarkRule`` fields are typed, so re-asserting their shape here could not
+    fail.
+    """
     from evalscope.metrics.semantics.identity import _BENCHMARK_RULES
 
     assert set(_BENCHMARK_RULES) == {
@@ -131,8 +136,3 @@ def test_every_declared_rule_is_reachable_from_both_entry_points() -> None:
         'wide_search',
         'hallusion_bench',
     }
-    # `general_qa` / `general_vqa` only recover an aggregation; their names are already covered by
-    # the generic BLEU / ROUGE families, so `is_known` answers True through those.
-    for benchmark_name, rule in _BENCHMARK_RULES.items():
-        assert rule.pattern.groups >= 0, benchmark_name
-        assert callable(rule.apply), benchmark_name

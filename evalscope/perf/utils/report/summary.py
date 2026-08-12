@@ -14,6 +14,14 @@ from __future__ import annotations
 from collections import OrderedDict
 from typing import Dict, List
 
+from evalscope.metrics.semantics import format_perf_value
+from evalscope.perf.utils.perf_constants import Metrics
+
+
+def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
+    """Format one perf table cell through the semantics registry."""
+    return format_perf_value(value, field_key, include_unit=include_unit)
+
 
 def is_embedding(api_type: str) -> bool:
     """Return True when *api_type* indicates an embedding / rerank model."""
@@ -38,7 +46,7 @@ def build_basic_info(
 
     info['Total Requests'] = f'{total_req:,}'
     info['Succeed Requests'] = f'{succeed:,}'
-    info['Total Test Time'] = f'{total_time:.2f} s'
+    info['Total Test Time'] = _cell(Metrics.TIME_TAKEN_FOR_TESTS, total_time, include_unit=True)
 
     if is_embedding_flag:
         total_input = sum(r.summary.avg_input_tokens * r.summary.succeed_requests for r in runs)
@@ -69,13 +77,13 @@ def build_summary_table(runs: list, is_embedding_flag: bool):
             rate = s.request_rate
             rows.append([
                 'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else f'{rate:.2f}',
-                f'{s.request_throughput:.4f}',
-                f'{s.avg_latency:.3f}',
-                f'{r.get_p99("latency"):.3f}',
-                f'{s.input_token_throughput:.2f}',
-                f'{s.avg_input_tokens:.1f}',
-                f'{r.success_rate:.1f}%',
+                'INF' if rate == -1 else _cell('Rate', rate),
+                _cell('RPS', s.request_throughput),
+                _cell('Avg Lat.(s)', s.avg_latency),
+                _cell('P99 Lat.(s)', r.get_p99('latency')),
+                _cell('Avg Inp.TPS', s.input_token_throughput),
+                _cell('Avg Inp.Tok', s.avg_input_tokens),
+                _cell('Success Rate', r.success_rate, include_unit=True),
             ])
     else:
         columns = [
@@ -97,16 +105,16 @@ def build_summary_table(runs: list, is_embedding_flag: bool):
             rate = s.request_rate
             rows.append([
                 'INF' if s.concurrency == -1 else str(s.concurrency),
-                'INF' if rate == -1 else f'{rate:.2f}',
-                f'{s.request_throughput:.4f}',
-                f'{s.avg_latency:.3f}',
-                f'{r.get_p99("latency"):.3f}',
-                f'{s.avg_ttft:.2f}',
-                f'{r.get_p99("ttft"):.2f}',
-                f'{s.avg_tpot:.2f}',
-                f'{r.get_p99("tpot"):.2f}',
-                f'{s.output_token_throughput:.2f}',
-                f'{r.success_rate:.1f}%',
+                'INF' if rate == -1 else _cell('Rate', rate),
+                _cell('RPS', s.request_throughput),
+                _cell('Avg Lat.(s)', s.avg_latency),
+                _cell('P99 Lat.(s)', r.get_p99('latency')),
+                _cell('Avg TTFT(ms)', s.avg_ttft),
+                _cell('P99 TTFT(ms)', r.get_p99('ttft')),
+                _cell('Avg TPOT(ms)', s.avg_tpot),
+                _cell('P99 TPOT(ms)', r.get_p99('tpot')),
+                _cell('Gen. tok/s', s.output_token_throughput),
+                _cell('Success Rate', r.success_rate, include_unit=True),
             ])
 
     return columns, rows
@@ -120,12 +128,16 @@ def build_best_config(runs: list) -> OrderedDict:
     best: OrderedDict = OrderedDict()
 
     best_rps = max(runs, key=lambda r: r.summary.request_throughput)
-    best['Highest RPS'] = (f'{best_rps.name} '
-                           f'({best_rps.summary.request_throughput:.4f} req/s)')
+    best['Highest RPS'] = (
+        f'{best_rps.name} '
+        f'({_cell(Metrics.REQUEST_THROUGHPUT, best_rps.summary.request_throughput, include_unit=True)})'
+    )
 
     best_lat = min(runs, key=lambda r: r.summary.avg_latency if r.summary.avg_latency >= 0 else float('inf'))
-    best['Lowest Latency'] = (f'{best_lat.name} '
-                              f'({best_lat.summary.avg_latency:.3f} s)')
+    best['Lowest Latency'] = (
+        f'{best_lat.name} '
+        f'({_cell(Metrics.AVERAGE_LATENCY, best_lat.summary.avg_latency, include_unit=True)})'
+    )
 
     return best
 
@@ -154,7 +166,8 @@ def build_recommendations(runs: list) -> List[str]:
     last = sorted_runs[-1]
     if last.success_rate < 95:
         recs.append(
-            f'Success rate at highest load ({last.name}) is {last.success_rate:.1f}%. '
+            f'Success rate at highest load ({last.name}) is '
+            f'{_cell("Success Rate", last.success_rate, include_unit=True)}. '
             'Check system resources or reduce the load.'
         )
 
@@ -181,34 +194,34 @@ def build_summary_items(
     """
     s = summary
     rate_raw = s.request_rate
-    rate_str = 'INF' if rate_raw == -1 else f'{rate_raw:.3f}'
+    rate_str = 'INF' if rate_raw == -1 else _cell(Metrics.REQUEST_RATE, rate_raw)
     concurrency_str = 'INF' if s.concurrency == -1 else str(s.concurrency)
 
     base = [
-        ('Total Requests', str(s.total_requests)),
-        ('Succeed Requests', str(s.succeed_requests)),
-        ('Failed Requests', str(s.failed_requests)),
+        ('Total Requests', _cell(Metrics.TOTAL_REQUESTS, s.total_requests)),
+        ('Succeed Requests', _cell(Metrics.SUCCEED_REQUESTS, s.succeed_requests)),
+        ('Failed Requests', _cell(Metrics.FAILED_REQUESTS, s.failed_requests)),
         ('Concurrency', concurrency_str),
-        ('Time Taken (s)', f'{s.time_taken:.3f}'),
+        ('Time Taken (s)', _cell(Metrics.TIME_TAKEN_FOR_TESTS, s.time_taken)),
         ('Request Rate (req/s)', rate_str),
-        ('Request Throughput (req/s)', f'{s.request_throughput:.4f}'),
-        ('Avg Latency (s)', f'{s.avg_latency:.4f}'),
+        ('Request Throughput (req/s)', _cell(Metrics.REQUEST_THROUGHPUT, s.request_throughput)),
+        ('Avg Latency (s)', _cell(Metrics.AVERAGE_LATENCY, s.avg_latency)),
     ]
 
     if is_embedding_flag:
         extra = [
-            ('Input Tok Throughput (tok/s)', f'{s.input_token_throughput:.2f}'),
-            ('Avg Input Tokens', f'{s.avg_input_tokens:.1f}'),
+            ('Input Tok Throughput (tok/s)', _cell(Metrics.INPUT_TOKEN_THROUGHPUT, s.input_token_throughput)),
+            ('Avg Input Tokens', _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens)),
         ]
     else:
         extra = [
-            ('Output Tok Throughput (tok/s)', f'{s.output_token_throughput:.2f}'),
-            ('Total Tok Throughput (tok/s)', f'{s.total_token_throughput:.2f}'),
-            ('Avg TTFT (ms)', f'{s.avg_ttft:.2f}'),
-            ('Avg TPOT (ms)', f'{s.avg_tpot:.2f}'),
-            ('Avg ITL (ms)', f'{s.avg_itl:.2f}'),
-            ('Avg Input Tokens', f'{s.avg_input_tokens:.1f}'),
-            ('Avg Output Tokens', f'{s.avg_output_tokens:.1f}'),
+            ('Output Tok Throughput (tok/s)', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, s.output_token_throughput)),
+            ('Total Tok Throughput (tok/s)', _cell(Metrics.TOTAL_TOKEN_THROUGHPUT, s.total_token_throughput)),
+            ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
+            ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
+            ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),
+            ('Avg Input Tokens', _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens)),
+            ('Avg Output Tokens', _cell(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, s.avg_output_tokens)),
         ]
 
     return [{'key': k, 'value': v} for k, v in base + extra]

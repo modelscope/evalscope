@@ -2,7 +2,9 @@ import pytest
 from pydantic import ValidationError
 
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
+from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
 
 
 def test_identity_sorts_dimensions_and_builds_stable_key() -> None:
@@ -114,6 +116,12 @@ def test_legacy_names_migrate_to_structured_identity(
 ) -> None:
     identity = migrate_legacy_identity(legacy_name, aggregation)
     assert (identity.name, identity.aggregation, identity.dimensions) == expected
+
+
+def test_exact_alias_manifest_drives_identity_and_read_old_semantics() -> None:
+    for name, alias in LEGACY_METRIC_ALIASES.items():
+        assert migrate_legacy_identity(name, 'identity').name == alias.canonical_name
+        assert (name in LEGACY_METRIC_MIGRATIONS) is (alias.baseline is not None)
 
 
 def test_hallusion_dynamic_prefix_becomes_dimensions() -> None:

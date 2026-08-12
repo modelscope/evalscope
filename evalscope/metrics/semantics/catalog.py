@@ -11,6 +11,7 @@ from typing import Dict, Tuple
 from evalscope.api.metric.semantics import MetricDirection
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.entry import BASELINE_TABLE_LOCATION, MetricEntry
+from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
 
 #: Where to declare a canonical metric name, used in audit and validation messages.
 METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_DEFINITIONS'
@@ -25,7 +26,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     # --- quality ratios: one line each, reused by every benchmark ------------------------
     # Bounded [0, 1] ratios rendered as percent, higher is better.
     'mean_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'accuracy': MetricEntry(baseline='quality.accuracy.ratio'),
     'multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -81,7 +81,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- exact match ---------------------------------------------------------------------
-    'em': MetricEntry(baseline='quality.exact_match.ratio'),
     'mean_em': MetricEntry(baseline='quality.exact_match.ratio'),
     'exact_match': MetricEntry(baseline='quality.exact_match.ratio'),
     # Tool-use benchmarks score the action and the plan by exact match (tool_bench).
@@ -102,8 +101,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'subproblem_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     # --- F1 / precision / recall ---------------------------------------------------------
     'f1': MetricEntry(baseline='quality.f1.ratio'),
-    'F1': MetricEntry(baseline='quality.f1.ratio'),
-    'f1_score': MetricEntry(baseline='quality.f1.ratio'),
     'f1_macro': MetricEntry(baseline='quality.f1.ratio'),
     'f1_micro': MetricEntry(baseline='quality.f1.ratio'),
     'f1_weighted': MetricEntry(baseline='quality.f1.ratio'),
@@ -126,13 +123,10 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_Bleu_4': MetricEntry(baseline='quality.bleu.ratio'),
     'mean_BLEU': MetricEntry(baseline='quality.bleu.ratio'),
     'mean_bleu': MetricEntry(baseline='quality.bleu.ratio'),
-    'ROUGE_L': MetricEntry(baseline='quality.rouge.ratio'),
     'mean_ROUGE_L': MetricEntry(baseline='quality.rouge.ratio'),
     'mean_Rouge': MetricEntry(baseline='quality.rouge.ratio'),
     'mean_Rouge-L': MetricEntry(baseline='quality.rouge.ratio'),
-    'METEOR': MetricEntry(baseline='quality.meteor.ratio'),
     'mean_METEOR': MetricEntry(baseline='quality.meteor.ratio'),
-    'CIDEr': MetricEntry(baseline='quality.cider.unbounded'),
     'mean_CIDEr': MetricEntry(baseline='quality.cider.unbounded'),
     'bert_score': MetricEntry(baseline='quality.similarity.ratio'),
     'mean_bert_score': MetricEntry(baseline='quality.similarity.ratio'),
@@ -143,7 +137,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'Semantic Consistency': MetricEntry(baseline='quality.similarity.ratio'),
     'Perceptual Similarity': MetricEntry(baseline='quality.similarity.ratio'),
     # --- localization --------------------------------------------------------------------
-    'mean_IoU': MetricEntry(baseline='quality.iou.ratio'),
     # --- speech recognition error rates: lower is better ---------------------------------
     'wer': MetricEntry(baseline='quality.wer.ratio'),
     'mean_wer': MetricEntry(baseline='quality.wer.ratio'),
@@ -157,10 +150,8 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_HalluRate': MetricEntry(baseline='quality.error_rate.ratio'),
     'mean_distractor_leakage': MetricEntry(baseline='quality.error_rate.ratio'),
     # --- bounded quality scores ----------------------------------------------------------
-    'score': MetricEntry(baseline='quality.score.ratio'),
     'mean_score': MetricEntry(baseline='quality.score.ratio'),
     'vqa_score': MetricEntry(baseline='quality.score.ratio'),
-    'overall': MetricEntry(baseline='quality.score.ratio'),
     'overall_mrcr_score': MetricEntry(baseline='quality.score.ratio'),
     'mean_partial_credit': MetricEntry(baseline='quality.score.ratio'),
     'mean_submission_ready': MetricEntry(baseline='quality.score.ratio'),
@@ -169,12 +160,9 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     # --- official 0-100 scales -----------------------------------------------------------
     'mean_eq_bench_score': MetricEntry(baseline='quality.score.points_100'),
     # --- win rates -----------------------------------------------------------------------
-    'winrate': MetricEntry(baseline='quality.win_rate.ratio'),
     'mean_winrate': MetricEntry(baseline='quality.win_rate.ratio'),
     'win_rate': MetricEntry(baseline='quality.win_rate.ratio'),
     # --- judge scores (unbounded) --------------------------------------------------------
-    'gpt_score': MetricEntry(baseline='quality.judge_score.unbounded'),
-    'total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_normalized_score': MetricEntry(baseline='quality.score.ratio'),
     'mean_avg_score': MetricEntry(baseline='quality.judge_score.unbounded'),
@@ -185,9 +173,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'context_awareness': MetricEntry(baseline='quality.judge_score.unbounded'),
     'instruction_following': MetricEntry(baseline='quality.judge_score.unbounded'),
     # --- scoring model outputs -----------------------------------------------------------
-    'HPSv2.1Score': MetricEntry(baseline='quality.model_score.unbounded'),
-    'PickScore': MetricEntry(baseline='quality.model_score.unbounded'),
-    'VQAScore': MetricEntry(baseline='quality.model_score.unbounded'),
     # Vendor verification rates: a correctly deployed vendor reports 1.0 for both, so these
     # grade the deployment rather than merely describing it.
     'param_immutable_reject_rate': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -209,8 +194,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'avg_reason_lens': MetricEntry(baseline='diagnostic.count.items'),
     # --- legacy names: only produced by report files written before the semantics -------
     # contract. Safe to drop once no report of that vintage is expected to be opened again.
-    'AverageAccuracy': MetricEntry(baseline='quality.accuracy.ratio'),
-    'WeightedAverageAccuracy': MetricEntry(baseline='quality.accuracy.ratio'),
     'WeightedScorePercent': MetricEntry(baseline='quality.score.points_100'),
     'AverageOutputTps': MetricEntry(baseline='perf.throughput.tokens_per_second'),
     # Names emitted by earlier revisions of adapters that have since renamed their metrics.
@@ -252,6 +235,11 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_total_tool_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'mean_total_other_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
 }
+LEGACY_METRIC_MIGRATIONS.update({
+    name: MetricEntry(baseline=alias.baseline)
+    for name, alias in LEGACY_METRIC_ALIASES.items()
+    if alias.baseline is not None
+})
 """Final report metric name -> catalog entry, reused by every benchmark.
 
 Seeded from the metric names this repository actually emits, so the common names render with the

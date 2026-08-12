@@ -106,9 +106,8 @@ class TestOverviewTable(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Performance Overview', text)
         self.assertIn('2', text)
-        self.assertIn('2.00', text)
-        self.assertIn('50.00', text)
-        self.assertIn('100.0%', text)
+        self.assertIn('50', text)
+        self.assertIn('100%', text)
 
     def test_sweep(self):
         results = _build_all_results([
@@ -124,7 +123,7 @@ class TestOverviewTable(unittest.TestCase):
             'summary': _make_summary(concurrency=-1, request_rate=5.0),
         }])
         text = _capture(results)
-        self.assertIn('5.00', text)
+        self.assertIn('│    - │    5 │', text)
 
     def test_traces_column(self):
         results = _build_all_results([{
@@ -150,7 +149,7 @@ class TestPerRequestMetrics(unittest.TestCase):
         # max column header and max latency value from fixture
         lines = [l for l in text.splitlines() if 'max' in l.lower()]
         self.assertTrue(any('max' in l for l in lines), 'max column should appear in Per-Request Metrics')
-        self.assertIn('5.000', text)  # max latency from _make_percentiles
+        self.assertIn('5', text)  # max latency from _make_percentiles
 
     def test_multi_turn_rows(self):
         results = _build_all_results([{
@@ -177,13 +176,13 @@ class TestPerRequestMetrics(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Decoded Tok/Iter', text)
         self.assertIn('Spec. Accept Rate', text)
-        self.assertIn('70.0%', text)
+        self.assertIn('70%', text)
 
     def test_decode_tps_shown(self):
         results = _build_all_results([{'summary': _make_summary(avg_tpot=20.0)}])
         text = _capture(results)
         self.assertIn('Decode toks/s', text)
-        self.assertIn('50.00', text)
+        self.assertIn('Decode toks/s │  50', text)
 
     def test_no_ttft_when_zero(self):
         results = _build_all_results([{
@@ -214,7 +213,7 @@ class TestPerTraceMetrics(unittest.TestCase):
         self.assertIn('Per-Trace Metrics', text)
         self.assertIn('Latency (s)', text)
         self.assertIn('Cache Hit Rate (%)', text)
-        self.assertIn('51.30', text)
+        self.assertIn('51.3', text)
 
     def test_sweep_merged(self):
         results = _build_all_results([
@@ -238,7 +237,7 @@ class TestWorkloadThroughput(unittest.TestCase):
         self.assertIn('Workload Throughput', text)
         self.assertIn('Total Prompt tok/s', text)
         self.assertIn('Completion tok/s', text)
-        self.assertIn('3118.70', text)
+        self.assertIn('3118.7', text)
         self.assertIn('Last 30s', text)
 
     def test_sweep_merged(self):

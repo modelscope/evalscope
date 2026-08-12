@@ -170,6 +170,9 @@ describe('metric labels', () => {
 })
 
 describe('golden samples', () => {
+  // Which branches the shared fixture must exercise is asserted once, on the backend side, in
+  // `tests/report/semantics/test_golden_samples.py::TestGoldenSampleCoverage`. This suite only
+  // checks that the TypeScript implementation agrees with the pinned expectations.
   /** One entry of `tests/report/semantics/golden_samples.json`, the shared formatting contract. */
   interface GoldenSample {
     id: string
@@ -187,14 +190,6 @@ describe('golden samples', () => {
     for (const sample of goldenSamples as GoldenSample[]) {
       expect(formatMetric(sample.value, sample.semantics).primary).toBe(sample.expected_primary)
     }
-  })
-
-  it('covers percent, number and missing paths', () => {
-    const kinds = new Set(
-      (goldenSamples as Array<{ semantics: MetricSemantics | null }>).map((s) => s.semantics?.display_kind ?? 'none'),
-    )
-    expect(kinds.has('percent')).toBe(true)
-    expect(kinds.has('number')).toBe(true)
   })
 
   it('renders the same label as the backend', () => {

@@ -61,9 +61,10 @@ import math
 import re
 from collections import Counter
 from decimal import ROUND_FLOOR, Decimal
-from typing import Any, Dict, Iterable, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Tuple, Union
 
 from evalscope.api.metric.semantics import (
+    DIAGNOSTIC_FALLBACK_PRECISION,
     MetricDirection,
     MetricDisplayKind,
     MetricIdentity,
@@ -71,12 +72,11 @@ from evalscope.api.metric.semantics import (
     MetricSemantics,
 )
 
+if TYPE_CHECKING:
+    from evalscope.metrics.semantics.resolver import SemanticsResolver
+
 #: Rendered in place of a value that is absent or not finite.
 MISSING_PLACEHOLDER = '—'
-
-#: Decimals used when no semantics are available (diagnostic fallback). Shared with
-#: ``resolver.diagnostic_fallback``, which builds the semantics this precision belongs to.
-DIAGNOSTIC_FALLBACK_PRECISION = 4
 
 _DIRECTION_ARROWS = {
     MetricDirection.HIGHER_IS_BETTER: '↑',
@@ -94,6 +94,7 @@ __all__ = [
     'format_metric_label',
     'format_metric_labels',
     'format_metric_value',
+    'format_perf_value',
     'is_missing_value',
 ]
 
@@ -227,3 +228,25 @@ def format_metric_value(value: Optional[float], semantics: Optional[MetricSemant
         return _join_unit(_format_number(scaled, semantics.display_precision), semantics.display_unit, '')
 
     return _join_unit(_format_number(scaled, semantics.display_precision), semantics.display_unit, ' ')
+
+
+def format_perf_value(
+    value: Optional[float],
+    field_key: str,
+    include_unit: bool = True,
+    resolver: Optional['SemanticsResolver'] = None,
+) -> str:
+    """Resolve and format a perf field through the shared semantics registry.
+
+    ``include_unit=False`` is intended for cells whose table header already contains the unit;
+    scaling and precision still come from the same semantics declaration.
+    """
+    if resolver is None:
+        # Function-local import preserves the one-way package import graph: resolver imports the
+        # formatting-independent perf catalog, while renderers can still use this convenience API.
+        from evalscope.metrics.semantics.resolver import get_semantics_resolver
+        resolver = get_semantics_resolver()
+    semantics = resolver.resolve_perf_field(field_key).semantics
+    if not include_unit and semantics.display_unit:
+        semantics = semantics.model_copy(update={'display_unit': None})
+    return format_metric_value(value, semantics)

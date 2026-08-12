@@ -9,7 +9,7 @@ import evalscope.metrics.semantics as semantics
 #: - ``hydrate_report_semantics`` -- ``evalscope/report/report.py``
 #: - ``attach_perf_semantics`` -- ``evalscope/evaluator/evaluator.py``, ``evalscope/report/report.py``
 #: - ``resolve_perf_semantics`` -- ``evalscope/service/blueprints/perf.py``, ``perf_archive.py``
-#: - ``format_metric_label`` / ``format_metric_labels`` / ``format_metric_value`` -- report renderers
+#: - format helpers -- report and perf renderers
 #: - ``PrimaryMetricRef`` -- ``evalscope/service/blueprints/reports.py``
 #:
 #: The catalog tables, the baseline table and the resolver internals are deliberately absent: no
@@ -21,6 +21,7 @@ EXPECTED_EXPORTS: List[str] = [
     'format_metric_label',
     'format_metric_labels',
     'format_metric_value',
+    'format_perf_value',
     'get_semantics_resolver',
     'hydrate_report_semantics',
     'resolve_perf_semantics',

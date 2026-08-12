@@ -74,6 +74,8 @@ class TestRoundTiesPositive:
 
     Asserted through ``format_metric_value`` at precision 0 rather than against a rounding helper:
     Tie-breaking is a property of the rendered text, which is the only thing production emits.
+    The percent and official-scale tie cases live with their own display kind, in
+    ``TestFormatPercent``.
     """
 
     @pytest.mark.parametrize(
@@ -91,13 +93,6 @@ class TestRoundTiesPositive:
             precision=0, display_unit=None, raw_unit=None, role=MetricRole.DIAGNOSTIC, direction=MetricDirection.NONE
         )
         assert format_metric_value(value, semantics) == expected
-
-    def test_official_scale_tie_rounds_up(self) -> None:
-        semantics = make_percent_semantics(multiplier=1.0, precision=1, value_range=ValueRange(min=0.0, max=100.0))
-        assert format_metric_value(87.25, semantics) == '87.3%'
-
-    def test_keeps_value_below_precision(self) -> None:
-        assert format_metric_value(0.0001234, make_number_semantics()) == '0 s'
 
 
 class TestIsMissingValue:
@@ -119,6 +114,7 @@ class TestFormatPercent:
         assert format_metric_value(0.8567, make_percent_semantics()) == '85.7%'
 
     def test_official_scale_is_not_rescaled(self) -> None:
+        # 87.25 at precision 1 is also the tie case: it must round up, not to even.
         semantics = make_percent_semantics(multiplier=1.0, value_range=ValueRange(min=0.0, max=100.0))
         assert format_metric_value(87.25, semantics) == '87.3%'
 

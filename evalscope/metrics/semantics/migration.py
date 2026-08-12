@@ -1,0 +1,142 @@
+"""Read-old migration for metric identities, report payloads, and persisted semantics."""
+
+import json
+import re
+from functools import lru_cache
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector, MetricSemantics
+from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
+from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
+from evalscope.metrics.semantics.resolver import (
+    AUDIT_MESSAGE_PREFIX,
+    SemanticsResolver,
+    attribute_metric_roles,
+    get_semantics_resolver,
+)
+from evalscope.utils import get_logger
+
+if TYPE_CHECKING:
+    from evalscope.report.report import Report
+
+logger = get_logger()
+
+_BUILTIN_META_DIR = Path(__file__).parents[2] / 'benchmarks' / '_meta'
+
+
+def migrate_legacy_report_identity(metric_name: str, benchmark_name: Optional[str] = None) -> MetricIdentity:
+    """Migrate a known v1 name, isolating unknown spellings as diagnostic identities."""
+    if metric_name in LEGACY_METRIC_MIGRATIONS or is_known_dynamic_legacy_name(metric_name, benchmark_name):
+        return migrate_legacy_identity(metric_name, 'identity', benchmark_name=benchmark_name)
+    if re.fullmatch(r'[a-z][a-z0-9_]*', metric_name) and metric_name not in {'score', 'overall', 'total_score'}:
+        return MetricIdentity(name=metric_name, aggregation='identity')
+    return MetricIdentity(name='legacy_metric', aggregation='identity', dimensions={'original_name': metric_name})
+
+
+def migrate_legacy_metric_payload(data: Any, benchmark_name: Optional[str] = None) -> Any:
+    """Convert one v1 metric dictionary into the persisted v2 shape."""
+    if not isinstance(data, dict) or 'identity' in data:
+        return data
+    migrated = dict(data)
+    old_name = migrated.pop('name', 'legacy_metric')
+    semantic_id = migrated.pop('semantic_id', None)
+    migrated['identity'] = migrate_legacy_report_identity(old_name, benchmark_name).model_dump()
+    migrated['legacy_name'] = old_name
+    migrated.setdefault('semantics', MetricSemantics.diagnostic(old_name, semantic_id).model_dump())
+    return migrated
+
+
+def migrate_legacy_report_payload(data: Any) -> Any:
+    """Convert a v1 report dictionary into the shape validated by ``Report`` v2."""
+    if not isinstance(data, dict):
+        return data
+    migrated = dict(data)
+    migrated.pop('num', None)
+    migrated.pop('metric_schema_version', None)
+    metrics = migrated.get('metrics', [])
+    has_v2_metrics = bool(metrics) and all(
+        hasattr(metric, 'identity') or isinstance(metric, dict) and 'identity' in metric for metric in metrics
+    )
+    if migrated.get('schema_version') == 2 or has_v2_metrics:
+        migrated.setdefault('schema_version', 2)
+        return migrated
+
+    dataset_name = migrated.get('dataset_name')
+    primary_name = migrated.pop('primary_metric_name', None)
+    migrated.pop('score', None)
+    migrated['schema_version'] = 2
+    migrated_metrics = []
+    for metric_data in metrics:
+        item = migrate_legacy_metric_payload(metric_data, benchmark_name=dataset_name)
+        migrated_metrics.append(item)
+        if primary_name == item.get('legacy_name'):
+            migrated['primary_metric_identity'] = item['identity']
+    migrated['metrics'] = migrated_metrics
+    return migrated
+
+
+@lru_cache(maxsize=None)
+def _meta_primary_metric(benchmark_name: str) -> Optional[MetricSelector]:
+    """Read the primary selector of a built-in benchmark without importing its adapter."""
+    path = _BUILTIN_META_DIR / f'{benchmark_name}.json'
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    meta = data.get('meta') if isinstance(data, dict) else None
+    if not isinstance(meta, dict):
+        return None
+    primary = meta.get('primary_metric')
+    if isinstance(primary, dict):
+        try:
+            return MetricSelector.model_validate(primary)
+        except ValueError:
+            return None
+    if not isinstance(primary, str) or not primary:
+        return None
+    aggregation = meta.get('aggregation')
+    identity = migrate_legacy_identity(
+        primary, aggregation if isinstance(aggregation, str) else '', benchmark_name=benchmark_name
+    )
+    return MetricSelector(name=identity.name)
+
+
+def hydrate_report_semantics(report: 'Report', resolver: Optional[SemanticsResolver] = None) -> 'Report':
+    """Resolve and persist the semantics of a historical report in place."""
+    metrics = list(getattr(report, 'metrics', None) or [])
+    if not metrics:
+        return report
+
+    benchmark_name = getattr(report, 'dataset_name', '') or ''
+    active_resolver = resolver or get_semantics_resolver()
+    selector = _meta_primary_metric(benchmark_name)
+    persisted_primary = getattr(report, 'primary_metric_identity', None)
+    if persisted_primary is not None:
+        selector = MetricSelector(
+            name=persisted_primary.name,
+            aggregation=persisted_primary.aggregation,
+            dimensions=persisted_primary.dimensions,
+        )
+
+    identities = [metric.identity for metric in metrics]
+    semantics_by_identity: Dict[str, MetricSemantics] = {}
+    for metric in metrics:
+        embedded_semantic_id = metric.semantics.semantic_id if metric.semantics else None
+        resolved = active_resolver.resolve(benchmark_name, metric.identity, embedded_semantic_id=embedded_semantic_id)
+        resolved.log_audit_messages()
+        semantics_by_identity[metric.identity.key] = resolved.semantics
+        if not resolved.degraded and resolved.semantics.role is not MetricRole.DIAGNOSTIC:
+            metric.legacy_name = None
+
+    try:
+        semantics_by_identity, primary_identity = attribute_metric_roles(identities, semantics_by_identity, selector)
+    except ValueError as error:
+        logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy report has no unambiguous primary metric: {error}')
+        primary_identity = None
+    for metric in metrics:
+        metric.semantics = semantics_by_identity[metric.identity.key]
+    report.primary_metric_identity = primary_identity
+    return report

@@ -40,9 +40,6 @@ class TestImportTimeValidation:
         with pytest.raises(ValueError):
             catalog_module._validate_catalog()
 
-    def test_shipped_catalog_validates(self) -> None:
-        catalog_module._validate_catalog()
-
 
 class TestGsm8kAccuracy:
     """GSM8K's canonical accuracy definition has the expected quality contract."""

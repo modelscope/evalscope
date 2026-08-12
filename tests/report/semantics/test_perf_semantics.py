@@ -10,8 +10,8 @@ import pytest
 from typing import Dict, FrozenSet
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole
-from evalscope.metrics.semantics import attach_perf_semantics, resolve_perf_semantics
-from evalscope.metrics.semantics.perf import PERF_SEMANTICS
+from evalscope.metrics.semantics import attach_perf_semantics, format_perf_value, resolve_perf_semantics
+from evalscope.metrics.semantics.perf import PERF_API_ALIASES, PERF_ARCHIVE_ALIASES, PERF_SEMANTICS
 from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
@@ -143,6 +143,12 @@ class TestPerfKeySpaces:
         for field_key in (Metrics.AVERAGE_LATENCY, 'best_rps', 'Avg Lat.(s)'):
             assert field_key in PERF_SEMANTICS
 
+    def test_non_constant_key_spaces_are_declared_as_aliases(self) -> None:
+        # Asserted as containment, not as a copy of the table: a new alias is a legitimate edit, while
+        # an alias pointing at nothing declared is the silent failure worth catching.
+        assert set(PERF_API_ALIASES) <= set(PERF_SEMANTICS)
+        assert set(PERF_ARCHIVE_ALIASES) <= set(PERF_SEMANTICS)
+
     @pytest.mark.parametrize(
         'field_key,expected_semantic_id',
         [
@@ -178,6 +184,11 @@ class TestPerfKeySpaces:
         assert semantics['raw_unit'] == 's'
         assert semantics['display_multiplier'] == 1000.0
         assert semantics['display_unit'] == 'ms'
+
+    def test_perf_formatter_uses_registry_precision_and_can_omit_repeated_units(self) -> None:
+        assert format_perf_value(1.23456, Metrics.AVERAGE_LATENCY) == '1.235 s'
+        assert format_perf_value(1.23456, Metrics.AVERAGE_LATENCY, include_unit=False) == '1.235'
+        assert format_perf_value(0.7, Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE) == '70%'
 
     def test_summary_keys_follow_the_table_shape(self) -> None:
         from evalscope.service.perf_archive import _summary_metric_keys

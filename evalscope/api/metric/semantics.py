@@ -18,6 +18,12 @@ from typing_extensions import Self
 METRIC_CONTRACT_VERSION = 1
 """Version of the MetricSemantics contract. Bump when the contract shape changes."""
 
+DIAGNOSTIC_FALLBACK_SEMANTIC_ID = 'diagnostic.unspecified'
+"""Semantic identifier used when a metric has no declared meaning."""
+
+DIAGNOSTIC_FALLBACK_PRECISION = 4
+"""Display precision of an undeclared diagnostic metric."""
+
 Scalar = Union[str, int, float, bool]
 _CANONICAL_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*$')
 
@@ -249,6 +255,18 @@ class MetricSemantics(BaseModel):
 
     contract_version: int = Field(default=METRIC_CONTRACT_VERSION)
     """Version of the contract this declaration follows."""
+
+    @classmethod
+    def diagnostic(cls, metric_name: str, semantic_id: Optional[str] = None) -> Self:
+        """Build the shared fallback contract for an undeclared metric."""
+        return cls(
+            semantic_id=semantic_id or DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
+            metric_name=metric_name,
+            role=MetricRole.DIAGNOSTIC,
+            direction=MetricDirection.NONE,
+            display_kind=MetricDisplayKind.NUMBER,
+            display_precision=DIAGNOSTIC_FALLBACK_PRECISION,
+        )
 
     @model_validator(mode='after')
     def _check_role_direction_display(self) -> Self:

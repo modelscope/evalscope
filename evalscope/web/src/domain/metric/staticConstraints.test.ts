@@ -5,6 +5,8 @@
  * than exercising behaviour, because the
  * property being protected is the *absence* of a mechanism: once a name table or a `metrics[0]`
  * shortcut reappears anywhere, metric semantics silently have two sources of truth again.
+ *
+ * Translation-key hygiene is a different absence and lives in `src/i18n/keyCoverage.test.ts`.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -43,6 +45,7 @@ describe('metric domain public surface', () => {
     // `formatDifference` is here rather than duplicated per feature, because "a difference of a
     // percentage is percentage points" is one rule and had already been written twice.
     // `MISSING_PLACEHOLDER` / `roundHalfUp` are internals of `formatMetric` and stay unexported.
+    // Asserted as an exact set, so a reintroduced name resolver fails here too.
     expect(Object.keys(metricDomain).sort()).toEqual([
       'directionArrow',
       'formatDifference',
@@ -56,20 +59,10 @@ describe('metric domain public surface', () => {
       'metricIdentityKey',
     ])
   })
-
-  it('has no metric name resolution helper', () => {
-    for (const forbidden of ['resolveMetricKey', 'getMetricSpec', 'formatMetricByKey', 'formatScore']) {
-      expect(metricDomain).not.toHaveProperty(forbidden)
-    }
-  })
 })
 
 describe('no metric name inference in the frontend', () => {
   const files = sourceFiles(SRC_ROOT)
-
-  it('finds source files to scan', () => {
-    expect(files.length).toBeGreaterThan(20)
-  })
 
   it('contains no metric alias table or name-keyed registry', () => {
     const offenders: string[] = []
@@ -79,6 +72,7 @@ describe('no metric name inference in the frontend', () => {
         offenders.push(relative(SRC_ROOT, file))
       }
     }
+    expect(files.length).toBeGreaterThan(20)
     expect(offenders).toEqual([])
   })
 
@@ -87,33 +81,6 @@ describe('no metric name inference in the frontend', () => {
     for (const file of files) {
       const text = readFileSync(file, 'utf-8')
       if (/metrics\[0\]/.test(text)) {
-        offenders.push(relative(SRC_ROOT, file))
-      }
-    }
-    expect(offenders).toEqual([])
-  })
-
-  it('no longer imports the deleted registry or display spec modules', () => {
-    const offenders: string[] = []
-    for (const file of files) {
-      const text = readFileSync(file, 'utf-8')
-      if (/domain\/metric\/(registry|MetricDisplaySpec)/.test(text)) {
-        offenders.push(relative(SRC_ROOT, file))
-      }
-    }
-    expect(offenders).toEqual([])
-  })
-})
-
-describe('i18n dictionaries are not mixed up', () => {
-  it('does not use the generated HTML report keys in the React app', () => {
-    // `col.*` and `card.*` belong to evalscope/report/template/js/i18n_eval.js, the dictionary of
-    // the standalone HTML report. Using one here renders the raw key on screen, which is silent:
-    // nothing throws, the header simply reads `col.metric`.
-    const offenders: string[] = []
-    for (const file of sourceFiles(SRC_ROOT)) {
-      const content = readFileSync(file, 'utf8')
-      if (/\bt\(\s*['"](col|card)\./.test(content)) {
         offenders.push(relative(SRC_ROOT, file))
       }
     }

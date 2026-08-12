@@ -9,16 +9,13 @@ Primary role assignment is intentionally separate and happens once per report th
 ``attribute_metric_roles``. The resolver never reads a data adapter and never selects a primary.
 """
 
-import json
 from enum import Enum
 from functools import lru_cache
-from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from evalscope.api.metric.semantics import (
-    MetricDirection,
-    MetricDisplayKind,
+    DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
     MetricIdentity,
     MetricRole,
     MetricSelector,
@@ -32,28 +29,16 @@ from evalscope.metrics.semantics.catalog import (
     METRIC_NAME_TABLE_LOCATION,
 )
 from evalscope.metrics.semantics.entry import MetricEntry
-from evalscope.metrics.semantics.formatting import DIAGNOSTIC_FALLBACK_PRECISION
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
 from evalscope.metrics.semantics.perf import PERF_SEMANTICS
 from evalscope.utils import get_logger
-
-if TYPE_CHECKING:
-    from evalscope.report.report import Report
 
 logger = get_logger()
 
 #: Prefix of every audit message emitted by this module, greppable in logs.
 AUDIT_MESSAGE_PREFIX = '[metric-semantics]'
 
-#: ``semantic_id`` used when no source of the priority chain matched.
-DIAGNOSTIC_FALLBACK_SEMANTIC_ID = 'diagnostic.unspecified'
-
 #: Where perf field semantics are declared, used in audit messages.
 PERF_FIELD_TABLE_LOCATION = 'evalscope/metrics/semantics/perf.py::PERF_SEMANTICS'
-
-#: Directory holding one JSON file per built-in benchmark. Resolved without importing
-#: ``evalscope.utils.resource_utils`` to keep this module cheap to import.
-_BUILTIN_META_DIR = Path(__file__).parents[2] / 'benchmarks' / '_meta'
 
 __all__ = [
     'AUDIT_MESSAGE_PREFIX',
@@ -66,7 +51,6 @@ __all__ = [
     'catalog_entry_location',
     'diagnostic_fallback',
     'get_semantics_resolver',
-    'hydrate_report_semantics',
     'resolve_perf_semantics',
 ]
 
@@ -124,16 +108,7 @@ def diagnostic_fallback(metric_name: str) -> MetricSemantics:
     Returns:
         Semantics with ``semantic_id='diagnostic.unspecified'`` and ``role=diagnostic``.
     """
-    return MetricSemantics(
-        semantic_id=DIAGNOSTIC_FALLBACK_SEMANTIC_ID,
-        metric_name=metric_name,
-        role=MetricRole.DIAGNOSTIC,
-        direction=MetricDirection.NONE,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_multiplier=None,
-        display_unit=None,
-        display_precision=DIAGNOSTIC_FALLBACK_PRECISION,
-    )
+    return MetricSemantics.diagnostic(metric_name)
 
 
 def catalog_entry_location(final_metric_name: str) -> str:
@@ -162,45 +137,6 @@ def _undeclared_perf_field_message(field_key: str) -> str:
         f"{AUDIT_MESSAGE_PREFIX} undeclared perf field: field_key='{field_key}'\n"
         f'  add an entry at {PERF_FIELD_TABLE_LOCATION}'
     )
-
-
-@lru_cache(maxsize=None)
-def _meta_primary_metric(benchmark_name: str) -> Optional[MetricSelector]:
-    """Return the primary selector recorded in a benchmark's ``_meta`` file.
-
-    Used to recover the primary metric of a legacy report. Reads only bundled metadata and never
-    imports the adapter.
-
-    Args:
-        benchmark_name: Built-in benchmark name.
-
-    Returns:
-        The raw metric name declared as primary and the aggregation name, or ``None`` when
-        unavailable.
-    """
-    path = _BUILTIN_META_DIR / f'{benchmark_name}.json'
-    if not path.is_file():
-        return None
-    try:
-        data = json.loads(path.read_text(encoding='utf-8'))
-    except (OSError, ValueError):
-        return None
-    meta = data.get('meta') if isinstance(data, dict) else None
-    if not isinstance(meta, dict):
-        return None
-    primary = meta.get('primary_metric')
-    if isinstance(primary, dict):
-        try:
-            return MetricSelector.model_validate(primary)
-        except ValueError:
-            return None
-    if not isinstance(primary, str) or not primary:
-        return None
-    aggregation = meta.get('aggregation')
-    identity = migrate_legacy_identity(
-        primary, aggregation if isinstance(aggregation, str) else '', benchmark_name=benchmark_name
-    )
-    return MetricSelector(name=identity.name)
 
 
 def _with_role(semantics: MetricSemantics, role: MetricRole) -> MetricSemantics:
@@ -254,19 +190,33 @@ def attribute_metric_roles(
 class SemanticsResolver:
     """Resolve canonical metric identities into base ``MetricSemantics``.
 
-    The resolver is stateless apart from the shipped tables it reads, so a single instance can be
-    shared; use :func:`get_semantics_resolver` for the process-wide one. Tests that need a
-    different table monkeypatch the table itself rather than injecting it here.
+    The resolver is stateless apart from its table references, so production can share the
+    process-wide :func:`get_semantics_resolver` instance. Tests and extensions can inject table
+    mappings explicitly without mutating module globals.
     """
 
-    def __init__(self, perf_fields: Optional[Mapping[str, MetricEntry]] = None) -> None:
+    def __init__(
+        self,
+        perf_fields: Optional[Mapping[str, MetricEntry]] = None,
+        metric_definitions: Optional[Mapping[str, MetricEntry]] = None,
+        aggregation_semantics: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
+        benchmark_overrides: Optional[Mapping[Tuple[str, str], MetricEntry]] = None,
+        baselines: Optional[Mapping[str, MetricSemantics]] = None,
+    ) -> None:
         """Build a resolver.
 
         Args:
-            perf_fields: Perf field key -> entry, overriding ``PERF_SEMANTICS``. Only used to
-                exercise the undeclared-field degradation path.
+            perf_fields: Perf field key -> entry, overriding ``PERF_SEMANTICS``.
+            metric_definitions: Canonical metric name -> entry, overriding ``METRIC_DEFINITIONS``.
+            aggregation_semantics: ``(metric, aggregation)`` -> entry overrides.
+            benchmark_overrides: ``(benchmark, metric)`` -> collision overrides.
+            baselines: Semantic anchor table used while reading historical reports.
         """
         self._perf_fields = PERF_SEMANTICS if perf_fields is None else perf_fields
+        self._metric_definitions = METRIC_DEFINITIONS if metric_definitions is None else metric_definitions
+        self._aggregation_semantics = AGGREGATION_SEMANTICS if aggregation_semantics is None else aggregation_semantics
+        self._benchmark_overrides = BENCHMARK_METRIC_OVERRIDES if benchmark_overrides is None else benchmark_overrides
+        self._baselines = SEMANTIC_BASELINES if baselines is None else baselines
 
     def resolve(
         self,
@@ -288,15 +238,15 @@ class SemanticsResolver:
         metric_name = identity.name
 
         # 1. Benchmark level collision override.
-        entry = BENCHMARK_METRIC_OVERRIDES.get((benchmark_name, metric_name))
+        entry = self._benchmark_overrides.get((benchmark_name, metric_name))
         if entry is not None:
             semantics = entry.resolve(metric_name)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.BENCHMARK_OVERRIDE)
 
         # 2. Aggregation-specific override, then the canonical name table.
-        entry = AGGREGATION_SEMANTICS.get((metric_name, identity.aggregation))
+        entry = self._aggregation_semantics.get((metric_name, identity.aggregation))
         if entry is None:
-            entry = METRIC_DEFINITIONS.get(metric_name)
+            entry = self._metric_definitions.get(metric_name)
         if entry is not None:
             semantics = entry.resolve(metric_name)
             if semantics.role is MetricRole.PRIMARY:
@@ -305,7 +255,7 @@ class SemanticsResolver:
 
         # 3. Report anchor: retain a historical declaration whose name is no longer catalogued.
         if embedded_semantic_id is not None:
-            baseline = SEMANTIC_BASELINES.get(embedded_semantic_id)
+            baseline = self._baselines.get(embedded_semantic_id)
             if baseline is not None:
                 semantics = baseline
                 if semantics.role is MetricRole.PRIMARY:
@@ -389,49 +339,3 @@ def attach_perf_semantics(perf_metrics: Dict[str, Any]) -> Dict[str, Any]:
         field_keys.extend(f'usage.{key}' for key in usage if f'usage.{key}' in PERF_SEMANTICS)
     payload['metric_semantics'] = resolve_perf_semantics(field_keys)
     return payload
-
-
-def hydrate_report_semantics(report: 'Report') -> 'Report':
-    """Migrate a historical report to persisted v2 semantics.
-
-    Args:
-        report: Report to hydrate, mutated in place.
-
-    Returns:
-        The same report instance.
-    """
-    metrics = list(getattr(report, 'metrics', None) or [])
-    if not metrics:
-        return report
-
-    benchmark_name = getattr(report, 'dataset_name', '') or ''
-    resolver = get_semantics_resolver()
-    selector = _meta_primary_metric(benchmark_name)
-    persisted_primary = getattr(report, 'primary_metric_identity', None)
-    if persisted_primary is not None:
-        selector = MetricSelector(
-            name=persisted_primary.name,
-            aggregation=persisted_primary.aggregation,
-            dimensions=persisted_primary.dimensions,
-        )
-
-    identities = [metric.identity for metric in metrics]
-    semantics_by_identity: Dict[str, MetricSemantics] = {}
-    for metric in metrics:
-        embedded_semantic_id = metric.semantics.semantic_id if metric.semantics else None
-        resolved = resolver.resolve(benchmark_name, metric.identity, embedded_semantic_id=embedded_semantic_id)
-        resolved.log_audit_messages()
-        semantics_by_identity[metric.identity.key] = resolved.semantics
-        if not resolved.degraded and resolved.semantics.role is not MetricRole.DIAGNOSTIC:
-            metric.legacy_name = None
-
-    try:
-        semantics_by_identity, primary_identity = attribute_metric_roles(identities, semantics_by_identity, selector)
-    except ValueError as error:
-        logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy report has no unambiguous primary metric: {error}')
-        primary_identity = None
-    for metric in metrics:
-        metric.semantics = semantics_by_identity[metric.identity.key]
-    report.primary_metric_identity = primary_identity
-
-    return report

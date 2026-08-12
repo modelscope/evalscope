@@ -15,8 +15,10 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
+// The flattening and the symmetric difference are owned by the drift checker; reimplementing them
+// here would give the same rule two definitions that could disagree.
+import { checkLocaleKeys, flattenLocaleKeys, type LocaleMap } from '../../scripts/drift/localeKeyCheck'
 import { localeDictionaries, lookupTranslation } from './translations'
-import type { Dict } from './translations'
 
 const SRC_ROOT = join(__dirname, '..')
 
@@ -108,11 +110,7 @@ describe('translation keys referenced by components exist', () => {
   })
 
   it('resolves the static prefix of every runtime-assembled key', () => {
-    const flatten = (dict: Dict, prefix = ''): string[] =>
-      Object.entries(dict).flatMap(([key, value]) =>
-        typeof value === 'string' ? [`${prefix}${key}`] : flatten(value as Dict, `${prefix}${key}.`),
-      )
-    const declared = flatten(localeDictionaries.en)
+    const declared = flattenLocaleKeys(localeDictionaries.en as LocaleMap)
 
     const orphaned: string[] = []
     for (const [prefix, files] of literalPrefixesInSource()) {
@@ -141,16 +139,11 @@ describe('dictionaries stay in step with each other', () => {
   it('defines the same keys in English and Chinese', () => {
     // `lookupTranslation` falls back to English before giving up, so a key missing from `zh` shows
     // English text rather than a raw key. That is a reasonable degradation and therefore invisible,
-    // which is exactly why it needs a test.
-    const flatten = (dict: Dict, prefix = ''): string[] =>
-      Object.entries(dict).flatMap(([key, value]) =>
-        typeof value === 'string' ? [`${prefix}${key}`] : flatten(value as Dict, `${prefix}${key}.`),
-      )
-
-    const en = flatten(localeDictionaries.en).sort()
-    const zh = flatten(localeDictionaries.zh).sort()
-
-    expect(en.filter((key) => !zh.includes(key))).toEqual([])
-    expect(zh.filter((key) => !en.includes(key))).toEqual([])
+    // which is exactly why it needs a test. `checkLocaleKeys` is exercised against synthetic maps in
+    // `scripts/drift/localeKeyCheck.test.ts`; this applies it to the dictionaries actually shipped.
+    expect(checkLocaleKeys(localeDictionaries.en as LocaleMap, localeDictionaries.zh as LocaleMap)).toEqual({
+      missing: [],
+      extra: [],
+    })
   })
 })

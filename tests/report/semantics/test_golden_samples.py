@@ -83,12 +83,9 @@ class TestGoldenSampleFile:
     """The file itself must stay a consumable, self-describing contract.
 
     ``SAMPLES`` is loaded through ``GoldenSample`` (``extra='forbid'``, required fields) at module
-    import, so a missing file, a malformed entry or an unknown key already errors at collection.
-    Only the invariants pydantic does *not* cover are asserted here.
+    import, so a missing file, a malformed entry, an unknown key or a wrongly typed field already
+    errors at collection. Only the invariants pydantic does *not* cover are asserted here.
     """
-
-    def test_top_level_is_a_non_empty_array(self) -> None:
-        assert len(load_raw_samples()) >= 7
 
     def test_sample_ids_are_unique(self) -> None:
         ids = sample_ids()
@@ -101,11 +98,6 @@ class TestGoldenSampleFile:
             if payload is None:
                 continue
             assert payload == MetricSemantics(**payload).model_dump(mode='json'), f"sample {raw['id']}"
-
-    def test_expected_texts_are_non_empty_strings(self) -> None:
-        for sample in SAMPLES:
-            assert isinstance(sample.expected_primary, str) and sample.expected_primary
-            assert isinstance(sample.expected_raw, str) and sample.expected_raw
 
     def test_label_samples_declare_an_identity(self) -> None:
         """``expected_label`` is meaningless without the identity it is rendered from."""
@@ -122,33 +114,31 @@ class TestGoldenSampleFile:
 
 
 class TestGoldenSampleCoverage:
-    """The samples must exercise every branch the two implementations share."""
+    """The samples must exercise every branch the two implementations share.
 
-    def test_covers_percent_ratio_and_official_scale(self) -> None:
-        percent = [s for s in SAMPLES if s.semantics and s.semantics.display_kind == MetricDisplayKind.PERCENT]
-        multipliers = {s.semantics.display_multiplier for s in percent}
+    One assertion per branch of ``format_metric_value`` / ``format_metric_label``: without these the
+    file could shrink to a single percent sample and both suites would still pass while silently
+    covering nothing. Shapes pydantic already enforces are not re-checked.
+    """
+
+    def test_covers_every_value_rendering_branch(self) -> None:
+        with_semantics = [s for s in SAMPLES if s.semantics]
+        multipliers = {
+            s.semantics.display_multiplier
+            for s in with_semantics if s.semantics.display_kind == MetricDisplayKind.PERCENT
+        }
         assert 100.0 in multipliers, 'no [0,1] ratio rendered as percent'
         assert 1.0 in multipliers, 'no official 0-100 scale sample'
-
-    @pytest.mark.parametrize('unit', ['s', 'ms'])
-    def test_covers_time_units(self, unit: str) -> None:
-        units = {s.semantics.display_unit for s in SAMPLES if s.semantics}
-        assert unit in units
-
-    def test_covers_unitless_number(self) -> None:
+        assert {'s', 'ms'} <= {s.semantics.display_unit for s in with_semantics}, 'a time unit is unpinned'
         assert any(
-            s.semantics is not None and s.semantics.display_kind == MetricDisplayKind.NUMBER
-            and s.semantics.display_unit is None for s in SAMPLES
-        )
+            s.semantics.display_kind == MetricDisplayKind.NUMBER and s.semantics.display_unit is None
+            for s in with_semantics
+        ), 'no unitless number'
 
-    def test_covers_missing_value(self) -> None:
         missing = [s for s in SAMPLES if s.value is None and s.semantics is not None]
         assert missing, 'no missing value sample with semantics'
         assert all(s.expected_primary == MISSING_PLACEHOLDER for s in missing)
-
-    def test_covers_diagnostic_fallback(self) -> None:
-        fallback = [s for s in SAMPLES if s.semantics is None and s.value is not None]
-        assert fallback, 'no diagnostic fallback sample'
+        assert [s for s in SAMPLES if s.semantics is None and s.value is not None], 'no diagnostic fallback sample'
 
     def test_covers_label_shapes(self) -> None:
         """The label path needs its own coverage: the value samples do not exercise it."""

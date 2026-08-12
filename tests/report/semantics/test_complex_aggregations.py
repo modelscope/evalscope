@@ -1,3 +1,5 @@
+from itertools import count
+
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.benchmarks.hallusion_bench.hallusion_bench_adapter import HallusionBenchAdapter
@@ -5,11 +7,16 @@ from evalscope.benchmarks.locomo.locomo_adapter import LoCoMoAdapter
 from evalscope.benchmarks.longmemeval.longmemeval_adapter import LongMemEvalAdapter
 from evalscope.benchmarks.openai_mrcr.openai_mrcr_adapter import OPENAI_MRCR_BINS, OpenAIMRCRAdapter
 
+_sample_ids = count(1)
+
 
 def _sample(metric_name: str, value: float, **metadata) -> SampleScore:
+    """Build one scored sample. Adapters are instantiated with ``__new__``: the aggregation methods
+    under test read only ``sample_metadata``, while ``__init__`` needs a full task config.
+    """
     return SampleScore(
         score=Score(value={metric_name: value}, main_score_name=metric_name, metadata=metadata),
-        sample_id=len(metadata),
+        sample_id=next(_sample_ids),
         sample_metadata=metadata,
     )
 

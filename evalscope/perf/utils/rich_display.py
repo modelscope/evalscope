@@ -7,14 +7,21 @@ from rich.table import Table
 from rich.text import Text
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
+from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 from evalscope.utils.logger import get_logger
-from .perf_constants import Metrics
+from .perf_constants import Metrics, PercentileMetrics
 
 logger = get_logger()
+
+
+def _cell(field_key: str, value: Optional[float], include_unit: bool = False) -> str:
+    """Format one perf table cell through the semantics registry."""
+    return format_perf_value(value, field_key, include_unit=include_unit)
+
 
 # ---------------------------------------------------------------------------
 # Layer 0: Output encapsulation
@@ -219,14 +226,16 @@ class EmbeddingResultAnalyzer(BaseResultAnalyzer):
 
         return {
             EmbCol.CONCURRENCY.key: 'INF' if concurrency == -1 else str(int(concurrency)),
-            EmbCol.RATE.key: f'{rate:.2f}' if rate != -1 else 'INF',
-            EmbCol.RPS.key: f'{rps:.2f}' if rps is not None else 'N/A',
-            EmbCol.AVG_LATENCY.key: f'{avg_latency:.3f}' if avg_latency is not None else 'N/A',
-            EmbCol.P99_LATENCY.key: f'{p99_latency:.3f}' if p99_latency is not None else 'N/A',
-            EmbCol.AVG_INPUT_TPS.key: f'{avg_input_tps:.2f}' if avg_input_tps is not None else 'N/A',
-            EmbCol.P99_INPUT_TPS.key: f'{p99_input_tps:.2f}',
-            EmbCol.AVG_INPUT_TOKENS.key: f'{avg_input_tokens:.1f}' if avg_input_tokens is not None else 'N/A',
-            EmbCol.SUCCESS_RATE.key: f'{success_rate:.1f}%' if success_rate is not None else 'N/A',
+            EmbCol.RATE.key: _cell('Rate', rate) if rate != -1 else 'INF',
+            EmbCol.RPS.key: _cell('RPS', rps) if rps is not None else 'N/A',
+            EmbCol.AVG_LATENCY.key: _cell('Avg Lat.(s)', avg_latency) if avg_latency is not None else 'N/A',
+            EmbCol.P99_LATENCY.key: _cell('P99 Lat.(s)', p99_latency) if p99_latency is not None else 'N/A',
+            EmbCol.AVG_INPUT_TPS.key: _cell('Avg Inp.TPS', avg_input_tps) if avg_input_tps is not None else 'N/A',
+            EmbCol.P99_INPUT_TPS.key: _cell('P99 Inp.TPS', p99_input_tps),
+            EmbCol.AVG_INPUT_TOKENS.key: _cell('Avg Inp.Tok', avg_input_tokens)
+            if avg_input_tokens is not None else 'N/A',
+            EmbCol.SUCCESS_RATE.key: _cell('Success Rate', success_rate, include_unit=True)
+            if success_rate is not None else 'N/A',
         }
 
 
@@ -264,7 +273,7 @@ class BaseSummaryRenderer(ABC):
         basic_info.add_row('API Type', args.api)
         for label, value in self._get_token_stat_rows(result, args):
             basic_info.add_row(label, value)
-        basic_info.add_row('Total Test Time', f'{result.total_time:.2f} seconds')
+        basic_info.add_row('Total Test Time', _cell(Metrics.TIME_TAKEN_FOR_TESTS, result.total_time, include_unit=True))
         basic_info.add_row('Output Path', args.outputs_dir)
 
         dc.print('\nBasic Information:')
@@ -289,7 +298,10 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         total_time = result.total_time
         return [
             ('Total Generated', f'{total_tokens:,} tokens'),
-            ('Avg Output Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A'),
+            (
+                'Avg Output Rate', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, total_tokens
+                                         / total_time, include_unit=True) if total_time > 0 else 'N/A'
+            ),
         ]
 
     def render(self, result: AnalysisResult, args: Arguments, dc: DualConsole):
@@ -341,7 +353,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
     def _conc_rate(summary: BenchmarkSummary) -> Tuple[str, str]:
         """Format concurrency and rate display values."""
         conc = '-' if summary.concurrency == -1 else str(int(summary.concurrency))
-        rate = '-' if summary.request_rate == -1 else f'{summary.request_rate:.2f}'
+        rate = '-' if summary.request_rate == -1 else _cell(Metrics.REQUEST_RATE, summary.request_rate)
         return conc, rate
 
     # ------------------------------------------------------------------
@@ -376,10 +388,10 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
             row = [
                 conc,
                 rate,
-                str(int(summary.total_requests)),
-                f'{summary.request_throughput:.2f}',
-                f'{summary.output_token_throughput:.2f}',
-                f'{summary.success_rate:.1f}%',
+                _cell(Metrics.TOTAL_REQUESTS, summary.total_requests),
+                _cell(Metrics.REQUEST_THROUGHPUT, summary.request_throughput),
+                _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, summary.output_token_throughput),
+                _cell('Success Rate', summary.success_rate, include_unit=True),
             ]
             if has_traces:
                 n = trace_summary.n_traces if trace_summary and not trace_summary.is_empty() else '-'
@@ -434,57 +446,79 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
             conc, rate = self._conc_rate(summary)
             first_row = True
 
-            def _add(metric: str, avg_val: Optional[float], perc_field: Optional[str] = None, fmt: str = '.3f') -> None:
+            def _add(
+                metric: str,
+                avg_val: Optional[float],
+                perc_field: Optional[str] = None,
+                field_key: Optional[str] = None,
+            ) -> None:
                 nonlocal first_row
                 c, r = (conc, rate) if first_row else ('', '')
                 first_row = False
-                avg_str = f'{avg_val:{fmt}}' if avg_val is not None else '-'
+                semantics_key = field_key or metric
+                avg_str = _cell(semantics_key, avg_val) if avg_val is not None else '-'
                 p50_str = p99_str = max_str = '-'
                 if perc_field:
                     p50 = percentiles.get_p('50%', perc_field)
                     p99 = percentiles.get_p('99%', perc_field)
                     pmax = percentiles.get_p('max', perc_field)
                     if p50 != 0.0:
-                        p50_str = f'{p50:{fmt}}'
+                        p50_str = _cell(semantics_key, p50)
                     if p99 != 0.0:
-                        p99_str = f'{p99:{fmt}}'
+                        p99_str = _cell(semantics_key, p99)
                     if pmax != 0.0:
-                        max_str = f'{pmax:{fmt}}'
+                        max_str = _cell(semantics_key, pmax)
                 table.add_row(c, r, metric, avg_str, p50_str, p99_str, max_str)
 
-            def _add_scalar(metric: str, value: Optional[float], fmt: str = '.2f', suffix: str = '') -> None:
+            def _add_scalar(
+                metric: str,
+                value: Optional[float],
+                field_key: str,
+                include_unit: bool = False,
+            ) -> None:
                 nonlocal first_row
                 c, r = (conc, rate) if first_row else ('', '')
                 first_row = False
-                val_str = f'{value:{fmt}}{suffix}' if value is not None else '-'
+                val_str = _cell(field_key, value, include_unit=include_unit) if value is not None else '-'
                 table.add_row(c, r, metric, val_str, '-', '-', '-')
 
-            _add('Latency (s)', summary.avg_latency, 'latency')
+            _add(PercentileMetrics.LATENCY, summary.avg_latency, 'latency')
             if has_ttft:
-                _add('TTFT (ms)', summary.avg_ttft, 'ttft', '.1f')
+                _add(PercentileMetrics.TTFT, summary.avg_ttft, 'ttft')
             if has_tpot:
-                _add('TPOT (ms)', summary.avg_tpot, 'tpot', '.1f')
-            _add('Input Tokens', summary.avg_input_tokens, 'input_tokens', '.1f')
+                _add(PercentileMetrics.TPOT, summary.avg_tpot, 'tpot')
+            _add('Input Tokens', summary.avg_input_tokens, 'input_tokens', PercentileMetrics.INPUT_TOKENS)
             if has_output:
-                _add('Output Tokens', summary.avg_output_tokens, 'output_tokens', '.1f')
+                _add('Output Tokens', summary.avg_output_tokens, 'output_tokens', PercentileMetrics.OUTPUT_TOKENS)
 
             if has_turns:
-                _add_scalar('Turns/Req', summary.avg_turns)
+                _add_scalar('Turns/Req', summary.avg_turns, Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST)
             if has_cache:
                 v = summary.avg_cached_percent
-                _add_scalar('Cache Hit (%)', v if v is not None and v >= 0 else None, '.1f', '%')
+                _add_scalar(
+                    'Cache Hit (%)',
+                    v if v is not None and v >= 0 else None,
+                    Metrics.AVERAGE_CACHED_PERCENT,
+                    include_unit=True,
+                )
             if has_first_ttft:
-                _add_scalar('1st-Turn TTFT (ms)', summary.avg_first_turn_ttft, '.1f')
+                _add_scalar('1st-Turn TTFT (ms)', summary.avg_first_turn_ttft, Metrics.AVERAGE_FIRST_TURN_TTFT)
             if has_subseq_ttft:
-                _add_scalar('Subseq. TTFT (ms)', summary.avg_subsequent_turn_ttft, '.1f')
+                _add_scalar('Subseq. TTFT (ms)', summary.avg_subsequent_turn_ttft, Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT)
             if has_decode:
                 tpot = summary.avg_tpot
                 tps = (1000.0 / tpot) if tpot and tpot > 0 else None
-                _add_scalar('Decode toks/s', tps)
+                _add_scalar('Decode toks/s', tps, Metrics.OUTPUT_TOKEN_THROUGHPUT)
             if has_spec:
-                _add_scalar('Decoded Tok/Iter', summary.avg_decoded_tokens_per_iter)
-                sr = summary.approx_spec_acceptance_rate
-                _add_scalar('Spec. Accept Rate', sr * 100 if sr is not None else None, '.1f', '%')
+                _add_scalar(
+                    'Decoded Tok/Iter', summary.avg_decoded_tokens_per_iter, Metrics.AVERAGE_DECODED_TOKENS_PER_ITER
+                )
+                _add_scalar(
+                    'Spec. Accept Rate',
+                    summary.approx_spec_acceptance_rate,
+                    Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE,
+                    include_unit=True
+                )
 
         dc.print('\n')
         dc.print(table)
@@ -524,11 +558,11 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                     c,
                     r,
                     row.metric,
-                    f'{row.mean:.2f}',
-                    f'{row.p50:.2f}',
-                    f'{row.p90:.2f}',
-                    f'{row.p99:.2f}',
-                    f'{row.max:.2f}',
+                    _cell(row.metric, row.mean),
+                    _cell(row.metric, row.p50),
+                    _cell(row.metric, row.p90),
+                    _cell(row.metric, row.p99),
+                    _cell(row.metric, row.max),
                 )
 
         dc.print('\n')
@@ -575,9 +609,9 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                     c,
                     r,
                     row.metric,
-                    f'{row.overall:.2f}',
-                    f'{row.last_window:.2f}',
-                    f'{row.steady_state:.2f}',
+                    _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, row.overall),
+                    _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, row.last_window),
+                    _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, row.steady_state),
                 )
 
         dc.print('\n')
@@ -595,7 +629,10 @@ class EmbeddingSummaryRenderer(BaseSummaryRenderer):
         total_time = result.total_time
         return [
             ('Total Input Tokens', f'{total_tokens:,.0f} tokens'),
-            ('Avg Input Rate', f'{total_tokens / total_time:.2f} tokens/sec' if total_time > 0 else 'N/A'),
+            (
+                'Avg Input Rate', _cell(Metrics.INPUT_TOKEN_THROUGHPUT, total_tokens
+                                        / total_time, include_unit=True) if total_time > 0 else 'N/A'
+            ),
         ]
 
     def render(self, result: AnalysisResult, args: Arguments, dc: DualConsole):

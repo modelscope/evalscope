@@ -62,37 +62,13 @@ class TestMetricSemanticsValid:
 
 
 class TestMetricSemanticsValidation:
+    """Rules with no property counterpart.
 
-    @pytest.mark.parametrize('role', [MetricRole.PRIMARY, MetricRole.AUXILIARY])
-    def test_scored_role_requires_direction(self, role: MetricRole) -> None:
-        with pytest.raises(ValidationError) as excinfo:
-            MetricSemantics(**_accuracy_kwargs(role=role, direction=MetricDirection.NONE))
-
-        message = str(excinfo.value)
-        assert 'quality.accuracy.ratio' in message
-        assert 'Accuracy' in message
-
-    def test_diagnostic_rejects_direction(self) -> None:
-        with pytest.raises(ValidationError) as excinfo:
-            MetricSemantics(
-                semantic_id='diagnostic.count.items',
-                metric_name='Steps',
-                role=MetricRole.DIAGNOSTIC,
-                direction=MetricDirection.LOWER_IS_BETTER,
-            )
-
-        message = str(excinfo.value)
-        assert 'diagnostic.count.items' in message
-        assert 'Steps' in message
-
-    @pytest.mark.parametrize('missing', ['value_range', 'display_multiplier'])
-    def test_percent_requires_range_and_multiplier(self, missing: str) -> None:
-        with pytest.raises(ValidationError) as excinfo:
-            MetricSemantics(**_accuracy_kwargs(**{missing: None}))
-
-        message = str(excinfo.value)
-        assert 'quality.accuracy.ratio' in message
-        assert missing in message
+    The role / direction pair, the percent display bundle and the closed enum domains are covered
+    exhaustively by ``TestMetricSemanticsProperties`` below, which asserts the same rejections plus
+    the error message contents over generated inputs. Only the rules those properties do not
+    generate are pinned here.
+    """
 
     @pytest.mark.parametrize('bounds', [(1.0, 1.0), (2.0, 1.0), (0.0, float('inf')), (float('nan'), 1.0)])
     def test_rejects_invalid_value_range(self, bounds: tuple) -> None:
@@ -118,11 +94,6 @@ class TestMetricSemanticsValidation:
         message = str(excinfo.value)
         assert 'quality.accuracy.ratio' in message
         assert 'display_precision' in message
-
-    @pytest.mark.parametrize('field, value', [('role', 'unknown'), ('direction', 'up'), ('display_kind', 'ratio')])
-    def test_enum_domains_are_closed(self, field: str, value: str) -> None:
-        with pytest.raises(ValidationError):
-            MetricSemantics(**_accuracy_kwargs(**{field: value}))
 
 
 class TestMetricSemanticsProperties:

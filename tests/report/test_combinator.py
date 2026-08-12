@@ -5,7 +5,7 @@ from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.identity import migrate_legacy_identity
-from evalscope.report import gen_table, get_report_list
+from evalscope.report import gen_table, get_display_data_frame, get_report_list
 from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Category, Metric, Report, Subset
 
@@ -103,6 +103,16 @@ def test_gen_table_formats_metric_values_without_changing_dataframe_scores() -> 
     assert '0.8765' in table
     assert '0.8567' not in table
     assert accuracy.to_dataframe()['Score'].tolist() == [0.8567]
+
+
+def test_display_data_frame_uses_the_same_semantics_as_the_cli_table() -> None:
+    report = _report('gsm8k', [AggScore(score=0.8567, metric_name='accuracy', aggregation='mean', num=100)])
+
+    display_table = get_display_data_frame([report])
+
+    assert display_table['Metric'].tolist() == ['Accuracy ↑']
+    assert display_table['Score'].tolist() == ['85.7%']
+    assert report.to_dataframe()['Score'].tolist() == [0.8567]
 
 
 def test_gen_table_disambiguates_repeated_metric_display_names() -> None:

@@ -101,6 +101,53 @@ def get_data_frame(
     return pd.concat(tables, ignore_index=True)
 
 
+def get_display_data_frame(
+    report_list: List[Report],
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False,
+) -> pd.DataFrame:
+    """Build a display-only DataFrame with semantic metric labels and formatted values.
+
+    The raw :func:`get_data_frame` contract intentionally remains numeric for downstream
+    analysis. Renderers should use this helper so the CLI and service tables share one display
+    path without changing the report payload.
+    """
+    display_table = get_data_frame(
+        report_list,
+        flatten_metrics=flatten_metrics,
+        flatten_categories=flatten_categories,
+        add_overall_metric=add_overall_metric,
+    ).copy()
+    semantics_by_metric = {}
+    labels_by_metric = {}
+    dataset_labels = {}
+    for report in report_list:
+        dataset_labels[(report.model_name, report.dataset_name)] = report.dataset_pretty_name or report.dataset_name
+        labels = format_metric_labels((metric.identity, metric.semantics) for metric in report.metrics)
+        for metric in report.metrics:
+            key = (report.model_name, report.dataset_name, metric.name)
+            semantics_by_metric[key] = metric.semantics
+            labels_by_metric[key] = format_metric_label(metric.identity, metric.semantics, metric.legacy_name
+                                                        ) if metric.legacy_name else labels[metric.identity.key]
+
+    if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
+        metric_labels = []
+        display_scores = []
+        for _, row in display_table.iterrows():
+            key = (row['Model'], row['Dataset'], row['Metric'])
+            metric_labels.append(labels_by_metric.get(key, row['Metric']))
+            display_scores.append(format_metric_value(float(row['Score']), semantics_by_metric.get(key)))
+        display_table['Metric'] = metric_labels
+        display_table['Score'] = display_scores
+        display_table['Dataset'] = [
+            dataset_labels.get((row['Model'], row['Dataset']), row['Dataset']) for _, row in display_table.iterrows()
+        ]
+
+    _format_category_columns_for_display(display_table)
+    return display_table
+
+
 def gen_table(
     reports_path_list: list[str] = None,
     report_list: list[Report] = None,
@@ -130,40 +177,12 @@ def gen_table(
         'Either reports_path_list or report_list must be provided.'
     if report_list is None:
         report_list = get_report_list(reports_path_list)
-    # Generate a DataFrame from the report list
-    table = get_data_frame(
+    display_table = get_display_data_frame(
         report_list,
         flatten_metrics=flatten_metrics,
         flatten_categories=flatten_categories,
-        add_overall_metric=add_overall_metric
+        add_overall_metric=add_overall_metric,
     )
-    display_table = table.copy()
-    semantics_by_metric = {}
-    labels_by_metric = {}
-    dataset_labels = {}
-    for report in report_list:
-        dataset_labels[(report.model_name, report.dataset_name)] = report.dataset_pretty_name or report.dataset_name
-        labels = format_metric_labels((metric.identity, metric.semantics) for metric in report.metrics)
-        for metric in report.metrics:
-            key = (report.model_name, report.dataset_name, metric.name)
-            semantics_by_metric[key] = metric.semantics
-            labels_by_metric[key] = format_metric_label(metric.identity, metric.semantics, metric.legacy_name
-                                                        ) if metric.legacy_name else labels[metric.identity.key]
-
-    if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
-        metric_labels = []
-        display_scores = []
-        for _, row in display_table.iterrows():
-            key = (row['Model'], row['Dataset'], row['Metric'])
-            metric_labels.append(labels_by_metric.get(key, row['Metric']))
-            display_scores.append(format_metric_value(float(row['Score']), semantics_by_metric.get(key)))
-        display_table['Metric'] = metric_labels
-        display_table['Score'] = display_scores
-        display_table['Dataset'] = [
-            dataset_labels.get((row['Model'], row['Dataset']), row['Dataset']) for _, row in display_table.iterrows()
-        ]
-
-    _format_category_columns_for_display(display_table)
 
     return tabulate(display_table, headers=display_table.columns, tablefmt='simple_grid', showindex=False)
 

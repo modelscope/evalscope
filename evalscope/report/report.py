@@ -15,13 +15,7 @@ from pydantic import (
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
-from evalscope.api.metric.semantics import (
-    MetricDirection,
-    MetricDisplayKind,
-    MetricIdentity,
-    MetricRole,
-    MetricSemantics,
-)
+from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -139,15 +133,8 @@ class Metric(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _migrate_v1_shape(cls, data: Any) -> Any:
-        if not isinstance(data, dict) or 'identity' in data:
-            return data
-        migrated = dict(data)
-        old_name = migrated.pop('name', 'legacy_metric')
-        semantic_id = migrated.pop('semantic_id', None)
-        migrated['identity'] = _migrate_legacy_report_identity(old_name)
-        if 'semantics' not in migrated:
-            migrated['semantics'] = _diagnostic_semantics(old_name, semantic_id)
-        return migrated
+        from evalscope.metrics.semantics.migration import migrate_legacy_metric_payload
+        return migrate_legacy_metric_payload(data)
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
@@ -170,32 +157,6 @@ class Metric(BaseModel):
     def name(self) -> str:
         """Compatibility display key; v2 serialization stores ``identity`` instead."""
         return self.legacy_name or self.identity.key
-
-
-def _diagnostic_semantics(metric_name: str, semantic_id: Optional[str] = None) -> MetricSemantics:
-    """Create a self-contained fallback without importing the resolver/catalog."""
-    return MetricSemantics(
-        semantic_id=semantic_id or 'diagnostic.unspecified',
-        metric_name=metric_name,
-        role=MetricRole.DIAGNOSTIC,
-        direction=MetricDirection.NONE,
-        display_kind=MetricDisplayKind.NUMBER,
-        display_precision=4,
-    )
-
-
-def _migrate_legacy_report_identity(metric_name: str, benchmark_name: Optional[str] = None) -> MetricIdentity:
-    """Migrate a known v1 name, or isolate an unknown legacy spelling as a diagnostic identity."""
-    import re
-
-    from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
-    from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
-
-    if metric_name in LEGACY_METRIC_MIGRATIONS or is_known_dynamic_legacy_name(metric_name, benchmark_name):
-        return migrate_legacy_identity(metric_name, 'identity', benchmark_name=benchmark_name)
-    if re.fullmatch(r'[a-z][a-z0-9_]*', metric_name) and metric_name not in {'score', 'overall', 'total_score'}:
-        return MetricIdentity(name=metric_name, aggregation='identity')
-    return MetricIdentity(name='legacy_metric', aggregation='identity', dimensions={'original_name': metric_name})
 
 
 class ReportKey:
@@ -230,37 +191,8 @@ class Report(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _migrate_v1_shape(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-        migrated = dict(data)
-        migrated.pop('num', None)
-        migrated.pop('metric_schema_version', None)
-        metrics = migrated.get('metrics', [])
-        has_v2_metrics = bool(metrics) and all(
-            hasattr(metric, 'identity') or isinstance(metric, dict) and 'identity' in metric for metric in metrics
-        )
-        if migrated.get('schema_version') == 2 or has_v2_metrics:
-            migrated.setdefault('schema_version', 2)
-            return migrated
-
-        dataset_name = migrated.get('dataset_name')
-        primary_name = migrated.pop('primary_metric_name', None)
-        migrated.pop('score', None)
-        migrated['schema_version'] = 2
-        migrated_metrics = []
-        for metric_data in migrated.get('metrics', []):
-            item = dict(metric_data)
-            old_name = item.pop('name', 'legacy_metric')
-            semantic_id = item.pop('semantic_id', None)
-            identity = _migrate_legacy_report_identity(old_name, benchmark_name=dataset_name)
-            item['identity'] = identity.model_dump()
-            item['legacy_name'] = old_name
-            item['semantics'] = _diagnostic_semantics(old_name, semantic_id).model_dump()
-            migrated_metrics.append(item)
-            if primary_name == old_name:
-                migrated['primary_metric_identity'] = identity.model_dump()
-        migrated['metrics'] = migrated_metrics
-        return migrated
+        from evalscope.metrics.semantics.migration import migrate_legacy_report_payload
+        return migrate_legacy_report_payload(data)
 
     @model_validator(mode='after')
     def _validate_v2(self, info: ValidationInfo) -> Self:

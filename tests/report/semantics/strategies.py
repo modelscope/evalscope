@@ -1,13 +1,10 @@
-"""Reusable Hypothesis strategies for metric semantics property tests.
+"""Reusable Hypothesis strategies for the ``MetricSemantics`` contract property tests.
 
-This module is the single generator source shared by every property test under
-``tests/report/semantics/``. Strategies are grouped as:
+Consumed by ``test_semantics_model.py``. Strategies are grouped as:
 
 * enum and scalar building blocks (roles, directions, display kinds, value ranges, units)
 * valid ``MetricSemantics`` keyword bundles, always self-consistent with the contract rules
 * deliberately invalid keyword bundles, one bundle per contract rule
-* catalog level generators (``MetricEntry``, metric name tables)
-* resolver level generators (benchmark names, baseline keys, declared and undeclared metric names)
 
 Generators constrain the input space instead of filtering it, so shrinking stays meaningful.
 """
@@ -16,9 +13,6 @@ from hypothesis import strategies as st
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, ValueRange
-from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
-from evalscope.metrics.semantics.catalog import BENCHMARK_METRIC_OVERRIDES, METRIC_DEFINITIONS
-from evalscope.metrics.semantics.entry import MetricEntry
 
 #: Roles that carry an optimization direction.
 SCORED_ROLES: Tuple[MetricRole, ...] = (MetricRole.PRIMARY, MetricRole.AUXILIARY)
@@ -207,100 +201,3 @@ def invalid_enum_kwargs(draw: st.DrawFn) -> Tuple[Dict[str, Any], str]:
     field_name = draw(st.sampled_from(['role', 'direction', 'display_kind']))
     kwargs[field_name] = draw(st.sampled_from(list(INVALID_ENUM_VALUES)))
     return kwargs, field_name
-
-
-def full_override_metric_entries(
-    roles: Optional[st.SearchStrategy[MetricRole]] = None,
-    display_kinds: Optional[st.SearchStrategy[MetricDisplayKind]] = None,
-) -> st.SearchStrategy[MetricEntry]:
-    """Generate baseline-free ``MetricEntry`` instances that resolve without a baseline table."""
-    return valid_semantics_kwargs(roles=roles, display_kinds=display_kinds).map(lambda kw: MetricEntry(**kw))
-
-
-def final_metric_names() -> st.SearchStrategy[str]:
-    """Generate final report metric names used as catalog keys."""
-    return identifiers(min_size=1, max_size=20)
-
-
-# ---------------------------------------------------------------------------------------------
-# Resolver level generators: benchmark names and baseline keys.
-# ---------------------------------------------------------------------------------------------
-
-#: Baseline keys of the shipped baseline table, usable as ``MetricEntry.baseline``.
-BASELINE_IDS: Tuple[str, ...] = tuple(sorted(SEMANTIC_BASELINES))
-
-#: Metric names declared by the shipped catalog, i.e. names the name level may resolve.
-DECLARED_METRIC_NAMES: Tuple[str, ...] = tuple(
-    sorted(set(METRIC_DEFINITIONS) | {metric_name
-                                      for _, metric_name in BENCHMARK_METRIC_OVERRIDES})
-)
-
-#: Benchmark names carrying a benchmark level collision override.
-OVERRIDE_BENCHMARK_NAMES: Tuple[str, ...] = tuple(
-    sorted({benchmark_name
-            for benchmark_name, _ in BENCHMARK_METRIC_OVERRIDES})
-)
-
-#: Prefix that keeps a generated benchmark name out of every shipped table.
-SYNTHETIC_BENCHMARK_PREFIX: str = 'bench_'
-
-#: Prefix that keeps a generated metric name out of every shipped table, so the only source
-#: that can resolve it is the one the test installs itself.
-UNDECLARED_METRIC_PREFIX: str = 'undeclared_'
-
-
-def baseline_ids() -> st.SearchStrategy[str]:
-    """Generate keys of the shipped baseline table."""
-    return st.sampled_from(list(BASELINE_IDS))
-
-
-def synthetic_benchmark_names() -> st.SearchStrategy[str]:
-    """Generate benchmark names absent from every shipped table."""
-    return identifiers().map(lambda suffix: f'{SYNTHETIC_BENCHMARK_PREFIX}{suffix}')
-
-
-def benchmark_names() -> st.SearchStrategy[str]:
-    """Generate benchmark names: carrying a collision override, or absent from every table."""
-    if OVERRIDE_BENCHMARK_NAMES:
-        return st.one_of(st.sampled_from(list(OVERRIDE_BENCHMARK_NAMES)), synthetic_benchmark_names())
-    return synthetic_benchmark_names()
-
-
-def declared_metric_names() -> st.SearchStrategy[str]:
-    """Generate metric names the shipped catalog declares."""
-    return st.sampled_from(list(DECLARED_METRIC_NAMES))
-
-
-def undeclared_metric_names() -> st.SearchStrategy[str]:
-    """Generate final report metric names no shipped table declares."""
-    return identifiers().map(lambda suffix: f'{UNDECLARED_METRIC_PREFIX}{suffix}')
-
-
-def name_variants(declared_name: str) -> st.SearchStrategy[str]:
-    """Generate variants of a declared name that are themselves not declared.
-
-    Covers the shapes a name-inference implementation would wrongly accept: case changes,
-    removed or added underscores, and added prefixes / suffixes.
-
-    Args:
-        declared_name: Name that is declared in the catalog.
-
-    Returns:
-        A strategy over strings that differ from every declared name.
-    """
-    variants = [
-        declared_name.upper(),
-        declared_name.lower() + '_v2',
-        declared_name.replace('_', ''),
-        declared_name.replace('_', '-'),
-        f' {declared_name}',
-        f'{declared_name} ',
-        f'x_{declared_name}',
-        f'{declared_name}_x',
-    ]
-    return st.sampled_from([variant for variant in variants if variant not in DECLARED_METRIC_NAMES])
-
-
-def metric_scores() -> st.SearchStrategy[float]:
-    """Generate finite metric scores as stored in a report."""
-    return st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False)

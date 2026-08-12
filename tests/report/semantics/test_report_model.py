@@ -3,6 +3,8 @@ from typing import Dict, List, Optional
 
 from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricIdentity, MetricRole, MetricSelector
+from evalscope.metrics.semantics.entry import MetricEntry
+from evalscope.metrics.semantics.resolver import SemanticsResolver
 from evalscope.report.generator import ReportGenerator
 from evalscope.report.report import Report
 
@@ -44,6 +46,23 @@ def test_generator_groups_by_identity_and_selects_primary() -> None:
 def test_generator_preserves_scores() -> None:
     report = _report()
     assert [metric.score for metric in report.metrics] == [0.8, 0.75]
+
+
+def test_generator_accepts_an_injected_semantics_resolver() -> None:
+    resolver = SemanticsResolver(
+        metric_definitions={'vendor_metric': MetricEntry(baseline='quality.accuracy.ratio')},
+        aggregation_semantics={},
+        benchmark_overrides={},
+    )
+    report = ReportGenerator.generate_report(
+        {'test': [AggScore(score=0.75, metric_name='vendor_metric', aggregation='mean', num=1)]},
+        'model',
+        _StubAdapter('third_party', MetricSelector(name='vendor_metric')),
+        semantics_resolver=resolver,
+    )
+
+    assert report.primary_metric is not None
+    assert report.primary_metric.semantics.semantic_id == 'quality.accuracy.ratio'
 
 
 def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:

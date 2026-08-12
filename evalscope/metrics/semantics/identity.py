@@ -9,38 +9,9 @@ import re
 from typing import Callable, Dict, FrozenSet, Match, NamedTuple, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
+from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
 
-_EXACT_ALIASES = {
-    'acc': 'accuracy',
-    'AverageAccuracy': 'accuracy',
-    'WeightedAverageAccuracy': 'accuracy',
-    'f1_score': 'f1',
-    'F1': 'f1',
-    'em': 'exact_match',
-    'winrate': 'win_rate',
-    'BLEU': 'bleu',
-    'Rouge': 'rouge',
-    'Rouge-L': 'rouge',
-    'ROUGE_L': 'rouge',
-    'METEOR': 'meteor',
-    'CIDEr': 'cider',
-    'IoU': 'iou',
-    'mean_IoU': 'iou',
-    'score': 'normalized_score',
-    'overall': 'normalized_score',
-    'total_score': 'judge_score',
-    'gpt_score': 'judge_score',
-    'avg_score': 'judge_score',
-    'HalluRate': 'hallucination_rate',
-    'bertscore': 'bert_score',
-    'total_wall_time_s': 'total_wall_time',
-    'total_model_time_s': 'total_model_time',
-    'total_tool_time_s': 'total_tool_time',
-    'total_other_time_s': 'total_other_time',
-    'HPSv2.1Score': 'hps_v2_1_score',
-    'PickScore': 'pick_score',
-    'VQAScore': 'vqa_score',
-}
+_EXACT_ALIASES = {name: alias.canonical_name for name, alias in LEGACY_METRIC_ALIASES.items()}
 
 _AGGREGATION_ALIASES = {
     'avg': 'mean',

@@ -119,27 +119,25 @@ def _build_report(benchmark: str, primary_metric: Optional[MetricSelector], agg_
 class TestSemanticsEndToEnd:
     """Every metric display surface agrees on the resolved semantics."""
 
-    def test_primary_metric_resolves_to_the_expected_semantics(
-        self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
-    ) -> None:
-        report = _build_report(benchmark, primary_metric, agg_scores)
+    @pytest.fixture
+    def report(self, benchmark, primary_metric, agg_scores) -> Report:
+        """The scenario's report, built once per test instead of once per assertion."""
+        return _build_report(benchmark, primary_metric, agg_scores)
 
+    def test_primary_metric_resolves_to_the_expected_semantics(
+        self, report: Report, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
+    ) -> None:
         assert report.primary_metric is not None, scenario
         assert report.primary_metric.semantics.semantic_id == expected_semantic_id
         assert report.primary_metric.semantics.role is MetricRole.PRIMARY
 
-    def test_exactly_one_primary_metric(
-        self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
-    ) -> None:
-        report = _build_report(benchmark, primary_metric, agg_scores)
-
+        # Exactly one, so no surface has to choose between two conclusions.
         primaries = [m for m in report.metrics if m.semantics and m.semantics.role is MetricRole.PRIMARY]
         assert len(primaries) == 1, f'{scenario}: {[m.name for m in primaries]}'
 
     def test_cli_dataframe_matches_the_primary_metric(
-        self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
+        self, report: Report, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
     ) -> None:
-        report = _build_report(benchmark, primary_metric, agg_scores)
         df = get_acc_report_df([report])
 
         assert len(df) == 1
@@ -147,13 +145,12 @@ class TestSemanticsEndToEnd:
         assert isinstance(df.iloc[0]['Score'], float)
 
     def test_html_report_shows_the_same_formatted_value(
-        self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id, tmp_path: Path
+        self, report: Report, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id, tmp_path: Path
     ) -> None:
         from evalscope.report.renderer import gen_html_report_file
 
         reports_dir = tmp_path / 'reports' / 'test-model'
         reports_dir.mkdir(parents=True)
-        report = _build_report(benchmark, primary_metric, agg_scores)
         (reports_dir / f'{benchmark}.json').write_text(report.to_json_str(), encoding='utf-8')
 
         html_path = gen_html_report_file(str(tmp_path / 'reports'))
@@ -165,11 +162,10 @@ class TestSemanticsEndToEnd:
         assert expected_value in html, f'{scenario}: expected {expected_value!r} in the HTML report'
 
     def test_api_payload_carries_the_same_contract(
-        self, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
+        self, report: Report, scenario, benchmark, primary_metric, agg_scores, expected_semantic_id
     ) -> None:
         from evalscope.service.blueprints.reports import _report_to_service_dict
 
-        report = _build_report(benchmark, primary_metric, agg_scores)
         payload = _report_to_service_dict(report)
 
         assert payload['primary_metric_identity'] == report.primary_metric.identity.model_dump()
@@ -183,9 +179,14 @@ class TestSemanticsEndToEnd:
 
 
 class TestDirectionsSurviveTheRoundTrip:
-    """A low-is-better metric must not be presented as if higher were better."""
+    """A low-is-better metric must not be presented as if higher were better.
 
-    def test_wer_is_lower_is_better_everywhere(self) -> None:
+    Asserted on the report read back from JSON, which is the shape every surface consumes; the
+    per-surface agreement itself is covered by ``TestSemanticsEndToEnd``. The perf key spaces have
+    their own resolution tests in ``tests/report/semantics/test_perf_semantics.py``.
+    """
+
+    def test_wer_stays_lower_is_better_after_a_round_trip(self) -> None:
         report = _build_report(
             'torgo', MetricSelector(name='wer'), [
                 AggScore(score=0.0432, metric_name='wer', aggregation='identity', num=50),
@@ -215,28 +216,3 @@ class TestDirectionsSurviveTheRoundTrip:
         assert diagnostic.semantics.direction.value == 'none'
         assert report.primary_metric.identity.name == 'success_rate'
         assert report.primary_metric.identity.aggregation == 'mean'
-
-
-class TestPerfSemanticsSurface:
-    """The perf API attaches semantics without touching the numbers it reports."""
-
-    def test_public_perf_fields_all_resolve(self) -> None:
-        from evalscope.metrics.semantics import resolve_perf_semantics
-        from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
-
-        keys = [Metrics.AVERAGE_LATENCY, Metrics.OUTPUT_TOKEN_THROUGHPUT, PercentileMetrics.TTFT]
-        semantics = resolve_perf_semantics(keys)
-
-        assert set(semantics) == set(keys)
-        assert semantics[Metrics.AVERAGE_LATENCY]['direction'] == 'lower_is_better'
-        assert semantics[Metrics.OUTPUT_TOKEN_THROUGHPUT]['direction'] == 'higher_is_better'
-
-    def test_counts_are_diagnostics(self) -> None:
-        from evalscope.metrics.semantics import resolve_perf_semantics
-        from evalscope.perf.utils.perf_constants import Metrics
-
-        semantics = resolve_perf_semantics([Metrics.FAILED_REQUESTS, Metrics.TOTAL_REQUESTS])
-
-        for field_key in (Metrics.FAILED_REQUESTS, Metrics.TOTAL_REQUESTS):
-            assert semantics[field_key]['role'] == 'diagnostic'
-            assert semantics[field_key]['direction'] == 'none'
