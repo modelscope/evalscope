@@ -7,23 +7,26 @@ the dependency runs one way only (contract <- data), which is why nothing here n
 import.
 """
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Dict, Optional
-from typing_extensions import Self
 
-from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricRole, MetricSemantics, ValueRange
+from evalscope.api.metric.semantics import MetricDirection, MetricSemantics, ValueRange
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 
 #: Location the baseline table is declared at, used in error messages.
 BASELINE_TABLE_LOCATION = 'evalscope/metrics/semantics/baselines.py::SEMANTIC_BASELINES'
 
-#: Fields of ``MetricEntry`` that override the referenced baseline when not ``None``.
-#: Derived from the contract so a newly added ``MetricSemantics`` field is never silently
-#: dropped from the override set (``contract_version`` is fixed, not overridable).
-_ENTRY_OVERRIDE_FIELDS = tuple(name for name in MetricSemantics.model_fields if name != 'contract_version')
-
-#: Fields a baseline-free entry must declare itself.
-_ENTRY_REQUIRED_WITHOUT_BASELINE = ('semantic_id', 'role', 'direction')
+#: Supported differences from a named baseline. Semantic identity, role and display kind belong
+#: to the baseline vocabulary rather than to each catalog entry.
+_ENTRY_OVERRIDE_FIELDS = (
+    'metric_name',
+    'direction',
+    'raw_unit',
+    'value_range',
+    'display_multiplier',
+    'display_unit',
+    'display_precision',
+)
 
 __all__ = ['BASELINE_TABLE_LOCATION', 'MetricEntry', 'lookup_baseline']
 
@@ -51,32 +54,16 @@ class MetricEntry(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra='forbid')
 
-    baseline: Optional[str] = Field(default=None)
-    """Key into the baseline table. ``None`` means this entry is a full override."""
+    baseline: str
+    """Key into the baseline table."""
 
-    semantic_id: Optional[str] = Field(default=None)
-    metric_name: Optional[str] = Field(default=None)
-    role: Optional[MetricRole] = Field(default=None)
-    direction: Optional[MetricDirection] = Field(default=None)
-    raw_unit: Optional[str] = Field(default=None)
-    value_range: Optional[ValueRange] = Field(default=None)
-    display_kind: Optional[MetricDisplayKind] = Field(default=None)
-    display_multiplier: Optional[float] = Field(default=None)
-    display_unit: Optional[str] = Field(default=None)
-    display_precision: Optional[int] = Field(default=None)
-
-    @model_validator(mode='after')
-    def _check_full_override_is_complete(self) -> Self:
-        if self.baseline is not None:
-            return self
-
-        missing = [name for name in _ENTRY_REQUIRED_WITHOUT_BASELINE if getattr(self, name) is None]
-        if missing:
-            raise ValueError(
-                f"metric entry without 'baseline' must declare {', '.join(missing)}; "
-                f'either set baseline (see {BASELINE_TABLE_LOCATION}) or complete the override'
-            )
-        return self
+    metric_name: Optional[str] = None
+    direction: Optional[MetricDirection] = None
+    raw_unit: Optional[str] = None
+    value_range: Optional[ValueRange] = None
+    display_multiplier: Optional[float] = None
+    display_unit: Optional[str] = None
+    display_precision: Optional[int] = None
 
     def resolve(self, final_metric_name: str) -> MetricSemantics:
         """Materialize this entry into a validated ``MetricSemantics``.
@@ -96,9 +83,7 @@ class MetricEntry(BaseModel):
             ValueError: If the referenced baseline is unknown.
             pydantic.ValidationError: If the merged declaration violates the contract.
         """
-        fields: Dict[str, Any] = {}
-        if self.baseline is not None:
-            fields.update(lookup_baseline(self.baseline).model_dump())
+        fields: Dict[str, Any] = lookup_baseline(self.baseline).model_dump()
 
         for name in _ENTRY_OVERRIDE_FIELDS:
             value = getattr(self, name)

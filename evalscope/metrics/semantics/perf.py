@@ -21,7 +21,6 @@ these entries to a service payload live in ``resolver`` and are re-exported from
 
 from typing import Any, Dict, Mapping, Tuple
 
-from evalscope.api.metric.semantics import MetricRole
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
@@ -258,7 +257,6 @@ _materialize_aliases(PERF_API_ALIASES)
 PERF_SEMANTICS['success_rate'] = MetricEntry(
     baseline='quality.score.points_100',
     metric_name='Success Rate',
-    role=MetricRole.AUXILIARY,
 )
 
 # Archive tables expose human-readable column labels. Each alias names the already declared field it

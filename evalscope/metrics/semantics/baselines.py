@@ -8,9 +8,8 @@ Conventions enforced here:
 
 - Keys equal the ``semantic_id`` of the declaration, named ``{domain}.{concept}.{unit}``.
 - Diagnostic baselines always use ``direction=none``.
-- Quality baselines default to ``role=primary``. A benchmark that reports several of them
-  (F1 plus Precision / Recall, WER plus CER) downgrades the extra ones to ``auxiliary`` in its
-  own ``MetricEntry``.
+- Quality and performance baselines default to ``role=auxiliary``. Report attribution promotes
+  exactly one selected metric to ``primary``.
 - Bounded ratios in [0, 1] render as percent with ``display_multiplier=100``; official 0-100
   scales render as percent with ``display_multiplier=1``.
 
@@ -37,7 +36,7 @@ def _percent(
     semantic_id: str,
     metric_name: str,
     direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
-    role: MetricRole = MetricRole.PRIMARY,
+    role: MetricRole = MetricRole.AUXILIARY,
     value_range: ValueRange = _RATIO_RANGE,
     display_multiplier: float = 100.0,
 ) -> MetricSemantics:
@@ -74,7 +73,7 @@ def _plain_number(
     metric_name: str,
     display_precision: int,
     direction: MetricDirection = MetricDirection.HIGHER_IS_BETTER,
-    role: MetricRole = MetricRole.PRIMARY,
+    role: MetricRole = MetricRole.AUXILIARY,
     raw_unit: Optional[str] = None,
     display_unit: Optional[str] = None,
 ) -> MetricSemantics:
@@ -134,7 +133,6 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         'quality.error_rate.ratio',
         'Error Rate',
         MetricDirection.LOWER_IS_BETTER,
-        role=MetricRole.AUXILIARY,
     ),
     # --- quality: official scales and unbounded judge scores ------------------------------
     'quality.score.points_100': _percent(

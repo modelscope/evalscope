@@ -249,18 +249,13 @@ class SemanticsResolver:
             entry = self._metric_definitions.get(metric_name)
         if entry is not None:
             semantics = entry.resolve(metric_name)
-            if semantics.role is MetricRole.PRIMARY:
-                semantics = _with_role(semantics, MetricRole.AUXILIARY)
             return ResolvedSemantics(semantics=semantics, source=SemanticsSource.METRIC_NAME)
 
         # 3. Report anchor: retain a historical declaration whose name is no longer catalogued.
         if embedded_semantic_id is not None:
             baseline = self._baselines.get(embedded_semantic_id)
             if baseline is not None:
-                semantics = baseline
-                if semantics.role is MetricRole.PRIMARY:
-                    semantics = _with_role(semantics, MetricRole.AUXILIARY)
-                return ResolvedSemantics(semantics=semantics, source=SemanticsSource.REPORT_ANCHOR)
+                return ResolvedSemantics(semantics=baseline, source=SemanticsSource.REPORT_ANCHOR)
 
         # 4. Diagnostic fallback: the value is shown as stored and the gap is logged.
         return ResolvedSemantics(
