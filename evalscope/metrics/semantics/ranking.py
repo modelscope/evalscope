@@ -13,7 +13,7 @@ rule for colour scales.
 """
 
 import math
-from typing import Iterable, Optional
+from typing import Optional
 
 from evalscope.api.metric.semantics import MetricDirection, MetricRole, MetricSemantics
 
@@ -42,23 +42,3 @@ def bounded_quality_ratio(value: Optional[float], semantics: Optional[MetricSema
     span = value_range.max - value_range.min
     clamped = min(1.0, max(0.0, (float(value) - value_range.min) / span))
     return 1.0 - clamped if semantics.direction is MetricDirection.LOWER_IS_BETTER else clamped
-
-
-def mean_quality_ratio(ratios: Iterable[Optional[float]]) -> Optional[float]:
-    """Average the quality ratios of a run's datasets, ignoring the unrankable ones.
-
-    Averaging raw scores across datasets is meaningless, which is why the reports API stopped
-    presenting such a total. Averaging *quality ratios* is defensible for ranking specifically,
-    because every ratio has already been placed on the same 0-1 "how good" axis regardless of the
-    metric it came from. The result stays internal to sorting and filtering.
-
-    Args:
-        ratios: Per-dataset quality ratios, possibly containing ``None``.
-
-    Returns:
-        The mean of the known ratios, or ``None`` when none of them is rankable.
-    """
-    known = [ratio for ratio in ratios if ratio is not None]
-    if not known:
-        return None
-    return sum(known) / len(known)

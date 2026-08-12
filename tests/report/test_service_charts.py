@@ -113,6 +113,22 @@ def test_build_report_meta_picks_the_primary_role_not_the_first_metric(monkeypat
     assert set(('score', 'metric_name', 'dataset_scores')).isdisjoint(payload)
 
 
+def test_build_report_meta_does_not_rank_multiple_datasets(monkeypatch) -> None:
+    reports = [
+        _semantic_report('accuracy', 0.8, 'quality.accuracy.ratio'),
+        _semantic_report('f1', 0.6, 'quality.f1.ratio'),
+    ]
+    monkeypatch.setattr(
+        'evalscope.service.blueprints.reports.load_report_bundle',
+        lambda _root, _ref: (reports, ['accuracy', 'f1'], {}),
+    )
+
+    metadata = _build_report_meta(ReportRef(run_id='run', model_id='test-model'), '/tmp')
+
+    assert len(metadata['primary_metrics']) == 2
+    assert metadata['quality_ratio'] is None
+
+
 def _semantic_report(dataset_name: str, score: float, semantic_id: str) -> Report:
     semantics = SEMANTIC_BASELINES[semantic_id].model_copy(update={'role': MetricRole.PRIMARY})
     identity = MetricIdentity(name=dataset_name, aggregation='mean')

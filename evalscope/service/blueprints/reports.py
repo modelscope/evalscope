@@ -17,7 +17,7 @@ from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
-from evalscope.metrics.semantics.ranking import bounded_quality_ratio, mean_quality_ratio
+from evalscope.metrics.semantics.ranking import bounded_quality_ratio
 from evalscope.report import ReportKey, ReportRef, get_data_frame
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
@@ -195,10 +195,8 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         primary_metrics.append(primary_metric)
     timestamp = _extract_timestamp(ref, root)
 
-    # Every dataset contributes a reference so each one can be shown as
-    # `dataset -> metric -> score`, each in its own native scale. They are never collapsed into a
-    # single cross-benchmark number. A report always resolves a primary metric when it has any
-    # metric at all, inferring one if the benchmark declared none.
+    # Every selected primary contributes a reference so it can be shown in its native scale.
+    # Multiple datasets are never collapsed into a single cross-benchmark ranking number.
     primary_metric_refs = [
         PrimaryMetricRef(
             dataset_name=r.dataset_name,
@@ -208,6 +206,10 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
             semantics=metric.semantics,
         ) for r, metric in zip(report_list, primary_metrics) if metric
     ]
+    quality_ratio = None
+    if len(report_list) == 1 and len(primary_metric_refs) == 1:
+        metric = primary_metrics[0]
+        quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
 
     return {
         'run_id': ref.run_id,
@@ -223,9 +225,7 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         # Ranking and filtering key only, never rendered: a direction-aware 0-1 quality ratio, so
         # a low WER ranks as well as a high accuracy and a 0-100 scale is not treated as 100x
         # better than a ratio. `None` means the run's metrics admit no such scale.
-        'quality_ratio': mean_quality_ratio(
-            bounded_quality_ratio(metric.score, metric.semantics) for metric in primary_metrics if metric
-        ),
+        'quality_ratio': quality_ratio,
         # keep individual scores for per-dataset filtering
         '_datasets': dataset_names,
     }
@@ -311,13 +311,13 @@ def list_reports():
         # The range is expressed as a 0-1 quality ratio, not as a raw score. Filtering raw values
         # against a fixed 0-1 window silently dropped every benchmark on an official 0-100 scale:
         # arena_hard reporting 87.25 could never satisfy `score <= 1`. A run whose metrics are not
-        # rankable has no ratio and is never excluded, since the filter cannot judge it.
+        # rankable has no ratio and is excluded whenever a quality range is active.
         score_min = request.args.get('score_min', type=float)
         score_max = request.args.get('score_max', type=float)
         if score_min is not None:
-            items = [it for it in items if it['quality_ratio'] is None or it['quality_ratio'] >= score_min]
+            items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] >= score_min]
         if score_max is not None:
-            items = [it for it in items if it['quality_ratio'] is None or it['quality_ratio'] <= score_max]
+            items = [it for it in items if it['quality_ratio'] is not None and it['quality_ratio'] <= score_max]
 
         # --- Sort ---
         sort_by = request.args.get('sort_by', 'time')
@@ -325,17 +325,18 @@ def list_reports():
         reverse = sort_order == 'desc'
 
         sort_key_map = {
-            # Rank by quality, so a lower-is-better metric is not sorted backwards and metrics on
-            # different scales are comparable. Unrankable runs have no ratio and sort at the
-            # bottom of whichever direction was asked for.
-            'score': lambda x: (x['quality_ratio'] is not None, x['quality_ratio'] or 0.0)
-            if reverse else (x['quality_ratio'] is None, x['quality_ratio'] or 0.0),
             'model': lambda x: x['model_name'].lower(),
             'dataset': lambda x: x['dataset_name'].lower(),
             'time': lambda x: x['timestamp'],
         }
-        key_fn = sort_key_map.get(sort_by, sort_key_map['time'])
-        items.sort(key=key_fn, reverse=reverse)
+        if sort_by == 'score':
+            rankable = [item for item in items if item['quality_ratio'] is not None]
+            unrankable = [item for item in items if item['quality_ratio'] is None]
+            rankable.sort(key=lambda item: item['quality_ratio'], reverse=reverse)
+            items = rankable + unrankable
+        else:
+            key_fn = sort_key_map.get(sort_by, sort_key_map['time'])
+            items.sort(key=key_fn, reverse=reverse)
 
         # --- Paginate ---
         page = max(1, request.args.get('page', 1, type=int))
