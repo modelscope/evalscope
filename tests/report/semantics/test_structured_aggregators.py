@@ -55,3 +55,42 @@ def test_pass_at_k_averages_unique_groups_instead_of_weighting_repetitions() -> 
     assert pass_at_1.score == pytest.approx(0.5)
     assert pass_at_1.num == 2
     assert pass_at_1.ids == ['short', 'long']
+
+
+@pytest.mark.parametrize(
+    ('aggregator', 'aggregation'),
+    [
+        (MeanPassAtK(), 'pass_at_k'),
+        (MeanPassHatK(), 'pass_hat_k'),
+        (MeanVoteAtK(), 'vote_at_k'),
+    ],
+)
+def test_k_aggregators_fall_back_to_sample_id_when_group_id_is_missing(aggregator, aggregation: str) -> None:
+    scores = [
+        SampleScore(sample_id=10, score=Score(value={'accuracy': 1}, extracted_prediction='a')),
+        SampleScore(sample_id=11, score=Score(value={'accuracy': 0}, extracted_prediction='b')),
+    ]
+
+    structured = [aggregate for aggregate in aggregator(scores) if aggregate.aggregation == aggregation]
+
+    assert len(structured) == 1
+    assert structured[0].dimensions == {'k': 1}
+    assert structured[0].score == pytest.approx(0.5)
+    assert structured[0].ids == [10, 11]
+
+
+@pytest.mark.parametrize(
+    ('aggregator', 'aggregation'),
+    [(MeanPassAtK(), 'pass_at_k'), (MeanVoteAtK(), 'vote_at_k')],
+)
+def test_k_aggregators_stop_at_the_shortest_group(aggregator, aggregation: str) -> None:
+    scores = [
+        SampleScore(sample_id=0, group_id='short', score=Score(value={'accuracy': 0}, extracted_prediction='a')),
+        SampleScore(sample_id=1, group_id='long', score=Score(value={'accuracy': 0}, extracted_prediction='b')),
+        SampleScore(sample_id=2, group_id='long', score=Score(value={'accuracy': 1}, extracted_prediction='c')),
+        SampleScore(sample_id=3, group_id='long', score=Score(value={'accuracy': 0}, extracted_prediction='d')),
+    ]
+
+    structured = [aggregate for aggregate in aggregator(scores) if aggregate.aggregation == aggregation]
+
+    assert [aggregate.dimensions for aggregate in structured] == [{'k': 1}]

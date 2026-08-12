@@ -80,7 +80,7 @@ class MeanPassAtK(Aggregator):
         For each metric:
         - Group scores by group_id
         - Collect binary correctness values
-        - Infer k as (total samples / number of groups) assuming uniform repetitions
+        - Limit k to the number of attempts available in every group
         - Compute per-group pass@n for all n from 1 to k via calculate_pass_at_k
         - Emit ``aggregation=pass_at_k`` and ``dimensions.k=n`` directly
         """
@@ -92,24 +92,21 @@ class MeanPassAtK(Aggregator):
 
         for metric_name in metrics:
             # group_id -> list[float] (0/1 correctness values)
-            group_values: Dict[str, List[float]] = defaultdict(list)
+            group_values: Dict[Any, List[float]] = defaultdict(list)
             for s in scores:
-                group_id = getattr(s, 'group_id', s.sample_id)
+                group_id = s.group_id if s.group_id is not None else s.sample_id
                 value = float(s.score.value[metric_name])
                 group_values[group_id].append(value)
 
             if not group_values:
                 continue
 
-            # Infer k (assumes roughly uniform repeats)
-            k = int(len(scores) / len(group_values)) if len(group_values) > 0 else 1
-            if k <= 0:
-                k = 1
+            k = min(len(values) for values in group_values.values())
 
             # Prepare inputs for calculate_pass_at_k
             num_samples: List[int] = []
             num_correct: List[int] = []
-            group_order: List[str] = []
+            group_order: List[Any] = []
             for gid, vals in group_values.items():
                 group_order.append(gid)
                 num_samples.append(len(vals))
@@ -174,9 +171,9 @@ class MeanVoteAtK(Aggregator):
         for metric_name in metrics:
             # Group samples by group_id, preserving order
             # Store: (prediction, correctness_score)
-            group_samples: Dict[str, List[tuple]] = defaultdict(list)
+            group_samples: Dict[Any, List[tuple]] = defaultdict(list)
             for score in scores:
-                group_id = getattr(score, 'group_id', score.sample_id)
+                group_id = score.group_id if score.group_id is not None else score.sample_id
                 prediction = getattr(score.score, 'extracted_prediction', None)
                 correctness = score.score.value[metric_name]
                 group_samples[group_id].append((prediction, correctness))
@@ -184,10 +181,7 @@ class MeanVoteAtK(Aggregator):
             if not group_samples:
                 continue
 
-            # Calculate k as the repetition count
-            k = int(len(scores) / len(group_samples)) if len(group_samples) > 0 else 1
-            if k <= 0:
-                k = 1
+            k = min(len(samples) for samples in group_samples.values())
 
             # Compute vote@n for all n from 1 to k for each group
             vote_at_n_maps: Dict[int, Dict[str, float]] = {}
@@ -240,7 +234,7 @@ class MeanPassHatK(Aggregator):
         For each metric:
         - Group scores by group_id
         - Collect binary correctness values
-        - Infer k as approximate repeats and clamp to min attempts across groups
+        - Limit k to the number of attempts available in every group
         - Compute per-group pass^n for all n from 1 to k via calculate_pass_hat_k
         - Emit ``aggregation=pass_hat_k`` and ``dimensions.k=n`` directly
         """
@@ -252,19 +246,16 @@ class MeanPassHatK(Aggregator):
 
         for metric_name in metrics:
             # group_id -> list[float] (0/1 correctness values)
-            group_values: Dict[str, List[float]] = defaultdict(list)
+            group_values: Dict[Any, List[float]] = defaultdict(list)
             for s in scores:
-                group_id = getattr(s, 'group_id', s.sample_id)
+                group_id = s.group_id if s.group_id is not None else s.sample_id
                 value = float(s.score.value[metric_name])
                 group_values[group_id].append(value)
 
             if not group_values:
                 continue
 
-            # Infer repeats and clamp to the smallest group size to satisfy n <= min_n
-            approx_k = int(len(scores) / len(group_values)) if len(group_values) > 0 else 1
-            min_n = min(len(vals) for vals in group_values.values())
-            k = max(1, min(approx_k, min_n))
+            k = min(len(values) for values in group_values.values())
 
             # Compute per-group pass^n for all n from 1 to k
             pass_hat_n_maps: Dict[int, Dict[str, float]] = {}
