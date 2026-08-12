@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 from typing import Dict, List, Optional
 
@@ -46,6 +47,56 @@ def test_generator_groups_by_identity_and_selects_primary() -> None:
 def test_generator_preserves_scores() -> None:
     report = _report()
     assert [metric.score for metric in report.metrics] == [0.8, 0.75]
+
+
+def test_collection_report_keeps_mixed_metrics_auxiliary() -> None:
+    report = ReportGenerator.gen_collection_report(
+        pd.DataFrame([
+            {
+                'metric': 'accuracy',
+                'categories': 'default',
+                'dataset_name': 'gsm8k',
+                'subset_name': 'test',
+                'score': 0.8,
+            },
+            {
+                'metric': 'f1',
+                'categories': 'default',
+                'dataset_name': 'conll2003',
+                'subset_name': 'test',
+                'score': 0.7,
+            },
+        ]),
+        'data_collection',
+        'model',
+    )
+
+    assert [metric.identity.name for metric in report.metrics] == ['accuracy', 'f1']
+    assert [metric.role for metric in report.metrics] == [MetricRole.AUXILIARY, MetricRole.AUXILIARY]
+    assert report.primary_metric is None
+    assert report.primary_metric_identity is None
+
+
+def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
+    report = _report()
+    assert report.score == 0.8
+
+    collection = ReportGenerator.gen_collection_report(
+        pd.DataFrame([
+            {
+                'metric': 'accuracy',
+                'categories': 'default',
+                'dataset_name': 'gsm8k',
+                'subset_name': 'test',
+                'score': 0.6,
+            }
+        ]),
+        'data_collection',
+        'model',
+    )
+    assert collection.score == 0.6
+    assert Report().score == 0.0
+    assert 'score' not in report.to_dict()
 
 
 def test_generator_accepts_an_injected_semantics_resolver() -> None:

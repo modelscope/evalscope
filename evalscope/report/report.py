@@ -242,6 +242,16 @@ class Report(BaseModel):
         """
         return self._find_primary_metric()
 
+    @property
+    def score(self) -> float:
+        """Compatibility score derived from the primary or first available metric.
+
+        Report v2 serializes the structured metric list and primary identity instead of this
+        convenience value.
+        """
+        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        return metric.score if metric is not None else 0.0
+
     def to_dict(self) -> Dict[str, Any]:
         # model_dump includes computed_field 'num' automatically
         return self.model_dump()

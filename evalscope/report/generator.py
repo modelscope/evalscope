@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.identity import canonicalize_producer_identity
 from evalscope.metrics.semantics.resolver import SemanticsResolver, attribute_metric_roles
 from evalscope.report.report import *
 
@@ -37,20 +37,15 @@ class ReportGenerator:
                     num = group_subset['score'].count()
                     subsets.append(Subset(name=f'{dataset_name}/{subset_name}', score=float(avg_score), num=int(num)))
                 categories.append(Category(name=category_name, subsets=subsets))
-            identity = migrate_legacy_identity(metric_name, 'mean', benchmark_name=all_dataset_name)
+            identity = canonicalize_producer_identity(metric_name, 'mean')
             semantics = active_resolver.resolve(all_dataset_name, identity).semantics
             metrics_list.append(Metric(identity=identity, categories=categories, semantics=semantics))
-        identities = [metric.identity for metric in metrics_list]
-        semantics = {metric.identity.key: metric.semantics for metric in metrics_list}
-        attributed, primary = attribute_metric_roles(identities, semantics, None)
-        for metric in metrics_list:
-            metric.semantics = attributed[metric.identity.key]
         return Report(
             name=DataCollection.NAME,
             metrics=metrics_list,
             dataset_name=all_dataset_name,
             model_name=model_name,
-            primary_metric_identity=primary,
+            primary_metric_identity=None,
         )
 
     @staticmethod
