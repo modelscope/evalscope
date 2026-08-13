@@ -36,7 +36,7 @@ HumanEval Plus 是 OpenAI HumanEval 基准测试的一个严格扩展版本，�
 | **数据集ID** | [evalscope/humanevalplus](https://modelscope.cn/datasets/evalscope/humanevalplus/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认 Shots** | 0-shot |
 | **评估分割** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |

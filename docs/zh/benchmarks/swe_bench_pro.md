@@ -35,7 +35,7 @@ SWE-bench_Pro 是由 Scale AI 提供的一项具有挑战性的基准测试，�
 | **数据集 ID** | [ScaleAI/SWE-bench_Pro](https://modelscope.cn/datasets/ScaleAI/SWE-bench_Pro/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

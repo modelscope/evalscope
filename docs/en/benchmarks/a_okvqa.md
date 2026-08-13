@@ -36,7 +36,7 @@ A-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reaso
 | **Dataset ID** | [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

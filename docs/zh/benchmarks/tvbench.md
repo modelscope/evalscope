@@ -10,7 +10,7 @@ EvalScope 原生适配器从数据集仓库中读取官方提供的按任务划�
 ## 任务描述
 
 - **任务类型**：视频多项选择题问答（MCQ）
-- **输入**：一段视频片段或带时间范围的视频片段、一个自然语言问题以及 2-4 个候选答案
+- **输入**：一段视频片段或带时间范围的视频片段、一个自然语言问题以及 2–4 个候选答案
 - **输出**：从提供的候选答案中选择一个选项字母
 - **默认子集**：`action_count`，因其在公开数据集仓库中以标准 MP4 压缩包形式提供
 - **支持的子集**：`action_antonym`、`action_count`、`action_localization`、`action_sequence`、`egocentric_sequence`、`moving_direction`、`object_count`、`object_shuffle`、`scene_transition` 和 `unexpected_action`
@@ -18,10 +18,10 @@ EvalScope 原生适配器从数据集仓库中读取官方提供的按任务划�
 ## 评估说明
 
 - 默认评估使用 0-shot Chain-of-Thought 多项选择提示模板 `MultipleChoiceTemplate.SINGLE_ANSWER_COT`。
-- 主要指标：准确率（`acc`）。数据集中的答案以候选文本形式存储，在评分前会转换为对应的选项字母。
-- 部分子集提供 `start`/`end` 字段。适配器会将这些值传递给 `ContentVideo`，并在提示中添加简明的片段说明。
+- 主要指标：准确率（`accuracy`）。数据集中的答案以候选文本形式存储，在评分前会转换为对应的选项字母。
+- 部分子集提供 `start`/`end` 字段。适配器会将这些值传递给 `ContentVideo`，并在提示中添加简洁的片段说明。
 - 视频文件按需从子集特定的压缩包中懒加载下载。`egocentric_sequence` 使用位于 `video/egocentric_sequence/<prefix>.zip` 下的分段压缩包。
-- `action_antonym` 的注释引用 AVI 文件。如果仓库媒体压缩包不可用，请通过配置 `extra_params.video_dir` 指向包含 AVI 文件的本地目录。
+- `action_antonym` 的注释引用 AVI 文件。如果仓库媒体压缩包不可用，请通过 `extra_params.video_dir` 配置指向包含 AVI 文件的本地目录。
 - 适配器支持两种本地视频布局：扁平结构（`video_dir/<video>`）或按子集分组结构（`video_dir/<subset>/<video>`）。
 
 ## 属性
@@ -32,7 +32,7 @@ EvalScope 原生适配器从数据集仓库中读取官方提供的按任务划�
 | **数据集ID** | [evalscope/TVBench](https://modelscope.cn/datasets/evalscope/TVBench/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `MultiModal`, `Video` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `train` |
 

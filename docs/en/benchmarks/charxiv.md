@@ -43,7 +43,7 @@ chart element perception (descriptive) and high-level reasoning about chart data
 | **Dataset ID** | [princeton-nlp/CharXiv](https://modelscope.cn/datasets/princeton-nlp/CharXiv/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2406.18521) |
 | **Tags** | `MultiModal`, `QA`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

@@ -34,7 +34,7 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估�
 | **数据集ID** | [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

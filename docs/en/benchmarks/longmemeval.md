@@ -35,7 +35,7 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 | **Dataset ID** | [evalscope/longmemeval-cleaned](https://modelscope.cn/datasets/evalscope/longmemeval-cleaned/summary) |
 | **Paper** | N/A |
 | **Tags** | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

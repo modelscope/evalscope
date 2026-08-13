@@ -126,8 +126,10 @@ describe('Tabs — keyboard activation', () => {
     renderTabs({ onChange })
 
     const beta = screen.getByRole('tab', { name: 'Beta' })
-    beta.focus()
-    act(() => fireEvent.keyDown(beta, { key: 'Enter' }))
+    act(() => {
+      beta.focus()
+      fireEvent.keyDown(beta, { key: 'Enter' })
+    })
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('b')
@@ -138,8 +140,10 @@ describe('Tabs — keyboard activation', () => {
     renderTabs({ onChange })
 
     const gamma = screen.getByRole('tab', { name: 'Gamma' })
-    gamma.focus()
-    act(() => fireEvent.keyDown(gamma, { key: ' ' }))
+    act(() => {
+      gamma.focus()
+      fireEvent.keyDown(gamma, { key: ' ' })
+    })
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith('c')
@@ -228,6 +232,13 @@ describe('Tabs — single visible panel', () => {
     expect(panelC).toHaveAttribute('hidden')
     expect(panelA).toBeEmptyDOMElement()
     expect(panelC).toBeEmptyDOMElement()
+  })
+
+  it('places optional page actions beside the tablist without changing panel semantics', () => {
+    renderTabs({ actions: <button type="button">Search options</button> })
+
+    expect(screen.getByRole('button', { name: 'Search options' })).toBeInTheDocument()
+    expect(screen.getAllByRole('tabpanel', { hidden: true })).toHaveLength(3)
   })
 })
 

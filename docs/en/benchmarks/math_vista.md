@@ -38,7 +38,7 @@ MathVista is a comprehensive benchmark for mathematical reasoning in visual cont
 | **Dataset ID** | [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `testmini` |
 

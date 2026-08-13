@@ -34,7 +34,7 @@ JNLPBA 数据集是一个广泛使用的生物实体识别资源，包含来自 
 | **数据集ID** | [extraordinarylab/jnlpba](https://modelscope.cn/datasets/extraordinarylab/jnlpba/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

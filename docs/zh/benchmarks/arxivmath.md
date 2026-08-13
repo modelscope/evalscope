@@ -34,7 +34,7 @@ ArXiv-Math 是一个包含 103 道研究级数学问题的基准测试，这些�
 | **数据集ID** | [evalscope/arxivmath](https://modelscope.cn/datasets/evalscope/arxivmath/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

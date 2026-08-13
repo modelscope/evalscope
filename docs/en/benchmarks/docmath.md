@@ -36,7 +36,7 @@ DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within 
 | **Dataset ID** | [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) |
 | **Paper** | N/A |
 | **Tags** | `LongContext`, `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

@@ -34,7 +34,7 @@ ArXiv-Math is a benchmark of 103 research-level mathematics problems extracted f
 | **Dataset ID** | [evalscope/arxivmath](https://modelscope.cn/datasets/evalscope/arxivmath/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

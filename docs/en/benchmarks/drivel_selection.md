@@ -33,7 +33,7 @@ Drivelology Narrative Selection evaluates models' ability to understand the unde
 | **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

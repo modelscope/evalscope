@@ -190,10 +190,6 @@ gradients:
   brand: "linear-gradient(135deg, #816DF8 0%, #a78bfa 100%)"
   accent: "linear-gradient(135deg, #0F9C7E 0%, #06b6d4 100%)"
   surface: "linear-gradient(135deg, rgba(129,109,248,0.08) 0%, rgba(167,139,250,0.05) 100%)"
-  kpi-0: "linear-gradient(135deg, #6366f1, #8b5cf6)"
-  kpi-1: "linear-gradient(135deg, #10b981, #06b6d4)"
-  kpi-2: "linear-gradient(135deg, #f59e0b, #f97316)"
-  kpi-3: "linear-gradient(135deg, #ec4899, #8b5cf6)"
   nav-hairline: "linear-gradient(90deg, transparent 0%, #816DF8 50%, transparent 100%)"
 transition:
   fast: "150ms cubic-bezier(0.4, 0, 0.2, 1)"
@@ -238,7 +234,7 @@ Type is the second decisive voice and is **theme-agnostic**. The brand uses cros
 - Every card section title, form label, and table header is at least 12 px, `font-semibold`, **UPPERCASE**, `tracking-wider`, and uses the AA-safe muted color. Body and titles stay sentence-case. The contrast between these two voices does most of the hierarchy work.
 - A dynamic HSL **score chip** (`hsl(score × 120, 70%, 45%)`) is the second-most-recognizable component after the brand violet — it is how the product communicates pass/fail. Identical formula on both themes; the chip's saturation works over cream and over near-black.
 - **Light theme uses solid hex hairlines, not translucent violet.** This is the most important light-theme rule, and the one most often broken on first attempt: a violet alpha overlay disappears into a near-white page, so light surfaces require concrete warm-grey edges (`#e6dfd8` / `#d6cdbe` / `#c1b6a3`) to keep their boundaries.
-- A complete domain token set exists for **chat bubbles** (5 semantic roles: user / bot / tool / reasoning / system), **compare slots** (3 per-model accent colors), and **KPI gradients** (4 named gradient pairs) — these are first-class brand tokens, not ad-hoc colors.
+- A complete domain token set exists for **chat bubbles** (5 semantic roles: user / bot / tool / reasoning / system) and **compare slots** (3 per-model accent colors) — these are first-class brand tokens, not ad-hoc colors.
 - A glassmorphic sticky top-nav (52 px, 12 px backdrop-blur, 1-px violet-to-transparent gradient hairline along the top edge) is the only "marketing-y" flourish the product allows itself. Dark uses translucent indigo glass; light uses translucent cream glass.
 
 ## Design Tokens {#tokens}
@@ -330,20 +326,15 @@ Five semantic roles, each with a complete 7-token set (`bg`, `bg-hl`, `border`, 
 
 Bubble containers are `{rounded.md}` with the role's tint background and border; hover/highlight states use the `*-hl` variants.
 
-#### KPI Gradients
+#### KPI Icon Tile
 
-Four named linear gradients for the four hero KPI tiles on the dashboard:
+The four hero KPI tiles on the dashboard share one hue: the 40 × 40 `{rounded.md}` icon tile is filled with `{colors.accent-dim}` and its glyph inked in `{colors.accent}`, on both themes.
 
-- **Indigo→Violet** (`{gradients.kpi-0}` — `linear-gradient(135deg, #6366f1, #8b5cf6)`)
-- **Emerald→Teal** (`{gradients.kpi-1}` — `linear-gradient(135deg, #10b981, #06b6d4)`)
-- **Amber→Orange** (`{gradients.kpi-2}` — `linear-gradient(135deg, #f59e0b, #f97316)`)
-- **Pink→Violet** (`{gradients.kpi-3}` — `linear-gradient(135deg, #ec4899, #8b5cf6)`)
-
-Always applied to the 40 × 40 `{rounded.md}` icon tile inside a `{components.kpi-card}`. **Same gradient values on both themes** — they're saturated enough to work over either canvas.
+**Do not introduce a per-KPI hue.** The four counters are the same kind of quantity, so distinct hues would assert a distinction that does not exist, and would put the loudest colour in the app on its least specific numbers. A hue is reserved for values that carry a meaning, such as `{chart.*}` for perf-metric series or the score scale.
 
 #### Chart Palette (Perf Metrics)
 
-Four hue tokens used to mark perf-metric series (latency / TTFT / TPOT / token-usage) across the KPI strip, the chart series legends, and the percentile-table accent headers in `<PerfMetricsPanel>`. **The two themes use different RGB values for the same hue** — unlike the KPI gradients, these aren't shared across themes:
+Four hue tokens used to mark perf-metric series (latency / TTFT / TPOT / token-usage) across the KPI strip, the chart series legends, and the percentile-table accent headers in `<PerfMetricsPanel>`. **The two themes use different RGB values for the same hue:**
 
 - **Latency** (`{chart.latency}` — `#60a5fa` dark / `#2563eb` light)
 - **TTFT** (`{chart.ttft}` — `#34d399` dark / `#047857` light)
@@ -375,7 +366,7 @@ Antialiasing is forced (`-webkit-font-smoothing: antialiased`). No web font is l
 
 | Token | Size | Weight | Tracking | Use |
 |---|---|---|---|---|
-| `{typography.display-xl}` | 24px | 700 | tight | KPI value, hero number (dashboard `{components.kpi-card}`). |
+| `{typography.display-xl}` | 24px | 700 | tight | Hero number where a single figure is the whole message. |
 | `{typography.title-md}` | 16px | 700 | normal | Card-title model name, group-header titles, brand wordmark. |
 | `{typography.body-sm}` | 14px | 400 / 500 | normal | Default body text, button-md label, table-cell text, paragraph copy. |
 | `{typography.label-xs}` | 12px | 600 | wider | **UPPERCASE** card-section header, form label, badge text — the brand's signature eyebrow. |
@@ -485,7 +476,7 @@ The *visual* chrome may be smaller than the *hit area*, and only the hit area is
 
 - **Backdrop-blur**: 12 px on `{colors.surface-glass}` for the sticky top-nav. This is the only blur effect in the system.
 - **Hairline gradient line**: The top of the nav draws a 1-px `transparent → {colors.accent} → transparent` line at 40 % opacity. The closest the design comes to "decoration."
-- **Card lift**: Hover lifts L1/L2 cards `-2px` (`{components.card-hover}`) or `-3px` (`{components.kpi-card}`), simultaneously upgrading their shadow ladder one step.
+- **Card lift**: Hover lifts L1/L2 cards `-2px` (`{components.card-hover}`), simultaneously upgrading their shadow ladder one step.
 - **Gradient text**: `.gradient-text` and `.gradient-text-accent` utilities apply `{gradients.brand}` / `{gradients.accent}` to text via `background-clip: text`. Use sparingly — reserved for hero brand moments, never for body or table cells.
 
 ### Shapes
@@ -508,7 +499,7 @@ The *visual* chrome may be smaller than the *hit area*, and only the hit area is
 
 - **Brand mark**: Hand-drawn SVG triangle with an amber check; rendered inline at 28 × 25 px with `currentColor` so it follows theme.
 - **Lucide icons**: 14 px in dense lists, 16 px in nav, 18 px in form controls, 28 px in empty-state hero tiles. Stroke width 1.5–2.
-- **KPI icon tile**: 40 × 40, `{rounded.md}`, filled with one of `{gradients.kpi-0..3}`, white icon centered.
+- **KPI icon tile**: 40 × 40, `{rounded.md}`, filled with `{colors.accent-dim}`, `{colors.accent}` icon centered.
 - **Chart**: Plotly canvas, no rounded corners; sits inside a `{rounded.md}` card frame.
 
 ## Components {#components}
@@ -543,8 +534,9 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 **`{components.card-hover}`** — utility applied to clickable cards.
 - Adds `-2 px translateY` on hover, upgrades shadow to `{shadows.lg}` (L4), strengthens border to `{colors.border-strong}`. All transitions in `{tokens.transition}`.
 
-**`{components.kpi-card}`** — the dashboard hero metric tile.
-- Same chrome as `{components.card}` but layered with `{gradients.surface}` (subtle violet wash, 5-8 % alpha) via `::before`. Hosts a 40 × 40 `{rounded.md}` icon tile filled with `{gradients.kpi-0..3}`. Hover lifts `-3 px` and ramps to L4 shadow. Stagger-animated on first paint (60 ms steps).
+**`{components.kpi-strip}`** — the counter strip that opens a page.
+- One joined surface, not a row of free-floating tiles: the counters are the same kind of quantity, so separating them into individually lifting cards would assert a distinction that does not exist. Chrome is `{components.card}` (`{colors.bg-card}` fill, 1-px `{colors.border}`, `{rounded.md}`, `{shadows.sm}`) wrapping hairline-divided cells; the strip clips its corners so the dividers never break the outline. A cell is 20-px padded (`{spacing.xl}`) in the `hero` density and holds an optional 32 × 32 `{rounded.sm}` icon tile filled `{colors.accent-dim}` / inked `{colors.accent}`, a `{typography.title-md}` value and a `{typography.body-xs}` label. Interactive cells are buttons and tint to `{colors.bg-card2}` on hover — the strip itself never lifts or transforms.
+- Two denser variants share the same contract: `dense` (in-panel metric overview — 2/3/4-up grid of gap-px cells, 18-px value, 10-px label, optional per-cell accent colour) and `inline` (identity/config row — flexible cells with a 140-px floor that wrap, `{typography.body-sm-strong}` value over a `{typography.table-xs}` uppercase label, no icons).
 
 **`{components.card-glass}`** — the glassmorphic surface used by the top-nav.
 - `{colors.surface-glass}` background + 12-px backdrop-blur. Always combined with a 1-px hairline border. Reserve for sticky-positioned surfaces — diffuse blur is performance-sensitive.
@@ -604,7 +596,7 @@ Disabled = `opacity: 0.5` + `cursor: not-allowed`. Transitions use `{tokens.tran
 
 ### Signature Components
 
-**`{components.kpi-card}`** — see *Cards & Containers* above.
+**`{components.kpi-strip}`** — see *Cards & Containers* above.
 
 **`{components.eval-run-card}`** — a full-width borderless button-styled card row.
 - Two rows of content: bold model name + colored score pill on the right; second row has a mono timestamp + a wrap of `{components.score-chip}` entries (one per benchmark). Hover only changes border tint (no lift).
@@ -679,19 +671,19 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
   - **disabled:** *n/a* — non-interactive cards have no disabled state; a disabled clickable card falls back to the button disabled contract.
   - **error:** *n/a* — error is expressed by the content inside (e.g. `{components.empty-state}` load-error), not the card shell.
 
-#### KPI strip / `{components.kpi-card}` — hero metric tiles
+#### KPI strip / `{components.kpi-strip}` — page-opening counters
 
 - **Responsive contract:**
   - **Mobile < 640 & Small 640–767:** 2-up grid (`grid-cols-2`).
-  - **Tablet 768–1023:** 2-up grid retained; tiles full-width of their column.
-  - **Desktop 1024–1279 & Wide ≥ 1280:** 4-up grid (`lg:grid-cols-4`). Each tile keeps `{rounded.md}` and 20-px padding at every breakpoint; the value uses `tabular-nums` and wraps per R-WRAP rather than truncating.
+  - **Tablet 768–1023:** 2-up grid retained; cells full-width of their column.
+  - **Desktop 1024–1279 & Wide ≥ 1280:** 4-up grid (`lg:grid-cols-4`). Each cell keeps 20-px padding at every breakpoint; the value uses `tabular-nums` and truncates with the full text carried in `title` rather than reflowing the strip.
 - **State contract:**
-  - **default:** `{components.card}` chrome + `{gradients.surface}` wash; 40 × 40 gradient icon tile.
-  - **hover:** lifts −3 px, ramps to L4 shadow.
-  - **focus:** per R-FOCUS when the tile is interactive; *n/a* for display-only tiles.
+  - **default:** `{components.card}` chrome around hairline-divided cells; optional 32 × 32 accent icon tile per cell.
+  - **hover:** interactive cells tint to `{colors.bg-card2}`; the strip does not lift or transform.
+  - **focus:** per R-FOCUS when the cell is interactive; *n/a* for display-only cells.
   - **active:** *n/a* unless linked, then follows the clickable-card active contract.
   - **disabled:** *n/a*.
-  - **error:** *n/a* — a metric with no value renders the missing-value placeholder inside the tile (see [Metric Display Contract](#metrics)), not a tile error state.
+  - **error:** *n/a* — a metric with no value renders the missing-value placeholder inside the cell (see [Metric Display Contract](#metrics)), not a cell error state.
 
 #### `{components.tabs}` — pill-container tabs
 
@@ -771,15 +763,15 @@ These thresholds are **enforceable rules, not logged known-failures**. The E2E/a
   - **hover:** column header/row tint strengthens via the slot's `bg-hl` where interactive.
   - **focus:** compare-selection controls follow R-FOCUS and R-TOUCH.
   - **active (selected for compare):** slot accent applied; selection persists across sort/filter and is reflected in the sticky selection tray count.
-  - **disabled (selection limit / incompatible):** at `MAX_COMPARE_SELECTION = 5` further checkboxes are disabled with an explanatory message; an incompatible run shows its incompatibility reason and retains existing selection.
+  - **disabled (incompatible):** score-comparison selection is unbounded; prediction comparison accepts up to `MAX_COMPARE_SLOTS = 3` runs. An incompatible run shows its incompatibility reason and retains existing selection.
   - **error:** incompatibility reason text is the error presentation; it does not drop the selection.
 
 ### Examples (illustrative)
 
 > These `ex-*` surfaces mirror the brand-native primitives for downstream consumers (kits, mockups, Stitch generation). Each references existing components so a re-skin re-skins all surfaces consistently.
 
-**`ex-metric-tile`** — Dashboard KPI tile. Re-uses `{components.kpi-card}` with gradient icon tile + tabular value + uppercase label.
-- Properties: `backgroundColor`, `iconGradient`, `rounded`, `padding`, `valueTypography`, `labelTypography`.
+**`ex-metric-tile`** — Dashboard KPI cell. Re-uses one cell of `{components.kpi-strip}` with accent icon tile + tabular value + label.
+- Properties: `backgroundColor`, `iconTint`, `rounded`, `padding`, `valueTypography`, `labelTypography`.
 
 **`ex-eval-run-row`** — A row in the eval timeline. Re-uses `{components.eval-run-card}` chrome.
 - Properties: `backgroundColor`, `borderColor`, `rounded`, `padding`, `scoreColor`, `chipColor`.

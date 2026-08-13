@@ -42,6 +42,7 @@ TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-20
         train_split='train',
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

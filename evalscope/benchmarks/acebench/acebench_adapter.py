@@ -82,7 +82,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
 
 ## Evaluation Notes
 
-- `acc` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
+- `accuracy` is the primary metric. For `normal` and `special` it is answer accuracy; for `agent` it is
   end-state accuracy. `process_acc` additionally reports milestone progress for `agent` samples and
   per-step progress for `normal_multi_turn_*` samples.
 - The report adds the official groupings (ATOM, SINGLE_TURN, MULTI_TURN, NORMAL, SPECIAL, AGENT)
@@ -96,6 +96,7 @@ multi-step agent tasks against a simulated environment. Data is split into three
         subset_list=list(ACEBENCH_CATEGORIES),
         default_subset='en',
         metric_list=['acc', 'process_acc'],
+        primary_metric='accuracy',
         eval_split='normal',
         extra_params={
             'language': {
@@ -134,7 +135,6 @@ class AceBenchAdapter(AgentAdapter):
         super().__init__(**kwargs)
         self.split_as_subset = True
         self.reformat_subset = True
-        self.add_aggregation_name = False
         self.add_overall_metric = False
 
         self.category_map = dict(ACEBENCH_CATEGORIES)
@@ -370,15 +370,15 @@ class AceBenchAdapter(AgentAdapter):
         return [
             AggScore(
                 score=sum(end_scores) / len(end_scores),
-                metric_name='acc',
-                aggregation_name=self.aggregation,
+                metric_name='accuracy',
+                aggregation=self.aggregation,
                 num=len(dialogues),
                 ids=ids,
             ),
             AggScore(
                 score=sum(process_scores) / len(process_scores),
                 metric_name='process_acc',
-                aggregation_name=self.aggregation,
+                aggregation=self.aggregation,
                 num=len(dialogues),
                 ids=ids,
             ),
@@ -387,7 +387,7 @@ class AceBenchAdapter(AgentAdapter):
     def _on_generate_report_end(self, report: Report, output_dir: str, **kwargs) -> None:
         """Append the official ACEBench groupings and the weighted OVERALL score."""
         for metric in report.metrics:
-            if metric.name != 'acc':
+            if metric.identity.name != 'accuracy':
                 continue
 
             subset_dict: Dict[str, Subset] = {

@@ -35,7 +35,7 @@ A-OKVQA（Augmented OK-VQA）是一个用于评估视觉问答（VQA）中常识
 | **数据集ID** | [HuggingFaceM4/A-OKVQA](https://modelscope.cn/datasets/HuggingFaceM4/A-OKVQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 

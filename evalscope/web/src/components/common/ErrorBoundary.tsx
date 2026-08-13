@@ -1,8 +1,38 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { AlertCircle } from 'lucide-react'
+import Button from '@/components/ui/Button'
+
+/** Text shown by the fallback, so a boundary inside the providers can translate it. */
+export interface ErrorBoundaryLabels {
+  title: string
+  /** Shown when the error carries no message of its own. */
+  body: string
+  action: string
+}
+
+/**
+ * English defaults for the outermost boundary.
+ *
+ * The root boundary sits outside `LocaleProvider` — it has to, in order to catch a
+ * failure in the providers themselves — so it cannot translate. Boundaries mounted
+ * inside the providers pass their own translated labels.
+ */
+const DEFAULT_LABELS: ErrorBoundaryLabels = {
+  title: 'Something went wrong',
+  body: 'An unexpected error occurred.',
+  action: 'Reload',
+}
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  labels?: ErrorBoundaryLabels
+  /**
+   * Recovery action. Defaults to a full page reload, which is all the root
+   * boundary can offer. A route-level boundary passes something cheaper, because
+   * the rest of the app is still mounted and working.
+   */
+  onRecover?: () => void
 }
 
 interface State {
@@ -10,6 +40,15 @@ interface State {
   error: Error | null
 }
 
+/**
+ * Catches a render failure in its subtree and offers a way out.
+ *
+ * Two of these are mounted. The root one in `App` is the last resort for a
+ * failure in the providers themselves. The one in `MainLayout` is keyed by route,
+ * so a page that throws is contained: the navigation, theme and locale stay
+ * usable, navigating elsewhere clears the error by remount, and the scan state is
+ * not discarded.
+ */
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
@@ -24,47 +63,31 @@ export default class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary]', error, info.componentStack)
   }
 
-  handleReload = () => {
+  handleRecover = () => {
     this.setState({ hasError: false, error: null })
+    if (this.props.onRecover) {
+      this.props.onRecover()
+      return
+    }
     window.location.reload()
   }
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback
+      const labels = this.props.labels ?? DEFAULT_LABELS
 
       return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)] p-10 max-w-[420px] w-full text-center shadow-[var(--shadow)]">
-            {/* Error icon */}
-            <div className="w-14 h-14 rounded-2xl bg-[var(--danger-bg)] border border-[var(--danger-border)] inline-flex items-center justify-center mb-4">
-              <svg
-                width={24}
-                height={24}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--danger)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="w-full max-w-[420px] rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-10 text-center shadow-[var(--shadow)]">
+            <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-[var(--radius)] border border-[var(--danger-border)] bg-[var(--danger-bg)]">
+              <AlertCircle size={24} className="text-[var(--danger)]" />
             </div>
-            <h2 className="text-[var(--text)] text-lg font-semibold mb-2 mt-0">
-              Something went wrong
-            </h2>
-            <p className="text-[var(--text-muted)] text-sm mb-5 mt-0 leading-normal">
-              {this.state.error?.message || 'An unexpected error occurred.'}
+            <h2 className="type-title-md mt-0 mb-2 text-[var(--text)]">{labels.title}</h2>
+            <p className="type-body-sm mt-0 mb-5 leading-normal text-[var(--text-muted)]">
+              {this.state.error?.message || labels.body}
             </p>
-            <button
-              onClick={this.handleReload}
-              className="bg-[var(--accent)] text-[var(--bg)] border-0 rounded-[var(--radius-sm)] px-6 py-2 text-sm font-medium cursor-pointer transition-opacity duration-150 hover:opacity-85"
-            >
-              Reload
-            </button>
+            <Button onClick={this.handleRecover}>{labels.action}</Button>
           </div>
         </div>
       )

@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { listBenchmarks } from '@/api/eval'
 import type { BenchmarkEntry } from '@/api/types'
-import LoadingSpinner from '@/components/common/LoadingSpinner'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer'
+import ErrorAlert from '@/components/ui/ErrorAlert'
+import Skeleton from '@/components/ui/Skeleton'
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import SearchInput from '@/components/ui/SearchInput'
 import Badge from '@/components/ui/Badge'
 import Pagination from '@/components/ui/Pagination'
 import { BookOpen, X, Database, Layers, FlaskConical, Tag, ExternalLink } from 'lucide-react'
 
 type TabKey = 'all' | 'text' | 'multimodal' | 'agent' | 'aigc'
+
+/** Stable placeholder so an unresolved catalog does not produce a new array each render. */
+const EMPTY_BENCHMARKS: BenchmarkEntry[] = []
 
 // Category -> small badge shown on cards. `llm` shows no badge (it is the default).
 const CATEGORY_BADGE: Partial<Record<BenchmarkEntry['category'], { label: string; variant: 'warning' | 'danger' | 'success' }>> = {
@@ -38,8 +43,6 @@ function stripMarkdown(md: string): string {
 export default function BenchmarksPage() {
   const { t, locale } = useLocale()
   const [tab, setTab] = useState<TabKey>('all')
-  const [loading, setLoading] = useState(true)
-  const [allBenchmarks, setAllBenchmarks] = useState<BenchmarkEntry[]>([])
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -62,27 +65,21 @@ export default function BenchmarksPage() {
     paper_url: e.paper_url ?? (e.meta as Record<string, unknown>)?.paper_url as string | null ?? null,
   })
 
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      try {
-        const res = await listBenchmarks(undefined, true, controller.signal)
-        if (controller.signal.aborted) return
-        const textList = (res.text ?? []).map((e) => normalize(e, 'llm'))
-        const mmList = (res.multimodal ?? []).map((e) => normalize(e, 'vlm'))
-        const agentList = (res.agent ?? []).map((e) => normalize(e, 'agent'))
-        const aigcList = (res.aigc ?? []).map((e) => normalize(e, 'aigc'))
-        setAllBenchmarks([...textList, ...mmList, ...agentList, ...aigcList])
-      } catch {
-        /* ignore */
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [])
+  const catalog = useAsyncResource(
+    async (signal) => {
+      const res = await listBenchmarks(undefined, true, signal)
+      return [
+        ...(res.text ?? []).map((e) => normalize(e, 'llm')),
+        ...(res.multimodal ?? []).map((e) => normalize(e, 'vlm')),
+        ...(res.agent ?? []).map((e) => normalize(e, 'agent')),
+        ...(res.aigc ?? []).map((e) => normalize(e, 'aigc')),
+      ]
+    },
+    [],
+    { fallbackMessage: t('common.loadError') },
+  )
+  const allBenchmarks = catalog.data ?? EMPTY_BENCHMARKS
+  const loading = catalog.loading
 
   // Debounce search
   useEffect(() => {
@@ -119,9 +116,9 @@ export default function BenchmarksPage() {
   const getDescription = useCallback(
     (entry: BenchmarkEntry) => {
       const desc = locale === 'zh' ? entry.description?.zh : entry.description?.en
-      const full = desc?.full
-      if (!full) return t('benchmarks.noDescription')
-      return stripMarkdown(full)
+      const preview = desc?.sections.overview ?? desc?.sections.Overview ?? desc?.full
+      if (!preview) return t('benchmarks.noDescription')
+      return stripMarkdown(preview)
     },
     [locale, t],
   )
@@ -134,16 +131,18 @@ export default function BenchmarksPage() {
     }
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase()
-      result = result.filter(
-        (e) =>
+      result = result.filter((e) => {
+        const fullDescription = locale === 'zh' ? e.description?.zh?.full : e.description?.en?.full
+        return (
           e.name.toLowerCase().includes(q) ||
           (e.pretty_name ?? '').toLowerCase().includes(q) ||
-          getDescription(e).toLowerCase().includes(q) ||
-          (e.tags ?? []).some((tag) => tag.toLowerCase().includes(q)),
-      )
+          (fullDescription ?? getDescription(e)).toLowerCase().includes(q) ||
+          (e.tags ?? []).some((tag) => tag.toLowerCase().includes(q))
+        )
+      })
     }
     return result
-  }, [tabFiltered, debouncedSearch, selectedTags, getDescription])
+  }, [tabFiltered, debouncedSearch, selectedTags, getDescription, locale])
 
   // Pagination (page is reset to 1 by every filter/tab/search mutator below).
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
@@ -157,6 +156,15 @@ export default function BenchmarksPage() {
   const closeDetail = useCallback(() => {
     setSelectedEntry(null)
   }, [])
+
+  useEffect(() => {
+    if (selectedEntry == null) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDetail()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedEntry, closeDetail])
 
   const toggleTag = (tag: string) => {
     setPage(1)
@@ -179,10 +187,13 @@ export default function BenchmarksPage() {
     { key: 'aigc', label: `${t('benchmarks.aigc')} (${aigcCount})` },
   ]
 
-  if (loading) return <LoadingSpinner />
+  if (loading) return <Skeleton lines={6} height={16} />
 
   return (
     <div className="page-enter space-y-5">
+      {/* A failed catalog read would otherwise render as "no benchmarks match". */}
+      {catalog.error && <ErrorAlert className="rounded-[var(--radius-sm)]">{catalog.error}</ErrorAlert>}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{t('benchmarks.title')}</h1>
@@ -364,6 +375,9 @@ export default function BenchmarksPage() {
           <div
             className="relative w-full max-w-3xl max-h-[85vh] rounded-[var(--radius-lg)] bg-[var(--bg-card)] border border-[var(--border)] shadow-2xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="benchmark-detail-title"
           >
             {/* Modal header */}
             <div className="flex items-start gap-3 p-5 pb-3 border-b border-[var(--border)]">
@@ -372,7 +386,7 @@ export default function BenchmarksPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-[var(--text)]">{selectedEntry.pretty_name}</h2>
+                  <h2 id="benchmark-detail-title" className="text-lg font-semibold text-[var(--text)]">{selectedEntry.pretty_name}</h2>
                   {CATEGORY_BADGE[selectedEntry.category] && (
                     <Badge variant={CATEGORY_BADGE[selectedEntry.category]!.variant} className="text-[10px] shrink-0">
                       {CATEGORY_BADGE[selectedEntry.category]!.label}
@@ -421,7 +435,9 @@ export default function BenchmarksPage() {
                 </div>
               </div>
               <button
+                type="button"
                 onClick={closeDetail}
+                aria-label={t('benchmarks.close')}
                 className="shrink-0 p-1.5 rounded-[var(--radius-sm)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-card2)] transition-colors cursor-pointer"
               >
                 <X size={18} />

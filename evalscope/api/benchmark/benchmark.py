@@ -16,6 +16,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
+    from evalscope.api.metric.semantics import MetricSelector
     from evalscope.config import TaskConfig
 
 logger = get_logger()
@@ -46,9 +47,6 @@ class DataAdapter(LLMJudgeMixin, ABC):
 
         self.save_metadata = True
         """Whether to save metadata in the review result"""
-
-        self.add_aggregation_name = True
-        """Whether to add aggregation name in the report"""
 
         self.add_overall_metric = True
         """Whether to add overall metric in the report"""
@@ -183,6 +181,15 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Return the metric list of the benchmark.
         """
         return self._benchmark_meta.metric_list
+
+    @property
+    def primary_metric(self) -> Optional['MetricSelector']:
+        """
+        Return the structured selector declared as this benchmark's primary metric.
+
+        ``None`` for single-metric benchmarks, whose only metric is implicitly primary.
+        """
+        return self._benchmark_meta.primary_metric
 
     @property
     def default_subset(self) -> str:

@@ -33,7 +33,7 @@ MIT-Restaurant 数据集是一组专门用于训练和测试命名实体识别�
 | **数据集ID** | [extraordinarylab/mit-restaurant](https://modelscope.cn/datasets/extraordinarylab/mit-restaurant/summary) |
 | **论文** | 无 |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

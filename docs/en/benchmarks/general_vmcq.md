@@ -38,7 +38,7 @@ It uses MMMU-style format with image/video placeholders in text, supporting flex
 | **Dataset ID** | `general_vmcq` |
 | **Paper** | N/A |
 | **Tags** | `Custom`, `MCQ`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `val` |
 | **Train Split** | `dev` |

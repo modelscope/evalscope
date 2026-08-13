@@ -36,7 +36,7 @@ C-Eval 是一个全面的中文评估基准，旨在评估语言模型在中文�
 | **数据集ID** | [evalscope/ceval](https://modelscope.cn/datasets/evalscope/ceval/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 5-shot |
 | **评估集** | `val` |
 | **训练集** | `dev` |

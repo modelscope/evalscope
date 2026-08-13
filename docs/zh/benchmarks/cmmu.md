@@ -36,7 +36,7 @@ CMMU 是一个新颖的中文多模态基准测试，旨在评估七个基础学
 | **数据集ID** | [evalscope/CMMU](https://modelscope.cn/datasets/evalscope/CMMU/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `val` |
 

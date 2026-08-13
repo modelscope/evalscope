@@ -38,7 +38,7 @@ PolyMath is a multilingual mathematical reasoning benchmark covering 18 language
 | **Dataset ID** | [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `MultiLingual`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

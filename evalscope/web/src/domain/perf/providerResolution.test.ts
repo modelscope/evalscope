@@ -1,5 +1,3 @@
-// Feature: frontend-refactor-2026-07, Property 13: Provider precedence resolution
-//
 // For any Performance run input, `resolveProvider` must follow a strict
 // priority order when resolving the provider:
 //   1. an explicit, non-empty `Provider` metadata value  → source = 'metadata';
@@ -9,8 +7,6 @@
 // In every case the result must always carry two independent, non-empty
 // `provider` and `protocol` fields (the protocol is never derived from the
 // provider and vice versa).
-//
-// Validates: Requirements 8.1, 8.2, 8.3
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
@@ -76,7 +72,7 @@ function makeBasicInfo(entries: Record<string, string | undefined>): Record<stri
   return info
 }
 
-describe('resolveProvider (Property 13: Provider precedence resolution)', () => {
+describe('resolveProvider precedence resolution', () => {
   // Scenario 1: explicit non-empty Provider metadata wins over everything else.
   it('uses explicit Provider metadata (source = metadata)', () => {
     const caseArb = fc.record({

@@ -30,7 +30,7 @@ Claw-Eval 用于评估助手代理在真实个人助理工作流中的表现，�
 | **数据集ID** | [claw-eval/Claw-Eval](https://modelscope.cn/datasets/claw-eval/Claw-Eval/summary) |
 | **论文** | 无 |
 | **标签** | `Agent`, `MultiModal`, `MultiTurn` |
-| **指标** | `avg_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |
+| **指标** | `judge_score`, `pass_at_k`, `pass_hat_k`, `error_rate` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

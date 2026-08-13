@@ -4,8 +4,16 @@ import io
 import unittest
 from rich.console import Console
 
+from evalscope.metrics.semantics import format_perf_value
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult, PercentileRow
-from evalscope.perf.utils.rich_display import AnalysisResult, DualConsole, LLMSummaryRenderer
+from evalscope.perf.utils.rich_display import (
+    AnalysisResult,
+    DualConsole,
+    EmbCol,
+    EmbeddingResultAnalyzer,
+    LLMSummaryRenderer,
+)
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary, TraceMetricStats
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput, WorkloadThroughputRow
 
@@ -106,9 +114,8 @@ class TestOverviewTable(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Performance Overview', text)
         self.assertIn('2', text)
-        self.assertIn('2.00', text)
-        self.assertIn('50.00', text)
-        self.assertIn('100.0%', text)
+        self.assertIn('50', text)
+        self.assertIn('100%', text)
 
     def test_sweep(self):
         results = _build_all_results([
@@ -124,7 +131,7 @@ class TestOverviewTable(unittest.TestCase):
             'summary': _make_summary(concurrency=-1, request_rate=5.0),
         }])
         text = _capture(results)
-        self.assertIn('5.00', text)
+        self.assertIn('│    - │    5 │', text)
 
     def test_traces_column(self):
         results = _build_all_results([{
@@ -134,6 +141,46 @@ class TestOverviewTable(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Traces', text)
         self.assertIn('3', text)
+
+
+class TestEmbeddingResultAnalyzer(unittest.TestCase):
+
+    def test_formats_rows_with_registry_field_keys(self):
+        summary = _make_summary(
+            request_rate=1.23456,
+            request_throughput=2.34567,
+            avg_latency=1.23456,
+            input_token_throughput=500.678,
+            avg_input_tokens=123.456,
+        )
+        percentiles = PercentileResult(rows=[
+            PercentileRow(percentile='99%', latency=3.45678, input_throughput=400.678),
+        ])
+
+        row = EmbeddingResultAnalyzer()._build_row(summary, percentiles)
+
+        expected = {
+            EmbCol.RATE.key: format_perf_value(summary.request_rate, Metrics.REQUEST_RATE, include_unit=False),
+            EmbCol.RPS.key: format_perf_value(
+                summary.request_throughput, Metrics.REQUEST_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.AVG_LATENCY.key: format_perf_value(
+                summary.avg_latency, Metrics.AVERAGE_LATENCY, include_unit=False
+            ),
+            EmbCol.P99_LATENCY.key: format_perf_value(3.45678, PercentileMetrics.LATENCY, include_unit=False),
+            EmbCol.AVG_INPUT_TPS.key: format_perf_value(
+                summary.input_token_throughput, Metrics.INPUT_TOKEN_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.P99_INPUT_TPS.key: format_perf_value(
+                400.678, PercentileMetrics.INPUT_THROUGHPUT, include_unit=False
+            ),
+            EmbCol.AVG_INPUT_TOKENS.key: format_perf_value(
+                summary.avg_input_tokens, Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, include_unit=False
+            ),
+            EmbCol.SUCCESS_RATE.key: format_perf_value(summary.success_rate, 'success_rate', include_unit=True),
+        }
+        for key, value in expected.items():
+            self.assertEqual(row[key], value)
 
 
 class TestPerRequestMetrics(unittest.TestCase):
@@ -150,7 +197,7 @@ class TestPerRequestMetrics(unittest.TestCase):
         # max column header and max latency value from fixture
         lines = [l for l in text.splitlines() if 'max' in l.lower()]
         self.assertTrue(any('max' in l for l in lines), 'max column should appear in Per-Request Metrics')
-        self.assertIn('5.000', text)  # max latency from _make_percentiles
+        self.assertIn('5', text)  # max latency from _make_percentiles
 
     def test_multi_turn_rows(self):
         results = _build_all_results([{
@@ -177,13 +224,13 @@ class TestPerRequestMetrics(unittest.TestCase):
         text = _capture(results)
         self.assertIn('Decoded Tok/Iter', text)
         self.assertIn('Spec. Accept Rate', text)
-        self.assertIn('70.0%', text)
+        self.assertIn('70%', text)
 
     def test_decode_tps_shown(self):
         results = _build_all_results([{'summary': _make_summary(avg_tpot=20.0)}])
         text = _capture(results)
         self.assertIn('Decode toks/s', text)
-        self.assertIn('50.00', text)
+        self.assertIn('Decode toks/s │  50', text)
 
     def test_no_ttft_when_zero(self):
         results = _build_all_results([{
@@ -214,7 +261,7 @@ class TestPerTraceMetrics(unittest.TestCase):
         self.assertIn('Per-Trace Metrics', text)
         self.assertIn('Latency (s)', text)
         self.assertIn('Cache Hit Rate (%)', text)
-        self.assertIn('51.30', text)
+        self.assertIn('51.3', text)
 
     def test_sweep_merged(self):
         results = _build_all_results([
@@ -238,7 +285,7 @@ class TestWorkloadThroughput(unittest.TestCase):
         self.assertIn('Workload Throughput', text)
         self.assertIn('Total Prompt tok/s', text)
         self.assertIn('Completion tok/s', text)
-        self.assertIn('3118.70', text)
+        self.assertIn('3118.7', text)
         self.assertIn('Last 30s', text)
 
     def test_sweep_merged(self):

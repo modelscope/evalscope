@@ -34,7 +34,7 @@ QASC（Question Answering via Sentence Composition，基于句子组合的问题
 | **数据集ID** | [extraordinarylab/qasc](https://modelscope.cn/datasets/extraordinarylab/qasc/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 

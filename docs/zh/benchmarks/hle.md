@@ -35,7 +35,7 @@ Humanity's Last Exam（HLE）是一个综合性语言模型基准测试，包含
 | **数据集ID** | [cais/hle](https://modelscope.cn/datasets/cais/hle/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `test` |
 

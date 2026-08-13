@@ -1,8 +1,7 @@
 // Component tests for the Performance_Compare_View.
 //
 // These cover the behaviour that lives in the PerfComparePage component layer
-// (rather than in the pure `compareModel` domain logic, which is covered by the
-// property tests in tasks 13.2-13.7):
+// (rather than in the pure `compareModel` domain logic, which has its own property tests):
 //   - the baseline swap is persisted to the URL `baseline` query param so it
 //     survives re-render and the effective-baseline marker follows it;
 //   - low sample sizes (n < 30) surface a strong warning and de-emphasize the
@@ -43,21 +42,36 @@ import { getPerfDetail } from '@/api/perf'
 // ------------------------------------------------------------------ //
 
 /**
- * Build a desensitized `PerfDetailResponse`. Sample count is driven through the
- * `Number of requests` summary row (mirrors {@link getSampleCount}); percentile
- * rows are always present so the low-sample de-emphasis can be exercised.
+ * Build a desensitized structured performance response.
  */
 type PerfDetailOverrides = Partial<PerfDetailResponse> & { __sampleCount?: number }
 
 function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse {
   const sampleCount = overrides.__sampleCount ?? 200
-  const rows: PerfDetailResponse['summary_rows'] = [
-    ['Number of requests', sampleCount],
-    ['Average latency (s)', 1.2],
-    ['P90 latency (s)', 2.0],
-    ['P95 latency (s)', 2.5],
-    ['P99 latency (s)', 3.0],
-    ['Output throughput (tokens/s)', 500],
+  const latencySemantics = {
+    semantic_id: 'perf.latency.seconds',
+    metric_name: 'Latency',
+    kind: 'quality' as const,
+    direction: 'lower_is_better' as const,
+    display_kind: 'number' as const,
+    display_unit: 's',
+    display_precision: 2,
+  }
+  const throughputSemantics = {
+    semantic_id: 'perf.throughput.tokens_per_second',
+    metric_name: 'Output Throughput',
+    kind: 'quality' as const,
+    direction: 'higher_is_better' as const,
+    display_kind: 'number' as const,
+    display_unit: 'tok/s',
+    display_precision: 2,
+  }
+  const columns: PerfDetailResponse['summary_columns'] = [
+    { key: 'avg_latency', label: 'Average latency (s)', semantics: latencySemantics },
+    { key: 'p90_latency', label: 'P90 latency (s)', semantics: latencySemantics },
+    { key: 'p95_latency', label: 'P95 latency (s)', semantics: latencySemantics },
+    { key: 'p99_latency', label: 'P99 latency (s)', semantics: latencySemantics },
+    { key: 'output_token_throughput', label: 'Output throughput (tokens/s)', semantics: throughputSemantics },
   ]
   const base: PerfDetailResponse = {
     path: 'run-a',
@@ -66,8 +80,18 @@ function makePerfDetail(overrides: PerfDetailOverrides = {}): PerfDetailResponse
     dataset: 'openqa',
     generated_at: '2026-06-01T00:00:00Z',
     basic_info: { 'Total requests': String(sampleCount) },
-    summary_columns: ['Metric', 'Value'],
-    summary_rows: rows,
+    summary_columns: columns,
+    summary_rows: [{
+      values: {
+        avg_latency: 1.2,
+        p90_latency: 2.0,
+        p95_latency: 2.5,
+        p99_latency: 3.0,
+        output_token_throughput: 500,
+      },
+      sample_counts: Object.fromEntries(columns.map((column) => [column.key, sampleCount])),
+    }],
+    total_requests: sampleCount,
     best_config: { concurrency: '10' },
     recommendations: [],
     num_runs: 1,
@@ -216,12 +240,12 @@ describe('PerfComparePage', () => {
       expect(screen.queryByTestId('low-sample-warn')).not.toBeInTheDocument()
 
       // Percentile deltas are de-emphasized (raw values preserved via title tooltips).
-      for (const key of ['P90 latency (s)', 'P95 latency (s)', 'P99 latency (s)']) {
+      for (const key of ['p90_latency', 'p95_latency', 'p99_latency']) {
         expect(screen.getByTestId(`delta-row-${key}`)).toHaveAttribute('data-deemphasized', 'true')
       }
 
       // A non-percentile metric stays emphasized.
-      expect(screen.getByTestId('delta-row-Average latency (s)')).toHaveAttribute('data-deemphasized', 'false')
+      expect(screen.getByTestId('delta-row-avg_latency')).toHaveAttribute('data-deemphasized', 'false')
     })
   })
 
@@ -242,7 +266,7 @@ describe('PerfComparePage', () => {
       expect(screen.getByTestId('workload-mismatch')).toBeInTheDocument()
       // ...but the comparison is not blocked: the delta table still renders.
       expect(screen.getByTestId('delta-table')).toBeInTheDocument()
-      expect(screen.getByTestId('delta-row-Average latency (s)')).toBeInTheDocument()
+      expect(screen.getByTestId('delta-row-avg_latency')).toBeInTheDocument()
     })
   })
 
@@ -266,7 +290,7 @@ describe('PerfComparePage', () => {
 
       // The metric present on the baseline but missing on the candidate is
       // de-emphasized (incomputable) rather than dropped.
-      expect(screen.getByTestId('delta-row-Average latency (s)')).toHaveAttribute('data-deemphasized', 'true')
+      expect(screen.getByTestId('delta-row-avg_latency')).toHaveAttribute('data-deemphasized', 'true')
     })
   })
 })

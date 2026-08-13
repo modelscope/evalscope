@@ -36,7 +36,7 @@ Data-Collection is a flexible framework for mixing multiple evaluation datasets 
 | **Dataset ID** | N/A |
 | **Paper** | N/A |
 | **Tags** | `Custom` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

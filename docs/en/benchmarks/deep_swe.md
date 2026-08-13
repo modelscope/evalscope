@@ -29,7 +29,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 | **Dataset ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `Coding`, `MultiTurn` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

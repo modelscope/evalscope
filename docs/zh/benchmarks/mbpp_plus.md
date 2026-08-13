@@ -36,7 +36,7 @@ MBPP Plus 是 MBPP 基准测试的强化版本，旨在提升基础 Python 编�
 | **数据集ID** | [evalscope/mbppplus](https://modelscope.cn/datasets/evalscope/mbppplus/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |

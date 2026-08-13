@@ -37,7 +37,7 @@ General-VMCQ 是一个可自定义的视觉多项选择题问答基准测试，�
 | **数据集ID** | `general_vmcq` |
 | **论文** | N/A |
 | **标签** | `Custom`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认Shots数** | 0-shot |
 | **评估集划分** | `val` |
 | **训练集划分** | `dev` |

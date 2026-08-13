@@ -6,26 +6,27 @@ from evalscope.benchmarks.deepsearchqa.utils import aggregate_official_scores, p
 
 
 class TestDeepSearchQAUtils(unittest.TestCase):
+
     def test_rule_fallback_handles_single_answer_substring(self):
         value, metadata = rule_fallback_score('The answer is Aotearoa.', 'Aotearoa', 'Single Answer')
 
         self.assertEqual(metadata['correct'], 1)
         self.assertEqual(metadata['expected'], 1)
-        self.assertEqual(value['f1_score'], 1.0)
+        self.assertEqual(value['f1'], 1.0)
 
     def test_rule_fallback_does_not_match_empty_reference_part(self):
         value, metadata = rule_fallback_score('', '', 'Single Answer')
 
         self.assertEqual(metadata['correct'], 0)
         self.assertEqual(metadata['expected'], 0)
-        self.assertEqual(value['f1_score'], 0.0)
+        self.assertEqual(value['f1'], 0.0)
 
     def test_rule_fallback_accepts_reordered_set_answers(self):
         value, metadata = rule_fallback_score('France; Belgium', 'Belgium, France', 'Set Answer')
 
         self.assertEqual(metadata['correct'], 2)
         self.assertEqual(metadata['excessive'], 0)
-        self.assertEqual(value['f1_score'], 1.0)
+        self.assertEqual(value['f1'], 1.0)
 
     def test_rule_fallback_does_not_count_missing_set_answers_as_excessive(self):
         value, metadata = rule_fallback_score('Belgium', 'Belgium, France', 'Set Answer')
@@ -51,14 +52,17 @@ class TestDeepSearchQAUtils(unittest.TestCase):
 
         value, metadata = parse_judge_response(judge_response)
 
-        self.assertEqual(value['f1_score'], 1.0)
+        self.assertEqual(value['f1'], 1.0)
         self.assertEqual(metadata['correctness_details'], {'Belgium': True, 'France': True})
 
     def test_parse_judge_response_rejects_surrounding_text_to_match_official_parser(self):
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Only one expected answer is present.',
-                'Correctness Details': {'Belgium': True, 'France': False},
+                'Correctness Details': {
+                    'Belgium': True,
+                    'France': False
+                },
                 'Excessive Answers': ['Italy'],
             }
         }
@@ -72,7 +76,9 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Malformed flag.',
-                'Correctness Details': {'Belgium': 'maybe'},
+                'Correctness Details': {
+                    'Belgium': 'maybe'
+                },
                 'Excessive Answers': [],
             }
         }
@@ -86,14 +92,19 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         sample_scores = [
             SampleScore(
                 sample_id=0,
-                score=Score(value={'precision': 1.0, 'recall': 0.5, 'f1_score': 2 / 3}, metadata={}),
+                score=Score(value={
+                    'precision': 1.0,
+                    'recall': 0.5,
+                    'f1': 2 / 3
+                }, metadata={}),
             ),
             SampleScore(sample_id=1, score=Score(value={}, metadata={'empty_model_response': True})),
             SampleScore(sample_id=2, score=Score(value={}, metadata={'invalid_auto_rater_response': True})),
         ]
 
         scores = {
-            f'{score.aggregation_name}_{score.metric_name}': score for score in aggregate_official_scores(sample_scores)
+            f'{score.aggregation}_{score.metric_name}': score
+            for score in aggregate_official_scores(sample_scores)
         }
 
         self.assertEqual(scores['mean_precision'].num, 1)

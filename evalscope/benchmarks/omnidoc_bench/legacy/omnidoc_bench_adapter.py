@@ -7,12 +7,23 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+LEGACY_METRIC_NAMES = {
+    'display_formula_CDM': 'display_formula_cdm',
+    'display_formula_Edit_dist': 'display_formula_edit_dist',
+    'overall': 'normalized_score',
+    'reading_order_Edit_dist': 'reading_order_edit_dist',
+    'table_Edit_dist': 'table_edit_dist',
+    'table_TEDS': 'table_teds',
+    'text_block_Edit_dist': 'text_block_edit_dist',
+}
 
 PROMPT_TEMPLATE = r""" You are an AI assistant specialized in converting PDF images to Markdown format. Please follow these instructions for the conversion:
 
@@ -97,7 +108,13 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
                     'metric': ['Edit_dist']
                 }
             },
+            {
+                'normalized_score': {
+                    'metric': []
+                }
+            },
         ],
+        primary_metric=MetricSelector(name='normalized_score', aggregation='macro_mean'),
         eval_split='train',
         prompt_template=PROMPT_TEMPLATE,
         extra_params={
@@ -114,7 +131,6 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.match_method = self.extra_params.get('match_method', 'quick_match')
 
         check_import(
@@ -161,6 +177,7 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
             metric_name: metric_params
             for metric in self.metric_list
             for metric_name, metric_params in metric.items()
+            if metric_name != 'normalized_score'
         }
         evaluator = End2EndEvaluator(
             prediction=predictions,
@@ -171,13 +188,30 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
         agg_results = evaluator.score()
 
         agg_scores = []
+        language_scores = []
         for metric_name, agg_result in agg_results.items():
-            if agg_result is not np.nan:
-                agg_score = AggScore(
+            if np.isnan(agg_result):
+                continue
+            legacy_name, language = metric_name.rsplit('_', 1)
+            agg_scores.append(
+                AggScore(
+                    dimensions={'language': language.lower()},
                     score=agg_result,
-                    metric_name=metric_name,
+                    metric_name=LEGACY_METRIC_NAMES[legacy_name],
                     num=len(sample_scores),
                 )
-                agg_scores.append(agg_score)
+            )
+            if legacy_name == 'overall':
+                language_scores.append(agg_result)
+
+        if language_scores:
+            agg_scores.append(
+                AggScore(
+                    aggregation='macro_mean',
+                    score=float(np.mean(language_scores)),
+                    metric_name='normalized_score',
+                    num=len(sample_scores),
+                )
+            )
 
         return agg_scores

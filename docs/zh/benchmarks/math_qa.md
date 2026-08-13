@@ -35,7 +35,7 @@ MathQA 是一个大规模数学应用题求解数据集，通过对 AQuA-RAT 数
 | **数据集ID** | [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

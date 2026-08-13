@@ -119,7 +119,7 @@ After evaluation completes, a result table similar to the following will be outp
 +------------------+-------------------+----------+----------+-------+---------+---------+
 | Model            | Dataset           | Metric   | Subset   |   Num |   Score | Cat.0   |
 +==================+===================+==========+==========+=======+=========+=========+
-| qwen3-coder-plus | terminal_bench_v2 | mean_acc | test     |     5 |     0.2 | default |
+| qwen3-coder-plus | terminal_bench_v2 | Accuracy ↑ | test     |     5 |     20% | default |
 +------------------+-------------------+----------+----------+-------+---------+---------+
 ```
 

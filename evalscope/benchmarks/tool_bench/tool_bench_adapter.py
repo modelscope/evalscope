@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, dict_to_chat_message
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -49,6 +50,7 @@ ToolBench-Static is a benchmark for evaluating AI models' ability to use tools a
         dataset_id='AI-ModelScope/ToolBench-Static',
         subset_list=['in_domain', 'out_of_domain'],
         metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
+        primary_metric=MetricSelector(name='f1', aggregation='mean'),
         eval_split='test',
     )
 )

@@ -28,7 +28,7 @@ Video-MME-v2 是一个公开的综合性视频理解基准测试。它包含 800
 | **数据集ID** | [MME-Benchmarks/Video-MME-v2](https://modelscope.cn/datasets/MME-Benchmarks/Video-MME-v2/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2604.05015) |
 | **标签** | `MCQ`, `MultiModal`, `Video` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

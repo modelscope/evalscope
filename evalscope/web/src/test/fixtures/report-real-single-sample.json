@@ -1,14 +1,14 @@
 {
   "report_list": [
     {
+      "schema_version": 2,
       "name": "qwen-plus@general_mcq",
       "dataset_name": "general_mcq",
       "model_name": "qwen-plus",
-      "score": 1.0,
       "analysis": "N/A",
       "metrics": [
         {
-          "name": "acc",
+          "identity": {"name": "accuracy", "aggregation": "mean", "dimensions": {}},
           "num": 1,
           "score": 1.0,
           "categories": [
@@ -20,7 +20,18 @@
                 {"name": "default", "score": 1.0, "num": 1}
               ]
             }
-          ]
+          ],
+          "semantics": {
+            "semantic_id": "quality.accuracy.ratio",
+            "metric_name": "Accuracy",
+            "kind": "quality",
+            "direction": "higher_is_better",
+            "value_range": {"min": 0.0, "max": 1.0},
+            "display_kind": "percent",
+            "display_multiplier": 100.0,
+            "display_unit": "%",
+            "display_precision": 1
+          }
         }
       ],
       "perf_metrics": {
@@ -38,17 +49,62 @@
           },
           "ttft": {"mean": 0.700828, "std": null, "min": 0.700828, "25%": 0.700828, "50%": 0.700828, "75%": 0.700828, "90%": 0.700828, "99%": 0.700828, "max": 0.700828},
           "tpot": {"mean": 0.002767, "std": null, "min": 0.002767, "25%": 0.002767, "50%": 0.002767, "75%": 0.002767, "90%": 0.002767, "99%": 0.002767, "max": 0.002767}
+        },
+        "metric_semantics": {
+          "n_samples": {
+            "semantic_id": "diagnostic.count.items", "metric_name": "Samples", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
+          },
+          "latency": {
+            "semantic_id": "perf.latency.seconds", "metric_name": "Latency", "kind": "quality",
+            "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
+            "display_unit": "s", "display_precision": 3
+          },
+          "ttft": {
+            "semantic_id": "perf.latency.seconds", "metric_name": "TTFT", "kind": "quality",
+            "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
+            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1
+          },
+          "tpot": {
+            "semantic_id": "perf.latency.seconds", "metric_name": "TPOT", "kind": "quality",
+            "direction": "lower_is_better", "raw_unit": "s", "display_kind": "number",
+            "display_multiplier": 1000.0, "display_unit": "ms", "display_precision": 1
+          },
+          "throughput.avg_output_tps": {
+            "semantic_id": "perf.throughput.tokens_per_second", "metric_name": "Output Throughput",
+            "kind": "quality", "direction": "higher_is_better", "raw_unit": "tok/s",
+            "display_kind": "number", "display_unit": "tok/s", "display_precision": 2
+          },
+          "throughput.avg_req_ps": {
+            "semantic_id": "perf.throughput.requests_per_second", "metric_name": "Request Throughput",
+            "kind": "quality", "direction": "higher_is_better", "raw_unit": "req/s",
+            "display_kind": "number", "display_unit": "req/s", "display_precision": 2
+          },
+          "usage.input_tokens": {
+            "semantic_id": "diagnostic.count.items", "metric_name": "Input Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
+          },
+          "usage.output_tokens": {
+            "semantic_id": "diagnostic.count.items", "metric_name": "Output Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
+          },
+          "usage.total_tokens": {
+            "semantic_id": "diagnostic.count.items", "metric_name": "Total Tokens", "kind": "diagnostic",
+            "direction": "none", "display_kind": "number", "display_precision": 0
+          }
         }
-      }
+      },
+      "primary_metric_identity": {"name": "accuracy", "aggregation": "mean", "dimensions": {}}
     },
     {
+      "schema_version": 2,
       "name": "qwen-plus@iquiz",
       "dataset_name": "iquiz",
       "model_name": "qwen-plus",
-      "score": 0.0,
       "analysis": "N/A",
       "metrics": [],
-      "perf_metrics": null
+      "perf_metrics": null,
+      "primary_metric_identity": null
     }
   ],
   "datasets": ["general_mcq", "iquiz"],

@@ -22,7 +22,14 @@
     "aggregation": "mean",
     "extra_params": {},
     "sandbox_config": {},
-    "category": "aigc"
+    "category": "aigc",
+    "primary_metric": {
+      "name": "hps_v2_1_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    }
   },
   "statistics": {
     "total_samples": 3200,
@@ -75,6 +82,6 @@
     "content_hash": "9a0acf2c064538d549eaf937fb440d2c",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.552031",
+  "updated_at": "2026-08-12T23:53:22.199485",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

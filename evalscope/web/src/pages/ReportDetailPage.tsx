@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
-import { isDomainError } from '@/api/errors'
-import type { LoadReportResponse, ReportData } from '@/api/types'
+import type { ReportData } from '@/api/types'
+import { formatReportRef } from '@/domain/report/reportRef'
+import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
+import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
@@ -13,84 +17,82 @@ import DatasetNav from '@/components/reports/DatasetNav'
 import OverviewTab from '@/components/reports/OverviewTab'
 import DetailsTab from '@/components/reports/DetailsTab'
 import PredictionsTab from '@/components/reports/PredictionsTab'
-import { resolveMetricKey } from '@/domain/metric/registry'
 
 type TabKey = 'overview' | 'details' | 'predictions'
 
 export default function ReportDetailPage() {
-  const { reportId } = useParams<{ reportId: string }>()
+  const { runId, modelId } = useParams<{ runId: string; modelId: string }>()
   const [searchParams] = useSearchParams()
   const { t } = useLocale()
 
   const rootPath = searchParams.get('root_path') || './outputs'
-  const reportName = decodeURIComponent(reportId ?? '')
+  const reportName = useMemo(
+    () => formatReportRef({ runId: runId ?? '', modelId: modelId ?? '' }),
+    [runId, modelId],
+  )
 
-  // Parse model name from reportName format: {timestamp}@@{model_name}::{datasets}
-  const breadcrumbLabel = useMemo(() => {
-    const atIdx = reportName.indexOf('@@')
-    if (atIdx === -1) return reportName
-    const afterAt = reportName.slice(atIdx + 2)
-    const colonIdx = afterAt.indexOf('::')
-    return colonIdx !== -1 ? afterAt.slice(0, colonIdx) : afterAt
-  }, [reportName])
-
-  const [data, setData] = useState<LoadReportResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState<TabKey>('overview')
-  const [activeDataset, setActiveDataset] = useState('')
   const [initialSubset, setInitialSubset] = useState<string | undefined>(undefined)
 
-  // Load report when the detail inputs change. A change aborts the previous
-  // request and drops its late/aborted response so only the newest
-  // request updates the view.
-  useEffect(() => {
-    if (!reportName) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const res = await apiLoadReport(rootPath, reportName, controller.signal)
-        if (controller.signal.aborted) return
-        setData(res)
-        if (res.datasets.length > 0) {
-          setActiveDataset(res.datasets[0])
-        }
-      } catch (err) {
-        if (controller.signal.aborted || (isDomainError(err) && err.kind === 'aborted')) return
-        setError(String(err))
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [rootPath, reportName])
+  // A change of inputs aborts the previous request and drops its late response,
+  // so only the newest one updates the view.
+  const report = useAsyncResource(
+    (signal) => apiLoadReport(rootPath, reportName, signal),
+    [rootPath, reportName],
+    { enabled: Boolean(reportName), fallbackMessage: t('common.loadError') },
+  )
+  const data = report.data ?? null
+  const loading = report.loading
+  const error = report.error
+
+  // Open on the report's first dataset, while still letting the user switch; the
+  // pick is scoped to the report it was made on, and only holds while it still
+  // names one of the datasets the report carries.
+  const datasetScope = `${rootPath}\0${reportName}`
+  const [pickedDataset, setActiveDataset] = useScopedState<string | null>(datasetScope, null)
+  const activeDataset = pickedDataset !== null && Boolean(data?.datasets.includes(pickedDataset))
+    ? pickedDataset
+    : (data?.datasets[0] ?? '')
 
   const reportList = useMemo<ReportData[]>(() => data?.report_list ?? [], [data])
 
   // Derive overall info from report list
-  const modelName = reportList[0]?.model_name ?? reportName
-  const primaryDataset = reportList[0]?.dataset_name ?? ''
+  const modelName = reportList[0]?.model_name ?? modelId ?? ''
+  // Prefer the loaded model name; fall back to the URL model id while the report loads.
+  const breadcrumbLabel = reportList[0]?.model_name ?? modelId ?? ''
+  const primaryDataset = reportList[0] ? datasetLabel(reportList[0]) : ''
   const overallMetric = useMemo(() => {
-    if (reportList.length === 0) return { score: null, metricName: '' }
-    const metricNames = reportList.map((report) => report.metrics[0]?.name ?? 'score')
-    const firstKey = resolveMetricKey(metricNames[0])
-    if (!metricNames.every((name) => resolveMetricKey(name) === firstKey)) {
-      return { score: null, metricName: '' }
-    }
+    if (reportList.length !== 1) return { score: null, semantics: null, metricName: '' }
+    const primary = primaryMetricOf(reportList[0])
     return {
-      score: reportList.reduce((sum, report) => sum + report.score, 0) / reportList.length,
-      metricName: metricNames[0],
+      score: primary?.score ?? null,
+      semantics: primary?.semantics ?? null,
+      metricName: primary ? formatMetricIdentityLabel(primary.identity, primary.semantics, primary.legacy_name) : '',
     }
   }, [reportList])
   const totalSamples = reportList.reduce((sum, r) => {
-    return sum + (r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
+    const primary = primaryMetricOf(r)
+    return sum + (primary?.categories?.reduce((s, c) => s + c.num, 0) ?? 0)
   }, 0)
 
   const datasets = data?.datasets ?? []
+  const datasetLabels = useMemo(
+    () => Object.fromEntries(reportList.map((report) => [report.dataset_name, datasetLabel(report)])),
+    [reportList],
+  )
   const htmlReportUrl = getHtmlReportUrl(rootPath, reportName)
+
+  // Semantics of the dataset currently shown in the details panel: its primary metric drives the
+  // headline number, and the per-metric map lets each row format itself.
+  const activeReport = useMemo(() => {
+    const report = reportList.find((r) => r.dataset_name === activeDataset)
+    if (!report) return undefined
+    const primaryMetric = primaryMetricOf(report)
+    const semanticsByMetric = Object.fromEntries(
+      report.metrics.map((metric) => [metricIdentityKey(metric.identity), metric.semantics]),
+    )
+    return { primaryMetric, semanticsByMetric }
+  }, [reportList, activeDataset])
 
   // Handler: switch dataset and auto-navigate to details tab
   const handleDatasetChange = (ds: string) => {
@@ -129,12 +131,12 @@ export default function ReportDetailPage() {
                     : 'text-[var(--text-muted)] hover:bg-[var(--bg-card2)]'
                 }`}
               >
-                {ds}
+                <span title={ds}>{datasetLabels[ds] || ds}</span>
               </button>
             ))}
           </div>
           <div className="hidden md:block">
-            <DatasetNav datasets={datasets} active={activeDataset} onChange={handleDatasetChange} />
+            <DatasetNav datasets={datasets} labels={datasetLabels} active={activeDataset} onChange={handleDatasetChange} />
           </div>
         </>
       )}
@@ -187,8 +189,10 @@ export default function ReportDetailPage() {
         modelName={modelName}
         datasetName={primaryDataset}
         datasets={datasets}
+        datasetLabels={datasetLabels}
         score={overallMetric.score}
         metricName={overallMetric.metricName}
+        semantics={overallMetric.semantics}
         totalSamples={totalSamples}
         htmlReportUrl={htmlReportUrl}
         onDatasetClick={handleDatasetChange}
@@ -218,8 +222,16 @@ export default function ReportDetailPage() {
               datasetName={activeDataset}
               rootPath={rootPath}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
-              overallScore={reportList.find((r) => r.dataset_name === activeDataset)?.score}
-              metricName={reportList.find((r) => r.dataset_name === activeDataset)?.metrics[0]?.name}
+              overallScore={activeReport?.primaryMetric?.score}
+              metricName={activeReport?.primaryMetric
+                ? formatMetricIdentityLabel(
+                    activeReport.primaryMetric.identity,
+                    activeReport.primaryMetric.semantics,
+                    activeReport.primaryMetric.legacy_name,
+                  )
+                : undefined}
+              semantics={activeReport?.primaryMetric?.semantics}
+              semanticsByMetric={activeReport?.semanticsByMetric}
               onSubsetClick={handleSubsetClick}
             />,
           ),

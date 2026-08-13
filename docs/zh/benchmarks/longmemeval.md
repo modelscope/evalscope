@@ -34,7 +34,7 @@ LongMemEval 用于评估聊天助手的长期交互记忆能力。每个问题�
 | **数据集ID** | [evalscope/longmemeval-cleaned](https://modelscope.cn/datasets/evalscope/longmemeval-cleaned/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

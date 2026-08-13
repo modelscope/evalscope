@@ -83,14 +83,7 @@ TruthfulQA is a benchmark designed to measure whether language models generate t
 
 ## Prompt Template
 
-**Prompt Template:**
-```text
-Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.
-
-{question}
-
-{choices}
-```
+*No prompt template defined.*
 
 ## Extra Parameters
 

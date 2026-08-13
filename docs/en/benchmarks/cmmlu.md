@@ -38,7 +38,7 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
 | **Dataset ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |
 | **Paper** | N/A |
 | **Tags** | `Chinese`, `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `dev` |

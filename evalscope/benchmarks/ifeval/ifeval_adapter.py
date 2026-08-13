@@ -57,6 +57,7 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
             'prompt_level_loose',
             'inst_level_loose',
         ],
+        primary_metric='prompt_level_strict',
         few_shot_num=0,
         train_split=None,
         eval_split='train',

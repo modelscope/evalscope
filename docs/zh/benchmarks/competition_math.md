@@ -35,7 +35,7 @@ Competition-MATH 是一个包含 12,500 道高难度竞赛数学题目的综合�
 | **数据集ID** | [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 4-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

@@ -115,6 +115,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
         default_subset='case_analysis',
         eval_split='test',
         metric_list=['acc', 'conclusion_acc', 'fact_acc', 'reasoning_acc', 'law_acc'],
+        primary_metric='accuracy',
         aggregation='mean',
         prompt_template='{question}',
         extra_params=_EXTRA_PARAMS,

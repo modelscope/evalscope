@@ -37,7 +37,7 @@ ToolBench-Static is a benchmark for evaluating AI models' ability to use tools a
 | **Dataset ID** | [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary) |
 | **Paper** | N/A |
 | **Tags** | `FunctionCalling`, `Reasoning` |
-| **Metrics** | `Act.EM`, `Plan.EM`, `F1`, `HalluRate`, `Rouge-L` |
+| **Metrics** | `Act.EM`, `Plan.EM`, `f1`, `HalluRate`, `Rouge-L` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

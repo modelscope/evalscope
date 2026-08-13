@@ -1,9 +1,15 @@
 import copy
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
+from pydantic import BaseModel
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.constants import OutputType
+from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.utils import get_logger
+
+logger = get_logger()
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
@@ -85,6 +91,15 @@ class BenchmarkMeta:
     aggregation: str = 'mean'
     """ Aggregation function for the metrics. Default is 'mean'. Can be 'mean', 'pass@<k>' or a custom function name."""
 
+    primary_metric: Optional[Union[str, MetricSelector]] = None
+    """Structured selector for the benchmark's primary report metric.
+
+    This is the report-level authoritative declaration. Optional for single-metric benchmarks
+    (the only scored identity is implicitly primary). If a report contains several scored
+    identities, it must provide a selector that matches exactly one of them. Every other
+    non-diagnostic metric is resolved as ``auxiliary``.
+    """
+
     shuffle: bool = False
     """Whether to shuffle the dataset before evaluation."""
 
@@ -126,6 +141,104 @@ class BenchmarkMeta:
         """Validate fields after initialization."""
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
+        self._normalize_metric_list()
+        self._normalize_primary_metric()
+        self._validate_primary_metric()
+
+    def _normalize_metric_list(self) -> None:
+        """Normalize unambiguous legacy scorer aliases at the adapter boundary.
+
+        Only pure re-spellings are listed. An entry here must keep ``get_metric()`` working, since
+        a declared name is looked up in the metric registry: ``acc`` and ``exact_match`` are both
+        registered, and the rest name no scorer at all because their adapter computes its own
+        metrics. A name whose canonical form is *not* registered while the alias is would break
+        that lookup, so it must not be added.
+
+        Aliases that reassign meaning (``total_score`` -> ``judge_score``) are deliberately absent:
+        built-in adapters now emit canonical names directly, so listing them here would only hide
+        the reassignment warning a third-party adapter needs to see.
+        """
+        aliases = {'acc', 'f1_score', 'F1', 'em'}
+        normalized = []
+        for entry in self.metric_list:
+            raw_name = entry if isinstance(entry, str) else next(iter(entry), '')
+            if raw_name not in aliases:
+                normalized.append(entry)
+                continue
+            canonical_name = migrate_legacy_identity(raw_name, 'identity', benchmark_name=self.name).name
+            if isinstance(entry, str):
+                normalized.append(canonical_name)
+            else:
+                normalized.append({canonical_name: entry[raw_name]})
+        self.metric_list = normalized
+
+    def _normalize_primary_metric(self) -> None:
+        """Normalize the common string shorthand to a selector."""
+        if not isinstance(self.primary_metric, str):
+            return
+        identity = migrate_legacy_identity(self.primary_metric, self.aggregation, benchmark_name=self.name)
+        self.primary_metric = MetricSelector(name=identity.name)
+
+    def _metric_names(self) -> List[str]:
+        """Return the distinct raw metric names declared in ``metric_list``.
+
+        Mirrors how ``match_score()`` reads ``metric_list``: a plain string is the metric name,
+        a dict maps a single metric name to its options.
+
+        Returns:
+            Distinct raw metric names, in declaration order.
+        """
+        names: List[str] = []
+        for entry in self.metric_list or ():
+            if isinstance(entry, str):
+                name = entry
+            elif isinstance(entry, dict) and entry:
+                name = next(iter(entry))
+            else:
+                name = None
+            if name and name not in names:
+                names.append(name)
+        return names
+
+    def _validate_primary_metric(self) -> None:
+        """Reject a primary metric that is not declared, and warn when one is missing.
+
+        A benchmark reporting several metrics should say which one carries the conclusion,
+        otherwise every consumer has to guess. Staying silent only warns here because this check
+        runs at import time (``@register_benchmark`` constructs the meta) and third-party adapters
+        may predate the selector. Report generation applies the strict rule: without a selector,
+        exactly one non-diagnostic identity must remain.
+
+        Naming a metric that is not in ``metric_list`` does raise: the field is new, so no
+        existing adapter can hit it, and the value can only be a typo.
+
+        Only the two own fields ``metric_list`` and ``primary_metric`` are read: no
+        ``task_config`` access and no dataset resolution, so instantiating an adapter without a
+        task config (as the docs pipeline does) stays unaffected.
+
+        Raises:
+            ValueError: If ``primary_metric`` is not part of ``metric_list``.
+        """
+        names = self._metric_names()
+
+        if self.primary_metric is not None:
+            canonical_names = {
+                migrate_legacy_identity(name, self.aggregation, benchmark_name=self.name).name
+                for name in names
+            }
+            if self.primary_metric.name not in canonical_names:
+                raise ValueError(
+                    f"benchmark '{self.name}': primary_metric='{self.primary_metric.name}' is not in "
+                    f'metric_list {names}'
+                )
+            return
+
+        if len(names) >= 2:
+            logger.warning(
+                f"benchmark '{self.name}': metric_list declares multiple metrics {names} but no "
+                f'primary_metric; report generation will reject multiple scored identities. '
+                f'Declare primary_metric to make the choice explicit.'
+            )
 
     def _is_spec_entry(self, entry: Any) -> bool:
         """Return True if entry is a spec dict (new structured form)."""
@@ -149,16 +262,27 @@ class BenchmarkMeta:
 
     def to_dict(self) -> dict:
         """Convert to dictionary, maintaining backward compatibility."""
-        return asdict(self)
+        return self._serialize_models(asdict(self))
 
     def to_string_dict(self) -> dict:
         """Convert to string dictionary, excluding data_adapter."""
-        cur_dict = copy.deepcopy(asdict(self))
+        cur_dict = copy.deepcopy(self._serialize_models(asdict(self)))
         if 'data_adapter' in cur_dict:
             del cur_dict['data_adapter']
 
         cur_dict['extra_params'] = self.get_extra_params()
         return cur_dict
+
+    @classmethod
+    def _serialize_models(cls, value: Any) -> Any:
+        """Recursively serialize Pydantic values nested in this dataclass."""
+        if isinstance(value, BaseModel):
+            return value.model_dump(mode='json')
+        if isinstance(value, dict):
+            return {key: cls._serialize_models(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [cls._serialize_models(item) for item in value]
+        return value
 
     def _update(self, args: dict):
         """Update instance with provided arguments, maintaining backward compatibility."""
@@ -182,6 +306,10 @@ class BenchmarkMeta:
                 setattr(self, key, value)  # Validate few_shot_num if it's being updated
                 if key == 'few_shot_num' and value < 0:
                     raise ValueError('few_shot_num must be >= 0')
+
+        self._normalize_metric_list()
+        self._normalize_primary_metric()
+        self._validate_primary_metric()
 
     def _update_filters(self, new_filters: dict):
         if self.filters is None:

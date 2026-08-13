@@ -69,6 +69,7 @@ Zapier's official Python package.
         description=_DESCRIPTION,
         paper_url='https://arxiv.org/abs/2604.18934',
         metric_list=['pass_rate', 'partial_credit', 'error_rate'],
+        primary_metric='pass_rate',
         aggregation='mean',
         eval_split='test',
         subset_list=PUBLIC_DOMAINS,

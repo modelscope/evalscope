@@ -37,7 +37,7 @@ AMC（美国数学竞赛）是一个基于2022-2024年AMC 10/12竞赛题目的�
 | **数据集ID** | [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `N/A` |
 

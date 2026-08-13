@@ -14,6 +14,7 @@ from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import JudgeStrategy, Tags
@@ -82,6 +83,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         eval_split='full',
         prompt_template='{question}',
         metric_list=list(METRIC_NAMES),
+        primary_metric=MetricSelector(name='success_rate', aggregation='pass_at_k', dimensions={'scope': 'all'}),
         paper_url='https://arxiv.org/abs/2508.07999',
     )
 )

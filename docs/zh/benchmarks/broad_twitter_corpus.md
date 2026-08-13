@@ -33,7 +33,7 @@ BroadTwitterCorpus 是一个在时间、地点和社会用途上分层采样的�
 | **数据集ID** | [extraordinarylab/broad-twitter-corpus](https://modelscope.cn/datasets/extraordinarylab/broad-twitter-corpus/summary) |
 | **论文** | 无 |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

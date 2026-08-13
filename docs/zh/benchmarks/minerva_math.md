@@ -36,7 +36,7 @@ Minerva-Math 是一个用于评估语言模型高级数学与定量推理能力�
 | **数据集ID** | [knoveleng/Minerva-Math](https://modelscope.cn/datasets/knoveleng/Minerva-Math/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

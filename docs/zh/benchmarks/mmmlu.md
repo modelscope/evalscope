@@ -36,7 +36,7 @@ MMMLU（Multilingual Massive Multitask Language Understanding，多语言大规�
 | **数据集ID** | [openai-mirror/MMMLU](https://modelscope.cn/datasets/openai-mirror/MMMLU/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiLingual` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

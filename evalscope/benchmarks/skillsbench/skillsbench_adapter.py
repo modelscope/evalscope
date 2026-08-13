@@ -139,7 +139,7 @@ task Docker image, runs the selected agent or oracle in that image, then execute
         dataset_id='skillsbench',
         subset_list=[_DEFAULT_SUBSET],
         default_subset=_DEFAULT_SUBSET,
-        metric_list=['score'],
+        metric_list=['normalized_score'],
         prompt_template='{question}',
         extra_params=_EXTRA_PARAMS,
     )
@@ -396,7 +396,7 @@ class SkillsBenchAdapter(AgentAdapter):
     ) -> Score:
         reward = float(task_state.metadata.get('reward') or 0.0)
         value = {
-            'score': reward,
+            'normalized_score': reward,
             'success': 1.0 if reward > 0 else 0.0,
         }
         return Score(
@@ -415,7 +415,7 @@ class SkillsBenchAdapter(AgentAdapter):
                 'reward_path': task_state.metadata.get('reward_path'),
                 'ctrf_path': task_state.metadata.get('ctrf_path'),
             },
-            main_score_name='score',
+            main_score_name='normalized_score',
         )
 
     def _save_verifier_artifacts(

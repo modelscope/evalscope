@@ -8,14 +8,42 @@ from tabulate import tabulate
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages.perf_metrics import PerfSummary
+from evalscope.api.metric.semantics import MetricSemantics
 from evalscope.constants import DataCollection
-from evalscope.report.report import Report, Subset
+from evalscope.metrics.semantics import format_metric_label, format_metric_labels, format_metric_value
+from evalscope.report.report import Report, ReportKey, Subset
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 """
 Combine and generate table for reports of LLMs.
 """
+
+_CATEGORY_PLACEHOLDERS = {'', '-', 'default'}
+
+
+def _format_category_columns_for_display(table: pd.DataFrame) -> None:
+    """Hide placeholder category levels and give informative levels user-facing names."""
+    category_columns = [column for column in table.columns if column.startswith(ReportKey.category_prefix)]
+    informative_columns = []
+    for column in category_columns:
+        values = table[column].dropna().astype(str).str.strip().str.casefold()
+        if values.empty or values.isin(_CATEGORY_PLACEHOLDERS).all():
+            table.drop(columns=column, inplace=True)
+            continue
+        table.loc[table[column].isna() | values.isin(_CATEGORY_PLACEHOLDERS), column] = '-'
+        informative_columns.append(column)
+
+    if len(informative_columns) == 1:
+        table.rename(columns={informative_columns[0]: ReportKey.category_name}, inplace=True)
+        return
+    table.rename(
+        columns={
+            column: f'{ReportKey.category_name} {index}'
+            for index, column in enumerate(informative_columns, 1)
+        },
+        inplace=True,
+    )
 
 
 def _is_report_json(data: Any) -> bool:
@@ -73,6 +101,53 @@ def get_data_frame(
     return pd.concat(tables, ignore_index=True)
 
 
+def get_display_data_frame(
+    report_list: List[Report],
+    flatten_metrics: bool = True,
+    flatten_categories: bool = True,
+    add_overall_metric: bool = False,
+) -> pd.DataFrame:
+    """Build a display-only DataFrame with semantic metric labels and formatted values.
+
+    The raw :func:`get_data_frame` contract intentionally remains numeric for downstream
+    analysis. Renderers should use this helper so the CLI and service tables share one display
+    path without changing the report payload.
+    """
+    display_table = get_data_frame(
+        report_list,
+        flatten_metrics=flatten_metrics,
+        flatten_categories=flatten_categories,
+        add_overall_metric=add_overall_metric,
+    ).copy()
+    semantics_by_metric = {}
+    labels_by_metric = {}
+    dataset_labels = {}
+    for report in report_list:
+        dataset_labels[(report.model_name, report.dataset_name)] = report.dataset_pretty_name or report.dataset_name
+        labels = format_metric_labels((metric.identity, metric.semantics) for metric in report.metrics)
+        for metric in report.metrics:
+            key = (report.model_name, report.dataset_name, metric.name)
+            semantics_by_metric[key] = metric.semantics
+            labels_by_metric[key] = format_metric_label(metric.identity, metric.semantics, metric.legacy_name
+                                                        ) if metric.legacy_name else labels[metric.identity.key]
+
+    if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
+        metric_labels = []
+        display_scores = []
+        for _, row in display_table.iterrows():
+            key = (row['Model'], row['Dataset'], row['Metric'])
+            metric_labels.append(labels_by_metric.get(key, row['Metric']))
+            display_scores.append(format_metric_value(float(row['Score']), semantics_by_metric.get(key)))
+        display_table['Metric'] = metric_labels
+        display_table['Score'] = display_scores
+        display_table['Dataset'] = [
+            dataset_labels.get((row['Model'], row['Dataset']), row['Dataset']) for _, row in display_table.iterrows()
+        ]
+
+    _format_category_columns_for_display(display_table)
+    return display_table
+
+
 def gen_table(
     reports_path_list: list[str] = None,
     report_list: list[Report] = None,
@@ -102,14 +177,14 @@ def gen_table(
         'Either reports_path_list or report_list must be provided.'
     if report_list is None:
         report_list = get_report_list(reports_path_list)
-    # Generate a DataFrame from the report list
-    table = get_data_frame(
+    display_table = get_display_data_frame(
         report_list,
         flatten_metrics=flatten_metrics,
         flatten_categories=flatten_categories,
-        add_overall_metric=add_overall_metric
+        add_overall_metric=add_overall_metric,
     )
-    return tabulate(table, headers=table.columns, tablefmt='simple_grid', showindex=False)
+
+    return tabulate(display_table, headers=display_table.columns, tablefmt='simple_grid', showindex=False)
 
 
 def weighted_average_from_subsets(
@@ -240,6 +315,7 @@ def gen_perf_table(
         report_list = get_report_list(reports_path_list)
 
     rows = []
+
     for report in report_list:
         perf = report.perf_metrics
         if not perf:
@@ -249,17 +325,24 @@ def gen_perf_table(
             continue
 
         ps = PerfSummary.from_dict(summary)
+        semantics_map = {
+            field_key: MetricSemantics.model_validate(semantics)
+            for field_key, semantics in perf.get('metric_semantics', {}).items()
+        }
+
+        def display(value: Optional[float], field_key: str) -> str:
+            return format_metric_value(value, semantics_map.get(field_key))
 
         row = {
             'Model': report.model_name,
-            'Dataset': report.dataset_name,
-            'Num': ps.n_samples,
-            'Avg Lat\n(s)': round(ps.avg_latency, 4),
-            'Avg TTFT\n(ms)': round(ps.avg_ttft * 1000, 2) if ps.avg_ttft is not None else '-',
-            'Avg TPOT\n(ms)': round(ps.avg_tpot * 1000, 2) if ps.avg_tpot is not None else '-',
-            'Avg Thpt\n(tok/s)': ps.avg_output_tps,
-            'Avg In\nTok': ps.avg_input_tokens,
-            'Avg Out\nTok': ps.avg_output_tokens,
+            'Dataset': report.dataset_pretty_name or report.dataset_name,
+            'Num': display(ps.n_samples, 'n_samples'),
+            'Avg Lat': display(ps.avg_latency, 'latency'),
+            'Avg TTFT': display(ps.avg_ttft, 'ttft'),
+            'Avg TPOT': display(ps.avg_tpot, 'tpot'),
+            'Avg Thpt': display(ps.avg_output_tps, 'throughput.avg_output_tps'),
+            'Avg In': display(ps.avg_input_tokens, 'usage.input_tokens'),
+            'Avg Out': display(ps.avg_output_tokens, 'usage.output_tokens'),
         }
         rows.append(row)
 

@@ -1,13 +1,12 @@
 import json
 import os
-import pandas as pd
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
-from evalscope.report.combinator import get_data_frame, get_report_list
+from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
 from ..utils import (
     DEFAULT_MULTIMODAL_BENCHMARKS,
@@ -49,7 +48,7 @@ def _build_result_table(work_dir: str) -> str:
         report_list = get_report_list([reports_dir])
         if not report_list:
             return ''
-        df = get_data_frame(report_list, flatten_metrics=True, flatten_categories=True)
+        df = get_display_data_frame(report_list, flatten_metrics=True, flatten_categories=True)
         _CAT_LEVEL_NAMES = ['类别', '子类别', '细分类别']
         new_cols = {}
         for col in df.columns:
@@ -62,10 +61,6 @@ def _build_result_table(work_dir: str) -> str:
                 except ValueError:
                     new_cols[col] = col.replace('Cat.', '类别')
         df = df.rename(columns=new_cols)
-        score_col = _COLUMN_ZH.get('Score', 'Score')
-        if score_col in df.columns:
-            df[score_col] = pd.to_numeric(df[score_col],
-                                          errors='coerce').map(lambda x: f'{x:.4f}' if pd.notna(x) else '')
         return tabulate(df, headers=df.columns, tablefmt='pipe', showindex=False, disable_numparse=True)
     except Exception as e:
         logger.warning(f'Failed to build result table: {e}')

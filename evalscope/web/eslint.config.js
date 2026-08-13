@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'test-results']),
+  // `coverage/` holds the v8 reporter's own bundled scripts, which are neither
+  // authored here nor lintable against this config.
+  globalIgnores(['dist', 'test-results', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -33,8 +35,7 @@ export default defineConfig([
   },
   {
     files: [
-      'src/domain/compare/compareModel.ts',
-      'src/domain/perf/compareModel.ts',
+      'src/domain/**/*.ts',
     ],
     rules: {
       'no-restricted-imports': [

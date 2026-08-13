@@ -37,7 +37,7 @@ WorldVQA is a benchmark designed to evaluate the atomic visual world knowledge o
 | **Dataset ID** | [evalscope/WorldVQA](https://modelscope.cn/datasets/evalscope/WorldVQA/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

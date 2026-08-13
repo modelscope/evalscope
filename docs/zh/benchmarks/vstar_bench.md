@@ -34,7 +34,7 @@ V*Bench 是一个用于评估多模态推理系统中视觉搜索能力的基准
 | **数据集ID** | [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary) |
 | **论文** | N/A |
 | **标签** | `Grounding`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

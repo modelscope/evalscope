@@ -28,7 +28,7 @@ MVBench 是一个公开的多模态视频理解基准测试，涵盖时间感知
 | **数据集ID** | [PKU-Alignment/MVBench](https://modelscope.cn/datasets/PKU-Alignment/MVBench/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2311.17005) |
 | **标签** | `MCQ`, `MultiModal`, `Video` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

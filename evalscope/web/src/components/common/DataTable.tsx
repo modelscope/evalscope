@@ -1,15 +1,16 @@
 import { scoreBg } from '@/utils/colorScale'
-import { useLocale } from '@/contexts/LocaleContext'
-import { formatMetricByKey } from '@/domain/metric/registry'
+import { formatMetric, getBoundedQualityRatio } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
 
 interface Props {
   columns: string[]
   data: Record<string, unknown>[]
   scoreColumns?: string[]
+  /** Backend semantics of the score columns, used for formatting, colour scale and sorting. */
+  semantics?: MetricSemantics | null
 }
 
-export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
-  const { t } = useLocale()
+export default function DataTable({ columns, data, scoreColumns = [], semantics }: Props) {
   if (!data.length) return null
   const scoreCols = new Set(scoreColumns.length ? scoreColumns : columns.filter((c) => c.toLowerCase().includes('score')))
 
@@ -31,13 +32,16 @@ export default function DataTable({ columns, data, scoreColumns = [] }: Props) {
               {columns.map((col) => {
                 const val = row[col]
                 const isScore = scoreCols.has(col) && typeof val === 'number'
+                // Only a bounded quality metric gets a colour scale; a diagnostic or an
+                // unbounded one would imply a verdict it does not carry.
+                const ratio = isScore ? getBoundedQualityRatio(val as number, semantics) : null
                 return (
                   <td
                     key={col}
                     className="px-3 py-1.5 whitespace-nowrap"
-                    style={isScore ? { backgroundColor: scoreBg(val as number) } : undefined}
+                    style={ratio === null ? undefined : { backgroundColor: scoreBg(ratio) }}
                   >
-                    {isScore ? formatMetricByKey('score', val as number, t).primary : String(val ?? '')}
+                    {isScore ? formatMetric(val as number, semantics).primary : String(val ?? '')}
                   </td>
                 )
               })}

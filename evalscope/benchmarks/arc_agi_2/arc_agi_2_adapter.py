@@ -7,6 +7,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -61,6 +62,7 @@ PROMPT_TEMPLATE = '{question}'
         subset_list=['default'],
         metric_list=['acc'],
         aggregation='mean_and_pass_hat_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_hat_k', dimensions={'k': 1}),
         few_shot_num=0,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,

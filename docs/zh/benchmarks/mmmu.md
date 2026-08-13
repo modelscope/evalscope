@@ -36,7 +36,7 @@ MMMU（Massive Multi-discipline Multimodal Understanding，大规模多学科多
 | **数据集ID** | [AI-ModelScope/MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `validation` |
 

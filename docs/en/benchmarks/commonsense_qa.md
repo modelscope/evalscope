@@ -34,7 +34,7 @@ CommonsenseQA is a benchmark for evaluating AI models' ability to answer questio
 | **Dataset ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Commonsense`, `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

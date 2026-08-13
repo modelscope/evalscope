@@ -45,12 +45,13 @@ const FIXED_SYSTEM_TIME = new Date('2026-07-01T00:00:00.000Z')
  */
 function makeReport(overrides: Partial<ReportSummary> = {}): ReportSummary {
   return {
-    name: 'Qwen2.5-72B-Instruct-Long-Model-Identifier_gsm8k_20260701_120000',
+    run_id: '20260701_120000',
+    model_id: 'Qwen2.5-72B-Instruct-Long-Model-Identifier',
     model_name: 'Qwen2.5-72B-Instruct-Long-Model-Identifier-That-Cannot-Break',
     dataset_name: 'gsm8k-extended-reasoning-benchmark-suite-verylongname',
-    score: 0.9234,
     num_samples: 128,
     timestamp: '2026-07-01T12:00:00',
+    primary_metrics: [],
     ...overrides,
   }
 }

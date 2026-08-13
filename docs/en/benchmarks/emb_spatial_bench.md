@@ -22,7 +22,7 @@ EmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of
 ## Evaluation Notes
 
 - Default evaluation uses the **embspatial_bench.json** file (3,640 samples)
-- Primary metric: **Accuracy** (acc)
+- Primary metric: **Accuracy** (`accuracy`)
 - Answer indices are 0-based in the dataset (0 → A, 1 → B, 2 → C, 3 → D)
 - Images are stored as JPEG base64 strings in the JSON file
 - Subsets are organized by the `relation` field (6 spatial categories)
@@ -37,7 +37,7 @@ EmbSpatial-Bench is a benchmark for evaluating embodied spatial understanding of
 | **Dataset ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2024.acl-short.33/) |
 | **Tags** | `MCQ`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

@@ -67,7 +67,7 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
 | **Dataset ID** | [evalscope/PLawBench](https://modelscope.cn/datasets/evalscope/PLawBench/summary) |
 | **Paper** | [Paper](https://github.com/skylenage/PLawbench) |
 | **Tags** | `Chinese`, `Knowledge`, `QA`, `Reasoning` |
-| **Metrics** | `acc`, `conclusion_acc`, `fact_acc`, `reasoning_acc`, `law_acc` |
+| **Metrics** | `accuracy`, `conclusion_acc`, `fact_acc`, `reasoning_acc`, `law_acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

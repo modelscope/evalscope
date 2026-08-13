@@ -34,7 +34,7 @@ SciQ 是一个众包的科学考试题目数据集，涵盖物理、化学、生
 | **数据集ID** | [extraordinarylab/sciq](https://modelscope.cn/datasets/extraordinarylab/sciq/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `ReadingComprehension` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

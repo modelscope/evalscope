@@ -41,6 +41,7 @@ The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created t
         few_shot_num=0,
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

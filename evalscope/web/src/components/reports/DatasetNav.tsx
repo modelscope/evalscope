@@ -2,11 +2,12 @@ import { cn } from '@/lib/utils'
 
 interface Props {
   datasets: string[]
+  labels?: Record<string, string>
   active: string
   onChange: (ds: string) => void
 }
 
-export default function DatasetNav({ datasets, active, onChange }: Props) {
+export default function DatasetNav({ datasets, labels = {}, active, onChange }: Props) {
   return (
     <nav
       className="flex flex-col gap-0.5 py-3 pr-3"
@@ -43,7 +44,7 @@ export default function DatasetNav({ datasets, active, onChange }: Props) {
                 isActive ? 'bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]' : 'bg-[var(--text-dim)]',
               )}
             />
-            <span className="truncate">{ds}</span>
+            <span className="truncate" title={ds}>{labels[ds] || ds}</span>
           </button>
         )
       })}

@@ -48,6 +48,7 @@ PubMedQA is a biomedical question answering dataset designed to evaluate models'
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/pubmed-qa',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio', 'maybe_ratio'],
+        primary_metric='accuracy',
         aggregation='f1',
         few_shot_num=0,
         eval_split='test',

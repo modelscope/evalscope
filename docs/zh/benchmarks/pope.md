@@ -8,27 +8,26 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 ## 任务描述
 
 - **任务类型**：物体幻觉检测（是非问答）
-- **输入**：图像 + 问题 “图像中是否有 [物体]？”
+- **输入**：图像 + 问题 “Is there a [object] in the image?”（图像中是否存在[物体]？）
 - **输出**：YES 或 NO
 - **重点**：衡量准确率与幻觉率
 
-## 核心特性
+## 主要特点
 
-- 三种采样策略：随机（random）、热门（popular）、对抗（adversarial）
-- 测试模型对不存在物体的错误肯定（即幻觉）
-- 基于 MSCOCO 图像构建
+- 三种采样策略：随机（random）、流行（popular）、对抗（adversarial）
+- 测试模型对不存在物体做出肯定回答的倾向（即幻觉）
+- 基于 MSCOCO 图像数据集
 - 采用简单的是非题格式，便于客观评估
-- 衡量模型回答与视觉内容的一致性
+- 衡量模型回答与视觉内容之间的一致性
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 五个指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数（F1 score）、yes_ratio
-- F1 分数为主要聚合指标
+- 五个评估指标：accuracy（准确率）、precision（精确率）、recall（召回率）、F1 score（F1分数）、yes_ratio（“是”的比例）
+- F1 分数为主要指标；准确率、精确率和召回率为辅助指标；yes_ratio 用于诊断
 - 包含三个子集：`popular`、`adversarial`、`random`
-- `popular` 和 `adversarial` 子集更具挑战性
+- “Popular” 和 “adversarial” 子集更具挑战性
 - yes_ratio 反映模型倾向于回答 “yes” 的程度
-
 
 ## 属性
 
@@ -38,7 +37,7 @@ POPE（Polling-based Object Probing Evaluation）是一个专门用于评估大�
 | **数据集ID** | [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary) |
 | **论文** | N/A |
 | **标签** | `Hallucination`, `MultiModal`, `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `N/A` |
 | **聚合方式** | `f1` |

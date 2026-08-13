@@ -36,7 +36,7 @@ MultiPL-E MBPP 是一个源自 MBPP（Mostly Basic Python Programming）的多�
 | **数据集 ID** | [evalscope/MultiPL-E](https://modelscope.cn/datasets/evalscope/MultiPL-E/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_at_k` |

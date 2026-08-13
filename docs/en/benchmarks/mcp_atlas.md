@@ -40,7 +40,7 @@ and expert claims used for LLM-as-judge coverage scoring.
 | **Dataset ID** | [ScaleAI/MCP-Atlas](https://modelscope.cn/datasets/ScaleAI/MCP-Atlas/summary) |
 | **Paper** | [Paper](https://static.scale.com/uploads/674f4cc7a74e35bcaae1c29a/MCP_Atlas.pdf) |
 | **Tags** | `Agent`, `MultiTurn` |
-| **Metrics** | `coverage_score`, `pass` |
+| **Metrics** | `coverage_score`, `pass_rate` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

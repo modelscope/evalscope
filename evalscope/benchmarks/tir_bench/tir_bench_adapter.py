@@ -39,7 +39,7 @@ diverse task categories requiring spatial, compositional, and multi-step visual 
 ## Evaluation Notes
 
 - Default evaluation uses the **test** split (1,215 samples)
-- Primary metric: **Accuracy** (acc)
+- Primary metric: **Accuracy** (`accuracy`)
 - Images are downloaded as `data.zip` from ModelScope and extracted automatically
 - Rule-based scoring: OCR (substring match), jigsaw (grid IoU), spot_difference (set IoU),
   word_search (numeric match), all other tasks (MCQ / numeric judge)

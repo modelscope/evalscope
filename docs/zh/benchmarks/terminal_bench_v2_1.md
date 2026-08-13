@@ -36,7 +36,7 @@ Terminal-Bench v2.1 是 Terminal-Bench 2.0 的改进版本，修复了 26 项任
 | **数据集ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

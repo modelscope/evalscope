@@ -33,7 +33,7 @@ HarveyNER 是一个在飓风哈维（Hurricane Harvey）期间收集的推文数
 | **数据集ID** | [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

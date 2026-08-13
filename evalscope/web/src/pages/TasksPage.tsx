@@ -1,8 +1,8 @@
 import { useLocale } from '@/contexts/LocaleContext'
 import { useQueryParams } from '@/hooks/useQueryParams'
 import Tabs from '@/components/ui/Tabs'
-import EvalTaskPage from './EvalTaskPage'
-import PerfTaskPage from './PerfTaskPage'
+import EvalTaskPanel from '@/components/tasks/EvalTaskPanel'
+import PerfTaskPanel from '@/components/tasks/PerfTaskPanel'
 
 /**
  * Unified "run a task" page — hosts the Evaluation and Performance task
@@ -26,8 +26,8 @@ export default function TasksPage() {
         activeKey={tab}
         onChange={(k) => set('tab', k)}
         panels={{
-          'tasks-eval-panel': <EvalTaskPage />,
-          'tasks-perf-panel': <PerfTaskPage />,
+          'tasks-eval-panel': <EvalTaskPanel />,
+          'tasks-perf-panel': <PerfTaskPanel />,
         }}
       />
     </div>

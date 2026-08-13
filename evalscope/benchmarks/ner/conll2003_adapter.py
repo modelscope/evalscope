@@ -41,6 +41,7 @@ CoNLL-2003 is a classic Named Entity Recognition (NER) benchmark introduced at t
         train_split='train',
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

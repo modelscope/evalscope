@@ -37,7 +37,7 @@ GSM8K-V is a purely visual multi-image mathematical reasoning benchmark that sys
 | **Dataset ID** | [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

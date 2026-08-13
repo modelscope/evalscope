@@ -37,7 +37,7 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 | **Dataset ID** | [cais/hle](https://modelscope.cn/datasets/cais/hle/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

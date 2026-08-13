@@ -35,7 +35,7 @@ CMATH 是一个面向中国小学数学的基准测试，包含 1,698 道覆盖 
 | **数据集 ID** | [evalscope/cmath](https://modelscope.cn/datasets/evalscope/cmath/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
