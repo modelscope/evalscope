@@ -15,7 +15,7 @@ export const en: Dict = {
   today: 'Today',
   neverText: '—',
 
-  // Zone 2 — bounded recent-run feed
+  // Zone 3 — bounded recent-run feed
   tabAll: 'All',
   tabEval: 'Eval',
   tabPerf: 'Perf',
@@ -23,6 +23,15 @@ export const en: Dict = {
   samples: 'samples',
   runs: 'runs',
   datasets: 'datasets',
+
+  // Zone 2 — scoped evaluation history
+  trendTitle: 'Evaluation Trend',
+  trendDescription: 'Compares the primary metric only across runs of the same model and benchmark.',
+  trendModel: 'Trend model',
+  trendBenchmark: 'Trend benchmark',
+  trendEmpty: 'Run the same model and benchmark at least twice to see a trend.',
+  trendRunCount: '${count} runs',
+  trendPrevious: '${delta} vs previous',
 
   // Shared
   noReportsHint: 'Enter an output directory and click Scan to discover reports',
@@ -45,6 +54,14 @@ export const zh: Dict = {
   samples: '条样本',
   runs: '次运行',
   datasets: '个数据集',
+
+  trendTitle: '评测趋势',
+  trendDescription: '仅比较同一模型、同一基准多次运行的主指标。',
+  trendModel: '趋势模型',
+  trendBenchmark: '趋势基准',
+  trendEmpty: '同一模型和基准至少运行两次后才会显示趋势。',
+  trendRunCount: '${count} 次运行',
+  trendPrevious: '较上次 ${delta}',
 
   noReportsHint: '输入输出目录路径并点击扫描来发现报告',
   welcomeTitle: '欢迎使用 EvalScope',
