@@ -137,8 +137,8 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     request = api_plugin.build_request(messages)
     if request is None:
         logger.error(
-            'Failed to build the test request. '
-            'Please check your --query-template and --tokenizer-path settings.'
+            f'{type(api_plugin).__name__}.build_request() returned None, so the connection test '
+            'has nothing to send. Please check the request options this API plugin requires.'
         )
         return False
 

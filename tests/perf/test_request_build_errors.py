@@ -86,11 +86,16 @@ class TestConnectionDoesNotRetryBuildErrors:
         # The buggy version slept 10s per retry until total_timeout.
         assert time.perf_counter() - start < 5
 
-    def test_none_request_aborts_immediately(self):
+    def test_none_request_aborts_immediately(self, monkeypatch):
         """Plugins that return None for unusable input must not be retried either."""
         args = _args()
         plugin = OpenaiPlugin(args)
         plugin.build_request = lambda messages, param=None: None
+        errors = []
+        # evalscope's logger does not propagate to caplog, so capture the call directly.
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
         start = time.perf_counter()
         assert asyncio.run(http_client.test_connection(args, plugin)) is False
         assert time.perf_counter() - start < 5
+        # The message names the plugin rather than guessing OpenAI-specific options.
+        assert 'OpenaiPlugin' in errors[0]
