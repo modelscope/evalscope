@@ -8,15 +8,25 @@ import {
   Play,
   Square,
 } from 'lucide-react'
-import type { ChatMessage, AgentTrace, AgentTraceEvent, ToolCall } from '@/api/types'
+import type { ChatMessage, AgentTrace, AgentTraceEvent } from '@/api/types'
 import { useLocale } from '@/contexts/LocaleContext'
 import { fmtMs } from '@/utils/formatUtils'
 import { contentToText } from '@/domain/chat/messageText'
 import { type Role } from './roleConfig'
 import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents'
-import { type ToolCallEntry, ToolCallsGroup } from './ToolCallComponents'
+import { ToolCallsGroup } from './ToolCallComponents'
 import { bubbleAccent } from '@/components/ui/ChatBubble'
 import VirtualList from '@/components/ui/VirtualList'
+import {
+  buildToolMessageIndex,
+  buildTraceContext,
+  isEnvironmentAttachment,
+  resetMessageIdsOf,
+  resolveResidualTools,
+  resolveToolCalls,
+  type StepGroup,
+  type TraceContext,
+} from '@/domain/trace/stepGroups'
 
 /* ─── EnvExecRow ───────────────────────────────────────────── */
 
@@ -68,15 +78,6 @@ export function NudgeRow({ msg }: { msg: ChatMessage }) {
 
 /* ─── StructuredMessages ───────────────────────────────────── */
 
-function toolCallIds(message: ChatMessage): string[] {
-  if (Array.isArray(message.tool_call_id)) return message.tool_call_id
-  return message.tool_call_id ? [message.tool_call_id] : []
-}
-
-function isEnvironmentAttachment(message: ChatMessage): boolean {
-  return message.role === 'user' && toolCallIds(message).length > 0
-}
-
 export function StructuredMessages({
   messages,
   highlightId,
@@ -84,13 +85,9 @@ export function StructuredMessages({
   messages: ChatMessage[]
   highlightId?: string
 }) {
-  // Build id->message for tool_call_id resolution
-  const byToolCallId = new Map<string, ChatMessage>()
-  for (const m of messages) {
-    if (m.role === 'tool' && typeof m.tool_call_id === 'string') {
-      byToolCallId.set(m.tool_call_id, m)
-    }
-  }
+  // Link tool calls to their results through the same index the traced timeline
+  // uses, so a call resolves identically whether or not a trace is present.
+  const toolMsgByCallId = buildToolMessageIndex(messages)
 
   // Each entry pairs a stable key with its rendered node so the list can be
   // windowed by VirtualList (only visible rows mount) for long traces.
@@ -134,16 +131,10 @@ export function StructuredMessages({
       ) : undefined
 
       // Build tool call entries (resolve results via tool_call_id)
-      const entries: ToolCallEntry[] = (msg.tool_calls ?? []).map(tc => {
-        const result = byToolCallId.get(tc.id)
-        if (result?.id) consumedToolIds.add(result.id)
-        return {
-          id: tc.id,
-          function: tc.function,
-          arguments: tc.arguments,
-          result,
-        }
-      })
+      const entries = resolveToolCalls(msg, [], { toolMsgByCallId })
+      for (const entry of entries) {
+        if (entry.result?.id) consumedToolIds.add(entry.result.id)
+      }
 
       rendered.push({
         key: `assistant-${idx}`,
@@ -194,157 +185,6 @@ export function StructuredMessages({
       estimateHeight={140}
     />
   )
-}
-
-/* ─── StepGroup / buildStepGroups ─────────────────────────── */
-
-export interface StepGroup {
-  step: number
-  /** Pre-agent messages (system/user) — only for step -1. */
-  preAgentMessages: ChatMessage[]
-  assistant: ChatMessage | null
-  tools: ChatMessage[]
-  traceEvents: AgentTraceEvent[]
-  totalLatencyMs: number | null
-}
-
-/** Cross-step linkage built once from the full message list and trace.
- *
- * Some recorders (e.g. the Claude Code external bridge) emit a tool_call on
- * step N but the matching tool_result on step N+1 (when observed in the next
- * request). Per-step lookups would then fail to inline the result under the
- * call. These globals let StepBlock resolve results regardless of the step
- * the result event landed on.
- */
-export interface TraceContext {
-  /** All tool messages indexed by their tool_call_id. */
-  toolMsgByCallId: Map<string, ChatMessage>
-  /** All tool_result trace events indexed by payload.id (= tool_call id). */
-  toolResultEvByCallId: Map<string, AgentTraceEvent>
-  /** Tool message ids already consumed as a result inside some assistant's
-   *  tool_calls — should be excluded from any step's residualTools. */
-  consumedToolMsgIds: Set<string>
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function buildTraceContext(
-  messages: ChatMessage[],
-  trace: AgentTrace,
-  groups: StepGroup[]
-): TraceContext {
-  const toolMsgByCallId = new Map<string, ChatMessage>()
-  for (const m of messages) {
-    if (m.role === 'tool' && typeof m.tool_call_id === 'string') {
-      toolMsgByCallId.set(m.tool_call_id, m)
-    }
-  }
-
-  const toolResultEvByCallId = new Map<string, AgentTraceEvent>()
-  for (const ev of trace.events) {
-    if (ev.type !== 'tool_result') continue
-    const id = typeof ev.payload?.id === 'string' ? ev.payload.id : null
-    if (id) toolResultEvByCallId.set(id, ev)
-  }
-
-  const consumedToolMsgIds = new Set<string>()
-  for (const g of groups) {
-    if (!g.assistant?.tool_calls) continue
-    for (const tc of g.assistant.tool_calls) {
-      const tm = toolMsgByCallId.get(tc.id)
-      if (tm?.id) consumedToolMsgIds.add(tm.id)
-    }
-  }
-
-  return { toolMsgByCallId, toolResultEvByCallId, consumedToolMsgIds }
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function buildStepGroups(messages: ChatMessage[], trace: AgentTrace): StepGroup[] {
-  const messageById = new Map<string, ChatMessage>()
-  for (const m of messages) if (m.id) messageById.set(m.id, m)
-
-  const stepEvents = new Map<number, AgentTraceEvent[]>()
-  for (const ev of trace.events) {
-    if (!stepEvents.has(ev.step)) stepEvents.set(ev.step, [])
-    stepEvents.get(ev.step)!.push(ev)
-  }
-
-  const referencedIds = new Set<string>()
-  for (const ev of trace.events) if (ev.message_id) referencedIds.add(ev.message_id)
-
-  const preAgent: ChatMessage[] = []
-  for (const m of messages) {
-    if (m.id && referencedIds.has(m.id)) break
-    preAgent.push(m)
-  }
-
-  const groups: StepGroup[] = []
-  if (preAgent.length > 0) {
-    groups.push({
-      step: -1,
-      preAgentMessages: preAgent,
-      assistant: null,
-      tools: [],
-      traceEvents: [],
-      totalLatencyMs: null,
-    })
-  }
-
-  const sortedSteps = Array.from(stepEvents.keys()).sort((a, b) => a - b)
-  for (const step of sortedSteps) {
-    const events = stepEvents.get(step)!
-    let assistant: ChatMessage | null = null
-    const tools: ChatMessage[] = []
-    const seenToolIds = new Set<string>()
-    for (const ev of events) {
-      if (!ev.message_id) continue
-      const msg = messageById.get(ev.message_id)
-      if (!msg) continue
-      if (msg.role === 'assistant') {
-        if (!assistant) assistant = msg
-      } else if (msg.role === 'tool' || msg.role === 'user') {
-        if (msg.id && !seenToolIds.has(msg.id)) {
-          seenToolIds.add(msg.id)
-          tools.push(msg)
-        }
-      }
-    }
-    let totalLatency: number | null = null
-    for (const e of events) {
-      if (e.latency_ms != null) totalLatency = (totalLatency ?? 0) + e.latency_ms
-    }
-    groups.push({
-      step,
-      preAgentMessages: [],
-      assistant,
-      tools,
-      traceEvents: events,
-      totalLatencyMs: totalLatency,
-    })
-  }
-
-  const groupByStep = new Map(groups.filter(group => group.step >= 0).map(group => [group.step, group]))
-  const stepByToolCallId = new Map<string, number>()
-  for (const [step, events] of stepEvents) {
-    for (const event of events) {
-      const callId = event.type === 'tool_call' && typeof event.payload.id === 'string'
-        ? event.payload.id
-        : null
-      if (callId) stepByToolCallId.set(callId, step)
-    }
-  }
-  for (const message of messages) {
-    if (!isEnvironmentAttachment(message)) continue
-    const step = toolCallIds(message)
-      .map(callId => stepByToolCallId.get(callId))
-      .find(candidate => candidate !== undefined)
-    if (step === undefined) continue
-    const group = groupByStep.get(step)
-    if (!group || group.tools.some(tool => tool.id === message.id)) continue
-    group.tools.push(message)
-  }
-
-  return groups
 }
 
 /* ─── TraceEventPill ───────────────────────────────────────── */
@@ -403,7 +243,8 @@ export function StepBlock({
   highlightId?: string
   highlighted: boolean
   onStepClick: (step: number) => void
-  ctx?: TraceContext
+  /** Cross-step linkage; required so results are resolved the same way on every step. */
+  ctx: TraceContext
 }) {
   const { t } = useLocale()
 
@@ -435,14 +276,9 @@ export function StepBlock({
 
   const modelGen = group.traceEvents.find(e => e.type === 'model_generate')
   const toolCallEvents = group.traceEvents.filter(e => e.type === 'tool_call')
-  const toolResultEvents = group.traceEvents.filter(e => e.type === 'tool_result')
   const envExecs = group.traceEvents.filter(e => e.type === 'env_exec')
   const loopErrors = group.traceEvents.filter(e => e.type === 'error')
-  const resetMessageIds = new Set(
-    group.traceEvents
-      .filter(e => e.type === 'env_reset' && e.message_id)
-      .map(e => e.message_id as string)
-  )
+  const resetMessageIds = resetMessageIdsOf(group)
   const resetMessages = group.tools.filter(m => m.id && resetMessageIds.has(m.id))
 
   // Build assistant header perf info from model_generate event (preferred)
@@ -469,78 +305,8 @@ export function StepBlock({
     />
   )
 
-  // Build ToolCallEntry[] — prefer assistant.tool_calls, fallback to tool_call events.
-  // Use global ctx maps when available so results emitted on a different step
-  // (e.g. Claude Code bridge emits tool_result on step+1) still get linked.
-  const toolResultByCallId = ctx?.toolResultEvByCallId ?? (() => {
-    const m = new Map<string, AgentTraceEvent>()
-    for (const ev of toolResultEvents) {
-      const id = typeof ev.payload.id === 'string' ? ev.payload.id : null
-      if (id) m.set(id, ev)
-    }
-    return m
-  })()
-
-  const toolMsgByCallId = ctx?.toolMsgByCallId ?? (() => {
-    const m = new Map<string, ChatMessage>()
-    for (const tm of group.tools) {
-      if (tm.role === 'tool' && typeof tm.tool_call_id === 'string') {
-        m.set(tm.tool_call_id, tm)
-      }
-    }
-    // Also link via trace tool_result events (for mini-swe where observations
-    // are ChatMessageUser without tool_call_id).
-    for (const ev of toolResultEvents) {
-      const callId = typeof ev.payload.id === 'string' ? ev.payload.id : null
-      if (callId && !m.has(callId) && ev.message_id) {
-        const msg = group.tools.find(t => t.id === ev.message_id)
-        if (msg) m.set(callId, msg)
-      }
-    }
-    return m
-  })()
-
-  let entries: ToolCallEntry[] = []
-  if (group.assistant?.tool_calls && group.assistant.tool_calls.length > 0) {
-    entries = group.assistant.tool_calls.map((tc: ToolCall) => {
-      const resultEv = toolResultByCallId.get(tc.id)
-      return {
-        id: tc.id,
-        function: tc.function,
-        arguments: tc.arguments,
-        result: toolMsgByCallId.get(tc.id),
-        latencyMs: resultEv?.latency_ms ?? null,
-      }
-    })
-  } else if (toolCallEvents.length > 0) {
-    // Fallback: reconstruct from tool_call events
-    entries = toolCallEvents.map(ev => {
-      const id = typeof ev.payload.id === 'string' ? ev.payload.id : ''
-      const name = typeof ev.payload.name === 'string' ? ev.payload.name : ''
-      const args = ev.payload.arguments
-      const resultEv = toolResultByCallId.get(id)
-      return {
-        id,
-        function: name,
-        arguments: args,
-        result: id ? toolMsgByCallId.get(id) : undefined,
-        latencyMs: resultEv?.latency_ms ?? null,
-      }
-    })
-  }
-
-  // Residual tool messages not linked to any call (rare; textual_block mode).
-  // Exclude this step's own linked results AND any tool message consumed by
-  // another step's assistant.tool_calls (cross-step tool_result placement).
-  const linkedToolIds = new Set<string>()
-  for (const e of entries) if (e.result?.id) linkedToolIds.add(e.result.id)
-  const residualTools = group.tools.filter(m => {
-    if (m.id && resetMessageIds.has(m.id)) return false
-    if (!m.id) return true
-    if (linkedToolIds.has(m.id)) return false
-    if (ctx?.consumedToolMsgIds.has(m.id)) return false
-    return true
-  })
+  const entries = resolveToolCalls(group.assistant, toolCallEvents, ctx)
+  const residualTools = resolveResidualTools(group, entries, resetMessageIds, ctx.consumedToolMsgIds)
 
   return (
     <div
