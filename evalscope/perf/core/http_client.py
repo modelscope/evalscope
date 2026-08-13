@@ -160,7 +160,7 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
             if output.status_code is not None and 400 <= output.status_code < 500:
                 logger.error(
                     f'Non-retryable error (HTTP {output.status_code}): {output.error}. '
-                    'Please check your --url and --api settings.'
+                    'Please check your --model, --url and --api settings.'
                 )
                 return False
             logger.warning(f'Retrying... <{output.error}>')
