@@ -9,7 +9,6 @@ import { listPerfRuns } from '@/api/perf'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
 import { formatMetric } from '@/domain/metric'
 import type { MetricSemantics } from '@/domain/metric'
-import { buildTrendSeries } from '@/domain/report/trendSeries'
 import Skeleton from '@/components/ui/Skeleton'
 import KpiStrip, { KPI_HERO_CELL, KPI_HERO_CONTAINER, type KpiItem } from '@/components/ui/KpiStrip'
 import Tabs from '@/components/ui/Tabs'
@@ -18,7 +17,6 @@ import Pagination from '@/components/ui/Pagination'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import ScopedTrend from '@/components/dashboard/ScopedTrend'
 import { formatTimestamp } from '@/utils/formatUtils'
 
 const RECENT_LIMIT = 15
@@ -45,36 +43,11 @@ export default function DashboardPage() {
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
-  const [trendModel, setTrendModel] = useState('')
-  const [trendBenchmark, setTrendBenchmark] = useState('')
 
   const overview = useAsyncResource(
     async (signal) => {
       const [evalResult, perfResult] = await Promise.allSettled([
-        (async () => {
-          const first = await listReports({
-            rootPath,
-            page: 1,
-            pageSize: 100,
-            sortBy: 'time',
-            sortOrder: 'desc',
-            signal,
-          })
-          const reports = [...first.reports]
-          for (let page = 2; reports.length < first.total; page += 1) {
-            const response = await listReports({
-              rootPath,
-              page,
-              pageSize: 100,
-              sortBy: 'time',
-              sortOrder: 'desc',
-              signal,
-            })
-            if (response.reports.length === 0) break
-            reports.push(...response.reports)
-          }
-          return { ...first, reports }
-        })(),
+        listReports({ rootPath, page: 1, pageSize: 100, sortBy: 'time', sortOrder: 'desc', signal }),
         listPerfRuns(rootPath, signal),
       ])
       const failure = evalResult.status === 'rejected'
@@ -95,28 +68,6 @@ export default function DashboardPage() {
 
   const reports = overview.data?.reports ?? EMPTY_REPORTS
   const perfRuns = overview.data?.perfRuns ?? EMPTY_PERF_RUNS
-  const trends = useMemo(() => buildTrendSeries(reports), [reports])
-  const trendModels = useMemo(() => {
-    const labels = new Map<string, string>()
-    trends.forEach((series) => labels.set(series.modelId, series.modelLabel))
-    return [...labels.entries()].map(([value, label]) => ({ value, label }))
-  }, [trends])
-  const activeTrendModel = trendModels.some((option) => option.value === trendModel)
-    ? trendModel
-    : trendModels[0]?.value ?? ''
-  const trendBenchmarks = useMemo(() => {
-    const labels = new Map<string, string>()
-    trends
-      .filter((series) => series.modelId === activeTrendModel)
-      .forEach((series) => labels.set(series.benchmark, series.benchmarkLabel))
-    return [...labels.entries()].map(([value, label]) => ({ value, label }))
-  }, [activeTrendModel, trends])
-  const activeTrendBenchmark = trendBenchmarks.some((option) => option.value === trendBenchmark)
-    ? trendBenchmark
-    : trendBenchmarks[0]?.value ?? ''
-  const activeTrend = trends.find(
-    (series) => series.modelId === activeTrendModel && series.benchmark === activeTrendBenchmark,
-  )
   const items = useMemo<RunItem[]>(() => [
     ...reports.map((report): RunItem => ({ kind: 'eval', timestamp: report.timestamp || '', report })),
     ...perfRuns.map((run): RunItem => ({ kind: 'perf', timestamp: run.timestamp || '', run })),
@@ -202,50 +153,6 @@ export default function DashboardPage() {
         <ErrorAlert className="rounded-[var(--radius-sm)]">{overview.error || overview.data?.failure}</ErrorAlert>
       )}
       {overview.loading && !scanned ? <KpiSkeleton /> : <KpiStrip items={kpis} />}
-      {!overview.loading && scanned && reports.length > 0 && (
-        <section className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="type-title-sm text-[var(--text)]">{t('dashboard.trendTitle')}</h2>
-              <p className="mt-1 type-body-xs text-[var(--text-muted)]">{t('dashboard.trendDescription')}</p>
-            </div>
-            {activeTrend && (
-              <div className="flex gap-2">
-                <select
-                  aria-label={t('dashboard.trendModel')}
-                  value={activeTrendModel}
-                  onChange={(event) => {
-                    setTrendModel(event.target.value)
-                    setTrendBenchmark('')
-                  }}
-                  className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 type-body-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
-                >
-                  {trendModels.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                <select
-                  aria-label={t('dashboard.trendBenchmark')}
-                  value={activeTrendBenchmark}
-                  onChange={(event) => setTrendBenchmark(event.target.value)}
-                  className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 type-body-sm text-[var(--text)] outline-none focus:border-[var(--accent)]"
-                >
-                  {trendBenchmarks.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          {activeTrend ? (
-            <ScopedTrend series={activeTrend} />
-          ) : (
-            <div className="py-8 text-center type-body-sm text-[var(--text-muted)]">
-              {t('dashboard.trendEmpty')}
-            </div>
-          )}
-        </section>
-      )}
       {overview.loading && !scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
           <Skeleton lines={8} height={14} />
