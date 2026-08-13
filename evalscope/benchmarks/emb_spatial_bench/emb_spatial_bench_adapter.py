@@ -36,7 +36,7 @@ perspective: **close**, **far**, **above**, **under**, **left**, and **right**.
 ## Evaluation Notes
 
 - Default evaluation uses the **embspatial_bench.json** file (3,640 samples)
-- Primary metric: **Accuracy** (acc)
+- Primary metric: **Accuracy** (`accuracy`)
 - Answer indices are 0-based in the dataset (0 → A, 1 → B, 2 → C, 3 → D)
 - Images are stored as JPEG base64 strings in the JSON file
 - Subsets are organized by the `relation` field (6 spatial categories)

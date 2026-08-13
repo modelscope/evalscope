@@ -36,7 +36,7 @@ AGIEval 是一个以人类为中心的基准测试，旨在评估基础模型在
 | **数据集ID** | [opencompass/agieval](https://modelscope.cn/datasets/opencompass/agieval/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **训练划分** | `dev` |

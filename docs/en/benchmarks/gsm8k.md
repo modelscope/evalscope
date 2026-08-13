@@ -36,7 +36,7 @@ GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically di
 | **Dataset ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2110.14168) |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 4-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

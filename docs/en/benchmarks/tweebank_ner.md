@@ -35,7 +35,7 @@ Tweebank-NER is an English Twitter corpus created by annotating the syntacticall
 | **Dataset ID** | [extraordinarylab/tweebank-ner](https://modelscope.cn/datasets/extraordinarylab/tweebank-ner/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

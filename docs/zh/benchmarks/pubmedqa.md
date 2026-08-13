@@ -34,7 +34,7 @@ PubMedQA 是一个生物医学问答数据集，旨在评估模型在生物医�
 | **数据集ID** | [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio`, `maybe_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio`, `maybe_ratio` |
 | **默认示例数量** | 0-shot |
 | **评估分割** | `test` |
 | **聚合方式** | `f1` |

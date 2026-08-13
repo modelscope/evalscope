@@ -42,7 +42,7 @@ SWE-bench Lite Agentic 是 SWE-bench Lite 的代理模式（agentic-mode）评�
 | **数据集ID** | [princeton-nlp/SWE-bench_Lite](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Lite/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

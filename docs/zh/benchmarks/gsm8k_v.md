@@ -35,7 +35,7 @@ GSM8K-V 是一个纯视觉的多图像数学推理基准测试，它将每个 GS
 | **数据集ID** | [evalscope/GSM8K-V](https://modelscope.cn/datasets/evalscope/GSM8K-V/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `train` |
 

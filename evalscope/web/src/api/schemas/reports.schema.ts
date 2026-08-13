@@ -8,6 +8,15 @@
  * Covers: LoadReportResponse, ListReportsResponse, PredictionsResponse.
  */
 import { z } from 'zod'
+import { metricSemanticsSchema } from '@/domain/metric/MetricSemantics'
+
+export { metricSemanticsSchema, valueRangeSchema } from '@/domain/metric/MetricSemantics'
+
+export const metricIdentitySchema = z.object({
+  name: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  aggregation: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  dimensions: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+})
 
 // ------------------------------------------------------------------ //
 // Report score tree                                                   //
@@ -30,10 +39,12 @@ export const categoryDataSchema = z.object({
 
 /** Runtime contract for a metric score tree. */
 export const metricDataSchema = z.object({
-  name: z.string(),
+  identity: metricIdentitySchema,
+  legacy_name: z.string().nullable().optional(),
   num: z.number(),
   score: z.number(),
   categories: z.array(categoryDataSchema),
+  semantics: metricSemanticsSchema,
 })
 
 // ------------------------------------------------------------------ //
@@ -79,19 +90,23 @@ export const perfMetricsSummarySchema = z.object({
 /** Runtime contract for embedded performance metrics. */
 export const perfMetricsSchema = z.object({
   summary: perfMetricsSummarySchema,
+  // Field key -> persisted semantics. Report v2 always carries this map.
+  metric_semantics: z.record(z.string(), metricSemanticsSchema),
 })
 
 /** Runtime contract for one dataset report. */
 export const reportDataSchema = z.object({
+  schema_version: z.literal(2),
   name: z.string(),
   dataset_name: z.string(),
+  dataset_pretty_name: z.string().optional(),
   model_name: z.string(),
-  score: z.number(),
   analysis: z.string(),
   metrics: z.array(metricDataSchema),
   // Reports created without collect_perf persist this field as null rather
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
+  primary_metric_identity: metricIdentitySchema.nullable(),
 })
 
 /** Runtime contract for a report detail response. */
@@ -105,16 +120,25 @@ export const loadReportResponseSchema = z.object({
 // Report list / summary                                               //
 // ------------------------------------------------------------------ //
 
+/** Runtime contract for one dataset's primary metric in a report-list item. */
+export const primaryMetricRefSchema = z.object({
+  dataset_name: z.string(),
+  dataset_pretty_name: z.string().optional(),
+  identity: metricIdentitySchema,
+  score: z.number(),
+  semantics: metricSemanticsSchema,
+})
+
 /** Runtime contract for one report-list item. */
 export const reportSummarySchema = z.object({
-  name: z.string(),
+  run_id: z.string(),
+  model_id: z.string(),
   model_name: z.string(),
   dataset_name: z.string(),
-  score: z.number(),
-  metric_name: z.string().optional(),
-  dataset_scores: z.record(z.string(), z.number()).optional(),
+  dataset_pretty_name: z.string().optional(),
   num_samples: z.number(),
   timestamp: z.string(),
+  primary_metrics: z.array(primaryMetricRefSchema),
 })
 
 /** Runtime contract for a paginated report list. */
@@ -244,14 +268,11 @@ export const predictionsResponseSchema = z.object({
   predictions: z.array(predictionRowSchema),
 })
 
-export const scanResponseSchema = z.object({
-  reports: z.array(z.string()),
-})
-
-/** Runtime contract for DELETE /api/v1/reports/report. */
+/** Runtime contract for DELETE /api/v1/reports/runs/{run_id}/models/{model_id}. */
 export const deleteReportResponseSchema = z.object({
   success: z.boolean(),
-  report_name: z.string(),
+  run_id: z.string(),
+  model_id: z.string(),
 })
 
 export const analysisResponseSchema = z.object({
@@ -275,6 +296,5 @@ export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
-export type ScanResponse = z.infer<typeof scanResponseSchema>
 export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>

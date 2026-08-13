@@ -41,7 +41,7 @@ recognition, and visual tracking.
 | **Dataset ID** | [evalscope/BabyVision](https://modelscope.cn/datasets/evalscope/BabyVision/summary) |
 | **Paper** | N/A |
 | **Tags** | `MultiModal`, `QA`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

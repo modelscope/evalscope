@@ -34,7 +34,7 @@ DocMath-Eval 是一个专注于特定领域内数值推理的综合性基准测�
 | **数据集ID** | [yale-nlp/DocMath-Eval](https://modelscope.cn/datasets/yale-nlp/DocMath-Eval/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

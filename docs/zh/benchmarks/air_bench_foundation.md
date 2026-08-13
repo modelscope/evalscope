@@ -48,7 +48,7 @@ D. {choice_d}
 | **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

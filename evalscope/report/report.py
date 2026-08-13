@@ -2,10 +2,11 @@ import json
 import os
 import pandas as pd
 from collections import defaultdict
-from pydantic import BaseModel, Field, computed_field, field_serializer, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
+from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
@@ -108,14 +109,28 @@ class Category(BaseModel):
 
 
 class Metric(BaseModel):
-    name: str = 'default_metric'
+    model_config = ConfigDict(extra='forbid')
+
+    identity: MetricIdentity
+    legacy_name: Optional[str] = None
     num: int = 0
     score: float = 0.0
     macro_score: float = 0.0
     categories: List[Category] = Field(default_factory=list)
 
+    semantics: MetricSemantics
+    """Persisted display contract. Historical reports are resolved once during migration."""
+
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_v1_shape(cls, data: Any) -> Any:
+        from evalscope.metrics.semantics.migration import migrate_legacy_metric_payload
+        return migrate_legacy_metric_payload(data)
+
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
+        if not self.categories:
+            return self
         # Categories whose subsets are all is_aggregate end up with num=0; skip them
         # so they don't drag down macro_mean.
         real = [c for c in self.categories if c.num > 0]
@@ -123,6 +138,11 @@ class Metric(BaseModel):
         self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
+
+    @property
+    def name(self) -> str:
+        """Compatibility display key; v2 serialization stores ``identity`` instead."""
+        return self.legacy_name or self.identity.key
 
 
 class ReportKey:
@@ -134,49 +154,83 @@ class ReportKey:
     subset_name = 'Subset'
     num = 'Num'
     score = 'Score'
+    raw_score = 'Raw Score'
+    display_score = 'Display Score'
     overall_score = 'OVERALL'
 
 
 class Report(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    schema_version: int = 2
     name: str = 'default_report'
     dataset_name: str = 'default_dataset'
     dataset_pretty_name: str = ''
     dataset_description: str = ''
     model_name: str = 'default_model'
-    score: float = 0.0
     metrics: List[Metric] = Field(default_factory=list)
     analysis: str = 'N/A'
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
+    primary_metric_identity: Optional[MetricIdentity] = None
 
-    model_config = {'ignored_types': ()}
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_v1_shape(cls, data: Any) -> Any:
+        from evalscope.metrics.semantics.migration import migrate_legacy_report_payload
+        return migrate_legacy_report_payload(data)
 
     @model_validator(mode='after')
-    def _set_score(self) -> Self:
-        if self.metrics:
-            self.score = self.metrics[0].score  # NOTE: only use the first metric by default
+    def _validate_v2(self) -> Self:
+        if self.schema_version != 2:
+            raise ValueError(f'unsupported report schema_version={self.schema_version}')
+        if self.primary_metric_identity is not None:
+            matches = [metric for metric in self.metrics if metric.identity == self.primary_metric_identity]
+            if len(matches) != 1:
+                raise ValueError('primary_metric_identity must match exactly one report metric')
+            if matches[0].semantics.kind is MetricKind.DIAGNOSTIC:
+                raise ValueError('primary_metric_identity must not reference a diagnostic metric')
         return self
+
+    def _find_primary_metric(self) -> Optional[Metric]:
+        """Return the metric identified by the persisted primary identity."""
+        if self.primary_metric_identity is None:
+            return None
+        return next((metric for metric in self.metrics if metric.identity == self.primary_metric_identity), None)
 
     @computed_field
     @property
     def num(self) -> int:
-        """Total sample count derived from the first metric's subsets.
+        """Total sample count derived from one metric's subsets.
 
-        Using the first metric avoids double-counting datasets that have
-        multiple metrics over the same sample set (e.g. multi_if has 12
-        metrics all evaluated on the same 6 samples).
+        Counting a single metric avoids double-counting datasets that evaluate several metrics over
+        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Any one
+        metric satisfies that, so a report whose primary metric could not be resolved still reports
+        its real sample count instead of zero.
         """
-        first = self.metrics[0] if self.metrics else None
-        if first is None:
+        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        if metric is None:
             return 0
-        return sum(s.num for c in first.categories for s in c.subsets if not s.is_aggregate)
+        return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
 
     @property
     def primary_metric(self) -> Optional[Metric]:
-        """Return the explicit overall metric when available, otherwise the first metric."""
-        if not self.metrics:
-            return None
-        return next((metric for metric in self.metrics if metric.name.lower() == 'overall'), self.metrics[0])
+        """The metric carrying this report's conclusion, or ``None`` when it has no metric.
+
+        A sole scored metric may be selected implicitly during generation; report reads use only
+        the persisted identity and never fall back to list order.
+        """
+        return self._find_primary_metric()
+
+    @property
+    def score(self) -> float:
+        """Compatibility score derived from the primary or first available metric.
+
+        Report v2 serializes the structured metric list and primary identity instead of this
+        convenience value.
+        """
+        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        return metric.score if metric is not None else 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         # model_dump includes computed_field 'num' automatically
@@ -195,7 +249,19 @@ class Report(BaseModel):
     @classmethod
     def from_dict(cls, data: dict):
         # Pydantic handles nested model construction automatically via model_validate
-        return cls.model_validate(data)
+        is_v2 = data.get('schema_version') == 2
+        report = cls.model_validate(data, context={'migrating_v1': not is_v2})
+        # Resolve the semantics of every metric on the single read path, so the API, the HTML
+        # report, the CLI table and the DataFrame all see the same contract. Imported inside the
+        # function to keep `report` importable without pulling in the semantics catalog.
+        if is_v2:
+            return report
+        from evalscope.metrics.semantics import hydrate_report_semantics
+        report = hydrate_report_semantics(report)
+        if report.perf_metrics:
+            from evalscope.metrics.semantics import attach_perf_semantics
+            report.perf_metrics = attach_perf_semantics(report.perf_metrics)
+        return report
 
     @classmethod
     def from_json(cls, json_file: str):

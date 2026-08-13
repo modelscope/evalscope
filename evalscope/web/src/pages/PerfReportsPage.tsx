@@ -1,27 +1,36 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
-import { useLocale } from '@/contexts/LocaleContext'
-import { useReports } from '@/contexts/ReportsContext'
+import { useLocale, type Translate } from '@/contexts/LocaleContext'
+import { useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useBatchDelete } from '@/hooks/useBatchDelete'
+import { useScopedState } from '@/hooks/useScopedState'
 import { getPerfHistoryReportUrl, listPerfRuns, deletePerfRun } from '@/api/perf'
-import { isDomainError } from '@/api/errors'
 import type { PerfRunSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
 import EmptyStateSystem, { type ResolvedEmptyStateAction } from '@/components/common/EmptyStateSystem'
 import SearchInput from '@/components/ui/SearchInput'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import SelectionTray from '@/components/reports/SelectionTray'
-import { formatMetricByKey } from '@/domain/metric/registry'
-import { formatFull } from '@/utils/perf'
+import { formatMetric } from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
-import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/compareModel'
-
-/** Locale translate contract (kept minimal so cards can format metrics). */
-type Translate = (key: string, vars?: Record<string, string | number>) => string
+import { addToSelection, preserveSelectionAcrossReorder } from '@/domain/compare/selection'
 
 type SortKey = 'time' | 'rps' | 'latency'
+
+/** Sort options in display order, also the source of the segmented control. */
+const SORT_KEYS: readonly SortKey[] = ['time', 'rps', 'latency']
+
+/** Stable placeholders so an unresolved read keeps a single identity. */
+const EMPTY_RUNS: PerfRunSummary[] = []
+const EMPTY_SELECTION: string[] = []
+const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
 
 /** Format the avg input/output token pair as e.g. `10000→300t`; `—` when absent. */
 function formatIoTokens(run: PerfRunSummary): string {
@@ -38,12 +47,15 @@ function PerfRunCard({
   onToggle,
   onClick,
   t,
+  perfSemantics,
 }: {
   run: PerfRunSummary
   selected: boolean
   onToggle: () => void
   onClick: () => void
   t: Translate
+  /** Field key -> semantics, provided by the perf run list API. */
+  perfSemantics?: Record<string, MetricSemantics | undefined>
 }) {
   const identity = resolveProvider(run)
   const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
@@ -58,7 +70,7 @@ function PerfRunCard({
       <SelectionCheckbox
         checked={selected}
         onClick={onToggle}
-        label={`${t('performance.selectRun')}: ${run.model || run.dataset || '—'}`}
+        label={`${t('perf.archive.selectRun')}: ${run.model || run.dataset || '—'}`}
         className="shrink-0 cursor-pointer"
       />
       <button
@@ -74,20 +86,20 @@ function PerfRunCard({
             {identity.provider} · {identity.protocol}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {t('performance.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
+            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
-            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatFull(run.timestamp)}
+            {(run.dataset || '—')} · {formatIoTokens(run)} · {formatTimestamp(run.timestamp, 'seconds')}
           </span>
         </div>
         <div className="hidden min-w-0 flex-col gap-0.5 lg:flex">
           <span className="type-body-sm text-[var(--text)] break-words">{run.dataset || '—'}</span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {t('performance.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
+            {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
         </div>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] lg:block">
-          {formatFull(run.timestamp)}
+          {formatTimestamp(run.timestamp, 'seconds')}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
           {formatIoTokens(run)}
@@ -96,13 +108,13 @@ function PerfRunCard({
             value rounds identically here, in the detail view and per-run
             tables. */}
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('rps', run.best_rps, t).primary}
+          {formatMetric(run.best_rps, perfSemantics?.best_rps).primary}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('latency', run.best_latency, t).primary}
+          {formatMetric(run.best_latency, perfSemantics?.best_latency).primary}
         </span>
         <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text)] lg:block">
-          {formatMetricByKey('success_rate', run.success_rate, t).primary}
+          {formatMetric(run.success_rate, perfSemantics?.success_rate).primary}
         </span>
         <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
       </button>
@@ -114,7 +126,7 @@ export default function PerfReportsPage() {
   const { t } = useLocale()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { rootPath, scanToken, setRootPath } = useReports()
+  const { rootPath, scanToken, setRootPath } = useScan()
 
   // Sync root_path from URL on mount (e.g. when navigating back from a detail
   // or compare page, which carry the active root in their breadcrumbs).
@@ -123,38 +135,47 @@ export default function PerfReportsPage() {
     if (urlRoot) setRootPath(urlRoot)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [runs, setRuns] = useState<PerfRunSummary[]>([])
-  const [loading, setLoading] = useState(false)
-  const [hasLoaded, setHasLoaded] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  // Bumped to re-trigger the fetch effect when the user retries from an empty state.
-  const [reloadToken, setReloadToken] = useState(0)
+  const runsResource = useAsyncResource(
+    (signal) => listPerfRuns(rootPath, signal),
+    [rootPath, scanToken],
+    { enabled: Boolean(rootPath), fallbackMessage: t('common.loadError') },
+  )
+  const runs = runsResource.data?.runs ?? EMPTY_RUNS
+  const perfSemantics = runsResource.data?.metric_semantics ?? EMPTY_SEMANTICS
+  const loading = runsResource.loading
+  const hasLoaded = runsResource.data !== undefined || Boolean(runsResource.error)
 
   // List controls (symmetric with the Evaluations page).
   const [query, setQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortKey>('time')
 
   // Multi-select for cross-run comparison (page-local; independent of eval Compare).
-  const [selected, setSelected] = useState<string[]>([])
-  const [capNotice, setCapNotice] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const capTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const selectionScope = useRef('')
+  // Unbounded: the perf compare view overlays any number of runs, and the same
+  // selection drives batch delete.
+  // A new root or a rescan describes a different set of runs, so a selection made
+  // under the old scope is dropped by comparison rather than by an effect. A plain
+  // reload keeps the same scope, and with it the selection.
+  const selectionScope = `${rootPath}\0${scanToken}`
+  const [selected, setSelected] = useScopedState<string[]>(selectionScope, EMPTY_SELECTION)
+
+  const reloadRuns = runsResource.reload
+  const deletion = useBatchDelete<string>({
+    items: selected,
+    deleteItem: (path) => deletePerfRun(rootPath, path),
+    onSettled: setSelected,
+    reload: reloadRuns,
+    formatError: (msg) => t('reports.deleteFailed', { msg }),
+  })
+
+  // Deleting reports its own failure; a load failure comes from the resource.
+  const error = deletion.error ?? (runsResource.error || null)
 
   const toggleSelect = (path: string) => {
     if (selected.includes(path)) {
       setSelected(selected.filter((p) => p !== path))
       return
     }
-    const { next, rejected } = addToSelection(selected, path)
-    if (rejected) {
-      setCapNotice(true)
-      clearTimeout(capTimer.current)
-      capTimer.current = setTimeout(() => setCapNotice(false), 3000)
-      return
-    }
-    setSelected(next)
+    setSelected(addToSelection(selected, path))
   }
 
   const compareSelected = () => {
@@ -164,7 +185,7 @@ export default function PerfReportsPage() {
     const first = runs.find((r) => r.path === selected[0])
     const embedding = first?.is_embedding ? '1' : '0'
     navigate(
-      `/perf-compare?paths=${encodeURIComponent(selected.slice(0, 3).join(';'))}`
+      `/perf-compare?paths=${encodeURIComponent(selected.join(';'))}`
         + `&embedding=${embedding}&root_path=${encodeURIComponent(rootPath)}`,
     )
   }
@@ -176,80 +197,21 @@ export default function PerfReportsPage() {
     window.open(getPerfHistoryReportUrl(rootPath, selectedRun.path), '_blank')
   }
 
-  const requestDeleteSelected = () => {
-    if (selected.length === 0 || deleting) return
-    setConfirmOpen(true)
-  }
-
-  const confirmDeleteSelected = async () => {
-    if (deleting || selected.length === 0) return
-    setDeleting(true)
-    setError(null)
-    const deleted: string[] = []
-    try {
-      for (const path of selected) {
-        await deletePerfRun(rootPath, path)
-        deleted.push(path)
-      }
-      setSelected([])
-    } catch (err) {
-      setSelected((prev) => prev.filter((p) => !deleted.includes(p)))
-      setError(t('reports.deleteFailed', { msg: err instanceof Error ? err.message : String(err) }))
-    } finally {
-      setDeleting(false)
-      setConfirmOpen(false)
-      setReloadToken((n) => n + 1)
-    }
-  }
-
   const pendingDeleteItems = useMemo(
     () =>
       selected.map((path) => {
         const run = runs.find((r) => r.path === path)
         if (!run) return path
-        return `${run.model || run.dataset || path} · ${formatFull(run.timestamp)}`
+        return `${run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
       }),
     [selected, runs],
   )
-
-  useEffect(() => () => clearTimeout(capTimer.current), [])
-
-  useEffect(() => {
-    if (!rootPath) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await listPerfRuns(rootPath, controller.signal)
-        if (!controller.signal.aborted) {
-          setRuns(res.runs)
-          const nextScope = `${rootPath}\0${scanToken}`
-          if (selectionScope.current !== nextScope) {
-            selectionScope.current = nextScope
-            setSelected([])
-          }
-        }
-      } catch (err) {
-        if (!controller.signal.aborted && !(isDomainError(err) && err.kind === 'aborted')) {
-          setError(err instanceof Error ? err.message : 'Failed to load perf runs')
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-          setHasLoaded(true)
-        }
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [rootPath, scanToken, reloadToken])
 
   // In-view recovery: retry re-fetches, clear-filters resets the search query;
   // other empty-state actions (create task, browse benchmarks) navigate.
   const handleEmptyAction = useCallback((action: ResolvedEmptyStateAction) => {
     if (action.navigateTo === '#retry') {
-      setReloadToken((n) => n + 1)
+      reloadRuns()
       return true
     }
     if (action.navigateTo === '#clear-filters') {
@@ -257,7 +219,7 @@ export default function PerfReportsPage() {
       return true
     }
     return false
-  }, [])
+  }, [reloadRuns])
 
   const openRun = (run: PerfRunSummary) => {
     navigate(`/perf-report?path=${encodeURIComponent(run.path)}&root_path=${encodeURIComponent(rootPath)}`)
@@ -309,7 +271,7 @@ export default function PerfReportsPage() {
           <EmptyStateSystem
             reason={error ? 'load-error' : 'no-data'}
             context={{ view: 'performance', retryTo: '#retry' }}
-            hint={!error && hasLoaded ? t('performance.noRunsHint') : undefined}
+            hint={!error && hasLoaded ? t('perf.archive.noRunsHint') : undefined}
             onAction={handleEmptyAction}
           />
         </div>
@@ -320,25 +282,17 @@ export default function PerfReportsPage() {
             <SearchInput
               value={query}
               onChange={setQuery}
-              placeholder={t('performance.searchPlaceholder')}
+              placeholder={t('perf.archive.searchPlaceholder')}
               className="w-full sm:w-72 [&>input]:h-10 [&>input]:py-0"
             />
-            <div className="flex h-10 w-fit items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] p-0.5">
-              {(['time', 'rps', 'latency'] as const).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => setSortBy(k)}
-                  className={[
-                    'h-8 px-3 rounded-[var(--radius-sm)] type-body-xs transition-colors',
-                    sortBy === k
-                      ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text)]',
-                  ].join(' ')}
-                >
-                  {t(`performance.sort_${k}`)}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              options={SORT_KEYS.map((k) => ({ value: k, label: t(`perf.archive.sort_${k}`) }))}
+              value={sortBy}
+              onChange={setSortBy}
+              ariaLabel={t('perf.archive.sortLabel')}
+              size="sm"
+              className="h-10 w-fit"
+            />
           </div>
 
           {visibleRuns.length > 0 ? (
@@ -348,10 +302,10 @@ export default function PerfReportsPage() {
                 <span>{t('reports.columns.model')}</span>
                 <span>{t('reports.columns.dataset')}</span>
                 <span>{t('reports.columns.time')}</span>
-                <span>{t('performance.ioTokens')}</span>
-                <span>{t('performance.sort_rps')}</span>
-                <span>{t('performance.sort_latency')}</span>
-                <span>{t('performance.successColumn')}</span>
+                <span>{t('perf.archive.ioTokens')}</span>
+                <span>{t('perf.archive.sort_rps')}</span>
+                <span>{t('perf.archive.sort_latency')}</span>
+                <span>{t('perf.archive.successColumn')}</span>
                 <span />
               </div>
               <div className="divide-y divide-[var(--border)]">
@@ -363,6 +317,7 @@ export default function PerfReportsPage() {
                     onToggle={() => toggleSelect(run.path)}
                     onClick={() => openRun(run)}
                     t={t}
+                    perfSemantics={perfSemantics}
                   />
                 ))}
               </div>
@@ -377,26 +332,25 @@ export default function PerfReportsPage() {
 
           <SelectionTray
             count={orderedSelection.length}
-            capNotice={capNotice}
             canViewHtml={orderedSelection.length === 1 && !!selectedRun?.has_html}
             onViewHtml={viewSelectedHtml}
             onCompare={compareSelected}
             onClear={() => setSelected([])}
-            onDelete={requestDeleteSelected}
-            deleting={deleting}
+            onDelete={deletion.request}
+            deleting={deletion.deleting}
           />
 
           <ConfirmDialog
-            open={confirmOpen}
+            open={deletion.confirmOpen}
             danger
-            busy={deleting}
+            busy={deletion.deleting}
             title={t('reports.deleteConfirmTitle')}
             message={t('reports.deleteConfirm', { n: selected.length })}
             items={pendingDeleteItems}
             confirmLabel={t('reports.delete')}
             cancelLabel={t('common.cancel')}
-            onConfirm={confirmDeleteSelected}
-            onCancel={() => setConfirmOpen(false)}
+            onConfirm={deletion.confirm}
+            onCancel={deletion.cancel}
           />
         </>
       )}

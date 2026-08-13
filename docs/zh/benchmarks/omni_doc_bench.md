@@ -37,7 +37,7 @@
 | **数据集ID** | [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `text_block`, `display_formula`, `table`, `reading_order` |
+| **指标** | `text_block`, `display_formula`, `table`, `reading_order`, `normalized_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

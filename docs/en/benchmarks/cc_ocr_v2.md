@@ -48,7 +48,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
 | **Dataset ID** | [evalscope/CC-OCR-V2](https://modelscope.cn/datasets/evalscope/CC-OCR-V2/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2605.03903) |
 | **Tags** | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |
-| **Metrics** | `score` |
+| **Metrics** | `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

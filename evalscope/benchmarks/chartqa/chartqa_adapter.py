@@ -68,7 +68,6 @@ class ChartQAAdapter(VisionLanguageAdapter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.add_aggregation_name = False
         self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

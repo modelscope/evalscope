@@ -38,7 +38,7 @@ LongBench v2 是一个具有挑战性的基准测试，用于评估大语言模�
 | **数据集ID** | [ZhipuAI/LongBench-v2](https://modelscope.cn/datasets/ZhipuAI/LongBench-v2/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `MCQ`, `ReadingComprehension` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认Shots数** | 0-shot |
 | **评估划分** | `train` |
 

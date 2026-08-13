@@ -36,7 +36,7 @@ ToolBench-Static 是一个用于评估 AI 模型在静态评测环境下使用�
 | **数据集 ID** | [AI-ModelScope/ToolBench-Static](https://modelscope.cn/datasets/AI-ModelScope/ToolBench-Static/summary) |
 | **论文** | N/A |
 | **标签** | `FunctionCalling`, `Reasoning` |
-| **指标** | `Act.EM`, `Plan.EM`, `F1`, `HalluRate`, `Rouge-L` |
+| **指标** | `Act.EM`, `Plan.EM`, `f1`, `HalluRate`, `Rouge-L` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

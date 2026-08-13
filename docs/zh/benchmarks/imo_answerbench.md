@@ -35,7 +35,7 @@ IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题�
 | **数据集ID** | [evalscope/imo-answerbench](https://modelscope.cn/datasets/evalscope/imo-answerbench/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评测划分** | `train` |
 

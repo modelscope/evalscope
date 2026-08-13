@@ -33,7 +33,7 @@ MultiNERD 是一个大规模、多语言、多体裁的细粒度命名实体识�
 | **数据集ID** | [extraordinarylab/multi-nerd](https://modelscope.cn/datasets/extraordinarylab/multi-nerd/summary) |
 | **论文** | 无 |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

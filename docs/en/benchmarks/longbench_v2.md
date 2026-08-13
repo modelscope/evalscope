@@ -39,7 +39,7 @@ LongBench v2 is a challenging benchmark for evaluating long-context understandin
 | **Dataset ID** | [ZhipuAI/LongBench-v2](https://modelscope.cn/datasets/ZhipuAI/LongBench-v2/summary) |
 | **Paper** | N/A |
 | **Tags** | `LongContext`, `MCQ`, `ReadingComprehension` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

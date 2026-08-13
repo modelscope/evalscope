@@ -36,7 +36,7 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 | **Dataset ID** | [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

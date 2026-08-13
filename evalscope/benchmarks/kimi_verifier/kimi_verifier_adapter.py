@@ -78,6 +78,7 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
             'param_default_accept_rate',
             'inference_error_rate',
         ],
+        primary_metric='param_immutable_reject_rate',
         aggregation='mean',
         subset_list=list(_THINK_MODES),
         eval_split='test',
@@ -87,7 +88,6 @@ class KimiVerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     # --------------------------------------------------------------------
     # Synthetic dataset

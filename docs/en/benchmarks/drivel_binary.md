@@ -33,7 +33,7 @@ Drivelology Binary Classification evaluates models' ability to identify "drivelo
 | **Dataset ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **Paper** | N/A |
 | **Tags** | `Yes/No` |
-| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **Metrics** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `f1` |

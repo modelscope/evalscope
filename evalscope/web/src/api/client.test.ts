@@ -11,15 +11,13 @@ function mockJsonResponse(body: unknown): void {
   )
 }
 
-describe('apiValidated backend-null normalization', () => {
-  it('accepts explicit nulls for .optional() fields nested at any depth', async () => {
-    // Mirrors how the backend emits Optional[...] = None (Pydantic) and NaN
-    // cells (pandas to_json): explicit JSON null rather than an absent key.
+describe('apiValidated null handling', () => {
+  it('preserves explicit nulls when the schema declares them', async () => {
     const schema = z.object({
-      top: z.number().optional(),
+      top: z.number().nullish(),
       nested: z.object({
-        inner: z.string().optional(),
-        items: z.array(z.object({ token: z.number().optional() })),
+        inner: z.string().nullish(),
+        items: z.array(z.object({ token: z.number().nullish() })),
       }),
     })
     mockJsonResponse({
@@ -30,8 +28,8 @@ describe('apiValidated backend-null normalization', () => {
     const result = await apiValidated('/api/v1/test', schema)
 
     expect(result).toEqual({
-      top: undefined,
-      nested: { inner: undefined, items: [{ token: undefined }, { token: 7 }] },
+      top: null,
+      nested: { inner: null, items: [{ token: null }, { token: 7 }] },
     })
   })
 

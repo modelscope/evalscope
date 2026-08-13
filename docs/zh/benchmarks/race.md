@@ -36,7 +36,7 @@ RACE（ReAding Comprehension from Examinations）是一个大规模阅读理解�
 | **数据集ID** | [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 3-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

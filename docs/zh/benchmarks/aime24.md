@@ -35,7 +35,7 @@ AIME 2024（2024年美国邀请赛数学考试）是一个基于著名AIME竞赛
 | **数据集ID** | [evalscope/aime24](https://modelscope.cn/datasets/evalscope/aime24/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

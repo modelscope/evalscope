@@ -34,7 +34,7 @@ MicroVQA 是一个由专家精心策划的基准测试，用于评估人工智�
 | **数据集 ID** | [evalscope/MicroVQA](https://modelscope.cn/datasets/evalscope/MicroVQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `test` |
 

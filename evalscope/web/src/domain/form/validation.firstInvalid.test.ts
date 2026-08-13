@@ -3,16 +3,12 @@ import fc from 'fast-check'
 
 import { computeFirstInvalid } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 22: First-invalid focus order
-//
 // For any field DOM order and any subset of invalid field ids,
 // computeFirstInvalid must return the id of the earliest invalid field in DOM
 // order, and null when the invalid subset is empty. Invalid ids that are not
 // part of the DOM order are ignored, so the result always reflects DOM
 // ordering regardless of how the invalid set was built.
-//
-// Validates: Requirements 10.4
-describe('computeFirstInvalid (Property 22: first-invalid focus order)', () => {
+describe('computeFirstInvalid (first-invalid focus order)', () => {
   // A DOM order of unique field ids. `fc.uniqueArray` guarantees no duplicates
   // so the "first in DOM order" notion is unambiguous.
   const uniqueOrder = fc.uniqueArray(fc.string({ minLength: 1, maxLength: 8 }), {

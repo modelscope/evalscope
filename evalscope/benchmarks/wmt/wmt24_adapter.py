@@ -187,6 +187,7 @@ WMT2024++ is a comprehensive machine translation benchmark based on the WMT 2024
                 'model_id_or_path': 'evalscope/wmt22-comet-da',
             }
         }],
+        primary_metric='comet',
         few_shot_num=0,
         prompt_template=PROMPT_TEMPLATE,
     )

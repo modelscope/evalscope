@@ -36,7 +36,7 @@ BLINK 是一个用于评估多模态大语言模型（MLLMs）核心视觉感知
 | **数据集ID** | [evalscope/BLINK](https://modelscope.cn/datasets/evalscope/BLINK/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `val` |
 

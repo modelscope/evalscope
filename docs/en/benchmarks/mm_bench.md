@@ -37,7 +37,7 @@ MMBench is a systematically designed benchmark for evaluating vision-language mo
 | **Dataset ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `dev` |
 

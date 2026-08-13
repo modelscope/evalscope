@@ -37,7 +37,7 @@ GPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198
 | **Dataset ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

@@ -34,7 +34,7 @@ SIQA (Social Interaction QA) is a benchmark for evaluating social commonsense in
 | **Dataset ID** | [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Commonsense`, `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `validation` |
 

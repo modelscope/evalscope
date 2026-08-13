@@ -22,7 +22,14 @@
     "aggregation": "mean",
     "extra_params": {},
     "sandbox_config": {},
-    "category": "aigc"
+    "category": "aigc",
+    "primary_metric": {
+      "name": "pick_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    }
   },
   "statistics": {
     "total_samples": 160,
@@ -73,6 +80,6 @@
     "content_hash": "cf47139f4c78a6f8bb7c15ecfa1bb302",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.560824",
+  "updated_at": "2026-08-12T23:53:22.203268",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

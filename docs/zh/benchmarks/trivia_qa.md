@@ -37,7 +37,7 @@ TriviaQA 是一个大规模阅读理解数据集，包含超过 65 万个问题-
 | **数据集ID** | [evalscope/trivia_qa](https://modelscope.cn/datasets/evalscope/trivia_qa/summary) |
 | **论文** | N/A |
 | **标签** | `QA`, `ReadingComprehension` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 

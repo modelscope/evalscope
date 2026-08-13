@@ -110,7 +110,8 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
         metric_list=[
             'puzzle_acc', 'cell_acc', 'easy_puzzle_acc', 'hard_puzzle_acc', 'small_puzzle_acc', 'medium_puzzle_acc',
             'large_puzzle_acc', 'xl_puzzle_acc', 'avg_reason_lens', 'no_answer_num'
-        ]
+        ],
+        primary_metric='puzzle_acc',
     )
 )
 class ZebraLogicBenchAdapter(DefaultDataAdapter):

@@ -33,7 +33,7 @@ JNLPBA-Rare 数据集是 JNLPBA 测试集的一个专门子集，用于评估模
 | **数据集ID** | [extraordinarylab/jnlpba-rare](https://modelscope.cn/datasets/extraordinarylab/jnlpba-rare/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
 

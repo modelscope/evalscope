@@ -36,7 +36,7 @@ SWE-bench Lite 是 SWE-bench 的一个聚焦子集，包含来自 11 个热门 P
 | **数据集ID** | [princeton-nlp/SWE-bench_Lite](https://modelscope.cn/datasets/princeton-nlp/SWE-bench_Lite/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

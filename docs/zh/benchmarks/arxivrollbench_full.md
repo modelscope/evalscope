@@ -36,7 +36,7 @@ ArxivRollBench 是一个基于近期 arXiv 论文构建的滚动基准测试，�
 | **数据集ID** | [liangzid/arxivrollbench-full](https://modelscope.cn/datasets/liangzid/arxivrollbench-full/summary) |
 | **论文** | [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41098) |
 | **标签** | `Knowledge`, `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `train` |
 

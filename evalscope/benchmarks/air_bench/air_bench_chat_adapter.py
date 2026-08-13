@@ -93,7 +93,7 @@ The paper's **Mixed-audio = mean(speech_and_sound, speech_and_music)**.
 
 - The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.
 - To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository — disable it via `extra_params={'do_swap': False}` to halve judge cost.
-- Reported metric `gpt_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
+- Reported metric `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
 
 ```{warning}
 The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
@@ -106,7 +106,8 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
 """,  # noqa: E501
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
-        metric_list=['gpt_score', 'win_rate'],
+        metric_list=['judge_score', 'win_rate'],
+        primary_metric='judge_score',
         few_shot_num=0,
         train_split=None,
         prompt_template='{question}',
@@ -148,7 +149,6 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.category_map = CHAT_TASK_TO_CATEGORY
         self._track_root: Optional[str] = None
         self._audio_cache_dir = ''
@@ -333,10 +333,10 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             mean_ref = sum(scores_ref) / len(scores_ref)
             win = 1.0 if mean_pred > mean_ref else 0.0
             score.value = {
-                'gpt_score': mean_pred,
+                'judge_score': mean_pred,
                 'win_rate': win,
             }
-            score.main_score_name = 'gpt_score'
+            score.main_score_name = 'judge_score'
             score.metadata = {
                 'reference_score': mean_ref,
                 'pred_scores_per_pass': scores_pred,
@@ -348,8 +348,8 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             score.explanation = ' || '.join(raw_responses)
         else:
             logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
-            score.value = {'gpt_score': 0.0, 'win_rate': 0.0}
-            score.main_score_name = 'gpt_score'
+            score.value = {'judge_score': 0.0, 'win_rate': 0.0}
+            score.main_score_name = 'judge_score'
             score.metadata = {'parse_failed': True, 'judge_raw': raw_responses}
         return score
 

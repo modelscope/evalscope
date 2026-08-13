@@ -36,7 +36,7 @@ CoNLL-2003 is a classic Named Entity Recognition (NER) benchmark introduced at t
 | **Dataset ID** | [extraordinarylab/conll2003](https://modelscope.cn/datasets/extraordinarylab/conll2003/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

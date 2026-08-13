@@ -34,7 +34,7 @@ NCBI 疾病语料库是一个人工标注的 PubMed 摘要资源，专为疾病�
 | **数据集 ID** | [extraordinarylab/ncbi](https://modelscope.cn/datasets/extraordinarylab/ncbi/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

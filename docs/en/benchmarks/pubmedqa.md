@@ -34,7 +34,7 @@ PubMedQA is a biomedical question answering dataset designed to evaluate models'
 | **Dataset ID** | [extraordinarylab/pubmed-qa](https://modelscope.cn/datasets/extraordinarylab/pubmed-qa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `Yes/No` |
-| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio`, `maybe_ratio` |
+| **Metrics** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio`, `maybe_ratio` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `f1` |

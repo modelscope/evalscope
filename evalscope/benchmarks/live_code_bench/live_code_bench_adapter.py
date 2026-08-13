@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -83,6 +84,7 @@ LiveCodeBench is a contamination-free benchmark for evaluating code generation m
         ],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='test',
         system_prompt=CodeGenerationPromptConstants.SYSTEM_MESSAGE_GENERIC,
         prompt_template=

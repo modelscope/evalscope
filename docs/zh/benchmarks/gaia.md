@@ -36,7 +36,7 @@ GAIA（General AI Assistants）是一个包含 450 多个问题的基准测试�
 | **数据集ID** | [gaia-benchmark/GAIA](https://modelscope.cn/datasets/gaia-benchmark/GAIA/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `MultiTurn`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 

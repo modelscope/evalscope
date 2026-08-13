@@ -36,7 +36,7 @@ BigCodeBench 是一个易于使用的基准测试，用于通过代码解决实�
 | **数据集ID** | [evalscope/bigcodebench](https://modelscope.cn/datasets/evalscope/bigcodebench/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分版本** | `v0.1.4` |
 | **聚合方式** | `mean_and_pass_at_k` |

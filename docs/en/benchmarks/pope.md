@@ -24,7 +24,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 
 - Default configuration uses **0-shot** evaluation
 - Five metrics: accuracy, precision, recall, F1 score, yes_ratio
-- F1 score is the primary aggregation metric
+- F1 score is the primary metric; accuracy, precision, and recall are auxiliary, and yes_ratio is diagnostic
 - Three subsets: `popular`, `adversarial`, `random`
 - "Popular" and "adversarial" subsets are more challenging
 - yes_ratio indicates model's tendency to answer "yes"
@@ -38,7 +38,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 | **Dataset ID** | [lmms-lab/POPE](https://modelscope.cn/datasets/lmms-lab/POPE/summary) |
 | **Paper** | N/A |
 | **Tags** | `Hallucination`, `MultiModal`, `Yes/No` |
-| **Metrics** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **Metrics** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `N/A` |
 | **Aggregation** | `f1` |
@@ -133,11 +133,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['pope'],
-    dataset_args={
-        'pope': {
-            # subset_list: ['popular', 'adversarial', 'random']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

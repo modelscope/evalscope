@@ -34,7 +34,7 @@ Drivelology 叙事写作评估模型生成详细描述的能力，以阐释“dr
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `Reasoning` |
-| **指标** | `bert_score`, `gpt_score` |
+| **指标** | `bert_score`, `judge_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

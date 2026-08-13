@@ -122,7 +122,7 @@ The output results are as follows:
 +-----------------------------+------------+----------+----------+-------+---------+---------+
 | Model                       | Dataset    | Metric   | Subset   |   Num |   Score | Cat.0   |
 +=============================+============+==========+==========+=======+=========+=========+
-| Qwen3-Omni-30B-A3B-Instruct | omni_bench | mean_acc | default  |   100 |    0.44 | default |
+| Qwen3-Omni-30B-A3B-Instruct | omni_bench | Accuracy ↑ | default  |   100 |     44% | default |
 +-----------------------------+------------+----------+----------+-------+---------+---------+ 
 ```
 

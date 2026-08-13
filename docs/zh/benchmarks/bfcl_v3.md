@@ -37,7 +37,7 @@ BFCL（Berkeley Function Calling Leaderboard）v3 是首个全面且可执行的
 | **数据集ID** | [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

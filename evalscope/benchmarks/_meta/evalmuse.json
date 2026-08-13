@@ -22,7 +22,14 @@
     "aggregation": "mean",
     "extra_params": {},
     "sandbox_config": {},
-    "category": "aigc"
+    "category": "aigc",
+    "primary_metric": {
+      "name": "fga_blip2_score",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    }
   },
   "statistics": {
     "total_samples": 199,
@@ -96,6 +103,6 @@
     "content_hash": "6e7107f190a2d151250757254442a2a4",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.506303",
+  "updated_at": "2026-08-12T23:53:22.208987",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

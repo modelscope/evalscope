@@ -3,8 +3,6 @@ import fc from 'fast-check'
 
 import { FORM_MESSAGE_KEYS, validateDatasetArgs } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 23: Dataset_Args JSON validation and round-trip
-//
 // For any JSON value serialized via JSON.stringify and handed to
 // validateDatasetArgs:
 // - A JSON object (the expected structure) yields { ok: true } whose `value` is
@@ -13,9 +11,7 @@ import { FORM_MESSAGE_KEYS, validateDatasetArgs } from './validation'
 //   { ok: false, messageKey: datasetArgsInvalidStructure }.
 // - Arbitrary non-JSON text yields { ok: false, messageKey: datasetArgsInvalidJson }.
 // Neither failure path mutates the input text (the function is pure).
-//
-// Validates: Requirements 10.6, 10.7
-describe('validateDatasetArgs (Property 23: Dataset_Args JSON validation & round-trip)', () => {
+describe('validateDatasetArgs (Dataset_Args JSON validation & round-trip)', () => {
   // A JSON object generator: string keys mapped to arbitrary JSON values.
   // `__proto__` is excluded because it cannot be represented as a plain own
   // property through the round-trip and would produce a spurious mismatch.

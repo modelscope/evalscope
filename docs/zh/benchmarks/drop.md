@@ -35,7 +35,7 @@ DROP（Discrete Reasoning Over Paragraphs，段落离散推理）是一个具有
 | **数据集ID** | [AI-ModelScope/DROP](https://modelscope.cn/datasets/AI-ModelScope/DROP/summary) |
 | **论文** | N/A |
 | **标签** | `Reasoning` |
-| **指标** | `em`, `f1` |
+| **指标** | `exact_match`, `f1` |
 | **默认示例数量** | 3-shot |
 | **评估划分** | `validation` |
 

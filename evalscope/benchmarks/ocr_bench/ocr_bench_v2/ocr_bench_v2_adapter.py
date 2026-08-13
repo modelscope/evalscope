@@ -69,7 +69,6 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.reformat_subset = True
 
         check_import(

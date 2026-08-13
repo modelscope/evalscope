@@ -42,7 +42,7 @@ SWE-bench Multilingual Agentic 是 SWE-bench Multilingual 的代理模式（agen
 | **数据集ID** | [SWE-bench/SWE-bench_Multilingual](https://modelscope.cn/datasets/SWE-bench/SWE-bench_Multilingual/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

@@ -6,6 +6,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -87,6 +88,7 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
         subset_list=['full'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         train_split='prompt',
         eval_split='test',
         few_shot_num=3,

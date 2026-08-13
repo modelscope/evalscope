@@ -38,7 +38,7 @@ BFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and e
 | **Dataset ID** | [AI-ModelScope/bfcl_v3](https://modelscope.cn/datasets/AI-ModelScope/bfcl_v3/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

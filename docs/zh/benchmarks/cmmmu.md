@@ -35,7 +35,7 @@ CMMU（Chinese Massive Multi-discipline Multimodal Understanding，中文大规�
 | **数据集ID** | [lmms-lab/CMMMU](https://modelscope.cn/datasets/lmms-lab/CMMMU/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认Shots数** | 0-shot |
 | **评估划分** | `val` |
 

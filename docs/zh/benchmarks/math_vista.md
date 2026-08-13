@@ -36,7 +36,7 @@ MathVista 是一个面向视觉上下文中的数学推理的综合性基准测�
 | **数据集 ID** | [evalscope/MathVista](https://modelscope.cn/datasets/evalscope/MathVista/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数（Shots）** | 0-shot |
 | **评估子集** | `testmini` |
 

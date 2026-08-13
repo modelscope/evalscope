@@ -36,7 +36,7 @@ OCRBench 是一个综合评估基准，旨在评估大语言多模态模型的 O
 | **数据集 ID** | [evalscope/OCRBench](https://modelscope.cn/datasets/evalscope/OCRBench/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

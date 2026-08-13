@@ -61,7 +61,6 @@ class DocVQAAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
 

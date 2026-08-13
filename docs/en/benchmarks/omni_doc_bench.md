@@ -38,7 +38,7 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 | **Dataset ID** | [evalscope/OmniDocBench_tsv](https://modelscope.cn/datasets/evalscope/OmniDocBench_tsv/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `text_block`, `display_formula`, `table`, `reading_order` |
+| **Metrics** | `text_block`, `display_formula`, `table`, `reading_order`, `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

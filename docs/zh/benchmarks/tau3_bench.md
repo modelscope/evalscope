@@ -44,7 +44,7 @@
 | **数据集ID** | [evalscope/tau3-bench-data](https://modelscope.cn/datasets/evalscope/tau3-bench-data/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `Reasoning` |
-| **指标** | N/A |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 | **聚合方式** | `mean_and_pass_hat_k` |

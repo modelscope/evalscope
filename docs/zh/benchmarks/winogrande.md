@@ -36,7 +36,7 @@ Winogrande 是一个大规模的常识推理基准测试，专门用于在 Winog
 | **数据集ID** | [AI-ModelScope/winogrande_val](https://modelscope.cn/datasets/AI-ModelScope/winogrande_val/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `validation` |
 

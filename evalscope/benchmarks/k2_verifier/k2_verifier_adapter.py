@@ -54,6 +54,7 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
             'count_finish_reason_tool_calls',
             'count_successful_tool_call',
         ],
+        primary_metric='trigger_similarity',
         aggregation='f1',
         subset_list=['k2_thinking'],
         eval_split='test',
@@ -63,7 +64,6 @@ class K2VerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         # Fields are stored as JSON-encoded strings in the hosted dataset.

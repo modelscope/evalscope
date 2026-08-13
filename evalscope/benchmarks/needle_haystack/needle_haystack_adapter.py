@@ -139,7 +139,6 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
             feature_name=self.pretty_name
         )
 
-        self.add_aggregation_name = False  # Don't add aggregation name for needle haystack adapter
         # set extra params
         self.retrieval_question = self.extra_params.get(
             'retrieval_question', 'What is the best thing to do in San Francisco?'

@@ -35,7 +35,7 @@ ARC（AI2 Reasoning Challenge）是一个用于评估 AI 模型科学问答能�
 | **数据集 ID** | [allenai/ai2_arc](https://modelscope.cn/datasets/allenai/ai2_arc/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认 Shots** | 0-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

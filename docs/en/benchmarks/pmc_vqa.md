@@ -47,7 +47,7 @@ reporting results.
 | **Dataset ID** | [evalscope/PMC-VQA](https://modelscope.cn/datasets/evalscope/PMC-VQA/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2305.10415) |
 | **Tags** | `MCQ`, `Medical`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test_clean` |
 

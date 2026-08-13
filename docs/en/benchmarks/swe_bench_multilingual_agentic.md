@@ -50,7 +50,7 @@ expects one ` ```mswea_bash_command ``` ` block per turn.
 | **Dataset ID** | [SWE-bench/SWE-bench_Multilingual](https://modelscope.cn/datasets/SWE-bench/SWE-bench_Multilingual/summary) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

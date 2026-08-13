@@ -37,7 +37,7 @@ MMMU-PRO 是一个增强版的多模态基准测试，旨在严格评估先进 A
 | **数据集 ID** | [AI-ModelScope/MMMU_Pro](https://modelscope.cn/datasets/AI-ModelScope/MMMU_Pro/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

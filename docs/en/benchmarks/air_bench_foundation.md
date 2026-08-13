@@ -49,7 +49,7 @@ D. {choice_d}
 | **Dataset ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **Tags** | `Audio`, `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

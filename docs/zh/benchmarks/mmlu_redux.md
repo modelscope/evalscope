@@ -39,7 +39,7 @@ MMLU-Redux 是 MMLU 基准测试的一个改进版本，修正了原始数据集
 | **数据集 ID** | [AI-ModelScope/mmlu-redux-2.0](https://modelscope.cn/datasets/AI-ModelScope/mmlu-redux-2.0/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
 

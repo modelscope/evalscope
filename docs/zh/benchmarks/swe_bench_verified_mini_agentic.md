@@ -41,7 +41,7 @@ SWE-bench Verified Mini Agentic 是对 SWE-bench Verified Mini 的代理模式�
 | **数据集ID** | [evalscope/swe-bench-verified-mini](https://modelscope.cn/datasets/evalscope/swe-bench-verified-mini/summary) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

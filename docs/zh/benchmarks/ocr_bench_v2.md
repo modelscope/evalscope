@@ -34,7 +34,7 @@ OCRBench v2 是一个大规模双语文本中心基准测试，包含最全面�
 | **数据集ID** | [evalscope/OCRBench_v2](https://modelscope.cn/datasets/evalscope/OCRBench_v2/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

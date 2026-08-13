@@ -39,7 +39,7 @@ OmniDocBench v1.6 用于评估端到端的文档解析能力，涵盖文本、�
 | **数据集ID** | [OpenDataLab/OmniDocBench](https://modelscope.cn/datasets/OpenDataLab/OmniDocBench/summary) |
 | **论文** | [Paper](https://github.com/opendatalab/OmniDocBench) |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `overall` |
+| **指标** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `normalized_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

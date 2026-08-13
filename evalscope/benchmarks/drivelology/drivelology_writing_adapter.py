@@ -86,8 +86,9 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
                 'model_type': 'roberta-large'
             }
         }, {
-            'gpt_score': {}
+            'judge_score': {}
         }],
+        primary_metric='judge_score',
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -191,7 +192,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
                     gpt_score = 0.0
                     logger.warning('No rating found in response, using default 0.0')
 
-        score.value['gpt_score'] = gpt_score
+        score.value['judge_score'] = gpt_score
         score.explanation = f'LLM judge rating: {gpt_score:.2f}'
 
         score.metadata = {
@@ -199,7 +200,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
             'model': getattr(self.llm_judge, 'model_id', 'unknown')
         }
 
-        score.main_score_name = 'gpt_score'
+        score.main_score_name = 'judge_score'
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -208,12 +209,12 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         """
         if not sample_scores:
             return [
-                AggScore(metric_name='gpt_score', score=0.0, num=0, metadata={}),
+                AggScore(metric_name='judge_score', score=0.0, num=0, metadata={}),
                 AggScore(metric_name='bert_score', score=0.0, num=0, metadata={})
             ]
 
         # Extract scores
-        gpt_scores = [ss.score.value.get('gpt_score', 0.0) for ss in sample_scores]
+        gpt_scores = [ss.score.value.get('judge_score', 0.0) for ss in sample_scores]
         bert_scores = [ss.score.value.get('bert_score', 0.0) for ss in sample_scores]
 
         # Calculate averages
@@ -222,7 +223,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
         return [
             AggScore(
-                metric_name='gpt_score',
+                metric_name='judge_score',
                 score=avg_gpt_score,
                 num=len(sample_scores),
                 metadata={

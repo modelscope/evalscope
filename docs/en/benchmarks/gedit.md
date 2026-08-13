@@ -18,14 +18,14 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 - 11 editing task categories
 - LLM-based evaluation for semantic consistency and perceptual quality
 - Supports both English and Chinese instructions
-- Comprehensive scoring: Semantic Consistency, Perceptual Quality, Overall
+- Comprehensive scoring: `semantic_consistency`, `perceptual_similarity`, `normalized_score`
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
 - Evaluates on **train** split (contains test samples)
-- Metrics: **Semantic Consistency**, **Perceptual Similarity** (via LLM judge)
-- Overall score: geometric mean of SC and PQ scores
+- Metrics: **semantic_consistency**, **perceptual_similarity** (via LLM judge)
+- `normalized_score` is the official Overall: the geometric mean of the SC and PQ scores
 - Configure language via `extra_params['language']` (en/cn)
 
 
@@ -37,7 +37,7 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 | **Dataset ID** | [stepfun-ai/GEdit-Bench](https://modelscope.cn/datasets/stepfun-ai/GEdit-Bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `ImageEditing` |
-| **Metrics** | `Semantic Consistency`, `Perceptual Similarity` |
+| **Metrics** | `semantic_consistency`, `perceptual_similarity`, `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

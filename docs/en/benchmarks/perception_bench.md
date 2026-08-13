@@ -50,7 +50,7 @@ single capability, so difficulty stems from perception rather than reasoning or 
 | **Dataset ID** | [moonshotai/PerceptionBench](https://modelscope.cn/datasets/moonshotai/PerceptionBench/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2607.24957) |
 | **Tags** | `MultiModal`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

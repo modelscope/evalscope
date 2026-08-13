@@ -158,13 +158,13 @@ class TestWideSearchAggregation(unittest.TestCase):
         scores = [self._sample_score(0, 'en', value, value * 0.8) for value in [0.0, 1.0, 0.0, 0.0]]
         scores.extend(self._sample_score(1, 'zh', value, 0.2) for value in [0.0, 0.0, 0.0, 0.0])
 
-        aggregated = {(score.metric_name, score.aggregation_name): score.score
+        aggregated = {(score.metric_name, score.aggregation, tuple(score.dimensions.items())): score.score
                       for score in aggregate_official_scores(scores)}
 
-        self.assertEqual(aggregated[('all/success_rate', 'avg@4')], 0.125)
-        self.assertEqual(aggregated[('all/success_rate', 'pass@4')], 0.5)
-        self.assertEqual(aggregated[('en/row_f1', 'max@4')], 0.8)
-        self.assertEqual(aggregated[('zh/row_f1', 'avg@4')], 0.2)
+        self.assertEqual(aggregated[('success_rate', 'mean', (('k', 4), ('scope', 'all')))], 0.125)
+        self.assertEqual(aggregated[('success_rate', 'pass_at_k', (('k', 4), ('scope', 'all')))], 0.5)
+        self.assertEqual(aggregated[('f1', 'max', (('k', 4), ('scope', 'en'), ('target', 'row')))], 0.8)
+        self.assertEqual(aggregated[('f1', 'mean', (('k', 4), ('scope', 'zh'), ('target', 'row')))], 0.2)
 
 
 class TestWideSearchAdapter(unittest.TestCase):

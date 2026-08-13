@@ -2,7 +2,7 @@
 
 ## 概述
 
-CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs）在一系列操作中跟踪二元状态变化的能力。每个问题都涉及确定在多次翻转操作后硬币的最终状态（正面/反面）。
+CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs）在一系列操作中跟踪二元状态变化的能力。每个问题都要求判断一枚硬币在经历若干次翻转操作后的最终状态（正面/反面）。
 
 ## 任务描述
 
@@ -13,18 +13,19 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 
 ## 主要特点
 
-- 测试通过操作序列进行状态追踪的能力
-- 二元推理（翻转/不翻转）决策
+- 测试模型在动作序列中追踪状态的能力
+- 涉及二元推理（翻转/不翻转）决策
 - 要求仔细关注操作者行为的影响
-- 评估系统性逻辑推理能力
+- 评估系统性的逻辑推理能力
 - 答案清晰明确、无歧义
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
 - 答案应遵循 "ANSWER: YES/NO" 格式
-- 采用五项指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数（F1 score）和 YES 比例（yes_ratio）
-- F1 分数为主要聚合指标
+- 使用五个指标：准确率（accuracy）、精确率（precision）、召回率（recall）、F1 分数和 YES 比例（yes_ratio）
+- 准确率是主要指标；其他指标用于辅助诊断
+- 仅准确率以全部样本数为分母；若答案不是严格意义上的 YES/NO，则不会计入精确率、召回率和 F1 的计算，因此当答案格式错误较多时，这三个指标可能虚高
 - 支持带推理示例的 few-shot 评估
 
 ## 属性
@@ -35,7 +36,7 @@ CoinFlip 是一个符号推理基准测试，用于评估大语言模型（LLMs�
 | **数据集 ID** | [extraordinarylab/coin-flip](https://modelscope.cn/datasets/extraordinarylab/coin-flip/summary) |
 | **论文** | N/A |
 | **标签** | `Reasoning`, `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **默认示例数量** | 0-shot |
 | **评估分割** | `test` |
 | **训练分割** | `validation` |

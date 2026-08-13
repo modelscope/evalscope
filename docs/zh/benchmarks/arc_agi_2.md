@@ -36,7 +36,7 @@ ARC-AGI-2（面向人工通用智能的抽象与推理语料库 2）是一个旨
 | **数据集ID** | [evalscope/arc-agi-2](https://modelscope.cn/datasets/evalscope/arc-agi-2/summary) |
 | **论文** | N/A |
 | **标签** | `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `mean_and_pass_hat_k` |

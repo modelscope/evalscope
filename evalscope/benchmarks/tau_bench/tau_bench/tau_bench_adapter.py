@@ -5,6 +5,7 @@ from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -51,7 +52,9 @@ logger = get_logger()
 """,  # noqa: E501
         dataset_id='https://github.com/sierra-research/tau-bench',
         subset_list=['airline', 'retail'],
+        metric_list=['acc'],
         aggregation='mean_and_pass_hat_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_hat_k', dimensions={'k': 1}),
         eval_split='test',
         extra_params={
             'user_model': {

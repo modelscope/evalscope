@@ -35,7 +35,7 @@ MMLU-Pro 是 MMLU 的增强版本，具有更高的难度和更强的推理要�
 | **数据集ID** | [TIGER-Lab/MMLU-Pro](https://modelscope.cn/datasets/TIGER-Lab/MMLU-Pro/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `validation` |

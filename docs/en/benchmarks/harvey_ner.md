@@ -33,7 +33,7 @@ HarveyNER is a dataset with fine-grained locations annotated in tweets, collecte
 | **Dataset ID** | [extraordinarylab/harvey-ner](https://modelscope.cn/datasets/extraordinarylab/harvey-ner/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

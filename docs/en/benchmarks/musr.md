@@ -37,7 +37,7 @@ MuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning 
 | **Dataset ID** | [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

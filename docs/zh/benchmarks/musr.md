@@ -35,7 +35,7 @@ MuSR（Multistep Soft Reasoning，多步软推理）是一个通过基于叙事�
 | **数据集ID** | [AI-ModelScope/MuSR](https://modelscope.cn/datasets/AI-ModelScope/MuSR/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

@@ -38,7 +38,7 @@ PolyMath 是一个多语言数学推理基准测试，涵盖 18 种语言和 4 �
 | **数据集 ID** | [evalscope/PolyMath](https://modelscope.cn/datasets/evalscope/PolyMath/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `MultiLingual`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

@@ -108,6 +108,70 @@ export function validateDatasetArgs(rawText: string): DatasetArgsValidation {
   return { ok: true, value: parsed as Record<string, unknown> }
 }
 
+/** A numeric field and the constraints its value must satisfy. */
+export interface NumericFieldCheck {
+  /** Field id the resulting error is associated with. */
+  id: string
+  /** Raw input text; an empty value is treated as "not provided". */
+  value: string
+  min?: number
+  max?: number
+  step?: number
+}
+
+/**
+ * Validate a set of optional numeric fields in one pass.
+ *
+ * An empty value means the optional field was left blank and is skipped; a
+ * non-empty one is validated against its constraints. The result is keyed by
+ * field id so it merges directly into a form's error map.
+ *
+ * @param checks - The numeric fields to validate.
+ * @returns Message keys for the fields that violate a constraint.
+ */
+export function collectNumericErrors(checks: NumericFieldCheck[]): Record<string, string> {
+  const errors: Record<string, string> = {}
+  for (const check of checks) {
+    if (check.value.trim() === '') continue
+    const error = validateNumeric(Number(check.value), check.min, check.max, check.step)
+    if (error) errors[check.id] = error.messageKey
+  }
+  return errors
+}
+
+/**
+ * Validate a comma-separated list of positive integers (a parallelism or
+ * request-count sweep, e.g. `1, 4, 8`).
+ *
+ * Every entry must be a whole number of at least one; an empty list, a blank
+ * entry or a non-integer entry all fail. Returns a message key rather than a
+ * boolean so the caller can surface it directly.
+ *
+ * @param value - Raw input text.
+ * @returns A message key when the list is invalid, otherwise `null`.
+ */
+export function validatePositiveIntegerList(value: string): string | null {
+  const entries = value.split(',').map((part) => part.trim())
+  const invalid = entries.length === 0
+    || entries.some((entry) => !/^\d+$/.test(entry) || Number(entry) < 1)
+  return invalid ? FORM_MESSAGE_KEYS.numericBelowMin : null
+}
+
+/**
+ * Parse a comma-separated numeric list into the numbers it names.
+ *
+ * Blank entries are dropped, so a trailing separator does not contribute a
+ * value. Pair with {@link validatePositiveIntegerList} to reject bad input
+ * before submitting.
+ */
+export function parseNumericList(value: string): number[] {
+  return value
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map(Number)
+}
+
 /**
  * Validate a numeric field value against optional min/max/step constraints.
  *

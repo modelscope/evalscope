@@ -6,6 +6,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -51,7 +52,15 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
 """,  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
-        aggregation='f1',
+        primary_metric=MetricSelector(
+            name='accuracy',
+            aggregation='mean',
+            dimensions={
+                'level': 'overall',
+                'target': 'answer'
+            },
+        ),
+        aggregation='mean',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
     )
@@ -143,6 +152,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             }
 
         outputs: List[AggScore] = []
+        target_names = {'aAcc': 'answer', 'fAcc': 'figure', 'qAcc': 'question'}
 
         # By subcategory
         subcategories = sorted({ss.sample_metadata.get('subcategory') for ss in sample_scores})
@@ -153,8 +163,13 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                 outputs.append(
                     AggScore(
                         score=stats[metric]['score'],
-                        metric_name=metric,
-                        aggregation_name=str(subcategory),
+                        metric_name='accuracy',
+                        aggregation='mean',
+                        dimensions={
+                            'level': 'subcategory',
+                            'category': str(subcategory),
+                            'target': target_names[metric],
+                        },
                         num=stats[metric]['num'],
                     )
                 )
@@ -168,8 +183,13 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                 outputs.append(
                     AggScore(
                         score=stats[metric]['score'],
-                        metric_name=metric,
-                        aggregation_name=str(category),
+                        metric_name='accuracy',
+                        aggregation='mean',
+                        dimensions={
+                            'level': 'category',
+                            'category': str(category),
+                            'target': target_names[metric],
+                        },
                         num=stats[metric]['num'],
                     )
                 )
@@ -180,8 +200,12 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             outputs.append(
                 AggScore(
                     score=overall[metric]['score'],
-                    metric_name=metric,
-                    aggregation_name='Overall',
+                    metric_name='accuracy',
+                    aggregation='mean',
+                    dimensions={
+                        'level': 'overall',
+                        'target': target_names[metric]
+                    },
                     num=overall[metric]['num'],
                 )
             )

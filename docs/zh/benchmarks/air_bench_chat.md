@@ -3,7 +3,7 @@
 
 ## 概述
 
-AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的生成部分——这是首个面向大型音频-语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。该数据集包含约 2,000 个开放式音频问答对，覆盖语音、声音、音乐及混合音频场景；模型的回答由 GPT-4 作为裁判，对照参考答案进行评分。
+AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的生成式部分——这是首个面向大音频语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。该数据集包含约 2,000 个开放式音频问答对，覆盖语音、声音、音乐及混合音频场景；模型的回答由 GPT-4 作为裁判，对照参考答案进行评分。
 
 ## 任务描述
 
@@ -25,14 +25,14 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 
 ## 数据集获取
 
-- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON 元数据* 的布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制仅拉取所需任务。
+- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON metadata* 的布局方式。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制仅拉取所需任务。
 - 如果数据集已存在于本地磁盘，请传入 `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Chat/` 文件夹。
 
 ## 评估协议
 
-- 裁判大语言模型（默认为 GPT-4）接收问题、音频的文本描述（来自数据集的 `meta_info`）、参考答案（`answer_gt`）以及模型的回答，并输出一行包含两个 `[1, 10]` 范围内的整数分数。
-- 为消除位置偏差，每个样本会被评判两次（交换参考答案与模型预测的顺序），然后取平均分。此做法与官方仓库中的 `cal_score.py` 一致；可通过设置 `extra_params={'do_swap': False}` 禁用该行为，以节省一半的裁判成本。
-- 报告指标 `gpt_score` 为模型的平均裁判分数；`win_rate` 记录模型严格优于参考答案的频率。
+- 裁判 LLM（默认为 GPT-4）接收问题、音频的文本描述（来自数据集的 `meta_info`）、参考答案（`answer_gt`）以及模型的回答，并输出一行包含两个 `[1, 10]` 范围内的整数分数。
+- 为消除位置偏差，每个样本会被评估两次，分别交换参考答案与模型预测的顺序，然后取平均分。此做法与官方仓库中的 `cal_score.py` 一致；可通过设置 `extra_params={'do_swap': False}` 禁用此行为，以节省一半的裁判成本。
+- 报告指标 `judge_score` 表示模型的平均裁判分数；`win_rate` 记录模型严格优于参考答案的频率。
 
 ```{warning}
 官方排行榜使用 `gpt-4-0125-preview` 作为裁判模型。如果该特定快照不可用，请使用其他可用的 GPT-4 级别裁判模型；由于裁判模型变更，绝对分数可能与已发表结果存在偏差。
@@ -41,7 +41,7 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 ## 实现说明
 
 - 通过 `--judge-model-args` 指定裁判模型；请确保所选模型支持长上下文（对话类任务的 `meta_info` 可能超过 4k tokens）。
-- 设置 `extra_params={'tasks': [...]}` 可仅评估指定的 Chat 任务名称——适用于部分运行。
+- 设置 `extra_params={'tasks': [...]}` 可仅评估指定的 Chat 任务名称——适用于部分运行场景。
 
 ## 属性
 
@@ -51,7 +51,7 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 | **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `InstructionFollowing`, `QA` |
-| **指标** | `gpt_score`, `win_rate` |
+| **指标** | `judge_score`, `win_rate` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

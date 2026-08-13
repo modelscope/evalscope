@@ -35,7 +35,7 @@ AlpacaEval 2.0 是一个用于评估指令遵循语言模型的框架，它使�
 | **数据集ID** | [AI-ModelScope/alpaca_eval](https://modelscope.cn/datasets/AI-ModelScope/alpaca_eval/summary) |
 | **论文** | N/A |
 | **标签** | `Arena`, `InstructionFollowing` |
-| **指标** | `winrate` |
+| **指标** | `win_rate` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `eval` |
 

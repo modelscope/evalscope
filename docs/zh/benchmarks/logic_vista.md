@@ -34,7 +34,7 @@ LogicVista 评估多模态大语言模型在视觉场景下的基础逻辑推理
 | **数据集ID** | [evalscope/LogicVista](https://modelscope.cn/datasets/evalscope/LogicVista/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2407.04973) |
 | **标签** | `MCQ`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

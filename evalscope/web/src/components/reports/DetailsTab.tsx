@@ -1,11 +1,19 @@
-import { useEffect, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { getAnalysis, getDataFrame } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
 import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
-import MarkdownRenderer from '@/components/common/MarkdownRenderer'
+import {
+  formatMetric,
+  formatMetricLabel,
+  formatMetricLabels,
+  getBoundedQualityRatio,
+  getValuePosition,
+} from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
+import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
 import type { PerfMetrics } from '@/api/types'
@@ -18,41 +26,56 @@ interface Props {
   onSubsetClick?: (subset: string) => void
   overallScore?: number
   metricName?: string
+  /** Backend semantics of the primary metric, and of each metric by its final report name. */
+  semantics?: MetricSemantics | null
+  semanticsByMetric?: Record<string, MetricSemantics | null | undefined>
 }
 
-export default function DetailsTab({ reportName, datasetName, rootPath, perfMetrics, onSubsetClick, overallScore, metricName = 'score' }: Props) {
+/** Stable placeholder so an unresolved frame does not produce a new object each render. */
+const EMPTY_FRAME: { columns: string[]; data: Record<string, unknown>[] } = { columns: [], data: [] }
+
+export default function DetailsTab({
+  reportName,
+  datasetName,
+  rootPath,
+  perfMetrics,
+  onSubsetClick,
+  overallScore,
+  metricName,
+  semantics,
+  semanticsByMetric = {},
+}: Props) {
   const { t } = useLocale()
-  const [analysis, setAnalysis] = useState('')
-  const [analysisLoading, setAnalysisLoading] = useState(false)
-  const [subsetData, setSubsetData] = useState<{ columns: string[]; data: Record<string, unknown>[] }>({
-    columns: [],
-    data: [],
-  })
 
-  useEffect(() => {
-    if (!datasetName || !reportName) return
-    const controller = new AbortController()
+  // Both reads describe the same dataset, so they are one resource: the analysis
+  // text and the per-subset frame always arrive (or fail) together.
+  const details = useAsyncResource(
+    async (signal) => {
+      const [analysis, frame] = await Promise.all([
+        // A missing analysis or frame is an absence, not a failure of the tab.
+        getAnalysis(rootPath, reportName, datasetName, signal).catch(() => ''),
+        getDataFrame(rootPath, reportName, 'dataset', datasetName, signal).catch(
+          () => ({ columns: [] as string[], data: [] as Record<string, unknown>[] }),
+        ),
+      ])
+      return { analysis, columns: frame.columns, data: frame.data }
+    },
+    [rootPath, reportName, datasetName],
+    { enabled: Boolean(datasetName && reportName) },
+  )
 
-    const load = async () => {
-      setAnalysisLoading(true)
-      try {
-        const [analysisText, dfRes] = await Promise.all([
-          getAnalysis(rootPath, reportName, datasetName, controller.signal).catch(() => ''),
-          getDataFrame(rootPath, reportName, 'dataset', datasetName, controller.signal).catch(() => ({ columns: [], data: [] })),
-        ])
-        if (controller.signal.aborted) return
-        setAnalysis(analysisText)
-        setSubsetData({ columns: dfRes.columns, data: dfRes.data })
-      } finally {
-        if (!controller.signal.aborted) setAnalysisLoading(false)
-      }
-    }
-    load()
-    return () => controller.abort()
-  }, [datasetName, reportName, rootPath])
+  const analysis = details.data?.analysis ?? ''
+  const analysisLoading = details.loading
+  const subsetData = details.data ?? EMPTY_FRAME
 
   // Detect whether data has Metric column
   const hasMetricCol = subsetData.data.length > 0 && 'Metric' in subsetData.data[0]
+  const metricLabels = formatMetricLabels(
+    Object.entries(semanticsByMetric).map(([name, metricSemantics]) => ({
+      metricName: name,
+      semantics: metricSemantics,
+    })),
+  )
 
   const subsetColumns = [
     {
@@ -79,9 +102,17 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
       key: 'Metric',
       label: t('reportDetail.metric'),
       sortable: true,
-      render: (row: Record<string, unknown>) => (
-        <span className="text-[var(--text-muted)] text-xs font-mono">{String(row.Metric ?? '')}</span>
-      ),
+      render: (row: Record<string, unknown>) => {
+        const metricName = String(row.Metric ?? '')
+        const rowSemantics = semanticsByMetric[metricName] ?? null
+        // The metric's display name and direction, the same label the header card and every other
+        // surface uses. The raw name stays reachable through the tooltip.
+        return (
+          <span className="text-xs text-[var(--text-muted)]" title={metricName}>
+            {metricLabels[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
+          </span>
+        )
+      },
     }] : []),
     {
       key: 'Score',
@@ -89,23 +120,16 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const score = Number(row.Score ?? 0)
-        const rowMetricName = String(row.Metric ?? metricName)
-        const ratio = getBoundedMetricRatio(rowMetricName, score)
-        // Inline score bar
+        // Each row names its own metric, so a report mixing metrics formats each row correctly.
+        const rowSemantics = semanticsByMetric[String(row.Metric ?? '')] ?? semantics
+        // Subsets of one dataset share a metric, so a bar is comparable across these rows.
         return (
-          <div className="flex items-center gap-2">
-            {ratio != null && (
-              <div className="h-1.5 w-[60px] min-w-[60px] rounded-full bg-[var(--border)] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${ratio * 100}%`, background: scoreColor(ratio) }}
-                />
-              </div>
-            )}
-            <span className="font-mono font-medium tabular-nums" style={{ color: ratio == null ? 'var(--text)' : scoreColor(ratio) }}>
-              {formatMetricByKey(rowMetricName, score, t).primary}
-            </span>
-          </div>
+          <ScoreBar
+            score={score}
+            semantics={rowSemantics}
+            ariaLabel={`${String(row.Subset ?? '')} ${String(row.Metric ?? '')}`.trim()}
+            track="fixed"
+          />
         )
       },
     },
@@ -119,7 +143,10 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
     },
   ]
 
-  const normOverall = getBoundedMetricRatio(metricName, overallScore)
+  // The arc length is the value's own position in its range; the colour says how good it is. A
+  // 4.3% WER therefore draws a small green arc, rather than a near-full one.
+  const overallPosition = getValuePosition(overallScore, semantics)
+  const overallQuality = getBoundedQualityRatio(overallScore, semantics)
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,24 +155,26 @@ export default function DetailsTab({ reportName, datasetName, rootPath, perfMetr
         <div className="flex items-center gap-3 p-4 rounded-[var(--radius)] bg-[var(--bg-card2)] border border-[var(--border)]">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-              {t('reportDetail.overallScore')}
+              {semantics
+                ? metricName ?? formatMetricLabel(semantics.metric_name, semantics)
+                : t('reportDetail.overallScore')}
             </span>
             <span
               className="text-3xl font-bold font-mono tabular-nums"
-              style={{ color: normOverall == null ? 'var(--text)' : scoreColor(normOverall) }}
+              style={{ color: overallQuality == null ? 'var(--text)' : scoreColor(overallQuality) }}
             >
-              {formatMetricByKey(metricName, overallScore, t).primary}
+              {formatMetric(overallScore, semantics).primary}
             </span>
           </div>
-          {normOverall != null && (
+          {overallPosition != null && (
             <svg width="48" height="48" viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
               <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border)" strokeWidth="6" />
               <circle
                 cx="24" cy="24" r="19" fill="none"
-                stroke={scoreColor(normOverall)}
+                stroke={scoreColor(overallQuality ?? overallPosition)}
                 strokeWidth="6"
                 strokeDasharray={`${2 * Math.PI * 19}`}
-                strokeDashoffset={`${2 * Math.PI * 19 * (1 - normOverall)}`}
+                strokeDashoffset={`${2 * Math.PI * 19 * (1 - overallPosition)}`}
                 strokeLinecap="round"
               />
             </svg>

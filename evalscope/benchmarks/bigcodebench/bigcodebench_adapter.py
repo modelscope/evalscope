@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec
@@ -124,6 +125,7 @@ _SANDBOX_CONFIG = {
         subset_list=['default'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='v0.1.4',
         prompt_template='{prompt}',
         review_timeout=240,
@@ -235,6 +237,7 @@ class BigCodeBenchAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         subset_list=['default'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
+        primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='v0.1.4',
         prompt_template='{prompt}',
         review_timeout=240,

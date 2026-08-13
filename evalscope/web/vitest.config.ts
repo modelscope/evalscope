@@ -15,8 +15,9 @@ export default mergeConfig(
       // Deterministic setup: fake timers, fixed system time and a fixed
       // fast-check seed, plus network access disabled.
       setupFiles: ['./src/test/setup.ts'],
-      // Only treat co-located test/spec files as tests.
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      // Co-located test/spec files, both for the app and for the drift scripts
+      // (a script's test lives next to the script it exercises).
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'scripts/**/*.{test,spec}.ts'],
       coverage: {
         provider: 'v8',
         reporter: ['text', 'html', 'lcov'],
@@ -25,6 +26,16 @@ export default mergeConfig(
           'src/**/*.{test,spec}.{ts,tsx}',
           'src/test/**',
         ],
+        // A ratchet, not a target: set just under the level the suite actually
+        // reaches so an ordinary change cannot quietly drop coverage, while a few
+        // tenths of run-to-run drift does not fail the build. Raise these when the
+        // real number moves up; never lower them to make a red build pass.
+        thresholds: {
+          statements: 77,
+          branches: 69,
+          functions: 71,
+          lines: 80,
+        },
       },
     },
   }),

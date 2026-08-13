@@ -3,7 +3,7 @@
  *
  * These provide a machine-discriminable error category (`kind`) so consumers can
  * branch on the failure mode (e.g. show a validation error state, silently ignore
- * an aborted request) without parsing error messages. See design section 11.
+ * an aborted request) without parsing error messages.
  */
 
 /**

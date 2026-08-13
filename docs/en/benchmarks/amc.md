@@ -37,7 +37,7 @@ AMC (American Mathematics Competitions) is a benchmark based on problems from th
 | **Dataset ID** | [evalscope/amc_22-24](https://modelscope.cn/datasets/evalscope/amc_22-24/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `N/A` |
 

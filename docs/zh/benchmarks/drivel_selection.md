@@ -33,7 +33,7 @@ Drivelology 叙事选择（Drivelology Narrative Selection）用于评估模型�
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 
