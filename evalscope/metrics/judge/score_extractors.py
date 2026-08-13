@@ -28,7 +28,13 @@ class PatternScoreExtractor(ScoreExtractor):
         match = re.search(self.pattern, response, re.MULTILINE)
         if match:
             answer = match.group(1) if match.lastindex else match.group(0).strip()
-            return self.score_mapping.get(answer, 0.0)
+            if answer not in self.score_mapping:
+                logger.warning(
+                    f"Matched '{answer}' for pattern '{self.pattern}' but no score mapping exists; "
+                    f'returning 0.0. Response: {response}'
+                )
+                return 0.0
+            return self.score_mapping[answer]
         else:
             logger.warning(f"No match found for pattern '{self.pattern}' in response: {response}")
             return 0.0
@@ -50,6 +56,17 @@ class NumericScoreExtractor(ScoreExtractor):
             logger.warning(f"No match found for pattern '{self.pattern}' in response: {response}")
             return 0.0
 
+        def _clamped(val: float) -> float:
+            """Clamp to [clamp_min, clamp_max], warning when the raw value was out of range."""
+            if val < self.clamp_min or val > self.clamp_max:
+                clamped = max(self.clamp_min, min(self.clamp_max, val))
+                logger.warning(
+                    f'Score {val} out of range [{self.clamp_min}, {self.clamp_max}], '
+                    f'clamped to {clamped} in response: {response}'
+                )
+                return clamped
+            return val
+
         # iterate from last to first to pick the final rating
         for match in reversed(matches):
             # prefer captured groups
@@ -57,14 +74,12 @@ class NumericScoreExtractor(ScoreExtractor):
                 if group is None:
                     continue
                 try:
-                    val = float(group)
-                    return max(self.clamp_min, min(self.clamp_max, val))
+                    return _clamped(float(group))
                 except (ValueError, TypeError):
                     continue
             # fallback: try entire match if groups fail
             try:
-                val = float(match.group(0))
-                return max(self.clamp_min, min(self.clamp_max, val))
+                return _clamped(float(match.group(0)))
             except (ValueError, TypeError):
                 continue
 
