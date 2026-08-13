@@ -43,46 +43,48 @@ class OpenaiPlugin(DefaultApiPlugin):
             param (QueryParameters): The query parameters.
 
         Raises:
-            Exception: NotImplemented
+            ValueError: If the messages cannot be tokenized on the --tokenize-prompt path.
+            FileNotFoundError: If the `--query-template` file does not exist.
+            json.JSONDecodeError: If `--query-template` is not valid JSON.
 
         Returns:
-            Dict: The request body. None if prompt format is error.
+            Dict: The request body.
         """
         param = param or self.param
-        try:
-            # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
-            # and send as a /v1/completions request with `prompt=[int, ...]`.
-            if param.tokenize_prompt and not isinstance(messages, dict):
-                token_ids = self._messages_to_token_ids(messages, param)
-                query = {'prompt': token_ids}
-                return self.__compose_query_from_parameter(query, param)
+        # Failures below are configuration errors (unusable tokenizer, malformed
+        # --query-template) that are identical for every request, so they are left
+        # to propagate and abort the run instead of degrading into a None request.
 
-            if param.query_template is not None:
-                if param.query_template.startswith('@'):
-                    file_path = param.query_template[1:]
-                    if os.path.exists(file_path):
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            query = json.load(file)
-                    else:
-                        raise FileNotFoundError(f'{file_path}')
-                else:
-                    query = json.loads(param.query_template)
-
-                # replace template messages with input messages.
-                query['messages'] = messages
-            elif isinstance(messages, dict):
-                # A complete request body (e.g. a line_by_line JSON object). Honor the
-                # user-provided fields and only fill in generation params that are
-                # missing, so CLI-level defaults do not silently overwrite the body.
-                return self.__compose_query_from_parameter(dict(messages), param, preserve_existing=True)
-            elif isinstance(messages, str):
-                query = {'prompt': messages}
-            else:
-                query = {'messages': messages}
+        # --tokenize-prompt path: convert messages/text/token-IDs to a token-ID list
+        # and send as a /v1/completions request with `prompt=[int, ...]`.
+        if param.tokenize_prompt and not isinstance(messages, dict):
+            token_ids = self._messages_to_token_ids(messages, param)
+            query = {'prompt': token_ids}
             return self.__compose_query_from_parameter(query, param)
-        except Exception as e:
-            logger.exception(e)
-            return None
+
+        if param.query_template is not None:
+            if param.query_template.startswith('@'):
+                file_path = param.query_template[1:]
+                if os.path.exists(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        query = json.load(file)
+                else:
+                    raise FileNotFoundError(f'{file_path}')
+            else:
+                query = json.loads(param.query_template)
+
+            # replace template messages with input messages.
+            query['messages'] = messages
+        elif isinstance(messages, dict):
+            # A complete request body (e.g. a line_by_line JSON object). Honor the
+            # user-provided fields and only fill in generation params that are
+            # missing, so CLI-level defaults do not silently overwrite the body.
+            return self.__compose_query_from_parameter(dict(messages), param, preserve_existing=True)
+        elif isinstance(messages, str):
+            query = {'prompt': messages}
+        else:
+            query = {'messages': messages}
+        return self.__compose_query_from_parameter(query, param)
 
     def _messages_to_token_ids(self, messages: Union[List[Dict], str, List[int]], param: Arguments) -> List[int]:
         """Convert messages / plain text / existing token IDs to a flat token-ID list.

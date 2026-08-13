@@ -130,12 +130,21 @@ class AioHttpClient:
 async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
     start_time = time.perf_counter()
 
+    # Building the request is deterministic and network-independent: a failure here
+    # is a configuration error that retrying can never fix, so it happens once,
+    # outside the retry loop, and the actionable error is allowed to propagate.
+    messages = [{'role': 'user', 'content': 'hello'}] if args.apply_chat_template else 'hello'
+    request = api_plugin.build_request(messages)
+    if request is None:
+        logger.error(
+            f'{type(api_plugin).__name__}.build_request() returned None, so the connection test '
+            'has nothing to send. Please check the request options this API plugin requires.'
+        )
+        return False
+
     async def attempt_connection():
         client = AioHttpClient(args, api_plugin)
         async with client:
-            messages = [{'role': 'user', 'content': 'hello'}] if args.apply_chat_template else 'hello'
-            request = api_plugin.build_request(messages)
-
             output = await client.post(request)
             return output
 
@@ -151,7 +160,7 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
             if output.status_code is not None and 400 <= output.status_code < 500:
                 logger.error(
                     f'Non-retryable error (HTTP {output.status_code}): {output.error}. '
-                    'Please check your --url and --api settings.'
+                    'Please check your --model, --url and --api settings.'
                 )
                 return False
             logger.warning(f'Retrying... <{output.error}>')
