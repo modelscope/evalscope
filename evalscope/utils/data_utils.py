@@ -4,85 +4,82 @@ Data loading and processing utilities for reports and predictions.
 import glob
 import os
 import pandas as pd
+from pydantic import ValidationError
 from typing import Any, Dict, List, Union
 
 from evalscope.api.evaluator import CacheManager, ReviewResult
-from evalscope.constants import DATASET_TOKEN, MODEL_TOKEN, REPORT_TOKEN, DataCollection
-from evalscope.report import Report, ReportKey, get_data_frame, get_report_list
+from evalscope.constants import DataCollection
+from evalscope.metrics.semantics import format_metric_value
+from evalscope.metrics.semantics.ranking import bounded_quality_ratio
+from evalscope.report import Report, ReportKey, ReportRef, get_data_frame, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
 
-def scan_for_report_folders(root_path):
-    """Scan for folders containing reports subdirectories"""
+def scan_report_refs(root_path: str) -> List[ReportRef]:
+    """Scan an outputs root for every model report it holds.
+
+    Returns:
+        List[ReportRef]: One reference per ``<run_id>/reports/<model_id>`` directory, newest first.
+            Directories whose names cannot form a reference (e.g. a manually created nested path)
+            are skipped with a warning rather than breaking the whole listing.
+    """
     logger.debug(f'Scanning for report folders in {root_path}')
     if not os.path.exists(root_path):
         return []
 
-    reports = []
-    # Iterate over all folders in the root path
-    for folder in glob.glob(os.path.join(root_path, '*')):
-        # Check if reports folder exists
-        reports_path = os.path.join(folder, OutputsStructure.REPORTS_DIR)
+    refs: List[ReportRef] = []
+    for run_dir in glob.glob(os.path.join(root_path, '*')):
+        reports_path = os.path.join(run_dir, OutputsStructure.REPORTS_DIR)
         if not os.path.exists(reports_path):
             continue
 
-        # Iterate over all items in reports folder
-        for model_item in glob.glob(os.path.join(reports_path, '*')):
-            if not os.path.isdir(model_item):
+        for model_dir in glob.glob(os.path.join(reports_path, '*')):
+            if not os.path.isdir(model_dir):
                 continue
-            datasets = []
-            for dataset_item in glob.glob(os.path.join(model_item, '*.json')):
-                base_name = os.path.basename(dataset_item)
-                if base_name == DataCollection.REPORT_NAME:
-                    continue
+            try:
+                refs.append(ReportRef(run_id=os.path.basename(run_dir), model_id=os.path.basename(model_dir)))
+            except ValidationError as e:
+                logger.warning(f'Skipping report directory {model_dir}: {e}')
 
-                datasets.append(os.path.splitext(base_name)[0])
-            datasets = DATASET_TOKEN.join(datasets)
-            reports.append(
-                f'{os.path.basename(folder)}{REPORT_TOKEN}{os.path.basename(model_item)}{MODEL_TOKEN}{datasets}'
-            )
-
-    reports = sorted(reports, reverse=True)
-    logger.debug(f'reports: {reports}')
-    return reports
+    refs.sort(key=lambda ref: ref.key, reverse=True)
+    logger.debug(f'reports: {[ref.key for ref in refs]}')
+    return refs
 
 
-def process_report_name(report_name: str):
-    prefix, report_name = report_name.split(REPORT_TOKEN)
-    model_name, datasets = report_name.split(MODEL_TOKEN)
-    datasets = datasets.split(DATASET_TOKEN)
-    return prefix, model_name, datasets
+def report_model_dir(root_path: str, ref: ReportRef) -> str:
+    """Directory holding the per-dataset report files of one model report."""
+    return os.path.join(root_path, ref.run_id, OutputsStructure.REPORTS_DIR, ref.model_id)
 
 
-def load_single_report(root_path: str, report_name: str):
-    prefix, model_name, datasets = process_report_name(report_name)
-    report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
-    report_list = get_report_list([report_path_list])
+def load_report_bundle(root_path: str, ref: ReportRef) -> tuple[List[Report], List[str], Dict[str, Any]]:
+    """Load one model report together with its datasets and the run's task configuration.
 
-    config_files = glob.glob(os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR, '*.yaml'))
+    The dataset list is derived from the loaded reports rather than from the identifier, so it always
+    describes what is actually on disk.
+    """
+    model_dir = report_model_dir(root_path, ref)
+    report_list = get_report_list([model_dir])
+    if not report_list:
+        raise FileNotFoundError(f'No report files found in {model_dir}')
+    datasets = list(dict.fromkeys(report.dataset_name for report in report_list))
+
+    configs_dir = os.path.join(root_path, ref.run_id, OutputsStructure.CONFIGS_DIR)
+    config_files = glob.glob(os.path.join(configs_dir, '*.yaml'))
     if not config_files:
-        raise FileNotFoundError(
-            f'No configuration files found in {os.path.join(root_path, prefix, OutputsStructure.CONFIGS_DIR)}'
-        )
-    task_cfg_path = config_files[0]
-    task_cfg = yaml_to_dict(task_cfg_path)
+        raise FileNotFoundError(f'No configuration files found in {configs_dir}')
+    task_cfg = yaml_to_dict(config_files[0])
     return report_list, datasets, task_cfg
 
 
-def load_multi_report(root_path: str, report_names: List[str]):
-    report_list = []
-    for report_name in report_names:
-        prefix, model_name, datasets = process_report_name(report_name)
-        report_path_list = os.path.join(root_path, prefix, OutputsStructure.REPORTS_DIR, model_name)
-        reports = get_report_list([report_path_list])
-        report_list.extend(reports)
-    return report_list
+def load_multi_report_groups(root_path: str, refs: List[ReportRef]) -> List[tuple[ReportRef, List[Report]]]:
+    """Load reports while retaining the reference that owns each group."""
+    return [(ref, get_report_list([report_model_dir(root_path, ref)])) for ref in refs]
 
 
-def get_acc_report_df(report_list: List[Report]):
+def get_acc_report_df(report_list: List[Report]) -> pd.DataFrame:
     data_dict = []
     for report in report_list:
         if report.name == DataCollection.NAME:
@@ -96,40 +93,114 @@ def get_acc_report_df(report_list: List[Report]):
                     }
                     data_dict.append(item)
         else:
+            # `primary_metric` is the declared `role=primary` metric, or the inferred headline
+            # when the benchmark declared none (see `Report._find_primary_metric`). It is only
+            # `None` for a report with no metric at all, which then shows no score.
             primary_metric = report.primary_metric
             item = {
                 ReportKey.model_name: report.model_name,
                 ReportKey.dataset_name: report.dataset_name,
-                ReportKey.score: primary_metric.score if primary_metric else report.score,
+                ReportKey.score: primary_metric.score if primary_metric else None,
                 ReportKey.num: primary_metric.num if primary_metric else 0,
             }
             data_dict.append(item)
     df = pd.DataFrame.from_dict(data_dict, orient='columns')
 
-    styler = style_df(df, columns=[ReportKey.score])
-    return df, styler
+    return df
 
 
-def style_df(df: pd.DataFrame, columns: List[str] = None):
-    # Apply background gradient to the specified columns
-    styler = df.style.background_gradient(subset=columns, cmap='RdYlGn', vmin=0.0, vmax=1.0, axis=0)
-    # Format the dataframe with a precision of 4 decimal places
-    styler.format(precision=4)
-    return styler
+def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
+    """Build chart rows on a comparable 0-1 quality axis.
+
+    Unbounded and diagnostic metrics are omitted because no honest normalization exists for them.
+    Their native score is never replaced in the report itself; the formatted value travels next
+    to the quality ratio for chart labels and tooltips.
+    """
+    rows = []
+    for report in report_list:
+        metric = report.primary_metric
+        if metric is None or metric.semantics is None:
+            continue
+        quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
+        if quality_ratio is None:
+            continue
+        rows.append({
+            ReportKey.model_name: report.model_name,
+            ReportKey.dataset_name: report.dataset_name,
+            ReportKey.metric_name: metric.name,
+            ReportKey.score: quality_ratio,
+            ReportKey.raw_score: metric.score,
+            ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
+            ReportKey.num: metric.num,
+        })
+    return pd.DataFrame.from_records(
+        rows,
+        columns=[
+            ReportKey.model_name,
+            ReportKey.dataset_name,
+            ReportKey.metric_name,
+            ReportKey.score,
+            ReportKey.raw_score,
+            ReportKey.display_score,
+            ReportKey.num,
+        ],
+    )
 
 
-def get_compare_report_df(acc_df: pd.DataFrame):
+def get_comparison_quality_report_df(report_groups: List[tuple[ReportRef, List[Report]]]) -> pd.DataFrame:
+    """Build comparison chart rows without collapsing separate runs of the same model."""
+    model_counts: Dict[str, int] = {}
+    for ref, _ in report_groups:
+        model_counts[ref.model_id] = model_counts.get(ref.model_id, 0) + 1
+
+    frames = []
+    for ref, reports in report_groups:
+        frame = get_quality_report_df(reports)
+        if frame.empty:
+            continue
+        display_name = f'{ref.model_id} ({ref.run_id})' if model_counts[ref.model_id] > 1 else ref.model_id
+        frame[ReportKey.model_name] = display_name
+        frames.append(frame)
+
+    return pd.concat(frames, ignore_index=True) if frames else get_quality_report_df([])
+
+
+def get_quality_metric_df(report_list: List[Report], metric_df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize metric rows for charts while retaining their native display value."""
+    semantics_by_metric = {(report.model_name, report.dataset_name, metric.name): metric.semantics
+                           for report in report_list
+                           for metric in report.metrics}
+    rows = []
+    for _, row in metric_df.iterrows():
+        semantics = semantics_by_metric.get(
+            (row[ReportKey.model_name], row[ReportKey.dataset_name], row[ReportKey.metric_name])
+        )
+        raw_score = row[ReportKey.score]
+        quality_ratio = bounded_quality_ratio(raw_score, semantics)
+        if quality_ratio is None:
+            continue
+        item = row.to_dict()
+        item[ReportKey.raw_score] = raw_score
+        item[ReportKey.display_score] = format_metric_value(raw_score, semantics)
+        item[ReportKey.score] = quality_ratio
+        rows.append(item)
+
+    columns = list(metric_df.columns)
+    for column in (ReportKey.raw_score, ReportKey.display_score):
+        if column not in columns:
+            columns.append(column)
+    return pd.DataFrame.from_records(rows, columns=columns)
+
+
+def get_compare_report_df(acc_df: pd.DataFrame) -> pd.DataFrame:
     df = acc_df.pivot_table(index=ReportKey.model_name, columns=ReportKey.dataset_name, values=ReportKey.score)
     df.reset_index(inplace=True)
 
-    styler = style_df(df)
-    return df, styler
+    return df
 
 
-def get_single_dataset_df(df: pd.DataFrame, dataset_name: str):
-    df = df[df[ReportKey.dataset_name] == dataset_name]
-    styler = style_df(df, columns=[ReportKey.score])
-    return df, styler
+def get_single_dataset_df(df: pd.DataFrame, dataset_name: str) -> pd.DataFrame:
+    return df[df[ReportKey.dataset_name] == dataset_name]
 
 
 def get_report_analysis(report_list: List[Report], dataset_name: str) -> str:

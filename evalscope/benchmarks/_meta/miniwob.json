@@ -13,6 +13,11 @@
       "success_rate",
       "error_rate"
     ],
+    "primary_metric": {
+      "name": "success_rate",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -103,6 +108,6 @@
     "content_hash": "7c9a3336d6ebb3f3e6dc1d0bb0cb6378",
     "needs_translation": false
   },
-  "updated_at": "2026-07-30T16:25:30.577736",
+  "updated_at": "2026-08-11T15:30:53.607584",
   "translation_updated_at": "2026-07-30T16:25:41"
 }

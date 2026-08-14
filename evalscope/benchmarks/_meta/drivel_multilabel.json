@@ -12,6 +12,11 @@
       "f1_macro",
       "exact_match"
     ],
+    "primary_metric": {
+      "name": "f1_weighted",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -89,6 +94,6 @@
     "content_hash": "0b160106ab96bcf2a7436af8fb6f511a",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.223704",
+  "updated_at": "2026-08-11T15:30:53.567907",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

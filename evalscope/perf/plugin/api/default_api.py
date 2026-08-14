@@ -168,7 +168,7 @@ class DefaultApiPlugin(ApiPluginBase):
 
                                         generated_text += content
                                         output.response_messages.append(data)
-                                    elif usage := data.get('usage'):
+                                    if usage := data.get('usage'):
                                         output.prompt_tokens = usage.get('prompt_tokens')
                                         output.completion_tokens = usage.get('completion_tokens')
                                         # Extract real cached tokens from prompt_tokens_details

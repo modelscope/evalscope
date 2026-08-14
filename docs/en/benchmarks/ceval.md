@@ -37,7 +37,7 @@ C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the kn
 | **Dataset ID** | [evalscope/ceval](https://modelscope.cn/datasets/evalscope/ceval/summary) |
 | **Paper** | N/A |
 | **Tags** | `Chinese`, `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `val` |
 | **Train Split** | `dev` |

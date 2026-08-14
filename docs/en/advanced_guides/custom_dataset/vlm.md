@@ -232,31 +232,31 @@ Evaluation will output BLEU and Rouge metrics:
 +--------------+-------------+----------------+----------------+-------+---------+---------+
 | Model        | Dataset     | Metric         | Subset         |   Num |   Score | Cat.0   |
 +==============+=============+================+================+=======+=========+=========+
-| qwen-vl-plus | general_vqa | mean_bleu-1    | example_openai |     5 |  0.0067 | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · 1              | example_openai |     5 |    0.7% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_bleu-2    | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · 2              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_bleu-3    | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · 3              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_bleu-4    | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · 4              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-1-R | example_openai |     5 |  0.4    | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · Recall    | example_openai |     5 |     40% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-1-P | example_openai |     5 |  0.0062 | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · Precision | example_openai |     5 |    0.6% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-1-F | example_openai |     5 |  0.0121 | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · F1        | example_openai |     5 |    1.2% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-2-R | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · Recall    | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-2-P | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · Precision | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-2-F | example_openai |     5 |  0      | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · F1        | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-L-R | example_openai |     5 |  0.4    | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · L · Recall    | example_openai |     5 |     40% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-L-P | example_openai |     5 |  0.0047 | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · L · Precision | example_openai |     5 |    0.5% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | general_vqa | mean_Rouge-L-F | example_openai |     5 |  0.0093 | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · L · F1        | example_openai |     5 |    0.9% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
 ```
 
@@ -317,7 +317,7 @@ Evaluation will output accuracy metrics:
 +--------------+-------------+----------+----------------+-------+---------+---------+
 | Model        | Dataset     | Metric   | Subset         |   Num |   Score | Cat.0   |
 +==============+=============+==========+================+=======+=========+=========+
-| qwen-vl-plus | general_vqa | mean_acc | example_openai |     5 |       1 | default |
+| qwen-vl-plus | general_vqa | Accuracy ↑ | example_openai |     5 |    100% | default |
 +--------------+-------------+----------+----------------+-------+---------+---------+ 
 ```
 
@@ -403,7 +403,7 @@ Evaluation will output accuracy metrics:
 +--------------+--------------+----------+----------+-------+---------+---------+
 | Model        | Dataset      | Metric   | Subset   |   Num |   Score | Cat.0   |
 +==============+==============+==========+==========+=======+=========+=========+
-| qwen-vl-plus | general_vmcq | mean_acc | example  |     3 |       1 | default |
+| qwen-vl-plus | general_vmcq | Accuracy ↑ | example  |     3 |    100% | default |
 +--------------+--------------+----------+----------+-------+---------+---------+ 
 ```
 

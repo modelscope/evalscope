@@ -107,7 +107,6 @@ class BFCLV4Adapter(AgentAdapter):
         check_import('bfcl_eval', extra='bfcl', raise_error=True, feature_name=self.pretty_name)
 
         self.add_overall_metric = False
-        self.add_aggregation_name = False
 
         self.underscore_to_dot = self.extra_params.get('underscore_to_dot', True)
         self.is_fc_model = self.extra_params.get('is_fc_model', True)

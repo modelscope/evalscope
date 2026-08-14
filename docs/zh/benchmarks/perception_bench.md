@@ -37,7 +37,7 @@ PerceptionBench 是由 Moonshot AI 提出的一项基准测试，用于评估多
 | **数据集ID** | [moonshotai/PerceptionBench](https://modelscope.cn/datasets/moonshotai/PerceptionBench/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2607.24957) |
 | **标签** | `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估切分** | `train` |
 

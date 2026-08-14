@@ -34,7 +34,7 @@ ERQA（Embodied Reasoning QA）是一个用于评估多模态大语言模型空�
 | **数据集ID** | [evalscope/ERQA](https://modelscope.cn/datasets/evalscope/ERQA/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认Shots数** | 0-shot |
 | **评估划分** | `test` |
 

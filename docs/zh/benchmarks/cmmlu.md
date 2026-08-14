@@ -37,7 +37,7 @@ C-MMLU（Chinese Massive Multitask Language Understanding，中文大规模多�
 | **数据集ID** | [evalscope/cmmlu](https://modelscope.cn/datasets/evalscope/cmmlu/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数（Shots）** | 0-shot |
 | **评估分割** | `test` |
 | **训练分割** | `dev` |

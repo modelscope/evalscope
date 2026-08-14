@@ -36,7 +36,7 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 | **数据集ID** | [Toolathlon](https://github.com/hkust-nlp/Toolathlon) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `MultiTurn` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

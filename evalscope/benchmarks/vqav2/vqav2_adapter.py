@@ -107,6 +107,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
         paper_url='https://arxiv.org/abs/1612.00837',
         subset_list=['default'],
         metric_list=['vqa_score', 'exact_match'],
+        primary_metric='vqa_score',
         eval_split='validation',
         prompt_template=PROMPT_TEMPLATE,
     )
@@ -116,7 +117,6 @@ class VQAv2Adapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question = str(record.get('question') or '').strip()

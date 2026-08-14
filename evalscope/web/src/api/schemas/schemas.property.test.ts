@@ -1,5 +1,3 @@
-// Feature: frontend-refactor-2026-07, Property 26: Schema 校验 round-trip 与 typed error
-//
 // For any object that conforms to a domain schema, `schema.parse` (via
 // `safeParse`) must succeed and return data that is semantically equivalent to
 // the input (round-trip). For any object that breaks a required field or a
@@ -12,8 +10,6 @@
 // (reports domain) and `perfRunSummarySchema` (performance domain). Both mix
 // string, number, boolean and optional fields, so the property covers the
 // common shapes of the API contract.
-//
-// Validates: Requirements 13.1, 13.2
 
 import { describe, expect, it, vi } from 'vitest'
 import fc from 'fast-check'
@@ -58,10 +54,10 @@ function wrongTypedValue(type: FieldType): unknown {
 // ------------------------------------------------------------------ //
 
 const REPORT_SUMMARY_FIELDS: FieldSpec[] = [
-  { name: 'name', type: 'string' },
+  { name: 'run_id', type: 'string' },
+  { name: 'model_id', type: 'string' },
   { name: 'model_name', type: 'string' },
   { name: 'dataset_name', type: 'string' },
-  { name: 'score', type: 'number' },
   { name: 'num_samples', type: 'number' },
   { name: 'timestamp', type: 'string' },
 ]
@@ -69,20 +65,25 @@ const REPORT_SUMMARY_FIELDS: FieldSpec[] = [
 /** Generate a fully-valid `reportSummarySchema` object (optional key varies). */
 const reportSummaryArb: fc.Arbitrary<Record<string, unknown>> = fc.record(
   {
-    name: fc.string(),
+    run_id: fc.string(),
+    model_id: fc.string(),
     model_name: fc.string(),
     dataset_name: fc.string(),
-    score: fc.double({ noNaN: true, noDefaultInfinity: true }),
     num_samples: fc.nat(),
     timestamp: fc.string(),
-    // Optional field: sometimes present, sometimes absent (requiredKeys below).
-    dataset_scores: fc.dictionary(
-      fc.string(),
-      fc.double({ noNaN: true, noDefaultInfinity: true }),
-      { maxKeys: 4 },
-    ),
+    primary_metrics: fc.constant([]),
   },
-  { requiredKeys: ['name', 'model_name', 'dataset_name', 'score', 'num_samples', 'timestamp'] },
+  {
+    requiredKeys: [
+      'run_id',
+      'model_id',
+      'model_name',
+      'dataset_name',
+      'num_samples',
+      'timestamp',
+      'primary_metrics',
+    ],
+  },
 )
 
 // ------------------------------------------------------------------ //
@@ -185,7 +186,7 @@ const CASES: Array<{ name: string; schema: ZodType; validArb: fc.Arbitrary<Recor
   { name: 'perfRunSummarySchema', schema: perfRunSummarySchema, validArb: perfRunSummaryArb, fields: PERF_RUN_SUMMARY_FIELDS },
 ]
 
-describe('domain schema validation (Property 26: Schema 校验 round-trip 与 typed error)', () => {
+describe('domain schema validation (Schema 校验 round-trip 与 typed error)', () => {
   for (const { name, schema, validArb, fields } of CASES) {
     describe(name, () => {
       it('parses any conforming object and round-trips it to semantically equivalent data', () => {

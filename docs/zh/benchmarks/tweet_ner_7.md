@@ -34,7 +34,7 @@ TweetNER7 是一个大规模命名实体识别（NER）数据集，包含 2019 �
 | **数据集 ID** | [extraordinarylab/tweet-ner-7](https://modelscope.cn/datasets/extraordinarylab/tweet-ner-7/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

@@ -1,0 +1,214 @@
+/**
+ * Compare data model (no rendering).
+ *
+ * This module holds the pure data logic behind the Evaluation History /
+ * Compare surfaces: how a run is labelled, how compare selection is bounded and
+ * de-duplicated, and whether a set of runs can be meaningfully compared. It has
+ * no React/DOM/network/clock dependencies so it can be exercised directly by
+ * unit and property tests.
+ */
+
+import { parseReportRef } from '@/domain/report/reportRef'
+
+/** Separator placed between the model and dataset parts of a display label. */
+const LABEL_SEPARATOR = ' · '
+
+/** Separator joining the datasets a run spans in a display label. */
+const DATASET_JOINER = ', '
+
+/**
+ * A meaningful display label for a run, derived from its model and dataset(s)
+ * rather than the raw timestamped path.
+ */
+export interface RunDisplayLabel {
+  /** Parsed model name; empty string when no meaningful model could be parsed. */
+  model: string
+  /** Parsed dataset name(s), joined when a run spans multiple datasets. */
+  dataset: string
+  /**
+   * Human-friendly label composed of model and dataset. When a meaningful model
+   * is present the label always contains that model and is never equal to the
+   * raw reference.
+   */
+  label: string
+}
+
+/**
+ * Generate a display name that is unique among a list of report references.
+ *
+ * The model part is the reference's `modelId` (a run writes its report under a per-model directory
+ * whose name is the sanitized model id). When several references share a `modelId`, the owning
+ * `runId` is appended so repeated runs of one model stay distinguishable.
+ */
+export function getDisplayNames(refs: string[]): Record<string, string> {
+  const modelCounts: Record<string, number> = {}
+  for (const ref of refs) {
+    const base = parseReportRef(ref).modelId || ref
+    modelCounts[base] = (modelCounts[base] ?? 0) + 1
+  }
+  const result: Record<string, string> = {}
+  for (const ref of refs) {
+    const { runId, modelId } = parseReportRef(ref)
+    const base = modelId || ref
+    result[ref] = modelCounts[base] > 1 ? `${base} (${runId})` : base
+  }
+  return result
+}
+
+/**
+ * Build a meaningful display label from a report reference and the datasets it covers.
+ *
+ * The model is the reference's `modelId`; the datasets are supplied by the caller from the loaded
+ * reports (they are data on disk, not part of the reference). When a model can be parsed, the label
+ * is `"{model} · {dataset}"` (or just the model when no dataset is present). When no model can be
+ * parsed, the label falls back to the raw reference so the caller still has something to render.
+ *
+ * @param ref Report reference (`{runId}/{modelId}`).
+ * @param datasets Dataset names the report covers.
+ * @returns The parsed model, dataset and composed label.
+ */
+export function buildDisplayLabel(ref: string, datasets: string[] = []): RunDisplayLabel {
+  const dataset = datasets.join(DATASET_JOINER)
+  const model = parseReportRef(ref).modelId.trim()
+
+  if (model.length === 0) {
+    // No meaningful model could be parsed: fall back to the raw reference.
+    return { model: '', dataset, label: ref }
+  }
+
+  const label = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
+  return { model, dataset, label }
+}
+
+/** Build model-and-dataset labels that still distinguish repeated runs of one model. */
+export function buildDisplayLabels(
+  refs: string[],
+  datasetsByRef: Record<string, string[]> = {},
+): Record<string, string> {
+  const uniqueModelNames = getDisplayNames(refs)
+  const labels: Record<string, string> = {}
+
+  for (const ref of refs) {
+    const dataset = (datasetsByRef[ref] ?? []).join(DATASET_JOINER)
+    const model = uniqueModelNames[ref]
+    labels[ref] = dataset.length > 0 ? `${model}${LABEL_SEPARATOR}${dataset}` : model
+  }
+
+  return labels
+}
+
+/** Number of report columns that prediction comparison can render side by side. */
+export const MAX_COMPARE_SLOTS = 3
+
+/**
+ * Toggle one report in the bounded prediction-comparison selection.
+ *
+ * Score comparison uses the full, unbounded report selection. Prediction
+ * comparison is the only surface capped at three because it renders complete
+ * responses side by side.
+ */
+export function togglePredictionSelection(state: string[], runId: string): string[] {
+  if (state.includes(runId)) {
+    return state.filter((id) => id !== runId)
+  }
+  if (state.length >= MAX_COMPARE_SLOTS) {
+    return state
+  }
+  return [...state, runId]
+}
+
+/**
+ * Add a run to the compare selection, de-duping.
+ *
+ * The selection is a set with a stable insertion order and is not capped: the
+ * same selection also drives batch deletion, so bounding it here would limit
+ * unrelated actions. Prediction comparison derives its own bounded subset via
+ * `togglePredictionSelection` instead of truncating this shared selection.
+ *
+ * @param state Current selection of run ids.
+ * @param runId Run id to add.
+ * @returns The next selection, unchanged when the run is already selected.
+ */
+export function addToSelection(state: string[], runId: string): string[] {
+  if (state.includes(runId)) {
+    // Already selected: de-duplicate by leaving the selection unchanged.
+    return state
+  }
+  return [...state, runId]
+}
+
+/**
+ * Preserve the full compare selection across a list reorder (sort/filter).
+ *
+ * The compare selection is a set of run ids that is conceptually independent of
+ * the order in which runs happen to be listed. Sorting or filtering the list
+ * only changes how runs are arranged (and which are currently visible); it must
+ * never drop any selected run. This helper realises that contract:
+ *
+ *   - The returned selection is the *same set* as the input selection: no run is
+ *     added or removed, and duplicates in the input are collapsed. As a set the
+ *     output always equals the input (set identity across any reorder/filter).
+ *   - Selected runs that appear in the reordered/filtered list are ordered to
+ *     match that list, so the on-screen order of selected runs follows the sort.
+ *   - Selected runs that are not present in the reordered list (e.g. hidden by a
+ *     filter) are retained and appended, so filtering never loses a selection.
+ *
+ * @param selected Current selection of run ids (may contain duplicates).
+ * @param reorderedList Run ids in their new (sorted/filtered) order.
+ * @returns The preserved selection, reordered to follow the list but with an
+ *   unchanged membership set.
+ */
+export function preserveSelectionAcrossReorder(selected: string[], reorderedList: string[]): string[] {
+  // De-duplicate the incoming selection while keeping first-seen order as the
+  // stable fallback ordering for runs missing from the reordered list.
+  const uniqueSelected = [...new Set(selected)]
+  const selectedSet = new Set(uniqueSelected)
+
+  // Selected runs that are visible in the reordered list, in the list's order
+  // (de-duplicated in case the list itself repeats an id).
+  const seen = new Set<string>()
+  const ordered: string[] = []
+  for (const id of reorderedList) {
+    if (selectedSet.has(id) && !seen.has(id)) {
+      seen.add(id)
+      ordered.push(id)
+    }
+  }
+
+  // Selected runs absent from the reordered list (e.g. filtered out) are kept so
+  // the selection set is never reduced by a sort/filter.
+  const retained = uniqueSelected.filter((id) => !seen.has(id))
+
+  return [...ordered, ...retained]
+}
+
+/** Localized message key returned when runs share no common dataset. */
+const NO_COMMON_DATASET_KEY = 'compare.noCommon'
+
+/**
+ * Determine whether a set of runs can be meaningfully compared.
+ *
+ * Runs are compatible when they share at least one common dataset. When there is
+ * no common dataset the runs cannot be aligned for comparison, so a localized
+ * reason key is returned; the caller keeps the existing selection and surfaces
+ * the reason. Fewer than two runs is not yet an incompatibility, so
+ * `null` is returned.
+ *
+ * A run's datasets are read from its loaded reports (one report per dataset), so the caller passes
+ * the dataset name list of each run rather than the reports themselves.
+ *
+ * @param datasetsPerRun Dataset names covered by each run selected for comparison.
+ * @returns A localized reason key when incompatible, or `null` when compatible.
+ */
+export function compatibilityReason(datasetsPerRun: string[][]): string | null {
+  if (datasetsPerRun.length < 2) {
+    return null
+  }
+
+  const datasetSets = datasetsPerRun.map((datasets) => new Set(datasets))
+  const common = datasetSets.reduce((acc, set) => {
+    return new Set([...acc].filter((ds) => set.has(ds)))
+  })
+
+  return common.size === 0 ? NO_COMMON_DATASET_KEY : null
+}

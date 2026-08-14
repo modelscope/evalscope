@@ -42,6 +42,7 @@ GeniaNER is a large-scale biomedical NER dataset consisting of 2,000 MEDLINE abs
         train_split='train',
         eval_split='test',
         metric_list=['precision', 'recall', 'f1_score', 'accuracy'],
+        primary_metric='f1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )

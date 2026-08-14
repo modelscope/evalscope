@@ -37,7 +37,7 @@ CCBench (Chinese Culture Bench) is an extension of MMBench specifically designed
 | **Dataset ID** | [lmms-lab/MMBench](https://modelscope.cn/datasets/lmms-lab/MMBench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

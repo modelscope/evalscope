@@ -15,13 +15,23 @@ logger = get_logger()
 
 
 def plot_single_report_scores(df: pd.DataFrame):
-    if df is None:
+    if df is None or df.empty:
         return None
     logger.debug(f'df: \n{df}')
-    plot = px.bar(df, x=df[ReportKey.dataset_name], y=df[ReportKey.score], text=df[ReportKey.score])
+    plot = px.bar(
+        df,
+        x=ReportKey.dataset_name,
+        y=ReportKey.score,
+        text=ReportKey.display_score,
+        custom_data=[ReportKey.metric_name, ReportKey.raw_score],
+    )
 
     width = DEFAULT_BAR_WIDTH if len(df[ReportKey.dataset_name]) <= 5 else None
-    plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
+    plot.update_traces(
+        width=width,
+        textposition='outside',
+        hovertemplate='%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}<extra></extra>',
+    )
     plot.update_layout(uniformtext_minsize=12, uniformtext_mode='hide', yaxis=dict(range=[0, 1]), template=PLOTLY_THEME)
     return plot
 
@@ -35,6 +45,8 @@ def plot_single_report_sunburst(report_list: List[Report]):
         df = get_data_frame(report_list=report_list, flatten_metrics=False)
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
+    from evalscope.utils.data_utils import get_quality_metric_df
+    df = get_quality_metric_df(report_list, df)
     logger.debug(f'df: \n{df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
     df = df[df[ReportKey.num] > 0]  # NOTE: filter out zero-num rows to avoid ZeroDivisionError in plotly
@@ -46,34 +58,47 @@ def plot_single_report_sunburst(report_list: List[Report]):
         path=path,
         values=ReportKey.num,
         color=ReportKey.score,
+        custom_data=[ReportKey.metric_name, ReportKey.display_score, ReportKey.raw_score],
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num])
         if df[ReportKey.num].sum() > 0 else df[ReportKey.score].mean(),
         template=PLOTLY_THEME,
         maxdepth=4
     )
-    plot.update_traces(insidetextorientation='radial')
+    plot.update_traces(
+        insidetextorientation='radial',
+        hovertemplate='%{label}<br>%{customdata[0]}: %{customdata[1]}<br>Quality: %{color:.3f}<extra></extra>',
+    )
     plot.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis=dict(cmin=0, cmax=1), height=600)
     return plot
 
 
 def plot_single_dataset_scores(df: pd.DataFrame):
+    if df is None or df.empty:
+        return None
     plot = px.bar(
         df,
         x=df[ReportKey.metric_name],
         y=df[ReportKey.score],
         color=df[ReportKey.subset_name],
-        text=df[ReportKey.score],
+        text=ReportKey.display_score,
+        custom_data=[ReportKey.raw_score],
         barmode='group'
     )
 
     width = 0.2 if len(df[ReportKey.subset_name]) <= 3 else None
-    plot.update_traces(width=width, texttemplate='%{text:.2f}', textposition='outside')
+    plot.update_traces(
+        width=width,
+        textposition='outside',
+        hovertemplate='%{x}<br>%{fullData.name}: %{text}<br>Quality: %{y:.3f}<extra></extra>',
+    )
     plot.update_layout(uniformtext_minsize=12, uniformtext_mode='hide', yaxis=dict(range=[0, 1]), template=PLOTLY_THEME)
     return plot
 
 
 def plot_multi_report_radar(df: pd.DataFrame):
+    if df is None or df.empty:
+        return None
     fig = go.Figure()
 
     grouped = df.groupby(ReportKey.model_name)
@@ -86,7 +111,12 @@ def plot_multi_report_radar(df: pd.DataFrame):
                 r=common_group[ReportKey.score],
                 theta=common_group[ReportKey.dataset_name],
                 name=model_name,
-                fill='toself'
+                fill='toself',
+                customdata=common_group[[ReportKey.metric_name, ReportKey.display_score]],
+                hovertemplate=(
+                    '%{theta}<br>%{customdata[0]}: %{customdata[1]}<br>Quality: %{r:.3f}'
+                    '<extra>%{fullData.name}</extra>'
+                ),
             )
         )
 

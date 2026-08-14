@@ -35,7 +35,7 @@ OfficeQA 是由 Databricks 构建的一个基于真实文档的推理基准测�
 | **数据集ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |
 | **论文** | N/A |
 | **标签** | `Agent`, `Knowledge`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

@@ -108,7 +108,6 @@ class BFCLV3Adapter(AgentAdapter):
         self.category_map = SUBJECT_MAPPING
         self.reformat_subset = True
         self.add_overall_metric = False
-        self.add_aggregation_name = False
 
         self.underscore_to_dot = self.extra_params.get('underscore_to_dot', True)
         self.is_fc_model = self.extra_params.get('is_fc_model', True)

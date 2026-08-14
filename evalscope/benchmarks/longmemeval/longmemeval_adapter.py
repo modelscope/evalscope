@@ -8,6 +8,7 @@ from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -48,7 +49,8 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 - `retrieval_log` mode consumes official LongMemEval retrieval logs; it does not run embedding retrieval itself
 """,
         dataset_id='evalscope/longmemeval-cleaned',
-        metric_list=['acc'],
+        metric_list=['accuracy'],
+        primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -253,7 +255,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         )
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
         is_correct = 'yes' in judge_response.lower()
-        score.value = {'acc': 1.0 if is_correct else 0.0}
+        score.value = {'accuracy': 1.0 if is_correct else 0.0}
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
             'source': 'llm_judge',
@@ -262,16 +264,16 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             'question_type': task_state.metadata['question_type'],
             'is_abstention': task_state.metadata.get('is_abstention', False),
         }
-        score.main_score_name = 'acc'
+        score.main_score_name = 'accuracy'
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
-        valid_scores = [s for s in sample_scores if s.score and 'acc' in s.score.value]
+        valid_scores = [s for s in sample_scores if s.score and 'accuracy' in s.score.value]
         if not valid_scores:
             return []
 
         agg_scores = [
-            self._make_agg_score(metric_name='acc', aggregation_name='overall', scores=valid_scores),
+            self._make_agg_score(metric_name='accuracy', dimensions={'scope': 'overall'}, scores=valid_scores),
         ]
 
         task_means = []
@@ -279,15 +281,18 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             type_scores = [s for s in valid_scores if (s.sample_metadata or {}).get('question_type') == question_type]
             if not type_scores:
                 continue
-            agg = self._make_agg_score(metric_name='acc', aggregation_name=question_type, scores=type_scores)
+            agg = self._make_agg_score(
+                metric_name='accuracy', dimensions={'question_type': question_type}, scores=type_scores
+            )
             agg_scores.append(agg)
             task_means.append(agg.score)
 
         if task_means:
             agg_scores.append(
                 AggScore(
-                    metric_name='acc',
-                    aggregation_name='task_averaged',
+                    metric_name='accuracy',
+                    aggregation='macro_mean',
+                    dimensions={'scope': 'question_types'},
                     score=sum(task_means) / len(task_means),
                     num=len(task_means),
                 )
@@ -296,18 +301,21 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         abstention_scores = [s for s in valid_scores if (s.sample_metadata or {}).get('is_abstention')]
         if abstention_scores:
             agg_scores.append(
-                self._make_agg_score(metric_name='acc', aggregation_name='abstention', scores=abstention_scores)
+                self._make_agg_score(
+                    metric_name='accuracy', dimensions={'question_type': 'abstention'}, scores=abstention_scores
+                )
             )
 
         return agg_scores
 
     @staticmethod
-    def _make_agg_score(metric_name: str, aggregation_name: str, scores: List[SampleScore]) -> AggScore:
-        values = [float(s.score.value[metric_name]) for s in scores]
+    def _make_agg_score(metric_name: str, dimensions: Dict[str, Any], scores: List[SampleScore]) -> AggScore:
+        values = [float(s.score.value['accuracy']) for s in scores]
         ids = [s.sample_id for s in scores]
         return AggScore(
             metric_name=metric_name,
-            aggregation_name=aggregation_name,
+            aggregation='mean',
+            dimensions=dimensions,
             score=sum(values) / len(values),
             num=len(values),
             ids=ids,

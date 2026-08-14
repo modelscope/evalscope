@@ -36,7 +36,7 @@ HMMT February 2025 (MathArena) is a challenging evaluation benchmark derived fro
 | **Dataset ID** | [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

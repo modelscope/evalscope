@@ -34,7 +34,7 @@ PIQA（Physical Interaction QA）是一个用于评估 AI 模型对物理常识�
 | **数据集ID** | [extraordinarylab/piqa](https://modelscope.cn/datasets/extraordinarylab/piqa/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估集** | `validation` |
 | **训练集** | `train` |

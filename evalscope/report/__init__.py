@@ -8,12 +8,14 @@ if TYPE_CHECKING:
         gen_perf_table,
         gen_table,
         get_data_frame,
+        get_display_data_frame,
         get_report_list,
         percentage_weighted_average_from_subsets,
         unweighted_average_from_subsets,
         weighted_average_from_subsets,
     )
     from .generator import ReportGenerator
+    from .ref import ReportRef
     from .renderer import gen_html_report_file
     from .report import Category, Metric, Report, ReportKey, Subset
 
@@ -23,6 +25,7 @@ else:
             'gen_perf_table',
             'gen_table',
             'get_data_frame',
+            'get_display_data_frame',
             'get_report_list',
             'weighted_average_from_subsets',
             'unweighted_average_from_subsets',
@@ -30,6 +33,9 @@ else:
         ],
         'generator': [
             'ReportGenerator',
+        ],
+        'ref': [
+            'ReportRef',
         ],
         'report': [
             'Category',

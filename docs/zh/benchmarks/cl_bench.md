@@ -36,7 +36,7 @@ CL-bench 旨在推动构建具备上下文学习（Context Learning）这一基�
 | **数据集ID** | [tencent-community/CL-bench](https://modelscope.cn/datasets/tencent-community/CL-bench/summary) |
 | **论文** | 无 |
 | **标签** | `InstructionFollowing`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `train` |
 

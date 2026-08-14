@@ -35,7 +35,7 @@ SimpleVQA 是首个全面的多模态基准测试，用于评估多模态大语�
 | **数据集ID** | [m-a-p/SimpleVQA](https://modelscope.cn/datasets/m-a-p/SimpleVQA/summary) |
 | **论文** | N/A |
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

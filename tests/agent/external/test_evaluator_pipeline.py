@@ -57,7 +57,11 @@ def test_external_agent_through_evaluator(tmp_path):
                 'subset_list': ['example'],
             },
         },
-        agent_config={'mode': 'external', 'framework': 'mock', 'environment': 'local'},
+        agent_config={
+            'mode': 'external',
+            'framework': 'mock',
+            'environment': 'local'
+        },
         eval_batch_size=1,
         limit=1,
         analysis_report=False,
@@ -72,7 +76,8 @@ def test_external_agent_through_evaluator(tmp_path):
     # Mock agent answered 'B' and the first sample's gold answer is also 'B',
     # so 1/1 should score a perfect 1.0 — proves the agent's output flowed
     # all the way back through the scoring path.
-    assert report.score == pytest.approx(1.0), f'expected perfect score, got {report.score}'
+    assert report.primary_metric is not None
+    assert report.primary_metric.score == pytest.approx(1.0)
 
     # Spot-check that the external-agent path actually ran by looking at the
     # serialized review file — adapter returns InferenceResult whose trace
@@ -91,5 +96,6 @@ def test_external_agent_through_evaluator(tmp_path):
     blob = matches[0][1]
     assert 'agent_trace' in blob, (
         f'expected agent_trace in {matches[0][0]}; '
-        f'the bridge path did not surface the trace')
+        f'the bridge path did not surface the trace'
+    )
     assert '"mock"' in blob, f'expected framework "mock" recorded in {matches[0][0]}'

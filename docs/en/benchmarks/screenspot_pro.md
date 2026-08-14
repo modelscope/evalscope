@@ -22,7 +22,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 
 ## Evaluation Notes
 
-- Primary metric: **acc** — a prediction is correct when the predicted point falls inside the ground-truth bounding box
+- Primary metric: **accuracy** — a prediction is correct when the predicted point falls inside the ground-truth bounding box
 - Secondary metrics: **text_acc** and **icon_acc**, each averaged over the samples of the corresponding `ui_type`
 - Predictions are read from the answer line that the prompt requires (`Answer: [x, y]`), so reasoning traces cannot be mistaken for the answer. Replies ignoring the format fall back to scanning for unambiguous point notation only (`[x, y]` pairs or `<bbox>` tags); loose notation such as `x=.., y=..` and bare numbers is accepted only on the answer line, because in free prose it harvests layout bounds and ordinals instead of a click point
 - A reply truncated before its answer line yields no prediction and scores 0 rather than a coordinate invented from its reasoning, so allow enough `max_tokens` for the model to finish answering
@@ -40,7 +40,7 @@ ScreenSpot-Pro is a GUI grounding benchmark built from authentic high-resolution
 | **Dataset ID** | [lmms-lab/ScreenSpot-Pro](https://modelscope.cn/datasets/lmms-lab/ScreenSpot-Pro/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2504.07981) |
 | **Tags** | `Agent`, `Grounding`, `MultiModal` |
-| **Metrics** | `acc`, `text_acc`, `icon_acc` |
+| **Metrics** | `accuracy`, `text_acc`, `icon_acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 
@@ -144,11 +144,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['screenspot_pro'],
-    dataset_args={
-        'screenspot_pro': {
-            # subset_list: ['CAD', 'Creative', 'Dev']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

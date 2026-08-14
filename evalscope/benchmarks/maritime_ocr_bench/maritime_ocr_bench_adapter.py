@@ -64,7 +64,7 @@ Each task type uses a specialized scoring method:
 """,
         dataset_id='HiDolphin/MaritimeOCRBench',
         subset_list=SUBSET_LIST,
-        metric_list=['score'],
+        metric_list=['normalized_score'],
         eval_split='test',
         prompt_template='{question}',
     )
@@ -74,7 +74,6 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
-        self.add_aggregation_name = False
         self.data_root: Optional[str] = None
 
     def load(self):
@@ -317,5 +316,5 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
             )
             score_value = float(metrics['text_score'])
 
-        score.value = {'score': score_value}
+        score.value = {'normalized_score': score_value}
         return score

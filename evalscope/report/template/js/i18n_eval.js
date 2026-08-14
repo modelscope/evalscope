@@ -46,6 +46,8 @@ var I18N = {
     'col.metric':    'Metric',
     'col.score':     'Score',
     'col.num':       'Num',
+    'col.value':     'Value',
+    'card.diagnostics':    'Diagnostic metrics',
     'col.subset':    'Subset',
     'col.category':  'Category',
 
@@ -88,6 +90,8 @@ var I18N = {
     'col.metric':    '指标',
     'col.score':     '分数',
     'col.num':       '数量',
+    'col.value':     '数值',
+    'card.diagnostics':    '诊断指标',
     'col.subset':    '子集',
     'col.category':  '类别',
 

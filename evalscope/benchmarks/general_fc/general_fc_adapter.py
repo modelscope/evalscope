@@ -52,6 +52,7 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
             'schema_accuracy',
             'tool_call_f1',
         ],
+        primary_metric='tool_call_f1',
         aggregation='f1',
         eval_split='test',
     )
@@ -60,8 +61,6 @@ class GeneralFCAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.add_aggregation_name = False
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)

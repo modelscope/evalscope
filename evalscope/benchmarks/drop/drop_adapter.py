@@ -68,6 +68,7 @@ DROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension
 """,
         dataset_id='AI-ModelScope/DROP',
         metric_list=['em', 'f1'],
+        primary_metric='f1',
         few_shot_num=3,
         train_split=None,
         eval_split='validation',

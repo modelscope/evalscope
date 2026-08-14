@@ -12,6 +12,7 @@ interface SelectProps {
   onChange?: (value: string) => void
   label?: string
   placeholder?: string
+  disabled?: boolean
   className?: string
 }
 
@@ -21,6 +22,7 @@ export default function Select({
   onChange,
   label,
   placeholder,
+  disabled = false,
   className,
 }: SelectProps) {
   const selectId = label?.toLowerCase().replace(/\s+/g, '-')
@@ -38,6 +40,7 @@ export default function Select({
       <div className="relative">
         <select
           id={selectId}
+          disabled={disabled}
           value={typeof value === 'string' ? value : value?.[0] ?? ''}
           onChange={(e) => onChange?.(e.target.value)}
           className={cn(
@@ -45,6 +48,7 @@ export default function Select({
             'bg-[var(--bg-deep)] border border-[var(--border)] text-[var(--text)]',
             'focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)]',
             'transition-all duration-[var(--transition)]',
+            disabled && 'cursor-not-allowed opacity-50',
             // text-dim allowed: select placeholder state (DESIGN.md §Text)
             !value && 'text-[var(--text-dim)]',
             className,

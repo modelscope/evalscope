@@ -37,7 +37,7 @@ MMMLU (Multilingual Massive Multitask Language Understanding) is a multilingual 
 | **Dataset ID** | [openai-mirror/MMMLU](https://modelscope.cn/datasets/openai-mirror/MMMLU/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

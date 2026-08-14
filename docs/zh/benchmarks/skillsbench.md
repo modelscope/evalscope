@@ -45,7 +45,7 @@ SkillsBench 用于评估编码智能体是否能够发现并应用任务捆绑�
 | **数据集ID** | `skillsbench` |
 | **论文** | N/A |
 | **标签** | `Agent`, `MultiTurn` |
-| **指标** | `score` |
+| **指标** | `normalized_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `N/A` |
 

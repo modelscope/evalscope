@@ -34,7 +34,7 @@ BioMixQA 是一个精心整理的生物医学问答数据集，旨在评估 AI �
 | **数据集ID** | [extraordinarylab/biomix-qa](https://modelscope.cn/datasets/extraordinarylab/biomix-qa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `Medical` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

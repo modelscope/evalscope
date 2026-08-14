@@ -38,7 +38,7 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
 | **Dataset ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |
 | **Paper** | N/A |
 | **Tags** | `LongContext`, `Retrieval` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

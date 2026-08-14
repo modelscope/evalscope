@@ -1,320 +1,308 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useReports } from '@/contexts/ReportsContext'
+import { ArrowRight, Clock, Cpu, FileText, Gauge } from 'lucide-react'
+import { useScan } from '@/contexts/ReportsContext'
+import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
 import { listPerfRuns } from '@/api/perf'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
-import Card from '@/components/ui/Card'
-import Badge from '@/components/ui/Badge'
+import { formatDifference, formatMetric, type MetricSemantics } from '@/domain/metric'
 import Skeleton from '@/components/ui/Skeleton'
-import KpiCard from '@/components/ui/KpiCard'
-import ScoreBadge from '@/components/ui/ScoreBadge'
+import KpiStrip, { KPI_HERO_CONTAINER, KPI_HERO_CELL, type KpiItem } from '@/components/ui/KpiStrip'
+import Tabs from '@/components/ui/Tabs'
+import SearchInput from '@/components/ui/SearchInput'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
-import SearchInput from '@/components/ui/SearchInput'
-import Pagination from '@/components/ui/Pagination'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import { FileText, Gauge, Cpu, Clock, ChevronRight } from 'lucide-react'
-import { formatMetricByKey } from '@/domain/metric/registry'
-import { formatFull } from '@/utils/perf'
+import AggregatedResults from '@/components/dashboard/AggregatedResults'
+import type { SortState } from '@/components/dashboard/AggregatedResults'
+import { aggregateRuns } from '@/domain/report/runAggregation'
+import { parseReportRef } from '@/domain/report/reportRef'
+import type { AggregatedRow, CellKind, CellPoint } from '@/domain/report/runAggregation'
+import { formatTimestamp } from '@/utils/formatUtils'
 
-// Number of recent runs shown before the "view all" toggle.
-const RECENT_LIMIT = 15
+/**
+ * Which kinds of run the table shows.
+ *
+ * `all` is not a kind, it is the absence of the filter, so it is kept out of `CellKind` rather than
+ * added to it -- nothing produces a cell of kind "all".
+ */
+type KindFilter = CellKind | 'all'
 
-// ------------------------------------------------------------------ //
-// Helpers                                                             //
-// ------------------------------------------------------------------ //
+/** Stable placeholders so an unresolved read keeps a single identity per collection. */
+const EMPTY_REPORTS: ReportSummary[] = []
+const EMPTY_PERF_RUNS: PerfRunSummary[] = []
+const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
 
-/** Format ISO timestamp to short form MM-DD HH:MM. */
-function formatShort(ts: string): string {
-  return ts ? ts.replace('T', ' ').slice(5, 16) : ''
-}
+/** Tab order, and the panel each one drives. */
+const KIND_TABS: { key: KindFilter; labelKey: string; panelId: string }[] = [
+  { key: 'all', labelKey: 'dashboard.tabAll', panelId: 'dashboard-results-all' },
+  { key: 'eval', labelKey: 'dashboard.tabEval', panelId: 'dashboard-results-eval' },
+  { key: 'perf', labelKey: 'dashboard.tabPerf', panelId: 'dashboard-results-perf' },
+]
 
-// Unified recent-run item across eval + perf.
-type RunItem =
-  | { kind: 'eval'; ts: string; report: ReportSummary }
-  | { kind: 'perf'; ts: string; run: PerfRunSummary }
-
-// ------------------------------------------------------------------ //
-// Recent run row                                                      //
-// ------------------------------------------------------------------ //
-function RunRow({ item, onClick }: { item: RunItem; onClick: () => void }) {
-  const { t } = useLocale()
-  const isEval = item.kind === 'eval'
-  const model = isEval ? item.report.model_name : item.run.model
-  const dataset = isEval ? item.report.dataset_name : item.run.dataset || item.run.api_type || 'perf'
-  const meta = isEval
-    ? `${item.report.num_samples} ${t('dashboard.samples')}`
-    : `${item.run.num_runs} ${t('dashboard.runs')}`
-
-  return (
-    <button
-      onClick={onClick}
-      className="grid min-h-14 w-full grid-cols-[3rem_minmax(0,1fr)_auto_auto] items-center gap-x-2 px-3 py-2 text-left transition-colors hover:bg-[var(--bg-card2)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] md:gap-x-3"
-    >
-      <span
-        aria-label={t(`dashboard.filter_${item.kind}`)}
-        title={t(`dashboard.filter_${item.kind}`)}
-        className={[
-          'mx-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-sm)]',
-          isEval
-            ? 'bg-[var(--accent-dim)] text-[var(--accent)]'
-            : 'bg-[var(--bg-card2)] text-[var(--text-muted)]',
-        ].join(' ')}
-      >
-        {isEval ? <FileText size={16} strokeWidth={2} /> : <Gauge size={16} strokeWidth={2} />}
-      </span>
-      <div className="flex flex-col min-w-0 flex-1">
-        <span className="type-body-sm text-[var(--text)] break-words">{model}</span>
-        <span className="type-caption-mono text-[var(--text-muted)] break-words md:hidden">{dataset}</span>
-        <span className="type-caption-mono mt-0.5 text-[var(--text-dim)] md:hidden">{formatShort(item.ts)}</span>
-      </div>
-      <div className="hidden min-w-0 flex-col md:flex">
-        <span className="type-body-sm break-words text-[var(--text)]">{dataset}</span>
-        <span className="type-caption-mono text-[var(--text-muted)]">{meta}</span>
-      </div>
-      <span className="type-caption-mono hidden whitespace-nowrap text-[var(--text-muted)] md:block">
-        {formatShort(item.ts)}
-      </span>
-      {isEval ? (
-        <ScoreBadge score={item.report.score} className="shrink-0 !text-xs !px-2" />
-      ) : (
-        <span className="type-caption-mono text-[var(--text)] shrink-0">
-          {formatMetricByKey('rps', item.run.best_rps, t).primary}
-        </span>
-      )}
-      <ChevronRight size={14} className="text-[var(--text-dim)] shrink-0" />
-    </button>
-  )
-}
-
-// ------------------------------------------------------------------ //
-// Dashboard (overview home)                                           //
-// ------------------------------------------------------------------ //
+/**
+ * Landing page: how much has been recorded here, then how the benchmarks are holding up.
+ *
+ * Four counters open the page, and below them the part no other page can do: results aggregated by
+ * what they measure rather than by when they ran, because re-running a benchmark is the normal
+ * workflow here and a flat feed renders those repeats as many identical-looking rows. Anything the
+ * list pages do better is not duplicated -- no filter, no search, no pagination.
+ */
 export default function DashboardPage() {
   const { t } = useLocale()
-  const { rootPath, scanToken } = useReports()
+  const { rootPath, scanToken } = useScan()
   const navigate = useNavigate()
 
-  const [loading, setLoading] = useState(false)
-  const [scanned, setScanned] = useState(false)
-  const [reports, setReports] = useState<ReportSummary[]>([])
-  const [perfRuns, setPerfRuns] = useState<PerfRunSummary[]>([])
-  const [loadError, setLoadError] = useState('')
-
-  // Recent-runs feed controls.
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [query, setQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | 'eval' | 'perf'>('all')
-  const [page, setPage] = useState(1)
+  const [sort, setSort] = useState<SortState>({ key: 'lastRun', descending: true })
 
-  // Fetch eval + perf whenever the global scan token or root changes.
-  useEffect(() => {
-    if (!rootPath) return
-    const controller = new AbortController()
-    const load = async () => {
-      setLoading(true)
-      setLoadError('')
+  // Fetch eval + perf whenever the global scan token or root changes. Settled,
+  // not all-or-nothing: one side failing must not hide the other's runs.
+  const overview = useAsyncResource(
+    async (signal) => {
       const [evalRes, perfRes] = await Promise.allSettled([
-        listReports({ rootPath, pageSize: 1000, sortBy: 'time', sortOrder: 'desc', signal: controller.signal }),
-        listPerfRuns(rootPath, controller.signal),
+        (async () => {
+          const collected: ReportSummary[] = []
+          let page = 1
+          while (true) {
+            const response = await listReports({
+              rootPath,
+              page,
+              pageSize: 100,
+              sortBy: 'time',
+              sortOrder: 'desc',
+              signal,
+            })
+            collected.push(...response.reports)
+            if (collected.length >= response.total || response.reports.length === 0) return collected
+            page += 1
+          }
+        })(),
+        listPerfRuns(rootPath, signal),
       ])
-      if (controller.signal.aborted) return
-      if (evalRes.status === 'fulfilled') setReports(evalRes.value.reports)
-      if (perfRes.status === 'fulfilled') setPerfRuns(perfRes.value.runs)
-      if (evalRes.status === 'rejected' || perfRes.status === 'rejected') {
-        const reason = evalRes.status === 'rejected' ? evalRes.reason : perfRes.status === 'rejected' ? perfRes.reason : null
-        setLoadError(reason instanceof Error ? reason.message : t('common.loadError'))
-      }
-      setScanned(true)
-      setLoading(false)
-    }
-    load()
-    return () => {
-      controller.abort()
-    }
-  }, [rootPath, scanToken, t])
 
-  // Merge into a single time-sorted feed (uncapped).
-  const allItems = useMemo<RunItem[]>(() => {
-    const items: RunItem[] = [
-      ...reports.map((r): RunItem => ({ kind: 'eval', ts: r.timestamp || '', report: r })),
-      ...perfRuns.map((r): RunItem => ({ kind: 'perf', ts: r.timestamp || '', run: r })),
-    ]
-    return items.sort((a, b) => b.ts.localeCompare(a.ts))
-  }, [reports, perfRuns])
+      const failure = evalRes.status === 'rejected'
+        ? evalRes.reason
+        : perfRes.status === 'rejected' ? perfRes.reason : null
 
-  // Apply the type filter + keyword search.
-  const filteredItems = useMemo<RunItem[]>(() => {
-    const q = query.trim().toLowerCase()
-    return allItems.filter((it) => {
-      if (typeFilter !== 'all' && it.kind !== typeFilter) return false
-      if (!q) return true
-      if (it.kind === 'eval') {
-        return (
-          (it.report.model_name || '').toLowerCase().includes(q) ||
-          (it.report.dataset_name || '').toLowerCase().includes(q)
-        )
+      return {
+        reports: evalRes.status === 'fulfilled' ? evalRes.value : EMPTY_REPORTS,
+        perfRuns: perfRes.status === 'fulfilled' ? perfRes.value.runs : EMPTY_PERF_RUNS,
+        perfSemantics: perfRes.status === 'fulfilled' ? (perfRes.value.metric_semantics ?? {}) : {},
+        failure: failure instanceof Error ? failure.message : failure ? t('common.loadError') : '',
       }
-      return (
-        (it.run.model || '').toLowerCase().includes(q) ||
-        (it.run.dataset || '').toLowerCase().includes(q) ||
-        (it.run.api_type || '').toLowerCase().includes(q)
-      )
+    },
+    [rootPath, scanToken],
+    { enabled: Boolean(rootPath), fallbackMessage: t('common.loadError') },
+  )
+
+  const reports = overview.data?.reports ?? EMPTY_REPORTS
+  const perfRuns = overview.data?.perfRuns ?? EMPTY_PERF_RUNS
+  const perfSemantics = overview.data?.perfSemantics ?? EMPTY_SEMANTICS
+  const loading = overview.loading
+  // A partial failure is reported by the resolved value; a total one by the hook.
+  const loadError = overview.error || (overview.data?.failure ?? '')
+  const scanned = overview.data !== undefined
+
+  // The table is driven by this: every score ever recorded, grouped by what it measures.
+  const rows = useMemo(
+    () => aggregateRuns(reports, perfRuns, perfSemantics),
+    [reports, perfRuns, perfSemantics],
+  )
+
+  // What the active tab admits. Filtering here rather than inside the table keeps the table a
+  // renderer of whatever rows it is handed.
+  const visibleRows = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase()
+    return rows.filter((row) => {
+      if (kindFilter !== 'all' && row.cell.kind !== kindFilter) return false
+      if (!normalizedQuery) return true
+      return [row.cell.model, row.cell.benchmark, row.cell.benchmarkLabel, row.cell.metricName]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLocaleLowerCase().includes(normalizedQuery))
     })
-  }, [allItems, typeFilter, query])
-
-  // Paginate the filtered feed (page is reset to 1 by the filter/search handlers).
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / RECENT_LIMIT))
-  const safePage = Math.min(page, totalPages)
-  const visibleItems = filteredItems.slice((safePage - 1) * RECENT_LIMIT, safePage * RECENT_LIMIT)
+  }, [rows, kindFilter, query])
 
   const kpi = useMemo(() => {
     const models = new Set<string>()
-    reports.forEach((r) => models.add(r.model_name))
-    perfRuns.forEach((r) => r.model && models.add(r.model))
-    const latestTs = allItems.length > 0 ? allItems[0].ts : ''
+    reports.forEach((report) => report.model_name && models.add(report.model_name))
+    perfRuns.forEach((run) => run.model && models.add(run.model))
+    const timestamps = [
+      ...reports.map((report) => report.timestamp || ''),
+      ...perfRuns.map((run) => run.timestamp || ''),
+    ].filter((timestamp): timestamp is string => Boolean(timestamp))
+    const latest: string = timestamps.length > 0 ? timestamps.reduce((a, b) => (a > b ? a : b)) : ''
     return {
       evals: reports.length,
       perfs: perfRuns.length,
       models: models.size,
-      latest: latestTs ? formatFull(latestTs) : t('dashboard.neverText'),
+      latest,
     }
-  }, [reports, perfRuns, allItems, t])
+  }, [reports, perfRuns])
 
-  const openItem = (item: RunItem) => {
-    if (item.kind === 'eval') {
-      navigate(`/reports/${encodeURIComponent(item.report.name)}?root_path=${encodeURIComponent(rootPath)}`)
-    } else {
-      navigate(`/perf-report?path=${encodeURIComponent(item.run.path)}&root_path=${encodeURIComponent(rootPath)}`)
+  const latestRunLabel = useMemo(() => {
+    if (!kpi.latest) return t('dashboard.neverText')
+    const value = new Date(kpi.latest)
+    const today = new Date()
+    const time = value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    if (value.toDateString() === today.toDateString()) return `${t('dashboard.today')}, ${time}`
+    return formatTimestamp(kpi.latest, 'seconds')
+  }, [kpi.latest, t])
+
+  const kpiItems = useMemo<KpiItem[]>(() => [
+    {
+      icon: <FileText size={17} strokeWidth={2} />,
+      value: String(kpi.evals),
+      label: t('dashboard.totalEvaluations'),
+      onClick: () => navigate('/reports'),
+    },
+    {
+      icon: <Gauge size={17} strokeWidth={2} />,
+      value: String(kpi.perfs),
+      label: t('dashboard.totalPerfRuns'),
+      onClick: () => navigate('/performance'),
+    },
+    {
+      icon: <Cpu size={17} strokeWidth={2} />,
+      value: String(kpi.models),
+      label: t('dashboard.modelsEvaluated'),
+    },
+    {
+      icon: <Clock size={17} strokeWidth={2} />,
+      value: latestRunLabel,
+      label: t('dashboard.latestRun'),
+      title: kpi.latest ? formatTimestamp(kpi.latest, 'seconds') : undefined,
+    },
+  ], [kpi, latestRunLabel, navigate, t])
+
+  const recentChange = useMemo(() => {
+    return visibleRows
+      .filter((row) => row.cell.history.length > 1)
+      .map((row) => {
+        const latest = row.cell.history[row.cell.history.length - 1]
+        const previous = row.cell.history
+          .slice(0, -1)
+          .reverse()
+          .find((point) => point.score !== latest.score)
+        if (!previous) return null
+        return { row, latest, delta: latest.score - previous.score }
+      })
+      .filter((change): change is NonNullable<typeof change> => change !== null)
+      .filter(({ delta }) => Number.isFinite(delta))
+      .sort((a, b) => b.latest.timestamp.localeCompare(a.latest.timestamp))[0]
+  }, [visibleRows])
+
+  const openRun = (row: AggregatedRow, point: CellPoint) => {
+    const root = encodeURIComponent(rootPath)
+    if (row.cell.kind === 'eval') {
+      const { runId, modelId } = parseReportRef(point.runId)
+      navigate(`/reports/${encodeURIComponent(runId)}/${encodeURIComponent(modelId)}?root_path=${root}`)
+      return
     }
+    navigate(`/perf-report?path=${encodeURIComponent(point.runId)}&root_path=${root}`)
   }
 
-  const hasData = scanned && allItems.length > 0
+  const hasData = scanned && rows.length > 0
+
+  const recentChangeStrip = recentChange ? (
+    <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--accent-dim)] px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <span className="mr-3 type-label-xs text-[var(--accent)]">{t('dashboard.recentChange')}</span>
+        <span className="type-body-sm text-[var(--text-muted)]">
+          {t('dashboard.recentChangeSummary', {
+            benchmark: recentChange.row.cell.benchmarkLabel || recentChange.row.cell.benchmark,
+            metric: recentChange.row.cell.semantics?.metric_name || recentChange.row.cell.metricName,
+            latest: formatMetric(recentChange.row.stats.latest, recentChange.row.cell.semantics).primary,
+            change: formatSignedDifference(recentChange.delta, recentChange.row.cell.semantics),
+          })}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={() => openRun(recentChange.row, recentChange.latest)}
+        className="inline-flex shrink-0 items-center gap-1 type-body-xs font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-dark)]"
+      >
+        {t('dashboard.viewDetails')}
+        <ArrowRight size={13} />
+      </button>
+    </div>
+  ) : null
+
+  // One node, handed to whichever panel is selected: the tab decides the rows, not the markup.
+  const resultsPanel = visibleRows.length > 0 ? (
+    <div className="mt-3 flex min-w-0 flex-col gap-3">
+      {recentChangeStrip}
+      <AggregatedResults rows={visibleRows} onOpenRun={openRun} sort={sort} onSortChange={setSort} />
+    </div>
+  ) : (
+    <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
+      <EmptyStateSystem reason="no-match" context={{ view: 'dashboard' }} />
+    </div>
+  )
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-col gap-5">
-      {loadError && (
-        <ErrorAlert className="rounded-[var(--radius-sm)]">{loadError}</ErrorAlert>
-      )}
+    <div className="flex min-h-0 w-full flex-col gap-4">
+      {loadError && <ErrorAlert className="rounded-[var(--radius-sm)]">{loadError}</ErrorAlert>}
 
-      {/* ── KPI Cards ── */}
       {loading && !scanned ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-5">
-              <Skeleton width={40} height={40} className="mb-3" />
-              <Skeleton width={60} height={28} className="mb-1" />
+        <div className={KPI_HERO_CONTAINER}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className={KPI_HERO_CELL}>
+              <Skeleton width={32} height={32} className="mb-2" />
+              <Skeleton width={60} height={24} className="mb-1" />
               <Skeleton width={100} height={14} />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            icon={<FileText size={18} strokeWidth={2} />}
-            value={String(kpi.evals)}
-            label={t('dashboard.totalEvaluations')}
-            gradient="var(--kpi-grad-0)"
-            delay={0}
-            onClick={() => navigate('/reports')}
-          />
-          <KpiCard
-            icon={<Gauge size={18} strokeWidth={2} />}
-            value={String(kpi.perfs)}
-            label={t('dashboard.totalPerfRuns')}
-            gradient="var(--kpi-grad-1)"
-            delay={60}
-            onClick={() => navigate('/performance')}
-          />
-          <KpiCard
-            icon={<Cpu size={18} strokeWidth={2} />}
-            value={String(kpi.models)}
-            label={t('dashboard.modelsEvaluated')}
-            gradient="var(--kpi-grad-2)"
-            delay={120}
-          />
-          <KpiCard
-            icon={<Clock size={18} strokeWidth={2} />}
-            value={kpi.latest}
-            label={t('dashboard.latestRun')}
-            gradient="var(--kpi-grad-3)"
-            delay={180}
-          />
-        </div>
+        <KpiStrip items={kpiItems} />
       )}
 
-      {/* ── Recent Runs ── */}
       {loading && !scanned ? (
-        <Card title={t('dashboard.recentRuns')}>
+        <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)] p-4">
           <Skeleton lines={8} height={14} />
-        </Card>
+        </div>
       ) : hasData ? (
-        <Card title={t('dashboard.recentRuns')} badge={<Badge>{filteredItems.length}</Badge>}>
-          {/* Filter controls */}
-          <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-1 p-0.5 rounded-[var(--radius-sm)] bg-[var(--bg-deep)] border border-[var(--border)] w-fit">
-              {(['all', 'eval', 'perf'] as const).map((k) => (
-                <button
-                  key={k}
-                  onClick={() => {
-                    setTypeFilter(k)
-                    setPage(1)
-                  }}
-                  className={[
-                    'px-3 py-1 rounded-[var(--radius-sm)] type-body-xs transition-colors',
-                    typeFilter === k
-                      ? 'bg-[var(--accent)] text-[var(--text-on-filled)]'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text)]',
-                  ].join(' ')}
+        <div className="flex min-w-0 flex-col gap-3">
+          <Tabs
+            tabs={KIND_TABS}
+            activeKey={kindFilter}
+            onChange={(key) => setKindFilter(key as KindFilter)}
+            panels={Object.fromEntries(KIND_TABS.map((tab) => [tab.panelId, resultsPanel]))}
+            className="self-start"
+            actions={
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <SearchInput
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={t('dashboard.searchPlaceholder')}
+                  className="w-full sm:w-64"
+                />
+                <select
+                  aria-label={t('dashboard.sortResults')}
+                  value={`${sort.key}-${sort.descending ? 'desc' : 'asc'}`}
+                  onChange={(event) => setSort(parseSort(event.target.value))}
+                  className="rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2 type-body-sm text-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-dim)]"
                 >
-                  {t(`dashboard.filter_${k}`)}
-                </button>
-              ))}
-            </div>
-            <SearchInput
-              value={query}
-              onChange={(v) => {
-                setQuery(v)
-                setPage(1)
-              }}
-              placeholder={t('dashboard.searchPlaceholder')}
-              className="w-full sm:ml-auto sm:w-72"
-            />
-          </div>
-
-          {visibleItems.length > 0 ? (
-            <div className="divide-y divide-[var(--border)] overflow-hidden rounded-[var(--radius-sm)]">
-              <div className="hidden grid-cols-[3rem_minmax(8rem,1fr)_minmax(10rem,1.5fr)_8rem_7rem_1rem] items-center gap-x-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] md:grid">
-                <span />
-                <span>{t('dashboard.model')}</span>
-                <span>{t('dashboard.dataset')}</span>
-                <span>{t('dashboard.date')}</span>
-                <span>{t('dashboard.result')}</span>
-                <span />
+                  <option value="lastRun-desc">{t('dashboard.sortLastRunNewest')}</option>
+                  <option value="lastRun-asc">{t('dashboard.sortLastRunOldest')}</option>
+                  <option value="runs-desc">{t('dashboard.sortRunsMost')}</option>
+                  <option value="runs-asc">{t('dashboard.sortRunsLeast')}</option>
+                  <option value="model-asc">{t('dashboard.sortModelAsc')}</option>
+                  <option value="model-desc">{t('dashboard.sortModelDesc')}</option>
+                  <option value="benchmark-asc">{t('dashboard.sortBenchmarkAsc')}</option>
+                  <option value="benchmark-desc">{t('dashboard.sortBenchmarkDesc')}</option>
+                </select>
               </div>
-              {visibleItems.map((item, i) => (
-                <RunRow key={`${item.kind}-${i}`} item={item} onClick={() => openItem(item)} />
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center type-body-sm text-[var(--text-muted)]">{t('dashboard.noMatch')}</div>
-          )}
-
-          <Pagination
-            page={safePage}
-            totalPages={filteredItems.length > RECENT_LIMIT ? totalPages : 1}
-            onPageChange={setPage}
-            className="mt-3"
+            }
           />
-        </Card>
+        </div>
       ) : scanned ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
-          <EmptyStateSystem
-            reason="no-data"
-            context={{ view: 'dashboard' }}
-            hint={t('dashboard.noReportsHint')}
-          />
+          <EmptyStateSystem reason="no-data" context={{ view: 'dashboard' }} hint={t('dashboard.noReportsHint')} />
         </div>
       ) : (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
@@ -328,4 +316,14 @@ export default function DashboardPage() {
       )}
     </div>
   )
+}
+
+function parseSort(value: string): SortState {
+  const [key, direction] = value.split('-') as [SortState['key'], 'asc' | 'desc']
+  return { key, descending: direction === 'desc' }
+}
+
+function formatSignedDifference(value: number, semantics: MetricSemantics | null): string {
+  const formatted = formatDifference(value, semantics).primary
+  return value > 0 ? `+${formatted}` : formatted
 }

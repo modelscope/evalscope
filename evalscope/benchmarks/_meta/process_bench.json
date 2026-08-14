@@ -12,6 +12,11 @@
       "correct_acc",
       "simple_f1_score"
     ],
+    "primary_metric": {
+      "name": "simple_f1_score",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -110,6 +115,6 @@
     "content_hash": "ca5bc409abb72d62abe6ccf44b6d48bc",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.431671",
+  "updated_at": "2026-08-11T15:30:53.505410",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

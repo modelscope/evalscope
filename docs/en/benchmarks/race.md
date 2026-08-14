@@ -37,7 +37,7 @@ RACE (ReAding Comprehension from Examinations) is a large-scale reading comprehe
 | **Dataset ID** | [evalscope/race](https://modelscope.cn/datasets/evalscope/race/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 3-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

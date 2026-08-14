@@ -36,7 +36,7 @@ HellaSwag 是一个用于评估常识性自然语言推理的基准测试，专�
 | **数据集ID** | [evalscope/hellaswag](https://modelscope.cn/datasets/evalscope/hellaswag/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 

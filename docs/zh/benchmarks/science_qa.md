@@ -37,7 +37,7 @@ ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程
 | **数据集ID** | [AI-ModelScope/ScienceQA](https://modelscope.cn/datasets/AI-ModelScope/ScienceQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

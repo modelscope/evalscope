@@ -57,7 +57,7 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
 - See [Arena User Guide](https://evalscope.readthedocs.io/en/latest/user_guides/arena.html) for details
 """,
         dataset_id='general_arena',
-        metric_list=['winrate'],
+        metric_list=['win_rate'],
         aggregation='elo',
         few_shot_num=0,
         train_split=None,
@@ -326,9 +326,11 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             stats.at[i, 'upper'] = np.percentile(bootstrap_model_coef[model], 97.5)
 
         metrics_dict = {}
-        metrics_dict['winrate'] = get_win_rate_column(stats, 'score', self.baseline).to_dict()
-        metrics_dict['winrate_lower'] = get_win_rate_column(stats, 'lower', self.baseline).to_dict()
-        metrics_dict['winrate_upper'] = get_win_rate_column(stats, 'upper', self.baseline).to_dict()
+        # Canonical names: `winrate` is migrated to `win_rate` on the way into AggScore, so the
+        # bounds must follow the same spelling or the leaderboard filter below cannot match them.
+        metrics_dict['win_rate'] = get_win_rate_column(stats, 'score', self.baseline).to_dict()
+        metrics_dict['win_rate_lower'] = get_win_rate_column(stats, 'lower', self.baseline).to_dict()
+        metrics_dict['win_rate_upper'] = get_win_rate_column(stats, 'upper', self.baseline).to_dict()
 
         agg_scores = []
         for metric_name, models in metrics_dict.items():
@@ -357,8 +359,8 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         # Convert report to dataframe
         df = report.to_dataframe()
 
-        # Filter for winrate-related metrics
-        winrate_df = df[df[ReportKey.metric_name].str.contains('winrate')].copy()
+        # Filter for win-rate related metrics
+        winrate_df = df[df[ReportKey.metric_name].str.contains('win_rate')].copy()
 
         if winrate_df.empty:
             logger.warning('No winrate data found in the report.')
@@ -372,13 +374,13 @@ class GeneralArenaAdapter(DefaultDataAdapter):
 
         def format_leaderboard(data_df, title):
             """Format DataFrame as leaderboard with CI."""
-            # Pivot to get winrate, winrate_lower, winrate_upper as columns
+            # Pivot to get win_rate, win_rate_lower, win_rate_upper as columns
             pivot_df = data_df.pivot_table(
                 index=[ReportKey.model_name], columns=ReportKey.metric_name, values=ReportKey.score, aggfunc='first'
             )
 
-            # Add baseline model with 50% winrate
-            baseline_data = {'winrate': 0.5, 'winrate_lower': 0.5, 'winrate_upper': 0.5}
+            # Add baseline model with 50% win rate
+            baseline_data = {'win_rate': 0.5, 'win_rate_lower': 0.5, 'win_rate_upper': 0.5}
 
             # Create a complete index with all models
             complete_index = pd.Index(all_model_names, name=pivot_df.index.name)
@@ -390,20 +392,20 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                     if col in pivot_df.columns:
                         pivot_df.loc[self.baseline, col] = val
 
-            # Fill missing values with winrate score for other models
-            if 'winrate' in pivot_df.columns:
-                pivot_df['winrate_lower'] = pivot_df.get('winrate_lower', pivot_df['winrate'])
-                pivot_df['winrate_upper'] = pivot_df.get('winrate_upper', pivot_df['winrate'])
+            # Fill missing values with the win rate score for other models
+            if 'win_rate' in pivot_df.columns:
+                pivot_df['win_rate_lower'] = pivot_df.get('win_rate_lower', pivot_df['win_rate'])
+                pivot_df['win_rate_upper'] = pivot_df.get('win_rate_upper', pivot_df['win_rate'])
 
             # Format for display
             leaderboard_data = []
             for model in pivot_df.index:
-                if pd.isna(pivot_df.loc[model, 'winrate']):
+                if pd.isna(pivot_df.loc[model, 'win_rate']):
                     continue
 
-                score_pct = pivot_df.loc[model, 'winrate'] * 100
-                lower_diff = (pivot_df.loc[model, 'winrate_lower'] - pivot_df.loc[model, 'winrate']) * 100
-                upper_diff = (pivot_df.loc[model, 'winrate_upper'] - pivot_df.loc[model, 'winrate']) * 100
+                score_pct = pivot_df.loc[model, 'win_rate'] * 100
+                lower_diff = (pivot_df.loc[model, 'win_rate_lower'] - pivot_df.loc[model, 'win_rate']) * 100
+                upper_diff = (pivot_df.loc[model, 'win_rate_upper'] - pivot_df.loc[model, 'win_rate']) * 100
 
                 leaderboard_data.append({
                     'Model': model,

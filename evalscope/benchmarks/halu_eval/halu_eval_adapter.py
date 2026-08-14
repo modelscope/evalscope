@@ -62,6 +62,7 @@ logger = get_logger()
         subset_list=['dialogue_samples', 'qa_samples', 'summarization_samples'],
         default_subset='Full',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
+        primary_metric='accuracy',
         few_shot_num=0,
         eval_split='data',
         prompt_template='{question}'

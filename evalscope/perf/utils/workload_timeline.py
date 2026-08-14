@@ -33,6 +33,9 @@ from pydantic import BaseModel, Field
 from tabulate import tabulate
 from typing import TYPE_CHECKING, List, Optional
 
+from evalscope.metrics.semantics import format_perf_value
+from evalscope.perf.utils.perf_constants import Metrics
+
 if TYPE_CHECKING:
     from evalscope.perf.utils.benchmark_util import BenchmarkData
 
@@ -282,9 +285,9 @@ class WorkloadThroughput(BaseModel):
         headers = ['Metric (tok/s)', 'Overall', last_label, steady_label]
         body = [[
             r.metric,
-            f'{r.overall:.2f}',
-            f'{r.last_window:.2f}',
-            f'{r.steady_state:.2f}',
+            format_perf_value(r.overall, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
+            format_perf_value(r.last_window, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
+            format_perf_value(r.steady_state, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
         ] for r in self.rows]
         col_align = ('left', ) + ('right', ) * 3
         return tabulate(

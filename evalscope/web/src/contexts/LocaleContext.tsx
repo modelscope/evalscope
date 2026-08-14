@@ -1,10 +1,18 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { lookupTranslation, type Locale } from '@/i18n/translations'
 
+/**
+ * The translate function's contract.
+ *
+ * Exported so a presentational component that is handed `t` as a prop can type it
+ * without re-declaring the signature, which is how two copies of it drifted apart.
+ */
+export type Translate = (path: string, vars?: Record<string, string | number>) => string
+
 interface LocaleCtx {
   locale: Locale
   setLocale: (l: Locale) => void
-  t: (path: string, vars?: Record<string, string | number>) => string
+  t: Translate
 }
 
 const LocaleContext = createContext<LocaleCtx>({

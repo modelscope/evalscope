@@ -34,7 +34,7 @@ MMLU（Massive Multitask Language Understanding，大规模多任务语言理解
 | **数据集 ID** | [cais/mmlu](https://modelscope.cn/datasets/cais/mmlu/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `dev` |

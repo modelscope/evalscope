@@ -33,7 +33,7 @@ GeniaNER is a large-scale biomedical NER dataset consisting of 2,000 MEDLINE abs
 | **Dataset ID** | [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

@@ -34,7 +34,7 @@ GSM8K（Grade School Math 8K）是一个高质量的数据集，包含由人工�
 | **数据集ID** | [AI-ModelScope/gsm8k](https://modelscope.cn/datasets/AI-ModelScope/gsm8k/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2110.14168) |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数** | 4-shot |
 | **评估划分** | `test` |
 | **训练划分** | `train` |

@@ -36,7 +36,7 @@ GPQA（Graduate-Level Google-Proof Q&A）Diamond 是一个极具挑战性的基�
 | **数据集 ID** | [AI-ModelScope/gpqa_diamond](https://modelscope.cn/datasets/AI-ModelScope/gpqa_diamond/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `train` |
 

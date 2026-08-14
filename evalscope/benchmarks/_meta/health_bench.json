@@ -15,6 +15,11 @@
       "context_awareness",
       "completeness"
     ],
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -181,6 +186,6 @@
     "content_hash": "9bd89c2267f2c8a43279ae1ea3c17df6",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.251794",
+  "updated_at": "2026-08-11T15:30:53.604846",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

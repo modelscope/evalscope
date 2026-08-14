@@ -34,7 +34,7 @@ AIME 2026（2026年美国数学邀请赛）是一个基于著名AIME竞赛题目
 | **数据集ID** | [evalscope/aime26](https://modelscope.cn/datasets/evalscope/aime26/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估分割** | `test` |
 

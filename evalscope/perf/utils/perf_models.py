@@ -20,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from tabulate import tabulate
 from typing import Any, Dict, List, Optional
 
+from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 # ---------------------------------------------------------------------------
@@ -118,46 +119,58 @@ class BenchmarkSummary(BaseModel):
     def to_table(self) -> str:
         """Render summary metrics as a grouped tabulate table (simple_outline)."""
 
-        def _fmt(v):
-            if isinstance(v, float):
-                return f'{v:.2f}'
-            return str(v)
+        def _fmt(field_key: str, value: float) -> str:
+            return format_perf_value(value, field_key, include_unit=False)
 
         rows = []
 
         # ── General ──
         rows.append(('── General ──', ''))
-        rows.append((Metrics.TIME_TAKEN_FOR_TESTS, _fmt(self.time_taken)))
-        rows.append((Metrics.NUMBER_OF_CONCURRENCY, str(self.concurrency)))
-        rows.append((Metrics.REQUEST_RATE, _fmt(self.request_rate)))
+        rows.append((Metrics.TIME_TAKEN_FOR_TESTS, _fmt(Metrics.TIME_TAKEN_FOR_TESTS, self.time_taken)))
+        rows.append((Metrics.NUMBER_OF_CONCURRENCY, _fmt(Metrics.NUMBER_OF_CONCURRENCY, self.concurrency)))
+        rows.append((Metrics.REQUEST_RATE, _fmt(Metrics.REQUEST_RATE, self.request_rate)))
         rows.append(
             ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}')
         )
         if self.stream_requests > 0 and self.non_stream_requests > 0:
             rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
-        rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(self.request_throughput)))
+        rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(Metrics.REQUEST_THROUGHPUT, self.request_throughput)))
 
         # ── Latency ──
         rows.append(('── Latency ──', ''))
-        rows.append((Metrics.AVERAGE_LATENCY, _fmt(self.avg_latency)))
+        rows.append((Metrics.AVERAGE_LATENCY, _fmt(Metrics.AVERAGE_LATENCY, self.avg_latency)))
         if self.avg_ttft:
-            rows.append((Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, _fmt(self.avg_ttft)))
+            rows.append((Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, _fmt(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, self.avg_ttft)))
         if self.avg_tpot:
-            rows.append((Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, _fmt(self.avg_tpot)))
+            rows.append(
+                (Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, _fmt(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, self.avg_tpot))
+            )
         if self.avg_itl:
-            rows.append((Metrics.AVERAGE_INTER_TOKEN_LATENCY, _fmt(self.avg_itl)))
+            rows.append((Metrics.AVERAGE_INTER_TOKEN_LATENCY, _fmt(Metrics.AVERAGE_INTER_TOKEN_LATENCY, self.avg_itl)))
 
         # ── Tokens ──
         rows.append(('── Tokens ──', ''))
-        rows.append((Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, _fmt(self.avg_input_tokens)))
+        rows.append((
+            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST,
+            _fmt(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, self.avg_input_tokens)
+        ))
         if self.avg_output_tokens:
-            rows.append((Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, _fmt(self.avg_output_tokens)))
+            rows.append((
+                Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
+                _fmt(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, self.avg_output_tokens)
+            ))
         if self.output_token_throughput:
-            rows.append((Metrics.OUTPUT_TOKEN_THROUGHPUT, _fmt(self.output_token_throughput)))
+            rows.append(
+                (Metrics.OUTPUT_TOKEN_THROUGHPUT, _fmt(Metrics.OUTPUT_TOKEN_THROUGHPUT, self.output_token_throughput))
+            )
         if self.total_token_throughput:
-            rows.append((Metrics.TOTAL_TOKEN_THROUGHPUT, _fmt(self.total_token_throughput)))
+            rows.append(
+                (Metrics.TOTAL_TOKEN_THROUGHPUT, _fmt(Metrics.TOTAL_TOKEN_THROUGHPUT, self.total_token_throughput))
+            )
         if self.input_token_throughput:
-            rows.append((Metrics.INPUT_TOKEN_THROUGHPUT, _fmt(self.input_token_throughput)))
+            rows.append(
+                (Metrics.INPUT_TOKEN_THROUGHPUT, _fmt(Metrics.INPUT_TOKEN_THROUGHPUT, self.input_token_throughput))
+            )
 
         # ── Multi-turn (optional) ──
         multiturn_present = any(
@@ -171,21 +184,37 @@ class BenchmarkSummary(BaseModel):
         if multiturn_present:
             rows.append(('── Multi-turn ──', ''))
             if self.avg_turns is not None:
-                rows.append((Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST, _fmt(self.avg_turns)))
+                rows.append((
+                    Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST,
+                    _fmt(Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST, self.avg_turns)
+                ))
             if self.avg_cached_percent is not None:
-                rows.append((Metrics.AVERAGE_CACHED_PERCENT, _fmt(self.avg_cached_percent)))
+                rows.append(
+                    (Metrics.AVERAGE_CACHED_PERCENT, _fmt(Metrics.AVERAGE_CACHED_PERCENT, self.avg_cached_percent))
+                )
             if self.avg_first_turn_ttft is not None:
-                rows.append((Metrics.AVERAGE_FIRST_TURN_TTFT, _fmt(self.avg_first_turn_ttft)))
+                rows.append(
+                    (Metrics.AVERAGE_FIRST_TURN_TTFT, _fmt(Metrics.AVERAGE_FIRST_TURN_TTFT, self.avg_first_turn_ttft))
+                )
             if self.avg_subsequent_turn_ttft is not None:
-                rows.append((Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT, _fmt(self.avg_subsequent_turn_ttft)))
+                rows.append((
+                    Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT,
+                    _fmt(Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT, self.avg_subsequent_turn_ttft)
+                ))
 
         # ── Speculative Decoding (optional) ──
         if self.avg_decoded_tokens_per_iter is not None or self.approx_spec_acceptance_rate is not None:
             rows.append(('── Speculative Decoding ──', ''))
             if self.avg_decoded_tokens_per_iter is not None:
-                rows.append((Metrics.AVERAGE_DECODED_TOKENS_PER_ITER, _fmt(self.avg_decoded_tokens_per_iter)))
+                rows.append((
+                    Metrics.AVERAGE_DECODED_TOKENS_PER_ITER,
+                    _fmt(Metrics.AVERAGE_DECODED_TOKENS_PER_ITER, self.avg_decoded_tokens_per_iter)
+                ))
             if self.approx_spec_acceptance_rate is not None:
-                rows.append((Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE, _fmt(self.approx_spec_acceptance_rate)))
+                rows.append((
+                    Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE,
+                    _fmt(Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE, self.approx_spec_acceptance_rate)
+                ))
 
         raw = tabulate(rows, headers=['Metric', 'Value'], tablefmt='simple_outline', colalign=('left', 'right'))
 
@@ -338,14 +367,17 @@ class PercentileResult(BaseModel):
         """Render percentile results as a formatted table string.
 
         Rows are metrics, columns are percentile labels (e.g. 5%, 10%, ..., 99%).
-        All numeric values are formatted to two decimal places.
+        Numeric values use the semantics declared for their metric key.
         """
         col_data = self.to_columns()
         p_labels = col_data.get(PercentileMetrics.PERCENTILES, [])
-        rows = [[metric] + [f'{v:.2f}' if isinstance(v, (int, float)) else v
-                            for v in values]
-                for metric, values in col_data.items()
-                if metric != PercentileMetrics.PERCENTILES]
+        rows = [
+            [metric]
+            + [format_perf_value(v, metric, include_unit=False) if isinstance(v, (int, float)) else v
+               for v in values]
+            for metric, values in col_data.items()
+            if metric != PercentileMetrics.PERCENTILES
+        ]
         col_align = ('left', ) + ('right', ) * len(p_labels)
         return tabulate(
             rows,

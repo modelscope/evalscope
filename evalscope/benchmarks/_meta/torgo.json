@@ -12,6 +12,11 @@
       "wer",
       "sem_score"
     ],
+    "primary_metric": {
+      "name": "wer",
+      "aggregation": null,
+      "dimensions": {}
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -176,6 +181,6 @@
     "content_hash": "e347b878043f753f1aad707542b6c9e0",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.629384",
+  "updated_at": "2026-08-11T15:30:53.498700",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

@@ -36,7 +36,7 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 | **数据集ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2/latest) |
 | **论文** | N/A |
 | **标签** | `Coding` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

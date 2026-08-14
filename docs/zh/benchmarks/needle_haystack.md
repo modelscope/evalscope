@@ -38,7 +38,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 | **数据集ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |
 | **论文** | 无 |
 | **标签** | `LongContext`, `Retrieval` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

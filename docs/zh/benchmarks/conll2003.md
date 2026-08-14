@@ -36,7 +36,7 @@ CoNLL-2003 是在 2003 年计算自然语言学习会议（Conference on Computa
 | **数据集ID** | [extraordinarylab/conll2003](https://modelscope.cn/datasets/extraordinarylab/conll2003/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认样本数** | 5-shot |
 | **评估集划分** | `test` |
 | **训练集划分** | `train` |

@@ -71,6 +71,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
             'prompt_level_loose',
             'inst_level_loose',
         ],
+        primary_metric='prompt_level_strict',
         few_shot_num=0,
         train_split=None,
         eval_split='train',

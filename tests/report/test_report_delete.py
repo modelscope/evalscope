@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-"""Unit tests for the eval-report delete endpoint (DELETE /api/v1/reports/report).
+"""Unit tests for the eval-report delete endpoint (DELETE /api/v1/reports/runs/<run_id>/models/<model_id>).
 
 Builds a fake eval output tree with two model reports sharing one run
 directory and verifies per-model deletion, run-dir cleanup, path-traversal
@@ -46,17 +46,14 @@ class TestReportDelete(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def _delete(self, report_name: str):
+    def _delete(self, run_id: str, model_id: str):
         return self.client.delete(
-            '/api/v1/reports/report',
-            query_string={
-                'root_path': self.tmp,
-                'report_name': report_name
-            },
+            f'/api/v1/reports/runs/{run_id}/models/{model_id}',
+            query_string={'root_path': self.tmp},
         )
 
     def test_delete_one_model_keeps_run_dir(self):
-        res = self._delete(f'{self.prefix}@@model-a::gsm8k')
+        res = self._delete(self.prefix, 'model-a')
         self.assertEqual(res.status_code, 200)
         body = res.get_json()
         self.assertTrue(body['success'])
@@ -72,29 +69,24 @@ class TestReportDelete(unittest.TestCase):
                 self.assertNotIn('model-a', f.read())
 
     def test_delete_last_model_removes_run_dir(self):
-        self._delete(f'{self.prefix}@@model-a::gsm8k')
-        res = self._delete(f'{self.prefix}@@model-b::gsm8k')
+        self._delete(self.prefix, 'model-a')
+        res = self._delete(self.prefix, 'model-b')
         self.assertEqual(res.status_code, 200)
         self.assertFalse(os.path.isdir(os.path.join(self.tmp, self.prefix)))
         # The outputs root itself is never removed.
         self.assertTrue(os.path.isdir(self.tmp))
 
     def test_delete_rejects_bad_names(self):
-        # Missing report_name.
-        res = self.client.delete('/api/v1/reports/report', query_string={'root_path': self.tmp})
-        self.assertEqual(res.status_code, 400)
-        # Malformed identifier (no @@ / :: tokens).
-        self.assertEqual(self._delete('not-a-report-name').status_code, 400)
-        # Path traversal in the prefix segment.
-        self.assertEqual(self._delete('../../etc@@model-a::gsm8k').status_code, 400)
-        # Unknown model report.
-        self.assertEqual(self._delete(f'{self.prefix}@@ghost::gsm8k').status_code, 404)
+        # Unknown model report under an existing run.
+        self.assertEqual(self._delete(self.prefix, 'ghost').status_code, 404)
+        # Unknown run directory.
+        self.assertEqual(self._delete('20990101_000000', 'model-a').status_code, 404)
         # The tree is untouched by all rejected attempts.
         self.assertTrue(os.path.isdir(os.path.join(self.tmp, self.prefix, 'reports', 'model-a')))
 
     def test_delete_rejects_running_task(self):
         with mock.patch('evalscope.service.blueprints.reports.active_task_ids', return_value={self.prefix}):
-            res = self._delete(f'{self.prefix}@@model-a::gsm8k')
+            res = self._delete(self.prefix, 'model-a')
         self.assertEqual(res.status_code, 409)
         self.assertTrue(os.path.isdir(os.path.join(self.tmp, self.prefix, 'reports', 'model-a')))
 

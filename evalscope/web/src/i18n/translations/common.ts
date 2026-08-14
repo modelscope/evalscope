@@ -10,6 +10,8 @@ export const en: Dict = {
   retry: 'Retry',
   cancel: 'Cancel',
   loadError: 'Failed to load data',
+  pageErrorTitle: 'This page could not be displayed',
+  pageErrorBody: 'An unexpected error occurred while rendering the page.',
 }
 
 export const zh: Dict = {
@@ -22,4 +24,6 @@ export const zh: Dict = {
   retry: '重试',
   cancel: '取消',
   loadError: '数据加载失败',
+  pageErrorTitle: '此页面无法显示',
+  pageErrorBody: '渲染页面时发生未预期的错误。',
 }

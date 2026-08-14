@@ -35,7 +35,7 @@ ArenaHard 是一个具有挑战性的基准测试，通过竞争性成对比较�
 | **数据集ID** | [AI-ModelScope/arena-hard-auto-v0.1](https://modelscope.cn/datasets/AI-ModelScope/arena-hard-auto-v0.1/summary) |
 | **论文** | N/A |
 | **标签** | `Arena`, `InstructionFollowing` |
-| **指标** | `winrate` |
+| **指标** | `win_rate` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `elo` |

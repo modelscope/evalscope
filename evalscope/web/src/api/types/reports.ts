@@ -24,7 +24,6 @@ export type {
   AgentTrace,
   PredictionRow,
   PredictionsResponse,
-  ScanResponse,
   DeleteReportResponse,
   AnalysisResponse,
 } from '@/api/schemas/reports.schema'

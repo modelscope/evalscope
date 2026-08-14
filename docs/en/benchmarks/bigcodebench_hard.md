@@ -37,7 +37,7 @@ BigCodeBench-Hard is a curated subset of BigCodeBench containing 148 tasks that 
 | **Dataset ID** | [evalscope/bigcodebench-hard](https://modelscope.cn/datasets/evalscope/bigcodebench-hard/summary) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `v0.1.4` |
 | **Aggregation** | `mean_and_pass_at_k` |

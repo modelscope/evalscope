@@ -36,7 +36,7 @@ AA-LCR（Artificial Analysis Long Context Retrieval）是一个用于评估语�
 | **数据集 ID** | [evalscope/AA-LCR](https://modelscope.cn/datasets/evalscope/AA-LCR/summary) |
 | **论文** | 无 |
 | **标签** | `Knowledge`, `LongContext`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估数据划分** | `test` |
 

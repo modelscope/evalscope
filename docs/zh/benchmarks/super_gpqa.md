@@ -39,7 +39,7 @@ SuperGPQA 是一个大规模多项选择题问答数据集，旨在评估模型�
 | **数据集 ID** | [m-a-p/SuperGPQA](https://modelscope.cn/datasets/m-a-p/SuperGPQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认 Shots** | 0-shot |
 | **评估划分** | `train` |
 

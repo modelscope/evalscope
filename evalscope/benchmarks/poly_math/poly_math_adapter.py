@@ -156,4 +156,13 @@ class PolyMathAdapter(DefaultDataAdapter):
 
         # Append DW-ACC metric
         if dw_subsets:
-            report.metrics.append(Metric(name='DW-ACC', categories=[Category(name='-', subsets=dw_subsets)]))
+            from evalscope.api.metric.semantics import MetricIdentity
+            from evalscope.metrics.semantics import get_semantics_resolver
+
+            identity = MetricIdentity(
+                name='accuracy', aggregation='weighted_mean', dimensions={'weighting': 'difficulty'}
+            )
+            semantics = get_semantics_resolver().resolve(self.name, identity).semantics
+            report.metrics.append(
+                Metric(identity=identity, categories=[Category(name='-', subsets=dw_subsets)], semantics=semantics)
+            )

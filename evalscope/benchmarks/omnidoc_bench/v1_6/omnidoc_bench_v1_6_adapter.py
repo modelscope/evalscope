@@ -74,7 +74,8 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         description=DESCRIPTION,
         dataset_id='OpenDataLab/OmniDocBench',
         paper_url='https://github.com/opendatalab/OmniDocBench',
-        metric_list=[*PAGE_METRICS, 'overall'],
+        metric_list=[*PAGE_METRICS, 'normalized_score'],
+        primary_metric='normalized_score',
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         review_timeout=REVIEW_TIMEOUT,
@@ -86,7 +87,6 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
         self.add_overall_metric = False
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
@@ -186,7 +186,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                 AggScore(
                     score=means[metric_name],
                     metric_name=metric_name,
-                    aggregation_name='mean',
+                    aggregation='mean',
                     num=len(values),
                     ids=metric_ids[metric_name],
                     metadata={'page_denominator': len(values)},
@@ -199,8 +199,8 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
             aggregated.append(
                 AggScore(
                     score=overall,
-                    metric_name='overall',
-                    aggregation_name='official',
+                    metric_name='normalized_score',
+                    aggregation='official',
                     num=len(sample_scores),
                     ids=[sample_score.sample_id for sample_score in sample_scores],
                     metadata={

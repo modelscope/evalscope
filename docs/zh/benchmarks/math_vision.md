@@ -35,7 +35,7 @@ MATH-Vision（MATH-V）是一个精心整理的数据集，包含3,040道高质�
 | **数据集ID** | [evalscope/MathVision](https://modelscope.cn/datasets/evalscope/MathVision/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

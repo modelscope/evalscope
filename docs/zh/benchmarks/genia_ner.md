@@ -33,7 +33,7 @@ GeniaNER 是一个大规模的生物医学命名实体识别（NER）数据集�
 | **数据集 ID** | [extraordinarylab/genia-ner](https://modelscope.cn/datasets/extraordinarylab/genia-ner/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |

@@ -34,7 +34,7 @@ MaritimeBench 是一个用于评估 AI 模型在中文海事相关多项选择�
 | **数据集 ID** | [HiDolphin/MaritimeBench](https://modelscope.cn/datasets/HiDolphin/MaritimeBench/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

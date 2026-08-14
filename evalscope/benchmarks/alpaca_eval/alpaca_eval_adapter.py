@@ -80,7 +80,7 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 """,
         dataset_id='AI-ModelScope/alpaca_eval',
         subset_list=['alpaca_eval_gpt4_baseline'],
-        metric_list=['winrate'],
+        metric_list=['win_rate'],
         few_shot_num=0,
         train_split=None,
         eval_split='eval',
@@ -146,12 +146,12 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
             winrate = 0
 
         # Set score based on the match result
-        score.value = {'winrate': winrate}
+        score.value = {'win_rate': winrate}
         score.explanation = f'LLM judge: {judge_response}'
         score.metadata = {
             'source': 'llm_judge',
             'judge_strategy': self.judge_strategy,
             'model': self.llm_judge.model_id
         }
-        score.main_score_name = 'winrate'
+        score.main_score_name = 'win_rate'
         return score

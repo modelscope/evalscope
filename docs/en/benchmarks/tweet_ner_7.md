@@ -35,7 +35,7 @@ TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-20
 | **Dataset ID** | [extraordinarylab/tweet-ner-7](https://modelscope.cn/datasets/extraordinarylab/tweet-ner-7/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

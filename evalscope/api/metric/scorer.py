@@ -1,9 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+import warnings
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
+from evalscope.api.metric.semantics import MetricIdentity
 
 Value = Dict[str, Union[int, float, bool]]
 
@@ -28,7 +27,11 @@ class Score(BaseModel):
     """Additional metadata related to the score"""
 
     main_score_name: Optional[str] = Field(default=None)
-    """Main score name, if applicable. This is used to indicate which score is the primary score in a multi-score scenario."""  # noqa: E501
+    """Raw per-sample score name used by :attr:`main_value` in a multi-score result.
+
+    This selects a value inside one ``Score`` only. ``BenchmarkMeta.primary_metric`` is the
+    report-level declaration; this field does not assign report metric roles.
+    """
 
     @property
     def main_value(self) -> Union[int, float, bool]:
@@ -78,14 +81,19 @@ class SampleScore(BaseModel):
 class AggScore(BaseModel):
     """Output of an aggregation operation."""
 
+    model_config = ConfigDict(populate_by_name=True, extra='forbid')
+
     score: float = Field(default=0.0)
     """Aggregated value as a float."""
 
     metric_name: str = Field(default='')
     """Name of the metric being aggregated."""
 
-    aggregation_name: str = Field(default='')
-    """Name of the aggregation methods"""
+    aggregation: str = Field(default='identity', validation_alias=AliasChoices('aggregation', 'aggregation_name'))
+    """Canonical name of the aggregation method. It is not part of ``metric_name``."""
+
+    dimensions: Dict[str, Union[str, int, float, bool]] = Field(default_factory=dict)
+    """Structured axes such as scope, threshold, level, target, or k."""
 
     num: int = Field(default=0)
     """Number of samples used in the aggregation."""
@@ -95,6 +103,35 @@ class AggScore(BaseModel):
 
     metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Additional metadata related to the aggregation."""
+
+    @property
+    def identity(self) -> MetricIdentity:
+        """Return the canonical structured identity represented by this aggregate."""
+        return MetricIdentity(name=self.metric_name, aggregation=self.aggregation, dimensions=self.dimensions)
+
+    @property
+    def aggregation_name(self) -> str:
+        """Deprecated compatibility alias for :attr:`aggregation`."""
+        warnings.warn('AggScore.aggregation_name is deprecated; use aggregation.', DeprecationWarning, stacklevel=2)
+        return self.aggregation
+
+    @model_validator(mode='before')
+    @classmethod
+    def _warn_deprecated_aggregation_name(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'aggregation_name' in data and 'aggregation' not in data:
+            warnings.warn('AggScore.aggregation_name is deprecated; use aggregation.', DeprecationWarning, stacklevel=3)
+        return data
+
+    @model_validator(mode='after')
+    def _canonicalize_identity_fields(self) -> 'AggScore':
+        """Normalize producer syntax without assigning legacy semantics."""
+        from evalscope.metrics.semantics.identity import canonicalize_producer_identity
+
+        identity = canonicalize_producer_identity(self.metric_name, self.aggregation, self.dimensions)
+        self.metric_name = identity.name
+        self.aggregation = identity.aggregation
+        self.dimensions = identity.dimensions
+        return self
 
 
 class Aggregator:

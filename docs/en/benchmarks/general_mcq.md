@@ -38,7 +38,7 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
 | **Dataset ID** | `general_mcq` |
 | **Paper** | N/A |
 | **Tags** | `Custom`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `val` |
 | **Train Split** | `dev` |

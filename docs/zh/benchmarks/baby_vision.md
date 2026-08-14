@@ -36,7 +36,7 @@ BabyVision 是一个视觉感知基准测试，通过受婴儿及幼儿视觉发
 | **数据集ID** | [evalscope/BabyVision](https://modelscope.cn/datasets/evalscope/BabyVision/summary) |
 | **论文** | N/A |
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估切分** | `train` |
 

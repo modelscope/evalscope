@@ -41,7 +41,7 @@ CharXiv 是 NeurIPS 2024 提出的一个全面的图表理解基准测试，用�
 | **数据集ID** | [princeton-nlp/CharXiv](https://modelscope.cn/datasets/princeton-nlp/CharXiv/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2406.18521) |
 | **标签** | `MultiModal`, `QA`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 

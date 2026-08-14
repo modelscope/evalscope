@@ -27,7 +27,7 @@ DeepSWE 是一个用于评估仓库级软件工程任务的编码智能体基准
 | **数据集ID** | [evalscope/deep-swe](https://modelscope.cn/datasets/evalscope/deep-swe/summary) |
 | **论文** | 无 |
 | **标签** | `Agent`, `Coding`, `MultiTurn` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

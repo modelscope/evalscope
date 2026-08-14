@@ -35,7 +35,7 @@ The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abst
 | **Dataset ID** | [extraordinarylab/bc4chemd](https://modelscope.cn/datasets/extraordinarylab/bc4chemd/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

@@ -37,7 +37,7 @@ Competition-MATH is a comprehensive benchmark of 12,500 challenging competition 
 | **Dataset ID** | [evalscope/competition_math](https://modelscope.cn/datasets/evalscope/competition_math/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 4-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

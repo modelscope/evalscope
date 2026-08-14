@@ -35,7 +35,7 @@ LogicVista evaluates the fundamental logical reasoning abilities of multimodal l
 | **Dataset ID** | [evalscope/LogicVista](https://modelscope.cn/datasets/evalscope/LogicVista/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2407.04973) |
 | **Tags** | `MCQ`, `MultiModal`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

@@ -33,7 +33,7 @@ Drivelology 二分类任务评估模型识别“drivelology”的能力——这
 | **数据集ID** | [extraordinarylab/drivel-hub](https://modelscope.cn/datasets/extraordinarylab/drivel-hub/summary) |
 | **论文** | N/A |
 | **标签** | `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方式** | `f1` |

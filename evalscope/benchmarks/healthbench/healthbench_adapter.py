@@ -139,6 +139,7 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
             'context_awareness',
             'completeness',
         ],
+        primary_metric='accuracy',
         aggregation='clipped_mean',
         few_shot_num=0,
         train_split=None,
@@ -176,7 +177,6 @@ class HealthBenchAdapter(DefaultDataAdapter):
         super().__init__(*args, **kwargs)
 
         self.reformat_subset = True
-        self.add_aggregation_name = False
         # Get version from extra parameters, default to first version if not specified
         self.version = self.extra_params.get('version', VERSION[0])
         # Map version to corresponding data file

@@ -26,27 +26,43 @@ describe('OverviewTab dataset score view', () => {
   it('renders a single dataset in the score table without a duplicate visualization', () => {
     renderOverview(multi.slice(0, 1))
 
-    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
+    expect(screen.getAllByText('gsm8k').length).toBeGreaterThan(0)
     expect(screen.queryByText('Dataset Score Visualization')).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('keeps two datasets in one sortable table', () => {
+  it('keeps two datasets in one table, each with its own metric column', () => {
+    // The metric has its own column now, and each row's bar is sized by that value's position in
+    // its own range rather than by quality, so two different metrics never draw the same length.
     renderOverview(multi.slice(0, 2))
 
-    expect(screen.getByRole('progressbar', { name: 'gsm8k Score' })).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'arc_challenge Score' })).toBeInTheDocument()
-    expect(screen.getByText('81.5%')).toBeInTheDocument()
-    expect(screen.queryByText('8150.0%')).not.toBeInTheDocument()
+    expect(screen.getAllByText('gsm8k').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('arc_challenge').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('progressbar')).toHaveLength(2)
+    expect(screen.getAllByText('81.5%').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/^Score ↑$/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/8150/)).not.toBeInTheDocument()
     expect(screen.queryByTestId('radar-chart')).not.toBeInTheDocument()
   })
 
-  it('keeps unbounded metrics in their native unit without a percentage bar', () => {
+  it('keeps an unbounded metric in its native unit', () => {
     renderOverview([multi[2]])
 
-    expect(screen.getAllByText('512.00 tokens/s')).not.toHaveLength(0)
-    expect(screen.queryByText('51200.0%')).not.toBeInTheDocument()
-    expect(screen.queryByRole('progressbar', { name: 'throughput_suite Score' })).not.toBeInTheDocument()
+    // An unbounded throughput keeps its native unit and is never rescaled to a percentage.
+    expect(screen.getAllByText(/^Token Throughput ↑$/)).not.toHaveLength(0)
+    expect(screen.getAllByText('512 tok/s').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/51200/)).not.toBeInTheDocument()
+    // An unbounded metric has no range to place the value in, so it gets no bar.
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0)
+  })
+
+  it('never states that metrics could not be merged', () => {
+    // Two benchmarks simply have two results; that is not a condition to warn about, and a note
+    // in place of the numbers hides what the run actually produced.
+    renderOverview(multi.slice(0, 2))
+
+    expect(screen.queryByText(/cannot be merged/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/primary metrics/i)).not.toBeInTheDocument()
   })
 
   it('offers radar only for three or more comparable bounded metrics', () => {
@@ -69,5 +85,54 @@ describe('OverviewTab dataset score view', () => {
     renderOverview(multi)
 
     expect(screen.queryByRole('button', { name: 'Radar' })).not.toBeInTheDocument()
+  })
+
+  it('does not average the same semantic metric across different identities', () => {
+    const scoped = ['all', 'hard'].map((scope, index) => {
+      const identity = { name: 'accuracy', aggregation: 'mean', dimensions: { scope } }
+      return {
+        ...multi[0],
+        name: `scoped-accuracy-${scope}`,
+        dataset_name: `scoped_accuracy_${scope}`,
+        primary_metric_identity: identity,
+        metrics: multi[0].metrics.map((metric) => ({
+          ...metric,
+          identity,
+          score: 0.7 + index * 0.1,
+        })),
+      }
+    })
+
+    renderOverview(scoped)
+
+    expect(screen.queryByText('Average Score')).not.toBeInTheDocument()
+    expect(screen.queryByText('Best Dataset')).not.toBeInTheDocument()
+    expect(screen.queryByText('Worst Dataset')).not.toBeInTheDocument()
+    expect(screen.getByText('Total Samples')).toBeInTheDocument()
+  })
+
+  it('keeps each dataset semantics when the same identity has different contracts', () => {
+    const primary = multi[0].metrics.find((metric) => (
+      metric.identity.name === multi[0].primary_metric_identity?.name
+    ))!
+    const werSemantics = {
+      ...primary.semantics!,
+      semantic_id: 'quality.wer.ratio',
+      metric_name: 'WER',
+      direction: 'lower_is_better' as const,
+    }
+    const speech = {
+      ...multi[0],
+      name: 'speech-wer',
+      dataset_name: 'speech',
+      metrics: [{ ...primary, score: 0.07, semantics: werSemantics }],
+    }
+
+    renderOverview([multi[0], speech])
+
+    expect(screen.getByText('Accuracy ↑')).toBeInTheDocument()
+    expect(screen.getByText('WER ↓')).toBeInTheDocument()
+    expect(screen.getByText('7%')).toBeInTheDocument()
+    expect(screen.queryByText('Average Score')).not.toBeInTheDocument()
   })
 })

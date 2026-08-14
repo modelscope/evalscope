@@ -35,7 +35,7 @@ BC5CDR 语料库是一个为 BioCreative V 挑战赛开发的手动标注资源�
 | **数据集ID** | [extraordinarylab/bc5cdr](https://modelscope.cn/datasets/extraordinarylab/bc5cdr/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |

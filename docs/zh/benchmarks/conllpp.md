@@ -35,7 +35,7 @@ CoNLL++ 数据集是对广泛使用的 CoNLL2003 命名实体识别（NER）基�
 | **数据集ID** | [extraordinarylab/conllpp](https://modelscope.cn/datasets/extraordinarylab/conllpp/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

@@ -35,7 +35,7 @@ SEED-Bench-2-Plus 是一个大规模基准测试，旨在评估多模态大语�
 | **数据集ID** | [evalscope/SEED-Bench-2-Plus](https://modelscope.cn/datasets/evalscope/SEED-Bench-2-Plus/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

@@ -39,7 +39,7 @@ VisuLogic 是一个用于评估多模态大语言模型（MLLMs）视觉推理�
 | **数据集ID** | [evalscope/VisuLogic](https://modelscope.cn/datasets/evalscope/VisuLogic/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
