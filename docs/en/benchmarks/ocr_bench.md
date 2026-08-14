@@ -38,7 +38,7 @@ OCRBench is a comprehensive evaluation benchmark designed to assess the OCR (Opt
 | **Dataset ID** | [evalscope/OCRBench](https://modelscope.cn/datasets/evalscope/OCRBench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

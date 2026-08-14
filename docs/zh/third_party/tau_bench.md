@@ -106,11 +106,11 @@ run_task(task_cfg=task_cfg)
 +-----------+-----------+--------+---------+-------+---------+
 | Model     | Dataset   | Metric | Subset  |   Num |   Score |
 +===========+===========+========+=========+=======+=========+
-| qwen-plus | tau_bench | Pass^1 | airline |    10 |   0.5   |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | airline |    10 |   50%   |
 +-----------+-----------+--------+---------+-------+---------+
-| qwen-plus | tau_bench | Pass^1 | retail  |    10 |   0.6   |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | retail  |    10 |   60%   |
 +-----------+-----------+--------+---------+-------+---------+
-| qwen-plus | tau_bench | Pass^1 | OVERALL |    20 |   0.55  |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | OVERALL |    20 |   55%  |
 +-----------+-----------+--------+---------+-------+---------+
 ```
 
@@ -119,4 +119,3 @@ run_task(task_cfg=task_cfg)
 **Pass^1**: 首次尝试成功完成任务的比例
 - 衡量模型在单次对话中解决用户问题的能力
 - 综合考虑任务完成度、策略遵循度和对话质量
-

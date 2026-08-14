@@ -34,7 +34,7 @@ CommonsenseQA 是一个用于评估 AI 模型回答需要常识推理问题能�
 | **数据集 ID** | [extraordinarylab/commonsense-qa](https://modelscope.cn/datasets/extraordinarylab/commonsense-qa/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `validation` |
 

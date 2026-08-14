@@ -2,34 +2,31 @@ import { ChevronRight } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { cn } from '@/lib/utils'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
+import { ScoreLines } from '@/components/reports/metricCells'
 import { useLocale } from '@/contexts/LocaleContext'
+import { formatTimestamp } from '@/utils/formatUtils'
 import type { ReportSummary } from '@/api/types'
-import { scoreColor } from '@/utils/colorScale'
-import { formatMetricByKey, getBoundedMetricRatio } from '@/domain/metric/registry'
+import { datasetLabel } from '@/domain/report/primaryMetrics'
+import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
 interface ReportCardProps {
   report: ReportSummary
   selected: boolean
-  onSelect: (name: string) => void
-  /** Navigate to report detail */
-  onClick: (name: string) => void
-}
-
-function formatTimestamp(ts: string): string {
-  return ts.replace('T', ' ').slice(0, 16)
+  onSelect: (ref: string) => void
+  /** Navigate to report detail by reference */
+  onClick: (ref: string) => void
 }
 
 export default function ReportCard({ report, selected, onSelect, onClick }: ReportCardProps) {
   const { t } = useLocale()
 
-  const formattedDate = report.timestamp ? formatTimestamp(report.timestamp) : ''
-  const metricName = report.metric_name ?? 'score'
-  const scoreValue = report.metric_name === '' ? null : report.score
-  const scoreRatio = getBoundedMetricRatio(metricName, scoreValue)
+  const ref = formatReportRef(reportRefFromSummary(report))
+  const formattedDate = formatTimestamp(report.timestamp)
+  const metricRefs = report.primary_metrics
 
   const handleDetailClick = (e: MouseEvent) => {
     e.stopPropagation()
-    onClick(report.name)
+    onClick(ref)
   }
 
   return (
@@ -47,7 +44,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         label={`${t('reports.selectReport')}: ${report.model_name}`}
         onClick={(e) => {
           e.stopPropagation()
-          onSelect(report.name)
+          onSelect(ref)
         }}
       />
 
@@ -55,7 +52,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
       <button
         type="button"
         className="flex-1 min-w-0 min-h-11 flex items-center gap-4 cursor-pointer text-left"
-        onClick={() => onClick(report.name)}
+        onClick={() => onClick(ref)}
       >
         {/* Model + Dataset */}
         <span className="block flex-1 min-w-0">
@@ -72,8 +69,8 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </span>
           {/* Secondary row: dataset + sample count */}
           <span className="flex items-center gap-3 mt-0.5">
-            <span className="text-sm text-[var(--text-muted)] break-words min-w-0">
-              {report.dataset_name}
+            <span className="text-sm text-[var(--text-muted)] break-words min-w-0" title={report.dataset_name}>
+              {datasetLabel(report)}
             </span>
             <span className="text-xs text-[var(--text-muted)] shrink-0">
               {t('reports.samples')}: {report.num_samples}
@@ -85,15 +82,16 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           </span>
         </span>
 
-        {/* Score badge */}
-        <span
-          className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-mono font-semibold shrink-0"
-          style={scoreRatio == null
-            ? { backgroundColor: 'var(--accent-dim)', color: 'var(--text)' }
-            : { backgroundColor: `${scoreColor(scoreRatio)}20`, color: scoreColor(scoreRatio) }}
-        >
-          {formatMetricByKey(metricName, scoreValue, t).primary}
-        </span>
+        {/* Every dataset's metric and score, so the card never hides the run's numbers. */}
+        {metricRefs.length > 0 ? (
+          <ScoreLines
+            refs={metricRefs}
+            emptyLabel={t('metrics.noPrimaryMetric')}
+            inlineMetricClass=""
+            inlineDatasetClass={metricRefs.length > 1 ? '' : undefined}
+            className="shrink-0"
+          />
+        ) : <span className="text-sm text-[var(--text-muted)]">{t('metrics.noPrimaryMetric')}</span>}
       </button>
 
       {/* Chevron — dedicated detail navigation button */}

@@ -11,6 +11,14 @@
       "BLEU",
       "Rouge"
     ],
+    "primary_metric": {
+      "name": "rouge",
+      "aggregation": "mean",
+      "dimensions": {
+        "statistic": "recall",
+        "variant": "l"
+      }
+    },
     "few_shot_num": 0,
     "eval_split": "test",
     "train_split": "",
@@ -45,6 +53,6 @@
     "content_hash": "216e954a0f30578e550f0eecf78f9515",
     "needs_translation": false
   },
-  "updated_at": "2026-01-28T17:31:32.237815",
+  "updated_at": "2026-08-11T16:33:44.612642",
   "translation_updated_at": "2026-01-28T16:09:53Z"
 }

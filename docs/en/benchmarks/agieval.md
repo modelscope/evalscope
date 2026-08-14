@@ -37,7 +37,7 @@ AGIEval is a human-centric benchmark designed to evaluate foundation models in t
 | **Dataset ID** | [opencompass/agieval](https://modelscope.cn/datasets/opencompass/agieval/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `dev` |

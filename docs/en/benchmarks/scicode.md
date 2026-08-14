@@ -220,7 +220,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
 
 ## Prompt Template
 
-**System Prompt:**
+**Prompt Template:**
 ```text
 
 PROBLEM DESCRIPTION:
@@ -241,35 +241,6 @@ For each subproblem provided you must solve it as follows:
  2. Implement a function to solve the problem provided, using the provided header and return line
 
 The response must be formatted as ```python```
-
-```
-
-**Prompt Template:**
-```text
-
-Implement code to solve the following subproblem, using the description, function header, and return line provided.
-
-Remember that you may use functions that you generated previously as solutions to previous subproblems to implement your answer.
-
-Remember that you MUST NOT include code to import dependencies.
-
-Remember to ensure your response is in the format of ```python``` and includes necessary background as a comment at the top.
-
-SUBPROBLEM DESCRIPTION:
-{step_description_prompt}
-
-FUNCTION HEADER:
-{function_header}
-
-RETURN LINE:
-{return_line}
-
-Example:
-```python
-# Background: [Here, insert the necessary scientific knowledge required for the next step.]
-
-[Insert the Python code here based on the provided function header and dependencies.]
-```
 
 ```
 

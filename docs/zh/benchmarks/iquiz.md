@@ -36,7 +36,7 @@ IQuiz 是一个中文基准测试，用于评估 AI 模型在智商（IQ）和�
 | **数据集 ID** | [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary) |
 | **论文** | N/A |
 | **标签** | `Chinese`, `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估数据划分** | `test` |
 

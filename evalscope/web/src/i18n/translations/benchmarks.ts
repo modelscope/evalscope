@@ -15,6 +15,7 @@ export const en: Dict = {
   shots: '${n}-shot',
   noResults: 'No matching benchmarks found',
   clearFilters: 'Clear filters',
+  close: 'Close benchmark details',
   showing: 'Showing ${n} of ${total}',
 }
 
@@ -33,5 +34,6 @@ export const zh: Dict = {
   shots: '${n}-shot',
   noResults: '未找到匹配的基准测试',
   clearFilters: '清除筛选',
+  close: '关闭基准测试详情',
   showing: '显示 ${n} / ${total}',
 }

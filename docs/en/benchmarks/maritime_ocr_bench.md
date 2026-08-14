@@ -30,7 +30,7 @@ Each task type uses a specialized scoring method:
 | **Dataset ID** | [HiDolphin/MaritimeOCRBench](https://modelscope.cn/datasets/HiDolphin/MaritimeOCRBench/summary) |
 | **Paper** | N/A |
 | **Tags** | `MultiModal`, `QA` |
-| **Metrics** | `score` |
+| **Metrics** | `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

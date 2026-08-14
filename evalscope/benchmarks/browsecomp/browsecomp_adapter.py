@@ -109,6 +109,7 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 """,  # noqa: E501
         dataset_id=BROWSECOMP_DATASET_ID,
         metric_list=['is_correct', 'is_incorrect'],
+        primary_metric='is_correct',
         few_shot_num=0,
         train_split=None,
         eval_split='test',

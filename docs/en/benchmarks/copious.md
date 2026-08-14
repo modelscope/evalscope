@@ -33,7 +33,7 @@ Copious corpus is a gold standard corpus for biodiversity entity recognition, co
 | **Dataset ID** | [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `NER` |
-| **Metrics** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **Metrics** | `precision`, `recall`, `f1`, `accuracy` |
 | **Default Shots** | 5-shot |
 | **Evaluation Split** | `test` |
 | **Train Split** | `train` |

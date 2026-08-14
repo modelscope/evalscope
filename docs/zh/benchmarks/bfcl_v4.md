@@ -37,7 +37,7 @@ BFCL-v4（Berkeley Function-Calling Leaderboard V4）是一个全面的基准测
 | **数据集ID** | [berkeley-function-call-leaderboard](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

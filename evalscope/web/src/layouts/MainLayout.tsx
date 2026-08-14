@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import TopNav from '@/components/nav/TopNav'
 import PathBar from '@/components/ui/PathBar'
-import { useReports } from '@/contexts/ReportsContext'
+import ErrorBoundary from '@/components/common/ErrorBoundary'
+import { useScan } from '@/contexts/ReportsContext'
 import { useLocale } from '@/contexts/LocaleContext'
 
 // Result routes share a single global "scan this directory" control.
@@ -11,8 +12,11 @@ const SCAN_ROUTES = new Set(['/dashboard', '/reports', '/performance'])
 export default function MainLayout() {
   const location = useLocation()
   const { t } = useLocale()
-  const { rootPath, triggerScan } = useReports()
+  const { rootPath, triggerScan } = useScan()
   const [visible, setVisible] = useState(true)
+  // Bumped by the route-level boundary's retry, which remounts the page in place
+  // instead of reloading the document and losing the scan state.
+  const [reloadToken, setReloadToken] = useState(0)
   const prevPath = useRef(location.pathname)
 
   // Local mirror of rootPath so typing does not fan out a rescan on every keystroke.
@@ -21,6 +25,10 @@ export default function MainLayout() {
     const sync = () => setPathInput(rootPath)
     sync()
   }, [rootPath])
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0 })
+  }, [location.pathname])
 
   useEffect(() => {
     if (prevPath.current !== location.pathname) {
@@ -54,7 +62,20 @@ export default function MainLayout() {
           className="page-enter"
           style={{ opacity: visible ? undefined : 0 }}
         >
-          <Outlet />
+          {/* Keyed by route so a page that throws is contained: the nav, theme and
+              locale stay usable, and navigating elsewhere clears the error by
+              remount rather than by discarding the session. */}
+          <ErrorBoundary
+            key={location.pathname}
+            labels={{
+              title: t('common.pageErrorTitle'),
+              body: t('common.pageErrorBody'),
+              action: t('common.retry'),
+            }}
+            onRecover={() => setReloadToken((token) => token + 1)}
+          >
+            <Outlet key={reloadToken} />
+          </ErrorBoundary>
         </div>
       </main>
     </div>

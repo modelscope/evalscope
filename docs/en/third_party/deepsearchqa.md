@@ -108,7 +108,7 @@ evalscope eval \
 
 ## Scoring
 
-The primary metric is `f1_score`; `precision` and `recall` are also reported. EvalScope additionally emits pipeline
+The primary metric is `f1`; `precision` and `recall` are also reported. EvalScope additionally emits pipeline
 health rates from the official starter logic:
 
 - `empty_model_response`

@@ -24,7 +24,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ReportsProvider } from '@/contexts/ReportsContext'
-import { useReports } from '@/contexts/ReportsContext'
+import { useScan } from '@/contexts/ReportsContext'
 import { DomainError } from '@/api/errors'
 import { loadFixture } from '@/test/loadFixture'
 import type {
@@ -35,7 +35,7 @@ import type {
 } from '@/api/types'
 
 import PerfReportDetailPage from './PerfReportDetailPage'
-import PerfRunsTab from './PerfRunsTab'
+import PerfRunsTab from '@/components/perf/PerfRunsTab'
 import PerfReportsPage from './PerfReportsPage'
 
 // The perf API module is entirely mocked: the URL builders return stable
@@ -191,8 +191,15 @@ describe('PerfReportDetailPage', () => {
   it('replaces the unlimited-rate sentinel in the overview summary', async () => {
     await renderDetail({
       ...detailFixture,
-      summary_columns: ['Conc.', 'Rate', 'RPS'],
-      summary_rows: [['2', 'INF', '1.9256']],
+      summary_columns: [
+        { key: 'concurrency', label: 'Conc.', semantics: null },
+        { key: 'request_rate', label: 'Rate', semantics: null },
+        { key: 'request_throughput', label: 'RPS', semantics: detailFixture.summary_columns[2].semantics },
+      ],
+      summary_rows: [{
+        values: { concurrency: 2, request_rate: -1, request_throughput: 1.9256 },
+        sample_counts: { request_throughput: 100 },
+      }],
     })
     fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))
 
@@ -267,7 +274,7 @@ function LocationProbe() {
 }
 
 function RescanHarness() {
-  const { triggerScan } = useReports()
+  const { triggerScan } = useScan()
   return <button onClick={() => triggerScan()}>Rescan fixture</button>
 }
 

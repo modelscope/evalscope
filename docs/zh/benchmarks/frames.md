@@ -36,7 +36,7 @@ FRAMES 是一个全面的评估数据集，旨在测试检索增强生成（Retr
 | **数据集ID** | [iic/frames](https://modelscope.cn/datasets/iic/frames/summary) |
 | **论文** | N/A |
 | **标签** | `LongContext`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

@@ -3,16 +3,12 @@ import fc from 'fast-check'
 
 import { FORM_MESSAGE_KEYS, validateNumeric } from './validation'
 
-// Feature: frontend-refactor-2026-07, Property 24: numeric min/max constraints
-//
 // For any finite numeric value and optional min/max bounds, `validateNumeric`
 // must reject values outside the inclusive `[min, max]` range and accept values
 // inside it: `value < min` or `value > max` returns a non-null FieldError, while
 // `min <= value <= max` returns `null`. `step` is intentionally omitted here so
 // step-grid alignment cannot interfere with the range contract.
-//
-// Validates: Requirements 10.9
-describe('validateNumeric (Property 24: numeric min/max constraint)', () => {
+describe('validateNumeric (numeric min/max constraint)', () => {
   // Finite doubles only; exclude NaN/Infinity which have their own contract.
   const finite = fc.double({ noNaN: true, noDefaultInfinity: true })
 

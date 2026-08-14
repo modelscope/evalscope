@@ -89,12 +89,25 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         dataset_index = 0
         num_messages = len(dataset_messages)
 
+        # Guard against an infinite loop: if build_request returns None for a whole
+        # pass over the dataset, no request will ever be produced, so abort instead
+        # of spinning forever (count would never advance).
+        consecutive_skips = 0
+
         while count < total_count:
             messages = dataset_messages[dataset_index]
             request = api_plugin.build_request(messages)
             if request is not None:
                 yield request, count < warmup_count
                 count += 1
+                consecutive_skips = 0
+            else:
+                consecutive_skips += 1
+                if consecutive_skips >= num_messages:
+                    raise ValueError(
+                        f'{type(api_plugin).__name__}.build_request() returned None for every one of '
+                        f'the {num_messages} dataset message(s); no request could be generated.'
+                    )
             dataset_index = (dataset_index + 1) % num_messages
 
     # Dispatch based on arguments.

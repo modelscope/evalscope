@@ -193,10 +193,10 @@ run_task(task_cfg=task_cfg)
 |  task_type  |         metric          |  dataset_name   | average_score | count |
 +-------------+-------------------------+-----------------+---------------+-------+
 |    code     |         Pass@1          | live_code_bench |     0.544     |  182  |
-|    exam     |     AverageAccuracy     |      ceval      |     0.88      |  125  |
-|    exam     |     AverageAccuracy     |      iquiz      |    0.8417     |  120  |
-|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.6867     |  83   |
-|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.9277     |  83   |
+|    exam     |        accuracy         |      ceval      |     0.88      |  125  |
+|    exam     |        accuracy         |      iquiz      |    0.8417     |  120  |
+|    exam     |        accuracy         |    mmlu_pro     |    0.6867     |  83   |
+|    exam     |        accuracy         |   mmlu_redux    |    0.9277     |  83   |
 | instruction |  inst_level_loose_acc   |     ifeval      |    0.9157     |  83   |
 | instruction |  inst_level_strict_acc  |     ifeval      |    0.8775     |  83   |
 | instruction | prompt_level_loose_acc  |     ifeval      |    0.8675     |  83   |
@@ -248,10 +248,10 @@ run_task(task_cfg=task_cfg)
 |  task_type  |         metric          |  dataset_name   | average_score | count |                                                                                                                                                                           
 +-------------+-------------------------+-----------------+---------------+-------+                                                                                                                                                                           
 |    code     |         Pass@1          | live_code_bench |    0.2857     |  182  |                                                                                                                                                                           
-|    exam     |     AverageAccuracy     |      ceval      |     0.808     |  125  |                                                                                                                                                                           
-|    exam     |     AverageAccuracy     |      iquiz      |     0.775     |  120  |                                                                                                                                                                           
-|    exam     |     AverageAccuracy     |    mmlu_pro     |    0.6145     |  83   |                                                                                                                                                                           
-|    exam     |     AverageAccuracy     |   mmlu_redux    |    0.8313     |  83   |                                                                                                                                                                           
+|    exam     |        accuracy         |      ceval      |     0.808     |  125  |
+|    exam     |        accuracy         |      iquiz      |     0.775     |  120  |
+|    exam     |        accuracy         |    mmlu_pro     |    0.6145     |  83   |
+|    exam     |        accuracy         |   mmlu_redux    |    0.8313     |  83   |
 | instruction |  inst_level_loose_acc   |     ifeval      |    0.6948     |  83   |                                                                                                                                                                           
 | instruction |  inst_level_strict_acc  |     ifeval      |    0.6888     |  83   |                                                                                                                                                                           
 | instruction | prompt_level_loose_acc  |     ifeval      |    0.6265     |  83   |                                                                                                                                                                           

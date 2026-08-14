@@ -1,11 +1,15 @@
 import { Eye, GitCompareArrows, Trash2, X } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
-import { MAX_COMPARE_SELECTION } from '@/domain/compare/compareModel'
 import Button from '@/components/ui/Button'
 
 interface SelectionTrayProps {
   count: number
-  capNotice: boolean
+  /**
+   * Number of runs the target compare view can render. When set and exceeded,
+   * a notice states that only the first `compareLimit` runs are compared.
+   * Omit for surfaces that compare any number of runs.
+   */
+  compareLimit?: number
   canViewHtml: boolean
   onViewHtml: () => void
   onCompare: () => void
@@ -16,7 +20,7 @@ interface SelectionTrayProps {
 
 export default function SelectionTray({
   count,
-  capNotice,
+  compareLimit,
   canViewHtml,
   onViewHtml,
   onCompare,
@@ -33,18 +37,12 @@ export default function SelectionTray({
       <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--accent-dim)] bg-[var(--bg-card)] px-4 py-3 shadow-[var(--shadow-lg)]">
         <span className="text-sm font-semibold text-[var(--text)]">
           {count} {t('reports.selected')}
-          <span className="ml-1 text-xs font-normal text-[var(--text-muted)]">
-            / {MAX_COMPARE_SELECTION}
-          </span>
         </span>
 
-        {capNotice && (
+        {compareLimit != null && count > compareLimit && (
           <span className="text-xs text-[var(--warning-color)]" role="status" aria-live="polite">
-            {t('reports.capReached')}
+            {t('compare.compareFirstN', { n: compareLimit })}
           </span>
-        )}
-        {!capNotice && count > 3 && (
-          <span className="text-xs text-[var(--warning-color)]">{t('compare.maxThreeSelected')}</span>
         )}
 
         <div className="ml-auto flex items-center gap-2">

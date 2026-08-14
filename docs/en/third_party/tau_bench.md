@@ -102,11 +102,11 @@ The evaluation process of τ-bench includes the following key steps:
 +-----------+-----------+--------+---------+-------+---------+
 | Model     | Dataset   | Metric | Subset  |   Num |   Score |
 +===========+===========+========+=========+=======+=========+
-| qwen-plus | tau_bench | Pass^1 | airline |    10 |   0.5   |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | airline |    10 |   50%   |
 +-----------+-----------+--------+---------+-------+---------+
-| qwen-plus | tau_bench | Pass^1 | retail  |    10 |   0.6   |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | retail  |    10 |   60%   |
 +-----------+-----------+--------+---------+-------+---------+
-| qwen-plus | tau_bench | Pass^1 | OVERALL |    20 |   0.55  |
+| qwen-plus | tau_bench | Accuracy ↑ · 1 | OVERALL |    20 |   55%  |
 +-----------+-----------+--------+---------+-------+---------+
 ```
 

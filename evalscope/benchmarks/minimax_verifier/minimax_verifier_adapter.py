@@ -98,6 +98,7 @@ def _decode_maybe_json(value: Any) -> Any:
             'repeat_ngram_pass_rate',
             'scenario_check_pass_rate',
         ],
+        primary_metric='tool_calls_match_rate',
         aggregation='mean',
         subset_list=['default'],
         eval_split='test',
@@ -107,7 +108,6 @@ class MiniMaxVerifierAdapter(FunctionCallAdapter):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_aggregation_name = False
 
     # --------------------------------------------------------------------
     # Sample loading

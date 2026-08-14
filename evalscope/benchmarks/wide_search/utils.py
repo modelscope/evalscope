@@ -428,12 +428,25 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
         repeats = repeat_counts.pop()
         sample_ids = [score.sample_id for score in scoped_scores]
         for metric_name in METRIC_NAMES:
+            if metric_name.startswith('row_'):
+                canonical_name = metric_name[4:]
+                target = 'row'
+            elif metric_name.startswith('item_'):
+                canonical_name = metric_name[5:]
+                target = 'item'
+            else:
+                canonical_name = metric_name
+                target = None
+            dimensions = {'scope': scope, 'k': repeats}
+            if target is not None:
+                dimensions['target'] = target
             all_values = [float(score.score.value[metric_name]) for score in scoped_scores]
             results.append(
                 AggScore(
-                    metric_name=f'{scope}/{metric_name}',
+                    metric_name=canonical_name,
                     score=sum(all_values) / len(all_values),
-                    aggregation_name=f'avg@{repeats}',
+                    aggregation='mean',
+                    dimensions=dimensions,
                     num=len(all_values),
                     ids=sample_ids,
                 )
@@ -442,9 +455,10 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
             aggregate_name = 'pass' if metric_name == 'success_rate' else 'max'
             results.append(
                 AggScore(
-                    metric_name=f'{scope}/{metric_name}',
+                    metric_name=canonical_name,
                     score=sum(group_maxima) / len(group_maxima),
-                    aggregation_name=f'{aggregate_name}@{repeats}',
+                    aggregation='pass_at_k' if aggregate_name == 'pass' else 'max',
+                    dimensions=dimensions,
                     num=len(group_maxima),
                     ids=list(grouped.keys()),
                 )

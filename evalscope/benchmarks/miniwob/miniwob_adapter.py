@@ -54,6 +54,7 @@ scrolling and dragging items.
         eval_split='test',
         prompt_template='{question}',
         metric_list=['success_rate', 'error_rate'],
+        primary_metric='success_rate',
     )
 )
 class MiniWobAdapter(BrowserGymAdapter):

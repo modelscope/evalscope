@@ -33,7 +33,7 @@ MIT-Movie-Trivia 数据集最初是为电影领域对话中的槽位填充任务
 | **数据集ID** | [extraordinarylab/mit-movie-trivia](https://modelscope.cn/datasets/extraordinarylab/mit-movie-trivia/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |

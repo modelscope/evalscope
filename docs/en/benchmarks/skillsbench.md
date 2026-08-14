@@ -49,7 +49,7 @@ task Docker image, runs the selected agent or oracle in that image, then execute
 | **Dataset ID** | `skillsbench` |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `MultiTurn` |
-| **Metrics** | `score` |
+| **Metrics** | `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `N/A` |
 

@@ -2,20 +2,20 @@
 
 ## 概述
 
-DeepSearchQA 是 Google DeepMind 推出的一项基准测试，用于评估深度研究智能体在开放网络上执行复杂多步骤信息检索任务的能力。该基准包含 900 个提示，涵盖 17 个领域，旨在衡量模型生成完整答案集合的能力，而不仅仅是单个答案的检索。
+DeepSearchQA 是 Google DeepMind 推出的一项基准测试，用于评估深度研究智能体在开放网络上执行复杂多步信息检索任务的能力。该基准包含 900 个提示，涵盖 17 个领域，旨在衡量模型生成完整答案集的能力，而不仅限于单个答案的检索。
 
 ## 任务描述
 
 - **任务类型**：搜索智能体事实型问答
 - **输入**：自然语言形式的研究问题
 - **输出**：单个答案或完整的答案集合（取决于问题）
-- **评分方式**：使用大语言模型（LLM）作为评判器，通过语义匹配对比标准答案及答案类型
+- **评分方式**：使用 LLM 作为裁判，通过语义匹配对比回答与标准答案及答案类型
 
 ## 核心特性
 
 - 测试从多个来源系统性整合碎片化信息的能力
-- 对于答案为集合的问题，要求进行实体消歧和去重
-- 同时惩罚检索不足和过度/幻觉生成的答案
+- 对于集合型答案任务，要求进行实体消歧和去重
+- 同时惩罚答案遗漏（欠检索）和答案冗余/幻觉（过检索）
 - 使用 `problem_category` 提供分析元数据；推理过程中对模型隐藏 `answer_type`
 - 兼容 EvalScope 智能体配置，支持原生或具备外部网络能力的智能体
 
@@ -28,9 +28,9 @@ DeepSearchQA 不硬编码指定搜索引擎。默认情况下，它通过 EvalSc
 ## 评估说明
 
 - EvalScope 从 `eval` 切分中加载 ModelScope 数据集 `google/deepsearchqa`。
-- 默认启用 LLM 评判器。官方起始代码使用 Gemini 2.5 Flash 模型配合 DeepSearchQA 评判提示，但 EvalScope 在本地运行时可使用任意已配置的评判模型。
-- 主要指标为 `f1_score`；同时报告 `precision`、`recall` 以及空/无效响应率。
-- `JudgeStrategy.RULE` 为冒烟测试提供保守的精确匹配/子串匹配回退机制，但不等同于官方的 LLM 评判。
+- 默认启用 LLM 裁判。官方起始代码使用 Gemini 2.5 Flash 模型配合 DeepSearchQA 裁判提示，但 EvalScope 在本地运行时可使用任意已配置的裁判模型。
+- 主要指标为 `f1`；同时报告 `precision`（精确率）、`recall`（召回率）以及空响应/无效响应率。
+- `JudgeStrategy.RULE` 为冒烟测试提供保守的精确匹配/子串匹配回退机制，但不等同于官方 LLM 裁判。
 
 ## 属性
 
@@ -40,7 +40,7 @@ DeepSearchQA 不硬编码指定搜索引擎。默认情况下，它通过 EvalSc
 | **数据集ID** | [google/deepsearchqa](https://modelscope.cn/datasets/google/deepsearchqa/summary) |
 | **论文** | [Paper](https://storage.googleapis.com/deepmind-media/DeepSearchQA/DeepSearchQA_benchmark_paper.pdf) |
 | **标签** | `Agent`, `Knowledge`, `QA`, `Retrieval` |
-| **指标** | `f1_score`, `precision`, `recall` |
+| **指标** | `f1`, `precision`, `recall` |
 | **默认示例数** | 0-shot |
 | **评估切分** | `eval` |
 

@@ -52,7 +52,7 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
 - Note: Style-controlled win rate not currently supported
 """,
         dataset_id='AI-ModelScope/arena-hard-auto-v0.1',
-        metric_list=['winrate'],
+        metric_list=['win_rate'],
         aggregation='elo',
         few_shot_num=0,
         train_split=None,
@@ -167,6 +167,6 @@ class ArenaHardAdapter(DefaultDataAdapter):
 
         return [AggScore(
             score=score,
-            metric_name='winrate',
+            metric_name='win_rate',
             num=len(sample_scores),
         )]

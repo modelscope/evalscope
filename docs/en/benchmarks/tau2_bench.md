@@ -39,7 +39,7 @@
 | **Dataset ID** | [evalscope/tau2-bench-data](https://modelscope.cn/datasets/evalscope/tau2-bench-data/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `FunctionCalling`, `Reasoning` |
-| **Metrics** | N/A |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `mean_and_pass_hat_k` |

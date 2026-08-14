@@ -28,7 +28,7 @@ Maritime-OCR-Bench 是一个全面的评估基准，用于衡量多模态大模�
 | **数据集ID** | [HiDolphin/MaritimeOCRBench](https://modelscope.cn/datasets/HiDolphin/MaritimeOCRBench/summary) |
 | **论文** | N/A |
 | **标签** | `MultiModal`, `QA` |
-| **指标** | `score` |
+| **指标** | `normalized_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

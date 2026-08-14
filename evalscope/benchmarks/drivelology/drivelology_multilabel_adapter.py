@@ -70,6 +70,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['multi-label-classification'],
         metric_list=['f1_weighted', 'f1_micro', 'f1_macro', 'exact_match'],
+        primary_metric='f1_weighted',
         aggregation='f1_weighted',
         eval_split='test',
         prompt_template='{question}',

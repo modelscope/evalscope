@@ -17,7 +17,6 @@ import {
   perfRunsListResponseSchema,
   predictionsResponseSchema,
   progressResponseSchema,
-  scanResponseSchema,
   taskStatusResponseSchema,
 } from './index'
 
@@ -33,7 +32,6 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
   { name: 'eval invoke', schema: evalInvokeResponseSchema, valid: { status: 'completed', task_id: 'task-1' } },
   { name: 'progress', schema: progressResponseSchema, valid: { percent: 50, phase: 'evaluate' } },
   { name: 'benchmarks', schema: benchmarksResponseSchema, valid: { text: [] } },
-  { name: 'report scan', schema: scanResponseSchema, valid: { reports: ['run-a'] } },
   { name: 'analysis', schema: analysisResponseSchema, valid: { analysis: 'complete' } },
   {
     name: 'report list',
@@ -52,13 +50,14 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
     valid: {
       report_list: [
         {
+          schema_version: 2,
           name: 'run-a',
           dataset_name: 'gsm8k',
           model_name: 'model-a',
-          score: 0.5,
           analysis: '',
           metrics: [],
           perf_metrics: null,
+          primary_metric_identity: null,
         },
       ],
       datasets: ['gsm8k'],
@@ -100,6 +99,7 @@ const ENDPOINT_CASES: Array<{ name: string; schema: ZodType; valid: unknown }> =
       basic_info: {},
       summary_columns: [],
       summary_rows: [],
+      total_requests: 0,
       best_config: {},
       recommendations: [],
       num_runs: 0,

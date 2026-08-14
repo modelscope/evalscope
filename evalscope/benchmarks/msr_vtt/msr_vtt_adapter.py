@@ -50,6 +50,7 @@ with multiple reference captions.
         'https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
+        primary_metric='cider',
         eval_split='validation',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
@@ -81,7 +82,6 @@ class MSRVTTAdapter(VisionLanguageAdapter):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.use_batch_scoring = True
-        self.add_aggregation_name = False
 
     @property
     def source_dataset_id(self) -> str:

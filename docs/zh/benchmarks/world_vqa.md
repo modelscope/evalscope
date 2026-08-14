@@ -36,7 +36,7 @@ WorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉
 | **数据集ID** | [evalscope/WorldVQA](https://modelscope.cn/datasets/evalscope/WorldVQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
 

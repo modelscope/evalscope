@@ -61,41 +61,41 @@ We can see that the model has strong overall tool calling abilities, but there i
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
 | Model            | Dataset   | Metric          | Subset                  |   Num |   Score | Cat.0        |
 +==================+===========+=================+=========================+=======+=========+==============+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_simple             |   257 |  0.8171 | AST_LIVE     |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_simple | 257 | 81.7% | AST_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_multiple           |  1039 |  0.8085 | AST_LIVE     |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_multiple | 1039 | 80.9% | AST_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_parallel           |    16 |  0.375  | AST_LIVE     |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_parallel | 16 | 37.5% | AST_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_parallel_multiple  |    24 |  0.4167 | AST_LIVE     |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_parallel_multiple | 24 | 41.7% | AST_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | simple                  |   400 |  0.955  | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | simple | 400 | 95.5% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | multiple                |   200 |  0.945  | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | multiple | 200 | 94.5% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | parallel                |   200 |  0.55   | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | parallel | 200 | 55% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | parallel_multiple       |   200 |  0.56   | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | parallel_multiple | 200 | 56% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | java                    |   100 |  0.64   | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | java | 100 | 64% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | javascript              |    50 |  0.82   | AST_NON_LIVE |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | javascript | 50 | 82% | AST_NON_LIVE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | multi_turn_base         |   200 |  0.43   | MULTI_TURN   |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | multi_turn_base | 200 | 43% | MULTI_TURN |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | multi_turn_miss_func    |   200 |  0.24   | MULTI_TURN   |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | multi_turn_miss_func | 200 | 24% | MULTI_TURN |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | multi_turn_miss_param   |   200 |  0.305  | MULTI_TURN   |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | multi_turn_miss_param | 200 | 30.5% | MULTI_TURN |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | multi_turn_long_context |   200 |  0.385  | MULTI_TURN   |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | multi_turn_long_context | 200 | 38.5% | MULTI_TURN |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | irrelevance             |   240 |  0.8458 | RELEVANCE    |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | irrelevance | 240 | 84.6% | RELEVANCE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_relevance          |    17 |  0.6471 | RELEVANCE    |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_relevance | 17 | 64.7% | RELEVANCE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | live_irrelevance        |   881 |  0.8343 | RELEVANCE    |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | live_irrelevance | 881 | 83.4% | RELEVANCE |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+
-| qwen3-coder-plus | bfcl_v3   | AverageAccuracy | OVERALL                 |  4424 |  0.7199 | -            |
+| qwen3-coder-plus | bfcl_v3 | Accuracy ↑ | OVERALL | 4424 | 72% | - |
 +------------------+-----------+-----------------+-------------------------+-------+---------+--------------+ 
 ```
 

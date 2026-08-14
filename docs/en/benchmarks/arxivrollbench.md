@@ -36,7 +36,7 @@ ArxivRollBench is a rolling benchmark built from recent arXiv papers. It evaluat
 | **Dataset ID** | [liangzid/arxivrollbench](https://modelscope.cn/datasets/liangzid/arxivrollbench/summary) |
 | **Paper** | [Paper](https://ojs.aaai.org/index.php/AAAI/article/view/41098) |
 | **Tags** | `Knowledge`, `MCQ`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

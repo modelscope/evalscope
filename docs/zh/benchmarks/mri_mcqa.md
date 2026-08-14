@@ -34,7 +34,7 @@ MRI-MCQA 是一个专门针对磁共振成像（MRI）的多项选择题基准�
 | **数据集 ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `Medical` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `test` |
 

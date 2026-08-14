@@ -36,7 +36,7 @@ OfficeQA is a grounded reasoning benchmark by Databricks, built for evaluating m
 | **Dataset ID** | [evalscope/officeqa](https://modelscope.cn/datasets/evalscope/officeqa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `Knowledge`, `QA` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

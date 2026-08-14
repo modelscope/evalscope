@@ -45,7 +45,7 @@ CC-OCR V2 是一个面向真实企业文档处理场景的高难度 OCR 基准�
 | **数据集ID** | [evalscope/CC-OCR-V2](https://modelscope.cn/datasets/evalscope/CC-OCR-V2/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2605.03903) |
 | **标签** | `Grounding`, `MultiLingual`, `MultiModal`, `QA` |
-| **指标** | `score` |
+| **指标** | `normalized_score` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 

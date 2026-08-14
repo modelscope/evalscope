@@ -36,7 +36,7 @@ PMC-VQA 是一个大规模医学视觉问答基准数据集，构建自 PubMed C
 | **数据集ID** | [evalscope/PMC-VQA](https://modelscope.cn/datasets/evalscope/PMC-VQA/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2305.10415) |
 | **标签** | `MCQ`, `Medical`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test_clean` |
 

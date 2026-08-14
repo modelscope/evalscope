@@ -35,7 +35,7 @@ ZeroBench 是一个面向大语言多模态模型（LMMs）的高难度视觉推
 | **数据集 ID** | [evalscope/zerobench](https://modelscope.cn/datasets/evalscope/zerobench/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `zerobench` |
 | **训练划分** | `zerobench_subquestions` |

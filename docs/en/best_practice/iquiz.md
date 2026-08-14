@@ -54,9 +54,9 @@ Sample output evaluation report:
 +-----------------------+-----------+-----------------+----------+-------+---------+---------+
 | Model                 | Dataset   | Metric          | Subset   |   Num |   Score | Cat.0   |
 +=======================+===========+=================+==========+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | iquiz     | AverageAccuracy | IQ       |    40 |  0.05   | default |
+| Qwen2.5-0.5B-Instruct | iquiz | Accuracy ↑ | IQ | 40 | 5% | default |
 +-----------------------+-----------+-----------------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | iquiz     | AverageAccuracy | EQ       |    80 |  0.1625 | default |
+| Qwen2.5-0.5B-Instruct | iquiz | Accuracy ↑ | EQ | 80 | 16.3% | default |
 +-----------------------+-----------+-----------------+----------+-------+---------+---------+ 
 ```
 
@@ -80,9 +80,9 @@ Sample output evaluation report:
 +---------------------+-----------+-----------------+----------+-------+---------+---------+
 | Model               | Dataset   | Metric          | Subset   |   Num |   Score | Cat.0   |
 +=====================+===========+=================+==========+=======+=========+=========+
-| Qwen2.5-7B-Instruct | iquiz     | AverageAccuracy | IQ       |    40 |  0.6    | default |
+| Qwen2.5-7B-Instruct | iquiz | Accuracy ↑ | IQ | 40 | 60% | default |
 +---------------------+-----------+-----------------+----------+-------+---------+---------+
-| Qwen2.5-7B-Instruct | iquiz     | AverageAccuracy | EQ       |    80 |  0.6625 | default |
+| Qwen2.5-7B-Instruct | iquiz | Accuracy ↑ | EQ | 80 | 66.3% | default |
 +---------------------+-----------+-----------------+----------+-------+---------+---------+ 
 ```
 
@@ -115,9 +115,9 @@ Sample output evaluation report:
 +----------------------+-----------+-----------------+----------+-------+---------+---------+
 | Model                | Dataset   | Metric          | Subset   |   Num |   Score | Cat.0   |
 +======================+===========+=================+==========+=======+=========+=========+
-| Qwen2.5-72B-Instruct | iquiz     | AverageAccuracy | IQ       |    40 |  0.825  | default |
+| Qwen2.5-72B-Instruct | iquiz | Accuracy ↑ | IQ | 40 | 82.5% | default |
 +----------------------+-----------+-----------------+----------+-------+---------+---------+
-| Qwen2.5-72B-Instruct | iquiz     | AverageAccuracy | EQ       |    80 |  0.8125 | default |
+| Qwen2.5-72B-Instruct | iquiz | Accuracy ↑ | EQ | 80 | 81.3% | default |
 +----------------------+-----------+-----------------+----------+-------+---------+---------+ 
 ```
 

@@ -37,7 +37,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
 | **Dataset ID** | [latest](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2/latest) |
 | **Paper** | N/A |
 | **Tags** | `Coding` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

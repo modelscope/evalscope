@@ -35,7 +35,7 @@ MGSM（Multilingual Grade School Math，多语言小学数学）是一个用于�
 | **数据集ID** | [evalscope/mgsm](https://modelscope.cn/datasets/evalscope/mgsm/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `MultiLingual`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认少样本数量** | 4-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |

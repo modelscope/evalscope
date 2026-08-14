@@ -34,7 +34,7 @@ MedMCQA 是一个大规模的多项选择题问答数据集，旨在解决真实
 | **数据集 ID** | [extraordinarylab/medmcqa](https://modelscope.cn/datasets/extraordinarylab/medmcqa/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估集** | `validation` |
 | **训练集** | `train` |

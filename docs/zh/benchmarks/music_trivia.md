@@ -34,7 +34,7 @@ MusicTrivia 是一个精心策划的多项选择题基准测试，用于评估 A
 | **数据集 ID** | [extraordinarylab/music-trivia](https://modelscope.cn/datasets/extraordinarylab/music-trivia/summary) |
 | **论文** | 无 |
 | **标签** | `Knowledge`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估数据划分** | `test` |
 

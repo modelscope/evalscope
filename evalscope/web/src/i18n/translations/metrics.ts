@@ -1,37 +1,28 @@
 import type { Dict } from './types'
 
+/**
+ * Metric-related UI strings.
+ *
+ * This dictionary deliberately holds no metric *names*: a metric's display name comes from the
+ * backend `MetricSemantics` contract, so translating names here would reintroduce a second source
+ * of truth. Only the surrounding UI wording lives here.
+ */
 export const en: Dict = {
-  accuracy: 'Accuracy',
-  pass_rate: 'Pass Rate',
-  exact_match: 'Exact Match',
-  f1: 'F1',
-  precision: 'Precision',
-  recall: 'Recall',
-  latency: 'Latency',
-  ttft: 'TTFT',
-  tpot: 'TPOT',
-  throughput: 'Throughput',
-  rps: 'Requests/s',
-  tokens: 'Tokens',
-  success_rate: 'Success Rate',
-  error_rate: 'Error Rate',
-  undefined_display: 'Display form undefined; raw value shown',
+  higherIsBetter: 'Higher is better',
+  lowerIsBetter: 'Lower is better',
+  diagnostics: 'Diagnostic metrics',
+  value: 'Value',
+  multiplePrimaryMetrics: '${count} primary metrics, cannot be merged',
+  noPrimaryMetric: 'No metric reported',
+  multipleMetrics: 'Multiple metrics',
 }
 
 export const zh: Dict = {
-  accuracy: '准确率',
-  pass_rate: '通过率',
-  exact_match: '精确匹配',
-  f1: 'F1',
-  precision: '精确率',
-  recall: '召回率',
-  latency: '延迟',
-  ttft: 'TTFT',
-  tpot: 'TPOT',
-  throughput: '吞吐',
-  rps: '请求/秒',
-  tokens: 'Token',
-  success_rate: '成功率',
-  error_rate: '错误率',
-  undefined_display: '展示形式未定义，已显示原始值',
+  higherIsBetter: '越高越好',
+  lowerIsBetter: '越低越好',
+  diagnostics: '诊断指标',
+  value: '数值',
+  multiplePrimaryMetrics: '${count} 个主指标，不可合并',
+  noPrimaryMetric: '未报告指标',
+  multipleMetrics: '多个指标',
 }

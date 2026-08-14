@@ -35,7 +35,7 @@ GeneralArena 是一个自定义基准测试，旨在通过竞争性场景评估�
 | **数据集ID** | `general_arena` |
 | **论文** | N/A |
 | **标签** | `Arena`, `Custom` |
-| **指标** | `winrate` |
+| **指标** | `win_rate` |
 | **默认示例数量** | 0-shot |
 | **评估分割** | `test` |
 | **聚合方式** | `elo` |

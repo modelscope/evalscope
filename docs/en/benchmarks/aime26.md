@@ -35,7 +35,7 @@ AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark ba
 | **Dataset ID** | [evalscope/aime26](https://modelscope.cn/datasets/evalscope/aime26/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

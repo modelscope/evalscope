@@ -19,8 +19,8 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 
 - The default evaluation split is `main`.
 - Configure `judge_model_args` for rubric scoring.
-- `normalized_score` is the primary weighted score (`total_score / max_score`); `pass_rate` is the unweighted
-  proportion of fully passed rubrics; `total_score` is the raw sum of passed rubric weights.
+- `normalized_score` is the primary weighted score (raw total / max score); `pass_rate` is the unweighted
+  proportion of fully passed rubrics; `judge_score` is the raw sum of passed rubric weights, reported as a diagnostic.
 - Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,
   PDF, and spreadsheet tools required by the tasks.
 
@@ -33,7 +33,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 | **Dataset ID** | [evalscope/job-bench](https://modelscope.cn/datasets/evalscope/job-bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Agent`, `Knowledge`, `MultiTurn` |
-| **Metrics** | `normalized_score`, `pass_rate`, `total_score` |
+| **Metrics** | `normalized_score`, `pass_rate`, `judge_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `main` |
 

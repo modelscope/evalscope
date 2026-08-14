@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.metric.scorer import AggScore, SampleScore
+from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -51,6 +52,7 @@ MRCR (Memory-Recall with Contextual Retrieval) is OpenAI's benchmark for evaluat
 """,
         dataset_id='openai-mirror/mrcr',
         metric_list=['mrcr_score'],
+        primary_metric=MetricSelector(name='mrcr_score', aggregation='mean', dimensions={'scope': 'overall'}),
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -259,7 +261,8 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         agg: List[AggScore] = [
             AggScore(
                 metric_name='mrcr_score',
-                aggregation_name='overall',
+                aggregation='mean',
+                dimensions={'scope': 'overall'},
                 score=sum(overall) / len(overall),
                 num=len(overall)
             )
@@ -270,7 +273,14 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
             l, r = OPENAI_MRCR_BINS[i]
             agg.append(
                 AggScore(
-                    metric_name='mrcr_score', aggregation_name=f'{l}-{r}', score=sum(vals) / len(vals), num=len(vals)
+                    metric_name='mrcr_score',
+                    aggregation='mean',
+                    dimensions={
+                        'min_tokens': l,
+                        'max_tokens': r
+                    },
+                    score=sum(vals) / len(vals),
+                    num=len(vals),
                 )
             )
         return agg

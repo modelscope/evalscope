@@ -23,7 +23,7 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
 ## Evaluation Notes
 
 - Default configuration uses **3-shot** with CoT prompting (recommended)
-- CoT prompts are pre-defined for each subset in `cot_prompts/` directory
+- CoT prompts are pre-defined for each subset in `cot_prompts.py`
 - Answers should follow the format: "So the answer is [ANSWER]"
 - Setting `few_shot_num=0` disables few-shot examples
 - Multiple-choice answers are normalized to single letters (A, B, C, etc.)
@@ -37,7 +37,7 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
 | **Dataset ID** | [evalscope/bbh](https://modelscope.cn/datasets/evalscope/bbh/summary) |
 | **Paper** | N/A |
 | **Tags** | `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 3-shot |
 | **Evaluation Split** | `test` |
 

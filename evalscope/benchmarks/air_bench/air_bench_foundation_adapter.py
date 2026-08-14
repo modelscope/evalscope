@@ -107,7 +107,6 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = False
-        self.add_aggregation_name = False
         self.category_map = FOUNDATION_SUBSET_TO_CATEGORY
         self._track_root: Optional[str] = None
         self._audio_cache_dir = ''

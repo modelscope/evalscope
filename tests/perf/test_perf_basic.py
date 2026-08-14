@@ -31,9 +31,9 @@ class TestPerfBasic(PerfTestBase):
         for a small number of requests (15) at parallelism 1.
         """
         task_cfg = Arguments(
-            url='http://127.0.0.1:8001/v1/chat/completions',
+            url=LOCAL_CHAT_URL,
             parallel=1,
-            model='qwen2.5',
+            model='Qwen2.5-0.5B-Instruct',
             number=15,
             api='openai',
             dataset='openqa',
@@ -131,9 +131,8 @@ class TestPerfBasic(PerfTestBase):
             tokenize_prompt=True,
             extra_args={'ignore_eos': True},
         )
-        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
-        print(metrics_result)
-        print(percentile_result)
+        result = run_perf_benchmark(task_cfg)
+        print(result)
 
     # ------------------------------------------------------------------
     # Completion endpoint / multi-parallel sweep
@@ -166,9 +165,8 @@ class TestPerfBasic(PerfTestBase):
             seed=None,
             extra_args={'ignore_eos': True},
         )
-        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
-        print(metrics_result)
-        print(percentile_result)
+        result = run_perf_benchmark(task_cfg)
+        print(result)
 
     def test_multi_parallel_sweep(self):
         """Multi-parallel sweep against DashScope chat/completions.
@@ -233,9 +231,8 @@ class TestPerfBasic(PerfTestBase):
             seed=None,
             extra_args={'ignore_eos': True},
         )
-        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
-        print(metrics_result)
-        print(percentile_result)
+        result = run_perf_benchmark(task_cfg)
+        print(result)
 
     def test_kontext_bench_vl(self):
         """KontextBench VL dataset sweep.
@@ -260,9 +257,8 @@ class TestPerfBasic(PerfTestBase):
             seed=None,
             extra_args={'ignore_eos': True},
         )
-        metrics_result, percentile_result = run_perf_benchmark(task_cfg)
-        print(metrics_result)
-        print(percentile_result)
+        result = run_perf_benchmark(task_cfg)
+        print(result)
 
     # ------------------------------------------------------------------
     # Sequential runs / ShareGPT

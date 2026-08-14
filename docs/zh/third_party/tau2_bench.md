@@ -111,13 +111,13 @@ run_task(task_cfg)
 +-----------+------------+-------------+----------+-------+---------+---------+
 | Model     | Dataset    | Metric      | Subset   |   Num |   Score | Cat.0   |
 +===========+============+=============+==========+=======+=========+=========+
-| qwen-plus | tau2_bench | mean_Pass^1 | airline  |    10 |     0.6 | default |
+| qwen-plus | tau2_bench | Accuracy ↑ · 1 | airline  |    10 |     60% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | mean_Pass^1 | retail   |    10 |     0.7 | default |
+| qwen-plus | tau2_bench | Accuracy ↑ · 1 | retail   |    10 |     70% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | mean_Pass^1 | telecom  |    10 |     0.8 | default |
+| qwen-plus | tau2_bench | Accuracy ↑ · 1 | telecom  |    10 |     80% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | mean_Pass^1 | OVERALL  |    30 |     0.7 | -       |
+| qwen-plus | tau2_bench | Accuracy ↑ · 1 | OVERALL  |    30 |     70% | -       |
 +-----------+------------+-------------+----------+-------+---------+---------+ 
 ```
 

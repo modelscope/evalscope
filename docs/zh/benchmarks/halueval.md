@@ -40,7 +40,7 @@ HaluEval 是一个大规模的生成与人工标注的幻觉样本集合，用�
 | **数据集ID** | [evalscope/HaluEval](https://modelscope.cn/datasets/evalscope/HaluEval/summary) |
 | **论文** | N/A |
 | **标签** | `Hallucination`, `Knowledge`, `Yes/No` |
-| **指标** | `accuracy`, `precision`, `recall`, `f1_score`, `yes_ratio` |
+| **指标** | `accuracy`, `precision`, `recall`, `f1`, `yes_ratio` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `data` |
 

@@ -47,7 +47,7 @@ PLawBench 是一个基于评分标准（rubric）的基准测试，用于评估�
 | **数据集ID** | [evalscope/PLawBench](https://modelscope.cn/datasets/evalscope/PLawBench/summary) |
 | **论文** | [Paper](https://github.com/skylenage/PLawbench) |
 | **标签** | `Chinese`, `Knowledge`, `QA`, `Reasoning` |
-| **指标** | `acc`, `conclusion_acc`, `fact_acc`, `reasoning_acc`, `law_acc` |
+| **指标** | `accuracy`, `conclusion_acc`, `fact_acc`, `reasoning_acc`, `law_acc` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 

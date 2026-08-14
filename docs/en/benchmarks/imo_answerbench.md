@@ -35,7 +35,7 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
 | **Dataset ID** | [evalscope/imo-answerbench](https://modelscope.cn/datasets/evalscope/imo-answerbench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

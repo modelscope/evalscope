@@ -38,7 +38,7 @@
 | **数据集 ID** | [tau-bench](https://github.com/sierra-research/tau-bench) |
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `Reasoning` |
-| **指标** | N/A |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 | **聚合方法** | `mean_and_pass_hat_k` |

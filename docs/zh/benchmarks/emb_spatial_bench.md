@@ -3,26 +3,26 @@
 
 ## 概述
 
-EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空间理解能力的基准测试。该基准测试从具身场景中自动构建，涵盖从第一人称视角出发的 6 种空间关系：**close**（近）、**far**（远）、**above**（上）、**under**（下）、**left**（左）和 **right**（右）。
+EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空间理解能力的基准测试。该基准测试从具身场景中自动构建，涵盖以自我为中心视角下的 6 种空间关系：**close**（近）、**far**（远）、**above**（上）、**under**（下）、**left**（左）和 **right**（右）。
 
 ## 任务描述
 
 - **任务类型**：多项选择视觉问答（VQA）
-- **输入**：一张第一人称 RGB 图像 + 一个包含 4 个候选答案的空间推理问题
+- **输入**：一张以自我为中心的 RGB 图像 + 一个包含 4 个候选答案的空间推理问题
 - **输出**：单个字母（A / B / C / D），标识正确的物体或空间关系
 - **领域**：具身人工智能、空间推理（MP3D 和 AI2Thor 环境）
 
-## 主要特点
+## 主要特性
 
-- 包含 3,640 个人工验证的评测问题，源自两个具身环境（MP3D 和 AI2Thor）
+- 包含 3,640 个经人工验证的评估问题，源自两个具身环境（MP3D 和 AI2Thor）
 - 涵盖 6 类空间关系：close、far、above、under、left、right
 - 每个问题需从 4 个选项中选出空间上最准确的答案
 - 旨在揭示当前 LVLM 与合格具身智能之间的差距
 
-## 评测说明
+## 评估说明
 
-- 默认评测使用 **embspatial_bench.json** 文件（共 3,640 个样本）
-- 主要指标：**准确率**（acc）
+- 默认评估使用 **embspatial_bench.json** 文件（共 3,640 个样本）
+- 主要指标：**准确率**（`accuracy`）
 - 数据集中答案索引为 0 起始（0 → A，1 → B，2 → C，3 → D）
 - 图像以 JPEG base64 字符串形式存储在 JSON 文件中
 - 子集按 `relation` 字段组织（6 种空间关系类别）
@@ -37,7 +37,7 @@ EmbSpatial-Bench 是一个用于评估大视觉语言模型（LVLMs）具身空�
 | **数据集ID** | [evalscope/EmbSpatial-Bench](https://modelscope.cn/datasets/evalscope/EmbSpatial-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-short.33/) |
 | **标签** | `MCQ`, `MultiModal`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评测划分** | `test` |
 

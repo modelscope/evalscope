@@ -34,7 +34,7 @@ MMStar 是一个精英级的视觉不可或缺型多模态基准测试，旨在�
 | **数据集ID** | [evalscope/MMStar](https://modelscope.cn/datasets/evalscope/MMStar/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数（Shots）** | 0-shot |
 | **评估划分** | `val` |
 

@@ -34,7 +34,7 @@ LogiQA 是一个用于评估逻辑推理能力的基准测试，其题目来源�
 | **数据集 ID** | [extraordinarylab/logiqa](https://modelscope.cn/datasets/extraordinarylab/logiqa/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估集** | `test` |
 | **训练集** | `validation` |

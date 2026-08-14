@@ -2,13 +2,19 @@ import { useMemo, useState } from 'react'
 import { Radar, Table2 } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import type { ReportData } from '@/api/types'
-import { getChartUrl } from '@/api/reports'
+import { getCompareChartUrl } from '@/api/reports'
 import Card from '@/components/ui/Card'
 import Table from '@/components/ui/Table'
-import { formatMetricByKey, getBoundedMetricRatio, getMetricSpec, resolveMetricKey } from '@/domain/metric/registry'
+import {
+  formatMetricIdentityLabel,
+  metricIdentityKey,
+} from '@/domain/metric'
+import type { MetricSemantics } from '@/domain/metric'
+import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
 import PlotlyChart from '@/components/charts/PlotlyChart'
+import ScoreBar from '@/components/ui/ScoreBar'
 import ReportSummaryStats from './ReportSummaryStats'
-import JsonViewer from '@/components/common/JsonViewer'
+import JsonViewer from '@/components/ui/JsonViewer'
 
 interface Props {
   reports: ReportData[]
@@ -18,21 +24,59 @@ interface Props {
   onDatasetClick?: (dataset: string) => void
 }
 
+/**
+ * Headline figures of one dataset report: the primary metric's name, score, sample count and
+ * semantics. `null` when the report declares no primary metric.
+ */
+function primarySummaryOf(report: ReportData): {
+  name: string
+  label: string
+  score: number
+  num: number
+  semantics?: MetricSemantics | null
+} | null {
+  const metric = primaryMetricOf(report)
+  if (!metric) {
+    return null
+  }
+  return {
+    name: metricIdentityKey(metric.identity),
+    label: formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name),
+    score: metric.score,
+    num: metric.categories?.reduce((sum, category) => sum + category.num, 0) ?? 0,
+    semantics: metric.semantics,
+  }
+}
+
 export default function OverviewTab({ reports, reportName, rootPath, taskConfig, onDatasetClick }: Props) {
   const { t } = useLocale()
   const [scoreView, setScoreView] = useState<'table' | 'radar'>('table')
-  const metricKeys = reports.map((report) => resolveMetricKey(report.metrics[0]?.name ?? 'score'))
+  const primaries = reports.map(primaryMetricOf)
+  const semanticIds = primaries.map((primary) => primary?.semantics?.semantic_id ?? null)
+  const sameSemantics = semanticIds.length > 0 && semanticIds.every((id) => id !== null && id === semanticIds[0])
+  // A radar chart puts every dataset on one axis scale, so it is only honest when the datasets
+  // share a semantic identifier and the metric is a bounded quality metric.
   const canShowRadar = reports.length >= 3
-    && metricKeys.every((key) => key === metricKeys[0])
-    && getMetricSpec(metricKeys[0] ?? '').spec.boundedness === 'bounded'
+    && sameSemantics
+    && primaries[0]?.semantics?.value_range != null
+    && primaries[0]?.semantics?.direction !== 'none'
 
   const tableData = useMemo(() => {
-    return reports.map((r) => ({
-      Dataset: r.dataset_name,
-      Score: r.score,
-      Metric: r.metrics[0]?.name ?? 'score',
-      Samples: r.metrics[0]?.categories?.reduce((s, c) => s + c.num, 0) ?? 0,
-    }))
+    // `primaries` is recomputed here rather than closed over: it is a fresh array on every render, so
+    // listing it as a dependency would defeat the memo, and omitting it is what the exhaustive-deps
+    // rule warns about. Deriving it inside keeps `reports` the only real input.
+    return reports.map((r) => {
+      const primary = primarySummaryOf(r)
+      return {
+        Dataset: datasetLabel(r),
+        DatasetId: r.dataset_name,
+        Score: primary?.score ?? null,
+        Metric: primary?.name ?? '',
+        MetricLabel: primary?.label ?? '',
+        Semantics: primary?.semantics ?? null,
+        Samples: primary?.num ?? 0,
+      }
+    })
   }, [reports])
 
   const columns = [
@@ -42,6 +86,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       sortable: true,
       render: (row: Record<string, unknown>) => {
         const name = String(row.Dataset)
+        const datasetId = String(row.DatasetId)
         const content = (
           <>
             <span className="block max-w-[72px] break-words sm:max-w-none">{name}</span>
@@ -53,7 +98,8 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
         if (onDatasetClick) {
           return (
             <button
-              onClick={() => onDatasetClick(name)}
+              onClick={() => onDatasetClick(datasetId)}
+              title={datasetId}
               className="text-[var(--accent)] hover:underline cursor-pointer bg-transparent border-none p-0 font-inherit text-left"
             >
               {content}
@@ -64,32 +110,35 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
       },
     },
     {
+      key: 'Metric',
+      label: t('reportDetail.metric'),
+      sortable: true,
+      render: (row: Record<string, unknown>) => {
+        const metricName = String(row.Metric ?? '')
+        return (
+          <span
+            className="truncate text-xs text-[var(--text-muted)] sm:text-sm"
+            title={metricName}
+          >
+            {String(row.MetricLabel || metricName)}
+          </span>
+        )
+      },
+    },
+    {
       key: 'Score',
       label: 'Score',
       sortable: true,
       render: (row: Record<string, unknown>) => {
-        const score = Number(row.Score)
-        const metricName = String(row.Metric ?? 'score')
-        const ratio = getBoundedMetricRatio(metricName, score)
+        const score = row.Score == null ? null : Number(row.Score)
+        const metricName = String(row.Metric ?? '')
+        const semantics = row.Semantics as MetricSemantics | null
         return (
-          <div className="flex min-w-[92px] items-center justify-end gap-1.5 sm:min-w-[240px] sm:gap-3">
-            {ratio != null && (
-              <div className="h-2 min-w-9 flex-1 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--bg-deep)] sm:h-2.5">
-                <div
-                  role="progressbar"
-                  aria-label={`${String(row.Dataset)} ${t('prediction.score')}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round(ratio * 100)}
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{ width: `${ratio * 100}%`, background: 'var(--accent)' }}
-                />
-              </div>
-            )}
-            <span className="min-w-12 text-right font-mono text-xs font-semibold tabular-nums text-[var(--text)] sm:text-sm">
-              {formatMetricByKey(metricName, score, t).primary}
-            </span>
-          </div>
+          <ScoreBar
+            score={score}
+            semantics={semantics}
+            ariaLabel={`${String(row.Dataset)} ${metricName}`}
+          />
         )
       },
     },
@@ -139,7 +188,7 @@ export default function OverviewTab({ reports, reportName, rootPath, taskConfig,
 
         {scoreView === 'radar' && canShowRadar ? (
           <PlotlyChart
-            src={getChartUrl(rootPath, 'radar', { reportName })}
+            src={getCompareChartUrl(rootPath, [reportName], 'radar')}
             height={400}
             fallbackTable={{
               columns: ['Dataset', 'Score', 'Samples'],

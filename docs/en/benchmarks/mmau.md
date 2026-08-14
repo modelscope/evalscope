@@ -36,7 +36,7 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 | **Dataset ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |
 | **Paper** | N/A |
 | **Tags** | `Audio`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test_mini` |
 

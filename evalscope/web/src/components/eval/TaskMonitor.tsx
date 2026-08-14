@@ -1,5 +1,5 @@
 import type { EvalInvokeResponse } from '@/api/types'
-import LogViewer from '@/components/common/LogViewer'
+import LogViewer from '@/components/ui/LogViewer'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { useLocale } from '@/contexts/LocaleContext'

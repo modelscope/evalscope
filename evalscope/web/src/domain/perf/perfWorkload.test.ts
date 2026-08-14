@@ -1,5 +1,3 @@
-// Feature: frontend-refactor-2026-07, Property 14: Workload normalization never renders INF and shows missing placeholders
-//
 // For any request rate and workload parameters, `normalizeWorkload`'s output
 // must satisfy:
 //   - when the rate is truly unlimited it is a semantic loop label
@@ -8,8 +6,6 @@
 //     literal `INF` (case-insensitive);
 //   - a missing/invalid concurrency or number-of-requests parameter renders as
 //     the `N/A` placeholder, while a valid one renders as its string value.
-//
-// Validates: Requirements 8.5, 8.6, 8.7
 
 import { describe, expect, it } from 'vitest'
 import fc from 'fast-check'
@@ -66,7 +62,7 @@ function isUnlimitedRate(rate: unknown): boolean {
   return rate <= 0
 }
 
-describe('normalizeWorkload (Property 14: normalization never renders INF and shows missing placeholders)', () => {
+describe('normalizeWorkload never renders INF and shows missing placeholders', () => {
   it('never emits an INF marker and uses semantic labels for unlimited rates', () => {
     fc.assert(
       fc.property(countArb, countArb, rateArb, (parallel, number, rate) => {

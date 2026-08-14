@@ -33,7 +33,7 @@ OntoNotes Release 5.0 是一个大规模、多语言语料库，包含英语、�
 | **数据集ID** | [extraordinarylab/ontonotes5](https://modelscope.cn/datasets/extraordinarylab/ontonotes5/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

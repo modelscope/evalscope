@@ -37,7 +37,7 @@ RealWorldQA 是由 XAI 贡献的一项基准测试，旨在评估多模态 AI �
 | **数据集 ID** | [lmms-lab/RealWorldQA](https://modelscope.cn/datasets/lmms-lab/RealWorldQA/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `test` |
 

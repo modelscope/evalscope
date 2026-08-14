@@ -40,7 +40,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
 | **Dataset ID** | [OpenDataLab/OmniDocBench](https://modelscope.cn/datasets/OpenDataLab/OmniDocBench/summary) |
 | **Paper** | [Paper](https://github.com/opendatalab/OmniDocBench) |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
-| **Metrics** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `overall` |
+| **Metrics** | `text_block_Edit_dist`, `display_formula_Edit_dist`, `display_formula_CDM`, `table_TEDS`, `table_TEDS_structure_only`, `table_Edit_dist`, `reading_order_Edit_dist`, `normalized_score` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

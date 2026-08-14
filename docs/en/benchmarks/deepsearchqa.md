@@ -30,7 +30,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 
 - EvalScope loads the ModelScope dataset `google/deepsearchqa` from the `eval` split.
 - LLM judge is enabled by default. Official starter code uses Gemini 2.5 Flash with the DeepSearchQA judge prompt, but EvalScope can use any configured judge model for local runs.
-- The primary metric is `f1_score`; `precision`, `recall`, and empty/invalid response rates are also reported.
+- The primary metric is `f1`; `precision`, `recall`, and empty/invalid response rates are also reported.
 - `JudgeStrategy.RULE` provides a conservative exact/substring fallback for smoke tests and is not equivalent to official LLM judging.
 
 ## Properties
@@ -41,7 +41,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 | **Dataset ID** | [google/deepsearchqa](https://modelscope.cn/datasets/google/deepsearchqa/summary) |
 | **Paper** | [Paper](https://storage.googleapis.com/deepmind-media/DeepSearchQA/DeepSearchQA_benchmark_paper.pdf) |
 | **Tags** | `Agent`, `Knowledge`, `QA`, `Retrieval` |
-| **Metrics** | `f1_score`, `precision`, `recall` |
+| **Metrics** | `f1`, `precision`, `recall` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `eval` |
 

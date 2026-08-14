@@ -34,7 +34,7 @@ HMMT February 2025（MathArena）是一个具有挑战性的评测基准，源�
 | **数据集ID** | [evalscope/hmmt_feb_2025](https://modelscope.cn/datasets/evalscope/hmmt_feb_2025/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评测划分** | `train` |
 

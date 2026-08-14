@@ -36,7 +36,7 @@ OmniBench is a pioneering universal multimodal benchmark designed to rigorously 
 | **Dataset ID** | [m-a-p/OmniBench](https://modelscope.cn/datasets/m-a-p/OmniBench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
 

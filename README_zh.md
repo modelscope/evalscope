@@ -74,6 +74,8 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ## 🎉 内容更新
 
+- 🔥 **[2026.08.13]** 评测报告升级：统一指标语义，并改善 Agent Trace 步骤分组与工具调用/结果关联的可靠性。
+- 🔥 **[2026.08.10]** 新增 **AutomationBench**、**JobBench**、**MiniWoB**、**OmniDocBench-v1.6**、**PerceptionBench**、**ScreenSpot-Pro**、**PLawBench**、**PMC-VQA**、**HiPhO**、**LogicVista** 和 **CC-OCR-V2** 基准。
 - 🔥 **[2026.07.21]** 新增 **Claw-Eval**、**ResearchRubrics**、**Toolathlon**（Agent）、**TVBench**（视频）、**WideSearch**、**PerspectiveGap** 基准。
 - 🔥 **[2026.07.03]** 新增 **CharXiv** & **BabyVision**（图表理解、视觉认知）及 **ERQA** & **WorldVQA**（实体识别 QA，支持 LLM judge + CoT）多模态基准。
 - 🔥 **[2026.06.23]** Agent 与代码评测大幅扩展：新增 **BigCodeBench**、**SWE-bench Multilingual**、**BrowseComp**、**MCP-Atlas**、**GDPval** 基准；新增 **OpenCode** / **OpenHands** runner；适配器架构重构，引入 `AudioLanguageAdapter`、统一 `FunctionCallAdapter`、公开 `run_agent_loop` API。
@@ -84,10 +86,11 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 - 🔥 **[2026.05.26]** 新增 [GAIA](https://evalscope.readthedocs.io/zh-cn/latest/third_party/gaia.html) agent 基准（Docker sandbox 内多轮 ReAct + `bash`，复用官方规则评分器）和通用 [MCP 服务器](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/agent/native.html#mcp-工具接入)接入 —— 任何基于 `NativeAgentConfig` 的 benchmark 都可直接挂载 stdio / HTTP / SSE 的 MCP server（`fetch`、网页搜索、GitHub 等），无需 benchmark 端改动。
 - 🔥 **[2026.05.22]** 新增 **外部 Agent Bridge** 模式：可直接评测 Anthropic [Claude Code](https://github.com/anthropics/claude-code)、OpenAI [Codex](https://github.com/openai/codex) 等成品 Agent CLI。Bridge 透明转发 CLI 的 LLM 请求（Anthropic Messages / OpenAI Chat / OpenAI Responses，含 SSE 流式响应）到评测模型，同时把完整交互轨迹录制为 `agent_trace`；通过 `@register_runner` 可接入任意第三方 CLI。详见[外部 Agent Bridge 指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/agent/bridge.html)。
 - 🔥 **[2026.05.19]** 新增对 [SWE-bench_Pro](https://evalscope.readthedocs.io/zh-cn/latest/third_party/swe_bench_pro.html) 与 [τ³-bench](https://evalscope.readthedocs.io/zh-cn/latest/third_party/tau3_bench.html) 的支持：SWE-bench_Pro 是 Scale AI 推出的更具挑战性的多语言、长周期软件工程基准，相比原始 SWE-bench 数据污染更少、覆盖语言更广，**推荐替代原始 SWE-bench 使用**，每个实例的 Docker 镜像直接从 DockerHub 拉取，无需本地构建；τ³-bench 是 tau-bench 系列的 v1.0.0 版本，在 τ²-bench 基础上新增 `banking_knowledge` 知识检索领域（RAG）、修复 75+ 项任务，并提供可插拔的检索流水线（BM25 / 稠密嵌入 / 重排序器 / 沙箱 shell）。
-- 🔥 **[2026.05.15]** 新增 **Agent 评测模式**：所有基于 `DefaultDataAdapter` 的基准（GSM8K、AIME、IFEval 等）现在均可通过多轮 AgentLoop 驱动，支持可插拔策略（`function_calling` / `react` / `swe_bench_*`）、工具（`bash` / `python_exec` / `submit`）以及 `local` / `docker` 运行环境，每条样本的 `agent_trace` 会随评测结果落盘，并在仪表盘的预测视图中按步骤回放。详见[Agent 评测指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/agent/native.html)。
-- 🔥 **[2026.05.08]** 与 [LightSeek](https://lightseek.org/) 联合推出 [TokenSpeed](https://lightseek.org/blog/lightseek-tokenspeed.html)——面向 Agentic 工作负载的极速 LLM 推理引擎。EvalScope 提供 SWE-smith 压测流水线，基于真实 Coding Agent 轨迹衡量单 GPU 吞吐（TPM）与单用户延迟（TPS），作为 TokenSpeed 性能评测的官方基准工具。参考 [SWE-smith 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/multi_turn.html#swe-smith) 快速上手。
 
 <details><summary>更多历史更新</summary>
+
+- 🔥 **[2026.05.15]** 新增 **Agent 评测模式**：所有基于 `DefaultDataAdapter` 的基准（GSM8K、AIME、IFEval 等）现在均可通过多轮 AgentLoop 驱动，支持可插拔策略（`function_calling` / `react` / `swe_bench_*`）、工具（`bash` / `python_exec` / `submit`）以及 `local` / `docker` 运行环境，每条样本的 `agent_trace` 会随评测结果落盘，并在仪表盘的预测视图中按步骤回放。详见[Agent 评测指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/agent/native.html)。
+- 🔥 **[2026.05.08]** 与 [LightSeek](https://lightseek.org/) 联合推出 [TokenSpeed](https://lightseek.org/blog/lightseek-tokenspeed.html)——面向 Agentic 工作负载的极速 LLM 推理引擎。EvalScope 提供 SWE-smith 压测流水线，基于真实 Coding Agent 轨迹衡量单 GPU 吞吐（TPM）与单用户延迟（TPS），作为 TokenSpeed 性能评测的官方基准工具。参考 [SWE-smith 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/multi_turn.html#swe-smith) 快速上手。
 
 - 🔥 **[2026.05.07]** 全新 Web 界面升级：使用 React + Vite 重构可视化平台，替换原有 Gradio 界面，提供更流畅的交互体验。
 - 🔥 **[2026.04.23]** 支持在评测任务中记录性能（perf）指标，可在单次评测运行中同时追踪模型准确率与 TTFT、TPOT、吞吐量等推理效率指标。

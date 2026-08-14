@@ -36,7 +36,7 @@ ARC-AGI-2 (Abstraction and Reasoning Corpus for Artificial General Intelligence 
 | **Dataset ID** | [evalscope/arc-agi-2](https://modelscope.cn/datasets/evalscope/arc-agi-2/summary) |
 | **Paper** | N/A |
 | **Tags** | `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 | **Aggregation** | `mean_and_pass_hat_k` |

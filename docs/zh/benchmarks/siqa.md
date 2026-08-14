@@ -34,7 +34,7 @@ SIQA（Social Interaction QA）是一个用于评估社会常识智能的基准�
 | **数据集 ID** | [extraordinarylab/siqa](https://modelscope.cn/datasets/extraordinarylab/siqa/summary) |
 | **论文** | N/A |
 | **标签** | `Commonsense`, `MCQ`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数量** | 0-shot |
 | **评估划分** | `validation` |
 

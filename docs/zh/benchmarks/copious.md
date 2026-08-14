@@ -33,7 +33,7 @@ Copious 语料库是一个用于生物多样性实体识别的黄金标准语料
 | **数据集 ID** | [extraordinarylab/copious](https://modelscope.cn/datasets/extraordinarylab/copious/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数** | 5-shot |
 | **评估集** | `test` |
 | **训练集** | `train` |

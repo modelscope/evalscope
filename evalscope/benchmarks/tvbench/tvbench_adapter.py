@@ -50,7 +50,7 @@ The EvalScope native adapter reads the official per-task JSON annotations from t
 ## Evaluation Notes
 
 - Default evaluation uses 0-shot Chain-of-Thought multiple-choice prompting via `MultipleChoiceTemplate.SINGLE_ANSWER_COT`.
-- Primary metric: Accuracy (`acc`). The dataset answer is stored as candidate text and is converted to the corresponding option letter before scoring.
+- Primary metric: Accuracy (`accuracy`). The dataset answer is stored as candidate text and is converted to the corresponding option letter before scoring.
 - Some subsets provide `start`/`end` fields. The adapter passes these values to `ContentVideo` and also adds a concise segment instruction to the prompt.
 - Video files are downloaded lazily from subset-specific archives. `egocentric_sequence` uses segmented archives under `video/egocentric_sequence/<prefix>.zip`.
 - The `action_antonym` annotations reference AVI files. If the repository media archive is unavailable, configure `extra_params.video_dir` to a local directory containing the AVI files.

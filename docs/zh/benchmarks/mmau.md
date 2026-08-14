@@ -36,7 +36,7 @@ MMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）
 | **数据集ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |
 | **论文** | N/A |
 | **标签** | `Audio`, `MCQ` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test_mini` |
 

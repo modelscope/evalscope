@@ -35,7 +35,7 @@ MathQA is a large-scale dataset for mathematical word problem solving, gathered 
 | **Dataset ID** | [extraordinarylab/math-qa](https://modelscope.cn/datasets/extraordinarylab/math-qa/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ`, `Math`, `Reasoning` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

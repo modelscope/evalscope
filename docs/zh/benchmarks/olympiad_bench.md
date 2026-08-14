@@ -40,7 +40,7 @@ OlympiadBench 是一个奥林匹克级别的双语多模态科学基准测试，
 | **数据集 ID** | [AI-ModelScope/OlympiadBench](https://modelscope.cn/datasets/AI-ModelScope/OlympiadBench/summary) |
 | **论文** | N/A |
 | **标签** | `Math`, `Reasoning` |
-| **指标** | `acc` |
+| **指标** | `accuracy` |
 | **默认提示方式** | 0-shot |
 | **评估划分** | `train` |
 

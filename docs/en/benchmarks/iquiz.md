@@ -38,7 +38,7 @@ IQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (
 | **Dataset ID** | [AI-ModelScope/IQuiz](https://modelscope.cn/datasets/AI-ModelScope/IQuiz/summary) |
 | **Paper** | N/A |
 | **Tags** | `Chinese`, `Knowledge`, `MCQ` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

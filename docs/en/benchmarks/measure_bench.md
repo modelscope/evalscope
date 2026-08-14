@@ -23,7 +23,7 @@ MeasureBench is a comprehensive benchmark for evaluating the ability of vision-l
 ## Evaluation Notes
 
 - Default splits: **real_world** and **synthetic_test** (treated as separate subsets)
-- Primary metric: **Accuracy** (acc) — ``all_correct``: number *and* unit both correct
+- Primary metric: **Accuracy** (`accuracy`) — ``all_correct``: number *and* unit both correct
 - Secondary metrics: **number_acc** (numeric only), **unit_acc** (unit only)
 - Two evaluators: ``interval_matching`` (single valid range) and ``multi_interval_matching`` (e.g. clock AM/PM)
 - Model output is expected in the format ``Answer: <value> <unit>`` on the last line
@@ -40,7 +40,7 @@ MeasureBench is a comprehensive benchmark for evaluating the ability of vision-l
 | **Dataset ID** | [evalscope/MeasureBench](https://modelscope.cn/datasets/evalscope/MeasureBench/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2510.26865) |
 | **Tags** | `MultiModal`, `QA`, `Reasoning` |
-| **Metrics** | `acc`, `number_acc`, `unit_acc` |
+| **Metrics** | `accuracy`, `number_acc`, `unit_acc` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `real_world` |
 
@@ -131,11 +131,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['measure_bench'],
-    dataset_args={
-        'measure_bench': {
-            # subset_list: ['real_world', 'synthetic_test']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

@@ -36,7 +36,7 @@ V*Bench is a benchmark designed for evaluating visual search capabilities within
 | **Dataset ID** | [lmms-lab/vstar-bench](https://modelscope.cn/datasets/lmms-lab/vstar-bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `Grounding`, `MCQ`, `MultiModal` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

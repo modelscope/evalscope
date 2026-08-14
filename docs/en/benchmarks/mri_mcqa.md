@@ -34,7 +34,7 @@ MRI-MCQA is a specialized benchmark composed of multiple-choice questions relate
 | **Dataset ID** | [extraordinarylab/mri-mcqa](https://modelscope.cn/datasets/extraordinarylab/mri-mcqa/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MCQ`, `Medical` |
-| **Metrics** | `acc` |
+| **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 

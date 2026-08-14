@@ -34,7 +34,7 @@ BC4CHEMD（BioCreative IV CHEMDNER）数据集是一个包含 10,000 篇 PubMed 
 | **数据集ID** | [extraordinarylab/bc4chemd](https://modelscope.cn/datasets/extraordinarylab/bc4chemd/summary) |
 | **论文** | N/A |
 | **标签** | `Knowledge`, `NER` |
-| **指标** | `precision`, `recall`, `f1_score`, `accuracy` |
+| **指标** | `precision`, `recall`, `f1`, `accuracy` |
 | **默认示例数量** | 5-shot |
 | **评估分割** | `test` |
 | **训练分割** | `train` |

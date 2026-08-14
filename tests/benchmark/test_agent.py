@@ -1006,17 +1006,17 @@ class TestAgentBenchmark(TestBenchmark):
         """Test grouped Claw-Eval repeat aggregation."""
         adapter = object.__new__(ClawEvalAdapter)
         scores = [
-            SampleScore(score=Score(value={'avg_score': 1.0}, metadata={}), sample_id=0, group_id=0),
-            SampleScore(score=Score(value={'avg_score': 0.0}, metadata={}), sample_id=1, group_id=0),
-            SampleScore(score=Score(value={'avg_score': 0.5}, metadata={'error': 'failed'}), sample_id=2, group_id=1),
-            SampleScore(score=Score(value={'avg_score': 1.0}, metadata={}), sample_id=3, group_id=1),
+            SampleScore(score=Score(value={'judge_score': 1.0}, metadata={}), sample_id=0, group_id=0),
+            SampleScore(score=Score(value={'judge_score': 0.0}, metadata={}), sample_id=1, group_id=0),
+            SampleScore(score=Score(value={'judge_score': 0.5}, metadata={'error': 'failed'}), sample_id=2, group_id=1),
+            SampleScore(score=Score(value={'judge_score': 1.0}, metadata={}), sample_id=3, group_id=1),
         ]
 
         with patch.dict(sys.modules, _fake_claw_eval_scoring_modules()):
-            aggregated = {(score.metric_name, score.aggregation_name): score.score
+            aggregated = {(score.metric_name, score.aggregation): score.score
                           for score in adapter.aggregate_scores(scores)}
 
-        self.assertAlmostEqual(aggregated[('avg_score', 'mean')], 0.625)
+        self.assertAlmostEqual(aggregated[('judge_score', 'mean')], 0.625)
         self.assertAlmostEqual(aggregated[('pass_at_k', 'mean')], 1.0)
         self.assertAlmostEqual(aggregated[('pass_hat_k', 'mean')], 0.25)
         self.assertAlmostEqual(aggregated[('error_rate', 'mean')], 0.25)
