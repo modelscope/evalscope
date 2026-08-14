@@ -3,6 +3,7 @@ import type { ZodType } from 'zod'
 
 import {
   analysisResponseSchema,
+  benchmarkEntrySchema,
   benchmarksResponseSchema,
   configResponseSchema,
   dataFrameResponseSchema,
@@ -121,6 +122,37 @@ describe('endpoint response schemas', () => {
 
   it.each(ENDPOINT_CASES)('rejects a non-object $name response', ({ schema }) => {
     expect(schema.safeParse(null).success).toBe(false)
+  })
+})
+
+describe('benchmarkEntrySchema', () => {
+  const base = {
+    name: 'gsm8k_indic',
+    pretty_name: 'GSM8K-Indic',
+    tags: ['Math'],
+    category: 'llm' as const,
+    subset_list: ['hi'],
+    total_samples: 0,
+    few_shot_num: 0,
+    dataset_id: 'sarvamai/gsm8k-indic',
+    metrics: ['acc'],
+    meta: {},
+  }
+
+  it('accepts a null description locale for a benchmark pending translation', () => {
+    const result = benchmarkEntrySchema.safeParse({
+      ...base,
+      description: { en: { full: 'Overview', sections: {} }, zh: null },
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts an omitted description locale', () => {
+    const result = benchmarkEntrySchema.safeParse({
+      ...base,
+      description: { en: { full: 'Overview', sections: {} } },
+    })
+    expect(result.success).toBe(true)
   })
 })
 
