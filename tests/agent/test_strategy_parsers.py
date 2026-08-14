@@ -238,6 +238,23 @@ class TestSweBenchToolcallParseOutput(unittest.TestCase):
         self.assertIsNone(parsed.final_answer)
         self.assertEqual(parsed.raw_text, 'just thinking')
 
+    def test_should_nudge_when_no_previous_nudge(self):
+        ctx = _make_ctx()
+        parsed = ParsedAction(raw_text='thinking')
+        self.assertTrue(self.strategy.should_nudge(parsed, ctx))
+
+    def test_should_not_nudge_after_reminder(self):
+        from evalscope.api.agent.constants import NUDGE_PROMPT
+
+        ctx = _make_ctx(messages=[ChatMessageUser(content=NUDGE_PROMPT)])
+        parsed = ParsedAction(raw_text='still thinking')
+        self.assertFalse(self.strategy.should_nudge(parsed, ctx))
+
+    def test_unrelated_user_message_does_not_consume_nudge(self):
+        ctx = _make_ctx(messages=[ChatMessageUser(content='No bash tool was called')])
+        parsed = ParsedAction(raw_text='thinking')
+        self.assertTrue(self.strategy.should_nudge(parsed, ctx))
+
 
 class TestSweBenchToolcallFormatObservation(unittest.TestCase):
     """``format_observation`` is the sentinel interception point."""
