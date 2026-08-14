@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import numpy as np
+import pytest
 from pytest import MonkeyPatch
 from typing import Dict, Iterator, List, Optional, Tuple
 
@@ -45,6 +46,23 @@ class _FakeApiPlugin:
 
     def build_request(self, messages: str) -> Dict[str, str]:
         return {'payload': messages}
+
+
+class _NoneApiPlugin:
+    """Simulates a plugin that returns None for every message (unusable input)."""
+
+    def build_request(self, messages: str) -> Optional[Dict[str, str]]:
+        return None
+
+
+class _SerialDatasetPlugin(DatasetPluginBase):
+
+    def build_messages(self) -> Iterator[str]:
+        for index in range(3):
+            yield f'message-{index}'
+
+    def supports_parallel_message_generation(self, total_count: Optional[int] = None) -> bool:
+        return False
 
 
 async def _collect_requests(args: Arguments) -> List:
@@ -95,6 +113,23 @@ def test_parallel_dataset_generation_hook_preserves_order_and_warmup() -> None:
         ({'payload': 'message-2'}, False),
         ({'payload': 'message-3'}, False),
     ]
+
+
+def test_all_none_requests_abort_instead_of_hanging() -> None:
+    """If build_request returns None for a whole dataset pass, get_requests must abort.
+
+    Reproduces the residual #1565 risk: count never advances, so the serial cycle
+    would otherwise spin forever without yielding.
+    """
+    DatasetRegistry.register('unit_serial_dataset', _SerialDatasetPlugin)
+    args = _make_args(dataset='unit_serial_dataset', num_workers=0)
+
+    async def _drain() -> None:
+        async for _ in get_requests(args, _NoneApiPlugin()):
+            pass
+
+    with pytest.raises(ValueError, match='returned None for every one of'):
+        asyncio.run(_drain())
 
 
 def test_dataset_generation_worker_auto_respects_cpu_affinity(monkeypatch: MonkeyPatch) -> None:
