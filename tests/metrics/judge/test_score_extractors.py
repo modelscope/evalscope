@@ -11,6 +11,7 @@ from evalscope.metrics.judge.score_extractors import NumericScoreExtractor, Patt
 
 
 class TestPatternScoreExtractor:
+
     def test_mapped_answer_returns_mapping_value(self) -> None:
         extractor = PatternScoreExtractor(pattern=r'\b([AB])\b', score_mapping={'A': 1.0, 'B': 0.5})
         assert extractor.extract('The answer is A.') == 1.0
@@ -32,6 +33,7 @@ class TestPatternScoreExtractor:
 
 
 class TestNumericScoreExtractor:
+
     def test_in_range_value_passes_through(self) -> None:
         extractor = NumericScoreExtractor(pattern=r'\[\[(.*?)\]\]')
         assert extractor.extract('[[0.5]]') == 0.5
@@ -45,12 +47,26 @@ class TestNumericScoreExtractor:
         extractor = NumericScoreExtractor(pattern=r'\[\[(.*?)\]\]')
         assert extractor.extract('[[-1]]') == 0.0
 
+    def test_nan_fails_closed_to_min(self) -> None:
+        # float() accepts 'nan', and NaN compares false against both bounds, so without an
+        # explicit check it escapes clamping. One NaN sample would poison every aggregate
+        # built on this metric, since nothing downstream filters it.
+        extractor = NumericScoreExtractor(pattern=r'\[\[(.*?)\]\]')
+        assert extractor.extract('[[nan]]') == 0.0
+        assert extractor.extract('[[NaN]]') == 0.0
+
+    def test_infinity_clamps_to_bounds(self) -> None:
+        extractor = NumericScoreExtractor(pattern=r'\[\[(.*?)\]\]')
+        assert extractor.extract('[[inf]]') == 1.0
+        assert extractor.extract('[[-inf]]') == 0.0
+
     def test_no_match_returns_zero(self) -> None:
         extractor = NumericScoreExtractor(pattern=r'\[\[(.*?)\]\]')
         assert extractor.extract('no brackets here') == 0.0
 
 
 class TestLLMJudgeErrorGuard:
+
     def make_judge(self, score_type: str, **kwargs) -> LLMJudge:
         return LLMJudge(score_type=score_type, **kwargs)
 
@@ -76,6 +92,7 @@ class TestLLMJudgeErrorGuard:
         judge = self.make_judge('pattern', score_pattern=r'\b([AB])\b')
 
         class _FailingModel:
+
             def generate(self, messages):
                 raise RuntimeError('connection refused')
 

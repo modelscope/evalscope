@@ -1,3 +1,4 @@
+import math
 import re
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
@@ -58,6 +59,12 @@ class NumericScoreExtractor(ScoreExtractor):
 
         def _clamped(val: float) -> float:
             """Clamp to [clamp_min, clamp_max], warning when the raw value was out of range."""
+            # NaN compares false against every bound, so it would slip through the range
+            # check below and propagate into aggregation, turning the whole metric into
+            # NaN. Fail closed at clamp_min instead, as documented for [ERROR] responses.
+            if math.isnan(val):
+                logger.warning(f'Score NaN is not a usable rating, returning {self.clamp_min} in response: {response}')
+                return self.clamp_min
             if val < self.clamp_min or val > self.clamp_max:
                 clamped = max(self.clamp_min, min(self.clamp_max, val))
                 logger.warning(
