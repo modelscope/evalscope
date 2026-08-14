@@ -394,4 +394,4 @@ EvalScope 支持通过第三方评测框架（我们称之为"后端"）发起�
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=modelscope/evalscope&type=Date)](https://star-history.dera.page/#modelscope/evalscope&Date)

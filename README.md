@@ -393,4 +393,4 @@ If you use EvalScope in your research, please cite our work:
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=modelscope/evalscope&type=Date)](https://star-history.dera.page/#modelscope/evalscope&Date)
