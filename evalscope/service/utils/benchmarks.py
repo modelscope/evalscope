@@ -33,6 +33,11 @@ DEFAULT_TEXT_BENCHMARKS: List[str] = [
     'multi_if',
     'ifeval',
     'ifbench',
+    'milu',
+    'arc_indic',
+    'triviaqa_indic',
+    'indic_boolq',
+    'gsm8k_indic',
 ]
 
 #: Default multimodal benchmarks exposed by the /api/v1/eval/benchmarks endpoint.

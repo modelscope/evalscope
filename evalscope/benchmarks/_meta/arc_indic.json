@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "pretty_name": "ARC-Challenge-Indic",
+    "dataset_id": "sarvamai/arc-challenge-indic",
+    "paper_url": null,
+    "tags": [
+      "Reasoning",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "validation",
+    "subset_list": [
+      "bn",
+      "en",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te"
+    ],
+    "description": "\n## Overview\n\nARC-Challenge-Indic is a translation of the AI2 Reasoning Challenge (ARC-Challenge) science\nquestion-answering benchmark into 10 Indic languages, plus the original English set, for evaluating\nmultilingual scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Science Question Answering\n- **Input**: Science question with answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- Same underlying science-exam questions as `arc` (Challenge split), machine/human translated per language\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# ARC-Challenge-Indic\n\n\n## Overview\n\nARC-Challenge-Indic is a translation of the AI2 Reasoning Challenge (ARC-Challenge) science\nquestion-answering benchmark into 10 Indic languages, plus the original English set, for evaluating\nmultilingual scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Science Question Answering\n- **Input**: Science question with answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- Same underlying science-exam questions as `arc` (Challenge split), machine/human translated per language\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arc_indic` |\n| **Dataset ID** | [sarvamai/arc-challenge-indic](https://modelscope.cn/datasets/sarvamai/arc-challenge-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc_indic'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "9bbbd1ec1441d1478f98d85d0c27a9f8",
+    "needs_translation": true
+  },
+  "updated_at": "2026-08-14T07:26:25.217863"
+}

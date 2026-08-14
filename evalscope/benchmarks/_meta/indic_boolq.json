@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "pretty_name": "BoolQ-Indic",
+    "dataset_id": "sarvamai/boolq-indic",
+    "paper_url": null,
+    "tags": [
+      "ReadingComprehension",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "bn",
+      "en",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te"
+    ],
+    "description": "\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# BoolQ-Indic\n\n\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `indic_boolq` |\n| **Dataset ID** | [sarvamai/boolq-indic](https://modelscope.cn/datasets/sarvamai/boolq-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `ReadingComprehension` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_boolq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_boolq'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "3e5c5e3ca5731ca911101e182454eb06",
+    "needs_translation": true
+  },
+  "updated_at": "2026-08-14T07:26:25.220977"
+}

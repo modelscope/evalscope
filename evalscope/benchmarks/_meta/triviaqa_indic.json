@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "pretty_name": "TriviaQA-Indic-MCQ",
+    "dataset_id": "sarvamai/trivia-qa-indic-mcq",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "bn",
+      "en",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te"
+    ],
+    "description": "\n## Overview\n\nTriviaQA-Indic-MCQ reformats TriviaQA trivia questions as 4-way multiple-choice questions, translated\ninto 10 Indic languages plus English, for evaluating multilingual world-knowledge recall.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Trivia Question Answering\n- **Input**: Trivia question with 4 answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# TriviaQA-Indic-MCQ\n\n\n## Overview\n\nTriviaQA-Indic-MCQ reformats TriviaQA trivia questions as 4-way multiple-choice questions, translated\ninto 10 Indic languages plus English, for evaluating multilingual world-knowledge recall.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Trivia Question Answering\n- **Input**: Trivia question with 4 answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `triviaqa_indic` |\n| **Dataset ID** | [sarvamai/trivia-qa-indic-mcq](https://modelscope.cn/datasets/sarvamai/trivia-qa-indic-mcq/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets triviaqa_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['triviaqa_indic'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "b6b7a608f5b4be983b187101a73c9078",
+    "needs_translation": true
+  },
+  "updated_at": "2026-08-14T07:26:25.219692"
+}

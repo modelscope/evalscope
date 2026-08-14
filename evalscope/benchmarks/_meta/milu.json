@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "pretty_name": "MILU",
+    "dataset_id": "ai4bharat/MILU",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "acc"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "English",
+      "Bengali",
+      "Gujarati",
+      "Hindi",
+      "Kannada",
+      "Malayalam",
+      "Marathi",
+      "Odia",
+      "Punjabi",
+      "Tamil",
+      "Telugu"
+    ],
+    "description": "\n## Overview\n\nMILU (Multi-task Indic Language Understanding Benchmark) is a comprehensive evaluation dataset for\nassessing LLM performance across 11 Indic languages. It spans 8 domains and 41 subjects, combining\ntranslated general-knowledge questions with culturally specific Indian content.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices in one of 11 languages\n- **Output**: Single correct answer letter\n- **Languages**: English, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Key Features\n\n- 8 domains / 41 subjects, including India-specific culture, history, and current affairs\n- Native-language questions rather than machine-translated MMLU\n- Each language is a separate HF dataset config, loaded independently\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`)\n- Requires access to the gated `ai4bharat/MILU` dataset — accept the dataset terms on\n  huggingface.co and set `HF_TOKEN` (or run `huggingface-cli login`) before evaluating.\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# MILU\n\n\n## Overview\n\nMILU (Multi-task Indic Language Understanding Benchmark) is a comprehensive evaluation dataset for\nassessing LLM performance across 11 Indic languages. It spans 8 domains and 41 subjects, combining\ntranslated general-knowledge questions with culturally specific Indian content.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices in one of 11 languages\n- **Output**: Single correct answer letter\n- **Languages**: English, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Key Features\n\n- 8 domains / 41 subjects, including India-specific culture, history, and current affairs\n- Native-language questions rather than machine-translated MMLU\n- Each language is a separate HF dataset config, loaded independently\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`)\n- Requires access to the gated `ai4bharat/MILU` dataset — accept the dataset terms on\n  huggingface.co and set `HF_TOKEN` (or run `huggingface-cli login`) before evaluating.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `milu` |\n| **Dataset ID** | [ai4bharat/MILU](https://modelscope.cn/datasets/ai4bharat/MILU/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets milu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['milu'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "811cc345b0ee5f931fb460354e9e0d6f",
+    "needs_translation": true
+  },
+  "updated_at": "2026-08-14T07:26:25.217653"
+}

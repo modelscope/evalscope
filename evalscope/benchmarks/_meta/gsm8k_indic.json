@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "pretty_name": "GSM8K-Indic",
+    "dataset_id": "sarvamai/gsm8k-indic",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MultiLingual"
+    ],
+    "metrics": [
+      {
+        "acc": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "bn",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te",
+      "bn_roman",
+      "gu_roman",
+      "hi_roman",
+      "kn_roman",
+      "ml_roman",
+      "mr_roman",
+      "or_roman",
+      "pa_roman",
+      "ta_roman",
+      "te_roman"
+    ],
+    "description": "\n## Overview\n\nGSM8K-Indic translates the GSM8K grade-school math word problems into 10 Indic languages, each\navailable in native script and a romanized (Latin transliteration) variant, plus the original English.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade-school math word problem in one of 21 language/script variants\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil,\n  Telugu — each Indic language in both native script and a `_roman` transliterated variant\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages/scripts (e.g., `['hi', 'hi_roman']`)\n- Gold answers are the original English reasoning chain's final numeric value; only the question is\n  translated\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# GSM8K-Indic\n\n\n## Overview\n\nGSM8K-Indic translates the GSM8K grade-school math word problems into 10 Indic languages, each\navailable in native script and a romanized (Latin transliteration) variant, plus the original English.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade-school math word problem in one of 21 language/script variants\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil,\n  Telugu — each Indic language in both native script and a `_roman` transliterated variant\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages/scripts (e.g., `['hi', 'hi_roman']`)\n- Gold answers are the original English reasoning chain's final numeric value; only the question is\n  translated\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gsm8k_indic` |\n| **Dataset ID** | [sarvamai/gsm8k-indic](https://modelscope.cn/datasets/sarvamai/gsm8k-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gsm8k_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gsm8k_indic'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "6b663e4030c126a1c2f621549b9f60d4",
+    "needs_translation": true
+  },
+  "updated_at": "2026-08-14T07:26:25.221591"
+}
