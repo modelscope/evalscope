@@ -48,7 +48,7 @@ If anything fails *before* the merged report is fully written, the partially-cre
 |---|---|
 | Fewer than 2 reports selected | 400 |
 | Selected reports belong to different models | 400 |
-| Malformed report identifier | 400 |
+| Malformed report reference | 400 |
 | A selected report's directory is missing, or has no dataset results | 404 |
 | Two selected reports share a dataset | 409 |
 | A selected report belongs to a task still executing | 409 |
@@ -73,37 +73,36 @@ Rename relabels a report's `model_name` - the report itself and all of its under
 
 | Cause | Status |
 |---|---|
-| Empty `report_name` or `new_model_name` | 400 |
+| Empty `new_model_name` | 400 |
 | `new_model_name` contains a path separator | 400 |
 | `new_model_name` is unchanged from the current name | 400 |
-| Malformed report identifier | 400 |
+| Malformed report reference | 400 |
 | Report directory not found | 404 |
 | The report belongs to a task still executing | 409 |
 | A report for `new_model_name` already exists in this run | 409 |
 
 ## API Reference
 
-Both actions are also available directly over HTTP, if you're scripting against the Web service rather than clicking through the UI (see [Visualization](visualization.md) for how to start `evalscope service`).
+Both actions are also available directly over HTTP, if you're scripting against the Web service rather than clicking through the UI (see [Visualization](visualization.md) for how to start `evalscope service`). A report reference is the flat `{run_id}/{model_id}` form used throughout the reports API.
 
 **`POST /api/v1/reports/merge`**
 
 ```json
 {
   "root_path": "/path/to/outputs",
-  "report_names": ["run1@@my-model::gsm8k", "run2@@my-model::mmlu"]
+  "refs": ["run1/my-model", "run2/my-model"]
 }
 ```
 
-`root_path` is optional and falls back to the service's configured output root. Returns `{"success": true, "report_name": "<merged-report-identifier>"}` on success.
+`root_path` is optional and falls back to the service's configured output root. Returns `{"success": true, "run_id": "<merged-run-id>", "model_id": "my-model"}` on success.
 
-**`POST /api/v1/reports/rename`**
+**`POST /api/v1/reports/runs/{run_id}/models/{model_id}/rename`**
 
 ```json
 {
   "root_path": "/path/to/outputs",
-  "report_name": "run1@@my-model::gsm8k",
   "new_model_name": "my-model-v2"
 }
 ```
 
-Returns `{"success": true, "report_name": "<renamed-report-identifier>"}` on success.
+Returns `{"success": true, "run_id": "run1", "model_id": "my-model-v2"}` on success.
