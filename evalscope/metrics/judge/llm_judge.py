@@ -9,6 +9,11 @@ from .score_extractors import NumericScoreExtractor, PatternScoreExtractor, Scor
 
 logger = get_logger()
 
+# Sentinel that ``judge`` returns instead of raising on a failed request.
+# Consumers must fail closed on it (score 0, never full credit) — the same
+# contract as ``evalscope/benchmarks/hipho/utils.py#JUDGE_ERROR_PREFIX``.
+JUDGE_ERROR_PREFIX = '[ERROR]'
+
 DEFAULT_PROMPT_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
 
 [Question]
@@ -159,7 +164,7 @@ class LLMJudge(BaseJudge):
         except Exception as e:
             error_message = f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}'
             logger.error(error_message)
-            return f'[ERROR] {error_message}'
+            return f'{JUDGE_ERROR_PREFIX} {error_message}'
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None) -> str:
         if question is None:
@@ -186,5 +191,12 @@ class LLMJudge(BaseJudge):
             float: The numeric score extracted from the response
         """
         if response is None:
+            return 0.0
+        # A failed judge request must score 0, never full credit: ``judge`` reports
+        # failures as an ``[ERROR] ...`` string whose embedded digits (model id,
+        # endpoint, HTTP code) could otherwise be parsed as a score by a loose
+        # pattern. Same guard as ``benchmarks/hipho/utils.py``.
+        if response.startswith(JUDGE_ERROR_PREFIX):
+            logger.warning(f'LLM judge failed; returning 0.0. Response: {response}')
             return 0.0
         return self._score_extractor.extract(response)
