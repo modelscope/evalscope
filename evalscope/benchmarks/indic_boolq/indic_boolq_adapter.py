@@ -29,6 +29,7 @@ LANGUAGE_NAMES = {
     'te': 'Telugu',
 }
 
+
 @register_benchmark(
     BenchmarkMeta(
         name='indic_boolq',
