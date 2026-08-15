@@ -76,8 +76,10 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         "video_1": "custom_eval/multimodal/videos/sample.mp4",
         "answer": "C"
     }
-    - Images/videos are plain strings: base64 data URL or local/remote path.
-      Do not wrap in {"url": ...} and do not use 'bytes'.
+        - JSONL/CSV/TSV inputs typically use plain image/video strings: base64 data
+            URLs or local/remote paths.
+        - Parquet or Hugging Face Image columns may also provide image dicts with
+            ``{"bytes": ...}`` or ``{"path": ...}``, which are converted to data URLs.
     - 'options' is a list (JSON array) of strings; do NOT include "A.", "B." prefixes.
     - 'answer' is the correct letter (e.g., 'A').
     """  # noqa: E501
@@ -100,6 +102,43 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             target=record['answer'],
         )
 
+    def _extract_images(self, record: Dict[str, Any]) -> Dict[int, str]:
+        image_map: Dict[int, Any] = {}
+        if record.get('images'):
+            for i, image in enumerate(record['images']):
+                image_map[i + 1] = image
+        else:
+            for i in range(GeneralVMCQAdapter.MAX_IMAGES):
+                image_map[i + 1] = record.get(f"image_{i + 1}")
+
+        for k, v in image_map.items():
+            # Hugging Face Image columns may surface undecoded values as dicts.
+            if isinstance(v, dict):
+                if v.get('bytes') is not None:
+                    bytes_obj = v['bytes']
+                elif v.get('path'):
+                    with open(v['path'], 'rb') as f:
+                        bytes_obj = f.read()
+                else:
+                    raise ValueError(f"Image {k} must contain either 'path' or 'bytes', got {v}")
+
+                # generally, guessing from bytes is more reliable than from path extension
+                image_map[k] = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
+            elif v is not None and not isinstance(v, str):
+                raise TypeError(f"Expect Image {k} as string (path, URL, or base64) or undecoded dict, got {type(v)}")
+        return image_map
+
+    def _extract_videos(self, record: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+        video_map: Dict[int, Dict[str, Any]] = {}
+        for i in range(GeneralVMCQAdapter.MAX_VIDEOS):
+            video = record.get(f"video_{i + 1}")
+            if video:
+                video_map[i + 1] = {
+                    'url': video,
+                    'format': record.get(f"video_{i + 1}_format"),
+                }
+        return video_map
+
     def create_content_and_answers_list(self, record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
         Create a list of content elements and a list of answers from a record.
@@ -112,18 +151,8 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             tuple: (content_list, answers_list)
         """
         # Prepare image map
-        image_map: Dict[int, str] = {}
-        for i in range(GeneralVMCQAdapter.MAX_IMAGES):
-            image_map[i + 1] = record.get(f'image_{i+1}')
-
-        video_map: Dict[int, Dict[str, Any]] = {}
-        for i in range(GeneralVMCQAdapter.MAX_VIDEOS):
-            video = record.get(f'video_{i+1}')
-            if video:
-                video_map[i + 1] = {
-                    'url': video,
-                    'format': record.get(f'video_{i+1}_format'),
-                }
+        image_map = self._extract_images(record)
+        video_map = self._extract_videos(record)
 
         raw_options = record.get('options')
         answers_list: List[str]
