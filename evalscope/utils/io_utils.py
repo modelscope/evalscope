@@ -144,7 +144,7 @@ class OutputsStructure:
 
 def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
     from datasets import Dataset
-    from datasets.features import Audio, Image, Sequence
+    from datasets.features import Audio, Image, Sequence, Video
 
     dataset = Dataset.from_parquet(parquet_file)
 
@@ -153,10 +153,14 @@ def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
             dataset = dataset.cast_column(col, Image(decode=False))
         elif isinstance(feat, Audio):
             dataset = dataset.cast_column(col, Audio(decode=False))
+        elif isinstance(feat, Video):
+            dataset = dataset.cast_column(col, Video(decode=False))
         elif isinstance(feat, Sequence) and isinstance(feat.feature, Image):
             dataset = dataset.cast_column(col, Sequence(Image(decode=False)))
         elif isinstance(feat, Sequence) and isinstance(feat.feature, Audio):
             dataset = dataset.cast_column(col, Sequence(Audio(decode=False)))
+        elif isinstance(feat, Sequence) and isinstance(feat.feature, Video):
+            dataset = dataset.cast_column(col, Sequence(Video(decode=False)))
     return dataset.to_list()
 
 

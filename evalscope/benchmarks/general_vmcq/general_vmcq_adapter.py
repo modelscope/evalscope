@@ -67,6 +67,8 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         "question": "<image 1> What animal is this?",
         "options": ["Dog", "Cat", "Tiger", "Elephant"],
         "image_1": "custom_eval/multimodal/images/dog.jpg",
+        # or use a Hugging Face Image undecoded Sequence(Image()) 'images' column
+        # "images": [{"path": "custom_eval/multimodal/images/dog.jpg"}, {"bytes": ...}]
         "answer": "A"
     }
     Video data format example:
@@ -76,10 +78,10 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         "video_1": "custom_eval/multimodal/videos/sample.mp4",
         "answer": "C"
     }
-        - JSONL/CSV/TSV inputs typically use plain image/video strings: base64 data
-            URLs or local/remote paths.
-        - Parquet or Hugging Face Image columns may also provide image dicts with
-            ``{"bytes": ...}`` or ``{"path": ...}``, which are converted to data URLs.
+    - JSONL/CSV/TSV inputs typically use plain image/video strings: base64 data
+        URLs or local/remote paths.
+    - Parquet or Hugging Face Image columns may also provide image dicts with
+        ``{"bytes": ...}`` or ``{"path": ...}``, which are converted to data URLs.
     - 'options' is a list (JSON array) of strings; do NOT include "A.", "B." prefixes.
     - 'answer' is the correct letter (e.g., 'A').
     """  # noqa: E501
@@ -104,12 +106,15 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def _extract_images(self, record: Dict[str, Any]) -> Dict[int, str]:
         image_map: Dict[int, Any] = {}
-        if record.get('images'):
+        # prefer 'image_n' > 'images'
+        if any(record.get(f"image_{i + 1}") for i in range(GeneralVMCQAdapter.MAX_IMAGES)):
+            for i in range(GeneralVMCQAdapter.MAX_IMAGES):
+                image_map[i + 1] = record.get(f"image_{i + 1}")
+        elif record.get('images'):
             for i, image in enumerate(record['images']):
                 image_map[i + 1] = image
         else:
-            for i in range(GeneralVMCQAdapter.MAX_IMAGES):
-                image_map[i + 1] = record.get(f"image_{i + 1}")
+            return {}
 
         for k, v in image_map.items():
             # Hugging Face Image columns may surface undecoded values as dicts.
