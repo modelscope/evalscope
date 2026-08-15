@@ -49,7 +49,6 @@ def macro_mean(items):
         return 0.0
 
 
-
 def wilson_ci(successes: int, n: int, z: float = 1.96) -> tuple:
     """Return the (lower, upper) Wilson score interval for a proportion.
 
@@ -81,6 +80,7 @@ def paired_mcnemar(a_only: int, b_only: int, two_sided: bool = True) -> float:
     for i in range(k + 1):
         tail += math.comb(n, i) / (2 ** n)
     return min(1.0, 2 * tail) if two_sided else tail
+
 
 def bleu_ngram_one_sample(predict: str, reference: str):
     """
