@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, List, Optional, Protocol, runtime_checkable
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
+from .constants import NUDGE_PROMPT
 from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode
 
 
@@ -38,6 +39,14 @@ class AgentStrategy(Protocol):
 
     name: str
     """Registered strategy name, used for trace labeling."""
+
+    max_nudges: int = 2
+    """Consecutive nudges allowed before the loop treats the output as final.
+
+    Counted by :class:`AgentLoop` in ``AgentContext.nudge_count`` and reset
+    whenever the model calls a tool again, so this bounds a stuck streak, not
+    the whole episode. Override in subclasses to tighten or loosen the budget.
+    """
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         """Return the system prompt injected at step 0, or None to skip."""
@@ -86,10 +95,24 @@ class AgentStrategy(Protocol):
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         """Whether to inject a nudge when no tool_calls are produced.
 
-        Override in subclasses to customize nudge behavior.  Return False to
-        skip the nudge and treat the current output as an implicit final answer.
+        The default allows up to :attr:`max_nudges` consecutive nudges, using
+        the count the loop maintains in ``ctx.nudge_count``. Override only for
+        policies that must also inspect ``parsed``; returning False makes the
+        loop treat the current output as an implicit final answer.
         """
-        ...
+        return ctx.nudge_count < self.max_nudges
+
+    def nudge_message(self, parsed: ParsedAction, ctx: AgentContext) -> str:
+        """Reminder text injected by the loop when a nudge is warranted.
+
+        The default surfaces the strategy's own ``parsed.error`` (so a
+        malformed-output turn gets feedback describing the actual problem) and
+        otherwise falls back to the generic prompt. Strategies whose completion
+        channel is not the ``submit`` tool (e.g. bash + sentinel) should
+        override this so the reminder does not point the model at a tool that
+        is not exposed.
+        """
+        return parsed.error or NUDGE_PROMPT
 
     def format_observation(
         self,

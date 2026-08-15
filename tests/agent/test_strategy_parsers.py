@@ -90,6 +90,16 @@ class TestSweBenchBackticksParseOutput(unittest.TestCase):
         self.assertEqual(len(parsed.tool_calls), 1)
         self.assertIn('seq 1 5', parsed.tool_calls[0].function.arguments.get('command', ''))
 
+    def test_nudge_message_zero_block_asks_for_a_block(self):
+        # Textual mode exposes no tools; the reminder must not mention submit.
+        msg = self.strategy.nudge_message(ParsedAction(raw_text='prose'), _make_ctx())
+        self.assertIn('mswea_bash_command', msg)
+        self.assertNotIn('submit', msg.lower())
+
+    def test_nudge_message_passes_through_multi_block_error(self):
+        msg = self.strategy.nudge_message(ParsedAction(error='exactly one'), _make_ctx())
+        self.assertEqual(msg, 'exactly one')
+
 
 # ---------------------------------------------------------------------------
 # SweBenchBackticksStrategy format_observation
@@ -244,16 +254,30 @@ class TestSweBenchToolcallParseOutput(unittest.TestCase):
         self.assertTrue(self.strategy.should_nudge(parsed, ctx))
 
     def test_should_not_nudge_after_reminder(self):
-        from evalscope.api.agent.constants import NUDGE_PROMPT
-
-        ctx = _make_ctx(messages=[ChatMessageUser(content=NUDGE_PROMPT)])
+        # toolcall allows a single nudge; the loop-owned counter drives the cap.
+        ctx = _make_ctx()
+        ctx.nudge_count = 1
         parsed = ParsedAction(raw_text='still thinking')
         self.assertFalse(self.strategy.should_nudge(parsed, ctx))
 
-    def test_unrelated_user_message_does_not_consume_nudge(self):
+    def test_nudge_decision_ignores_message_text(self):
+        # The decision is driven by the loop's counter, not by matching reminder
+        # text in the transcript, so a user message that merely looks like a
+        # reminder does not consume the budget.
         ctx = _make_ctx(messages=[ChatMessageUser(content='No bash tool was called')])
         parsed = ParsedAction(raw_text='thinking')
         self.assertTrue(self.strategy.should_nudge(parsed, ctx))
+
+    def test_nudge_message_targets_bash_not_submit(self):
+        # No submit tool is exposed; the reminder must steer the model to bash
+        # and the sentinel rather than a nonexistent submit tool.
+        msg = self.strategy.nudge_message(ParsedAction(raw_text='thinking'), _make_ctx())
+        self.assertIn('bash', msg.lower())
+        self.assertNotIn('submit tool', msg.lower())
+
+    def test_nudge_message_passes_through_parse_error(self):
+        msg = self.strategy.nudge_message(ParsedAction(error='boom'), _make_ctx())
+        self.assertEqual(msg, 'boom')
 
 
 class TestSweBenchToolcallFormatObservation(unittest.TestCase):

@@ -148,8 +148,8 @@ class AgentContext:
     """Mutable context shared across AgentLoop iterations.
 
     Strategies and tool executors read/write this object; the loop itself
-    only bumps ``step`` and appends messages.  Not serialized: persistence
-    happens through ``AgentTrace`` attached to ``TaskState``.
+    only bumps ``step`` / ``nudge_count`` and appends messages.  Not
+    serialized: persistence happens through ``AgentTrace``.
     """
 
     sample_id: Any
@@ -159,6 +159,16 @@ class AgentContext:
     max_steps: int = 10
     last_output: Optional[ModelOutput] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    nudge_count: int = 0
+    """Nudges injected since the last turn that produced tool calls.
+
+    Owned by :class:`AgentLoop`: it increments the counter when it injects a
+    reminder and resets it once the model calls a tool again. Strategies read
+    it in ``should_nudge`` and must not mutate it. Deriving the count by
+    matching reminder text in ``messages`` instead would silently return 0
+    whenever the reminder wording or shape changes, which reads as "never
+    nudged" and lets a stuck model burn the whole step budget.
+    """
 
 
 ToolSchemaMode = Literal['function_calling', 'textual_block', 'none']

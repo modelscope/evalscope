@@ -318,5 +318,181 @@ class TestAgentLoopCore(unittest.TestCase):
         self.assertEqual(result.messages[0].content, 'SYSTEM_PROMPT_X')
 
 
+class _AlwaysTextStrategy:
+    """Minimal strategy stub that never yields tool calls.
+
+    Used to exercise the loop's nudge budget without depending on any real
+    strategy's parsing rules. ``max_nudges`` is read by the default
+    ``should_nudge`` logic mirrored below.
+    """
+
+    name = 'always_text'
+
+    def __init__(self, max_nudges: int) -> None:
+        self.max_nudges = max_nudges
+
+    def build_system_prompt(self, ctx):
+        return None
+
+    def prepare_messages(self, ctx):
+        return ctx.messages
+
+    def parse_output(self, output, ctx):
+        return ParsedAction(raw_text=output.choices[0].message.content)
+
+    def is_done(self, parsed, ctx):
+        return parsed.final_answer is not None
+
+    def should_nudge(self, parsed, ctx):
+        return ctx.nudge_count < self.max_nudges
+
+    def nudge_message(self, parsed, ctx):
+        return parsed.error or 'please call a tool'
+
+    def tool_schema_mode(self):
+        return 'none'
+
+    def tools(self, ctx):
+        return []
+
+    def format_observation(self, call, observation, error, parsed, ctx):
+        return ChatMessageTool(content=str(observation), tool_call_id=call.id, function=call.function.name)
+
+
+class TestAgentLoopNudgeBudget(unittest.TestCase):
+    """The loop owns the nudge count; a stuck model stops after max_nudges.
+
+    Regression for #1577: the SWE-bench strategy counted a reminder string that
+    the loop never injected, so ``should_nudge`` always saw 0 and nudged on
+    every no-tool turn up to ``max_steps`` (250 for SWE-bench).
+    """
+
+    def _run_all_text(self, strategy, *, max_steps=20):
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='thinking, no tool'))
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=max_steps)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+        return model, ctx, result
+
+    def test_registered_strategies_stop_after_their_budget(self):
+        # Parametrized over the live registry so a new strategy is covered
+        # automatically. On the pre-fix code swe_bench_* would reach max_steps.
+        from evalscope.api.registry import STRATEGY_REGISTRY
+
+        for name in STRATEGY_REGISTRY.list_keys():
+            with self.subTest(strategy=name):
+                strategy = get_strategy(name)()
+                budget = strategy.max_nudges
+                model, ctx, result = self._run_all_text(strategy)
+
+                # One initial generate plus exactly ``budget`` retries.
+                self.assertEqual(model.generate_async.call_count, budget + 1)
+                self.assertEqual(ctx.nudge_count, budget)
+
+                nudge_events = [e for e in result.trace.events
+                                if e.payload and e.payload.get('source') == 'nudge']
+                # Invariant: the loop-owned counter equals the observable nudges.
+                self.assertEqual(len(nudge_events), budget)
+
+                submit = [e for e in result.trace.events if e.type == EventType.SUBMIT]
+                self.assertEqual(len(submit), 1)
+                self.assertEqual(submit[0].payload.get('source'), 'implicit_no_nudge')
+
+    def test_tool_call_resets_the_nudge_streak(self):
+        # P3 semantics: nudges bound a *consecutive* silent streak. A tool call
+        # mid-episode resets the counter, so a later stray text turn does not
+        # inherit earlier nudges. Sequence: text, echo, text, text, text.
+        strategy = _AlwaysTextStrategy(max_nudges=2)
+        strategy.parse_output = MagicMock(side_effect=[
+            ParsedAction(raw_text='t1'),
+            ParsedAction(tool_calls=[_tool_call(name='echo')]),
+            ParsedAction(raw_text='t3'),
+            ParsedAction(raw_text='t4'),
+            ParsedAction(raw_text='t5'),
+        ])
+
+        async def echo_handler(call, env):
+            return 'echoed'
+
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='x'))
+        executor = ToolExecutor(handlers={'echo': echo_handler}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=20)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+
+        # nudge(t1) → tool(reset) → nudge(t3) → nudge(t4) → implicit submit(t5).
+        # Without the reset the budget would be spent by t4 (call_count 4).
+        self.assertEqual(model.generate_async.call_count, 5)
+        nudge_events = [e for e in result.trace.events
+                        if e.payload and e.payload.get('source') == 'nudge']
+        self.assertEqual(len(nudge_events), 3)
+        self.assertEqual(ctx.nudge_count, 2)
+
+    def test_backticks_all_text_is_bounded_not_max_steps(self):
+        # Behavioral guard independent of the nudge_count field: the backticks
+        # strategy used to count a reminder string ('must contain exactly one')
+        # that the loop never injects, so an all-text model nudged until
+        # max_steps. Assert the run is bounded well below the step budget.
+        strategy = get_strategy('swe_bench_backticks')()
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='just prose, no fenced block'))
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=8)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='fix the bug')])
+        asyncio.run(loop.run(ctx))
+
+        # budget 2 → one initial generate + two nudges, then implicit submit.
+        self.assertEqual(model.generate_async.call_count, 3)
+
+
+class TestAgentLoopNudgeContent(unittest.TestCase):
+    """The reminder injected on a nudge reflects what the model did wrong."""
+
+    def _nudge_messages(self, result):
+        return [m for m in result.messages if m.role == 'user' and m is not result.messages[0]]
+
+    def test_parse_error_reaches_the_model(self):
+        # function_calling with a per-turn cap: two tool calls -> ParsedAction
+        # with an error and no tool_calls. The model must see that error, not
+        # the generic "no tool was called" text (it did call tools).
+        strategy = get_strategy('function_calling')(max_tool_calls_per_turn=1)
+        submit_call = ToolCall(id='s', function=ToolFunction(name='submit', arguments={'answer': 'done'}))
+        model = MagicMock()
+        model.generate_async = AsyncMock(side_effect=[
+            _make_output(tool_calls=[_tool_call(call_id='a'), _tool_call(call_id='b')]),
+            _make_output(tool_calls=[submit_call]),
+        ])
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=10)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+
+        nudges = self._nudge_messages(result)
+        self.assertEqual(len(nudges), 1)
+        self.assertEqual(str(nudges[0].content), 'Call at most 1 tool call per turn.')
+
+        nudge_events = [e for e in result.trace.events
+                        if e.payload and e.payload.get('source') == 'nudge']
+        self.assertEqual(nudge_events[0].payload.get('message'), 'parse_error_reminder')
+
+    def test_no_submit_tool_reminder_omits_submit(self):
+        # BrowserGym-style config: no submit tool. The reminder must not tell
+        # the model to call a submit tool that is not exposed.
+        strategy = get_strategy('function_calling')(include_submit_tool=False)
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='thinking'))
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=6)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+
+        nudges = self._nudge_messages(result)
+        self.assertTrue(nudges)
+        self.assertNotIn('submit', str(nudges[0].content).lower())
+
+
 if __name__ == '__main__':
     unittest.main()

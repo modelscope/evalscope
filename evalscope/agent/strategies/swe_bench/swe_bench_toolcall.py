@@ -20,12 +20,18 @@ from __future__ import annotations
 from typing import List, Optional
 
 from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
-from evalscope.api.agent.constants import NUDGE_PROMPT
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation, is_terminal_sandbox_error
+
+# The completion channel is the sentinel printed by bash, not a submit tool, so
+# the generic nudge ("call the submit tool") would misdirect the model.
+_NUDGE_MESSAGE = (
+    'No bash tool call was made. Call the bash tool to inspect or modify the '
+    f'repository, and print {SUBMIT_SENTINEL} on its own line when the task is complete.'
+)
 
 
 @register_strategy('swe_bench_toolcall')
@@ -46,6 +52,10 @@ class SweBenchToolcallStrategy(AgentStrategy):
     """
 
     name: str = 'swe_bench_toolcall'
+
+    #: A model with real bash access should recover in one reminder; keep the
+    #: streak budget at a single nudge before treating the turn as final.
+    max_nudges: int = 1
 
     def __init__(self, *, system_prompt: Optional[str] = None, **_: object) -> None:
         self._system_prompt = system_prompt
@@ -85,10 +95,8 @@ class SweBenchToolcallStrategy(AgentStrategy):
         # detecting the completion sentinel in the bash output.
         return parsed.final_answer is not None
 
-    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # Allow at most one nudge by matching the reminder appended by AgentLoop.
-        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and str(m.content) == NUDGE_PROMPT)
-        return nudge_count < 1
+    def nudge_message(self, parsed: ParsedAction, ctx: AgentContext) -> str:
+        return parsed.error or _NUDGE_MESSAGE
 
     def tool_schema_mode(self) -> ToolSchemaMode:
         return 'function_calling'

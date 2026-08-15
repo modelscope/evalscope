@@ -21,7 +21,7 @@ from typing import Any, List, Optional, Tuple
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
-from .constants import NUDGE_PROMPT, LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
+from .constants import LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
 from .environment import AgentEnvironment
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
@@ -117,6 +117,11 @@ class AgentLoop:
                 break
 
             # ---- tool execution (may set parsed.final_answer post-hoc) ----
+            # A turn that produced tool calls ends the no-tool streak, so the
+            # nudge budget applies to consecutive silent turns rather than the
+            # whole episode. Without the reset a single stray text-only turn
+            # late in a long task would exhaust the budget and end the episode.
+            ctx.nudge_count = 0
             if await self._run_tools(parsed, ctx, assistant_msg):
                 terminated_by_strategy = True
                 break
@@ -186,15 +191,21 @@ class AgentLoop:
         if not should_nudge:
             return False
 
-        nudge = ChatMessageUser(content=NUDGE_PROMPT)
+        # Prefer the strategy's own reminder so the model gets feedback that
+        # matches what it actually did wrong (e.g. a parse error, or a bash /
+        # fenced-block protocol) instead of the generic "call the submit tool"
+        # text, which misleads when the strategy exposes no submit tool.
+        reminder = self.strategy.nudge_message(parsed, ctx)
+        nudge = ChatMessageUser(content=reminder)
         ctx.messages.append(nudge)
+        ctx.nudge_count += 1
         self.trace.add_event(
             step=ctx.step,
             type=EventType.NUDGE,
             message_id=nudge.id,
             payload={
                 'source': TraceSources.NUDGE,
-                'message': LoopMessages.NO_TOOL_CALL_REMINDER,
+                'message': (LoopMessages.PARSE_ERROR_REMINDER if parsed.error else LoopMessages.NO_TOOL_CALL_REMINDER),
             },
         )
         ctx.step += 1
