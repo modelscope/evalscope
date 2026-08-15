@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .judge.llm_judge import DEFAULT_NUMERIC_SCORE_TEMPLATE, DEFAULT_PROMPT_TEMPLATE, LLMJudge
     from .math.parser import extract_answer, math_equal, strip_answer_string
     from .nlp.metrics import ExactMatch
-    from .utils.functions import bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score
+    from .utils.functions import bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, paired_mcnemar, simple_f1_score, wilson_ci
     from .utils.rouge import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
     from .utils.text_normalizer import BasicTextNormalizer, ChineseTextNormalizer, EnglishTextNormalizer
 
@@ -20,7 +20,9 @@ else:
             'macro_mean',
             'mean',
             'micro_mean',
+            'paired_mcnemar',
             'simple_f1_score',
+            'wilson_ci',
         ],
         'aggregators.aggregators': [
             'Mean',
