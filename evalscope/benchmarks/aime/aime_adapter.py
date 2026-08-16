@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import re
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -180,7 +179,8 @@ class AIME24Adapter(DefaultDataAdapter):
 
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
 
-        is_correct = bool(re.search(r'\bYes\b', judge_response, re.IGNORECASE))
+        judge_verdict = judge_response.strip().casefold()
+        is_correct = judge_verdict == 'yes'
         score.value = {
             'acc': 1.0 if is_correct else 0.0,
         }
@@ -190,6 +190,9 @@ class AIME24Adapter(DefaultDataAdapter):
             'judge_strategy': self.judge_strategy,
             'model': self.llm_judge.model_id,
         }
+        if judge_verdict not in {'yes', 'no'}:
+            logger.warning(f'AIME: failed to parse LLM judge response: {judge_response!r}')
+            score.metadata['parse_failed'] = True
         score.main_score_name = 'acc'
         return score
 

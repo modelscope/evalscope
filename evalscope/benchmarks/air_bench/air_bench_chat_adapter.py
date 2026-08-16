@@ -313,6 +313,7 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             scores_pred.append(pred_score_1)
 
         raw_responses = [raw_1]
+        parse_failed = ref_score_1 is None or pred_score_1 is None
 
         if do_swap:
             # Pass 2: prediction as Assistant 1, reference as Assistant 2.
@@ -327,6 +328,8 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             if pred_score_2 is not None and ref_score_2 is not None:
                 scores_ref.append(ref_score_2)
                 scores_pred.append(pred_score_2)
+            else:
+                parse_failed = True
 
         if scores_pred and scores_ref:
             mean_pred = sum(scores_pred) / len(scores_pred)
@@ -345,6 +348,9 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
                 'judge_model': getattr(self.llm_judge, 'model_id', 'unknown'),
                 'do_swap': do_swap,
             }
+            if parse_failed:
+                logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
+                score.metadata.update({'parse_failed': True, 'judge_raw': raw_responses})
             score.explanation = ' || '.join(raw_responses)
         else:
             logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
@@ -384,19 +390,5 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
     @staticmethod
     def _extract_judge_scores(raw: str) -> List[str]:
         score_pattern = r'(?:10(?:\.0+)?|[0-9](?:\.\d+)?)'
-
-        for line in raw.splitlines():
-            cleaned = re.sub(r'(?i)assistant\s*[12]\s*(?:score)?', 'assistant', line)
-            slash_nums = re.findall(rf'(?<![\w.])({score_pattern})\s*/\s*10(?![\w.])', cleaned)
-            if len(slash_nums) == 2:
-                return slash_nums
-            nums = re.findall(rf'(?<![\w.])({score_pattern})(?![\w.])', cleaned)
-            if len(nums) == 2:
-                return nums
-
-        cleaned = re.sub(r'(?i)assistant\s*[12]\s*(?:score)?', 'assistant', raw)
-        slash_nums = re.findall(rf'(?<![\w.])({score_pattern})\s*/\s*10(?![\w.])', cleaned)
-        if len(slash_nums) >= 2:
-            return slash_nums[-2:]
-        nums = re.findall(rf'(?<![\w.])({score_pattern})(?![\w.])', cleaned)
-        return nums[-2:] if len(nums) >= 2 else nums
+        match = re.fullmatch(rf'({score_pattern})[ \t]+({score_pattern})', raw.strip())
+        return list(match.groups()) if match else []
