@@ -46,13 +46,9 @@ class AgentStrategy(Protocol):
     Counted by :class:`AgentLoop` in ``AgentContext.nudge_count`` and reset
     whenever the model calls a tool again, so this bounds a stuck *streak*, not
     the per-episode total: a model that alternates tool calls with silent turns
-    never accumulates a streak and can still be nudged on roughly half of its
-    steps. That is intentional — every such nudge follows real progress — but
-    it means this budget is not a global cap on nudge cost. The same budget
-    also covers malformed-output retries, since a parse error with no tool
-    calls takes the nudge path too.
-
-    Override in subclasses to tighten or loosen the budget.
+    never accumulates a streak and can still be nudged on about half its steps.
+    Malformed-output retries share the same budget. Override in subclasses to
+    tighten or loosen it.
     """
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
@@ -119,11 +115,9 @@ class AgentStrategy(Protocol):
         override this so the reminder does not point the model at a tool that
         is not exposed.
 
-        :class:`AgentLoop` calls this unconditionally before injecting a
-        reminder, so it is a **required** member of the strategy contract:
-        implementations that satisfy this Protocol structurally instead of
-        subclassing it must provide it or the loop raises ``AttributeError``
-        on the first nudge.
+        Required: the loop calls this unconditionally, so an implementation
+        that satisfies this Protocol structurally rather than by subclassing
+        raises ``AttributeError`` on the first nudge.
         """
         return parsed.error or NUDGE_PROMPT
 

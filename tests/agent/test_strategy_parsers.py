@@ -97,10 +97,7 @@ class TestSweBenchBackticksParseOutput(unittest.TestCase):
         self.assertNotIn('submit', msg.lower())
 
     def test_nudge_message_relays_the_real_multi_block_error(self):
-        # Drive the whole path — parse_output must set ``error`` AND
-        # nudge_message must relay it verbatim.  Asserting pass-through with a
-        # hand-made error string would keep passing if parse_output stopped
-        # reporting one.
+        # Driven through parse_output, so dropping the error there fails here.
         from evalscope.agent.strategies.swe_bench.swe_bench_backticks import _FORMAT_ERROR_TEMPLATE
         output = _make_output(
             text='THOUGHT: try two\n```mswea_bash_command\necho first\n```\n```mswea_bash_command\necho second\n```'
@@ -277,12 +274,7 @@ class TestSweBenchToolcallParseOutput(unittest.TestCase):
         self.assertTrue(self.strategy.should_nudge(parsed, ctx))
 
     def test_nudge_message_targets_bash_and_the_sentinel(self):
-        # No submit tool is exposed; the reminder must steer the model to bash
-        # and to the sentinel protocol, which is the only completion channel.
-        # Assert that positive contract rather than the absence of the word
-        # "submit" — the sentinel itself contains SUBMIT, so a bare
-        # ``assertNotIn('submit', ...)`` cannot be used and the looser
-        # ``'submit tool'`` variant would still pass for "call submit()".
+        # No submit tool is exposed; the sentinel is the only completion channel.
         from evalscope.agent.strategies.swe_bench._observation import SUBMIT_SENTINEL
         msg = self.strategy.nudge_message(ParsedAction(raw_text='thinking'), _make_ctx())
         self.assertIn('bash', msg.lower())

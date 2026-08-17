@@ -323,11 +323,9 @@ class TestAgentLoopCore(unittest.TestCase):
 class _AlwaysTextStrategy(AgentStrategy):
     """Minimal strategy stub that never yields tool calls.
 
-    Used to exercise the loop's nudge budget without depending on any real
-    strategy's parsing rules. It deliberately inherits ``should_nudge`` and
-    ``nudge_message`` from :class:`AgentStrategy` rather than restating them,
-    so these tests exercise the real defaults instead of a copy that could
-    drift from them.
+    Inherits ``should_nudge`` / ``nudge_message`` from :class:`AgentStrategy`
+    rather than restating them, so these tests exercise the real defaults
+    instead of a copy that could drift from them.
     """
 
     name: str = 'always_text'
@@ -357,10 +355,8 @@ class _AlwaysTextStrategy(AgentStrategy):
         return ChatMessageTool(content=str(observation), tool_call_id=call.id, function=call.function.name)
 
 
-#: Nudge budget each registered strategy is expected to expose.  Asserted
-#: explicitly (rather than read back from the strategy) so that silently
-#: widening a budget, or adding a strategy without reviewing its budget, fails
-#: this test instead of passing tautologically.
+#: Nudge budget each registered strategy is expected to expose.  Pinned here
+#: rather than read back from the strategy, so widening a budget fails a test.
 EXPECTED_NUDGE_BUDGETS = {
     'function_calling': 2,
     'react': 2,
@@ -387,8 +383,6 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
         return model, ctx, result
 
     def test_every_registered_strategy_has_a_reviewed_budget(self):
-        # A new strategy must be added to EXPECTED_NUDGE_BUDGETS deliberately;
-        # otherwise the budget assertions below would silently not cover it.
         from evalscope.api.registry import STRATEGY_REGISTRY
 
         self.assertEqual(set(STRATEGY_REGISTRY.list_keys()), set(EXPECTED_NUDGE_BUDGETS))
@@ -550,10 +544,7 @@ class TestNudgeIsNotMistakenForASubmission(unittest.TestCase):
     """A reminder must never be reported as the model's submission.
 
     ``swe_bench_backticks`` archives observations as ``ChatMessageUser``, and so
-    is a nudge. When ``max_steps`` is reached immediately after a nudge the
-    reminder is the transcript's last message, so a naive reverse scan for "the
-    last user message that isn't an XML envelope" returns the reminder text as
-    the patch.
+    is a nudge — a run ending on one would return the reminder as the patch.
     """
 
     def test_backticks_extract_ignores_a_trailing_nudge(self):

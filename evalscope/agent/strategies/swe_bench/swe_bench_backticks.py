@@ -164,12 +164,9 @@ class SweBenchBackticksStrategy(AgentStrategy):
         description) by stopping at the first non-system, non-assistant
         message after the last assistant turn.
 
-        System-injected nudges are ``ChatMessageUser`` too, and a run that
-        exhausts ``max_steps`` immediately after a nudge ends with one as its
-        last message — so it would otherwise be returned here as the patch.
-        They are identified from the trace's NUDGE events rather than by
-        matching reminder wording, for the same reason the nudge count itself
-        is loop-owned: text matching silently breaks when the wording changes.
+        System-injected nudges are ``ChatMessageUser`` too, and a run that ends
+        on a nudge leaves one as the last message — so they are excluded via
+        the trace's NUDGE events rather than by matching reminder wording.
         """
         nudge_ids = {
             event.message_id
