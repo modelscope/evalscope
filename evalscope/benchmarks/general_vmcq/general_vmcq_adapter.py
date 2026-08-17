@@ -34,9 +34,9 @@ It uses MMMU-style format with image/video placeholders in text, supporting flex
 
 ## Key Features
 
-- MMMU-style format (not OpenAI message format)
-- Supports up to 100 images and 100 videos per sample
-- Flexible image/video input (path, URL, or base64 data URL)
+- MMMU-style format (not OpenAI message format), supporting up to 100 images and 100 videos per sample
+- Flexible image/video input (path, URL, base64 data URL, or Hugging Face Image with `{"path": ...}` or `{"bytes": ...}`)
+- Additional format support for `images` column for unlimited number of images
 - Chain-of-thought prompt template option
 - Custom dataset support via local file loading
 
@@ -67,6 +67,8 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         "question": "<image 1> What animal is this?",
         "options": ["Dog", "Cat", "Tiger", "Elephant"],
         "image_1": "custom_eval/multimodal/images/dog.jpg",
+        # or use a Hugging Face Image undecoded Sequence(Image()) 'images' column
+        # "images": [{"path": "custom_eval/multimodal/images/dog.jpg"}, {"bytes": ...}]
         "answer": "A"
     }
     Video data format example:
@@ -76,8 +78,10 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         "video_1": "custom_eval/multimodal/videos/sample.mp4",
         "answer": "C"
     }
-    - Images/videos are plain strings: base64 data URL or local/remote path.
-      Do not wrap in {"url": ...} and do not use 'bytes'.
+    - JSONL/CSV/TSV inputs typically use plain image/video strings: base64 data
+        URLs or local/remote paths.
+    - Parquet or Hugging Face Image columns may also provide image dicts with
+        ``{"bytes": ...}`` or ``{"path": ...}``, which are converted to data URLs.
     - 'options' is a list (JSON array) of strings; do NOT include "A.", "B." prefixes.
     - 'answer' is the correct letter (e.g., 'A').
     """  # noqa: E501
@@ -100,6 +104,64 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             target=record['answer'],
         )
 
+    def _extract_images(self, record: Dict[str, Any]) -> Dict[int, str]:
+        image_map: Dict[int, Any] = {}
+        # prefer 'image_n' > 'images'
+        if any(record.get(f'image_{i + 1}') for i in range(GeneralVMCQAdapter.MAX_IMAGES)):
+            for i in range(GeneralVMCQAdapter.MAX_IMAGES):
+                image_map[i + 1] = record.get(f'image_{i + 1}')
+        elif record.get('images'):
+            # intentionally allow unlimited images, when 'image_n' is not feasible/readable.
+            # e.g. long-context benchmarks like OCR may have >100 images.
+            for i, image in enumerate(record['images']):
+                image_map[i + 1] = image
+        else:
+            return {}
+
+        # a scan through raw image_map to convert bytes -> b64 str
+        parsed_image_map: Dict[int, str] = {}
+        for k, v in image_map.items():
+            if v is None:
+                continue
+
+            # Hugging Face Image columns may surface undecoded values as dicts.
+            # https://huggingface.co/docs/datasets/en/about_dataset_features#image-feature
+            if isinstance(v, dict):
+                if v.get('path') and isinstance(v['path'], str):
+                    parsed_image_map[k] = v['path']
+                    continue
+                elif v.get('bytes') and isinstance(v['bytes'], (bytes, bytearray)):
+                    bytes_obj = v['bytes']
+                else:
+                    raise ValueError(
+                        f"Image {k} must contain either '{{path: '...'}}' or '{{bytes: b'...'}}', got {v!r}"
+                    )
+
+                # generally, guessing from bytes is more reliable than from path extension
+                img_base64 = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
+                # handle cases where mimetype is not detected as image
+                # to catch issues before sending to LLM API
+                if not img_base64.startswith('data:image/'):
+                    raise ValueError(f'Image {k} is invalid as base64 image, got b64 {img_base64[:30]!r}...')
+                parsed_image_map[k] = img_base64
+            # path, URL, or base64 string waiting for _parse_text_with_media() to handle
+            elif isinstance(v, str):
+                parsed_image_map[k] = v
+            else:
+                raise TypeError(f'Expect Image {k} as string (path, URL, or base64) or undecoded dict, got {type(v)}')
+        return parsed_image_map
+
+    def _extract_videos(self, record: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+        video_map: Dict[int, Dict[str, Any]] = {}
+        for i in range(GeneralVMCQAdapter.MAX_VIDEOS):
+            video = record.get(f'video_{i + 1}')
+            if video:
+                video_map[i + 1] = {
+                    'url': video,
+                    'format': record.get(f'video_{i + 1}_format'),
+                }
+        return video_map
+
     def create_content_and_answers_list(self, record: Dict[str, Any]) -> tuple[List[Content], List[str]]:
         """
         Create a list of content elements and a list of answers from a record.
@@ -112,18 +174,8 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             tuple: (content_list, answers_list)
         """
         # Prepare image map
-        image_map: Dict[int, str] = {}
-        for i in range(GeneralVMCQAdapter.MAX_IMAGES):
-            image_map[i + 1] = record.get(f'image_{i+1}')
-
-        video_map: Dict[int, Dict[str, Any]] = {}
-        for i in range(GeneralVMCQAdapter.MAX_VIDEOS):
-            video = record.get(f'video_{i+1}')
-            if video:
-                video_map[i + 1] = {
-                    'url': video,
-                    'format': record.get(f'video_{i+1}_format'),
-                }
+        image_map = self._extract_images(record)
+        video_map = self._extract_videos(record)
 
         raw_options = record.get('options')
         answers_list: List[str]

@@ -11,10 +11,16 @@ from typing import List, Optional
 # Import submit ToolInfo for auto-injection.
 from evalscope.agent.tools.submit import SUBMIT_TOOL_INFO
 from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent.constants import NUDGE_PROMPT
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
+
+# Reminder used when this strategy is configured without the ``submit`` tool
+# (e.g. BrowserGym single-action mode); the default prompt would otherwise tell
+# the model to call a tool that is not exposed.
+_NO_SUBMIT_NUDGE = 'No tool was called. Please use one of the available tools to make progress.'
 
 
 @register_strategy('function_calling')
@@ -78,10 +84,14 @@ class FunctionCallingStrategy(AgentStrategy):
         # Only done when submit was called (final_answer is set).
         return parsed.final_answer is not None
 
-    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # Limit nudge to avoid token waste with models that prefer reasoning first.
-        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and 'No tool was called' in str(m.content))
-        return nudge_count < 2
+    def nudge_message(self, parsed: ParsedAction, ctx: AgentContext) -> str:
+        if parsed.error:
+            return parsed.error
+        # Without a submit tool the generic prompt's "call the submit tool"
+        # clause points at a tool that is not exposed.
+        if not self._include_submit_tool:
+            return _NO_SUBMIT_NUDGE
+        return NUDGE_PROMPT
 
     def tool_schema_mode(self) -> ToolSchemaMode:
         return 'function_calling'

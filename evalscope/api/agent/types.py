@@ -7,6 +7,7 @@ import from ``evalscope.api.agent`` to participate.
 """
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
@@ -126,6 +127,30 @@ class ToolExecutionOutput:
     final_answer: Optional[str] = None
 
 
+class TurnOutcome(str, Enum):
+    """What a parsed turn asks the loop to do next.
+
+    The loop must not re-derive this from ``ParsedAction``'s field shape:
+    ``tool_calls`` being empty is a *symptom* shared by two very different
+    states (a malformed turn that tried to act, and an idle turn that only
+    produced text), and conflating them is what made one nudge budget, one
+    terminal exit and one trace label serve both.
+
+    ``done`` is deliberately absent: termination is decided by the strategy
+    hook ``AgentStrategy.is_done``, which is overridable, so folding it into a
+    derived property would replace strategy semantics with a fixed rule.
+    """
+
+    ACT = 'act'
+    """Has tool calls; the loop should execute them."""
+
+    MALFORMED = 'malformed'
+    """Tried to act but violated the protocol; ``error`` describes the rule."""
+
+    IDLE = 'idle'
+    """Only text — either the model's answer, or a stall."""
+
+
 @dataclass
 class ParsedAction:
     """Structured output produced by :class:`AgentStrategy.parse_output`.
@@ -142,14 +167,30 @@ class ParsedAction:
     error: Optional[str] = None
     raw_text: Optional[str] = None
 
+    @property
+    def outcome(self) -> TurnOutcome:
+        """Classify this turn for the loop; see :class:`TurnOutcome`.
+
+        This is the single place the precedence is defined. ``ACT`` wins over
+        ``MALFORMED`` so a strategy that reports usable tool calls *and* a
+        complaint (e.g. "I dropped the calls past the cap") still makes
+        progress; the complaint reaches the trace through the loop's parse
+        error event.
+        """
+        if self.tool_calls:
+            return TurnOutcome.ACT
+        if self.error:
+            return TurnOutcome.MALFORMED
+        return TurnOutcome.IDLE
+
 
 @dataclass
 class AgentContext:
     """Mutable context shared across AgentLoop iterations.
 
     Strategies and tool executors read/write this object; the loop itself
-    only bumps ``step`` and appends messages.  Not serialized: persistence
-    happens through ``AgentTrace`` attached to ``TaskState``.
+    only bumps ``step`` / the nudge counters and appends messages.  Not
+    serialized: persistence happens through ``AgentTrace``.
     """
 
     sample_id: Any
@@ -159,6 +200,26 @@ class AgentContext:
     max_steps: int = 10
     last_output: Optional[ModelOutput] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    nudge_count: int = 0
+    """Idle nudges injected since the last turn that produced tool calls.
+
+    Owned by :class:`AgentLoop`: it increments the counter when it injects a
+    reminder and resets it once the model calls a tool again. Strategies read
+    it in ``should_nudge`` and must not mutate it. Deriving the count by
+    matching reminder text in ``messages`` instead would silently return 0
+    whenever the reminder wording or shape changes, which reads as "never
+    nudged" and lets a stuck model burn the whole step budget.
+    """
+
+    parse_error_nudge_count: int = 0
+    """Malformed-turn nudges since the last turn that produced tool calls.
+
+    Counted separately from :attr:`nudge_count` because the two failures are
+    not interchangeable: a malformed turn is told the exact rule it broke and
+    is therefore far more recoverable than a model that keeps answering in
+    prose. Sharing one counter let either failure consume the other's retries.
+    Also owned by :class:`AgentLoop`; strategies must not mutate it.
+    """
 
 
 ToolSchemaMode = Literal['function_calling', 'textual_block', 'none']
@@ -188,4 +249,5 @@ __all__ = [
     'ParsedAction',
     'ToolSchemaMode',
     'ToolExecutionOutput',
+    'TurnOutcome',
 ]

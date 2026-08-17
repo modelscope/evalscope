@@ -167,6 +167,7 @@ examples/api_test/
 .qoder
 .claude
 .kiro
+.pr-review/
 
 # Frontend (evalscope/web)
 node_modules/

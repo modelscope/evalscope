@@ -10,19 +10,11 @@ import type { Dict } from './types'
 export const en: Dict = {
   higherIsBetter: 'Higher is better',
   lowerIsBetter: 'Lower is better',
-  diagnostics: 'Diagnostic metrics',
-  value: 'Value',
-  multiplePrimaryMetrics: '${count} primary metrics, cannot be merged',
   noPrimaryMetric: 'No metric reported',
-  multipleMetrics: 'Multiple metrics',
 }
 
 export const zh: Dict = {
   higherIsBetter: '越高越好',
   lowerIsBetter: '越低越好',
-  diagnostics: '诊断指标',
-  value: '数值',
-  multiplePrimaryMetrics: '${count} 个主指标，不可合并',
   noPrimaryMetric: '未报告指标',
-  multipleMetrics: '多个指标',
 }

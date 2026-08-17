@@ -20,7 +20,7 @@ import re
 import uuid
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, EventType, ParsedAction, ToolSchemaMode
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -42,6 +42,13 @@ _FORMAT_ERROR_TEMPLATE = (
     'Your response must contain exactly one '
     '```mswea_bash_command ... ``` fenced block with a single shell '
     'command. Do not emit multiple blocks.'
+)
+
+# Textual mode exposes no tools, so the generic "call the submit tool" nudge is
+# meaningless here; instruct the model to emit the fenced command block instead.
+_NO_BLOCK_REMINDER = (
+    'Your response did not contain a ```mswea_bash_command ... ``` fenced '
+    'block. Emit exactly one such block with a single shell command to continue.'
 )
 
 
@@ -98,13 +105,10 @@ class SweBenchBackticksStrategy(AgentStrategy):
         # in the bash output.
         return parsed.final_answer is not None
 
-    def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # Allow one nudge per missing/format-error response.  Cap globally
-        # at 2 so a buggy model doesn't burn the entire step budget on
-        # nudges.
-        marker = 'must contain exactly one'
-        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and marker in str(m.content))
-        return nudge_count < 2
+    def nudge_message(self, parsed: ParsedAction, ctx: AgentContext) -> str:
+        # ``parsed.error`` is set when the model emitted multiple blocks; the
+        # no-error nudge path is the zero-block case.
+        return parsed.error or _NO_BLOCK_REMINDER
 
     def tool_schema_mode(self) -> ToolSchemaMode:
         return 'textual_block'
@@ -159,15 +163,24 @@ class SweBenchBackticksStrategy(AgentStrategy):
         that don't look like envelopes either (e.g. the original task
         description) by stopping at the first non-system, non-assistant
         message after the last assistant turn.
+
+        System-injected nudges are ``ChatMessageUser`` too, and a run that ends
+        on a nudge leaves one as the last message — so they are excluded via
+        the trace's NUDGE events rather than by matching reminder wording.
         """
+        nudge_ids = {
+            event.message_id
+            for event in result.trace.events
+            if event.type == EventType.NUDGE and event.message_id is not None
+        }
         # Walk backwards collecting user messages produced AFTER the last
         # assistant turn — those are tool observations.
         observations: list[str] = []
         for msg in reversed(result.messages):
             if msg.role == 'assistant':
                 break
-            if msg.role == 'user':
-                observations.append(str(msg.content or ''))
+            if msg.role == 'user' and msg.id not in nudge_ids:
+                observations.append(msg.text or '')
         for content in observations:
             if not content:
                 continue
