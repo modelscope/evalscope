@@ -34,9 +34,9 @@ It uses MMMU-style format with image/video placeholders in text, supporting flex
 
 ## Key Features
 
-- MMMU-style format (not OpenAI message format)
-- Supports up to 100 images and 100 videos per sample
-- Flexible image/video input (path, URL, or base64 data URL)
+- MMMU-style format (not OpenAI message format), supporting up to 100 images and 100 videos per sample
+- Flexible image/video input (path, URL, base64 data URL, or Hugging Face Image with `{"path": ...}` or `{"bytes": ...}`)
+- Additional format support for `images` column for unlimited number of images
 - Chain-of-thought prompt template option
 - Custom dataset support via local file loading
 
@@ -111,27 +111,45 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             for i in range(GeneralVMCQAdapter.MAX_IMAGES):
                 image_map[i + 1] = record.get(f'image_{i + 1}')
         elif record.get('images'):
+            # intentionally allow unlimited images, when 'image_n' is not feasible/readable.
+            # e.g. long-context benchmarks like OCR may have >100 images.
             for i, image in enumerate(record['images']):
                 image_map[i + 1] = image
         else:
             return {}
 
+        # a scan through raw image_map to convert bytes -> b64 str
+        parsed_image_map: Dict[int, str] = {}
         for k, v in image_map.items():
+            if v is None:
+                continue
+
             # Hugging Face Image columns may surface undecoded values as dicts.
+            # https://huggingface.co/docs/datasets/en/about_dataset_features#image-feature
             if isinstance(v, dict):
-                if v.get('bytes') is not None:
+                if v.get('path') and isinstance(v['path'], str):
+                    parsed_image_map[k] = v['path']
+                    continue
+                elif v.get('bytes') and isinstance(v['bytes'], (bytes, bytearray)):
                     bytes_obj = v['bytes']
-                elif v.get('path'):
-                    with open(v['path'], 'rb') as f:
-                        bytes_obj = f.read()
                 else:
-                    raise ValueError(f"Image {k} must contain either 'path' or 'bytes', got {v}")
+                    raise ValueError(
+                        f"Image {k} must contain either '{{path: '...'}}' or '{{bytes: b'...'}}', got {v!r}"
+                    )
 
                 # generally, guessing from bytes is more reliable than from path extension
-                image_map[k] = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
-            elif v is not None and not isinstance(v, str):
+                img_base64 = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
+                # handle cases where mimetype is not detected as image
+                # to catch issues before sending to LLM API
+                if not img_base64.startswith('data:image/'):
+                    raise ValueError(f'Image {k} is invalid as base64 image, got b64 {img_base64[:30]!r}...')
+                parsed_image_map[k] = img_base64
+            # path, URL, or base64 string waiting for _parse_text_with_media() to handle
+            elif isinstance(v, str):
+                parsed_image_map[k] = v
+            else:
                 raise TypeError(f'Expect Image {k} as string (path, URL, or base64) or undecoded dict, got {type(v)}')
-        return image_map
+        return parsed_image_map
 
     def _extract_videos(self, record: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
         video_map: Dict[int, Dict[str, Any]] = {}

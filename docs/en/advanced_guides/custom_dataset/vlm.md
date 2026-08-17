@@ -327,13 +327,14 @@ Evaluation will output accuracy metrics:
 
 General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>` and video placeholders `<video x>`; `options` is a Python list string, options can be text or media placeholders.
 
-Media support the following forms (all strings):
+Media support the following forms (all strings unless otherwise specified):
 - Image local or remote path/URL: `"custom_eval/multimodal/images/dog.jpg"` or `"https://.../dog.jpg"`
 - Image Base64 Data URL: `"data:image/jpeg;base64,/9j/4AAQSk..."`
+- Image in [Hugging Face Image format](https://huggingface.co/docs/datasets/about_dataset_features#image-feature): `{"path": "..."}` or `{"bytes": b"..."}` (binaries from parquet only).
 - Video local or remote path/URL: `"custom_eval/multimodal/videos/sample.mp4"` or `"https://.../sample.mp4"`
 - Video Base64 Data URL: `"data:video/mp4;base64,AAAAIGZ0eX..."`
 
-Supports up to 100 images (`image_1` to `image_100`) and 100 videos (`video_1` to `video_100`). Missing media placeholders are ignored.
+Supports up to 100 images (`image_1` to `image_100`, or `images` for an unlimited list of images) and 100 videos (`video_1` to `video_100`). Missing media placeholders are ignored.
 
 **JSONL Example** (`example.jsonl`):
 ```json
@@ -353,7 +354,8 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `question`: Question text, can contain `<image x>` or `<video x>` placeholders
 - `options`: List (JSON array), elements can be text (e.g., `"School"`) or media placeholders (e.g., `"<image 1>"`, `"<video 1>"`), no need to add prefixes like `A.`, `B.`
 - `answer`: Correct answer letter (e.g., `"A"`, `"B"`)
-- `image_k`: Image string (local/remote path or base64 Data URL), k ∈ [1, 100]
+- `image_k`: Image string (local/remote path, base64 Data URL or [Huggingface Image Feature](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)), k ∈ [1, 100]
+- `images`: List of images equivalent to consecutive `image_1`, `image_2`. Only used when `image_k` not present.
 - `video_k`: Video string (local/remote path or base64 Data URL), k ∈ [1, 100]
 - `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, and `"mov"`
 
