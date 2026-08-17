@@ -223,9 +223,7 @@ class TestSweBenchBackticksExtractFinalAnswer(unittest.TestCase):
         self.assertEqual(self.strategy.extract_final_answer(result), '')
 
     def test_list_content_observation_is_read_as_text(self):
-        # Reasoning models produce list content. ``str(msg.content)`` on a list
-        # yields a Python repr, which is always non-empty and therefore silently
-        # became the payload; ``msg.text`` is the only correct accessor.
+        # ``str()`` on list content yields a Python repr, not the payload.
         from evalscope.api.messages.content import ContentReasoning, ContentText
         messages = [
             ChatMessageAssistant(content='```mswea_bash_command\ncat patch.txt\n```',
@@ -453,8 +451,7 @@ class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
         self.assertEqual(self.strategy.extract_final_answer(result), '')
 
     def test_list_content_observation_is_read_as_text(self):
-        # Same defect class as the backticks case: ``str()`` on list content
-        # yields a Python repr instead of the submission payload.
+        # ``str()`` on list content yields a Python repr, not the payload.
         from evalscope.api.messages.content import ContentReasoning, ContentText
         bash_call = _tool_call('bash', {'command': 'cat patch.txt'})
         messages = [
@@ -475,15 +472,10 @@ class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
 
 
 class TestSweBenchAdapterDiffFallback(unittest.TestCase):
-    """The adapter's diff-recovery fallback must read message *text*.
+    """Diff-recovery fallback must read ``msg.text``, not ``str(msg.content)``.
 
-    When the sentinel protocol is not followed, both SWE-bench agentic adapters
-    fall back to scanning the last assistant message for a unified diff. They
-    used to read it via ``str(msg.content or '') or msg.text``: for a reasoning
-    model ``content`` is a ``list[Content]``, ``str()`` of which is a non-empty
-    Python repr, so the correct ``msg.text`` branch was unreachable and the
-    reported patch became that repr. ``extract_diff`` passes it straight
-    through, so the grader received a repr and scored 0.
+    For a reasoning model ``content`` is a list, whose ``str()`` is a non-empty
+    Python repr that ``extract_diff`` passes straight through to the grader.
     """
 
     def setUp(self):
@@ -509,7 +501,6 @@ class TestSweBenchAdapterDiffFallback(unittest.TestCase):
                 source='generate',
             ),
         ]
-        # Sentinel never fired, so the strategy yields '' and the fallback runs.
         self.strategy = SweBenchBackticksStrategy()
 
     def _result(self):

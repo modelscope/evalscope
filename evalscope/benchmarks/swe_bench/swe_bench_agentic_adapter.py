@@ -40,6 +40,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.agent.external.runners import AgentRunResult
+    from evalscope.api.agent import AgentStrategy
 
 logger = get_logger()
 
@@ -399,10 +400,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             last_assistant = ''
             for msg in reversed(result.messages):
                 if msg.role == 'assistant':
-                    # ``msg.text`` is the only correct accessor: content may be a
-                    # list of ``Content`` parts (any reasoning model produces
-                    # one), and ``str()`` on that yields a Python repr, which is
-                    # always non-empty and so used to shadow this branch.
+                    # ``str(content)`` on list content yields a Python repr.
                     last_assistant = msg.text or ''
                     if last_assistant:
                         break
