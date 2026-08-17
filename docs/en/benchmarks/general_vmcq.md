@@ -15,9 +15,9 @@ It uses MMMU-style format with image/video placeholders in text, supporting flex
 
 ## Key Features
 
-- MMMU-style format (not OpenAI message format)
-- Supports up to 100 images and 100 videos per sample
-- Flexible image/video input (path, URL, or base64 data URL)
+- MMMU-style format (not OpenAI message format), supporting up to 100 images and 100 videos per sample
+- Flexible image/video input (path, URL, base64 data URL, or Hugging Face Image with `{"path": ...}` or `{"bytes": ...}`)
+- Additional format support for `images` column for unlimited number of images
 - Chain-of-thought prompt template option
 - Custom dataset support via local file loading
 
