@@ -20,6 +20,7 @@ from .types import (
     ParsedAction,
     ToolExecutionOutput,
     ToolSchemaMode,
+    TurnOutcome,
 )
 
 __all__ = [
@@ -39,5 +40,6 @@ __all__ = [
     'ToolExecutionOutput',
     'ToolHandler',
     'ToolSchemaMode',
+    'TurnOutcome',
     'run_agent_loop',
 ]

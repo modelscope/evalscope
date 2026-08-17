@@ -19,7 +19,17 @@ export const en: Dict = {
   loopMessage: {
     max_steps_exceeded: 'Maximum steps exceeded',
     model_context_overflow: 'Model context window exceeded',
-    no_tool_call_reminder: 'No tool was called — system reminder injected',
+  },
+  nudgeOutcome: {
+    idle: 'no tool call',
+    malformed: 'malformed output',
+  },
+  submitSource: {
+    sentinel: 'sentinel',
+    post_tool: 'after tool',
+    implicit_no_nudge: 'no tool call',
+    parse_error_exhausted: 'malformed output',
+    sandbox_error: 'sandbox error',
   },
 }
 
@@ -42,6 +52,16 @@ export const zh: Dict = {
   loopMessage: {
     max_steps_exceeded: '达到最大步数上限',
     model_context_overflow: '超出模型上下文窗口',
-    no_tool_call_reminder: '未调用工具——系统已注入提醒',
+  },
+  nudgeOutcome: {
+    idle: '未调用工具',
+    malformed: '输出格式错误',
+  },
+  submitSource: {
+    sentinel: '哨兵标记',
+    post_tool: '工具执行后',
+    implicit_no_nudge: '未调用工具',
+    parse_error_exhausted: '输出格式错误',
+    sandbox_error: '沙箱错误',
   },
 }

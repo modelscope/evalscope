@@ -90,6 +90,21 @@ class TestSweBenchBackticksParseOutput(unittest.TestCase):
         self.assertEqual(len(parsed.tool_calls), 1)
         self.assertIn('seq 1 5', parsed.tool_calls[0].function.arguments.get('command', ''))
 
+    def test_nudge_message_zero_block_asks_for_a_block(self):
+        # Textual mode exposes no tools; the reminder must not mention submit.
+        msg = self.strategy.nudge_message(ParsedAction(raw_text='prose'), _make_ctx())
+        self.assertIn('mswea_bash_command', msg)
+        self.assertNotIn('submit', msg.lower())
+
+    def test_nudge_message_relays_the_real_multi_block_error(self):
+        # Driven through parse_output, so dropping the error there fails here.
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import _FORMAT_ERROR_TEMPLATE
+        output = _make_output(
+            text='THOUGHT: try two\n```mswea_bash_command\necho first\n```\n```mswea_bash_command\necho second\n```'
+        )
+        parsed = self.strategy.parse_output(output, self.ctx)
+        self.assertEqual(self.strategy.nudge_message(parsed, _make_ctx()), _FORMAT_ERROR_TEMPLATE)
+
 
 # ---------------------------------------------------------------------------
 # SweBenchBackticksStrategy format_observation
@@ -207,6 +222,22 @@ class TestSweBenchBackticksExtractFinalAnswer(unittest.TestCase):
         result = self._make_result(messages=messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '')
 
+    def test_list_content_observation_is_read_as_text(self):
+        # ``str()`` on list content yields a Python repr, not the payload.
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+        messages = [
+            ChatMessageAssistant(content='```mswea_bash_command\ncat patch.txt\n```',
+                                 model='test', source='generate'),
+            ChatMessageUser(content=[
+                ContentReasoning(reasoning='the sentinel fired'),
+                ContentText(text='diff --git a/foo.py b/foo.py\n+fix'),
+            ]),
+        ]
+        result = self._make_result(messages=messages)
+        answer = self.strategy.extract_final_answer(result)
+        self.assertEqual(answer, 'diff --git a/foo.py b/foo.py\n+fix')
+        self.assertNotIn('ContentReasoning', answer)
+
 
 # ---------------------------------------------------------------------------
 # SweBenchToolcallStrategy parse_output / extract
@@ -244,16 +275,30 @@ class TestSweBenchToolcallParseOutput(unittest.TestCase):
         self.assertTrue(self.strategy.should_nudge(parsed, ctx))
 
     def test_should_not_nudge_after_reminder(self):
-        from evalscope.api.agent.constants import NUDGE_PROMPT
-
-        ctx = _make_ctx(messages=[ChatMessageUser(content=NUDGE_PROMPT)])
+        # toolcall allows a single nudge; the loop-owned counter drives the cap.
+        ctx = _make_ctx()
+        ctx.nudge_count = 1
         parsed = ParsedAction(raw_text='still thinking')
         self.assertFalse(self.strategy.should_nudge(parsed, ctx))
 
-    def test_unrelated_user_message_does_not_consume_nudge(self):
+    def test_nudge_decision_ignores_message_text(self):
+        # The decision is driven by the loop's counter, not by matching reminder
+        # text in the transcript, so a user message that merely looks like a
+        # reminder does not consume the budget.
         ctx = _make_ctx(messages=[ChatMessageUser(content='No bash tool was called')])
         parsed = ParsedAction(raw_text='thinking')
         self.assertTrue(self.strategy.should_nudge(parsed, ctx))
+
+    def test_nudge_message_targets_bash_and_the_sentinel(self):
+        # No submit tool is exposed; the sentinel is the only completion channel.
+        from evalscope.agent.strategies.swe_bench._observation import SUBMIT_SENTINEL
+        msg = self.strategy.nudge_message(ParsedAction(raw_text='thinking'), _make_ctx())
+        self.assertIn('bash', msg.lower())
+        self.assertIn(SUBMIT_SENTINEL, msg)
+
+    def test_nudge_message_passes_through_parse_error(self):
+        msg = self.strategy.nudge_message(ParsedAction(error='boom'), _make_ctx())
+        self.assertEqual(msg, 'boom')
 
 
 class TestSweBenchToolcallFormatObservation(unittest.TestCase):
@@ -404,6 +449,83 @@ class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
         ]
         result = self._make_result(messages=messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '')
+
+    def test_list_content_observation_is_read_as_text(self):
+        # ``str()`` on list content yields a Python repr, not the payload.
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+        bash_call = _tool_call('bash', {'command': 'cat patch.txt'})
+        messages = [
+            ChatMessageAssistant(content='', tool_calls=[bash_call], model='test', source='generate'),
+            ChatMessageTool(
+                content=[
+                    ContentReasoning(reasoning='the sentinel fired'),
+                    ContentText(text='diff --git a/foo.py b/foo.py\n+fix'),
+                ],
+                tool_call_id='tc-1',
+                function='bash',
+            ),
+        ]
+        result = self._make_result(messages=messages)
+        answer = self.strategy.extract_final_answer(result)
+        self.assertEqual(answer, 'diff --git a/foo.py b/foo.py\n+fix')
+        self.assertNotIn('ContentReasoning', answer)
+
+
+class TestSweBenchAdapterDiffFallback(unittest.TestCase):
+    """Diff-recovery fallback must read ``msg.text``, not ``str(msg.content)``.
+
+    For a reasoning model ``content`` is a list, whose ``str()`` is a non-empty
+    Python repr that ``extract_diff`` passes straight through to the grader.
+    """
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+
+        self.patch = (
+            'diff --git a/foo.py b/foo.py\n'
+            '--- a/foo.py\n'
+            '+++ b/foo.py\n'
+            '@@ -1 +1 @@\n'
+            '-old\n'
+            '+new\n'
+        )
+        # A reasoning model's assistant turn: list content, patch in a text part.
+        self.messages = [
+            ChatMessageAssistant(
+                content=[
+                    ContentReasoning(reasoning='I should emit the diff directly.'),
+                    ContentText(text=self.patch),
+                ],
+                model='test',
+                source='generate',
+            ),
+        ]
+        self.strategy = SweBenchBackticksStrategy()
+
+    def _result(self):
+        return AgentLoopResult(
+            messages=self.messages,
+            final_output=_make_output(text=''),
+            trace=AgentTrace(),
+        )
+
+    def _assert_clean_patch(self, answer: str) -> None:
+        self.assertIn('diff --git a/foo.py', answer)
+        self.assertNotIn('ContentReasoning', answer)
+        self.assertNotIn('ContentText', answer)
+        # A repr escapes newlines; a real patch keeps them.
+        self.assertNotIn('\\n', answer)
+
+    def test_swe_bench_agentic_fallback_recovers_the_patch(self):
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        self._assert_clean_patch(adapter._extract_final_answer(self._result(), self.strategy))
+
+    def test_swe_bench_pro_fallback_recovers_the_patch(self):
+        from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
+        adapter = object.__new__(SWEBenchProAgenticAdapter)
+        self._assert_clean_patch(adapter._extract_final_answer(self._result(), self.strategy))
 
 
 # ---------------------------------------------------------------------------
