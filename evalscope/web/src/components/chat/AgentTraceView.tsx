@@ -66,11 +66,18 @@ export function LoopErrorRow({ event }: { event: AgentTraceEvent }) {
 /* ─── NudgeRow ─────────────────────────────────────────────── */
 
 /** Compact nudge reminder row (system-injected when model didn't call tools). */
-export function NudgeRow({ msg }: { msg: ChatMessage }) {
+export function NudgeRow({ msg, outcome }: { msg: ChatMessage; outcome?: string }) {
+  const { t } = useLocale()
   const text = contentToText(msg.content)
+  const outcomeLabel = outcome ? t(`trace.nudgeOutcome.${outcome}`) : ''
   return (
     <div className="flex items-center gap-[0.4rem] px-[0.6rem] py-[0.35rem] bg-[var(--warning-bg)] border border-[var(--warning-border)] rounded-[0.4rem] text-[0.72rem] font-mono text-[var(--warning-text)] mt-1">
       <AlertTriangle size={12} className="shrink-0" />
+      {outcome && (
+        <span className="shrink-0 px-[4px] rounded-[3px] border border-current opacity-80 text-[0.6rem]">
+          {outcomeLabel === `trace.nudgeOutcome.${outcome}` ? outcome : outcomeLabel}
+        </span>
+      )}
       <span className="whitespace-pre-wrap break-all flex-1">{text}</span>
     </div>
   )
@@ -219,6 +226,15 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
   })()
   const Icon = cfg.Icon
   const label = t(cfg.labelKey)
+  // A submit event's ``source`` says how the episode ended (sentinel, post-tool,
+  // no tool call, malformed output); surface it so the pill is diagnosable.
+  const sourceKey = event.type === 'submit' && event.payload.source != null
+    ? String(event.payload.source)
+    : ''
+  const sourceLabel = sourceKey ? t(`trace.submitSource.${sourceKey}`) : ''
+  const sourceText = sourceKey
+    ? (sourceLabel === `trace.submitSource.${sourceKey}` ? sourceKey : sourceLabel)
+    : ''
   return (
     <span
       className="inline-flex items-center gap-[3px] px-[6px] py-[1px] rounded-[3px] bg-transparent border text-[0.58rem] font-mono font-medium opacity-85 whitespace-nowrap"
@@ -226,6 +242,7 @@ export function TraceEventPill({ event }: { event: AgentTraceEvent }) {
     >
       <Icon size={9} />
       {label === cfg.labelKey ? event.type : label}
+      {sourceText && <span className="opacity-70">· {sourceText}</span>}
     </span>
   )
 }
@@ -386,7 +403,17 @@ export function StepBlock({
             ev => ev.type === 'nudge' && ev.message_id === m.id
           )
           if (isNudge) {
-            return <NudgeRow key={`nudge-${m.id ?? i}`} msg={m} />
+            const nudgeEvent = group.traceEvents.find(
+              ev => ev.type === 'nudge' && ev.message_id === m.id
+            )
+            const outcome = nudgeEvent?.payload?.outcome
+            return (
+              <NudgeRow
+                key={`nudge-${m.id ?? i}`}
+                msg={m}
+                outcome={outcome != null ? String(outcome) : undefined}
+              />
+            )
           }
           const role = isEnvironmentAttachment(m)
             ? 'environment'

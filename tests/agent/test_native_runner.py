@@ -265,5 +265,45 @@ def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pyt
     assert env.closed == 0
 
 
+def test_run_native_agent_reports_the_adapter_resolved_prediction() -> None:
+    """The runner forwards whatever the adapter hook resolved.
+
+    ``trace.final_prediction`` is recorded further downstream, at the single
+    point every inference path converges (``DefaultDataAdapter.run_inference``),
+    not here -- an earlier revision wrote it in this runner and consequently
+    left it unset for every adapter that assembles its own ``InferenceResult``
+    (SWE-bench among them).
+    """
+    trace = AgentTrace(strategy='fake', environment=None, max_steps=1)
+
+    def fake_run_agent_loop(**kwargs: Any) -> AgentLoopResult:
+        return AgentLoopResult(
+            messages=[ChatMessageAssistant(content='incidental prose')],
+            final_output=_model_output('incidental prose'),
+            trace=trace,
+        )
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
+        monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
+        monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
+        monkeypatch.setattr('evalscope.agent.runner.run_agent_loop', fake_run_agent_loop)
+
+        result = run_native_agent(
+            task_config=TaskConfig(
+                datasets=['demo'],
+                agent_config=NativeAgentConfig(strategy='fake', max_steps=1),
+            ),
+            model=object(),
+            sample=Sample(id=1, input='do work', target='', metadata={}),
+            build_sandbox_config=lambda _: None,
+            # An adapter hook that does NOT simply forward the last message, the
+            # way the SWE-bench overrides don't.
+            extract_final_answer=lambda loop_result, strategy: 'diff --git a/foo.py b/foo.py',
+        )
+
+    assert result.output.message.text == 'diff --git a/foo.py b/foo.py'
+
+
 def _model_output(text: str) -> ModelOutput:
     return ModelOutput(model='fake', choices=[ChatCompletionChoice.from_content(text)])

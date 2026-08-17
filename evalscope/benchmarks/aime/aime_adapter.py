@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import re
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -14,6 +13,9 @@ from evalscope.utils.logger import get_logger
 # flake8: noqa
 
 logger = get_logger()
+
+# Punctuation and markdown a judge may wrap its bare "Yes"/"No" verdict in.
+VERDICT_WRAPPER_CHARS = ' \t*_`"\'.:'
 
 JUDGE_PROMPT = """
 Look at the following two expressions (answers to a math problem) and judge whether they are equivalent. Only perform trivial simplifications
@@ -180,7 +182,8 @@ class AIME24Adapter(DefaultDataAdapter):
 
         judge_response = self.llm_judge.judge(prompt=judge_prompt)
 
-        is_correct = bool(re.search(r'\bYes\b', judge_response, re.IGNORECASE))
+        judge_verdicts = self._parse_judge_verdicts(judge_response)
+        is_correct = judge_verdicts == {'yes'}
         score.value = {
             'acc': 1.0 if is_correct else 0.0,
         }
@@ -190,8 +193,24 @@ class AIME24Adapter(DefaultDataAdapter):
             'judge_strategy': self.judge_strategy,
             'model': self.llm_judge.model_id,
         }
+        if len(judge_verdicts) != 1:
+            logger.warning(f'AIME: failed to parse LLM judge response: {judge_response!r}')
+            score.metadata['parse_failed'] = True
         score.main_score_name = 'acc'
         return score
+
+    @staticmethod
+    def _parse_judge_verdicts(judge_response: str) -> Set[str]:
+        """Collect the bare Yes/No verdicts the judge stated on lines of their own.
+
+        Matching anywhere in the response instead lets a judge that explains itself
+        ("Yes, the answer is incorrect") set the opposite verdict.
+        """
+        return {
+            verdict
+            for line in judge_response.splitlines()
+            if (verdict := line.strip(VERDICT_WRAPPER_CHARS).casefold()) in ('yes', 'no')
+        }
 
 
 @register_benchmark(

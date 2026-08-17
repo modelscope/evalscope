@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Union
 from evalscope.api.dataset.utils import record_to_sample_fn
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
 from evalscope.utils import get_logger
-from evalscope.utils.io_utils import csv_to_list, gen_hash, jsonl_to_list, safe_filename, tsv_to_list
+from evalscope.utils.io_utils import csv_to_list, gen_hash, jsonl_to_list, parquet_to_list, safe_filename, tsv_to_list
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
 from .hub import DatasetHub
 from .utils import data_to_samples, shuffle_choices_if_requested
@@ -188,6 +188,7 @@ class LocalDataLoader(DataLoader):
             ('.jsonl', jsonl_to_list),
             ('.csv', csv_to_list),
             ('.tsv', tsv_to_list),
+            ('.parquet', parquet_to_list),
         ]
 
         dataset_found = False

@@ -327,13 +327,14 @@ evalscope eval \
 
 General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>` 和视频占位符 `<video x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。
 
-支持以下媒体形式（均为字符串）：
+支持以下媒体形式（均为字符串，除非另有说明）：
 - 图片本地或远程路径/URL：`"custom_eval/multimodal/images/dog.jpg"` 或 `"https://.../dog.jpg"`
 - 图片 Base64 Data URL：`"data:image/jpeg;base64,/9j/4AAQSk..."`
+- 图片 [Hugging Face Image 格式](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)：`{"path": "..."}` 或 `{"bytes": b"..."}`（仅 Parquet 支持）。
 - 视频本地或远程路径/URL：`"custom_eval/multimodal/videos/sample.mp4"` 或 `"https://.../sample.mp4"`
 - 视频 Base64 Data URL：`"data:video/mp4;base64,AAAAIGZ0eX..."`
 
-支持最多 100 张图片（`image_1` 到 `image_100`）和 100 个视频（`video_1` 到 `video_100`）。不存在的媒体占位符会被忽略。
+支持最多 100 张图片（`image_1` 到 `image_100`，或使用 `images` 以传入图片列表，不受数量限制）和 100 个视频（`video_1` 到 `video_100`）。不存在的媒体占位符会被忽略。
 
 **JSONL 示例**（`example.jsonl`）：
 ```json
@@ -353,7 +354,8 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `question`: 问题文本，可包含 `<image x>` 或 `<video x>` 占位符
 - `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或媒体占位符（如 `"<image 1>"`、`"<video 1>"`），不需要添加 `A.`、`B.` 等前缀
 - `answer`: 正确答案字母（如 `"A"`、`"B"`）
-- `image_k`: 图片字符串（本地/远程路径或 base64 Data URL），k ∈ [1, 100]
+- `image_k`: 图片字符串（本地/远程路径、base64 Data URL 或 [Hugging Face Image 格式](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)），k ∈ [1, 100]
+- `images`: 图片列表，相当于连续的 `image_1`、`image_2`。仅在不存在 `image_k` 时使用。
 - `video_k`: 视频字符串（本地/远程路径或 base64 Data URL），k ∈ [1, 100]
 - `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"` 和 `"mov"`
 

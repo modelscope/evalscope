@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import hashlib
 import os
 import random
 from typing import Any, Dict
@@ -102,7 +103,13 @@ class GPQAAdapter(MultiChoiceAdapter):
             preprocess(input_d['Incorrect Answer 3']),
             preprocess(input_d['Correct Answer']),
         ]
-        random.shuffle(choices)
+        # Derive the shuffle order from the question so this method stays a pure
+        # function. With the unseeded global RNG the option order changed on every
+        # dataset build, so `--rerun-review` paired cached predictions with a freshly
+        # shuffled answer key and accuracy collapsed to chance. Hashing per question
+        # keeps the position-bias protection while making the mapping reproducible.
+        seed = int.from_bytes(hashlib.sha256(preprocess(input_d['Question']).encode('utf-8')).digest()[:8], 'big')
+        random.Random(seed).shuffle(choices)
         correct_answer_index = choices.index(preprocess(input_d['Correct Answer']))
 
         return {
