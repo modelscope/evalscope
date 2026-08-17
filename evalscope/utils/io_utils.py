@@ -1,5 +1,6 @@
 import base64
 import csv
+import filetype
 import hashlib
 import io
 import json
@@ -134,6 +135,37 @@ class OutputsStructure:
     def configs_dir(self) -> str:
         """Path to the configs sub-directory."""
         return self._get_dir('configs_dir', OutputsStructure.CONFIGS_DIR)
+
+
+# ---------------------------------------------------------------------------
+# Parquet/Arrow utilities
+# ---------------------------------------------------------------------------
+
+
+def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
+    from datasets import Dataset
+    from datasets.features import Audio, Image, Sequence, Video
+
+    dataset = Dataset.from_parquet(parquet_file)
+
+    for col, feat in list(dataset.features.items()):
+        if isinstance(feat, Image):
+            dataset = dataset.cast_column(col, Image(decode=False))
+        elif isinstance(feat, Audio):
+            raise NotImplementedError('Parquet audio loading is not supported yet.')
+            # dataset = dataset.cast_column(col, Audio(decode=False))
+        elif isinstance(feat, Video):
+            raise NotImplementedError('Parquet video loading is not supported yet.')
+            # dataset = dataset.cast_column(col, Video(decode=False))
+        elif isinstance(feat, Sequence) and isinstance(feat.feature, Image):
+            dataset = dataset.cast_column(col, Sequence(Image(decode=False)))
+        elif isinstance(feat, Sequence) and isinstance(feat.feature, Audio):
+            raise NotImplementedError('Parquet audio loading is not supported yet.')
+            # dataset = dataset.cast_column(col, Sequence(Audio(decode=False)))
+        elif isinstance(feat, Sequence) and isinstance(feat.feature, Video):
+            raise NotImplementedError('Parquet video loading is not supported yet.')
+            # dataset = dataset.cast_column(col, Sequence(Video(decode=False)))
+    return dataset.to_list()
 
 
 # ---------------------------------------------------------------------------
@@ -606,6 +638,7 @@ def bytes_to_base64(
     format: str = 'png',
     add_header: bool = False,
     content_type: str = 'image',
+    guess_mimetype: bool = False,
 ) -> str:
     """Encode raw bytes as a base64 string.
 
@@ -619,12 +652,17 @@ def bytes_to_base64(
         content_type (str): Top-level MIME type (e.g. ``'image'``,
             ``'audio'``).  Used only when *add_header* is ``True``.
             Defaults to ``'image'``.
+        guess_mimetype (bool): When ``True``, detect the MIME type from
+            ``bytes_data`` and use it in the data-URI header. Falls back to
+            ``content_type`` and ``format`` when detection fails.
 
     Returns:
         str: Base64-encoded string, optionally with a data-URI header.
     """
     base64_str = base64.b64encode(bytes_data).decode('utf-8')
     if add_header:
+        if guess_mimetype and (guessed_mime := filetype.guess_mime(bytes_data)):
+            content_type, format = guessed_mime.split('/')
         base64_str = f'data:{content_type}/{format};base64,{base64_str}'
     return base64_str
 

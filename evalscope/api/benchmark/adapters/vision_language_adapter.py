@@ -17,7 +17,9 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         # Accepts integers (bytes) or human-readable strings like '5mb', '500kb', '1.5gb'.
         self._max_image_bytes: Optional[int] = parse_size(self._benchmark_meta.max_image_bytes)
 
-    def _image_bytes_to_base64(self, image_bytes: bytes, default_format: str = 'png') -> str:
+    def _image_bytes_to_base64(
+        self, image_bytes: bytes, default_format: str = 'png', guess_mimetype: bool = False
+    ) -> str:
         """Convert raw image bytes to a base64 data-URI, compressing first if needed.
 
         This is the recommended helper for subclasses that obtain images as raw
@@ -39,8 +41,8 @@ class VisionLanguageAdapter(DefaultDataAdapter):
             # fall back to the caller's default_format for the correct MIME type.
             if fmt == 'png':
                 fmt = default_format
-            return bytes_to_base64(compressed_bytes, format=fmt, add_header=True)
-        return bytes_to_base64(image_bytes, format=default_format, add_header=True)
+            return bytes_to_base64(compressed_bytes, format=fmt, add_header=True, guess_mimetype=guess_mimetype)
+        return bytes_to_base64(image_bytes, format=default_format, add_header=True, guess_mimetype=guess_mimetype)
 
     def _parse_text_with_images(self, text: str, image_map: Dict[int, str]) -> List[Content]:
         """

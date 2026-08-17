@@ -3,6 +3,7 @@ colorlog
 docstring_parser
 dotenv
 editdistance
+filetype
 jieba
 jinja2
 jsonlines
