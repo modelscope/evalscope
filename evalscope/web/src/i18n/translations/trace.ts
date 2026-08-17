@@ -21,6 +21,7 @@ export const en: Dict = {
     model_context_overflow: 'Model context window exceeded',
     no_tool_call_reminder: 'No tool was called — system reminder injected',
     parse_error_reminder: 'Malformed output — system reminder injected',
+    parse_error_exhausted: 'Malformed output repeated past its retry budget',
   },
 }
 
@@ -45,5 +46,6 @@ export const zh: Dict = {
     model_context_overflow: '超出模型上下文窗口',
     no_tool_call_reminder: '未调用工具——系统已注入提醒',
     parse_error_reminder: '输出格式错误——系统已注入提醒',
+    parse_error_exhausted: '输出格式错误重复超出重试预算',
   },
 }

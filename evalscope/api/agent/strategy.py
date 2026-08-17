@@ -26,7 +26,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 from .constants import NUDGE_PROMPT
-from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode
+from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode, TurnOutcome
 
 
 @runtime_checkable
@@ -41,14 +41,21 @@ class AgentStrategy(Protocol):
     """Registered strategy name, used for trace labeling."""
 
     max_nudges: int = 2
-    """Consecutive nudges allowed before the loop treats the output as final.
+    """Consecutive *idle* nudges allowed before the output is treated as final.
 
     Counted by :class:`AgentLoop` in ``AgentContext.nudge_count`` and reset
     whenever the model calls a tool again, so this bounds a stuck *streak*, not
     the per-episode total: a model that alternates tool calls with silent turns
     never accumulates a streak and can still be nudged on about half its steps.
-    Malformed-output retries share the same budget. Override in subclasses to
-    tighten or loosen it.
+    Override in subclasses to tighten or loosen it.
+    """
+
+    max_parse_error_nudges: int = 3
+    """Consecutive *malformed* nudges allowed, counted separately.
+
+    Higher than :attr:`max_nudges` on purpose: the reminder for a malformed
+    turn quotes the exact rule that was broken, so it is a strictly more
+    recoverable failure than a model that keeps replying in prose.
     """
 
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
@@ -98,11 +105,15 @@ class AgentStrategy(Protocol):
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         """Whether to inject a nudge when no tool_calls are produced.
 
-        The default allows up to :attr:`max_nudges` consecutive nudges, using
-        the count the loop maintains in ``ctx.nudge_count``. Override only for
-        policies that must also inspect ``parsed``; returning False makes the
-        loop treat the current output as an implicit final answer.
+        The default budgets the two no-tool outcomes separately, using the
+        counts the loop maintains: :attr:`max_parse_error_nudges` for a
+        malformed turn, :attr:`max_nudges` for an idle one. Override only for
+        policies that need more than the outcome and the counts; returning
+        False makes the loop treat the current output as an implicit final
+        answer.
         """
+        if parsed.outcome is TurnOutcome.MALFORMED:
+            return ctx.parse_error_nudge_count < self.max_parse_error_nudges
         return ctx.nudge_count < self.max_nudges
 
     def nudge_message(self, parsed: ParsedAction, ctx: AgentContext) -> str:

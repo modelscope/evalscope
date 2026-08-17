@@ -55,6 +55,8 @@ class SweBenchToolcallStrategy(AgentStrategy):
 
     #: A model with real bash access should recover in one reminder; keep the
     #: streak budget at a single nudge before treating the turn as final.
+    #: ``max_parse_error_nudges`` is inert here: ``parse_output`` never reports
+    #: an error (non-bash calls are dropped), so no turn is ever MALFORMED.
     max_nudges: int = 1
 
     def __init__(self, *, system_prompt: Optional[str] = None, **_: object) -> None:

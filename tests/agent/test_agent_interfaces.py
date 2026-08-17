@@ -28,6 +28,7 @@ from evalscope.api.agent import (
     ToolExecutor,
     ToolHandler,
     ToolSchemaMode,
+    TurnOutcome,
 )
 from evalscope.api.registry import (
     AGENT_TOOL_REGISTRY,
@@ -186,6 +187,27 @@ class TestAgentTypesBehavior(unittest.TestCase):
         self.assertIsNone(pa.final_answer)
         self.assertIsNone(pa.error)
         self.assertIsNone(pa.raw_text)
+
+    def test_parsed_action_outcome_act(self):
+        from evalscope.api.tool import ToolCall, ToolFunction
+        call = ToolCall(id='c1', function=ToolFunction(name='bash', arguments={}))
+        self.assertIs(ParsedAction(tool_calls=[call]).outcome, TurnOutcome.ACT)
+
+    def test_parsed_action_outcome_malformed(self):
+        self.assertIs(ParsedAction(error='one block only', raw_text='prose').outcome, TurnOutcome.MALFORMED)
+
+    def test_parsed_action_outcome_idle(self):
+        # No tool calls and no error: the text may itself be the answer.
+        self.assertIs(ParsedAction(raw_text='the answer is 42').outcome, TurnOutcome.IDLE)
+        self.assertIs(ParsedAction().outcome, TurnOutcome.IDLE)
+
+    def test_parsed_action_outcome_prefers_act_over_malformed(self):
+        # A strategy reporting usable calls *and* a complaint should still make
+        # progress; the complaint reaches the trace as a parse error event.
+        from evalscope.api.tool import ToolCall, ToolFunction
+        call = ToolCall(id='c1', function=ToolFunction(name='bash', arguments={}))
+        parsed = ParsedAction(tool_calls=[call], error='dropped the calls past the cap')
+        self.assertIs(parsed.outcome, TurnOutcome.ACT)
 
     def test_exec_result_defaults(self):
         r = ExecResult()

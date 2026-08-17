@@ -65,6 +65,10 @@ def test_walking_skeleton_round_trip():
     assert trace.framework == 'mock'
     assert trace.trial_id, 'trial_id should be set by the bridge'
     assert trace.environment == 'local'
+    # Single source of truth for the reported prediction, mirroring the native
+    # path: the trace must not disagree with what was actually reported.
+    assert trace.final_prediction == expected
+    assert trace.final_prediction == result.output.choices[0].message.text
     # The mock makes exactly one LLM call → exactly one MODEL_GENERATE event
     # plus RUN_START / RUN_END brackets.
     types = [ev.type for ev in trace.events]

@@ -265,5 +265,48 @@ def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pyt
     assert env.closed == 0
 
 
+def test_run_native_agent_records_the_resolved_prediction_on_the_trace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``trace.final_prediction`` is the single source of truth for what was reported.
+
+    Resolution is an adapter-level decision (SWE-bench adapters layer their own
+    diff-recovery fallback on top of ``strategy.extract_final_answer``), so the
+    loop cannot know it; the runner that resolves it must record it.
+    """
+    trace = AgentTrace(strategy='fake', environment=None, max_steps=1)
+
+    def fake_run_agent_loop(**kwargs: Any) -> AgentLoopResult:
+        return AgentLoopResult(
+            messages=[ChatMessageAssistant(content='incidental prose')],
+            final_output=_model_output('incidental prose'),
+            trace=trace,
+        )
+
+    monkeypatch.setattr('evalscope.agent.runner.get_strategy', lambda name: FakeStrategy)
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tools', lambda tools: {})
+    monkeypatch.setattr('evalscope.agent.runner.resolve_tool_infos', lambda tools: [])
+    monkeypatch.setattr('evalscope.agent.runner.run_agent_loop', fake_run_agent_loop)
+
+    assert trace.final_prediction is None
+
+    result = run_native_agent(
+        task_config=TaskConfig(
+            datasets=['demo'],
+            agent_config=NativeAgentConfig(strategy='fake', max_steps=1),
+        ),
+        model=object(),
+        sample=Sample(id=1, input='do work', target='', metadata={}),
+        build_sandbox_config=lambda _: None,
+        # An adapter hook that does NOT simply forward the last message, the way
+        # the SWE-bench overrides don't.
+        extract_final_answer=lambda loop_result, strategy: 'diff --git a/foo.py b/foo.py',
+    )
+
+    assert result.trace.final_prediction == 'diff --git a/foo.py b/foo.py'
+    # Whatever is reported and whatever the trace claims cannot disagree.
+    assert result.trace.final_prediction == result.output.message.text
+
+
 def _model_output(text: str) -> ModelOutput:
     return ModelOutput(model='fake', choices=[ChatCompletionChoice.from_content(text)])

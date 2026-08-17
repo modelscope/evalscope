@@ -355,13 +355,13 @@ class _AlwaysTextStrategy(AgentStrategy):
         return ChatMessageTool(content=str(observation), tool_call_id=call.id, function=call.function.name)
 
 
-#: Nudge budget each registered strategy is expected to expose.  Pinned here
-#: rather than read back from the strategy, so widening a budget fails a test.
+#: Per-strategy nudge budgets: (idle, malformed).  Pinned here rather than read
+#: back from the strategy, so widening a budget fails a test.
 EXPECTED_NUDGE_BUDGETS = {
-    'function_calling': 2,
-    'react': 2,
-    'swe_bench_toolcall': 1,
-    'swe_bench_backticks': 2,
+    'function_calling': (2, 3),
+    'react': (2, 3),
+    'swe_bench_toolcall': (1, 3),
+    'swe_bench_backticks': (2, 3),
 }
 
 
@@ -395,13 +395,17 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
         for name in STRATEGY_REGISTRY.list_keys():
             with self.subTest(strategy=name):
                 strategy = get_strategy(name)()
-                budget = EXPECTED_NUDGE_BUDGETS[name]
+                budget, error_budget = EXPECTED_NUDGE_BUDGETS[name]
                 self.assertEqual(strategy.max_nudges, budget)
+                self.assertEqual(strategy.max_parse_error_nudges, error_budget)
                 model, ctx, result = self._run_all_text(strategy)
 
                 # One initial generate plus exactly ``budget`` retries.
                 self.assertEqual(model.generate_async.call_count, budget + 1)
                 self.assertEqual(ctx.nudge_count, budget)
+                # An all-text run is IDLE throughout, so the malformed budget
+                # must be untouched.
+                self.assertEqual(ctx.parse_error_nudge_count, 0)
 
                 nudge_events = [e for e in result.trace.events
                                 if e.payload and e.payload.get('source') == 'nudge']
@@ -538,6 +542,113 @@ class TestAgentLoopNudgeContent(unittest.TestCase):
         self.assertEqual(len(nudges), 1)
         self.assertIn('bash', str(nudges[0].content).lower())
         self.assertNotIn('Fix the failing test.', str(nudges[0].content))
+
+
+class TestSplitNudgeBudgets(unittest.TestCase):
+    """Malformed and idle turns are budgeted independently.
+
+    ``tool_calls`` being empty is a symptom shared by two different failures,
+    so one shared counter let either of them consume the other's retries.
+    """
+
+    def _loop(self, strategy, parse_results, *, handlers=None, max_steps=30):
+        strategy.parse_output = MagicMock(side_effect=parse_results)
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='x'))
+        executor = ToolExecutor(handlers=handlers or {}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=max_steps)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+        return model, ctx, result
+
+    def test_malformed_streak_uses_its_own_budget(self):
+        # 3 malformed retries (not 2) then the loop gives up: 1 + 3 generates.
+        strategy = _AlwaysTextStrategy(max_nudges=2)
+        model, ctx, _ = self._loop(strategy, [ParsedAction(error='bad format', raw_text='prose')] * 6)
+        self.assertEqual(model.generate_async.call_count, 4)
+        self.assertEqual(ctx.parse_error_nudge_count, 3)
+        self.assertEqual(ctx.nudge_count, 0)
+
+    def test_idle_streak_does_not_consume_the_malformed_budget(self):
+        # Two malformed turns, then idle: the idle budget is still full, so the
+        # run continues. A shared counter would already be exhausted (2+2 > 3).
+        strategy = _AlwaysTextStrategy(max_nudges=2)
+        model, ctx, _ = self._loop(
+            strategy,
+            [
+                ParsedAction(error='bad format', raw_text='p1'),
+                ParsedAction(error='bad format', raw_text='p2'),
+                ParsedAction(raw_text='t3'),
+                ParsedAction(raw_text='t4'),
+                ParsedAction(raw_text='t5'),
+            ],
+        )
+        # malformed, malformed, idle, idle → nudged 4 times, 5th turn is final.
+        self.assertEqual(model.generate_async.call_count, 5)
+        self.assertEqual(ctx.parse_error_nudge_count, 2)
+        self.assertEqual(ctx.nudge_count, 2)
+
+    def test_act_turn_resets_both_counters(self):
+        async def echo_handler(call, env):
+            return 'echoed'
+
+        strategy = _AlwaysTextStrategy(max_nudges=2)
+        model, ctx, _ = self._loop(
+            strategy,
+            [
+                ParsedAction(error='bad format', raw_text='p1'),
+                ParsedAction(raw_text='t2'),
+                ParsedAction(tool_calls=[_tool_call(name='echo')]),
+                ParsedAction(raw_text='t4'),
+                ParsedAction(raw_text='t5'),
+                ParsedAction(raw_text='t6'),
+            ],
+            handlers={'echo': echo_handler},
+        )
+        # After the ACT turn both streaks restart, so the idle budget of 2 is
+        # available again: t4 and t5 are nudged, t6 is final.
+        self.assertEqual(model.generate_async.call_count, 6)
+        self.assertEqual(ctx.nudge_count, 2)
+        self.assertEqual(ctx.parse_error_nudge_count, 0)
+
+
+class TestTerminalSource(unittest.TestCase):
+    """The SUBMIT event must say *why* the episode ended."""
+
+    def _run(self, parse_result, *, strategy=None):
+        strategy = strategy or _AlwaysTextStrategy(max_nudges=1)
+        strategy.parse_output = MagicMock(return_value=parse_result)
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='x'))
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=30)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='q')])
+        result = asyncio.run(loop.run(ctx))
+        submits = [e for e in result.trace.events if e.type == EventType.SUBMIT]
+        self.assertEqual(len(submits), 1)
+        return submits[0]
+
+    def test_malformed_exhausted_gets_its_own_source(self):
+        submit = self._run(ParsedAction(error='Call at most 1 tool call per turn.', raw_text='here you go'))
+        self.assertEqual(submit.payload.get('source'), 'parse_error_exhausted')
+        self.assertEqual(submit.payload.get('outcome'), 'malformed')
+        # The error must travel with it: "kept breaking the protocol" is a
+        # different diagnosis from "stopped calling tools".
+        self.assertEqual(submit.payload.get('error'), 'Call at most 1 tool call per turn.')
+
+    def test_idle_exhausted_keeps_implicit_no_nudge(self):
+        submit = self._run(ParsedAction(raw_text='the answer is 42'))
+        self.assertEqual(submit.payload.get('source'), 'implicit_no_nudge')
+        self.assertEqual(submit.payload.get('outcome'), 'idle')
+        self.assertIsNone(submit.payload.get('error'))
+
+    def test_loop_does_not_publish_a_final_answer_it_does_not_own(self):
+        # The reported prediction is resolved after the loop returns, by the
+        # adapter hook; a competing ``final_answer`` here already disagreed
+        # with it for swe_bench_backticks.
+        submit = self._run(ParsedAction(raw_text='THOUGHT: the patch would be trivial'))
+        self.assertNotIn('final_answer', submit.payload)
+        self.assertIn('THOUGHT:', submit.payload.get('raw_text_preview', ''))
 
 
 class TestNudgeIsNotMistakenForASubmission(unittest.TestCase):

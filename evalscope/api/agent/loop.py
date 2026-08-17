@@ -26,7 +26,7 @@ from .environment import AgentEnvironment
 from .strategy import AgentStrategy
 from .tool_executor import ToolExecutor
 from .trace import AgentTrace, EventType
-from .types import AgentContext, AgentLoopResult, ParsedAction, ToolExecutionOutput
+from .types import AgentContext, AgentLoopResult, ParsedAction, ToolExecutionOutput, TurnOutcome
 
 logger = get_logger()
 
@@ -109,7 +109,7 @@ class AgentLoop:
                 break
 
             # ---- no tool calls but not done → nudge or implicit submit ----
-            if not parsed.tool_calls:
+            if parsed.outcome is not TurnOutcome.ACT:
                 if self._try_nudge(parsed, ctx):
                     continue
                 self._emit_implicit_submit(ctx, parsed)
@@ -117,11 +117,12 @@ class AgentLoop:
                 break
 
             # ---- tool execution (may set parsed.final_answer post-hoc) ----
-            # A turn that produced tool calls ends the no-tool streak, so the
-            # nudge budget applies to consecutive silent turns rather than the
-            # whole episode. Without the reset a single stray text-only turn
-            # late in a long task would exhaust the budget and end the episode.
+            # An ACT turn ends both no-tool streaks, so the budgets bound
+            # consecutive silent/malformed turns rather than the whole episode.
+            # Without the reset a single stray text-only turn late in a long
+            # task would exhaust the budget and end the episode.
             ctx.nudge_count = 0
+            ctx.parse_error_nudge_count = 0
             if await self._run_tools(parsed, ctx, assistant_msg):
                 terminated_by_strategy = True
                 break
@@ -186,12 +187,9 @@ class AgentLoop:
         False when the strategy declined and the caller should treat the
         current output as an implicit final answer.
         """
-        # TODO: a turn with no tool calls and a malformed turn (``parsed.error``)
-        # share this budget, and both exit through ``_emit_implicit_submit`` —
-        # which reports ``implicit_no_nudge`` even though the latter did call
-        # tools. Give exhausted parse-error streaks their own submission source.
         should_nudge = self.strategy.should_nudge(parsed, ctx)
-        self._dbg(ctx, f'no_tool_calls, should_nudge={should_nudge}')
+        malformed = parsed.outcome is TurnOutcome.MALFORMED
+        self._dbg(ctx, f'outcome={parsed.outcome.value}, should_nudge={should_nudge}')
         if not should_nudge:
             return False
 
@@ -202,14 +200,18 @@ class AgentLoop:
         reminder = self.strategy.nudge_message(parsed, ctx)
         nudge = ChatMessageUser(content=reminder)
         ctx.messages.append(nudge)
-        ctx.nudge_count += 1
+        if malformed:
+            ctx.parse_error_nudge_count += 1
+        else:
+            ctx.nudge_count += 1
         self.trace.add_event(
             step=ctx.step,
             type=EventType.NUDGE,
             message_id=nudge.id,
             payload={
                 'source': TraceSources.NUDGE,
-                'message': (LoopMessages.PARSE_ERROR_REMINDER if parsed.error else LoopMessages.NO_TOOL_CALL_REMINDER),
+                'message': (LoopMessages.PARSE_ERROR_REMINDER if malformed else LoopMessages.NO_TOOL_CALL_REMINDER),
+                'outcome': parsed.outcome.value,
             },
         )
         ctx.step += 1
@@ -354,6 +356,13 @@ class AgentLoop:
         assistant_msg: ChatMessage,
         parsed: ParsedAction,
     ) -> None:
+        """Record the strategy's own termination signal.
+
+        ``final_answer`` here is what the *loop observed*, not the prediction
+        that gets reported: that is resolved after the loop returns and lives
+        in ``AgentTrace.final_prediction``. The two coincide for the sentinel
+        protocol but must not be conflated.
+        """
         self._dbg(
             ctx,
             f'is_done=True final_answer={str(parsed.final_answer)[:100]!r}',
@@ -367,14 +376,25 @@ class AgentLoop:
             )
 
     def _emit_implicit_submit(self, ctx: AgentContext, parsed: ParsedAction) -> None:
-        final = parsed.raw_text or ''
+        """Record that the loop gave up nudging and ended the episode.
+
+        The loop deliberately does not publish a ``final_answer`` here: it has
+        no answer of its own, and a malformed turn's ``raw_text`` is incidental
+        prose rather than a submission. Only a short preview is kept, for
+        diagnosis; the reported prediction is ``AgentTrace.final_prediction``.
+        """
+        malformed = parsed.outcome is TurnOutcome.MALFORMED
         self.trace.add_event(
             step=ctx.step,
             type=EventType.SUBMIT,
             message_id=None,
             payload={
-                'final_answer': final,
-                'source': SubmissionSources.IMPLICIT_NO_NUDGE,
+                'source': (
+                    SubmissionSources.PARSE_ERROR_EXHAUSTED if malformed else SubmissionSources.IMPLICIT_NO_NUDGE
+                ),
+                'outcome': parsed.outcome.value,
+                'error': parsed.error,
+                'raw_text_preview': str(parsed.raw_text or '')[:120],
             },
         )
 

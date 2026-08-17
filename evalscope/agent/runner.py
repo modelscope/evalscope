@@ -125,6 +125,9 @@ def run_native_agent(
     )
 
     final_text = extract_final_answer(result, strategy)
+    # Single owner of the reported prediction: the adapter hook decided it, so
+    # record it here rather than letting the loop publish a competing value.
+    result.trace.final_prediction = final_text
     output = result.final_output
     output.completion = final_text  # normalise content via existing setter
     return InferenceResult(output=output, messages=result.messages, trace=result.trace)
