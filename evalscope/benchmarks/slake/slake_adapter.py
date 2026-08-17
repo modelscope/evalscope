@@ -1,16 +1,9 @@
 # flake8: noqa: E501
-import json
-import os
 import zipfile
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import (
-    DatasetDict,
-    Sample,
-    build_dataset_dict_from_record_map,
-    resolve_snapshot_or_local_path,
-)
+from evalscope.api.dataset import DatasetDict, Sample, download_dataset_file
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
@@ -98,51 +91,41 @@ and medical knowledge that has to be recalled on top of what the image shows.
 class SLAKEAdapter(VisionLanguageAdapter):
     """Data adapter for evalscope/SLAKE.
 
-    The dataset ships one JSON file per split plus a single ``imgs.zip``; the split file is read
-    directly and split into ``<language>_<answer type>`` subsets, the archive is opened once during
-    :meth:`load` and read member by member while samples are built.
+    Questions come from the standard remote dataset flow and are regrouped into
+    ``<language>_<answer type>`` subsets. Only the images need special handling: they ship as a
+    single ``imgs.zip``, which is opened once around the standard load and read member by member
+    while samples are built.
     """
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self.reformat_subset = True  # group samples by the subset_key set in record_to_sample
         self.category_map = SUBSET_TO_LANGUAGE
         # Archive handle and per-image cache; only valid while load() is running. The 2,094 test
         # questions share 180 images, so encoding each image once keeps one base64 string per image.
         self._image_archive: Optional[zipfile.ZipFile] = None
         self._image_cache: Dict[str, str] = {}
 
-    def load(self) -> Tuple[DatasetDict, None]:
-        """Download the split file and image archive, then group records into subsets."""
+    def load(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
+        """Open the image archive, then defer to the standard dataset flow."""
         unknown = [subset for subset in self.subset_list if subset not in SUBSET_TO_LANGUAGE]
         if unknown:
             raise ValueError(f'Unknown SLAKE subsets {unknown}. Valid subsets are: {list(SUBSET_TO_LANGUAGE)}')
 
-        split_file = f'{self.eval_split}.json'
-        dataset_path = resolve_snapshot_or_local_path(self, allow_file_pattern=[split_file, IMAGE_ARCHIVE])
-        with open(os.path.join(dataset_path, split_file), 'r', encoding='utf-8') as f:
-            records: List[Dict[str, Any]] = json.load(f)
-
-        record_map: Dict[str, List[Dict[str, Any]]] = {subset: [] for subset in self.subset_list}
-        for record in records:
-            subset = f"{record['q_lang']}_{record['answer_type'].lower()}"
-            if subset in record_map:
-                record_map[subset].append(record)
-
-        with zipfile.ZipFile(os.path.join(dataset_path, IMAGE_ARCHIVE)) as archive:
+        archive_path = download_dataset_file(
+            data_id_or_path=self.dataset_id,
+            file_path=IMAGE_ARCHIVE,
+            data_source=self.dataset_hub,
+            force_redownload=self.force_redownload,
+            cache_dir=self.dataset_dir,
+        )
+        with zipfile.ZipFile(archive_path) as archive:
             self._image_archive = archive
-            dataset_dict = build_dataset_dict_from_record_map(
-                record_map=record_map,
-                sample_fields=self.record_to_sample,
-                location=self.dataset_id,
-                limit=self.limit,
-                repeats=self.repeats,
-                shuffle=self.shuffle,
-                seed=None,
-            )
+            datasets = super().load()
         self._image_archive = None
         self._image_cache = {}
 
-        return dataset_dict, None
+        return datasets
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert one SLAKE question into a multimodal Sample."""
@@ -162,6 +145,7 @@ class SLAKEAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'],
+            subset_key=f"{record['q_lang']}_{record['answer_type'].lower()}",
             metadata={
                 'qid': record['qid'],
                 'img_name': img_name,
