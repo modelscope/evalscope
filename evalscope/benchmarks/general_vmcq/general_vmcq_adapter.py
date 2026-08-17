@@ -107,9 +107,9 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
     def _extract_images(self, record: Dict[str, Any]) -> Dict[int, str]:
         image_map: Dict[int, Any] = {}
         # prefer 'image_n' > 'images'
-        if any(record.get(f"image_{i + 1}") for i in range(GeneralVMCQAdapter.MAX_IMAGES)):
+        if any(record.get(f'image_{i + 1}') for i in range(GeneralVMCQAdapter.MAX_IMAGES)):
             for i in range(GeneralVMCQAdapter.MAX_IMAGES):
-                image_map[i + 1] = record.get(f"image_{i + 1}")
+                image_map[i + 1] = record.get(f'image_{i + 1}')
         elif record.get('images'):
             for i, image in enumerate(record['images']):
                 image_map[i + 1] = image
@@ -130,17 +130,17 @@ class GeneralVMCQAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 # generally, guessing from bytes is more reliable than from path extension
                 image_map[k] = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
             elif v is not None and not isinstance(v, str):
-                raise TypeError(f"Expect Image {k} as string (path, URL, or base64) or undecoded dict, got {type(v)}")
+                raise TypeError(f'Expect Image {k} as string (path, URL, or base64) or undecoded dict, got {type(v)}')
         return image_map
 
     def _extract_videos(self, record: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
         video_map: Dict[int, Dict[str, Any]] = {}
         for i in range(GeneralVMCQAdapter.MAX_VIDEOS):
-            video = record.get(f"video_{i + 1}")
+            video = record.get(f'video_{i + 1}')
             if video:
                 video_map[i + 1] = {
                     'url': video,
-                    'format': record.get(f"video_{i + 1}_format"),
+                    'format': record.get(f'video_{i + 1}_format'),
                 }
         return video_map
 
