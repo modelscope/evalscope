@@ -573,3 +573,34 @@ class TestVLMBenchmark(TestBenchmark):
     def test_count_qa_mock(self):
         """Test CountQA with mock LLM."""
         self._run_dataset_test('count_qa', limit=5, use_mock=True)
+
+    def test_phyx_mc(self):
+        """Test PhyX multiple-choice physical reasoning benchmark."""
+        dataset_args = {'subset_list': ['optics', 'modern_physics']}
+        self._run_dataset_test('phyx_mc', dataset_args=dataset_args, limit=5)
+
+    def test_phyx_mc_mock(self):
+        """Test PhyX-MC with mock LLM."""
+        dataset_args = {'subset_list': ['optics']}
+        self._run_dataset_test('phyx_mc', dataset_args=dataset_args, limit=5, use_mock=True)
+
+    def test_phyx_oe(self):
+        """Test PhyX open-ended physical reasoning benchmark (LLM-judged)."""
+        dataset_args = {'subset_list': ['optics', 'modern_physics']}
+        self._run_dataset_test('phyx_oe', dataset_args=dataset_args, limit=5)
+
+    def test_phyx_oe_mock(self):
+        """Test PhyX-OE with a mock model and a mock judge."""
+        dataset_args = {'subset_list': ['optics']}
+        self._run_dataset_test(
+            'phyx_oe',
+            dataset_args=dataset_args,
+            limit=5,
+            use_mock=True,
+            judge_model_args={'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM},
+        )
+
+    def test_phyx_oe_testmini(self):
+        """Test the official PhyX testmini split selection."""
+        dataset_args = {'subset_list': ['optics'], 'eval_split': 'test_mini'}
+        self._run_dataset_test('phyx_oe', dataset_args=dataset_args, limit=5)
