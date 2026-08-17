@@ -20,7 +20,7 @@ import re
 import uuid
 from typing import List, Optional
 
-from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, EventType, ParsedAction, ToolSchemaMode
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -163,14 +163,26 @@ class SweBenchBackticksStrategy(AgentStrategy):
         that don't look like envelopes either (e.g. the original task
         description) by stopping at the first non-system, non-assistant
         message after the last assistant turn.
+
+        System-injected nudges are ``ChatMessageUser`` too, and a run that
+        exhausts ``max_steps`` immediately after a nudge ends with one as its
+        last message — so it would otherwise be returned here as the patch.
+        They are identified from the trace's NUDGE events rather than by
+        matching reminder wording, for the same reason the nudge count itself
+        is loop-owned: text matching silently breaks when the wording changes.
         """
+        nudge_ids = {
+            event.message_id
+            for event in result.trace.events
+            if event.type == EventType.NUDGE and event.message_id is not None
+        }
         # Walk backwards collecting user messages produced AFTER the last
         # assistant turn — those are tool observations.
         observations: list[str] = []
         for msg in reversed(result.messages):
             if msg.role == 'assistant':
                 break
-            if msg.role == 'user':
+            if msg.role == 'user' and msg.id not in nudge_ids:
                 observations.append(str(msg.content or ''))
         for content in observations:
             if not content:

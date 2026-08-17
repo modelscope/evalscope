@@ -185,6 +185,14 @@ class AgentLoop:
         Returns True when a nudge was injected (caller should ``continue``);
         False when the strategy declined and the caller should treat the
         current output as an implicit final answer.
+
+        This path serves two distinct failures that share one budget: a turn
+        with no tool calls at all, and a malformed turn whose ``parsed.error``
+        left no usable tool calls. When the budget runs out both fall through
+        to ``_emit_implicit_submit``, which submits ``parsed.raw_text`` — a
+        reasonable answer for the former, but only incidental prose for the
+        latter. TODO: give exhausted parse-error streaks their own submission
+        source instead of reporting them as ``implicit_no_nudge``.
         """
         should_nudge = self.strategy.should_nudge(parsed, ctx)
         self._dbg(ctx, f'no_tool_calls, should_nudge={should_nudge}')

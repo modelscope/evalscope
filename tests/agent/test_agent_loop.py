@@ -10,6 +10,7 @@ Plan 覆盖点:
 """
 
 import asyncio
+import itertools
 import unittest
 from typing import List, Optional
 from unittest.mock import AsyncMock, MagicMock
@@ -18,13 +19,14 @@ import evalscope  # noqa: F401 - trigger strategy registration
 from evalscope.api.agent import (
     AgentContext,
     AgentLoop,
+    AgentStrategy,
     AgentTrace,
     EventType,
     ParsedAction,
     ToolExecutionOutput,
     ToolExecutor,
 )
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser, ContentImage
+from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageTool, ChatMessageUser, ContentImage
 from evalscope.api.model.model_output import ChatCompletionChoice, ModelOutput
 from evalscope.api.registry import get_strategy
 from evalscope.api.tool import ToolCall, ToolCallError
@@ -318,45 +320,53 @@ class TestAgentLoopCore(unittest.TestCase):
         self.assertEqual(result.messages[0].content, 'SYSTEM_PROMPT_X')
 
 
-class _AlwaysTextStrategy:
+class _AlwaysTextStrategy(AgentStrategy):
     """Minimal strategy stub that never yields tool calls.
 
     Used to exercise the loop's nudge budget without depending on any real
-    strategy's parsing rules. ``max_nudges`` is read by the default
-    ``should_nudge`` logic mirrored below.
+    strategy's parsing rules. It deliberately inherits ``should_nudge`` and
+    ``nudge_message`` from :class:`AgentStrategy` rather than restating them,
+    so these tests exercise the real defaults instead of a copy that could
+    drift from them.
     """
 
-    name = 'always_text'
+    name: str = 'always_text'
 
     def __init__(self, max_nudges: int) -> None:
         self.max_nudges = max_nudges
 
-    def build_system_prompt(self, ctx):
+    def build_system_prompt(self, ctx: AgentContext) -> None:
         return None
 
-    def prepare_messages(self, ctx):
+    def prepare_messages(self, ctx: AgentContext) -> List[ChatMessage]:
         return ctx.messages
 
-    def parse_output(self, output, ctx):
+    def parse_output(self, output: ModelOutput, ctx: AgentContext) -> ParsedAction:
         return ParsedAction(raw_text=output.choices[0].message.content)
 
-    def is_done(self, parsed, ctx):
+    def is_done(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         return parsed.final_answer is not None
 
-    def should_nudge(self, parsed, ctx):
-        return ctx.nudge_count < self.max_nudges
-
-    def nudge_message(self, parsed, ctx):
-        return parsed.error or 'please call a tool'
-
-    def tool_schema_mode(self):
+    def tool_schema_mode(self) -> str:
         return 'none'
 
-    def tools(self, ctx):
+    def tools(self, ctx: AgentContext) -> list:
         return []
 
-    def format_observation(self, call, observation, error, parsed, ctx):
+    def format_observation(self, call, observation, error, parsed, ctx) -> ChatMessageTool:
         return ChatMessageTool(content=str(observation), tool_call_id=call.id, function=call.function.name)
+
+
+#: Nudge budget each registered strategy is expected to expose.  Asserted
+#: explicitly (rather than read back from the strategy) so that silently
+#: widening a budget, or adding a strategy without reviewing its budget, fails
+#: this test instead of passing tautologically.
+EXPECTED_NUDGE_BUDGETS = {
+    'function_calling': 2,
+    'react': 2,
+    'swe_bench_toolcall': 1,
+    'swe_bench_backticks': 2,
+}
 
 
 class TestAgentLoopNudgeBudget(unittest.TestCase):
@@ -376,6 +386,13 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
         result = asyncio.run(loop.run(ctx))
         return model, ctx, result
 
+    def test_every_registered_strategy_has_a_reviewed_budget(self):
+        # A new strategy must be added to EXPECTED_NUDGE_BUDGETS deliberately;
+        # otherwise the budget assertions below would silently not cover it.
+        from evalscope.api.registry import STRATEGY_REGISTRY
+
+        self.assertEqual(set(STRATEGY_REGISTRY.list_keys()), set(EXPECTED_NUDGE_BUDGETS))
+
     def test_registered_strategies_stop_after_their_budget(self):
         # Parametrized over the live registry so a new strategy is covered
         # automatically. On the pre-fix code swe_bench_* would reach max_steps.
@@ -384,7 +401,8 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
         for name in STRATEGY_REGISTRY.list_keys():
             with self.subTest(strategy=name):
                 strategy = get_strategy(name)()
-                budget = strategy.max_nudges
+                budget = EXPECTED_NUDGE_BUDGETS[name]
+                self.assertEqual(strategy.max_nudges, budget)
                 model, ctx, result = self._run_all_text(strategy)
 
                 # One initial generate plus exactly ``budget`` retries.
@@ -395,6 +413,12 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
                                 if e.payload and e.payload.get('source') == 'nudge']
                 # Invariant: the loop-owned counter equals the observable nudges.
                 self.assertEqual(len(nudge_events), budget)
+                # An all-text turn carries no parse error, so the trace must
+                # tag these as the no-tool-call variant.
+                self.assertEqual(
+                    {e.payload.get('message') for e in nudge_events},
+                    {'no_tool_call_reminder'},
+                )
 
                 submit = [e for e in result.trace.events if e.type == EventType.SUBMIT]
                 self.assertEqual(len(submit), 1)
@@ -520,6 +544,46 @@ class TestAgentLoopNudgeContent(unittest.TestCase):
         self.assertEqual(len(nudges), 1)
         self.assertIn('bash', str(nudges[0].content).lower())
         self.assertNotIn('Fix the failing test.', str(nudges[0].content))
+
+
+class TestNudgeIsNotMistakenForASubmission(unittest.TestCase):
+    """A reminder must never be reported as the model's submission.
+
+    ``swe_bench_backticks`` archives observations as ``ChatMessageUser``, and so
+    is a nudge. When ``max_steps`` is reached immediately after a nudge the
+    reminder is the transcript's last message, so a naive reverse scan for "the
+    last user message that isn't an XML envelope" returns the reminder text as
+    the patch.
+    """
+
+    def test_backticks_extract_ignores_a_trailing_nudge(self):
+        # Alternate a valid fenced block with prose so the nudge streak never
+        # exhausts the budget; max_steps then runs out on a nudge turn.
+        strategy = get_strategy('swe_bench_backticks')()
+        outputs = itertools.cycle([
+            _make_output(content='```mswea_bash_command\nls\n```'),
+            _make_output(content='THOUGHT: let me think without emitting a command'),
+        ])
+
+        async def bash_handler(call, env):
+            return 'file1\nfile2'
+
+        model = MagicMock()
+        model.generate_async = AsyncMock(side_effect=lambda *a, **kw: next(outputs))
+        executor = ToolExecutor(handlers={'bash': bash_handler}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=10)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='fix the bug')])
+        result = asyncio.run(loop.run(ctx))
+
+        # Precondition: the run really did end on a nudge, otherwise this test
+        # would pass without exercising the guard.
+        nudge_ids = {e.message_id for e in result.trace.events if e.type == EventType.NUDGE}
+        self.assertIn(result.messages[-1].id, nudge_ids)
+
+        # The sentinel never fired, so there is no submission to recover.
+        answer = strategy.extract_final_answer(result)
+        self.assertEqual(answer, '')
+        self.assertNotIn('mswea_bash_command', answer)
 
 
 if __name__ == '__main__':
