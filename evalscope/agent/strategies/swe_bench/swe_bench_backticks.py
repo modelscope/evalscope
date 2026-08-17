@@ -180,7 +180,7 @@ class SweBenchBackticksStrategy(AgentStrategy):
             if msg.role == 'assistant':
                 break
             if msg.role == 'user' and msg.id not in nudge_ids:
-                observations.append(str(msg.content or ''))
+                observations.append(msg.text or '')
         for content in observations:
             if not content:
                 continue

@@ -167,7 +167,7 @@ class SweBenchToolcallStrategy(AgentStrategy):
         for msg in reversed(result.messages):
             if msg.role != 'tool':
                 continue
-            content = str(msg.content or '')
+            content = msg.text or ''
             if not content:
                 continue
             stripped = content.lstrip()

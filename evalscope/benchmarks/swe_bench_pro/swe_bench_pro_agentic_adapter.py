@@ -352,7 +352,9 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         last_assistant = ''
         for msg in reversed(result.messages):
             if getattr(msg, 'role', '') == 'assistant':
-                last_assistant = str(getattr(msg, 'content', '') or '') or getattr(msg, 'text', '') or ''
+                # ``msg.text`` filters the text parts out of list content; a
+                # bare ``str(content)`` would yield a Python repr instead.
+                last_assistant = getattr(msg, 'text', '') or ''
                 if last_assistant:
                     break
         try:

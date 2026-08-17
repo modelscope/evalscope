@@ -399,7 +399,11 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             last_assistant = ''
             for msg in reversed(result.messages):
                 if msg.role == 'assistant':
-                    last_assistant = str(msg.content or '') or msg.text or ''
+                    # ``msg.text`` is the only correct accessor: content may be a
+                    # list of ``Content`` parts (any reasoning model produces
+                    # one), and ``str()`` on that yields a Python repr, which is
+                    # always non-empty and so used to shadow this branch.
+                    last_assistant = msg.text or ''
                     if last_assistant:
                         break
             return extract_diff(last_assistant) or ''

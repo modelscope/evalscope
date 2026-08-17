@@ -222,6 +222,24 @@ class TestSweBenchBackticksExtractFinalAnswer(unittest.TestCase):
         result = self._make_result(messages=messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '')
 
+    def test_list_content_observation_is_read_as_text(self):
+        # Reasoning models produce list content. ``str(msg.content)`` on a list
+        # yields a Python repr, which is always non-empty and therefore silently
+        # became the payload; ``msg.text`` is the only correct accessor.
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+        messages = [
+            ChatMessageAssistant(content='```mswea_bash_command\ncat patch.txt\n```',
+                                 model='test', source='generate'),
+            ChatMessageUser(content=[
+                ContentReasoning(reasoning='the sentinel fired'),
+                ContentText(text='diff --git a/foo.py b/foo.py\n+fix'),
+            ]),
+        ]
+        result = self._make_result(messages=messages)
+        answer = self.strategy.extract_final_answer(result)
+        self.assertEqual(answer, 'diff --git a/foo.py b/foo.py\n+fix')
+        self.assertNotIn('ContentReasoning', answer)
+
 
 # ---------------------------------------------------------------------------
 # SweBenchToolcallStrategy parse_output / extract
@@ -433,6 +451,90 @@ class TestSweBenchToolcallExtractFinalAnswer(unittest.TestCase):
         ]
         result = self._make_result(messages=messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '')
+
+    def test_list_content_observation_is_read_as_text(self):
+        # Same defect class as the backticks case: ``str()`` on list content
+        # yields a Python repr instead of the submission payload.
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+        bash_call = _tool_call('bash', {'command': 'cat patch.txt'})
+        messages = [
+            ChatMessageAssistant(content='', tool_calls=[bash_call], model='test', source='generate'),
+            ChatMessageTool(
+                content=[
+                    ContentReasoning(reasoning='the sentinel fired'),
+                    ContentText(text='diff --git a/foo.py b/foo.py\n+fix'),
+                ],
+                tool_call_id='tc-1',
+                function='bash',
+            ),
+        ]
+        result = self._make_result(messages=messages)
+        answer = self.strategy.extract_final_answer(result)
+        self.assertEqual(answer, 'diff --git a/foo.py b/foo.py\n+fix')
+        self.assertNotIn('ContentReasoning', answer)
+
+
+class TestSweBenchAdapterDiffFallback(unittest.TestCase):
+    """The adapter's diff-recovery fallback must read message *text*.
+
+    When the sentinel protocol is not followed, both SWE-bench agentic adapters
+    fall back to scanning the last assistant message for a unified diff. They
+    used to read it via ``str(msg.content or '') or msg.text``: for a reasoning
+    model ``content`` is a ``list[Content]``, ``str()`` of which is a non-empty
+    Python repr, so the correct ``msg.text`` branch was unreachable and the
+    reported patch became that repr. ``extract_diff`` passes it straight
+    through, so the grader received a repr and scored 0.
+    """
+
+    def setUp(self):
+        from evalscope.agent.strategies.swe_bench.swe_bench_backticks import SweBenchBackticksStrategy
+        from evalscope.api.messages.content import ContentReasoning, ContentText
+
+        self.patch = (
+            'diff --git a/foo.py b/foo.py\n'
+            '--- a/foo.py\n'
+            '+++ b/foo.py\n'
+            '@@ -1 +1 @@\n'
+            '-old\n'
+            '+new\n'
+        )
+        # A reasoning model's assistant turn: list content, patch in a text part.
+        self.messages = [
+            ChatMessageAssistant(
+                content=[
+                    ContentReasoning(reasoning='I should emit the diff directly.'),
+                    ContentText(text=self.patch),
+                ],
+                model='test',
+                source='generate',
+            ),
+        ]
+        # Sentinel never fired, so the strategy yields '' and the fallback runs.
+        self.strategy = SweBenchBackticksStrategy()
+
+    def _result(self):
+        return AgentLoopResult(
+            messages=self.messages,
+            final_output=_make_output(text=''),
+            trace=AgentTrace(),
+        )
+
+    def _assert_clean_patch(self, answer: str) -> None:
+        self.assertIn('diff --git a/foo.py', answer)
+        self.assertNotIn('ContentReasoning', answer)
+        self.assertNotIn('ContentText', answer)
+        # A repr escapes newlines; a real patch keeps them.
+        self.assertNotIn('\\n', answer)
+
+    def test_swe_bench_agentic_fallback_recovers_the_patch(self):
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        self._assert_clean_patch(adapter._extract_final_answer(self._result(), self.strategy))
+
+    def test_swe_bench_pro_fallback_recovers_the_patch(self):
+        from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
+        adapter = object.__new__(SWEBenchProAgenticAdapter)
+        self._assert_clean_patch(adapter._extract_final_answer(self._result(), self.strategy))
 
 
 # ---------------------------------------------------------------------------
