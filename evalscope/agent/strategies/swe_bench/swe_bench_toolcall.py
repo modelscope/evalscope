@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import List, Optional
 
 from evalscope.api.agent import AgentContext, AgentLoopResult, AgentStrategy, ParsedAction, ToolSchemaMode
+from evalscope.api.agent.constants import NUDGE_PROMPT
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
@@ -85,10 +86,8 @@ class SweBenchToolcallStrategy(AgentStrategy):
         return parsed.final_answer is not None
 
     def should_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
-        # Allow at most one nudge; matches the ``FunctionCallingStrategy``
-        # philosophy but with a distinct marker so the two don't share state.
-        marker = 'No bash tool was called'
-        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and marker in str(m.content))
+        # Allow at most one nudge by matching the reminder appended by AgentLoop.
+        nudge_count = sum(1 for m in ctx.messages if m.role == 'user' and str(m.content) == NUDGE_PROMPT)
         return nudge_count < 1
 
     def tool_schema_mode(self) -> ToolSchemaMode:
