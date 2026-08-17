@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "pretty_name": "SLAKE",
+    "dataset_id": "evalscope/SLAKE",
+    "paper_url": "https://arxiv.org/abs/2102.09542",
+    "tags": [
+      "MultiModal",
+      "Medical",
+      "QA"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en_open",
+      "en_closed",
+      "zh_open",
+      "zh_closed"
+    ],
+    "description": "\n## Overview\n\nSLAKE is a bilingual (English / Chinese) radiology visual question answering benchmark built by\nphysicians on CT, MRI and X-Ray images. Questions cover both purely visual properties of the scan\nand medical knowledge that has to be recalled on top of what the image shows.\n\n## Task Description\n\n- **Task Type**: Medical visual question answering (free-form short answer)\n- **Input**: A radiology image plus a question in English or Chinese\n- **Output**: A single word or short phrase, in the language of the question\n- **Domain**: Radiology (chest, abdomen, brain, pelvis, neck)\n\n## Key Features\n\n- 2,094 test questions over 180 images, roughly balanced between English (1,061) and Chinese (1,033)\n- Every question is labelled `OPEN` (free answer) or `CLOSED` (answer drawn from a small closed set,\n  mostly yes/no), which is the breakdown the original paper reports\n- Questions span ten semantic types: organ, position, abnormality, knowledge-graph, modality, size,\n  plane, quantity, color and shape\n- Knowledge-graph questions (`base_type=kvqa`) ask about causes, symptoms, treatments and functions\n  that cannot be read off the image\n\n## Evaluation Notes\n\n- Primary metric: **Accuracy** by normalized exact match against the single reference answer\n- Reported as four subsets, `<language>_<open|closed>`, grouped into an English and a Chinese\n  category; the overall score is the sample-weighted mean\n- Normalization lower-cases, removes punctuation and parenthesised asides, maps yes/no synonyms\n  onto one label — required because Chinese references express the same polarity as\n  是的 / 有 / 包含 / 可以 or 不是 / 没有 / 不包含 / 不可以 — and unifies the X-Ray spellings, including\n  the Chinese X光 / X射线, because modality references stay in English in the Chinese half\n- Answers are read from the `ANSWER:` line requested by the prompt; when the model does not emit\n  one, the whole reply is normalized instead, so a reply that only restates the question scores 0\n- Exact match is strict by design, matching the original classification-style evaluation: a\n  reference such as `Lung, Spinal Cord`, a knowledge-graph list of treatments, or `T2` answered as\n  `T2-weighted` only counts when the model reproduces the reference wording, so open-ended\n  accuracy on the knowledge-graph questions is expected to be low\n- Images ship as a single `imgs.zip` (about 200 MB) and are read directly from the archive\n- [Paper](https://arxiv.org/abs/2102.09542) | [Project page](https://www.med-vqa.com/slake/)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 2094,
+    "subset_stats": [
+      {
+        "name": "en_open",
+        "sample_count": 645,
+        "prompt_length_mean": 195.09,
+        "prompt_length_min": 168,
+        "prompt_length_max": 257,
+        "prompt_length_std": 14.04,
+        "target_length_mean": 10.06,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 645,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "240x240",
+              "256x256",
+              "320x320",
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "240x240",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "en_closed",
+        "sample_count": 416,
+        "prompt_length_mean": 187.99,
+        "prompt_length_min": 162,
+        "prompt_length_max": 253,
+        "prompt_length_std": 15.61,
+        "target_length_mean": 2.9,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 416,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "240x240",
+              "256x256",
+              "320x320",
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "240x240",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "zh_open",
+        "sample_count": 613,
+        "prompt_length_mean": 67.07,
+        "prompt_length_min": 61,
+        "prompt_length_max": 79,
+        "prompt_length_std": 3.16,
+        "target_length_mean": 3.17,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 613,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "240x240",
+              "256x256",
+              "320x320",
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "240x240",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "zh_closed",
+        "sample_count": 420,
+        "prompt_length_mean": 65.44,
+        "prompt_length_min": 60,
+        "prompt_length_max": 82,
+        "prompt_length_std": 4.18,
+        "target_length_mean": 2.13,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 420,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "240x240",
+              "256x256",
+              "320x320",
+              "512x512"
+            ],
+            "resolution_range": {
+              "min": "240x240",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 130.2,
+      "min": 60,
+      "max": 257,
+      "std": 63.92
+    },
+    "target_length_mean": 5.03,
+    "computed_at": "2026-08-17T17:34:04.870036",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2094,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1024x1024",
+          "240x240",
+          "256x256",
+          "320x320",
+          "512x512"
+        ],
+        "resolution_range": {
+          "min": "240x240",
+          "max": "1024x1024"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "411b63eb",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~63.2KB]"
+            },
+            {
+              "text": "What modality is used to take this image?\nAnswer the question with a single word or phrase in English.\nThe last line of your response must be of the form \"ANSWER: <answer>\" (without quotes)."
+            }
+          ]
+        }
+      ],
+      "target": "CT",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "qid": 11934,
+        "img_name": "xmlab102/source.jpg",
+        "answer_type": "OPEN",
+        "content_type": "Modality",
+        "modality": "CT"
+      }
+    },
+    "subset": "en_open",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# SLAKE\n\n\n## Overview\n\nSLAKE is a bilingual (English / Chinese) radiology visual question answering benchmark built by\nphysicians on CT, MRI and X-Ray images. Questions cover both purely visual properties of the scan\nand medical knowledge that has to be recalled on top of what the image shows.\n\n## Task Description\n\n- **Task Type**: Medical visual question answering (free-form short answer)\n- **Input**: A radiology image plus a question in English or Chinese\n- **Output**: A single word or short phrase, in the language of the question\n- **Domain**: Radiology (chest, abdomen, brain, pelvis, neck)\n\n## Key Features\n\n- 2,094 test questions over 180 images, roughly balanced between English (1,061) and Chinese (1,033)\n- Every question is labelled `OPEN` (free answer) or `CLOSED` (answer drawn from a small closed set,\n  mostly yes/no), which is the breakdown the original paper reports\n- Questions span ten semantic types: organ, position, abnormality, knowledge-graph, modality, size,\n  plane, quantity, color and shape\n- Knowledge-graph questions (`base_type=kvqa`) ask about causes, symptoms, treatments and functions\n  that cannot be read off the image\n\n## Evaluation Notes\n\n- Primary metric: **Accuracy** by normalized exact match against the single reference answer\n- Reported as four subsets, `<language>_<open|closed>`, grouped into an English and a Chinese\n  category; the overall score is the sample-weighted mean\n- Normalization lower-cases, removes punctuation and parenthesised asides, maps yes/no synonyms\n  onto one label — required because Chinese references express the same polarity as\n  是的 / 有 / 包含 / 可以 or 不是 / 没有 / 不包含 / 不可以 — and unifies the X-Ray spellings, including\n  the Chinese X光 / X射线, because modality references stay in English in the Chinese half\n- Answers are read from the `ANSWER:` line requested by the prompt; when the model does not emit\n  one, the whole reply is normalized instead, so a reply that only restates the question scores 0\n- Exact match is strict by design, matching the original classification-style evaluation: a\n  reference such as `Lung, Spinal Cord`, a knowledge-graph list of treatments, or `T2` answered as\n  `T2-weighted` only counts when the model reproduces the reference wording, so open-ended\n  accuracy on the knowledge-graph questions is expected to be low\n- Images ship as a single `imgs.zip` (about 200 MB) and are read directly from the archive\n- [Paper](https://arxiv.org/abs/2102.09542) | [Project page](https://www.med-vqa.com/slake/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `slake` |\n| **Dataset ID** | [evalscope/SLAKE](https://modelscope.cn/datasets/evalscope/SLAKE/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2102.09542) |\n| **Tags** | `Medical`, `MultiModal`, `QA` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,094 |\n| Prompt Length (Mean) | 130.2 chars |\n| Prompt Length (Min/Max) | 60 / 257 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en_open` | 645 | 195.09 | 168 | 257 |\n| `en_closed` | 416 | 187.99 | 162 | 253 |\n| `zh_open` | 613 | 67.07 | 61 | 79 |\n| `zh_closed` | 420 | 65.44 | 60 | 82 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,094 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 240x240 - 1024x1024 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `en_open`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"411b63eb\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~63.2KB]\"\n        },\n        {\n          \"text\": \"What modality is used to take this image?\\nAnswer the question with a single word or phrase in English.\\nThe last line of your response must be of the form \\\"ANSWER: <answer>\\\" (without quotes).\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"CT\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"qid\": 11934,\n    \"img_name\": \"xmlab102/source.jpg\",\n    \"answer_type\": \"OPEN\",\n    \"content_type\": \"Modality\",\n    \"modality\": \"CT\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets slake \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['slake'],\n    dataset_args={\n        'slake': {\n            # subset_list: ['en_open', 'en_closed', 'zh_open']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SLAKE\n\n\n## 概述\n\nSLAKE 是一个双语（英语/中文）的放射学视觉问答基准数据集，由医生基于 CT、MRI 和 X 光图像构建。问题既涵盖影像本身的纯视觉属性，也包含需要结合医学知识才能回答的内容。\n\n## 任务描述\n\n- **任务类型**：医学视觉问答（自由形式的简短回答）\n- **输入**：一张放射学图像以及一条英语或中文问题\n- **输出**：单个单词或短语，语言需与问题一致\n- **领域**：放射学（胸部、腹部、脑部、骨盆、颈部）\n\n## 主要特点\n\n- 测试集包含 180 张图像上的 2,094 个问题，英语（1,061）和中文（1,033）大致均衡\n- 每个问题均标注为 `OPEN`（自由回答）或 `CLOSED`（答案来自小型封闭集合，多为是/否），这是原始论文所采用的划分方式\n- 问题涵盖十种语义类型：器官、位置、异常、知识图谱、模态、大小、平面、数量、颜色和形状\n- 知识图谱类问题（`base_type=kvqa`）涉及病因、症状、治疗和功能等无法直接从图像中读取的信息\n\n## 评估说明\n\n- **主要指标**：**准确率（Accuracy）**，通过归一化后的精确匹配（exact match）与单一参考答案进行比较\n- 结果按四个子集报告：`<language>_<open|closed>`，分为英语和中文两类；总体得分为样本加权平均值\n- 归一化处理包括：转为小写、移除标点符号和括号内的附加说明、将 yes/no 的同义词统一为单一标签（因中文参考答案使用“是的 / 有 / 包含 / 可以”或“不是 / 没有 / 不包含 / 不可以”表达相同极性），并统一 X 光的不同拼写（包括中文的“X光 / X射线”），因为中文部分中的模态名称仍保留英文形式\n- 答案从提示中要求的 `ANSWER:` 行读取；若模型未生成该行，则对整个回复进行归一化处理，因此仅重复问题的回复得分为 0\n- 精确匹配设计上较为严格，与原始分类式评估一致：例如参考答案为 `Lung, Spinal Cord`、知识图谱中的治疗列表，或 `T2` 被回答为 `T2-weighted` 时，只有模型完全复现参考措辞才算正确，因此知识图谱类开放问题的准确率预期较低\n- 图像以单个 `imgs.zip` 文件（约 200 MB）提供，并直接从压缩包中读取\n- [论文](https://arxiv.org/abs/2102.09542) | [项目主页](https://www.med-vqa.com/slake/)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `slake` |\n| **数据集ID** | [evalscope/SLAKE](https://modelscope.cn/datasets/evalscope/SLAKE/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2102.09542) |\n| **标签** | `Medical`, `MultiModal`, `QA` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,094 |\n| 提示词长度（平均） | 130.2 字符 |\n| 提示词长度（最小/最大） | 60 / 257 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en_open` | 645 | 195.09 | 168 | 257 |\n| `en_closed` | 416 | 187.99 | 162 | 253 |\n| `zh_open` | 613 | 67.07 | 61 | 79 |\n| `zh_closed` | 420 | 65.44 | 60 | 82 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 2,094 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 240x240 - 1024x1024 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `en_open`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"411b63eb\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~63.2KB]\"\n        },\n        {\n          \"text\": \"What modality is used to take this image?\\nAnswer the question with a single word or phrase in English.\\nThe last line of your response must be of the form \\\"ANSWER: <answer>\\\" (without quotes).\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"CT\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"qid\": 11934,\n    \"img_name\": \"xmlab102/source.jpg\",\n    \"answer_type\": \"OPEN\",\n    \"content_type\": \"Modality\",\n    \"modality\": \"CT\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets slake \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['slake'],\n    dataset_args={\n        'slake': {\n            # subset_list: ['en_open', 'en_closed', 'zh_open']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5493af6116964b6916a8a9bceed5b4e7",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-17T17:34:06.440030",
+  "translation_updated_at": "2026-08-17T17:34:12"
+}
