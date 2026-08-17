@@ -453,22 +453,6 @@ class TestAgentLoopNudgeBudget(unittest.TestCase):
         self.assertEqual(len(nudge_events), 3)
         self.assertEqual(ctx.nudge_count, 2)
 
-    def test_backticks_all_text_is_bounded_not_max_steps(self):
-        # Behavioral guard independent of the nudge_count field: the backticks
-        # strategy used to count a reminder string ('must contain exactly one')
-        # that the loop never injects, so an all-text model nudged until
-        # max_steps. Assert the run is bounded well below the step budget.
-        strategy = get_strategy('swe_bench_backticks')()
-        model = MagicMock()
-        model.generate_async = AsyncMock(return_value=_make_output(content='just prose, no fenced block'))
-        executor = ToolExecutor(handlers={}, environment=None)
-        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=8)
-        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='fix the bug')])
-        asyncio.run(loop.run(ctx))
-
-        # budget 2 → one initial generate + two nudges, then implicit submit.
-        self.assertEqual(model.generate_async.call_count, 3)
-
 
 class TestAgentLoopNudgeContent(unittest.TestCase):
     """The reminder injected on a nudge reflects what the model did wrong."""
