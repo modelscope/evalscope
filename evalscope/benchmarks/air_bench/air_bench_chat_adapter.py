@@ -354,8 +354,9 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             score.explanation = ' || '.join(raw_responses)
         else:
             logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
-            score.value = {'judge_score': 0.0, 'win_rate': 0.0}
-            score.main_score_name = 'judge_score'
+            # Omitting the metric keys drops the sample from the mean; a 0.0 would be averaged
+            # in as a real rating even though the judge scale starts at 1.
+            score.value = {}
             score.metadata = {'parse_failed': True, 'judge_raw': raw_responses}
         return score
 
@@ -389,6 +390,12 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
 
     @staticmethod
     def _extract_judge_scores(raw: str) -> List[str]:
+        # Anchor to the first non-empty line, the format the prompt asks for. Reading further
+        # lets prose numbers, or numbers quoted back from the candidate answer, become the scores.
         score_pattern = r'(?:10(?:\.0+)?|[0-9](?:\.\d+)?)'
-        match = re.fullmatch(rf'({score_pattern})[ \t]+({score_pattern})', raw.strip())
-        return list(match.groups()) if match else []
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            match = re.fullmatch(rf'({score_pattern})[\s,]+({score_pattern})', line.strip())
+            return list(match.groups()) if match else []
+        return []
