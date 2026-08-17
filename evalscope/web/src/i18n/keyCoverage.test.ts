@@ -147,3 +147,34 @@ describe('dictionaries stay in step with each other', () => {
     })
   })
 })
+
+describe('every declared key is reachable', () => {
+  it('declares no key that no call site can ask for', () => {
+    // The checks above run one way: a key a component asks for must exist. The
+    // other way round is just as silent -- a declared key nothing asks for is
+    // dead weight that reads as intentional, and translators keep paying for it.
+    //
+    // Limited by construction to keys outside a runtime-assembled prefix: under
+    // `` t(`trace.submitSource.${source}`) `` any suffix might be produced, so
+    // no static rule can call one dead. Those groups are only verifiable against
+    // the producing enum on the Python side, which this test cannot see.
+    const declared = flattenLocaleKeys(localeDictionaries.en as LocaleMap)
+    const prefixes = [...literalPrefixesInSource().keys()]
+    // Reachability is a weaker question than the checks above: a key counts as
+    // asked for if it appears as a string anywhere, since call sites also carry
+    // keys through descriptors, maps and variables rather than only `t('a.b')`.
+    const namespaces = new Set(declared.map((key) => key.split('.')[0]))
+    const referenced = new Set<string>()
+    for (const file of sourceFiles(SRC_ROOT)) {
+      const content = readFileSync(file, 'utf8')
+      for (const match of content.matchAll(/['"`]([A-Za-z_]\w*(?:\.[A-Za-z0-9_]+)+)['"`]/g)) {
+        if (namespaces.has(match[1].split('.')[0])) referenced.add(match[1])
+      }
+    }
+
+    const unreachable = declared.filter(
+      (key) => !referenced.has(key) && !prefixes.some((prefix) => key.startsWith(prefix)),
+    )
+    expect(unreachable).toEqual([])
+  })
+})
