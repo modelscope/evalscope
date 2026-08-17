@@ -232,8 +232,6 @@ async def _run_async(
                     break
 
     output = _to_model_output(final_text, model_name=getattr(model, 'name', '') or '')
-    # Single owner of the reported prediction, mirroring ``run_native_agent``.
-    trace.final_prediction = final_text
     return InferenceResult(output=output, messages=messages, trace=trace)
 
 

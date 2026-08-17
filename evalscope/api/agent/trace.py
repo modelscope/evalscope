@@ -111,18 +111,6 @@ class AgentTrace(BaseModel):
     total_usage: Optional[ModelUsage] = None
     """Aggregate token usage across every ``MODEL_GENERATE`` event."""
 
-    final_prediction: Optional[str] = None
-    """The prediction actually reported for this sample — single source of truth.
-
-    Written once, by whichever runner resolved it (``run_native_agent`` for the
-    AgentLoop path, ``run_external_agent`` for the bridge), because resolution
-    is an *adapter-level* decision: ``_extract_final_answer`` overrides may
-    layer their own fallback (e.g. SWE-bench recovering a diff from the last
-    assistant message) on top of ``strategy.extract_final_answer``. The loop
-    cannot know that value, so it must not publish a competing one — SUBMIT
-    payloads carry only what the loop itself observed.
-    """
-
     events: List[AgentTraceEvent] = Field(default_factory=list)
     """Ordered event log."""
 
