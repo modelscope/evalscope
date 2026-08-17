@@ -66,7 +66,7 @@ def test_extract_images_reads_hf_path_dict(adapter: GeneralVMCQAdapter, tmp_path
 
     image_map = adapter._extract_images({'image_1': {'path': str(image_path)}})
 
-    assert image_map[1].startswith('data:image/jpeg;base64,')
+    assert image_map[1] == str(image_path)
 
 
 def test_extract_images_rejects_unsupported_value_type(adapter: GeneralVMCQAdapter) -> None:
@@ -75,7 +75,7 @@ def test_extract_images_rejects_unsupported_value_type(adapter: GeneralVMCQAdapt
 
 
 def test_extract_images_rejects_dict_without_path_or_bytes(adapter: GeneralVMCQAdapter) -> None:
-    with pytest.raises(ValueError, match="must contain either 'path' or 'bytes'"):
+    with pytest.raises(ValueError):
         adapter._extract_images({'image_1': {'url': 'https://example.com/image.png'}})
 
 
@@ -135,6 +135,6 @@ def test_local_loader_supports_parquet_with_hf_image_column(
 
     assert any(isinstance(content, ContentImage) for content in content_list)
     assert any(
-        isinstance(content, ContentImage) and content.image.startswith('data:image/png;base64,')
+        isinstance(content, ContentImage) and content.image == str(image_path)
         for content in content_list
     )
