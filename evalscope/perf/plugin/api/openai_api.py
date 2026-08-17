@@ -220,18 +220,18 @@ class OpenaiPlugin(DefaultApiPlugin):
             return
         if response['object'] == 'chat.completion':
             for choice in response['choices']:
-                delta_contents[choice['index']] = [choice['message']['content']]
+                delta_contents[choice['index']] = [choice['message'].get('content') or '']
         elif response['object'] == 'text_completion':
             for choice in response['choices']:
                 if 'text' in choice and 'index' in choice:
-                    delta_contents[choice['index']].append(choice['text'])
+                    delta_contents[choice['index']].append(choice.get('text') or '')
         elif response['object'] == 'chat.completion.chunk':
             for choice in response['choices']:
                 if 'delta' in choice and 'index' in choice:
                     delta = choice['delta']
                     idx = choice['index']
                     if 'content' in delta:
-                        delta_contents[idx].append(delta['content'])
+                        delta_contents[idx].append(delta.get('content') or '')
 
     def __process_no_object(self, response, delta_contents):
         #  assume the response is a single choice
@@ -242,9 +242,9 @@ class OpenaiPlugin(DefaultApiPlugin):
                 delta = choice['delta']
                 idx = choice['index']
                 if 'content' in delta:
-                    delta_contents[idx].append(delta['content'])
+                    delta_contents[idx].append(delta.get('content') or '')
             else:
-                delta_contents[choice['index']] = [choice['message']['content']]
+                delta_contents[choice['index']] = [choice['message'].get('content') or '']
 
     def __calculate_tokens_from_content(self, request, content):
         input_tokens = output_tokens = 0
