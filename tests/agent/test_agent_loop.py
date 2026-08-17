@@ -452,7 +452,16 @@ class TestAgentLoopNudgeContent(unittest.TestCase):
     """The reminder injected on a nudge reflects what the model did wrong."""
 
     def _nudge_messages(self, result):
-        return [m for m in result.messages if m.role == 'user' and m is not result.messages[0]]
+        # Identify nudges by the trace's NUDGE message_ids rather than by
+        # position: a strategy that injects a system prompt shifts the initial
+        # user message, and positional filtering would report the task
+        # description as a nudge. Same principle as the fix under test — read
+        # the authoritative record instead of inferring from the transcript.
+        nudge_ids = {
+            e.message_id
+            for e in result.trace.events if e.type == EventType.NUDGE and e.message_id is not None
+        }
+        return [m for m in result.messages if m.id in nudge_ids]
 
     def test_parse_error_reaches_the_model(self):
         # function_calling with a per-turn cap: two tool calls -> ParsedAction
@@ -492,6 +501,25 @@ class TestAgentLoopNudgeContent(unittest.TestCase):
         nudges = self._nudge_messages(result)
         self.assertTrue(nudges)
         self.assertNotIn('submit', str(nudges[0].content).lower())
+
+    def test_reminder_identified_correctly_with_system_prompt(self):
+        # swe_bench_toolcall always injects a system prompt, so messages[0] is
+        # the system message and the task description sits at index 1. The
+        # reminder must still be identified correctly (and must not be the task
+        # description) — positional filtering would get this wrong.
+        strategy = get_strategy('swe_bench_toolcall')()
+        model = MagicMock()
+        model.generate_async = AsyncMock(return_value=_make_output(content='thinking about the repo'))
+        executor = ToolExecutor(handlers={}, environment=None)
+        loop = AgentLoop(model=model, strategy=strategy, tool_executor=executor, max_steps=6)
+        ctx = AgentContext(sample_id='s', messages=[ChatMessageUser(content='Fix the failing test.')])
+        result = asyncio.run(loop.run(ctx))
+
+        self.assertEqual(result.messages[0].role, 'system')
+        nudges = self._nudge_messages(result)
+        self.assertEqual(len(nudges), 1)
+        self.assertIn('bash', str(nudges[0].content).lower())
+        self.assertNotIn('Fix the failing test.', str(nudges[0].content))
 
 
 if __name__ == '__main__':
