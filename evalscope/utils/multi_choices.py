@@ -165,8 +165,7 @@ _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，]\s*[A-Z
 _PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,]*)')
 _PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，]*)')
 
-_LABEL_SEPARATOR = r'[,，]|\s+and\s+|\s+'
-_LABEL_SEPARATOR_ZH = r'[,，]|\s+和\s+'
+_LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
@@ -180,21 +179,28 @@ def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Option
     return None
 
 
-def _is_label_shaped(capture: str, separator: str, allowed_options: set[str]) -> bool:
-    """Whether a capture holds nothing but labels of the current sample."""
-    capture = capture.strip().rstrip('。.')
-    listed = {part.strip() for part in re.split(separator, capture) if part.strip()}
-    if listed and listed.issubset(allowed_options):
-        return True
-    run = set(capture)
-    return bool(run) and run.issubset(allowed_options)
+def _label_prefix(capture: str, allowed_options: set[str]) -> str:
+    """Leading part of a capture that holds nothing but labels of the current sample.
+
+    Models routinely justify the choice in the same breath ('ANSWER: B, not C'), and a
+    capture rejected as a whole loses the label with the prose: the reply then reaches
+    `_fallback_parse_answer`, which answers with the last capital - typically a distractor
+    named in that justification.
+    """
+    end = 0
+    for token in _LABEL_TOKEN_RE.finditer(capture):
+        word = token.group(0)
+        if word in allowed_options or set(word).issubset(allowed_options):
+            end = token.end()
+            continue
+        break
+    return capture[:end]
 
 
 def _last_labelled_answer(
     text: str,
     marker_re: re.Pattern,
     plain_label_re: re.Pattern,
-    separator: str,
     allowed_options: set[str],
 ) -> Optional[str]:
     """Label of the last answer marker that is actually followed by one.
@@ -206,8 +212,11 @@ def _last_labelled_answer(
         tail = text[marker.end():]
         for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
             label = label_re.match(tail)
-            if label is not None and _is_label_shaped(label.group(1), separator, allowed_options):
-                return label.group(1)
+            if label is None:
+                continue
+            prefix = _label_prefix(label.group(1), allowed_options)
+            if prefix:
+                return prefix
     return None
 
 
@@ -233,7 +242,7 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    matched = _last_labelled_answer(text, _ANSWER_MARKER_RE, _PLAIN_LABEL_RE, _LABEL_SEPARATOR, allowed_options)
+    matched = _last_labelled_answer(text, _ANSWER_MARKER_RE, _PLAIN_LABEL_RE, allowed_options)
 
     if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()
@@ -292,9 +301,7 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    matched = _last_labelled_answer(
-        text, _ANSWER_MARKER_ZH_RE, _PLAIN_LABEL_ZH_RE, _LABEL_SEPARATOR_ZH, allowed_options
-    )
+    matched = _last_labelled_answer(text, _ANSWER_MARKER_ZH_RE, _PLAIN_LABEL_ZH_RE, allowed_options)
 
     if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()

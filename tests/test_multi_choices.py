@@ -162,6 +162,44 @@ def test_parse_answers_skips_a_trailing_marker_without_a_label() -> None:
     assert parse_answers(_make_state('ANSWER: B</think>ANSWER: [LETTER]')) == {'B'}
 
 
+JUSTIFIED_ANSWERS = [
+    'ANSWER: B because it fits',
+    'ANSWER: B is the correct choice',
+    'ANSWER: B second option',
+    'ANSWER: B - energy is conserved',
+    'ANSWER: B; energy is conserved',
+    'ANSWER: B because Energy is conserved',
+    'ANSWER: B is correct per Newton',
+    'ANSWER: B because option A is wrong',
+    'ANSWER: B, not C',
+    'ANSWER: B is correct, D is a distractor',
+]
+
+
+def test_parse_answers_reads_a_label_that_is_justified_in_the_same_breath() -> None:
+    """A label must be read from its own token, not from the whole trailing sentence.
+
+    Regression test: the capture used to be validated as a whole, so the label was
+    discarded together with the justification and the reply fell through to the
+    last-capital fallback - which answers with whichever distractor the justification
+    happens to name last.
+    """
+    for completion in JUSTIFIED_ANSWERS:
+        assert parse_answers(_make_state(completion)) == {'B'}, completion
+
+
+def test_parse_answers_zh_reads_a_label_that_is_justified_in_the_same_breath() -> None:
+    for completion in ['答案：B，因为能量守恒', '答案：B，因为A是错的', '答案：B是正确的，D是干扰项']:
+        assert parse_answers_zh(_make_state(completion)) == {'B'}, completion
+
+
+def test_parse_answers_still_rejects_prose_that_names_no_label() -> None:
+    """Reading a label prefix must not turn an unparseable reply into an answer."""
+    assert parse_answers(_make_state('ANSWER: None of the above')) == set()
+    assert parse_answers(_make_state('ANSWER: A B C D are all plausible')) == set()
+    assert parse_answers_zh(_make_state('答案：无法确定')) == set()
+
+
 def test_completion_argument_overrides_raw_model_output() -> None:
     """An explicit `completion` must be parsed instead of the raw model output.
 
