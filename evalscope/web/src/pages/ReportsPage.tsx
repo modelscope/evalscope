@@ -7,7 +7,7 @@ import { useCompareSelection, useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useBatchDelete } from '@/hooks/useBatchDelete'
 import * as reportsApi from '@/api/reports'
-import type { ListReportsResponse, ReportSummary } from '@/api/types'
+import type { ListReportsGroupedResponse, ListReportsResponse, ReportGroup, ReportSummary } from '@/api/types'
 import Skeleton from '@/components/ui/Skeleton'
 import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import Pagination from '@/components/ui/Pagination'
@@ -19,6 +19,7 @@ import EmptyStateSystem, {
 import ReportFiltersBar, { type ReportFilters } from '@/components/reports/ReportFilters'
 import ReportCard from '@/components/reports/ReportCard'
 import ReportsTable from '@/components/reports/ReportsTable'
+import ReportGroupList from '@/components/reports/ReportGroupList'
 import SelectionTray from '@/components/reports/SelectionTray'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
@@ -30,6 +31,7 @@ const PAGE_SIZE = 20
 
 /** Stable placeholders so an unresolved listing keeps a single identity. */
 const EMPTY_REPORTS: ReportSummary[] = []
+const EMPTY_GROUPS: ReportGroup[] = []
 const EMPTY_FACETS: string[] = []
 
 const defaultFilters: ReportFilters = {
@@ -38,7 +40,20 @@ const defaultFilters: ReportFilters = {
   datasets: [],
   sortBy: 'time',
   sortOrder: 'desc',
+  groupByModel: false,
 }
+
+/**
+ * `listReports`/`listReportsGrouped` are two distinct endpoints with two
+ * distinct response shapes (see `api/reports.ts`) so that every existing
+ * flat-list caller is unaffected by grouping. This page is the one caller
+ * that needs both, so it tags whichever one it fetched with a `grouped`
+ * discriminant locally, rather than pushing that union into the shared API
+ * types.
+ */
+type ReportsListing =
+  | ({ grouped: false } & ListReportsResponse)
+  | ({ grouped: true } & ListReportsGroupedResponse)
 
 export default function ReportsPage() {
   const { t } = useLocale()
@@ -86,18 +101,24 @@ export default function ReportsPage() {
   // Fetch reports on root/scan/filter/page change. When any dependency changes
   // the previous in-flight request is aborted; its late/aborted response is
   // dropped so only the newest request updates the UI.
-  const listing = useAsyncResource(
-    (signal): Promise<ListReportsResponse> => reportsApi.listReports({
-      rootPath,
-      search: debouncedSearch || undefined,
-      models: filters.models.length ? filters.models : undefined,
-      datasets: filters.datasets.length ? filters.datasets : undefined,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      page,
-      pageSize: PAGE_SIZE,
-      signal,
-    }),
+  const listing = useAsyncResource<ReportsListing>(
+    async (signal) => {
+      const params = {
+        rootPath,
+        search: debouncedSearch || undefined,
+        models: filters.models.length ? filters.models : undefined,
+        datasets: filters.datasets.length ? filters.datasets : undefined,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        page,
+        pageSize: PAGE_SIZE,
+        signal,
+      }
+      if (filters.groupByModel) {
+        return { grouped: true, ...(await reportsApi.listReportsGrouped(params)) }
+      }
+      return { grouped: false, ...(await reportsApi.listReports(params)) }
+    },
     [
       rootPath,
       scanToken,
@@ -106,22 +127,45 @@ export default function ReportsPage() {
       filters.datasets,
       filters.sortBy,
       filters.sortOrder,
+      filters.groupByModel,
       page,
     ],
     { enabled: Boolean(rootPath), fallbackMessage: t('common.loadError') },
   )
 
-  const reports = listing.data?.reports ?? EMPTY_REPORTS
-  const total = listing.data?.total ?? 0
-  const availableModels = listing.data?.filters.available_models ?? EMPTY_FACETS
-  const availableDatasets = listing.data?.filters.available_datasets ?? EMPTY_FACETS
+  const listingData = listing.data
+  const grouped = listingData?.grouped ?? false
+  const reports: ReportSummary[] = listingData && !listingData.grouped ? listingData.reports : EMPTY_REPORTS
+  const groups: ReportGroup[] = listingData && listingData.grouped ? listingData.reports : EMPTY_GROUPS
+  const total = listingData?.total ?? 0
+  const availableModels = listingData?.filters.available_models ?? EMPTY_FACETS
+  const availableDatasets = listingData?.filters.available_datasets ?? EMPTY_FACETS
   const loading = listing.loading
   const hasLoaded = listing.data !== undefined || Boolean(listing.error)
+  const isEmpty = grouped ? groups.length === 0 : reports.length === 0
+
+  // Which model rows are expanded in grouped view. Reset on every reload so
+  // a new filter/sort/page doesn't carry stale expand state.
+  const [expandedModels, setExpandedModels] = useState<Set<string>>(new Set())
+  const handleToggleExpand = useCallback((modelName: string) => {
+    setExpandedModels((prev) => {
+      const next = new Set(prev)
+      if (next.has(modelName)) next.delete(modelName)
+      else next.add(modelName)
+      return next
+    })
+  }, [])
 
   // ---- Selection helpers ----
+  // In grouped view, "this page" means every child report under every
+  // model row shown - selection/compare/delete act on the real reports
+  // underneath, whether or not their group is currently expanded.
   const currentPageNames = useMemo(
-    () => reports.map((r) => formatReportRef(reportRefFromSummary(r))),
-    [reports],
+    () =>
+      grouped
+        ? groups.flatMap((g) => g.refs)
+        : reports.map((r) => formatReportRef(reportRefFromSummary(r))),
+    [grouped, groups, reports],
   )
   const allSelected = currentPageNames.length > 0 && currentPageNames.every((n) => selectedForCompare.includes(n))
 
@@ -155,6 +199,18 @@ export default function ReportsPage() {
     setCompareSelection(currentPageNames.reduce(addToSelection, selectedForCompare))
   }, [allSelected, selectedForCompare, currentPageNames, setCompareSelection])
 
+  // Select/deselect every report under one grouped model row at once.
+  const handleSelectGroup = useCallback(
+    (refs: string[], select: boolean) => {
+      if (select) {
+        setCompareSelection(refs.reduce(addToSelection, selectedForCompare))
+        return
+      }
+      setCompareSelection(selectedForCompare.filter((n) => !refs.includes(n)))
+    },
+    [selectedForCompare, setCompareSelection],
+  )
+
   const handleCardClick = useCallback(
     (ref: string) => {
       const { runId, modelId } = parseReportRef(ref)
@@ -165,13 +221,20 @@ export default function ReportsPage() {
     [navigate, rootPath],
   )
 
-  const handleCompare = useCallback(() => {
-    if (selectedForCompare.length >= 2) {
+  const handleCompareRefs = useCallback(
+    (refs: string[]) => {
+      if (refs.length < 2) return
       const params = new URLSearchParams({ root_path: rootPath })
-      for (const ref of selectedForCompare) params.append('report', ref)
+      for (const ref of refs) params.append('report', ref)
       navigate(`/compare?${params.toString()}`)
-    }
-  }, [selectedForCompare, navigate, rootPath])
+    },
+    [navigate, rootPath],
+  )
+
+  const handleCompare = useCallback(
+    () => handleCompareRefs(selectedForCompare),
+    [handleCompareRefs, selectedForCompare],
+  )
 
   const handleViewHtml = useCallback(() => {
     if (selectedForCompare.length === 1) {
@@ -192,14 +255,22 @@ export default function ReportsPage() {
   // Deleting reports its own failure; a load failure comes from the resource.
   const error = deletion.error ?? (listing.error || null)
 
+  // Selection is stored by ref, but the current page's reports live either flat
+  // or nested under groups - flatten once so a pending delete can always show
+  // a real report's label regardless of view mode or expand state.
+  const allPageReports = useMemo(
+    () => (grouped ? groups.flatMap((g) => g.children) : reports),
+    [grouped, groups, reports],
+  )
+
   const pendingDeleteItems = useMemo(
     () =>
       selectedForCompare.map((ref) => {
-        const report = reports.find((r) => formatReportRef(reportRefFromSummary(r)) === ref)
+        const report = allPageReports.find((r) => formatReportRef(reportRefFromSummary(r)) === ref)
         if (!report) return ref
         return `${report.model_name} · ${datasetLabel(report)}`
       }),
-    [selectedForCompare, reports],
+    [selectedForCompare, allPageReports],
   )
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -252,7 +323,7 @@ export default function ReportsPage() {
             <Skeleton key={i} height={64} className="rounded-[var(--radius)]" />
           ))}
         </div>
-      ) : reports.length === 0 ? (
+      ) : isEmpty ? (
         <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
           <EmptyStateSystem
             reason={emptyReason}
@@ -265,6 +336,38 @@ export default function ReportsPage() {
             onAction={handleEmptyAction}
           />
         </div>
+      ) : grouped ? (
+        <>
+          {/* Desktop (>=1024px): each model row expands into the same table used flat. */}
+          <div className="hidden lg:block">
+            <ReportGroupList
+              groups={groups}
+              expandedModels={expandedModels}
+              onToggleExpand={handleToggleExpand}
+              selected={selectedForCompare}
+              onToggleSelect={handleToggleSelect}
+              onSelectGroup={handleSelectGroup}
+              onRowClick={handleCardClick}
+              onCompareGroup={handleCompareRefs}
+              variant="table"
+            />
+          </div>
+
+          {/* Narrow (<1024px): each model row expands into the same cards used flat. */}
+          <div className="lg:hidden">
+            <ReportGroupList
+              groups={groups}
+              expandedModels={expandedModels}
+              onToggleExpand={handleToggleExpand}
+              selected={selectedForCompare}
+              onToggleSelect={handleToggleSelect}
+              onSelectGroup={handleSelectGroup}
+              onRowClick={handleCardClick}
+              onCompareGroup={handleCompareRefs}
+              variant="cards"
+            />
+          </div>
+        </>
       ) : (
         <>
           {/* Desktop (>=1024px): tabular view with fixed, ordered columns. */}

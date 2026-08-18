@@ -10,7 +10,7 @@ import mimetypes
 import os
 import shutil
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -32,6 +32,7 @@ from evalscope.service.api_models import (
     AnalysisResponse,
     DataFrameResponse,
     DeleteReportResponse,
+    ListReportsGroupedResponse,
     ListReportsResponse,
     LoadReportResponse,
     PredictionsResponse,
@@ -252,6 +253,48 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
     }
 
 
+def _group_items_by_model(items: List[dict]) -> List[dict]:
+    """Collapse per-report list items into one row per model, for display only.
+
+    This is a pure in-memory rollup over metadata `_build_report_meta` already
+    loaded - no report is read, written, moved, or merged, and no group ever
+    picks a "winning" source for a dataset that appears in more than one of
+    the model's reports. Every constituent report keeps its own identity
+    (`run_id`/`model_id`) and its own honestly-attributed `primary_metrics`;
+    the group only ever aggregates counts (`report_count`, `dataset_count`,
+    `num_samples`) and lists which reports it rolls up (`children`, `refs`).
+
+    Preserves `model_name`/`dataset_name`/`timestamp` keys with the same
+    meaning as a flat item so the existing sort machinery works unmodified.
+    """
+    order: List[str] = []
+    buckets: Dict[str, List[dict]] = {}
+    for it in items:
+        model_name = it['model_name']
+        if model_name not in buckets:
+            buckets[model_name] = []
+            order.append(model_name)
+        buckets[model_name].append(it)
+
+    groups: List[dict] = []
+    for model_name in order:
+        children = sorted(buckets[model_name], key=lambda c: c['timestamp'], reverse=True)
+        dataset_names = sorted({ds for child in children for ds in child['_datasets']})
+        stripped_children = [{k: v for k, v in child.items() if k != '_datasets'} for child in children]
+
+        groups.append({
+            'model_name': model_name,
+            'dataset_name': ', '.join(dataset_names),
+            'timestamp': children[0]['timestamp'],
+            'report_count': len(children),
+            'dataset_count': len(dataset_names),
+            'num_samples': sum(child['num_samples'] for child in children),
+            'refs': [f"{child['run_id']}/{child['model_id']}" for child in children],
+            'children': stripped_children,
+        })
+    return groups
+
+
 def _report_to_service_dict(report: Report) -> dict:
     """Serialize the persisted Report v2 contract without boundary-time reinjection."""
     return report.to_dict()
@@ -328,13 +371,14 @@ def _list_response(
     available_datasets: List[str],
     fingerprints: List[Tuple[str, Fingerprint]],
     query_parts: List[str],
+    grouped: bool = False,
 ) -> ResponseReturnValue:
     """Serialize the page with an ETag so unchanged responses revalidate as 304."""
     # Project internal keys into fresh dicts: meta objects are shared with the
     # cache, so mutating them here would corrupt later requests.
     response_reports = [{k: v for k, v in it.items() if k != '_datasets'} for it in page_items]
     resp = json_response(
-        ListReportsResponse,
+        ListReportsGroupedResponse if grouped else ListReportsResponse,
         {
             'reports': response_reports,
             'total': total,
@@ -362,6 +406,9 @@ def list_reports() -> ResponseReturnValue:
         datasets   (str):   semicolon-separated dataset filter
         sort_by    (str):   model / dataset / time (default: time)
         sort_order (str):   asc / desc (default: desc)
+        group_by   (str):   'model' to roll same-model reports up into one row each
+                             (display only - no report is read, written, or merged);
+                             omit for the flat, one-row-per-report listing
         page       (int):   page number (default: 1)
         page_size  (int):   items per page (default: 20)
     """
@@ -374,10 +421,13 @@ def list_reports() -> ResponseReturnValue:
         return jsonify({'error': f'unsupported query parameters: {", ".join(removed_score_params)}'}), 400
     sort_by = request.args.get('sort_by', 'time')
     sort_order = request.args.get('sort_order', 'desc')
+    group_by = request.args.get('group_by', '').strip().lower()
     if sort_by not in _SORT_KEYS:
         return jsonify({'error': f'unsupported sort_by: {sort_by}'}), 400
     if sort_order not in {'asc', 'desc'}:
         return jsonify({'error': f'unsupported sort_order: {sort_order}'}), 400
+    if group_by and group_by != 'model':
+        return jsonify({'error': f'unsupported group_by: {group_by}'}), 400
 
     try:
         items, fingerprints = _load_report_metas(root)
@@ -390,6 +440,9 @@ def list_reports() -> ResponseReturnValue:
         models_filter = request.args.get('models', '').strip()
         datasets_filter = request.args.get('datasets', '').strip()
         items = _apply_report_filters(items, search, models_filter, datasets_filter)
+
+        if group_by == 'model':
+            items = _group_items_by_model(items)
 
         items.sort(key=_SORT_KEYS[sort_by], reverse=sort_order == 'desc')
 
@@ -404,11 +457,20 @@ def list_reports() -> ResponseReturnValue:
             f'datasets={datasets_filter}',
             f'sort_by={sort_by}',
             f'sort_order={sort_order}',
+            f'group_by={group_by}',
             f'page={page}',
             f'page_size={page_size}',
         ]
         return _list_response(
-            page_items, total, page, page_size, available_models, available_datasets, fingerprints, query_parts
+            page_items,
+            total,
+            page,
+            page_size,
+            available_models,
+            available_datasets,
+            fingerprints,
+            query_parts,
+            grouped=group_by == 'model',
         )
     except Exception:
         logger.error('Failed to list reports', exc_info=True)
