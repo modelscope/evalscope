@@ -356,6 +356,15 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         return self._task_config.seed
 
+    def is_user_configured(self, field_name: str) -> bool:
+        """Whether ``dataset_args`` set *field_name* explicitly.
+
+        An adapter that derives one of these fields in ``__init__`` must check this first: the
+        assignment writes through the property setter into the meta, and ``dataset_args`` is merged
+        before the adapter is built, so an unguarded assignment discards the user's value silently.
+        """
+        return field_name in self._benchmark_meta.user_overrides
+
     @property
     def dataset_dir(self) -> str:
         """

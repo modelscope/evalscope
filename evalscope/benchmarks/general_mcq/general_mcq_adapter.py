@@ -80,13 +80,15 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
         self.use_cot = self.extra_params.get('use_cot', False)
 
         if self.multiple_correct and self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+            default_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
         elif self.multiple_correct:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
+            default_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
         elif self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
+            default_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
         else:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
+            default_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
+        if not self.is_user_configured('prompt_template'):
+            self.prompt_template = default_template
 
     def load_from_disk(self, **kwargs):
         return super().load_from_disk(use_local_loader=True)

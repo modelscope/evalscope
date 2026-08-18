@@ -52,8 +52,8 @@ def eval_cmmmu(entry):
                 return '错'
             else:
                 # Seed the tie-break from the prediction so rescoring the same output agrees. Sorted
-                # because `get_TF_prediction` builds the list through a set, whose order varies
-                # between processes.
+                # because a cache written before `get_TF_prediction` sorted its result holds this
+                # list in an arbitrary order.
                 return random.Random(content_seed(*sorted(pred_list))).choice(['对', '错'])
 
         answer = entry['answer']
@@ -242,8 +242,9 @@ def get_TF_prediction(response):
     key_responses = get_key_subresponses(response)
 
     pred_list = key_responses.copy()  # keep the original string response
-    # remove duplicates
-    pred_list = list(set(pred_list))
+    # remove duplicates; sorted because set iteration order varies with PYTHONHASHSEED and this
+    # list is persisted into the review metadata
+    pred_list = sorted(set(pred_list))
 
     return pred_list
 

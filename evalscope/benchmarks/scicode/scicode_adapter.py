@@ -96,8 +96,10 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         super().__init__(**kwargs)
 
         self.provide_background = self.extra_params.get('provide_background', False)
-        self.system_prompt = INITIAL_PROMPT_PROVIDE_BACKGROUND if self.provide_background else INITIAL_PROMPT
-        self.prompt_template = SUBPROBLEM_PROMPT_PROVIDE_BACKGROUND if self.provide_background else SUBPROBLEM_PROMPT
+        if not self.is_user_configured('system_prompt'):
+            self.system_prompt = INITIAL_PROMPT_PROVIDE_BACKGROUND if self.provide_background else INITIAL_PROMPT
+        if not self.is_user_configured('prompt_template'):
+            self.prompt_template = SUBPROBLEM_PROMPT_PROVIDE_BACKGROUND if self.provide_background else SUBPROBLEM_PROMPT  # noqa: E501
         self.docker_path = Path(__file__).parent / 'docker'
 
     def load(self):

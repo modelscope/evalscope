@@ -116,3 +116,42 @@ def test_dataset_args_can_turn_shuffle_choices_off() -> None:
     adapter = get_benchmark('truthful_qa', config=config, validate_judge=False)
 
     assert adapter.shuffle_choices is False
+
+
+def test_dataset_args_survives_adapter_init_across_benchmarks() -> None:
+    """An adapter must not overwrite a field the user set through `dataset_args`.
+
+    Assigning a meta-backed field in `__init__` writes through the property setter, and
+    `dataset_args` is merged before the adapter is built, so an unguarded assignment discards the
+    user's value silently. `truthful_qa`, `general_mcq` and `scicode` each did this.
+    """
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    custom = 'CUSTOM TEMPLATE {question} {choices}'
+    for name in ('truthful_qa', 'general_mcq', 'scicode', 'mmlu'):
+        config = TaskConfig(datasets=[name], dataset_args={name: {'prompt_template': custom}})
+        adapter = get_benchmark(name, config=config, validate_judge=False)
+
+        assert adapter.prompt_template == custom, f'{name} discarded the configured prompt_template'
+
+
+def test_benchmark_defaults_still_apply_without_dataset_args() -> None:
+    from evalscope.api.registry import get_benchmark
+
+    adapter = get_benchmark('truthful_qa', validate_judge=False)
+
+    assert adapter.prompt_template is not None
+    assert not adapter.is_user_configured('prompt_template')
+
+
+def test_user_overrides_stay_out_of_the_serialized_meta() -> None:
+    """The tracking attribute must not leak into `to_dict`, which is dumped into the task config."""
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['mmlu'], dataset_args={'mmlu': {'few_shot_num': 3}})
+    adapter = get_benchmark('mmlu', config=config, validate_judge=False)
+
+    assert adapter.is_user_configured('few_shot_num')
+    assert '_user_overrides' not in adapter.to_dict()

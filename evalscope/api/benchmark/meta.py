@@ -2,7 +2,7 @@ import copy
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
 from pydantic import BaseModel
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, FrozenSet, List, Optional, Type, Union
 
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.constants import OutputType
@@ -287,9 +287,11 @@ class BenchmarkMeta:
     def _update(self, args: dict):
         """Update instance with provided arguments, maintaining backward compatibility."""
         args = copy.deepcopy(args)
+        overridden = set()
 
         if args.get('local_path'):
             self.dataset_id = args['local_path']
+            overridden.add('dataset_id')
             del args['local_path']
 
         if args.get('filters'):
@@ -304,12 +306,27 @@ class BenchmarkMeta:
         for key, value in args.items():
             if hasattr(self, key):
                 setattr(self, key, value)  # Validate few_shot_num if it's being updated
+                overridden.add(key)
                 if key == 'few_shot_num' and value < 0:
                     raise ValueError('few_shot_num must be >= 0')
+
+        # Plain attribute, not a dataclass field, so it stays out of `asdict` and therefore out of
+        # the dumped task config.
+        self._user_overrides = self.user_overrides | overridden
 
         self._normalize_metric_list()
         self._normalize_primary_metric()
         self._validate_primary_metric()
+
+    @property
+    def user_overrides(self) -> FrozenSet[str]:
+        """Field names that ``dataset_args`` set explicitly, as opposed to this benchmark's defaults.
+
+        An adapter deriving a value in ``__init__`` must not overwrite one of these: the assignment
+        goes through the property setter into this meta, and ``dataset_args`` is merged before the
+        adapter is built, so the user's choice would be discarded silently.
+        """
+        return frozenset(getattr(self, '_user_overrides', frozenset()))
 
     def _update_filters(self, new_filters: dict):
         if self.filters is None:
