@@ -11,7 +11,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 logger = get_logger()
 
-# HF dataset config name per language (matches ai4bharat/MILU's `configs` exactly)
+# Dataset config name per language (matches ai4bharat/MILU's `configs` exactly)
 SUBSET_LIST = [
     'English',
     'Bengali',
@@ -52,14 +52,17 @@ translated general-knowledge questions with culturally specific Indian content.
 
 - 8 domains / 41 subjects, including India-specific culture, history, and current affairs
 - Native-language questions rather than machine-translated MMLU
-- Each language is a separate HF dataset config, loaded independently
+- Each language is a separate dataset config, loaded independently
 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (test split)
-- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`)
-- Requires access to the gated `ai4bharat/MILU` dataset — accept the dataset terms on
-  huggingface.co and set `HF_TOKEN` (or run `huggingface-cli login`) before evaluating.
+- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap
+  sample count — evaluating all 11 languages' full test splits is a large run
+- Loads from ModelScope by default (evalscope's default `dataset_hub`), where this dataset is public
+  and needs no token. If you explicitly set `dataset_hub` to `huggingface`, note that
+  `ai4bharat/MILU` is gated there — accept the dataset terms on huggingface.co and set `HF_TOKEN`
+  (or run `huggingface-cli login`) first
 """,
         dataset_id='ai4bharat/MILU',
         metric_list=['acc'],
@@ -71,9 +74,6 @@ translated general-knowledge questions with culturally specific Indian content.
     )
 )
 class MILUAdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = [record[key] for key in OPTION_KEYS]

@@ -75,9 +75,6 @@ available in native script and a romanized (Latin transliteration) variant, plus
 )
 class GSM8KIndicAdapter(DefaultDataAdapter):
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         DELIM = '####'
         question = record['question']

@@ -11,7 +11,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 
 logger = get_logger()
 
-# HF dataset config name per language
+# Dataset config name per language
 SUBSET_LIST = ['bn', 'en', 'gu', 'hi', 'kn', 'ml', 'mr', 'or', 'pa', 'ta', 'te']
 
 LANGUAGE_NAMES = {
@@ -64,9 +64,6 @@ multilingual scientific reasoning.
     )
 )
 class ARCIndicAdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choice_texts = record['choices']['text']

@@ -49,7 +49,8 @@ into 10 Indic languages plus English, for evaluating multilingual world-knowledg
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (validation split, the only split available)
-- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)
+- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample
+  count — the full default run is ~18k samples per language across all 11 languages (~198k total)
 """,
         dataset_id='sarvamai/trivia-qa-indic-mcq',
         metric_list=['acc'],
@@ -61,9 +62,6 @@ into 10 Indic languages plus English, for evaluating multilingual world-knowledg
     )
 )
 class TriviaQAIndicAdapter(MultiChoiceAdapter):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = record['choices']

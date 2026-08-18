@@ -12,7 +12,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 logger = get_logger()
 
 # `sarvamai/boolq-indic` ships every language in a single "default" config, differentiated by a
-# `language` column, rather than one HF config per language (unlike arc_indic/triviaqa_indic/milu).
+# `language` column, rather than one config per language (unlike arc_indic/triviaqa_indic/milu).
 SUBSET_LIST = ['bn', 'en', 'gu', 'hi', 'kn', 'ml', 'mr', 'or', 'pa', 'ta', 'te']
 
 LANGUAGE_NAMES = {
@@ -51,7 +51,8 @@ languages plus English, for evaluating multilingual passage understanding.
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (validation split)
-- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)
+- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample
+  count — the full default run is 35,970 samples across all 11 languages
 - All languages ship in a single dataset config; this adapter reformats by the `language` field
 """,
         dataset_id='sarvamai/boolq-indic',
@@ -74,6 +75,9 @@ class IndicBoolQAdapter(MultiChoiceAdapter):
         label = int(record['label'])
         target_letter = 'A' if label == 1 else 'B'
 
+        # `passage`/`question` are already in the target language; only the "Question:"/"?"
+        # scaffold stays in English, matching the source dataset's own convention (its `question`
+        # field never carries a trailing "?" or a language-local equivalent of "Question:").
         return Sample(
             input=f"{record['passage']}\n\nQuestion: {record['question']}?",
             choices=['Yes', 'No'],
