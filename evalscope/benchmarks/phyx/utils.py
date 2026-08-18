@@ -17,6 +17,9 @@ MC_INSTRUCTION = (
 )
 OE_INSTRUCTION = ' Please answer the question with step by step reasoning.'
 
+# Every PhyX problem offers exactly these four labels.
+OPTION_LABELS = ('A', 'B', 'C', 'D')
+
 # Options ship as a single string, ``A:"...",B:"...",...``. Values are matched non-greedily up to the
 # quote that precedes the next label (or the end), because option text legitimately contains commas
 # and may end in a backslash. ``ast.literal_eval`` cannot be used: a value ending in a backslash
@@ -33,8 +36,12 @@ _FINAL_ANSWER_RE = re.compile(
 )
 
 # A letter the model committed to, e.g. 'The correct option is D': the first capital A-D following
-# one of the answer-announcing words.
-_MC_ANSWER_RE = re.compile(r'\b(?:correct|answer|option|Answer|Option|Correct)\b[\s\S]*?([A-D])')
+# one of the answer-announcing words. Upstream enumerates the lower-case and capitalised spellings;
+# the all-caps forms are added here because 'ANSWER: C' otherwise falls through to the raw reply and
+# scores 0. Case-insensitivity is deliberately not expressed with a flag: ``re.IGNORECASE`` would
+# also let ``[A-D]`` match the 'd' in 'derived' and invent a choice the model never made.
+_ANSWER_WORDS = 'correct|answer|option|Correct|Answer|Option|CORRECT|ANSWER|OPTION'
+_MC_ANSWER_RE = re.compile(rf'\b(?:{_ANSWER_WORDS})\b[\s\S]*?([A-D])')
 
 # Replies that echo the option list instead of announcing a choice, e.g. 'B: 5.2 mW/cm^2'.
 _MC_LABEL_RE = re.compile(r'([ABCD]):')
@@ -208,7 +215,13 @@ def extract_mc_answer(prediction: str) -> str:
 
 
 def match_oe_answer(extracted: str, prediction: str, reference: str) -> bool:
-    """Official string-level match for open-ended answers."""
+    """Official string-level match for open-ended answers.
+
+    The reference is stripped before the containment test, which upstream does not do. 175 of the
+    3,000 ground-truth values carry a trailing space, and requiring the model to reproduce it would
+    reject a reply that ends in exactly the right value. The containment test stays case-sensitive:
+    physical units are case-bearing, so folding case would equate ``7.55N`` with ``7.55n``.
+    """
     reference = reference.strip()
     return (
         reference.lower() == extracted.strip().lower() or reference.lower() == prediction.strip().lower()

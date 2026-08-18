@@ -16,6 +16,7 @@ from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from .utils import (
+    OPTION_LABELS,
     build_mc_judge_prompt,
     build_mc_question,
     build_oe_judge_prompt,
@@ -121,13 +122,14 @@ class PhyXAdapter(VisionLanguageAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Build a multimodal Sample from one physics problem."""
         options = parse_options(record['options'])
-        if record['answer'] not in options:
-            # Dropping the problem instead would leave the run reporting fewer problems per domain
-            # than PhyX defines, and a partially parsed option string would put an incomplete
+        if set(options) != set(OPTION_LABELS) or record['answer'] not in options:
+            # Every PhyX problem offers exactly A-D, so a short or relabelled parse means the option
+            # string was only partially read. Dropping the problem would leave the run reporting
+            # fewer problems per domain than PhyX defines, and continuing would put an incomplete
             # question in front of the model.
             raise ValueError(
-                f'PhyX problem {record["index"]}: answer {record["answer"]!r} is not among its '
-                f'parsed options {sorted(options)}.'
+                f'PhyX problem {record["index"]}: parsed option labels {sorted(options)} with answer '
+                f'{record["answer"]!r}, expected exactly {list(OPTION_LABELS)}.'
             )
 
         content: List[Content] = [
@@ -241,10 +243,16 @@ class PhyXMCAdapter(PhyXAdapter):
     def llm_match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        """Score with the official judge, which only arbitrates replies without a clear letter."""
-        if match_mc_answer(filtered_prediction, original_prediction, reference):
+        """Score with the official judge, which only arbitrates replies without a clear letter.
+
+        The pre-check is plain equality rather than the lenient ``match_mc_answer`` used in rule
+        mode: upstream keeps the ``D:`` / ``**D**`` fallbacks out of its judged path, and accepting
+        them here would credit a reply that committed to one letter while merely quoting the
+        correct option's text.
+        """
+        if reference.strip().lower() == filtered_prediction.strip().lower():
             return self._build_score(original_prediction, filtered_prediction, True, 'string match')
-        if filtered_prediction.strip() in ('A', 'B', 'C', 'D'):
+        if filtered_prediction.strip() in OPTION_LABELS:
             # The reply committed to a different option; there is nothing for the judge to weigh.
             return self._build_score(original_prediction, filtered_prediction, False, 'string match')
 

@@ -5,6 +5,13 @@ regression in `parse_options`, `extract_*_answer` or `parse_judge_verdict` silen
 replies instead of raising. The expected prompt/answer strings below are taken verbatim from the
 official `PhyX_MC.tsv` / `PhyX_OE.tsv` releases.
 """
+import pytest
+from typing import List, Tuple
+
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.model import ModelOutput
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.phyx.utils import (
     build_mc_question,
     build_oe_question,
@@ -16,6 +23,8 @@ from evalscope.benchmarks.phyx.utils import (
     parse_judge_verdict,
     parse_options,
 )
+from evalscope.config import TaskConfig
+from evalscope.constants import JudgeStrategy
 
 # Record index 0 of the released test set.
 DESCRIPTION = ('A patient with a dislocated shoulder is put into a traction apparatus as shown in figure. '
@@ -95,6 +104,23 @@ def test_mc_answer_reads_an_announced_label() -> None:
     assert extract_mc_answer('A') == 'A'
 
 
+def test_mc_answer_reads_an_all_caps_answer_marker() -> None:
+    """'ANSWER: C' must not fall through to the raw reply and score 0.
+
+    Upstream enumerates only the lower-case and capitalised announcing words; the all-caps spelling
+    is added. It cannot be expressed as `re.IGNORECASE` because that would also let the letter class
+    match lower-case text.
+    """
+    assert extract_mc_answer('ANSWER: C') == 'C'
+    assert extract_mc_answer('FINAL OPTION: B') == 'B'
+
+
+def test_lower_case_prose_does_not_yield_an_invented_letter() -> None:
+    """A reply whose reasoning contains 'derived'/'because' must not be read as choice B or D."""
+    assert extract_mc_answer('the value is derived from the diagram') == 'the value is derived from the diagram'
+    assert extract_mc_answer('answer: derived below, so 22.3 degrees') != 'D'
+
+
 def test_mc_answer_falls_back_to_the_last_echoed_label() -> None:
     """Replies that restate the option list end with the one they picked."""
     assert extract_mc_answer('Comparing the values, B: 5.55N') == 'B'
@@ -131,3 +157,104 @@ def test_failed_judge_request_scores_zero() -> None:
     assert not parse_judge_verdict('[ERROR] Error occurred during qwen3-max@http://host:1 evaluation')
     assert not parse_judge_verdict('')
     assert not parse_judge_verdict('unable to compare')
+
+
+class _StubJudge:
+    """Records whether the judge was consulted and with which prompt."""
+
+    model_id = 'stub-judge'
+
+    def __init__(self, response: str = '1') -> None:
+        self.response = response
+        self.prompts: List[str] = []
+
+    def judge(self, prompt: str) -> str:
+        self.prompts.append(prompt)
+        return self.response
+
+
+def _judged_score(name: str, prediction: str, target: str, response: str = '1') -> Tuple[float, _StubJudge]:
+    """Run one prediction through the benchmark's judged scoring path."""
+    adapter = get_benchmark(name, TaskConfig(model='mock', datasets=[name], judge_strategy=JudgeStrategy.LLM))
+    judge = _StubJudge(response)
+    adapter.llm_judge = judge
+    state = TaskState(
+        model='mock',
+        sample=Sample(input='q', target=target),
+        output=ModelOutput.from_content('mock', prediction),
+    )
+    extracted = adapter.extract_answer(prediction, state)
+    score = adapter.llm_match_score(prediction, extracted, target, state)
+    return score.value['acc'], judge
+
+
+def test_mc_judge_is_not_consulted_when_the_reply_names_a_letter() -> None:
+    """Upstream settles a committed letter by string comparison and never pays for a judge call."""
+    acc, judge = _judged_score('phyx_mc', 'C', 'C')
+    assert (acc, judge.prompts) == (1.0, [])
+
+    acc, judge = _judged_score('phyx_mc', 'B', 'C')
+    assert (acc, judge.prompts) == (0.0, [])
+
+
+def test_mc_judge_arbitrates_only_replies_without_a_letter() -> None:
+    """A reply that states the option text instead of its label is handed to the judge."""
+    prediction = 'The refracted beam bends to 22.3 degrees from the normal.'
+    acc, judge = _judged_score('phyx_mc', prediction, 'C')
+    assert acc == 1.0
+    assert len(judge.prompts) == 1
+    assert 'Ground truth answer: C' in judge.prompts[0]
+
+
+def test_mc_judged_mode_does_not_credit_a_quoted_option() -> None:
+    """A reply committing to A while quoting 'D: ...' must not score.
+
+    Upstream's judged path applies plain equality, not the `D:` / `**D**` fallbacks of rule mode.
+    """
+    prediction = 'Answer: A. For reference the other choices were D: 6.65N and B: 5.55N.'
+    acc, judge = _judged_score('phyx_mc', prediction, 'D')
+    assert (acc, judge.prompts) == (0.0, [])
+
+
+def test_oe_judge_settles_answers_that_do_not_match_literally() -> None:
+    acc, judge = _judged_score('phyx_oe', 'Thus \\boxed{50 cm}', '0.5 m')
+    assert acc == 1.0
+    assert 'Ground truth answer: 0.5 m' in judge.prompts[0]
+    assert 'Predicted answer: 50 cm' in judge.prompts[0]
+
+    acc, judge = _judged_score('phyx_oe', 'Thus \\boxed{0.5 m}', '0.5 m')
+    assert (acc, judge.prompts) == (1.0, [])  # settled by string equality, no judge call
+
+
+def test_oe_judge_error_does_not_award_credit() -> None:
+    acc, _ = _judged_score('phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response='[ERROR] request failed for model 1')
+    assert acc == 0.0
+
+
+def test_partially_parsed_options_are_rejected() -> None:
+    """A record whose option string yields fewer than the four labels must not reach the model.
+
+    Presenting an incomplete choice list would silently corrupt the measurement, and skipping the
+    record would under-report the domain's problem count.
+    """
+    adapter = get_benchmark('phyx_mc', TaskConfig(model='mock', datasets=['phyx_mc']))
+    adapter.image_root = '/nonexistent'
+    record = {
+        'index': '7',
+        'question': 'q',
+        'question_simply': 'd',
+        'options': 'A:"7.55N",B:"5.55N"',
+        'answer': 'A',
+        'image': '7.png',
+        'category': 'Mechanics',
+        'subfield': 'Statics',
+        'reasoning_type': [],
+    }
+    with pytest.raises(ValueError, match='expected exactly'):
+        adapter.record_to_sample(record)
+
+    # A full parse whose answer names a label outside A-D is rejected on the same path.
+    record['options'] = 'A:"1",B:"2",C:"3",D:"4"'
+    record['answer'] = 'E'
+    with pytest.raises(ValueError, match='expected exactly'):
+        adapter.record_to_sample(record)
