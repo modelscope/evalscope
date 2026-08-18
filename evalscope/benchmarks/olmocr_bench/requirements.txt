@@ -1,0 +1,4 @@
+beautifulsoup4
+fuzzysearch
+pypdfium2
+rapidfuzz
