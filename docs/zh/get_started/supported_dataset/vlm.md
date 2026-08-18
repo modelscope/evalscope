@@ -52,6 +52,8 @@
 | `omni_doc_bench` | [OmniDocBench](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `omni_doc_bench_v1_6` | [OmniDocBench-v1.6](../../benchmarks/omni_doc_bench_v1_6.md) | `Knowledge`, `MultiModal`, `QA` |
 | `perception_bench` | [PerceptionBench](../../benchmarks/perception_bench.md) | `MultiModal`, `QA` |
+| `phyx_mc` | [PhyX-MC](../../benchmarks/phyx_mc.md) | `MCQ`, `MultiModal`, `Reasoning` |
+| `phyx_oe` | [PhyX-OE](../../benchmarks/phyx_oe.md) | `MultiModal`, `QA`, `Reasoning` |
 | `pmc_vqa` | [PMC-VQA](../../benchmarks/pmc_vqa.md) | `MCQ`, `Medical`, `MultiModal` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -123,6 +125,8 @@
 ../../benchmarks/omni_doc_bench.md
 ../../benchmarks/omni_doc_bench_v1_6.md
 ../../benchmarks/perception_bench.md
+../../benchmarks/phyx_mc.md
+../../benchmarks/phyx_oe.md
 ../../benchmarks/pmc_vqa.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
