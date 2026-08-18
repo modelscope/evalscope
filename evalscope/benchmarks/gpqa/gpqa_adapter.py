@@ -1,6 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import hashlib
 import os
 import random
 from typing import Any, Dict
@@ -9,6 +8,7 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.io_utils import content_seed
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
 
@@ -108,8 +108,7 @@ class GPQAAdapter(MultiChoiceAdapter):
         # dataset build, so `--rerun-review` paired cached predictions with a freshly
         # shuffled answer key and accuracy collapsed to chance. Hashing per question
         # keeps the position-bias protection while making the mapping reproducible.
-        seed = int.from_bytes(hashlib.sha256(preprocess(input_d['Question']).encode('utf-8')).digest()[:8], 'big')
-        random.Random(seed).shuffle(choices)
+        random.Random(content_seed(preprocess(input_d['Question']))).shuffle(choices)
         correct_answer_index = choices.index(preprocess(input_d['Correct Answer']))
 
         return {

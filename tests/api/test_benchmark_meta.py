@@ -93,3 +93,26 @@ def test_doc_metadata_serializes_structured_primary_metric() -> None:
         },
     }
     json.dumps(extracted)
+
+
+def test_adapter_init_preserves_the_declared_shuffle_choices() -> None:
+    """`DataAdapter.__init__` used to assign `self.shuffle_choices = False`.
+
+    That runs through the property setter and writes into the meta, so it silently discarded both
+    the benchmark's declaration and any `dataset_args` value, leaving the switch unreachable.
+    """
+    from evalscope.api.registry import get_benchmark
+
+    adapter = get_benchmark('truthful_qa', validate_judge=False)
+
+    assert adapter.shuffle_choices is True
+
+
+def test_dataset_args_can_turn_shuffle_choices_off() -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['truthful_qa'], dataset_args={'truthful_qa': {'shuffle_choices': False}})
+    adapter = get_benchmark('truthful_qa', config=config, validate_judge=False)
+
+    assert adapter.shuffle_choices is False

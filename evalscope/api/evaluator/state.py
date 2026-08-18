@@ -103,7 +103,7 @@ class Choices(Sequence[Choice]):
         """Set the value of a specific choice"""
         self._choices[index].correct = correct
 
-    def shuffle(self, rand: Random = Random()) -> None:
+    def shuffle(self, rand: Optional[Random] = None) -> None:
         """
         Shuffle the choice order, setting the `original_position` so they can be mapped back to their original order.
 
@@ -111,6 +111,9 @@ class Choices(Sequence[Choice]):
         avoid the model answering correctly due to fine-tuning (or similar) on
         specific datasets.
         """
+        # Built here rather than defaulted in the signature: a default `Random()` is created once at
+        # import and then shared by every call, so callers would silently share one RNG stream.
+        rand = rand if rand is not None else Random()
         shuffled_positions = list(range(len(self._choices)))
         rand.shuffle(shuffled_positions)
 

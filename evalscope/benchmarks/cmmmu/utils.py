@@ -2,6 +2,8 @@ import random
 import re
 from collections import Counter
 
+from evalscope.utils.io_utils import content_seed
+
 
 def eval_cmmmu(entry):
     correct = False
@@ -49,7 +51,10 @@ def eval_cmmmu(entry):
             elif negative_count > positive_count:
                 return '错'
             else:
-                return random.choice(['对', '错'])
+                # Seed the tie-break from the prediction so rescoring the same output agrees. Sorted
+                # because `get_TF_prediction` builds the list through a set, whose order varies
+                # between processes.
+                return random.Random(content_seed(*sorted(pred_list))).choice(['对', '错'])
 
         answer = entry['answer']
         parsed_pred = [word for word in parsed_pred if not any(ambiguous in word for ambiguous in ambiguous_keywords)]
@@ -87,7 +92,8 @@ def get_multi_choice_prediction(response, all_choices, index2ans):
                 candidates.append(index)
 
     if len(candidates) == 0:  # still not get answer, randomly choose one.
-        return random.choice(all_choices)
+        # Seed the guess from the response so rescoring the same output agrees.
+        return random.Random(content_seed(response)).choice(all_choices)
         # return ''
     else:
         # Count the occurrence of each candidate

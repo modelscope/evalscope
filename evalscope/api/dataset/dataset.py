@@ -8,6 +8,10 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
+from evalscope.utils.io_utils import content_seed
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 
 class Sample(BaseModel):
@@ -53,6 +57,17 @@ class Sample(BaseModel):
         else:
             input_text = messages_to_markdown(self.input, max_length=max_length)
         return f'Sample ID: {self.id}\nInput: {input_text}\nTarget: {self.target}'
+
+
+def _sample_choice_key(sample: Sample) -> str:
+    """Content identifying a sample's choice set, independent of its position and current order.
+
+    ``sample.id`` is deliberately unused: it is assigned by position in :meth:`MemoryDataset.reindex`,
+    so keying on it would reintroduce the coupling this key exists to avoid. Choices are sorted so
+    the key does not depend on the order a previous shuffle left them in.
+    """
+    input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
+    return '\x00'.join([input_text, *sorted(sample.choices or [])])
 
 
 @dataclass
@@ -223,16 +238,21 @@ class MemoryDataset(Dataset):
         if seed is not None:
             random.Random(seed).shuffle(self.samples)
         else:
+            logger.warning('Shuffling the dataset without a seed; this run cannot be reproduced.')
             random.shuffle(self.samples)
         self._shuffled = True
 
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
         from evalscope.utils.multi_choices import answer_character
 
-        rand = random.Random(seed)
         for sample in self.samples:
             if not sample.choices:
                 continue
+            # Seed per sample from its own content: a single RNG advanced over the list would make
+            # each sample's order depend on how many samples precede it, so `limit` or a filter
+            # would silently re-letter the answers of every other sample.
+            rand = random.Random(content_seed(str(seed), _sample_choice_key(sample)))
+
             # The original positions
             positions = list(range(len(sample.choices)))
 

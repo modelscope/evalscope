@@ -23,6 +23,7 @@ HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  #
 DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
 USE_OSS = os.getenv('USE_OSS', '0') == '1'  # whether to use OSS/FUSE-mounted filesystem
 BEIJING_TZ = timezone(timedelta(hours=8))  # UTC+8
+DEFAULT_SEED = 42  # shared by TaskConfig.seed and offline collection sampling
 
 
 class HubType:

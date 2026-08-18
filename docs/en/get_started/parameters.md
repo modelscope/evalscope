@@ -105,8 +105,8 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `subset_list` | `list[str]` | List of dataset subsets to evaluate |
 | `few_shot_num` | `int` | Number of few-shot examples |
 | `few_shot_random` | `bool` | Whether to randomly sample few-shot data |
-| `shuffle` | `bool` | Whether to shuffle the data |
-| `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only) |
+| `shuffle` | `bool` | Whether to shuffle the data. The order is determined by `--seed` and is reproducible for a given seed |
+| `shuffle_choices` | `bool` | Whether to shuffle choice order (multiple-choice only). Each question's option order is derived from that question's own content together with `--seed`, so it does not change with `limit`, `filters`, or the sample's position |
 | `metric_list` | `list[str\|dict]` | Metric list. Use canonical names such as `accuracy`; legacy aliases such as `acc` are normalized for compatibility. |
 | `aggregation` | `str` | Aggregation method for evaluation results, default is `mean`. Options: `mean_and_pass_at_k`, `mean_and_vote_at_k`, `mean_and_pass_hat_k` (all require setting `repeats=k`).<br>• `pass_at_k`: Probability that the same sample passes at least once in k generations (e.g., set `repeats=5` for `humaneval`)<br>• `vote_at_k`: Scoring by voting on k results for the same sample<br>• `pass_hat_k`: Probability that the same sample passes all k times (e.g., set `repeats=3` for `tau2_bench`) |
 | `filters` | `dict` | Output filters<br>• `remove_until`: Remove content before specified string<br>• `extract`: Extract regex-matched content |
@@ -278,7 +278,7 @@ For full usage, examples and Trace visualization, see [Agent Evaluation](../user
 | `--rerun-review` | `bool` | Used with `--use-cache`: deletes the existing reviews cache and re-runs the review/scoring stage while still reusing prediction cache | `false` |
 | `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical evaluation progress to `progress.json` in real time, queryable via the service API | `false` |
 | `--collect-perf` | `bool` | Collect per-request performance metrics (latency, TTFT, token usage) and write them into the evaluation report. TTFT requires `--generation-config stream=true`. Use `--no-collect-perf` to disable | `true` |
-| `--seed` | `int` | Random seed | `42` |
+| `--seed` | `int` | Random seed. Determines both the dataset order and the choice order; setting it to `None` makes the dataset shuffle irreproducible and logs a warning. Note that instruction-argument randomization in `ifeval`, `ifbench` and `multi_if` is not yet governed by this seed | `42` |
 | `--debug` | `bool` | Whether to enable debug mode | `false` |
 | `--ignore-errors` | `bool` | Whether to ignore errors during generation | `false` |
 | `--dry-run` | `bool` | Dry run to check parameters without executing inference | `false` |

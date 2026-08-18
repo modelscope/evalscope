@@ -12,6 +12,7 @@ from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
+    DEFAULT_SEED,
     DEFAULT_WORK_DIR,
     EvalBackend,
     EvalType,
@@ -201,7 +202,7 @@ class TaskConfig(BaseArgument):
     debug: bool = False
     """Enable debug mode for detailed logging and error reporting."""
 
-    seed: Optional[int] = 42
+    seed: Optional[int] = DEFAULT_SEED
     """Random seed for reproducible results."""
 
     api_url: Optional[str] = None

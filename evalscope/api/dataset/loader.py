@@ -26,6 +26,7 @@ def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
     if seed is not None:
         random.Random(seed).shuffle(data)
     else:
+        logger.warning('Shuffling the dataset without a seed; this run cannot be reproduced.')
         random.shuffle(data)
 
 
@@ -136,6 +137,8 @@ class RemoteDataLoader(DataLoader):
 
         # shuffle if requested
         if self.shuffle:
+            if self.seed is None:
+                logger.warning('Shuffling the dataset without a seed; this run cannot be reproduced.')
             dataset = dataset.shuffle(seed=self.seed)
 
         # limit if requested
@@ -169,7 +172,7 @@ class RemoteDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset
 
@@ -269,7 +272,7 @@ class LocalDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset
 
@@ -312,6 +315,6 @@ class DictDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset

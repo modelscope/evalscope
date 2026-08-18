@@ -579,6 +579,22 @@ def gen_hash(name: str, bits: int = 32) -> str:
     return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
 
 
+def content_seed(*parts: str) -> int:
+    """Derive a stable RNG seed from content.
+
+    Shuffles seeded from content stay reproducible across runs and, unlike a single RNG advanced
+    over a list, do not change when the surrounding items change.
+
+    Args:
+        *parts: Content fragments identifying what is being shuffled.
+
+    Returns:
+        int: Seed derived from the joined fragments.
+    """
+    joined = '\x00'.join(parts)
+    return int.from_bytes(hashlib.sha256(joined.encode('utf-8')).digest()[:8], 'big')
+
+
 # ---------------------------------------------------------------------------
 # List utilities
 # ---------------------------------------------------------------------------

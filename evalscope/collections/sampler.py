@@ -5,6 +5,8 @@ from tqdm import tqdm
 from typing import List
 
 from evalscope.collections.schema import CollectionSchema, DatasetInfo
+from evalscope.constants import DEFAULT_SEED
+from evalscope.utils.io_utils import content_seed
 
 
 class DatasetEntry(BaseModel):
@@ -21,8 +23,9 @@ class DatasetEntry(BaseModel):
 # Define an abstract base class for Samplers
 class Sampler(ABC):
 
-    def __init__(self, schema: CollectionSchema):
+    def __init__(self, schema: CollectionSchema, seed: int = DEFAULT_SEED):
         self.schema = schema
+        self.seed = seed
 
     @abstractmethod
     def sample(self) -> List[dict]:
@@ -51,7 +54,9 @@ class Sampler(ABC):
                     )
                 )
 
-        sampled_data = random.sample(all_data, k=total_count)
+        # Seed per dataset so the drawn subset does not depend on this dataset's position in the
+        # schema, and so the same schema and seed always produce the same collection.
+        sampled_data = random.Random(content_seed(str(self.seed), dataset.name)).sample(all_data, k=total_count)
         return sampled_data
 
     def _update_index(self, all_data: List[DatasetEntry]) -> List[dict]:

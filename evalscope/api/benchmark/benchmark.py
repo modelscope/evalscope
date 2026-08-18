@@ -39,8 +39,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self.split_as_subset = False
         """Whether to use the split name as the dataset subsets"""
 
-        self.shuffle_choices = False
-        """Whether to shuffle the choices in the dataset"""
+        # `shuffle_choices` is deliberately not defaulted here: unlike the two above it is a
+        # `BenchmarkMeta` field with a property setter, so assigning it would overwrite both the
+        # benchmark's own declaration and any `dataset_args` value already merged into the meta.
 
         self.use_batch_scoring = False
         """Whether to use batch scoring for metrics that support it, need to be enabled in the benchmark as well"""

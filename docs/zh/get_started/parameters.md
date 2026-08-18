@@ -105,8 +105,8 @@
 | `subset_list` | `list[str]` | 评测数据子集列表 |
 | `few_shot_num` | `int` | few-shot示例数量 |
 | `few_shot_random` | `bool` | 是否随机采样few-shot数据 |
-| `shuffle` | `bool` | 是否打乱数据 |
-| `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题） |
+| `shuffle` | `bool` | 是否打乱数据。打乱顺序由 `--seed` 决定，相同种子下可复现 |
+| `shuffle_choices` | `bool` | 是否打乱选项顺序（仅多选题）。每道题的选项顺序由该题内容与 `--seed` 共同派生，因此不受 `limit`、`filters` 或样本位置变化的影响 |
 | `metric_list` | `list[str\|dict]` | 指标列表。应使用 `accuracy` 等规范名称；`acc` 等旧别名仅为兼容用途并会被规范化。 |
 | `aggregation` | `str` | 评测结果聚合方式，默认`mean`。可选：`mean_and_pass_at_k`、`mean_and_vote_at_k`、`mean_and_pass_hat_k`（均需设置`repeats=k`）。<br>• `pass_at_k`：同一样例生成k次至少一次通过的概率（如`humaneval`设`repeats=5`）<br>• `vote_at_k`：对同一样例k次结果投票后计分<br>• `pass_hat_k`：同一样例k次全部通过的概率（如`tau2_bench`设`repeats=3`） |
 | `filters` | `dict` | 输出过滤器<br>• `remove_until`: 过滤指定字符串之前的内容<br>• `extract`: 提取正则匹配的内容 |
@@ -274,7 +274,7 @@ EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统�
 | `--rerun-review` | `bool` | 配合 `--use-cache` 使用：删除已有 reviews 缓存并重跑评测/打分阶段，但仍复用 predictions 缓存 | `false` |
 | `--enable-progress-tracker` | `bool` | 是否开启进度追踪，将层级评测进度实时写入`progress.json`，可通过服务接口查询 | `false` |
 | `--collect-perf` | `bool` | 采集每次推理请求的性能指标（延迟、TTFT、Token 用量），汇总后写入评测报告。采集 TTFT 需开启 `--generation-config stream=true`；使用 `--no-collect-perf` 可禁用 | `true` |
-| `--seed` | `int` | 随机种子 | `42` |
+| `--seed` | `int` | 随机种子。决定数据集打乱顺序与选项打乱顺序；设为 `None` 时数据集打乱不可复现并会给出告警。注意 `ifeval`、`ifbench`、`multi_if` 的指令参数随机化目前不受该种子约束 | `42` |
 | `--debug` | `bool` | 是否开启调试模式 | `false` |
 | `--ignore-errors` | `bool` | 是否忽略生成过程中的错误 | `false` |
 | `--dry-run` | `bool` | 预检参数，不执行推理，只打印参数 | `false` |
