@@ -133,19 +133,48 @@ def test_parse_answers_keeps_last_valid_label() -> None:
     assert parse_answers_zh(_make_state('推理：答案：A 不对。</think>答案：B')) == {'B'}
 
 
+def test_parse_answers_last_marker_wins_in_every_label_form() -> None:
+    """The last-marker rule must not depend on the form the label is written in.
+
+    A per-form cascade (bare label first, wrapped label second) answers a revised
+    reply with the discarded choice whenever the two markers use different forms.
+    """
+    assert parse_answers(_make_state('ANSWER: A\nANSWER: B')) == {'B'}
+    assert parse_answers(_make_state('ANSWER: (A)</think>ANSWER: (B)')) == {'B'}
+    assert parse_answers(_make_state('ANSWER: A\nreasoning\nANSWER: (B) 300')) == {'B'}
+    assert parse_answers_zh(_make_state('答案：(A)</think>答案：（B）')) == {'B'}
+
+
+def test_parse_answers_finds_a_marker_that_follows_prose_on_one_line() -> None:
+    """Regression test: a greedy label pattern used to run past the next `ANSWER:`.
+
+    The second marker was then never examined, so a revision stated on the same line
+    was scored as the discarded choice, or lost to the last-capital fallback.
+    """
+    assert parse_answers(_make_state('ANSWER: A is not right, ANSWER: B. Hope this helps.')) == {'B'}
+    assert parse_answers(_make_state('I first said ANSWER: A but ANSWER: C is correct.')) == {'C'}
+    assert parse_answers(_make_state('ANSWER: A,B then ANSWER: C,D'), multiple_correct=True) == {'C', 'D'}
+    assert parse_answers_zh(_make_state('先写答案：A，再改为答案：C。')) == {'C'}
+
+
+def test_parse_answers_skips_a_trailing_marker_without_a_label() -> None:
+    """A placeholder echoed after the real answer must not discard it."""
+    assert parse_answers(_make_state('ANSWER: B</think>ANSWER: [LETTER]')) == {'B'}
+
+
 def test_completion_argument_overrides_raw_model_output() -> None:
     """An explicit `completion` must be parsed instead of the raw model output.
 
-    Reasoning models can leak a wrong letter into their chain of thought; callers
-    pass the filtered text so the discarded reasoning cannot win the match.
+    Asserted with a `completion` that resolves differently from the raw output, so the
+    argument cannot appear to be honoured while the raw text is what actually got parsed.
     """
     state = _make_state('If I answer ANSWER: A that is wrong.</think>ANSWER: B')
     assert parse_answers(state) == {'B'}
-    assert parse_answers(state, completion='ANSWER: B') == {'B'}
+    assert parse_answers(state, completion='ANSWER: A') == {'A'}
 
     zh_state = _make_state('如果答案：A 就错了。</think>答案：B')
     assert parse_answers_zh(zh_state) == {'B'}
-    assert parse_answers_zh(zh_state, completion='答案：B') == {'B'}
+    assert parse_answers_zh(zh_state, completion='答案：A') == {'A'}
 
 
 def test_configured_filter_reaches_multi_choice_extraction() -> None:

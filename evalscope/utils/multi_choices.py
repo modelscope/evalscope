@@ -152,17 +152,21 @@ def format_example(
     return f'{question}\n{choices_text}\nANSWER: {answer.text}'
 
 
+# The answer marker itself.  Locating markers separately from the label keeps a greedy label
+# pattern from swallowing the next marker, which would hide it from the scan below.
+_ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*:\s*\**\s*')
+_ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
+
 # A label the model may wrap the way the options are printed, optionally listing several labels:
 # '(A)', '[A]', '(A, C)'.  Only label-shaped content is accepted, so bracketed prose such as
 # '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
-_BRACKETED_LABEL = r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，]\s*[A-Za-z\d])*)\s*[\)\]）】]'
+_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
-# Models frequently give the label in that wrapped form and then append the option text, e.g.
-# 'ANSWER: (A) 36'.  Neither the strict nor the loose pattern accepts a leading bracket, so
-# without this pattern such a reply reaches `_fallback_parse_answer` and is answered with an
-# arbitrary capital letter taken from the reasoning.
-_BRACKETED_ANSWER_RE = re.compile(rf'(?i)ANSWER\s*:\s*\**\s*{_BRACKETED_LABEL}')
-_BRACKETED_ANSWER_ZH_RE = re.compile(rf'答案\s*[:：]\s*\**\s*{_BRACKETED_LABEL}')
+_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,]*)')
+_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，]*)')
+
+_LABEL_SEPARATOR = r'[,，]|\s+and\s+|\s+'
+_LABEL_SEPARATOR_ZH = r'[,，]|\s+和\s+'
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
@@ -173,6 +177,37 @@ def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Option
             # returning it would record an answer the model never gave.  Reporting no answer
             # scores the same (an invalid label never equals the target) and stays diagnosable.
             return {letter} if letter in allowed_options else None
+    return None
+
+
+def _is_label_shaped(capture: str, separator: str, allowed_options: set[str]) -> bool:
+    """Whether a capture holds nothing but labels of the current sample."""
+    capture = capture.strip().rstrip('。.')
+    listed = {part.strip() for part in re.split(separator, capture) if part.strip()}
+    if listed and listed.issubset(allowed_options):
+        return True
+    run = set(capture)
+    return bool(run) and run.issubset(allowed_options)
+
+
+def _last_labelled_answer(
+    text: str,
+    marker_re: re.Pattern,
+    plain_label_re: re.Pattern,
+    separator: str,
+    allowed_options: set[str],
+) -> Optional[str]:
+    """Label of the last answer marker that is actually followed by one.
+
+    Reasoning models restate the required format and revise themselves mid-thought, so an
+    earlier marker may carry an echoed placeholder or a choice the model went on to reject.
+    """
+    for marker in reversed(list(marker_re.finditer(text))):
+        tail = text[marker.end():]
+        for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
+            label = label_re.match(tail)
+            if label is not None and _is_label_shaped(label.group(1), separator, allowed_options):
+                return label.group(1)
     return None
 
 
@@ -198,61 +233,10 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    def _labels_are_valid(labels: set[str]) -> bool:
-        return bool(labels) and labels.issubset(allowed_options)
+    matched = _last_labelled_answer(text, _ANSWER_MARKER_RE, _PLAIN_LABEL_RE, _LABEL_SEPARATOR, allowed_options)
 
-    def _valid_label(capture: str) -> set[str]:
-        """Return the labels parsed from a capture group, or an empty set if invalid."""
-        capture = capture.strip().rstrip('。.')
-        # Multiple labels may be separated by commas/spaces/`and`, or run together (`AB`).
-        separated = {part.strip() for part in re.split(r'[,，]|\s+and\s+|\s+', capture) if part.strip()}
-        if _labels_are_valid(separated):
-            return separated
-        if _labels_are_valid(set(capture)):
-            return set(capture)
-        return set()
-
-    # First check whether the string strictly ends with the expected answer
-    # In this case, we're looking for a single line which contains the expected
-    # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
-    # Note: the capture group must start with an alphanumeric character, otherwise a
-    # placeholder the model echoed from the prompt (e.g. `ANSWER: [LETTER]`) matches
-    # with a whitespace-only capture and shadows the real answer that follows.
-    match = None
-    strict = re.search(
-        r'(?i)^ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
-        text,
-        flags=re.MULTILINE,
-    )
-    if strict is not None and _valid_label(strict.group(1)):
-        match = strict
-
-    # The alphanumeric-start rule above also rejects a label the model wrapped in brackets,
-    # so try that form explicitly before giving up on the answer marker.
-    if match is None:
-        bracketed = _BRACKETED_ANSWER_RE.search(text)
-        if bracketed is not None and _valid_label(bracketed.group(1)):
-            match = bracketed
-
-    # If we couldn't match the strict version, we can try the less strict
-    # version for backward compatibility.
-    # Reasoning models often restate the required format (e.g. `ANSWER: [LETTER]`) and
-    # hedge with sentences like `Final answer: ANSWER: D` before the real answer, so the
-    # first `ANSWER:` marker may capture a placeholder or a partial word instead of the
-    # final choice.  The actual answer is the LAST marker, so iterate all matches and
-    # keep the last one whose capture looks like a valid label.
-    if match is None:
-        for candidate in re.finditer(
-            r'(?i)ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
-            text,
-        ):
-            if _valid_label(candidate.group(1)):
-                match = candidate
-
-    if match is None:
+    if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()
-
-    matched = match.group(1)
 
     # Strip trailing period / full stop
     matched = matched.strip()
@@ -308,26 +292,14 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    # Simple pattern to capture answers with optional bold markdown.
-    # Keep the LAST marker whose capture looks like a valid label: reasoning models may
-    # restate the required format or hedge with `答案：X` multiple times, and only the
-    # final `答案：<label>` is the actual answer (see `parse_answers` for details).
-    pattern = r'答案\s*[:：]\s*\**\s*([A-Za-z0-9,，]+)'
-    match = None
-    for candidate in re.finditer(pattern, text, flags=re.MULTILINE):
-        label = candidate.group(1).strip().rstrip('。.')
-        labels = {part.strip() for part in re.split(r'[,，]|\s+和\s+', label) if part.strip()}
-        if labels.issubset(allowed_options) and labels:
-            match = candidate
+    matched = _last_labelled_answer(
+        text, _ANSWER_MARKER_ZH_RE, _PLAIN_LABEL_ZH_RE, _LABEL_SEPARATOR_ZH, allowed_options
+    )
 
-    # The pattern above cannot start on a bracket, so try a wrapped label explicitly.
-    if match is None:
-        match = _BRACKETED_ANSWER_ZH_RE.search(text)
-
-    if match is None:
+    if matched is None:
         return _fallback_parse_answer(text, allowed_options) or set()
 
-    matched = match.group(1).strip().rstrip('。.')
+    matched = matched.strip().rstrip('。.')
 
     if multiple_correct:
         # Handle comma-separated or continuous letters
