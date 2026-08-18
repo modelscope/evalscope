@@ -116,19 +116,103 @@ def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
     assert parse_answers(_make_state(completion)).isdisjoint({'A', 'B', 'C', 'D'})
 
 
+def test_parse_answers_keeps_last_valid_label() -> None:
+    """Reasoning models may emit several `ANSWER:` markers (format restatements,
+    hedges like `Final answer: ANSWER: X`, or a letter leaked into the chain of
+    thought) before the real answer.  The LAST marker whose capture is a valid
+    label is the model's final choice, not the first one.
+    """
+    # `Final answer: ANSWER: D` makes the first marker capture the word `ANSWER`;
+    # the actual label `D` only appears in the final marker.
+    assert parse_answers(_make_state('Final answer: ANSWER: D</think>ANSWER: D')) == {'D'}
+    # A wrong letter inside the reasoning must not shadow the final answer.
+    assert parse_answers(_make_state('ANSWER: A is wrong.</think>ANSWER: B')) == {'B'}
+    # Placeholder restated in the reasoning, real answer at the end.
+    assert parse_answers(_make_state("format 'ANSWER: [LETTER]'. So B.</think>ANSWER: B")) == {'B'}
+    # Chinese counterpart.
+    assert parse_answers_zh(_make_state('推理：答案：A 不对。</think>答案：B')) == {'B'}
+
+
+def test_parse_answers_last_marker_wins_in_every_label_form() -> None:
+    """The last-marker rule must not depend on the form the label is written in.
+
+    A per-form cascade (bare label first, wrapped label second) answers a revised
+    reply with the discarded choice whenever the two markers use different forms.
+    """
+    assert parse_answers(_make_state('ANSWER: A\nANSWER: B')) == {'B'}
+    assert parse_answers(_make_state('ANSWER: (A)</think>ANSWER: (B)')) == {'B'}
+    assert parse_answers(_make_state('ANSWER: A\nreasoning\nANSWER: (B) 300')) == {'B'}
+    assert parse_answers_zh(_make_state('答案：(A)</think>答案：（B）')) == {'B'}
+
+
+def test_parse_answers_finds_a_marker_that_follows_prose_on_one_line() -> None:
+    """Regression test: a greedy label pattern used to run past the next `ANSWER:`.
+
+    The second marker was then never examined, so a revision stated on the same line
+    was scored as the discarded choice, or lost to the last-capital fallback.
+    """
+    assert parse_answers(_make_state('ANSWER: A is not right, ANSWER: B. Hope this helps.')) == {'B'}
+    assert parse_answers(_make_state('I first said ANSWER: A but ANSWER: C is correct.')) == {'C'}
+    assert parse_answers(_make_state('ANSWER: A,B then ANSWER: C,D'), multiple_correct=True) == {'C', 'D'}
+    assert parse_answers_zh(_make_state('先写答案：A，再改为答案：C。')) == {'C'}
+
+
+def test_parse_answers_skips_a_trailing_marker_without_a_label() -> None:
+    """A placeholder echoed after the real answer must not discard it."""
+    assert parse_answers(_make_state('ANSWER: B</think>ANSWER: [LETTER]')) == {'B'}
+
+
+JUSTIFIED_ANSWERS = [
+    'ANSWER: B because it fits',
+    'ANSWER: B is the correct choice',
+    'ANSWER: B second option',
+    'ANSWER: B - energy is conserved',
+    'ANSWER: B; energy is conserved',
+    'ANSWER: B because Energy is conserved',
+    'ANSWER: B is correct per Newton',
+    'ANSWER: B because option A is wrong',
+    'ANSWER: B, not C',
+    'ANSWER: B is correct, D is a distractor',
+]
+
+
+def test_parse_answers_reads_a_label_that_is_justified_in_the_same_breath() -> None:
+    """A label must be read from its own token, not from the whole trailing sentence.
+
+    Regression test: the capture used to be validated as a whole, so the label was
+    discarded together with the justification and the reply fell through to the
+    last-capital fallback - which answers with whichever distractor the justification
+    happens to name last.
+    """
+    for completion in JUSTIFIED_ANSWERS:
+        assert parse_answers(_make_state(completion)) == {'B'}, completion
+
+
+def test_parse_answers_zh_reads_a_label_that_is_justified_in_the_same_breath() -> None:
+    for completion in ['答案：B，因为能量守恒', '答案：B，因为A是错的', '答案：B是正确的，D是干扰项']:
+        assert parse_answers_zh(_make_state(completion)) == {'B'}, completion
+
+
+def test_parse_answers_still_rejects_prose_that_names_no_label() -> None:
+    """Reading a label prefix must not turn an unparseable reply into an answer."""
+    assert parse_answers(_make_state('ANSWER: None of the above')) == set()
+    assert parse_answers(_make_state('ANSWER: A B C D are all plausible')) == set()
+    assert parse_answers_zh(_make_state('答案：无法确定')) == set()
+
+
 def test_completion_argument_overrides_raw_model_output() -> None:
     """An explicit `completion` must be parsed instead of the raw model output.
 
-    Reasoning models can leak a wrong letter into their chain of thought; callers
-    pass the filtered text so the discarded reasoning cannot win the match.
+    Asserted with a `completion` that resolves differently from the raw output, so the
+    argument cannot appear to be honoured while the raw text is what actually got parsed.
     """
     state = _make_state('If I answer ANSWER: A that is wrong.</think>ANSWER: B')
-    assert parse_answers(state) == set()
-    assert parse_answers(state, completion='ANSWER: B') == {'B'}
+    assert parse_answers(state) == {'B'}
+    assert parse_answers(state, completion='ANSWER: A') == {'A'}
 
     zh_state = _make_state('如果答案：A 就错了。</think>答案：B')
-    assert parse_answers_zh(zh_state) == {'A'}
-    assert parse_answers_zh(zh_state, completion='答案：B') == {'B'}
+    assert parse_answers_zh(zh_state) == {'B'}
+    assert parse_answers_zh(zh_state, completion='答案：A') == {'A'}
 
 
 def test_configured_filter_reaches_multi_choice_extraction() -> None:
