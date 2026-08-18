@@ -125,3 +125,98 @@ def test_parse_responses_usage_present_but_empty_falls_through(plugin):
     responses = [{'usage': {}}]
     with pytest.raises(ValueError):
         plugin.parse_responses(responses, request='{}')
+
+
+class _StubTokenizer:
+    """Minimal tokenizer stand-in: ``encode`` returns one token per character.
+
+    Lets the content-based branch of ``parse_responses`` run end-to-end
+    (``__calculate_tokens_from_content`` → ``_count_output_tokens``) without
+    loading a real HF tokenizer, so we can assert on null-content handling.
+    """
+
+    def encode(self, text, add_special_tokens=False):
+        return list(text)
+
+
+@pytest.fixture
+def plugin_with_tokenizer():
+    """``OpenaiPlugin`` with a stub tokenizer so the content-based path runs.
+
+    The default ``plugin`` fixture uses ``tokenizer_path=None``; when a
+    response lacks a usage block that makes ``parse_responses`` raise
+    ``ValueError`` before ever reaching the ``delta_contents`` join. To
+    exercise the join (the site of the null-content crash), inject a
+    trivial tokenizer whose ``encode`` returns one token per character.
+    """
+    args = Arguments(model='test-model', api='openai', number=1, parallel=1)
+    plug = OpenaiPlugin(args)
+    plug.tokenizer = _StubTokenizer()
+    return plug
+
+
+def test_parse_responses_non_stream_tool_call_null_content(plugin_with_tokenizer):
+    """Non-stream tool-call: ``message.content`` is ``None`` (tool_calls set).
+
+    Before the fix, ``delta_contents[0] = [None]`` and ``''.join`` raised
+    ``TypeError: sequence item 0: expected str instance, NoneType found``.
+    The fill site now coerces ``None`` to ``''``, so the content-based
+    path yields 0 output tokens instead of crashing.
+    """
+    responses = [{
+        'object': 'chat.completion',
+        'choices': [{
+            'index': 0,
+            'message': {
+                'content': None,
+                'tool_calls': [{
+                    'id': 'call_1',
+                    'type': 'function',
+                    'function': {
+                        'name': 'get_weather',
+                        'arguments': '{}',
+                    },
+                }],
+            },
+            'finish_reason': 'tool_calls',
+        }],
+    }]
+    assert plugin_with_tokenizer.parse_responses(responses, request='{}') == (0, 0)
+
+
+def test_parse_responses_stream_tool_call_null_delta_content(plugin_with_tokenizer):
+    """Streaming tool-call: some chunks carry ``delta.content: None``.
+
+    Before the fix, ``delta_contents[0].append(None)`` made ``''.join``
+    raise ``TypeError`` as soon as any chunk in the stream had a null
+    ``content`` field (common when the chunk only carries ``tool_calls``).
+    The fill site now coerces ``None`` to ``''``.
+    """
+    responses = [
+        {
+            'object': 'chat.completion.chunk',
+            'choices': [{'index': 0, 'delta': {'role': 'assistant'}}],
+        },
+        {
+            'object': 'chat.completion.chunk',
+            'choices': [{
+                'index': 0,
+                'delta': {
+                    'content': None,
+                    'tool_calls': [{
+                        'id': 'call_1',
+                        'type': 'function',
+                        'function': {
+                            'name': 'get_weather',
+                            'arguments': '{}',
+                        },
+                    }],
+                },
+            }],
+        },
+        {
+            'object': 'chat.completion.chunk',
+            'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'tool_calls'}],
+        },
+    ]
+    assert plugin_with_tokenizer.parse_responses(responses, request='{}') == (0, 0)
