@@ -116,6 +116,23 @@ def test_parse_answers_placeholder_only_yields_no_valid_option() -> None:
     assert parse_answers(_make_state(completion)).isdisjoint({'A', 'B', 'C', 'D'})
 
 
+def test_parse_answers_keeps_last_valid_label() -> None:
+    """Reasoning models may emit several `ANSWER:` markers (format restatements,
+    hedges like `Final answer: ANSWER: X`, or a letter leaked into the chain of
+    thought) before the real answer.  The LAST marker whose capture is a valid
+    label is the model's final choice, not the first one.
+    """
+    # `Final answer: ANSWER: D` makes the first marker capture the word `ANSWER`;
+    # the actual label `D` only appears in the final marker.
+    assert parse_answers(_make_state('Final answer: ANSWER: D</think>ANSWER: D')) == {'D'}
+    # A wrong letter inside the reasoning must not shadow the final answer.
+    assert parse_answers(_make_state('ANSWER: A is wrong.</think>ANSWER: B')) == {'B'}
+    # Placeholder restated in the reasoning, real answer at the end.
+    assert parse_answers(_make_state("format 'ANSWER: [LETTER]'. So B.</think>ANSWER: B")) == {'B'}
+    # Chinese counterpart.
+    assert parse_answers_zh(_make_state('推理：答案：A 不对。</think>答案：B')) == {'B'}
+
+
 def test_completion_argument_overrides_raw_model_output() -> None:
     """An explicit `completion` must be parsed instead of the raw model output.
 
@@ -123,11 +140,11 @@ def test_completion_argument_overrides_raw_model_output() -> None:
     pass the filtered text so the discarded reasoning cannot win the match.
     """
     state = _make_state('If I answer ANSWER: A that is wrong.</think>ANSWER: B')
-    assert parse_answers(state) == set()
+    assert parse_answers(state) == {'B'}
     assert parse_answers(state, completion='ANSWER: B') == {'B'}
 
     zh_state = _make_state('如果答案：A 就错了。</think>答案：B')
-    assert parse_answers_zh(zh_state) == {'A'}
+    assert parse_answers_zh(zh_state) == {'B'}
     assert parse_answers_zh(zh_state, completion='答案：B') == {'B'}
 
 

@@ -198,30 +198,56 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
+    def _labels_are_valid(labels: set[str]) -> bool:
+        return bool(labels) and labels.issubset(allowed_options)
+
+    def _valid_label(capture: str) -> set[str]:
+        """Return the labels parsed from a capture group, or an empty set if invalid."""
+        capture = capture.strip().rstrip('。.')
+        # Multiple labels may be separated by commas/spaces/`and`, or run together (`AB`).
+        separated = {part.strip() for part in re.split(r'[,，]|\s+and\s+|\s+', capture) if part.strip()}
+        if _labels_are_valid(separated):
+            return separated
+        if _labels_are_valid(set(capture)):
+            return set(capture)
+        return set()
+
     # First check whether the string strictly ends with the expected answer
     # In this case, we're looking for a single line which contains the expected
     # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
     # Note: the capture group must start with an alphanumeric character, otherwise a
     # placeholder the model echoed from the prompt (e.g. `ANSWER: [LETTER]`) matches
     # with a whitespace-only capture and shadows the real answer that follows.
-    match = re.search(
+    match = None
+    strict = re.search(
         r'(?i)^ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)\s*(?:$|\n|\.)',
         text,
         flags=re.MULTILINE,
     )
+    if strict is not None and _valid_label(strict.group(1)):
+        match = strict
 
     # The alphanumeric-start rule above also rejects a label the model wrapped in brackets,
     # so try that form explicitly before giving up on the answer marker.
     if match is None:
-        match = _BRACKETED_ANSWER_RE.search(text)
+        bracketed = _BRACKETED_ANSWER_RE.search(text)
+        if bracketed is not None and _valid_label(bracketed.group(1)):
+            match = bracketed
 
     # If we couldn't match the strict version, we can try the less strict
-    # version for backward compatibility
+    # version for backward compatibility.
+    # Reasoning models often restate the required format (e.g. `ANSWER: [LETTER]`) and
+    # hedge with sentences like `Final answer: ANSWER: D` before the real answer, so the
+    # first `ANSWER:` marker may capture a placeholder or a partial word instead of the
+    # final choice.  The actual answer is the LAST marker, so iterate all matches and
+    # keep the last one whose capture looks like a valid label.
     if match is None:
-        match = re.search(
+        for candidate in re.finditer(
             r'(?i)ANSWER\s*:\s*\**\s*([A-Za-z\d][A-Za-z\d ,]*)(?:[^\w]|\n|$|\.)',
             text,
-        )
+        ):
+            if _valid_label(candidate.group(1)):
+                match = candidate
 
     if match is None:
         return _fallback_parse_answer(text, allowed_options) or set()
@@ -282,9 +308,17 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
 
     allowed_options = set(answer_character(i) for i in range(len(state.choices)))
 
-    # Simple pattern to capture answers with optional bold markdown
+    # Simple pattern to capture answers with optional bold markdown.
+    # Keep the LAST marker whose capture looks like a valid label: reasoning models may
+    # restate the required format or hedge with `答案：X` multiple times, and only the
+    # final `答案：<label>` is the actual answer (see `parse_answers` for details).
     pattern = r'答案\s*[:：]\s*\**\s*([A-Za-z0-9,，]+)'
-    match = re.search(pattern, text, flags=re.MULTILINE)
+    match = None
+    for candidate in re.finditer(pattern, text, flags=re.MULTILINE):
+        label = candidate.group(1).strip().rstrip('。.')
+        labels = {part.strip() for part in re.split(r'[,，]|\s+和\s+', label) if part.strip()}
+        if labels.issubset(allowed_options) and labels:
+            match = candidate
 
     # The pattern above cannot start on a bracket, so try a wrapped label explicitly.
     if match is None:
