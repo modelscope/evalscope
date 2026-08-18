@@ -118,7 +118,7 @@ def parse_tool_info(func: Callable[..., Any]) -> ToolInfo:
         if param_name in type_hints:
             tool_param = json_schema(type_hints[param_name])
         # as a fallback try to parse it from the docstring
-        # (this is minimally necessary for backwards compatiblity
+        # (this is minimally necessary for backwards compatibility
         #  with tools gen1 type parsing, which only used docstrings)
         elif 'docstring_type' in docstring_info:
             json_type = python_type_to_json_type(docstring_info['docstring_type'])

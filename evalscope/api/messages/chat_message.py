@@ -13,7 +13,7 @@ class ChatMessageBase(BaseModel):
     """Base class for chat messages."""
 
     id: Optional[str] = Field(default=None)
-    """Unique identifer for message."""
+    """Unique identifier for message."""
 
     content: Union[str, List[Content]]
     """Content (simple string or list of content objects)"""
