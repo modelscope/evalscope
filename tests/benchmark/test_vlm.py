@@ -604,3 +604,11 @@ class TestVLMBenchmark(TestBenchmark):
         """Test the official PhyX testmini split selection."""
         dataset_args = {'subset_list': ['optics'], 'eval_split': 'test_mini'}
         self._run_dataset_test('phyx_oe', dataset_args=dataset_args, limit=5)
+
+    def test_slake(self):
+        """Test SLAKE bilingual medical visual question answering benchmark."""
+        self._run_dataset_test('slake', limit=5)
+
+    def test_slake_mock(self):
+        """Test SLAKE with mock LLM."""
+        self._run_dataset_test('slake', limit=5, use_mock=True)
