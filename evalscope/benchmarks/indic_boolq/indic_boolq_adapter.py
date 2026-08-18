@@ -53,13 +53,14 @@ languages plus English, for evaluating multilingual passage understanding.
 - Default configuration uses **0-shot** evaluation (validation split)
 - Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample
   count — the full default run is 35,970 samples across all 11 languages
+- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `train` split
 - All languages ship in a single dataset config; this adapter reformats by the `language` field
 """,
         dataset_id='sarvamai/boolq-indic',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,
-        train_split=None,
+        train_split='train',
         eval_split='validation',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )

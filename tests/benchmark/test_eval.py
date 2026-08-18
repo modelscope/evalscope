@@ -971,6 +971,15 @@ class TestNativeBenchmark(TestBenchmark):
         """Test MILU Indic multi-task MCQ benchmark with mock."""
         self._run_dataset_test('milu', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True)
 
+    def test_milu_fewshot_mock(self):
+        """Test MILU few-shot prompting (examples drawn from the validation split)."""
+        self._run_dataset_test(
+            'milu', dataset_args={
+                'subset_list': ['Hindi'],
+                'few_shot_num': 2
+            }, limit=2, use_mock=True
+        )
+
     def test_arc_indic_mock(self):
         """Test ARC-Challenge-Indic benchmark with mock."""
         self._run_dataset_test('arc_indic', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)
@@ -982,6 +991,15 @@ class TestNativeBenchmark(TestBenchmark):
     def test_indic_boolq_mock(self):
         """Test BoolQ-Indic benchmark with mock."""
         self._run_dataset_test('indic_boolq', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)
+
+    def test_indic_boolq_fewshot_mock(self):
+        """Test BoolQ-Indic few-shot prompting (examples drawn from the train split)."""
+        self._run_dataset_test(
+            'indic_boolq', dataset_args={
+                'subset_list': ['hi'],
+                'few_shot_num': 2
+            }, limit=2, use_mock=True
+        )
 
     def test_gsm8k_indic_mock(self):
         """Test GSM8K-Indic benchmark with mock."""

@@ -59,6 +59,7 @@ translated general-knowledge questions with culturally specific Indian content.
 - Default configuration uses **0-shot** evaluation (test split)
 - Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap
   sample count — evaluating all 11 languages' full test splits is a large run
+- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `validation` split
 - Loads from ModelScope by default (evalscope's default `dataset_hub`), where this dataset is public
   and needs no token. If you explicitly set `dataset_hub` to `huggingface`, note that
   `ai4bharat/MILU` is gated there — accept the dataset terms on huggingface.co and set `HF_TOKEN`
@@ -68,7 +69,7 @@ translated general-knowledge questions with culturally specific Indian content.
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,
-        train_split=None,
+        train_split='validation',
         eval_split='test',
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
