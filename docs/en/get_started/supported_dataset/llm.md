@@ -14,6 +14,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
 | `arc` | [ARC](../../benchmarks/arc.md) | `MCQ`, `Reasoning` |
 | `arc_agi_2` | [ARC-AGI-2](../../benchmarks/arc_agi_2.md) | `Reasoning` |
+| `arc_indic` | [ARC-Challenge-Indic](../../benchmarks/arc_indic.md) | `MCQ`, `MultiLingual`, `Reasoning` |
 | `arena_hard` | [ArenaHard](../../benchmarks/arena_hard.md) | `Arena`, `InstructionFollowing` |
 | `arxivmath` | [ArXiv-Math](../../benchmarks/arxivmath.md) | `Math`, `Reasoning` |
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
@@ -54,6 +55,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `genia_ner` | [GeniaNER](../../benchmarks/genia_ner.md) | `Knowledge`, `NER` |
 | `gpqa_diamond` | [GPQA-Diamond](../../benchmarks/gpqa_diamond.md) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](../../benchmarks/gsm8k.md) | `Math`, `Reasoning` |
+| `gsm8k_indic` | [GSM8K-Indic](../../benchmarks/gsm8k_indic.md) | `Math`, `MultiLingual`, `Reasoning` |
 | `halueval` | [HaluEval](../../benchmarks/halueval.md) | `Hallucination`, `Knowledge`, `Yes/No` |
 | `harvey_ner` | [HarveyNER](../../benchmarks/harvey_ner.md) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](../../benchmarks/health_bench.md) | `Knowledge`, `Medical`, `QA` |
@@ -66,6 +68,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `ifbench` | [IFBench](../../benchmarks/ifbench.md) | `InstructionFollowing` |
 | `ifeval` | [IFEval](../../benchmarks/ifeval.md) | `InstructionFollowing` |
 | `imo_answerbench` | [IMO-AnswerBench](../../benchmarks/imo_answerbench.md) | `Math`, `Reasoning` |
+| `indic_boolq` | [BoolQ-Indic](../../benchmarks/indic_boolq.md) | `MCQ`, `MultiLingual`, `ReadingComprehension` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
@@ -82,6 +85,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `mbpp_plus` | [MBPP-Plus](../../benchmarks/mbpp_plus.md) | `Coding` |
 | `med_mcqa` | [Med-MCQA](../../benchmarks/med_mcqa.md) | `Knowledge`, `MCQ` |
 | `mgsm` | [MGSM](../../benchmarks/mgsm.md) | `Math`, `MultiLingual`, `Reasoning` |
+| `milu` | [MILU](../../benchmarks/milu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `minerva_math` | [Minerva-Math](../../benchmarks/minerva_math.md) | `Math`, `Reasoning` |
 | `mit_movie_trivia` | [MIT-Movie-Trivia](../../benchmarks/mit_movie_trivia.md) | `Knowledge`, `NER` |
 | `mit_restaurant` | [MIT-Restaurant](../../benchmarks/mit_restaurant.md) | `Knowledge`, `NER` |
@@ -121,6 +125,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `swe_bench_verified_mini` | [SWE-bench_Verified_mini](../../benchmarks/swe_bench_verified_mini.md) | `Coding` |
 | `tool_bench` | [ToolBench-Static](../../benchmarks/tool_bench.md) | `FunctionCalling`, `Reasoning` |
 | `trivia_qa` | [TriviaQA](../../benchmarks/trivia_qa.md) | `QA`, `ReadingComprehension` |
+| `triviaqa_indic` | [TriviaQA-Indic-MCQ](../../benchmarks/triviaqa_indic.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `truthful_qa` | [TruthfulQA](../../benchmarks/truthful_qa.md) | `Knowledge` |
 | `tweebank_ner` | [TweeBankNER](../../benchmarks/tweebank_ner.md) | `Knowledge`, `NER` |
 | `tweet_ner_7` | [TweetNER7](../../benchmarks/tweet_ner_7.md) | `Knowledge`, `NER` |
@@ -143,6 +148,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/anat_em.md
 ../../benchmarks/arc.md
 ../../benchmarks/arc_agi_2.md
+../../benchmarks/arc_indic.md
 ../../benchmarks/arena_hard.md
 ../../benchmarks/arxivmath.md
 ../../benchmarks/arxivrollbench.md
@@ -183,6 +189,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/genia_ner.md
 ../../benchmarks/gpqa_diamond.md
 ../../benchmarks/gsm8k.md
+../../benchmarks/gsm8k_indic.md
 ../../benchmarks/halueval.md
 ../../benchmarks/harvey_ner.md
 ../../benchmarks/health_bench.md
@@ -195,6 +202,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/ifbench.md
 ../../benchmarks/ifeval.md
 ../../benchmarks/imo_answerbench.md
+../../benchmarks/indic_boolq.md
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
@@ -211,6 +219,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mbpp_plus.md
 ../../benchmarks/med_mcqa.md
 ../../benchmarks/mgsm.md
+../../benchmarks/milu.md
 ../../benchmarks/minerva_math.md
 ../../benchmarks/mit_movie_trivia.md
 ../../benchmarks/mit_restaurant.md
@@ -250,6 +259,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/swe_bench_verified_mini.md
 ../../benchmarks/tool_bench.md
 ../../benchmarks/trivia_qa.md
+../../benchmarks/triviaqa_indic.md
 ../../benchmarks/truthful_qa.md
 ../../benchmarks/tweebank_ner.md
 ../../benchmarks/tweet_ner_7.md

@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "pretty_name": "TriviaQA-Indic-MCQ",
+    "dataset_id": "sarvamai/trivia-qa-indic-mcq",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "bn",
+      "en",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te"
+    ],
+    "description": "\n## Overview\n\nTriviaQA-Indic-MCQ reformats TriviaQA trivia questions as 4-way multiple-choice questions, translated\ninto 10 Indic languages plus English, for evaluating multilingual world-knowledge recall.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Trivia Question Answering\n- **Input**: Trivia question with 4 answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample\n  count — the full default run is ~18k samples per language across all 11 languages (~198k total)\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 197384,
+    "subset_stats": [
+      {
+        "name": "bn",
+        "sample_count": 17944,
+        "prompt_length_mean": 351.81,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1131,
+        "prompt_length_std": 49.69,
+        "target_length_mean": 1
+      },
+      {
+        "name": "en",
+        "sample_count": 17944,
+        "prompt_length_mean": 347.69,
+        "prompt_length_min": 256,
+        "prompt_length_max": 1158,
+        "prompt_length_std": 44.56,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gu",
+        "sample_count": 17944,
+        "prompt_length_mean": 347.73,
+        "prompt_length_min": 247,
+        "prompt_length_max": 1117,
+        "prompt_length_std": 48.02,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hi",
+        "sample_count": 17944,
+        "prompt_length_mean": 349.05,
+        "prompt_length_min": 258,
+        "prompt_length_max": 1141,
+        "prompt_length_std": 48.39,
+        "target_length_mean": 1
+      },
+      {
+        "name": "kn",
+        "sample_count": 17944,
+        "prompt_length_mean": 359.89,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1164,
+        "prompt_length_std": 50.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ml",
+        "sample_count": 17944,
+        "prompt_length_mean": 366.11,
+        "prompt_length_min": 257,
+        "prompt_length_max": 1267,
+        "prompt_length_std": 53.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "mr",
+        "sample_count": 17944,
+        "prompt_length_mean": 350.9,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1078,
+        "prompt_length_std": 47.85,
+        "target_length_mean": 1
+      },
+      {
+        "name": "or",
+        "sample_count": 17944,
+        "prompt_length_mean": 349.44,
+        "prompt_length_min": 255,
+        "prompt_length_max": 941,
+        "prompt_length_std": 47.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pa",
+        "sample_count": 17944,
+        "prompt_length_mean": 345.48,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1157,
+        "prompt_length_std": 49.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ta",
+        "sample_count": 17944,
+        "prompt_length_mean": 368.55,
+        "prompt_length_min": 248,
+        "prompt_length_max": 1198,
+        "prompt_length_std": 54.44,
+        "target_length_mean": 1
+      },
+      {
+        "name": "te",
+        "sample_count": 17944,
+        "prompt_length_mean": 356.75,
+        "prompt_length_min": 254,
+        "prompt_length_max": 1259,
+        "prompt_length_std": 50.03,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 353.95,
+      "min": 247,
+      "max": 1267,
+      "std": 50.1
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-18T17:29:39.662659"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "eff7630c",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nচিপমঙ্কসের পিছনে লোকটি কে ছিল?\n\nA) ডেভিড সেভিল\nB) জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র\nC) পবিত্র ক্রুসেড\nD) উপাদান (অ্যালবাম)"
+        }
+      ],
+      "choices": [
+        "ডেভিড সেভিল",
+        "জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র",
+        "পবিত্র ক্রুসেড",
+        "উপাদান (অ্যালবাম)"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "language": "Bengali"
+      }
+    },
+    "subset": "bn",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# TriviaQA-Indic-MCQ\n\n\n## Overview\n\nTriviaQA-Indic-MCQ reformats TriviaQA trivia questions as 4-way multiple-choice questions, translated\ninto 10 Indic languages plus English, for evaluating multilingual world-knowledge recall.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Trivia Question Answering\n- **Input**: Trivia question with 4 answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample\n  count — the full default run is ~18k samples per language across all 11 languages (~198k total)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `triviaqa_indic` |\n| **Dataset ID** | [sarvamai/trivia-qa-indic-mcq](https://modelscope.cn/datasets/sarvamai/trivia-qa-indic-mcq/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 197,384 |\n| Prompt Length (Mean) | 353.95 chars |\n| Prompt Length (Min/Max) | 247 / 1267 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `bn` | 17,944 | 351.81 | 253 | 1131 |\n| `en` | 17,944 | 347.69 | 256 | 1158 |\n| `gu` | 17,944 | 347.73 | 247 | 1117 |\n| `hi` | 17,944 | 349.05 | 258 | 1141 |\n| `kn` | 17,944 | 359.89 | 253 | 1164 |\n| `ml` | 17,944 | 366.11 | 257 | 1267 |\n| `mr` | 17,944 | 350.9 | 253 | 1078 |\n| `or` | 17,944 | 349.44 | 255 | 941 |\n| `pa` | 17,944 | 345.48 | 253 | 1157 |\n| `ta` | 17,944 | 368.55 | 248 | 1198 |\n| `te` | 17,944 | 356.75 | 254 | 1259 |\n\n## Sample Example\n\n**Subset**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eff7630c\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nচিপমঙ্কসের পিছনে লোকটি কে ছিল?\\n\\nA) ডেভিড সেভিল\\nB) জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র\\nC) পবিত্র ক্রুসেড\\nD) উপাদান (অ্যালবাম)\"\n    }\n  ],\n  \"choices\": [\n    \"ডেভিড সেভিল\",\n    \"জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র\",\n    \"পবিত্র ক্রুসেড\",\n    \"উপাদান (অ্যালবাম)\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets triviaqa_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['triviaqa_indic'],\n    dataset_args={\n        'triviaqa_indic': {\n            # subset_list: ['bn', 'en', 'gu']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TriviaQA-Indic-MCQ\n\n\n## 概述\n\nTriviaQA-Indic-MCQ 将 TriviaQA 的常识问答题重新格式化为四选一的多项选择题，并翻译成 10 种印度语言及英语，用于评估模型在多语言环境下的世界知识回忆能力。\n\n## 任务描述\n\n- **任务类型**：多语言多项选择常识问答\n- **输入**：以 11 种语言之一呈现的常识问题及其 4 个选项\n- **输出**：正确答案对应的字母\n- **语言**：孟加拉语、英语、古吉拉特语、印地语、卡纳达语、马拉雅拉姆语、马拉地语、奥里亚语、旁遮普语、泰米尔语、泰卢固语\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（仅提供验证集）\n- 可通过 `subset_list` 参数指定评估特定语言（例如 `['hi', 'ta']`），或使用 `limit` 参数限制样本数量 —— 完整默认运行包含全部 11 种语言，每种语言约 1.8 万个样本（总计约 19.8 万）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `triviaqa_indic` |\n| **数据集ID** | [sarvamai/trivia-qa-indic-mcq](https://modelscope.cn/datasets/sarvamai/trivia-qa-indic-mcq/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 197,384 |\n| 提示词长度（平均） | 353.95 字符 |\n| 提示词长度（最小/最大） | 247 / 1267 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `bn` | 17,944 | 351.81 | 253 | 1131 |\n| `en` | 17,944 | 347.69 | 256 | 1158 |\n| `gu` | 17,944 | 347.73 | 247 | 1117 |\n| `hi` | 17,944 | 349.05 | 258 | 1141 |\n| `kn` | 17,944 | 359.89 | 253 | 1164 |\n| `ml` | 17,944 | 366.11 | 257 | 1267 |\n| `mr` | 17,944 | 350.9 | 253 | 1078 |\n| `or` | 17,944 | 349.44 | 255 | 941 |\n| `pa` | 17,944 | 345.48 | 253 | 1157 |\n| `ta` | 17,944 | 368.55 | 248 | 1198 |\n| `te` | 17,944 | 356.75 | 254 | 1259 |\n\n## 样例示例\n\n**子集**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"eff7630c\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nচিপমঙ্কসের পিছনে লোকটি কে ছিল?\\n\\nA) ডেভিড সেভিল\\nB) জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র\\nC) পবিত্র ক্রুসেড\\nD) উপাদান (অ্যালবাম)\"\n    }\n  ],\n  \"choices\": [\n    \"ডেভিড সেভিল\",\n    \"জাগরেব শহর - ক্রোয়েশিয়া প্রজাতন্ত্র\",\n    \"পবিত্র ক্রুসেড\",\n    \"উপাদান (অ্যালবাম)\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets triviaqa_indic \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['triviaqa_indic'],\n    dataset_args={\n        'triviaqa_indic': {\n            # subset_list: ['bn', 'en', 'gu']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "68290e2becd36b5551c7c3296a8faef3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-18T17:29:52.060303",
+  "translation_updated_at": "2026-08-18T17:31:57"
+}

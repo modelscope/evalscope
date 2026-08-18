@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "pretty_name": "MILU",
+    "dataset_id": "ai4bharat/MILU",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "validation",
+    "subset_list": [
+      "English",
+      "Bengali",
+      "Gujarati",
+      "Hindi",
+      "Kannada",
+      "Malayalam",
+      "Marathi",
+      "Odia",
+      "Punjabi",
+      "Tamil",
+      "Telugu"
+    ],
+    "description": "\n## Overview\n\nMILU (Multi-task Indic Language Understanding Benchmark) is a comprehensive evaluation dataset for\nassessing LLM performance across 11 Indic languages. It spans 8 domains and 41 subjects, combining\ntranslated general-knowledge questions with culturally specific Indian content.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices in one of 11 languages\n- **Output**: Single correct answer letter\n- **Languages**: English, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Key Features\n\n- 8 domains / 41 subjects, including India-specific culture, history, and current affairs\n- Native-language questions rather than machine-translated MMLU\n- Each language is a separate dataset config, loaded independently\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap\n  sample count — evaluating all 11 languages' full test splits is a large run\n- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `validation` split\n- Loads from ModelScope by default (evalscope's default `dataset_hub`), where this dataset is public\n  and needs no token. If you explicitly set `dataset_hub` to `huggingface`, note that\n  `ai4bharat/MILU` is gated there — accept the dataset terms on huggingface.co and set `HF_TOKEN`\n  (or run `huggingface-cli login`) first\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 79608,
+    "subset_stats": [
+      {
+        "name": "English",
+        "sample_count": 13535,
+        "prompt_length_mean": 397.01,
+        "prompt_length_min": 227,
+        "prompt_length_max": 1930,
+        "prompt_length_std": 145.78,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Bengali",
+        "sample_count": 6637,
+        "prompt_length_mean": 359.93,
+        "prompt_length_min": 232,
+        "prompt_length_max": 1828,
+        "prompt_length_std": 112.76,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Gujarati",
+        "sample_count": 4826,
+        "prompt_length_mean": 359.36,
+        "prompt_length_min": 230,
+        "prompt_length_max": 1785,
+        "prompt_length_std": 113.5,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Hindi",
+        "sample_count": 14831,
+        "prompt_length_mean": 367.43,
+        "prompt_length_min": 229,
+        "prompt_length_max": 1907,
+        "prompt_length_std": 102.41,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Kannada",
+        "sample_count": 6234,
+        "prompt_length_mean": 364.45,
+        "prompt_length_min": 229,
+        "prompt_length_max": 1753,
+        "prompt_length_std": 116.87,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Malayalam",
+        "sample_count": 4321,
+        "prompt_length_mean": 388.2,
+        "prompt_length_min": 239,
+        "prompt_length_max": 2110,
+        "prompt_length_std": 142.38,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Marathi",
+        "sample_count": 6924,
+        "prompt_length_mean": 394.85,
+        "prompt_length_min": 223,
+        "prompt_length_max": 1888,
+        "prompt_length_std": 150.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Odia",
+        "sample_count": 4525,
+        "prompt_length_mean": 366.63,
+        "prompt_length_min": 238,
+        "prompt_length_max": 1825,
+        "prompt_length_std": 119.84,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Punjabi",
+        "sample_count": 4099,
+        "prompt_length_mean": 364.93,
+        "prompt_length_min": 234,
+        "prompt_length_max": 1874,
+        "prompt_length_std": 121.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Tamil",
+        "sample_count": 6372,
+        "prompt_length_mean": 382.22,
+        "prompt_length_min": 230,
+        "prompt_length_max": 1934,
+        "prompt_length_std": 130.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Telugu",
+        "sample_count": 7304,
+        "prompt_length_mean": 384.05,
+        "prompt_length_min": 233,
+        "prompt_length_max": 1806,
+        "prompt_length_std": 124.01,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 377.16,
+      "min": 223,
+      "max": 2110,
+      "std": 126.84
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-18T17:29:37.125847"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "84726982",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nBakelite is what type of polymer?\n\nA) Thermosetting polymer\nB) Thermoplastic polymer\nC) Fibre\nD) Elastomer"
+        }
+      ],
+      "choices": [
+        "Thermosetting polymer",
+        "Thermoplastic polymer",
+        "Fibre",
+        "Elastomer"
+      ],
+      "target": "A",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "language": "English"
+      }
+    },
+    "subset": "English",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# MILU\n\n\n## Overview\n\nMILU (Multi-task Indic Language Understanding Benchmark) is a comprehensive evaluation dataset for\nassessing LLM performance across 11 Indic languages. It spans 8 domains and 41 subjects, combining\ntranslated general-knowledge questions with culturally specific Indian content.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Question Answering\n- **Input**: Question with four answer choices in one of 11 languages\n- **Output**: Single correct answer letter\n- **Languages**: English, Bengali, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Key Features\n\n- 8 domains / 41 subjects, including India-specific culture, history, and current affairs\n- Native-language questions rather than machine-translated MMLU\n- Each language is a separate dataset config, loaded independently\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap\n  sample count — evaluating all 11 languages' full test splits is a large run\n- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `validation` split\n- Loads from ModelScope by default (evalscope's default `dataset_hub`), where this dataset is public\n  and needs no token. If you explicitly set `dataset_hub` to `huggingface`, note that\n  `ai4bharat/MILU` is gated there — accept the dataset terms on huggingface.co and set `HF_TOKEN`\n  (or run `huggingface-cli login`) first\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `milu` |\n| **Dataset ID** | [ai4bharat/MILU](https://modelscope.cn/datasets/ai4bharat/MILU/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 79,608 |\n| Prompt Length (Mean) | 377.16 chars |\n| Prompt Length (Min/Max) | 223 / 2110 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `English` | 13,535 | 397.01 | 227 | 1930 |\n| `Bengali` | 6,637 | 359.93 | 232 | 1828 |\n| `Gujarati` | 4,826 | 359.36 | 230 | 1785 |\n| `Hindi` | 14,831 | 367.43 | 229 | 1907 |\n| `Kannada` | 6,234 | 364.45 | 229 | 1753 |\n| `Malayalam` | 4,321 | 388.2 | 239 | 2110 |\n| `Marathi` | 6,924 | 394.85 | 223 | 1888 |\n| `Odia` | 4,525 | 366.63 | 238 | 1825 |\n| `Punjabi` | 4,099 | 364.93 | 234 | 1874 |\n| `Tamil` | 6,372 | 382.22 | 230 | 1934 |\n| `Telugu` | 7,304 | 384.05 | 233 | 1806 |\n\n## Sample Example\n\n**Subset**: `English`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"84726982\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nBakelite is what type of polymer?\\n\\nA) Thermosetting polymer\\nB) Thermoplastic polymer\\nC) Fibre\\nD) Elastomer\"\n    }\n  ],\n  \"choices\": [\n    \"Thermosetting polymer\",\n    \"Thermoplastic polymer\",\n    \"Fibre\",\n    \"Elastomer\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets milu \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['milu'],\n    dataset_args={\n        'milu': {\n            # subset_list: ['English', 'Bengali', 'Gujarati']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MILU\n\n\n## 概述\n\nMILU（Multi-task Indic Language Understanding Benchmark，多任务印度语言理解基准）是一个全面的评估数据集，用于衡量大语言模型（LLM）在11种印度语言上的表现。该数据集涵盖8个领域和41个主题，结合了翻译而来的通用知识问题以及具有印度文化特色的本地内容。\n\n## 任务描述\n\n- **任务类型**：多语言多项选择题问答（Multilingual Multiple-Choice Question Answering）\n- **输入**：用11种语言之一编写的包含四个选项的问题\n- **输出**：单个正确答案的字母（A/B/C/D）\n- **语言**：英语、孟加拉语、古吉拉特语、印地语、卡纳达语、马拉雅拉姆语、马拉地语、奥里亚语、旁遮普语、泰米尔语、泰卢固语\n\n## 主要特点\n\n- 覆盖8个领域 / 41个主题，包括印度特有的文化、历史和时事内容\n- 使用母语编写的问题，而非机器翻译版的MMLU\n- 每种语言作为独立的数据集配置，可分别加载\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（测试集 `test`）\n- 可通过 `subset_list` 参数指定评估特定语言（例如 `['Hindi', 'Tamil']`），或使用 `limit` 限制样本数量 —— 评估全部11种语言的完整测试集将是一次大规模运行\n- 设置 `few_shot_num` > 0 可启用少样本提示（few-shot prompting），示例从 `validation` 验证集中抽取\n- 默认从 ModelScope 加载（evalscope 的默认 `dataset_hub`），该数据集在此平台公开且无需访问令牌。若显式将 `dataset_hub` 设为 `huggingface`，请注意 `ai4bharat/MILU` 在 Hugging Face 上是受限制数据集 —— 需先在 huggingface.co 上接受数据集条款，并设置 `HF_TOKEN`（或运行 `huggingface-cli login`）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `milu` |\n| **数据集ID** | [ai4bharat/MILU](https://modelscope.cn/datasets/ai4bharat/MILU/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认样本数** | 0-shot |\n| **评估集** | `test` |\n| **训练集** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 79,608 |\n| 提示词长度（平均） | 377.16 字符 |\n| 提示词长度（最小/最大） | 223 / 2110 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `English` | 13,535 | 397.01 | 227 | 1930 |\n| `Bengali` | 6,637 | 359.93 | 232 | 1828 |\n| `Gujarati` | 4,826 | 359.36 | 230 | 1785 |\n| `Hindi` | 14,831 | 367.43 | 229 | 1907 |\n| `Kannada` | 6,234 | 364.45 | 229 | 1753 |\n| `Malayalam` | 4,321 | 388.2 | 239 | 2110 |\n| `Marathi` | 6,924 | 394.85 | 223 | 1888 |\n| `Odia` | 4,525 | 366.63 | 238 | 1825 |\n| `Punjabi` | 4,099 | 364.93 | 234 | 1874 |\n| `Tamil` | 6,372 | 382.22 | 230 | 1934 |\n| `Telugu` | 7,304 | 384.05 | 233 | 1806 |\n\n## 样例示例\n\n**子集**: `English`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"84726982\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nBakelite is what type of polymer?\\n\\nA) Thermosetting polymer\\nB) Thermoplastic polymer\\nC) Fibre\\nD) Elastomer\"\n    }\n  ],\n  \"choices\": [\n    \"Thermosetting polymer\",\n    \"Thermoplastic polymer\",\n    \"Fibre\",\n    \"Elastomer\"\n  ],\n  \"target\": \"A\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets milu \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['milu'],\n    dataset_args={\n        'milu': {\n            # subset_list: ['English', 'Bengali', 'Gujarati']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1cc925cde449170a568503cfda57f0c4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-18T17:29:49.203569",
+  "translation_updated_at": "2026-08-18T17:31:57"
+}

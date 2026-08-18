@@ -1,0 +1,281 @@
+{
+  "meta": {
+    "pretty_name": "GSM8K-Indic",
+    "dataset_id": "sarvamai/gsm8k-indic",
+    "paper_url": null,
+    "tags": [
+      "Math",
+      "Reasoning",
+      "MultiLingual"
+    ],
+    "metrics": [
+      {
+        "accuracy": {
+          "numeric": true
+        }
+      }
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "en",
+      "bn",
+      "gu",
+      "hi",
+      "kn",
+      "ml",
+      "mr",
+      "or",
+      "pa",
+      "ta",
+      "te",
+      "bn_roman",
+      "gu_roman",
+      "hi_roman",
+      "kn_roman",
+      "ml_roman",
+      "mr_roman",
+      "or_roman",
+      "pa_roman",
+      "ta_roman",
+      "te_roman"
+    ],
+    "description": "\n## Overview\n\nGSM8K-Indic translates the GSM8K grade-school math word problems into 10 Indic languages, each\navailable in native script and a romanized (Latin transliteration) variant, plus the original English.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade-school math word problem in one of 21 language/script variants\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil,\n  Telugu — each Indic language in both native script and a `_roman` transliterated variant\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages/scripts (e.g., `['hi', 'hi_roman']`)\n- Gold answers are the original English reasoning chain's final numeric value; only the question is\n  translated\n",
+    "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 27670,
+    "subset_stats": [
+      {
+        "name": "en",
+        "sample_count": 1319,
+        "prompt_length_mean": 310.87,
+        "prompt_length_min": 144,
+        "prompt_length_max": 919,
+        "prompt_length_std": 97.61,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "bn",
+        "sample_count": 1319,
+        "prompt_length_mean": 306.06,
+        "prompt_length_min": 136,
+        "prompt_length_max": 790,
+        "prompt_length_std": 95.51,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "gu",
+        "sample_count": 1319,
+        "prompt_length_mean": 303.06,
+        "prompt_length_min": 135,
+        "prompt_length_max": 770,
+        "prompt_length_std": 93.24,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "hi",
+        "sample_count": 1319,
+        "prompt_length_mean": 311.1,
+        "prompt_length_min": 147,
+        "prompt_length_max": 761,
+        "prompt_length_std": 96.11,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "kn",
+        "sample_count": 1319,
+        "prompt_length_mean": 338.11,
+        "prompt_length_min": 145,
+        "prompt_length_max": 831,
+        "prompt_length_std": 104.42,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "ml",
+        "sample_count": 1319,
+        "prompt_length_mean": 345.21,
+        "prompt_length_min": 156,
+        "prompt_length_max": 907,
+        "prompt_length_std": 110.05,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "mr",
+        "sample_count": 1319,
+        "prompt_length_mean": 315.01,
+        "prompt_length_min": 146,
+        "prompt_length_max": 785,
+        "prompt_length_std": 98.06,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "or",
+        "sample_count": 1319,
+        "prompt_length_mean": 313.28,
+        "prompt_length_min": 141,
+        "prompt_length_max": 815,
+        "prompt_length_std": 97.73,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "pa",
+        "sample_count": 1319,
+        "prompt_length_mean": 312.77,
+        "prompt_length_min": 152,
+        "prompt_length_max": 800,
+        "prompt_length_std": 96.75,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "ta",
+        "sample_count": 1319,
+        "prompt_length_mean": 367.12,
+        "prompt_length_min": 161,
+        "prompt_length_max": 972,
+        "prompt_length_std": 116.36,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "te",
+        "sample_count": 1319,
+        "prompt_length_mean": 330.78,
+        "prompt_length_min": 142,
+        "prompt_length_max": 877,
+        "prompt_length_std": 102.19,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "bn_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 330.69,
+        "prompt_length_min": 153,
+        "prompt_length_max": 816,
+        "prompt_length_std": 103.79,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "gu_roman",
+        "sample_count": 1318,
+        "prompt_length_mean": 335.73,
+        "prompt_length_min": 148,
+        "prompt_length_max": 885,
+        "prompt_length_std": 106.25,
+        "target_length_mean": 2.3
+      },
+      {
+        "name": "hi_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 340.77,
+        "prompt_length_min": 154,
+        "prompt_length_max": 869,
+        "prompt_length_std": 108.84,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "kn_roman",
+        "sample_count": 1316,
+        "prompt_length_mean": 368.49,
+        "prompt_length_min": 149,
+        "prompt_length_max": 959,
+        "prompt_length_std": 117.37,
+        "target_length_mean": 2.3
+      },
+      {
+        "name": "ml_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 363.39,
+        "prompt_length_min": 159,
+        "prompt_length_max": 937,
+        "prompt_length_std": 117.93,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "mr_roman",
+        "sample_count": 1310,
+        "prompt_length_mean": 339.56,
+        "prompt_length_min": 156,
+        "prompt_length_max": 848,
+        "prompt_length_std": 107.35,
+        "target_length_mean": 2.3
+      },
+      {
+        "name": "or_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 339.92,
+        "prompt_length_min": 158,
+        "prompt_length_max": 930,
+        "prompt_length_std": 109.15,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "pa_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 334.74,
+        "prompt_length_min": 155,
+        "prompt_length_max": 847,
+        "prompt_length_std": 105.96,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "ta_roman",
+        "sample_count": 1303,
+        "prompt_length_mean": 387.6,
+        "prompt_length_min": 163,
+        "prompt_length_max": 1045,
+        "prompt_length_std": 125.69,
+        "target_length_mean": 2.29
+      },
+      {
+        "name": "te_roman",
+        "sample_count": 1319,
+        "prompt_length_mean": 360.46,
+        "prompt_length_min": 145,
+        "prompt_length_max": 1025,
+        "prompt_length_std": 115.99,
+        "target_length_mean": 2.29
+      }
+    ],
+    "prompt_length": {
+      "mean": 335.91,
+      "min": 135,
+      "max": 1045,
+      "std": 108.74
+    },
+    "target_length_mean": 2.3,
+    "computed_at": "2026-08-18T17:31:54.653331"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "92205129",
+          "content": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\nPlease reason step by step, and put your final answer within \\boxed{}."
+        }
+      ],
+      "target": "18",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "language": "English"
+      }
+    },
+    "subset": "en",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# GSM8K-Indic\n\n\n## Overview\n\nGSM8K-Indic translates the GSM8K grade-school math word problems into 10 Indic languages, each\navailable in native script and a romanized (Latin transliteration) variant, plus the original English.\n\n## Task Description\n\n- **Task Type**: Multilingual Mathematical Word Problem Solving\n- **Input**: Grade-school math word problem in one of 21 language/script variants\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil,\n  Telugu — each Indic language in both native script and a `_roman` transliterated variant\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages/scripts (e.g., `['hi', 'hi_roman']`)\n- Gold answers are the original English reasoning chain's final numeric value; only the question is\n  translated\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `gsm8k_indic` |\n| **Dataset ID** | [sarvamai/gsm8k-indic](https://modelscope.cn/datasets/sarvamai/gsm8k-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `Math`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 27,670 |\n| Prompt Length (Mean) | 335.91 chars |\n| Prompt Length (Min/Max) | 135 / 1045 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `en` | 1,319 | 310.87 | 144 | 919 |\n| `bn` | 1,319 | 306.06 | 136 | 790 |\n| `gu` | 1,319 | 303.06 | 135 | 770 |\n| `hi` | 1,319 | 311.1 | 147 | 761 |\n| `kn` | 1,319 | 338.11 | 145 | 831 |\n| `ml` | 1,319 | 345.21 | 156 | 907 |\n| `mr` | 1,319 | 315.01 | 146 | 785 |\n| `or` | 1,319 | 313.28 | 141 | 815 |\n| `pa` | 1,319 | 312.77 | 152 | 800 |\n| `ta` | 1,319 | 367.12 | 161 | 972 |\n| `te` | 1,319 | 330.78 | 142 | 877 |\n| `bn_roman` | 1,319 | 330.69 | 153 | 816 |\n| `gu_roman` | 1,318 | 335.73 | 148 | 885 |\n| `hi_roman` | 1,319 | 340.77 | 154 | 869 |\n| `kn_roman` | 1,316 | 368.49 | 149 | 959 |\n| `ml_roman` | 1,319 | 363.39 | 159 | 937 |\n| `mr_roman` | 1,310 | 339.56 | 156 | 848 |\n| `or_roman` | 1,319 | 339.92 | 158 | 930 |\n| `pa_roman` | 1,319 | 334.74 | 155 | 847 |\n| `ta_roman` | 1,303 | 387.6 | 163 | 1045 |\n| `te_roman` | 1,319 | 360.46 | 145 | 1025 |\n\n## Sample Example\n\n**Subset**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"92205129\",\n      \"content\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gsm8k_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gsm8k_indic'],\n    dataset_args={\n        'gsm8k_indic': {\n            # subset_list: ['en', 'bn', 'gu']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# GSM8K-Indic\n\n\n## 概述\n\nGSM8K-Indic 将 GSM8K 小学数学应用题翻译为 10 种印度语言，每种语言均提供原生文字版本和罗马化（拉丁转写）版本，同时还包含原始英文版本。\n\n## 任务描述\n\n- **任务类型**：多语言数学应用题求解\n- **输入**：21 种语言/文字变体之一的小学数学应用题\n- **输出**：通过逐步推理得出的数值答案\n- **语言**：孟加拉语、英语、古吉拉特语、印地语、卡纳达语、马拉雅拉姆语、马拉地语、奥里亚语、旁遮普语、泰米尔语、泰卢固语 —— 每种印度语言均包含原生文字版本和 `_roman` 转写版本\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（仅提供测试集）\n- 使用 `subset_list` 参数评估特定语言/文字（例如 `['hi', 'hi_roman']`）\n- 标准答案为原始英文推理链的最终数值结果；仅问题部分被翻译\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `gsm8k_indic` |\n| **数据集ID** | [sarvamai/gsm8k-indic](https://modelscope.cn/datasets/sarvamai/gsm8k-indic/summary) |\n| **论文** | N/A |\n| **标签** | `Math`, `MultiLingual`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 27,670 |\n| 提示词长度（平均） | 335.91 字符 |\n| 提示词长度（最小/最大） | 135 / 1045 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `en` | 1,319 | 310.87 | 144 | 919 |\n| `bn` | 1,319 | 306.06 | 136 | 790 |\n| `gu` | 1,319 | 303.06 | 135 | 770 |\n| `hi` | 1,319 | 311.1 | 147 | 761 |\n| `kn` | 1,319 | 338.11 | 145 | 831 |\n| `ml` | 1,319 | 345.21 | 156 | 907 |\n| `mr` | 1,319 | 315.01 | 146 | 785 |\n| `or` | 1,319 | 313.28 | 141 | 815 |\n| `pa` | 1,319 | 312.77 | 152 | 800 |\n| `ta` | 1,319 | 367.12 | 161 | 972 |\n| `te` | 1,319 | 330.78 | 142 | 877 |\n| `bn_roman` | 1,319 | 330.69 | 153 | 816 |\n| `gu_roman` | 1,318 | 335.73 | 148 | 885 |\n| `hi_roman` | 1,319 | 340.77 | 154 | 869 |\n| `kn_roman` | 1,316 | 368.49 | 149 | 959 |\n| `ml_roman` | 1,319 | 363.39 | 159 | 937 |\n| `mr_roman` | 1,310 | 339.56 | 156 | 848 |\n| `or_roman` | 1,319 | 339.92 | 158 | 930 |\n| `pa_roman` | 1,319 | 334.74 | 155 | 847 |\n| `ta_roman` | 1,303 | 387.6 | 163 | 1045 |\n| `te_roman` | 1,319 | 360.46 | 145 | 1025 |\n\n## 样例示例\n\n**子集**: `en`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"92205129\",\n      \"content\": \"Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?\\nPlease reason step by step, and put your final answer within \\\\boxed{}.\"\n    }\n  ],\n  \"target\": \"18\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets gsm8k_indic \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['gsm8k_indic'],\n    dataset_args={\n        'gsm8k_indic': {\n            # subset_list: ['en', 'bn', 'gu']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "64f80ea6c29e96ef7b5b533de9ee07a4",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-18T17:31:55.345863",
+  "translation_updated_at": "2026-08-18T17:31:57"
+}

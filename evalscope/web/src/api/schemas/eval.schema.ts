@@ -52,8 +52,8 @@ export const benchmarkEntrySchema = z.object({
   metrics: z.array(z.string()),
   meta: z.record(z.string(), z.unknown()),
   description: z.object({
-    en: benchmarkDescriptionLocaleSchema.optional(),
-    zh: benchmarkDescriptionLocaleSchema.optional(),
+    en: benchmarkDescriptionLocaleSchema.nullish(),
+    zh: benchmarkDescriptionLocaleSchema.nullish(),
   }),
 })
 
