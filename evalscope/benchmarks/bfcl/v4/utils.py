@@ -87,7 +87,7 @@ DUMMY_MODEL_NO_UNDERSCORE_TO_DOT = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 # ----------------------------
 
 
-def patch_openai_completions_handler_empty_tool_calls(handler_cls) -> None:
+def patch_openai_completions_handler_empty_tool_calls(handler_cls: type[Any]) -> None:
     """Work around a bfcl_eval bug where a text-only assistant turn loses its content.
 
     ``OpenAICompletionsHandler._parse_query_response_FC`` only falls back to
@@ -95,14 +95,10 @@ def patch_openai_completions_handler_empty_tool_calls(handler_cls) -> None:
     is ``None``). Many OpenAI-compatible servers (e.g. vLLM, SGLang) return
     ``tool_calls: []`` instead of omitting/nulling it for text-only completions, so the
     list comprehension over an empty list succeeds and silently produces
-    ``model_responses == []``, discarding the model's real final answer.
-
-    For BFCL-v4 agentic categories (memory, web_search) the final natural-language
-    answer is the only thing being graded, so losing it turns every entry into a
-    guaranteed ``agentic:no_last_message`` failure regardless of whether the model
-    actually answered correctly. This has been reported and fixed upstream
-    (ShishirPatil/gorilla#1316, #1351) but is not yet included in the ``bfcl-eval``
-    version this package pins, so we patch the method on the handler class here.
+    ``model_responses == []``, discarding the model's real final answer. This has been
+    reported and fixed upstream (ShishirPatil/gorilla#1316, #1351) but is not yet
+    included in the ``bfcl-eval`` version this package pins, so we patch the method on
+    the handler class here.
     """
 
     def _parse_query_response_FC(self, api_response):
