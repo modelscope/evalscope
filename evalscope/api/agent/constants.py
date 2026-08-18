@@ -34,12 +34,16 @@ class SubmissionSources:
     indicate the completion was detected inside a tool observation.  The
     loop falls back to ``POST_TOOL`` when the strategy did not annotate
     the source.  ``IMPLICIT_NO_NUDGE`` is emitted by the loop itself when
-    a strategy returns no tool calls and declines a nudge.
+    a strategy returns no tool calls and declines a nudge;
+    ``PARSE_ERROR_EXHAUSTED`` is its malformed-turn counterpart, kept
+    distinct because "the model stopped calling tools" and "the model kept
+    breaking the output protocol" need different diagnoses.
     """
 
     SENTINEL = 'sentinel'
     POST_TOOL = 'post_tool'
     IMPLICIT_NO_NUDGE = 'implicit_no_nudge'
+    PARSE_ERROR_EXHAUSTED = 'parse_error_exhausted'
 
 
 class LoopMessages:
@@ -48,6 +52,7 @@ class LoopMessages:
     MAX_STEPS_EXCEEDED = 'max_steps_exceeded'
     MODEL_CONTEXT_OVERFLOW = 'model_context_overflow'
     NO_TOOL_CALL_REMINDER = 'no_tool_call_reminder'
+    PARSE_ERROR_REMINDER = 'parse_error_reminder'
 
 
 class TraceSources:

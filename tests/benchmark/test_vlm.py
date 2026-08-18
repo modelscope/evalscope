@@ -566,6 +566,14 @@ class TestVLMBenchmark(TestBenchmark):
         """Test PMC-VQA with mock LLM."""
         self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
 
+    def test_count_qa(self):
+        """Test CountQA object counting benchmark."""
+        self._run_dataset_test('count_qa', limit=5)
+
+    def test_count_qa_mock(self):
+        """Test CountQA with mock LLM."""
+        self._run_dataset_test('count_qa', limit=5, use_mock=True)
+
     def test_slake(self):
         """Test SLAKE bilingual medical visual question answering benchmark."""
         self._run_dataset_test('slake', limit=5)

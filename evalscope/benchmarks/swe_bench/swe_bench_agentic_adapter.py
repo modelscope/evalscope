@@ -40,6 +40,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.agent.external.runners import AgentRunResult
+    from evalscope.api.agent import AgentStrategy
 
 logger = get_logger()
 
@@ -399,7 +400,8 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
             last_assistant = ''
             for msg in reversed(result.messages):
                 if msg.role == 'assistant':
-                    last_assistant = str(msg.content or '') or msg.text or ''
+                    # ``str(content)`` on list content yields a Python repr.
+                    last_assistant = msg.text or ''
                     if last_assistant:
                         break
             return extract_diff(last_assistant) or ''
