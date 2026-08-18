@@ -30,8 +30,10 @@ well-separated objects.
 - Secondary metric: **relaxed_acc** — the paper's Relaxed Accuracy, counting a prediction correct
   when it is within 5% of the ground truth
 - The paper's system prompt is used as-is; it constrains the reply to a bare integer
-- Answer parsing takes the reply if it is already an integer, otherwise the first integer in it
-  (the deterministic equivalent of the paper's rewriter LLM). A reply with no digit scores 0
+- Answer parsing takes the reply if it is already an integer, otherwise its first integer — the
+  rule the paper states for its rewriter LLM. A reply with no digit scores 0, so `max_tokens` must
+  leave the model room to reach its answer; a model that narrates its count ("row 1 has 3 ...") is
+  scored on the first number it mentions rather than on its stated total
 - [Paper](https://arxiv.org/abs/2508.06585)
 
 
@@ -74,11 +76,11 @@ well-separated objects.
 {
   "input": [
     {
-      "id": "c166f353",
+      "id": "e9e2dfce",
       "content": "You are a helpful assistant that counts the number of items in an image. The user will provide an image and ask a question about the number of a certain type of item in the image. If the user question is referring to multiple objects, it means that you need to provide a sum of the number of items. You will count the number of items and return the number as an integer. Your output should STRICTLY be a single integer and nothing else."
     },
     {
-      "id": "485685a4",
+      "id": "75a00480",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~202.2KB]"

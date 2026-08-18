@@ -64,9 +64,31 @@ def test_compliant_reply_is_parsed() -> None:
 
 
 def test_verbose_reply_falls_back_to_the_first_integer() -> None:
-    """Matches the paper's rewriter LLM, which extracts the first numerical value."""
+    """Matches the rule the paper states for its rewriter LLM: the first numerical value."""
     assert parse_count('There are approximately 12 boxes visible.') == 12
     assert parse_count('I count 18 tiles on that wall.') == 18
+
+
+def test_counting_out_loud_reads_the_first_integer_not_the_total() -> None:
+    """Documents where the paper's rule diverges from what its rewriter LLM would answer.
+
+    'first numerical value' picks a row label rather than the stated total, so a model that
+    narrates its count is scored on the wrong number. No reply in either verification run took
+    this shape (both models emitted bare integers for 100% of samples), so the behaviour is
+    pinned here rather than worked around; changing it must be a deliberate, measured decision.
+    """
+    assert parse_count('Row 1 has 3, row 2 has 4. Total: 7') == 1
+    assert parse_count('3 apples and 4 pears, so 7 in total.') == 3
+
+
+def test_reply_truncated_mid_count_is_scored_on_what_it_contains() -> None:
+    """A reply cut off by ``max_tokens`` before its answer still yields its first digit.
+
+    Only a digitless truncation yields no prediction, so ``max_tokens`` must be generous enough
+    for the model to reach its answer -- noted in DESCRIPTION.
+    """
+    assert parse_count('Let me count the top row: 3 so far, then the') == 3
+    assert parse_count('Let me carefully examine the image and') is None
 
 
 def test_reply_without_a_count_yields_no_prediction() -> None:

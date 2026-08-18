@@ -40,8 +40,10 @@ well-separated objects.
 - Secondary metric: **relaxed_acc** — the paper's Relaxed Accuracy, counting a prediction correct
   when it is within 5% of the ground truth
 - The paper's system prompt is used as-is; it constrains the reply to a bare integer
-- Answer parsing takes the reply if it is already an integer, otherwise the first integer in it
-  (the deterministic equivalent of the paper's rewriter LLM). A reply with no digit scores 0
+- Answer parsing takes the reply if it is already an integer, otherwise its first integer — the
+  rule the paper states for its rewriter LLM. A reply with no digit scores 0, so `max_tokens` must
+  leave the model room to reach its answer; a model that narrates its count ("row 1 has 3 ...") is
+  scored on the first number it mentions rather than on its stated total
 - [Paper](https://arxiv.org/abs/2508.06585)
 """
 
@@ -65,9 +67,10 @@ def parse_count(prediction: str) -> Optional[int]:
 
     The system prompt asks for a bare integer, so a compliant reply is used directly after
     stripping the punctuation and markdown emphasis models add around it. For a verbose reply the
-    first integer is taken, which is what the paper's rewriter LLM extracts. ``None`` means the
-    reply holds no count at all (e.g. it was truncated before answering), which scores 0 rather
-    than being replaced by a guess.
+    first integer is taken, which is the rule the paper states for its rewriter LLM. Note the limit
+    of that rule: in a reply that counts out loud (``'Row 1 has 3, row 2 has 4. Total: 7'``) the
+    first integer is a row label, not the answer. ``None`` means the reply contains no digit at all,
+    which scores 0 rather than being replaced by a guess.
 
     Args:
         prediction (str): Raw model reply.
