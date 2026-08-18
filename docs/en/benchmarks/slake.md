@@ -29,10 +29,11 @@ and medical knowledge that has to be recalled on top of what the image shows.
 - Primary metric: **Accuracy** by normalized exact match against the single reference answer
 - Reported as four subsets, `<language>_<open|closed>`, grouped into an English and a Chinese
   category; the overall score is the sample-weighted mean
-- Normalization lower-cases, removes punctuation and parenthesised asides, maps yes/no synonyms
-  onto one label — required because Chinese references express the same polarity as
-  是的 / 有 / 包含 / 可以 or 不是 / 没有 / 不包含 / 不可以 — and unifies the X-Ray spellings, including
-  the Chinese X光 / X射线, because modality references stay in English in the Chinese half
+- Normalization follows the official answer preprocessing (lower-case, punctuation and article
+  removal, word-form numbers mapped to digits, `x ray` unified to `xray`) and adds what generative
+  answering requires: yes/no synonyms collapse onto one label, because Chinese references express
+  the same polarity as 是的 / 有 / 包含 / 可以 or 不是 / 没有 / 不包含 / 不可以, and the Chinese X光 / X射线
+  and 两个 / 二 spellings resolve to the English `X-Ray` and digit references the Chinese half keeps
 - Answers are read from the `ANSWER:` line requested by the prompt; when the model does not emit
   one, the whole reply is normalized instead, so a reply that only restates the question scores 0
 - Exact match is strict by design, matching the original classification-style evaluation: a
@@ -91,7 +92,7 @@ and medical knowledge that has to be recalled on top of what the image shows.
 {
   "input": [
     {
-      "id": "411b63eb",
+      "id": "62474b21",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~63.2KB]"
@@ -105,6 +106,7 @@ and medical knowledge that has to be recalled on top of what the image shows.
   "target": "CT",
   "id": 0,
   "group_id": 0,
+  "subset_key": "en_open",
   "metadata": {
     "qid": 11934,
     "img_name": "xmlab102/source.jpg",

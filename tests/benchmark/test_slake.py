@@ -52,6 +52,27 @@ def test_normalize_answer_unifies_xray_spellings() -> None:
         assert normalize_answer(spelling) == 'xray', spelling
 
 
+def test_normalize_answer_maps_word_numbers_to_digits() -> None:
+    """Quantity references are Arabic digits, so word-form numbers must resolve to them.
+
+    The English mapping mirrors the official ``preprocess_answer``; the Chinese one is needed
+    because the Chinese prompt asks for a Chinese answer.
+    """
+    assert normalize_answer('Two') == normalize_answer('2')
+    assert normalize_answer('none') == normalize_answer('0')
+    assert normalize_answer('两个') == normalize_answer('2')
+    assert normalize_answer('二') == normalize_answer('2')
+    assert normalize_answer('3个') == normalize_answer('3')
+    # A counter word is only dropped after a number, so ordinary answers are untouched
+    assert normalize_answer('半个') == '半个'
+    assert normalize_answer('两侧') == '两侧'
+
+
+def test_normalize_answer_drops_articles() -> None:
+    assert normalize_answer('The lung') == normalize_answer('Lung')
+    assert normalize_answer('a chest') == normalize_answer('chest')
+
+
 def test_normalize_answer_keeps_distinct_answers_distinct() -> None:
     assert normalize_answer('健康') != normalize_answer('是的')
     assert normalize_answer('异常') != normalize_answer('不是')

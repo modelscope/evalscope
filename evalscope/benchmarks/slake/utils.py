@@ -18,6 +18,38 @@ _PUNCTUATION_TABLE = str.maketrans({char: ' ' for char in string.punctuation + Z
 
 _ANSWER_PATTERN = re.compile(r'ANSWER:\s*(.*)', flags=re.IGNORECASE)
 
+# The official med-vqa answer preprocessing (``preprocess_answer`` in tools/create_label.py) maps
+# word-form numbers to digits and drops articles before comparing answers. The Chinese number
+# words are added here for the same reason as the X-Ray aliases below: every ``Quantity`` reference
+# is an Arabic digit, while the Chinese prompt asks for a Chinese answer.
+_NUMBER_WORDS = {
+    'none': '0',
+    'zero': '0',
+    'one': '1',
+    'two': '2',
+    'three': '3',
+    'four': '4',
+    'five': '5',
+    'six': '6',
+    'seven': '7',
+    'eight': '8',
+    'nine': '9',
+    'ten': '10',
+    '零': '0',
+    '一': '1',
+    '两': '2',
+    '二': '2',
+    '三': '3',
+    '四': '4',
+    '五': '5',
+    '六': '6',
+    '七': '7',
+    '八': '8',
+    '九': '9',
+    '十': '10',
+}
+_ARTICLES = {'a', 'an', 'the'}
+
 # Modality references are stored in English even in the Chinese half of the dataset, while the
 # Chinese prompt asks for a Chinese answer, so the Chinese spellings of X-Ray have to resolve to
 # the same label as the reference.
@@ -34,8 +66,9 @@ _ALIASES = {
 def normalize_answer(answer: Any) -> str:
     """Normalize a SLAKE answer so that only meaningful differences remain.
 
-    Lower-cases, drops parenthesised asides and punctuation, collapses whitespace and maps
-    yes/no synonyms and the X-Ray spellings onto a canonical form.
+    Lower-cases, drops parenthesised asides and punctuation, collapses whitespace, maps word-form
+    numbers to digits and drops articles as the official evaluation does, then maps yes/no synonyms
+    and the X-Ray spellings onto a canonical form.
 
     Args:
         answer: Raw answer string (or any value convertible to one).
@@ -49,6 +82,7 @@ def normalize_answer(answer: Any) -> str:
     text = re.sub(r'（[^）]*）', ' ', text)
     text = text.translate(_PUNCTUATION_TABLE)
     text = re.sub(r'\s+', ' ', text).strip()
+    text = ' '.join(word for word in map(_normalize_word, text.split()) if word not in _ARTICLES)
     if text in _ALIASES:
         return _ALIASES[text]
     if text in EN_YES or text in ZH_YES:
@@ -56,6 +90,13 @@ def normalize_answer(answer: Any) -> str:
     if text in EN_NO or text in ZH_NO:
         return 'no'
     return text
+
+
+def _normalize_word(word: str) -> str:
+    """Map one word-form number to its digit, tolerating a trailing Chinese counter word."""
+    if word.endswith('个') and (word[:-1].isdigit() or word[:-1] in _NUMBER_WORDS):
+        word = word[:-1]
+    return _NUMBER_WORDS.get(word, word)
 
 
 def parse_answer(prediction: str) -> str:
