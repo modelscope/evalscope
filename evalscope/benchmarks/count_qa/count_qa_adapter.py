@@ -44,6 +44,11 @@ well-separated objects.
   rule the paper states for its rewriter LLM. A reply with no digit scores 0, so `max_tokens` must
   leave the model room to reach its answer; a model that narrates its count ("row 1 has 3 ...") is
   scored on the first number it mentions rather than on its stated total
+- Scoring is deterministic arithmetic and needs no LLM judge: keep `judge_strategy` at `rule` or
+  `auto`, since `llm` replaces both metrics with a generic judge score. To read a different number
+  out of a model that ignores the output format, prepend a per-run filter such as
+  `filters={'regex': {'regex_pattern': '(\\d+)', 'group_select': -1}}` (last number) via
+  `dataset_args` rather than editing the adapter
 - [Paper](https://arxiv.org/abs/2508.06585)
 """
 
