@@ -152,19 +152,15 @@ def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
         if isinstance(feat, Image):
             dataset = dataset.cast_column(col, Image(decode=False))
         elif isinstance(feat, Audio):
-            raise NotImplementedError('Parquet audio loading is not supported yet.')
-            # dataset = dataset.cast_column(col, Audio(decode=False))
+            dataset = dataset.cast_column(col, Audio(decode=False))
         elif isinstance(feat, Video):
-            raise NotImplementedError('Parquet video loading is not supported yet.')
-            # dataset = dataset.cast_column(col, Video(decode=False))
+            dataset = dataset.cast_column(col, Video(decode=False))
         elif isinstance(feat, Sequence) and isinstance(feat.feature, Image):
             dataset = dataset.cast_column(col, Sequence(Image(decode=False)))
         elif isinstance(feat, Sequence) and isinstance(feat.feature, Audio):
-            raise NotImplementedError('Parquet audio loading is not supported yet.')
-            # dataset = dataset.cast_column(col, Sequence(Audio(decode=False)))
+            dataset = dataset.cast_column(col, Sequence(Audio(decode=False)))
         elif isinstance(feat, Sequence) and isinstance(feat.feature, Video):
-            raise NotImplementedError('Parquet video loading is not supported yet.')
-            # dataset = dataset.cast_column(col, Sequence(Video(decode=False)))
+            dataset = dataset.cast_column(col, Sequence(Video(decode=False)))
     return dataset.to_list()
 
 

@@ -3,7 +3,7 @@
 本框架支持两种自定义多模态评测方式：
 
 - **通用问答题格式（General-VQA）**：基于 OpenAI 消息格式，支持多图片/音频输入、系统提示和 base64 编码，适用于问答类多模态评测任务。
-- **通用选择题格式（General-VMCQ）**：类似 MMMU 格式，问题文本中可包含图片占位符 `<image x>`，适用于选择题类多模态评测任务。
+- **通用选择题格式（General-VMCQ）**：类似 MMMU 格式，问题文本中可包含图片、视频和音频占位符，如 `<image x>`、`<video x>` 和 `<audio x>`，适用于选择题类多模态评测任务。
 
 ## 通用问答题格式（General-VQA）
 
@@ -325,16 +325,22 @@ evalscope eval \
 
 ### 1. 数据准备
 
-General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>` 和视频占位符 `<video x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。
+General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>`、视频占位符 `<video x>` 和音频占位符 `<audio x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。
 
 支持以下媒体形式（均为字符串，除非另有说明）：
 - 图片本地或远程路径/URL：`"custom_eval/multimodal/images/dog.jpg"` 或 `"https://.../dog.jpg"`
 - 图片 Base64 Data URL：`"data:image/jpeg;base64,/9j/4AAQSk..."`
-- 图片 [Hugging Face Image 格式](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)：`{"path": "..."}` 或 `{"bytes": b"..."}`（仅 Parquet 支持）。
 - 视频本地或远程路径/URL：`"custom_eval/multimodal/videos/sample.mp4"` 或 `"https://.../sample.mp4"`
 - 视频 Base64 Data URL：`"data:video/mp4;base64,AAAAIGZ0eX..."`
+- 音频本地或远程路径/URL：`"custom_eval/multimodal/audio/sample.wav"` 或 `"https://.../sample.wav"`
+- 音频 Base64 Data URL：`"data:audio/wav;base64,UklGRiQ..."`
+- 未解码的图片/视频/音频字典：`{"path": "..."}` 或 `{"bytes": b"..."}`，或 Hugging Face 的 [Image feature][HFImage]、[Video feature][HFVideo]、[Audio feature][HFAudio]。二进制内容仅支持从 Parquet 文件加载。
 
-支持最多 100 张图片（`image_1` 到 `image_100`，或使用 `images` 以传入图片列表，不受数量限制）和 100 个视频（`video_1` 到 `video_100`）。不存在的媒体占位符会被忽略。
+[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
+[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
+[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
+
+支持最多 100 张图片（`image_1` 到 `image_100`）、100 个视频（`video_1` 到 `video_100`）和 100 个音频（`audio_1` 到 `audio_100`）；使用 `images`/`videos`/`audios` 传入媒体列表时不受 100 的数量限制。不存在的媒体占位符会被忽略。
 
 **JSONL 示例**（`example.jsonl`）：
 ```json
@@ -351,13 +357,17 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 ```
 
 **字段说明**：
-- `question`: 问题文本，可包含 `<image x>` 或 `<video x>` 占位符
-- `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或媒体占位符（如 `"<image 1>"`、`"<video 1>"`），不需要添加 `A.`、`B.` 等前缀
+- `question`: 问题文本，可包含 `<image x>`、`<video x>` 或 `<audio x>` 占位符
+- `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或媒体占位符（如 `"<image 1>"`、`"<video 1>"`、`"<audio 1>"`），不需要添加 `A.`、`B.` 等前缀
 - `answer`: 正确答案字母（如 `"A"`、`"B"`）
-- `image_k`: 图片字符串（本地/远程路径、base64 Data URL 或 [Hugging Face Image 格式](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)），k ∈ [1, 100]
+- `image_k`: 图片字符串（本地/远程路径、base64 Data URL）或 [Image Feature][HFImage]，k ∈ [1, 100]
 - `images`: 图片列表，相当于连续的 `image_1`、`image_2`。仅在不存在 `image_k` 时使用。
-- `video_k`: 视频字符串（本地/远程路径或 base64 Data URL），k ∈ [1, 100]
+- `video_k`: 视频字符串（本地/远程路径或 base64 Data URL）或 [Video Feature][HFVideo]，k ∈ [1, 100]
 - `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"` 和 `"mov"`
+- `videos`: 视频列表，相当于连续的 `video_1`、`video_2`。仅在不存在 `video_k` 时使用。
+- `audio_k`: 音频字符串（本地/远程路径、URL 或 base64 Data URL）或 [Audio Feature][HFAudio]，k ∈ [1, 100]
+- `audio_k_format`: 可选的音频格式提示；支持 `"wav"` 和 `"mp3"`
+- `audios`: 音频列表，相当于连续的 `audio_1`、`audio_2`。仅在不存在 `audio_k` 时使用。
 
 ### 2. 配置评测任务
 

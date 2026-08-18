@@ -7,6 +7,7 @@ from typing import Literal, Optional, cast
 from evalscope.utils.uri_utils import data_uri_mime_type, file_as_data_uri, is_data_uri
 
 VideoFormat = Literal['mp4', 'mpeg', 'mov', 'avi']
+AudioFormat = Literal['mp3', 'wav']
 SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov', 'avi')
 VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
     'mp4': 'video/mp4',
@@ -53,10 +54,41 @@ def video_as_data_uri(video: str, video_format: Optional[VideoFormat] = None) ->
     return file_as_data_uri(video, default_mime_type=video_format_to_mime_type(video_format))
 
 
+def guess_audio_format(audio: Optional[str], default: AudioFormat = 'mp3') -> AudioFormat:
+    """Infer a supported audio format from a data URI, URL, or local path."""
+    if not audio:
+        return default
+
+    format_aliases: dict[str, AudioFormat] = {
+        'mpeg': 'mp3',
+        'mpga': 'mp3',
+        'x-mp3': 'mp3',
+        'x-wav': 'wav',
+        'wave': 'wav',
+        'vnd.wave': 'wav',
+    }
+
+    mime_type = data_uri_mime_type(audio)
+    if not mime_type:
+        path_like = audio.split('?', 1)[0].split('#', 1)[0]
+        mime_type, _ = mimetypes.guess_type(path_like, strict=False)
+
+    if mime_type and mime_type.startswith('audio/'):
+        subtype = mime_type.split('/', 1)[1].lower()
+        return format_aliases.get(subtype, default)
+
+    ext = os.path.splitext(audio.split('?', 1)[0].split('#', 1)[0])[1].lstrip('.').lower()
+    if ext:
+        return format_aliases.get(ext, default)
+
+    return default
+
+
 __all__ = [
     'SUPPORTED_VIDEO_FORMATS',
     'VIDEO_FORMAT_TO_MIME_TYPE',
     'VideoFormat',
+    'guess_audio_format',
     'guess_video_format',
     'video_as_data_uri',
     'video_format_to_mime_type',
