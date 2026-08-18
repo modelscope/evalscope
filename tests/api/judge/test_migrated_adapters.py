@@ -3,9 +3,8 @@
 Each test drives the real adapter through the executor with a scripted judge, so it covers
 ``build_judge_cases`` -> ``build_judge_request`` -> contract parse -> ``reduce_judge_verdicts`` -> ``finalize_judge_score``.
 """
-from typing import Any, List, Optional, Sequence
-
 import pytest
+from typing import Any, List, Optional, Sequence
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -65,9 +64,21 @@ def score_sample(adapter, prediction: str, target: str):
 @pytest.mark.parametrize(
     'verdict, expected',
     [
-        ('{"verdict": "A"}', {'is_correct': 1.0, 'is_incorrect': 0.0, 'is_not_attempted': 0.0}),
-        ('{"verdict": "B"}', {'is_correct': 0.0, 'is_incorrect': 1.0, 'is_not_attempted': 0.0}),
-        ('{"verdict": "C"}', {'is_correct': 0.0, 'is_incorrect': 0.0, 'is_not_attempted': 1.0}),
+        ('{"verdict": "A"}', {
+            'is_correct': 1.0,
+            'is_incorrect': 0.0,
+            'is_not_attempted': 0.0
+        }),
+        ('{"verdict": "B"}', {
+            'is_correct': 0.0,
+            'is_incorrect': 1.0,
+            'is_not_attempted': 0.0
+        }),
+        ('{"verdict": "C"}', {
+            'is_correct': 0.0,
+            'is_incorrect': 0.0,
+            'is_not_attempted': 1.0
+        }),
     ],
 )
 def test_simple_qa_grades_each_verdict(verdict, expected):
@@ -266,7 +277,9 @@ def test_aime_accepts_a_bare_verdict_line():
     adapter = make_adapter('aime24', ['{"verdict": "Yes"}'], judge_strategy='llm')
 
     assert score_sample(adapter, '42', '42').value == {'acc': 1.0}
-    assert score_sample(make_adapter('aime24', ['{"verdict": "No"}'], judge_strategy='llm'), '41', '42').value == {'acc': 0.0}
+    assert score_sample(make_adapter('aime24', ['{"verdict": "No"}'], judge_strategy='llm'), '41', '42').value == {
+        'acc': 0.0
+    }
 
 
 def test_aime_rejects_a_self_explaining_judge():
@@ -280,7 +293,10 @@ def test_aime_rejects_a_self_explaining_judge():
 
 
 def test_aime_rejects_conflicting_verdict_lines():
-    adapter = make_adapter('aime24', ['```json\n{"verdict": "Yes"}\n```\nOn reflection:\n```json\n{"verdict": "No"}\n```'], judge_strategy='llm')
+    adapter = make_adapter(
+        'aime24', ['```json\n{"verdict": "Yes"}\n```\nOn reflection:\n```json\n{"verdict": "No"}\n```'],
+        judge_strategy='llm'
+    )
 
     assert score_sample(adapter, '41', '42').status is ScoreStatus.EXCLUDED
 
@@ -331,10 +347,12 @@ def test_alpaca_eval_no_longer_matches_an_m_inside_prose():
 def test_orm_benchmarks_require_the_json_verdict(name):
     state = _state_with_question(None, 'answer', 'answer')
 
-    assert make_adapter(name, ['{"verdict": "YES"}'],
-                        judge_strategy='llm').calculate_metrics(state).score.value == {'acc': 1.0}
-    assert make_adapter(name, ['{"verdict": "NO"}'],
-                        judge_strategy='llm').calculate_metrics(state).score.value == {'acc': 0.0}
+    assert make_adapter(name, ['{"verdict": "YES"}'], judge_strategy='llm').calculate_metrics(state).score.value == {
+        'acc': 1.0
+    }
+    assert make_adapter(name, ['{"verdict": "NO"}'], judge_strategy='llm').calculate_metrics(state).score.value == {
+        'acc': 0.0
+    }
 
 
 @pytest.mark.parametrize('name', ['frames', 'docmath'])
@@ -351,7 +369,9 @@ def test_orm_benchmarks_no_longer_read_yes_out_of_the_explanation(name):
 def test_browsecomp_reads_the_correctness_field():
     state = _state_with_question(None, 'answer', 'answer')
 
-    correct = make_adapter('browsecomp', ['{"extracted_final_answer": "answer", "correct": "yes"}'], judge_strategy='llm')
+    correct = make_adapter(
+        'browsecomp', ['{"extracted_final_answer": "answer", "correct": "yes"}'], judge_strategy='llm'
+    )
     assert correct.calculate_metrics(state).score.value == {'is_correct': 1.0, 'is_incorrect': 0.0}
 
     wrong = make_adapter('browsecomp', ['{"correct": "no"}'], judge_strategy='llm')
@@ -423,7 +443,11 @@ def _charxiv_state(prediction: str, target: str, question_type: str) -> TaskStat
         id=0,
         input='question',
         target=target,
-        metadata={'question_type': question_type, 'question_id': 1, 'reasoning_a_type': 1},
+        metadata={
+            'question_type': question_type,
+            'question_id': 1,
+            'reasoning_a_type': 1
+        },
     )
     return TaskState(
         model='m',
@@ -583,7 +607,9 @@ def _mia_state(prediction: str) -> TaskState:
 
 
 def test_mia_bench_normalizes_each_component_and_derives_the_total():
-    adapter = make_adapter('mia_bench', ['{"reasoning": "ok", "component_1": 3, "component_2": 1}'], judge_strategy='llm')
+    adapter = make_adapter(
+        'mia_bench', ['{"reasoning": "ok", "component_1": 3, "component_2": 1}'], judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(_mia_state('un')).score
 
@@ -629,8 +655,10 @@ def _deepsearch_state(prediction: str, target: str, answer_type: str = 'Single A
     )
 
 
-_DEEPSEARCH_OK = ('{"Answer Correctness": {"Explanation": "match", '
-                  '"Correctness Details": {"Belgium": true, "France": true}, "Excessive Answers": []}}')
+_DEEPSEARCH_OK = (
+    '{"Answer Correctness": {"Explanation": "match", '
+    '"Correctness Details": {"Belgium": true, "France": true}, "Excessive Answers": []}}'
+)
 
 
 def test_deepsearchqa_reads_the_nested_official_json():
@@ -715,20 +743,22 @@ def test_hipho_step_level_bounds_each_criterion_and_takes_the_best_scheme():
             'answers': ['\\boxed{x}'],
             # Two schemes; each criterion carries its own point allocation.
             'marking': [
-                ['Award 1.0 pt if the student sets up momentum.',
-                 'Award 2.0 pts if the student solves for v.'],
+                ['Award 1.0 pt if the student sets up momentum.', 'Award 2.0 pts if the student solves for v.'],
                 ['Award 3.0 pts if the student uses energy conservation.'],
             ],
         },
     )
-    state = TaskState(model='m', sample=sample,
-                      output=ModelOutput.from_content(model='m', content='derivation'), completed=True)
+    state = TaskState(
+        model='m', sample=sample, output=ModelOutput.from_content(model='m', content='derivation'), completed=True
+    )
     # Scheme 0: 1/1 + 1/2 = 0.5;  Scheme 1: 3/3 = 1.0 -> best is 1.0.
-    adapter = make_adapter('hipho', [
-        '{"awarded": 1.0}',
-        '{"awarded": 1.0}',
-        '{"awarded": 3.0}',
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'hipho', [
+            '{"awarded": 1.0}',
+            '{"awarded": 1.0}',
+            '{"awarded": 3.0}',
+        ], judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(state).score
 
@@ -749,8 +779,9 @@ def test_hipho_step_level_rejects_a_score_exceeding_the_criterion_max():
             'marking': [['Award 1.0 pt if the student sets up momentum.']],
         },
     )
-    state = TaskState(model='m', sample=sample,
-                      output=ModelOutput.from_content(model='m', content='derivation'), completed=True)
+    state = TaskState(
+        model='m', sample=sample, output=ModelOutput.from_content(model='m', content='derivation'), completed=True
+    )
     adapter = make_adapter('hipho', ['{"awarded": 5.0}'], judge_strategy='llm')
 
     score = adapter.calculate_metrics(state).score
@@ -770,10 +801,21 @@ def _healthbench_state() -> TaskState:
         input='patient question',
         target='',
         metadata={
-            'prompt': [{'role': 'user', 'content': 'I have a headache.'}],
+            'prompt': [{
+                'role': 'user',
+                'content': 'I have a headache.'
+            }],
             'rubrics': [
-                {'criterion': 'Advises seeing a doctor', 'points': 5, 'tags': ['axis:accuracy']},
-                {'criterion': 'Mentions hydration', 'points': 3, 'tags': ['axis:completeness']},
+                {
+                    'criterion': 'Advises seeing a doctor',
+                    'points': 5,
+                    'tags': ['axis:accuracy']
+                },
+                {
+                    'criterion': 'Mentions hydration',
+                    'points': 3,
+                    'tags': ['axis:completeness']
+                },
             ],
         },
     )
@@ -786,10 +828,13 @@ def _healthbench_state() -> TaskState:
 
 
 def test_healthbench_weights_each_rubric_verdict():
-    adapter = make_adapter('health_bench', [
-        '{"explanation": "advises a doctor", "criteria_met": true}',
-        '{"explanation": "no hydration advice", "criteria_met": false}',
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'health_bench', [
+            '{"explanation": "advises a doctor", "criteria_met": true}',
+            '{"explanation": "no hydration advice", "criteria_met": false}',
+        ],
+        judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(_healthbench_state()).score
 
@@ -800,10 +845,13 @@ def test_healthbench_weights_each_rubric_verdict():
 
 
 def test_healthbench_excludes_a_sample_when_a_rubric_verdict_is_unparseable():
-    adapter = make_adapter('health_bench', [
-        '{"explanation": "ok", "criteria_met": true}',
-        'The response partially meets the criteria.',
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'health_bench', [
+            '{"explanation": "ok", "criteria_met": true}',
+            'The response partially meets the criteria.',
+        ],
+        judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(_healthbench_state()).score
 
@@ -881,10 +929,13 @@ def _cl_bench_state(prediction: str) -> TaskState:
 
 
 def test_cl_bench_reads_the_binary_overall_score():
-    adapter = make_adapter('cl_bench', [
-        '{"Grading Rationale": "all met", "List of Requirement Satisfaction Status": ["yes", "yes"], '
-        '"Overall Score": 1}'
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'cl_bench', [
+            '{"Grading Rationale": "all met", "List of Requirement Satisfaction Status": ["yes", "yes"], '
+            '"Overall Score": 1}'
+        ],
+        judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(_cl_bench_state('un')).score
 
@@ -927,8 +978,7 @@ def _drivelology_state() -> TaskState:
 
 
 def test_drivelology_normalizes_the_five_point_rating():
-    adapter = make_adapter('drivel_writing', ['{"reasoning": "close", "rating": 4}'],
-                           judge_strategy='llm')
+    adapter = make_adapter('drivel_writing', ['{"reasoning": "close", "rating": 4}'], judge_strategy='llm')
 
     score = adapter.calculate_metrics(_drivelology_state()).score
 
@@ -938,9 +988,10 @@ def test_drivelology_normalizes_the_five_point_rating():
 
 def test_drivelology_no_longer_grabs_any_digit_from_prose():
     """The old third-tier fallback matched any standalone 1-5 anywhere in the reply."""
-    adapter = make_adapter('drivel_writing',
-                           ['The candidate covers 3 of the reference points but misses the punchline.'],
-                           judge_strategy='llm')
+    adapter = make_adapter(
+        'drivel_writing', ['The candidate covers 3 of the reference points but misses the punchline.'],
+        judge_strategy='llm'
+    )
 
     score = adapter.calculate_metrics(_drivelology_state()).score
 
@@ -1031,8 +1082,13 @@ def test_arena_hard_aggregation_skips_excluded_samples():
 def _researchrubrics_state(report: str, rubrics: list) -> TaskState:
     import json
     sample = Sample(
-        id=0, input='research question', target=json.dumps(rubrics),
-        metadata={'sample_id': 'test_001', 'domain': 'science'},
+        id=0,
+        input='research question',
+        target=json.dumps(rubrics),
+        metadata={
+            'sample_id': 'test_001',
+            'domain': 'science'
+        },
     )
     return TaskState(
         model='m',
@@ -1044,13 +1100,24 @@ def _researchrubrics_state(report: str, rubrics: list) -> TaskState:
 
 def test_researchrubrics_binary_scores_short_docs():
     rubrics = [
-        {'criterion': 'Mentions gravity', 'axis': 'content', 'weight': 2.0},
-        {'criterion': 'Cites Newton', 'axis': 'references', 'weight': 1.0},
+        {
+            'criterion': 'Mentions gravity',
+            'axis': 'content',
+            'weight': 2.0
+        },
+        {
+            'criterion': 'Cites Newton',
+            'axis': 'references',
+            'weight': 1.0
+        },
     ]
-    adapter = make_adapter('researchrubrics', [
-        '{"verdict": "Satisfied", "score": 1.0, "confidence": 0.9, "reasoning": "ok", "evidence_quotes": ["g"], "missing_elements": []}',
-        '{"verdict": "Not Satisfied", "score": 0.0, "confidence": 0.8, "reasoning": "no", "evidence_quotes": [], "missing_elements": ["Newton"]}',
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'researchrubrics', [
+            '{"verdict": "Satisfied", "score": 1.0, "confidence": 0.9, "reasoning": "ok", "evidence_quotes": ["g"], "missing_elements": []}',
+            '{"verdict": "Not Satisfied", "score": 0.0, "confidence": 0.8, "reasoning": "no", "evidence_quotes": [], "missing_elements": ["Newton"]}',
+        ],
+        judge_strategy='llm'
+    )
 
     state = _researchrubrics_state('Gravity pulls objects together.', rubrics)
     score = adapter._score_task_state(state)
@@ -1068,21 +1135,25 @@ def test_researchrubrics_chunked_emits_synthesis_after_chunks():
     # Make a report that triggers chunking (> judge_context_limit * 4 chars).
     long_report = 'word ' * 800000  # 4M chars → 1M estimated tokens > 150k default
 
-    adapter = make_adapter('researchrubrics', [
-        # Chunk responses (one per chunk)
-        '{"relevant_evidence": ["ref found in chunk 1"], "satisfaction": true, "confidence_for_chunk": 0.9, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 2"], "satisfaction": true, "confidence_for_chunk": 0.8, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 3"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 4"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 5"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 6"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 7"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 8"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 9"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        '{"relevant_evidence": ["ref in chunk 10"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
-        # Synthesis response
-        '{"verdict": "Satisfied", "score": 1.0, "confidence": 0.95, "reasoning": "synthesized", "evidence_quotes": ["ref found in chunk 1"], "missing_elements": []}',
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'researchrubrics',
+        [
+            # Chunk responses (one per chunk)
+            '{"relevant_evidence": ["ref found in chunk 1"], "satisfaction": true, "confidence_for_chunk": 0.9, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 2"], "satisfaction": true, "confidence_for_chunk": 0.8, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 3"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 4"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 5"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 6"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 7"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 8"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 9"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            '{"relevant_evidence": ["ref in chunk 10"], "satisfaction": true, "confidence_for_chunk": 0.7, "notes": "ok"}',
+            # Synthesis response
+            '{"verdict": "Satisfied", "score": 1.0, "confidence": 0.95, "reasoning": "synthesized", "evidence_quotes": ["ref found in chunk 1"], "missing_elements": []}',
+        ],
+        judge_strategy='llm'
+    )
 
     state = _researchrubrics_state(long_report, rubrics)
     score = adapter._score_task_state(state)
@@ -1093,9 +1164,13 @@ def test_researchrubrics_chunked_emits_synthesis_after_chunks():
 
 def test_researchrubrics_rejects_unparseable_verdict():
     rubrics = [{'criterion': 'Has intro', 'axis': 'structure', 'weight': 1.0}]
-    adapter = make_adapter('researchrubrics', [
-        'The document has a fine introduction.',  # Not JSON
-    ], judge_strategy='llm')
+    adapter = make_adapter(
+        'researchrubrics',
+        [
+            'The document has a fine introduction.',  # Not JSON
+        ],
+        judge_strategy='llm'
+    )
 
     state = _researchrubrics_state('Hello world.', rubrics)
     score = adapter._score_task_state(state)

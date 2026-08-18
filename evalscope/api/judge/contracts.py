@@ -11,6 +11,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, List, Literal, Optional, Sequence, Type, get_args, get_origin
 
+
 class ParseResult(BaseModel):
     """Outcome of parsing one judge response against a contract."""
 
@@ -49,10 +50,8 @@ class OutputContract(BaseModel):
         fields = '\n'.join(
             f'- "{field.alias or name}": {_describe(field)}' for name, field in self.schema_model.model_fields.items()
         )
-        return (
-            '\n\nReply with a single JSON object and no other text, containing exactly these keys:\n'
-            f'{fields}'
-        )
+        return ('\n\nReply with a single JSON object and no other text, containing exactly these keys:\n'
+                f'{fields}')
 
     def parse(self, response: str) -> ParseResult:
         """Parse a judge reply, strictly."""
@@ -120,13 +119,15 @@ def _describe(field: Any) -> str:
         return f'exactly one of {allowed}'
 
     bounds = [
-        f'>= {meta.ge}' if getattr(meta, 'ge', None) is not None else
-        f'<= {meta.le}' if getattr(meta, 'le', None) is not None else ''
+        f'>= {meta.ge}'
+        if getattr(meta, 'ge', None) is not None else f'<= {meta.le}' if getattr(meta, 'le', None) is not None else ''
         for meta in field.metadata
     ]
     bounds = [bound for bound in bounds if bound]
-    kind = ('true or false' if annotation is bool else 'an integer' if annotation is int else
-            'a number' if annotation is float else 'a list' if get_origin(annotation) is list else 'a string')
+    kind = (
+        'true or false' if annotation is bool else 'an integer' if annotation is int else
+        'a number' if annotation is float else 'a list' if get_origin(annotation) is list else 'a string'
+    )
     if bounds:
         return f'{kind} {" and ".join(bounds)}'
     return f'{kind}' + (f' ({field.description})' if field.description else '')
