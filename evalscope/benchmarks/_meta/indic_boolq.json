@@ -9,11 +9,11 @@
       "MultiLingual"
     ],
     "metrics": [
-      "acc"
+      "accuracy"
     ],
     "few_shot_num": 0,
     "eval_split": "validation",
-    "train_split": "",
+    "train_split": "train",
     "subset_list": [
       "bn",
       "en",
@@ -27,7 +27,7 @@
       "ta",
       "te"
     ],
-    "description": "\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n",
+    "description": "\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample\n  count — the full default run is 35,970 samples across all 11 languages\n- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `train` split\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n",
     "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -36,13 +36,147 @@
     "sandbox_config": {},
     "category": "llm"
   },
-  "statistics": {},
-  "sample_example": {},
-  "readme": {
-    "en": "# BoolQ-Indic\n\n\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `indic_boolq` |\n| **Dataset ID** | [sarvamai/boolq-indic](https://modelscope.cn/datasets/sarvamai/boolq-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `ReadingComprehension` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_boolq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_boolq'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "",
-    "content_hash": "3e5c5e3ca5731ca911101e182454eb06",
-    "needs_translation": true
+  "statistics": {
+    "total_samples": 35970,
+    "subset_stats": [
+      {
+        "name": "bn",
+        "sample_count": 3270,
+        "prompt_length_mean": 801.95,
+        "prompt_length_min": 294,
+        "prompt_length_max": 2308,
+        "prompt_length_std": 303.12,
+        "target_length_mean": 1
+      },
+      {
+        "name": "en",
+        "sample_count": 3270,
+        "prompt_length_mean": 814.26,
+        "prompt_length_min": 292,
+        "prompt_length_max": 5035,
+        "prompt_length_std": 329.04,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gu",
+        "sample_count": 3270,
+        "prompt_length_mean": 793.37,
+        "prompt_length_min": 283,
+        "prompt_length_max": 2105,
+        "prompt_length_std": 290.86,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hi",
+        "sample_count": 3270,
+        "prompt_length_mean": 818.47,
+        "prompt_length_min": 297,
+        "prompt_length_max": 3078,
+        "prompt_length_std": 323.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "kn",
+        "sample_count": 3270,
+        "prompt_length_mean": 833.99,
+        "prompt_length_min": 275,
+        "prompt_length_max": 2920,
+        "prompt_length_std": 312.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ml",
+        "sample_count": 3270,
+        "prompt_length_mean": 869.99,
+        "prompt_length_min": 294,
+        "prompt_length_max": 3558,
+        "prompt_length_std": 330.04,
+        "target_length_mean": 1
+      },
+      {
+        "name": "mr",
+        "sample_count": 3270,
+        "prompt_length_mean": 806.68,
+        "prompt_length_min": 289,
+        "prompt_length_max": 2593,
+        "prompt_length_std": 308.35,
+        "target_length_mean": 1
+      },
+      {
+        "name": "or",
+        "sample_count": 3270,
+        "prompt_length_mean": 787.68,
+        "prompt_length_min": 306,
+        "prompt_length_max": 1482,
+        "prompt_length_std": 255.25,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pa",
+        "sample_count": 3270,
+        "prompt_length_mean": 804.93,
+        "prompt_length_min": 295,
+        "prompt_length_max": 1975,
+        "prompt_length_std": 296.49,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ta",
+        "sample_count": 3270,
+        "prompt_length_mean": 904.01,
+        "prompt_length_min": 297,
+        "prompt_length_max": 3570,
+        "prompt_length_std": 357.0,
+        "target_length_mean": 1
+      },
+      {
+        "name": "te",
+        "sample_count": 3270,
+        "prompt_length_mean": 813.95,
+        "prompt_length_min": 284,
+        "prompt_length_max": 3312,
+        "prompt_length_std": 307.23,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 822.66,
+      "min": 275,
+      "max": 5035,
+      "std": 312.97
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-18T17:27:01.790564"
   },
-  "updated_at": "2026-08-14T07:26:25.220977"
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0f04f0f7",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nসকল জৈববস্তুই কমপক্ষে এই ধাপগুলোর মধ্য দিয়ে যায়: এগুলো চা ... [TRUNCATED 1099 chars] ...  বার্কলেতে  ছয়টি পৃথক গবেষণা বিশ্লেষণ করার পর, একটি গবেষণায় উপসংহারে আসা গেছে যে, ভুট্টা থেকে ইথানল উৎপাদনে পেট্রোলিয়ামের ব্যবহার গ্যাসোলিন উৎপাদনের তুলনায় অনেক কম।\n\nQuestion: ইথানল উৎপাদনের চেয়ে  তৈরিতে কি বেশি শক্তি লাগে??\n\nA) Yes\nB) No"
+        }
+      ],
+      "choices": [
+        "Yes",
+        "No"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "bn",
+      "metadata": {
+        "language": "Bengali"
+      }
+    },
+    "subset": "bn",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BoolQ-Indic\n\n\n## Overview\n\nBoolQ-Indic is a translation of the BoolQ yes/no reading-comprehension benchmark into 10 Indic\nlanguages plus English, for evaluating multilingual passage understanding.\n\n## Task Description\n\n- **Task Type**: Multilingual Yes/No Reading Comprehension\n- **Input**: Passage + yes/no question in one of 11 languages\n- **Output**: `Yes` or `No`\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (validation split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`), or `limit` to cap sample\n  count — the full default run is 35,970 samples across all 11 languages\n- Set `few_shot_num` > 0 to enable few-shot prompting; examples are drawn from the `train` split\n- All languages ship in a single dataset config; this adapter reformats by the `language` field\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `indic_boolq` |\n| **Dataset ID** | [sarvamai/boolq-indic](https://modelscope.cn/datasets/sarvamai/boolq-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `ReadingComprehension` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 35,970 |\n| Prompt Length (Mean) | 822.66 chars |\n| Prompt Length (Min/Max) | 275 / 5035 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `bn` | 3,270 | 801.95 | 294 | 2308 |\n| `en` | 3,270 | 814.26 | 292 | 5035 |\n| `gu` | 3,270 | 793.37 | 283 | 2105 |\n| `hi` | 3,270 | 818.47 | 297 | 3078 |\n| `kn` | 3,270 | 833.99 | 275 | 2920 |\n| `ml` | 3,270 | 869.99 | 294 | 3558 |\n| `mr` | 3,270 | 806.68 | 289 | 2593 |\n| `or` | 3,270 | 787.68 | 306 | 1482 |\n| `pa` | 3,270 | 804.93 | 295 | 1975 |\n| `ta` | 3,270 | 904.01 | 297 | 3570 |\n| `te` | 3,270 | 813.95 | 284 | 3312 |\n\n## Sample Example\n\n**Subset**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0f04f0f7\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nসকল জৈববস্তুই কমপক্ষে এই ধাপগুলোর মধ্য দিয়ে যায়: এগুলো চা ... [TRUNCATED 1099 chars] ...  বার্কলেতে  ছয়টি পৃথক গবেষণা বিশ্লেষণ করার পর, একটি গবেষণায় উপসংহারে আসা গেছে যে, ভুট্টা থেকে ইথানল উৎপাদনে পেট্রোলিয়ামের ব্যবহার গ্যাসোলিন উৎপাদনের তুলনায় অনেক কম।\\n\\nQuestion: ইথানল উৎপাদনের চেয়ে  তৈরিতে কি বেশি শক্তি লাগে??\\n\\nA) Yes\\nB) No\"\n    }\n  ],\n  \"choices\": [\n    \"Yes\",\n    \"No\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"bn\",\n  \"metadata\": {\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_boolq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_boolq'],\n    dataset_args={\n        'indic_boolq': {\n            # subset_list: ['bn', 'en', 'gu']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BoolQ-Indic\n\n\n## 概述\n\nBoolQ-Indic 是将 BoolQ 是/否阅读理解基准测试翻译为 10 种印度语言及英语的版本，用于评估多语言段落理解能力。\n\n## 任务描述\n\n- **任务类型**：多语言是/否阅读理解\n- **输入**：一段文章 + 一个用 11 种语言之一提出的是/否问题\n- **输出**：`Yes` 或 `No`\n- **语言**：孟加拉语、英语、古吉拉特语、印地语、卡纳达语、马拉雅拉姆语、马拉地语、奥里亚语、旁遮普语、泰米尔语、泰卢固语\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（验证集）\n- 使用 `subset_list` 来评估特定语言（例如 `['hi', 'ta']`），或使用 `limit` 限制样本数量 —— 默认完整运行包含全部 11 种语言共 35,970 个样本\n- 设置 `few_shot_num` > 0 可启用少样本提示；示例从 `train` 划分中抽取\n- 所有语言均包含在单一数据集配置中；此适配器根据 `language` 字段重新格式化数据\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `indic_boolq` |\n| **数据集ID** | [sarvamai/boolq-indic](https://modelscope.cn/datasets/sarvamai/boolq-indic/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `MultiLingual`, `ReadingComprehension` |\n| **指标** | `accuracy` |\n| **默认样本数** | 0-shot |\n| **评估划分** | `validation` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 35,970 |\n| 提示词长度（平均） | 822.66 字符 |\n| 提示词长度（最小/最大） | 275 / 5035 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `bn` | 3,270 | 801.95 | 294 | 2308 |\n| `en` | 3,270 | 814.26 | 292 | 5035 |\n| `gu` | 3,270 | 793.37 | 283 | 2105 |\n| `hi` | 3,270 | 818.47 | 297 | 3078 |\n| `kn` | 3,270 | 833.99 | 275 | 2920 |\n| `ml` | 3,270 | 869.99 | 294 | 3558 |\n| `mr` | 3,270 | 806.68 | 289 | 2593 |\n| `or` | 3,270 | 787.68 | 306 | 1482 |\n| `pa` | 3,270 | 804.93 | 295 | 1975 |\n| `ta` | 3,270 | 904.01 | 297 | 3570 |\n| `te` | 3,270 | 813.95 | 284 | 3312 |\n\n## 样例示例\n\n**子集**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0f04f0f7\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nসকল জৈববস্তুই কমপক্ষে এই ধাপগুলোর মধ্য দিয়ে যায়: এগুলো চা ... [TRUNCATED 1099 chars] ...  বার্কলেতে  ছয়টি পৃথক গবেষণা বিশ্লেষণ করার পর, একটি গবেষণায় উপসংহারে আসা গেছে যে, ভুট্টা থেকে ইথানল উৎপাদনে পেট্রোলিয়ামের ব্যবহার গ্যাসোলিন উৎপাদনের তুলনায় অনেক কম।\\n\\nQuestion: ইথানল উৎপাদনের চেয়ে  তৈরিতে কি বেশি শক্তি লাগে??\\n\\nA) Yes\\nB) No\"\n    }\n  ],\n  \"choices\": [\n    \"Yes\",\n    \"No\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"bn\",\n  \"metadata\": {\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_boolq \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_boolq'],\n    dataset_args={\n        'indic_boolq': {\n            # subset_list: ['bn', 'en', 'gu']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "4397d781adf19ef55b8b3c50d82adb01",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-18T17:27:04.093478",
+  "translation_updated_at": "2026-08-18T17:31:57"
 }

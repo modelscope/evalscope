@@ -9,7 +9,7 @@
       "MultiLingual"
     ],
     "metrics": [
-      "acc"
+      "accuracy"
     ],
     "few_shot_num": 0,
     "eval_split": "test",
@@ -36,13 +36,149 @@
     "sandbox_config": {},
     "category": "llm"
   },
-  "statistics": {},
-  "sample_example": {},
-  "readme": {
-    "en": "# ARC-Challenge-Indic\n\n\n## Overview\n\nARC-Challenge-Indic is a translation of the AI2 Reasoning Challenge (ARC-Challenge) science\nquestion-answering benchmark into 10 Indic languages, plus the original English set, for evaluating\nmultilingual scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Science Question Answering\n- **Input**: Science question with answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- Same underlying science-exam questions as `arc` (Challenge split), machine/human translated per language\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arc_indic` |\n| **Dataset ID** | [sarvamai/arc-challenge-indic](https://modelscope.cn/datasets/sarvamai/arc-challenge-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `acc` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc_indic'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "",
-    "content_hash": "9bbbd1ec1441d1478f98d85d0c27a9f8",
-    "needs_translation": true
+  "statistics": {
+    "total_samples": 12647,
+    "subset_stats": [
+      {
+        "name": "bn",
+        "sample_count": 1150,
+        "prompt_length_mean": 432.51,
+        "prompt_length_min": 242,
+        "prompt_length_max": 1137,
+        "prompt_length_std": 115.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "en",
+        "sample_count": 1147,
+        "prompt_length_mean": 454.88,
+        "prompt_length_min": 253,
+        "prompt_length_max": 1111,
+        "prompt_length_std": 120.28,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gu",
+        "sample_count": 1150,
+        "prompt_length_mean": 426.57,
+        "prompt_length_min": 243,
+        "prompt_length_max": 1098,
+        "prompt_length_std": 109.05,
+        "target_length_mean": 1
+      },
+      {
+        "name": "hi",
+        "sample_count": 1150,
+        "prompt_length_mean": 443.47,
+        "prompt_length_min": 236,
+        "prompt_length_max": 1162,
+        "prompt_length_std": 117.22,
+        "target_length_mean": 1
+      },
+      {
+        "name": "kn",
+        "sample_count": 1150,
+        "prompt_length_mean": 456.08,
+        "prompt_length_min": 245,
+        "prompt_length_max": 1199,
+        "prompt_length_std": 126.33,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ml",
+        "sample_count": 1150,
+        "prompt_length_mean": 473.31,
+        "prompt_length_min": 239,
+        "prompt_length_max": 2053,
+        "prompt_length_std": 139.45,
+        "target_length_mean": 1
+      },
+      {
+        "name": "mr",
+        "sample_count": 1150,
+        "prompt_length_mean": 434.22,
+        "prompt_length_min": 242,
+        "prompt_length_max": 1133,
+        "prompt_length_std": 112.83,
+        "target_length_mean": 1
+      },
+      {
+        "name": "or",
+        "sample_count": 1150,
+        "prompt_length_mean": 440.04,
+        "prompt_length_min": 243,
+        "prompt_length_max": 1374,
+        "prompt_length_std": 121.81,
+        "target_length_mean": 1
+      },
+      {
+        "name": "pa",
+        "sample_count": 1150,
+        "prompt_length_mean": 443.35,
+        "prompt_length_min": 236,
+        "prompt_length_max": 1132,
+        "prompt_length_std": 117.88,
+        "target_length_mean": 1
+      },
+      {
+        "name": "ta",
+        "sample_count": 1150,
+        "prompt_length_mean": 479.12,
+        "prompt_length_min": 243,
+        "prompt_length_max": 1295,
+        "prompt_length_std": 137.26,
+        "target_length_mean": 1
+      },
+      {
+        "name": "te",
+        "sample_count": 1150,
+        "prompt_length_mean": 444.53,
+        "prompt_length_min": 244,
+        "prompt_length_max": 1172,
+        "prompt_length_std": 118.12,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 448.01,
+      "min": 236,
+      "max": 2053,
+      "std": 122.72
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-18T17:29:33.762181"
   },
-  "updated_at": "2026-08-14T07:26:25.217863"
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "f750462b",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nএকজন খগোলবিদ পর্যবেক্ষণ করেন যে একটি উল্কা পতনের পরে একটি গ্রহের ঘূর্ণন গতি বেড়ে যায়। ঘূর্ণন বৃদ্ধির ফলে কোন প্রভাবটি সবচেয়ে বেশি সম্ভাব্য?\n\nA) গ্রহের ঘনত্ব কমে যাবে।\nB) গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।\nC) গ্রহের দিনগুলি ছোট হয়ে যাবে।\nD) গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।"
+        }
+      ],
+      "choices": [
+        "গ্রহের ঘনত্ব কমে যাবে।",
+        "গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।",
+        "গ্রহের দিনগুলি ছোট হয়ে যাবে।",
+        "গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।"
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "Mercury_7175875",
+        "language": "Bengali"
+      }
+    },
+    "subset": "bn",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# ARC-Challenge-Indic\n\n\n## Overview\n\nARC-Challenge-Indic is a translation of the AI2 Reasoning Challenge (ARC-Challenge) science\nquestion-answering benchmark into 10 Indic languages, plus the original English set, for evaluating\nmultilingual scientific reasoning.\n\n## Task Description\n\n- **Task Type**: Multilingual Multiple-Choice Science Question Answering\n- **Input**: Science question with answer choices in one of 11 languages\n- **Output**: Correct answer letter\n- **Languages**: Bengali, English, Gujarati, Hindi, Kannada, Malayalam, Marathi, Odia, Punjabi, Tamil, Telugu\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split)\n- Use `subset_list` to evaluate specific languages (e.g., `['hi', 'ta']`)\n- Same underlying science-exam questions as `arc` (Challenge split), machine/human translated per language\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `arc_indic` |\n| **Dataset ID** | [sarvamai/arc-challenge-indic](https://modelscope.cn/datasets/sarvamai/arc-challenge-indic/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ`, `MultiLingual`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 12,647 |\n| Prompt Length (Mean) | 448.01 chars |\n| Prompt Length (Min/Max) | 236 / 2053 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `bn` | 1,150 | 432.51 | 242 | 1137 |\n| `en` | 1,147 | 454.88 | 253 | 1111 |\n| `gu` | 1,150 | 426.57 | 243 | 1098 |\n| `hi` | 1,150 | 443.47 | 236 | 1162 |\n| `kn` | 1,150 | 456.08 | 245 | 1199 |\n| `ml` | 1,150 | 473.31 | 239 | 2053 |\n| `mr` | 1,150 | 434.22 | 242 | 1133 |\n| `or` | 1,150 | 440.04 | 243 | 1374 |\n| `pa` | 1,150 | 443.35 | 236 | 1132 |\n| `ta` | 1,150 | 479.12 | 243 | 1295 |\n| `te` | 1,150 | 444.53 | 244 | 1172 |\n\n## Sample Example\n\n**Subset**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f750462b\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nএকজন খগোলবিদ পর্যবেক্ষণ করেন যে একটি উল্কা পতনের পরে একটি গ্রহের ঘূর্ণন গতি বেড়ে যায়। ঘূর্ণন বৃদ্ধির ফলে কোন প্রভাবটি সবচেয়ে বেশি সম্ভাব্য?\\n\\nA) গ্রহের ঘনত্ব কমে যাবে।\\nB) গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।\\nC) গ্রহের দিনগুলি ছোট হয়ে যাবে।\\nD) গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।\"\n    }\n  ],\n  \"choices\": [\n    \"গ্রহের ঘনত্ব কমে যাবে।\",\n    \"গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।\",\n    \"গ্রহের দিনগুলি ছোট হয়ে যাবে।\",\n    \"গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Mercury_7175875\",\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc_indic \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc_indic'],\n    dataset_args={\n        'arc_indic': {\n            # subset_list: ['bn', 'en', 'gu']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ARC-Challenge-Indic\n\n\n## 概述\n\nARC-Challenge-Indic 是将 AI2 推理挑战赛（ARC-Challenge）科学问答基准翻译成 10 种印度语言，并保留原始英文版本，共涵盖 11 种语言，用于评估多语言科学推理能力。\n\n## 任务描述\n\n- **任务类型**：多语言多项选择科学问答\n- **输入**：以 11 种语言之一呈现的科学问题及其选项\n- **输出**：正确答案对应的字母\n- **语言**：孟加拉语、英语、古吉拉特语、印地语、卡纳达语、马拉雅拉姆语、马拉地语、奥里亚语、旁遮普语、泰米尔语、泰卢固语\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（测试集）\n- 使用 `subset_list` 参数可指定评估特定语言（例如 `['hi', 'ta']`）\n- 所用题目与 `arc` 基准（Challenge 分割）相同，每种语言均经过机器或人工翻译\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `arc_indic` |\n| **数据集ID** | [sarvamai/arc-challenge-indic](https://modelscope.cn/datasets/sarvamai/arc-challenge-indic/summary) |\n| **论文** | N/A |\n| **标签** | `MCQ`, `MultiLingual`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认样本数** | 0-shot |\n| **评估分割** | `test` |\n| **训练分割** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 12,647 |\n| 提示词长度（平均） | 448.01 字符 |\n| 提示词长度（最小/最大） | 236 / 2053 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `bn` | 1,150 | 432.51 | 242 | 1137 |\n| `en` | 1,147 | 454.88 | 253 | 1111 |\n| `gu` | 1,150 | 426.57 | 243 | 1098 |\n| `hi` | 1,150 | 443.47 | 236 | 1162 |\n| `kn` | 1,150 | 456.08 | 245 | 1199 |\n| `ml` | 1,150 | 473.31 | 239 | 2053 |\n| `mr` | 1,150 | 434.22 | 242 | 1133 |\n| `or` | 1,150 | 440.04 | 243 | 1374 |\n| `pa` | 1,150 | 443.35 | 236 | 1132 |\n| `ta` | 1,150 | 479.12 | 243 | 1295 |\n| `te` | 1,150 | 444.53 | 244 | 1172 |\n\n## 样例示例\n\n**子集**: `bn`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"f750462b\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nএকজন খগোলবিদ পর্যবেক্ষণ করেন যে একটি উল্কা পতনের পরে একটি গ্রহের ঘূর্ণন গতি বেড়ে যায়। ঘূর্ণন বৃদ্ধির ফলে কোন প্রভাবটি সবচেয়ে বেশি সম্ভাব্য?\\n\\nA) গ্রহের ঘনত্ব কমে যাবে।\\nB) গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।\\nC) গ্রহের দিনগুলি ছোট হয়ে যাবে।\\nD) গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।\"\n    }\n  ],\n  \"choices\": [\n    \"গ্রহের ঘনত্ব কমে যাবে।\",\n    \"গ্রহীয় বছরগুলি আরও দীর্ঘ হবে।\",\n    \"গ্রহের দিনগুলি ছোট হয়ে যাবে।\",\n    \"গ্রহের মাধ্যাকর্ষণ শক্তি আরও বৃদ্ধি পাবে।\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Mercury_7175875\",\n    \"language\": \"Bengali\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets arc_indic \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['arc_indic'],\n    dataset_args={\n        'arc_indic': {\n            # subset_list: ['bn', 'en', 'gu']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1603b171dc8bba7d502d13860a4f8a62",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-18T17:29:39.358102",
+  "translation_updated_at": "2026-08-18T17:31:57"
 }
