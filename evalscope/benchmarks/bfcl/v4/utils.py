@@ -83,6 +83,45 @@ DUMMY_MODEL_UNDERSCORE_TO_DOT = 'gpt-4o-2024-11-20-FC'
 DUMMY_MODEL_NO_UNDERSCORE_TO_DOT = 'meta-llama/Llama-3.3-70B-Instruct-FC'
 
 # ----------------------------
+# Handler compatibility helpers
+# ----------------------------
+
+
+def patch_openai_completions_handler_empty_tool_calls(handler_cls: type[Any]) -> None:
+    """Work around a bfcl_eval bug where a text-only assistant turn loses its content.
+
+    ``OpenAICompletionsHandler._parse_query_response_FC`` only falls back to
+    ``message.content`` when iterating ``message.tool_calls`` *raises* (i.e. when it
+    is ``None``). Many OpenAI-compatible servers (e.g. vLLM, SGLang) return
+    ``tool_calls: []`` instead of omitting/nulling it for text-only completions, so the
+    list comprehension over an empty list succeeds and silently produces
+    ``model_responses == []``, discarding the model's real final answer. This has been
+    reported and fixed upstream (ShishirPatil/gorilla#1316, #1351) but is not yet
+    included in the ``bfcl-eval`` version this package pins, so we patch the method on
+    the handler class here.
+    """
+
+    def _parse_query_response_FC(self, api_response):
+        message = api_response.choices[0].message
+        tool_calls = message.tool_calls or []
+        if tool_calls:
+            model_responses = [{call.function.name: call.function.arguments} for call in tool_calls]
+            tool_call_ids = [call.id for call in tool_calls]
+        else:
+            model_responses = message.content or ''
+            tool_call_ids = []
+        return {
+            'model_responses': model_responses,
+            'model_responses_message_for_chat_history': message,
+            'tool_call_ids': tool_call_ids,
+            'input_token': api_response.usage.prompt_tokens,
+            'output_token': api_response.usage.completion_tokens,
+        }
+
+    handler_cls._parse_query_response_FC = _parse_query_response_FC
+
+
+# ----------------------------
 # Data preparation helpers
 # ----------------------------
 

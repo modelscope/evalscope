@@ -24,6 +24,7 @@ from .utils import (
     compute_aggregate_subsets,
     compute_entry_result,
     load_bfcl_data,
+    patch_openai_completions_handler_empty_tool_calls,
     process_test_entries,
     run_prereq_inference,
     synthesize_agent_messages,
@@ -184,6 +185,8 @@ class BFCLV4Adapter(AgentAdapter):
             os.environ['OPENAI_BASE_URL'] = base_url
         else:
             os.environ.pop('OPENAI_BASE_URL', None)
+
+        patch_openai_completions_handler_empty_tool_calls(OpenAICompletionsHandler)
 
         self.handler = OpenAICompletionsHandler(
             model_name=self._task_config.model,
