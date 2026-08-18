@@ -74,7 +74,7 @@ class VQA:
         Print information about the VQA annotation file.
         :return:
         """
-        for key, value in self.datset['info'].items():
+        for key, value in self.dataset['info'].items():
             print('%s: %s' % (key, value))
 
     def getQuesIds(self, imgIds=[], quesTypes=[], ansTypes=[]):
