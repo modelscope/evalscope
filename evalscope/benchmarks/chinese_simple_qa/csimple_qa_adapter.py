@@ -1,15 +1,30 @@
-import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class Grade(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['A', 'B', 'C']
+
+
+JUDGE_SYSTEM_PROMPT = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
+
+GRADE_CONTRACT = OutputContract(
+    schema_model=Grade,
+    # Upstream falls back to 未尝试 (NOT_ATTEMPTED) rather than retrying a malformed verdict.
+    parse_retries=0,
+)
 
 GRADER_TEMPLATE = """
 请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。您的任务是将结果评定为：【正确】、【错误】或【未尝试】。
@@ -81,7 +96,6 @@ A:【正确】
 B:【错误】
 C:【未尝试】
 
-只返回字母"A"、"B"或"C"，无须添加其他文本。
 """.strip()
 
 SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应用科学', '生活、艺术与文化', '社会', '自然与自然科学']
@@ -131,7 +145,8 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 )
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,39 +174,32 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
         return Sample(input=question, target=answer, subset_key=subset_key, metadata=metadata)
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        prompt = GRADER_TEMPLATE.format(
+            question=context.task_state.input_text,
+            target=context.reference,
+            predicted_answer=context.filtered_prediction,
+        )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
+
+    def judge_fallback_verdict(self, case, context) -> CaseVerdict:
+        return CaseVerdict(case_id=case.case_id, value=Grade(verdict='C'))
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        grade = case_verdicts[0].value.verdict
+        return ReducedVerdict(
+            value={
+                'is_correct': 1.0 if grade == 'A' else 0.0,
+                'is_incorrect': 1.0 if grade == 'B' else 0.0,
+                'is_not_attempted': 1.0 if grade == 'C' else 0.0,
+            }
         )
 
-        question = task_state.input_text
-
-        # Request judge and obtain score
-        prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
-        system_prompt = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
-        judge_response = self.llm_judge.judge(prompt, system_prompt=system_prompt)
-        # parse grading response
-        match = re.search(r'(A|B|C)', judge_response)
-        res = match.group(0) if match else 'C'
-
-        # Set score based on the match result
-        score.value = {
-            'is_correct': 1 if res == 'A' else 0,
-            'is_incorrect': 1 if res == 'B' else 0,
-            'is_not_attempted': 1 if res == 'C' else 0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'is_correct'
         return score

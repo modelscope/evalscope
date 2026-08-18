@@ -6,7 +6,7 @@ import { EvalResultPanel } from './EvalResultPanel'
 
 afterEach(cleanup)
 
-function renderPanel(nScore: number) {
+function renderPanel(nScore: number | null, status?: string) {
   return render(
     <ThemeProvider>
       <LocaleProvider>
@@ -14,7 +14,8 @@ function renderPanel(nScore: number) {
           pred="B"
           gold="B"
           nScore={nScore}
-          score={{ acc: nScore }}
+          status={status}
+          score={nScore === null ? {} : { acc: nScore }}
           metadata={{ id: '1' }}
           threshold={0.99}
           showPred
@@ -39,5 +40,23 @@ describe('EvalResultPanel', () => {
     expect(screen.getByRole('button', { name: 'Score Detail' })).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('"acc"')).not.toBeInTheDocument()
     expect(screen.getByText('20%')).toHaveStyle({ color: 'var(--danger)' })
+  })
+
+  it('shows the judge failure reason instead of a 0% score when there is none', () => {
+    renderPanel(null, 'parse_error')
+
+    expect(screen.getByText('Unavailable')).toBeInTheDocument()
+    expect(screen.getByText('Judge response could not be parsed')).toBeInTheDocument()
+    expect(screen.queryByText('0%')).not.toBeInTheDocument()
+    expect(screen.queryByText('Below filter')).not.toBeInTheDocument()
+  })
+
+  it('falls back to a generic hint for an unknown status', () => {
+    renderPanel(null)
+
+    expect(screen.getByText('Unavailable')).toBeInTheDocument()
+    expect(
+      screen.getByText('No usable score for this sample; it is excluded from the metric rather than counted as 0.'),
+    ).toBeInTheDocument()
   })
 })

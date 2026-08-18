@@ -1,7 +1,8 @@
-import json
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Any, Dict, List, Tuple
 
+from evalscope.api.judge import OutputContract
 from evalscope.api.metric import AggScore, SampleScore
 
 DEEPSEARCH_QA_PROMPT = """
@@ -98,41 +99,35 @@ def rule_fallback_score(prediction: str, reference: str, answer_type: str) -> Tu
     }
 
 
-def parse_judge_response(response: str) -> Tuple[Dict[str, float], Dict[str, Any]]:
-    if not response:
-        return {}, {
-            'empty_auto_rater_response': True,
-            'error_message': 'Auto-rater response was empty.',
-            'judge_raw': response,
-        }
+class AnswerCorrectness(BaseModel):
+    """The judge's ``Answer Correctness`` node, using the official DeepSearchQA keys."""
 
-    parsed = _extract_json_object(response)
-    if parsed is None:
-        return _invalid_score('Invalid JSON response from auto-rater.', response)
+    model_config = ConfigDict(populate_by_name=True)
 
-    answer_correctness = parsed.get('Answer Correctness')
-    if not isinstance(answer_correctness, dict):
-        return _invalid_score("Missing or malformed 'Answer Correctness' node.", response)
+    explanation: str = Field(alias='Explanation')
+    correctness_details: Dict[str, bool] = Field(alias='Correctness Details')
+    excessive_answers: List[str] = Field(default_factory=list, alias='Excessive Answers')
 
-    explanation = answer_correctness.get('Explanation')
-    if not isinstance(explanation, str):
-        return _invalid_score("Missing or malformed 'Explanation' in Answer Correctness.", response)
 
-    details = answer_correctness.get('Correctness Details')
-    if not isinstance(details, dict) or not all(isinstance(k, str) for k in details.keys()) \
-            or not all(isinstance(v, bool) for v in details.values()):
-        return _invalid_score("Invalid 'Correctness Details' in Answer Correctness.", response)
+class Grade(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
 
-    excessive_answers = answer_correctness.get('Excessive Answers', [])
-    if not isinstance(excessive_answers, list) or not all(isinstance(item, str) for item in excessive_answers):
-        return _invalid_score("Invalid 'Excessive Answers' in Answer Correctness.", response)
+    answer_correctness: AnswerCorrectness = Field(alias='Answer Correctness')
 
+
+GRADE_CONTRACT = OutputContract(schema_model=Grade)
+
+
+def metrics_from_grade(grade: Grade) -> Tuple[Dict[str, float], Dict[str, Any]]:
+    """Fold the judge's correctness verdict into precision/recall/f1 plus diagnostic metadata."""
+    details = grade.answer_correctness.correctness_details
+    excessive_answers = grade.answer_correctness.excessive_answers
     expected = len(details)
     correct = sum(1 for value in details.values() if value)
     excessive = len([answer for answer in excessive_answers if answer.strip()])
 
     metadata = {
-        'answer_correctness_explanation': explanation,
+        'answer_correctness_explanation': grade.answer_correctness.explanation,
         'correct': correct,
         'expected': expected,
         'excessive': excessive,
@@ -149,19 +144,17 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
 
     valid_scores = []
     empty_model = 0
-    empty_auto_rater = 0
-    invalid_auto_rater = 0
+    judge_failure = 0
 
     for sample_score in sample_scores:
         metadata = sample_score.score.metadata or {}
         if metadata.get('empty_model_response'):
             empty_model += 1
             continue
-        if metadata.get('empty_auto_rater_response'):
-            empty_auto_rater += 1
-            continue
-        if metadata.get('invalid_auto_rater_response'):
-            invalid_auto_rater += 1
+        # A judge that could not produce a usable verdict (empty or malformed) is excluded from the
+        # means and reported as a single failure rate, rather than the old empty/invalid split.
+        if not sample_score.score.status.is_usable:
+            judge_failure += 1
             continue
         valid_scores.append(sample_score)
 
@@ -193,8 +186,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
 
     for metric_name, count in {
         'empty_model_response': empty_model,
-        'empty_auto_rater_response': empty_auto_rater,
-        'invalid_auto_rater_response': invalid_auto_rater,
+        'judge_parse_failure': judge_failure,
     }.items():
         agg_scores.append(AggScore(
             score=count / total,
@@ -219,27 +211,6 @@ def _split_reference(answer: str) -> List[str]:
     return [part.strip() for part in re.split(r',|;|\n', answer_text) if part.strip()]
 
 
-def _extract_json_object(text: str) -> Optional[Dict[str, Any]]:
-    if not text:
-        return None
-
-    json_str = text.strip()
-    start_marker = '```json'
-    start_idx = json_str.find(start_marker)
-    if start_idx != -1:
-        json_str = json_str[start_idx + len(start_marker):].strip()
-        end_idx = json_str.rfind('```')
-        if end_idx != -1:
-            json_str = json_str[:end_idx].strip()
-
-    try:
-        parsed = json.loads(json_str)
-    except json.JSONDecodeError:
-        return None
-
-    return parsed if isinstance(parsed, dict) else None
-
-
 def _calculate_metric(true_positives: int, false_positives: int, false_negatives: int) -> Dict[str, float]:
     precision = true_positives / (true_positives + false_positives) if true_positives + false_positives else 0.0
     recall = true_positives / (true_positives + false_negatives) if true_positives + false_negatives else 0.0
@@ -257,11 +228,3 @@ def _score_from_counts(correct: int, expected: int, excessive: int) -> Dict[str,
         false_positives=excessive,
         false_negatives=expected - correct,
     )
-
-
-def _invalid_score(error_message: str, response: str) -> Tuple[Dict[str, float], Dict[str, Any]]:
-    return {}, {
-        'invalid_auto_rater_response': True,
-        'error_message': error_message,
-        'judge_raw': response,
-    }

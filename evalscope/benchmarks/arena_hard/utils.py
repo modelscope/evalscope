@@ -10,14 +10,6 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def post_process_arenahard(completion):
-    result = re.findall(r'\[\[([AB<>=]+)\]\]', completion)
-    if result:
-        return result[0]
-    else:
-        return None
-
-
 def get_judge_score(result, reverse=False):
     """
     Calculate the judge score, considering confidence weight.

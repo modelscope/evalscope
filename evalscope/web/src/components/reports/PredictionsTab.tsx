@@ -84,15 +84,22 @@ export default function PredictionsTab({ reportName, datasetName, rootPath, init
   const loadError = subsetsResource.error || predictionsResource.error
 
   // The threshold is a view-only filter (above/below), not a pass/fail verdict,
-  // and it never leaves this view.
+  // and it never leaves this view. A sample without a usable score belongs to neither
+  // side; counting it as Below would report an unscored sample as a failure.
   const filtered = useMemo(() => {
-    if (mode === 'Above') return predictions.filter((p) => p.NScore >= threshold)
-    if (mode === 'Below') return predictions.filter((p) => p.NScore < threshold)
+    if (mode === 'Above') return predictions.filter((p) => p.NScore !== null && p.NScore >= threshold)
+    if (mode === 'Below') return predictions.filter((p) => p.NScore !== null && p.NScore < threshold)
     return predictions
   }, [predictions, mode, threshold])
 
-  const aboveCount = useMemo(() => predictions.filter((p) => p.NScore >= threshold).length, [predictions, threshold])
-  const belowCount = predictions.length - aboveCount
+  const aboveCount = useMemo(
+    () => predictions.filter((p) => p.NScore !== null && p.NScore >= threshold).length,
+    [predictions, threshold],
+  )
+  const belowCount = useMemo(
+    () => predictions.filter((p) => p.NScore !== null && p.NScore < threshold).length,
+    [predictions, threshold],
+  )
   const totalPages = filtered.length
   const row = totalPages > 0 ? filtered[Math.min(page - 1, totalPages - 1)] : null
 

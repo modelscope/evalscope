@@ -126,6 +126,20 @@ Don't try to learn the architecture from this file — read these and grep:
 6. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`.
 7. Add a smoke test.
 
+## Adding a judge-scored benchmark
+
+An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply itself — that debt is fenced off by `tests/api/judge/test_gates.py`. Score through the JSON output contract in `evalscope/api/judge/` instead:
+
+1. Set `uses_judge_contracts = True` and pick a `scoring_policy` (`JUDGE_ONLY` or `JUDGE_DEFAULT`).
+2. **Simple binary correct/incorrect:** do nothing else. `LLMJudgeMixin` supplies a default `build_judge_cases` / `build_judge_request` / `reduce_judge_verdicts` that grade one JSON verdict into `{'acc': 1.0|0.0}`. Override only `judge_prompt(context)` to change wording, or `judge_metric_name` to change the key.
+3. **Custom shape (multiple cases, ratings, rubrics):** declare a Pydantic `schema_model`, wrap it in `OutputContract`, and implement the three hooks:
+   - `build_judge_cases(context)` → one `JudgeCase(case_id, output_contract, metadata)` per thing to judge.
+   - `build_judge_request(case, placement, completed, context)` → the messages; append `case.output_contract.instruction()` so the prompt and parser cannot drift.
+   - `reduce_judge_verdicts(verdicts, context)` → fold parsed verdicts into `{metric: value}`.
+   - Optional: `expand_judge_cases()` for staged/derived cases, `judge_fallback_verdict()` for a rule fallback, `finalize_judge_score()` to set `main_score_name`.
+4. The executor owns retries, position swap, aggregation and fail-closed exclusion; a reply that fails the contract excludes the sample from the metric — it is never scored 0 or full credit.
+5. Add a scripted-judge test in `tests/api/judge/test_migrated_adapters.py` covering: a valid verdict, a parse failure (prose / malformed), and a transport `[ERROR]` — each must exclude, not silently score.
+
 ## Conventions & gotchas
 
 - `eval_type`: `openai_api`, `llm_ckpt`, `mock_llm`, `text2image`, `image_editing`. Deprecated aliases: `server` → `openai_api`, `checkpoint` → `llm_ckpt`.

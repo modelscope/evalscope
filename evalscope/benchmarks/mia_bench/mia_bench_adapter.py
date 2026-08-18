@@ -1,17 +1,27 @@
 # flake8: noqa: E501
-from typing import Any, Dict, List
+from pydantic import BaseModel, Field, create_model
+from typing import Any, Dict, List, Type
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+def _build_grade_schema(component_weight: List[int]) -> Type[BaseModel]:
+    """A per-sample schema: ``component_i`` bounded by that component's weight, plus reasoning."""
+    fields: Dict[str, Any] = {'reasoning': (str, Field(default=''))}
+    for i, weight in enumerate(component_weight):
+        fields[f'component_{i + 1}'] = (float, Field(ge=0.0, le=float(weight)))
+    return create_model('MiaGrade', **fields)
 
 
 @register_benchmark(
@@ -58,7 +68,8 @@ class MIABenchAdapter(VisionLanguageAdapter):
     Each sample is scored by an LLM judge that evaluates whether the model's
     response satisfies each weighted instruction component.
     """
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -95,62 +106,57 @@ class MIABenchAdapter(VisionLanguageAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        """
-        Use an LLM judge to score the model's response against MIA-Bench components.
-
-        The judge is asked to rate each instruction component separately and
-        provide a total score. Scores are parsed and normalised to [0, 1].
-        """
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
-        metadata = task_state.metadata or {}
-        instruction: str = metadata.get('instruction', task_state.input_text)
-        components: List[str] = metadata.get('components', [])
-        component_weight: List[int] = metadata.get('component_weight', [])
-        component_type: List[str] = metadata.get('component_type', [])
-
+        components = (task_state.metadata or {}).get('components', [])
         if not components:
             logger.warning('No components found in sample metadata; assigning zero score.')
-            score.value = {'judge_score': 0.0}
-            score.main_score_name = 'judge_score'
-            return score
+            return Score(
+                extracted_prediction=filtered_prediction,
+                prediction=original_prediction,
+                value={'judge_score': 0.0},
+                main_score_name='judge_score',
+            )
+        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
 
-        # Build judge prompt
-        from .utils import generate_mia_judge_prompt, parse_mia_score
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        # The schema is per-sample: one bounded field per instruction component, so a raw score
+        # above a component's weight is a parse failure rather than a silently clamped value.
+        metadata = context.task_state.metadata or {}
+        contract = OutputContract(schema_model=_build_grade_schema(metadata.get('component_weight', [])))
+        return [JudgeCase(case_id='grade', output_contract=contract)]
 
-        judge_prompt = generate_mia_judge_prompt(
-            instruction=instruction,
-            components=components,
-            component_weight=component_weight,
-            response=filtered_prediction or original_prediction,
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        from .utils import generate_mia_judge_prompt
+
+        metadata = context.task_state.metadata or {}
+        prompt = generate_mia_judge_prompt(
+            instruction=metadata.get('instruction', context.task_state.input_text),
+            components=metadata.get('components', []),
+            component_weight=metadata.get('component_weight', []),
+            response=context.filtered_prediction or context.original_prediction,
         )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        # Call LLM judge
-        judge_response = self.llm_judge.judge(judge_prompt)
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        grade = case_verdicts[0].value
+        metadata = context.task_state.metadata or {}
+        component_type: List[str] = metadata.get('component_type', [])
+        weights: List[int] = metadata.get('component_weight', [])
 
-        # Parse scores
-        score_dict = parse_mia_score(component_type, judge_response)
-
-        # Build score.value: the judge score + per-component scores with unique keys. The parser
-        # still reports its own `total_score` key; only the emitted metric name is canonical.
-        score_value: Dict[str, float] = {'judge_score': score_dict.get('total_score', 0.0)}
+        value: Dict[str, float] = {}
+        raw_sum = 0.0
         for i, ctype in enumerate(component_type):
-            key = f'component_{i + 1}_{ctype}'
-            score_value[key] = score_dict.get(ctype, 0.0)
+            raw = float(getattr(grade, f'component_{i + 1}'))
+            weight = weights[i] if i < len(weights) else 1
+            value[f'component_{i + 1}_{ctype}'] = raw / weight if weight else 0.0
+            raw_sum += raw
+        # `judge_score` is derived from the components, the single source of truth, rather than
+        # trusting a separate total the judge might miscompute.
+        total_weight = sum(weights)
+        value['judge_score'] = raw_sum / total_weight if total_weight else 0.0
+        return ReducedVerdict(value=value)
 
-        score.value = score_value
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'judge_score'
-        score.explanation = f'LLM judge response:\n{judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-            'components': components,
-            'component_weight': component_weight,
-            'component_type': component_type,
-        }
-
         return score

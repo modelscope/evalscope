@@ -405,6 +405,7 @@ def _build_prediction_row(
 
     prediction = score.prediction
     extracted_prediction = score.extracted_prediction
+    main_value = score.main_value
 
     return {
         'Index': str(review_result.index),
@@ -415,7 +416,10 @@ def _build_prediction_row(
         'Pred': (extracted_prediction if extracted_prediction != prediction else '*Same as Generated*')
         or '',  # Ensure no None value
         'Score': score.model_dump(exclude_none=True),
-        'NScore': normalize_score(score.main_value),
+        # ``None`` when the sample carries no usable value: a judge that could not be
+        # scored is not a sample that scored 0.
+        'NScore': normalize_score(main_value) if main_value is not None else None,
+        'Status': score.status.value,
         'PerfMetrics': fallback_perf,
         'Messages': messages_data,
         'AgentTrace': review_result.agent_trace.model_dump(exclude_none=True) if review_result.agent_trace else None,
@@ -442,7 +446,7 @@ def get_model_prediction(work_dir: str, model_name: str, dataset_name: str, subs
 
     ds = []
     for cache in review_caches:
-        review_result = ReviewResult.model_validate(cache)
+        review_result = ReviewResult.from_cache_item(cache)
         sample_score = review_result.sample_score
 
         # For DataCollection, filter to the requested subset

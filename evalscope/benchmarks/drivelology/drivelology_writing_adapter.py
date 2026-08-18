@@ -1,16 +1,25 @@
-import re
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class NarrativeRating(BaseModel):
+    reasoning: str = ''
+    rating: int = Field(ge=1, le=5)
+
+
+RATING_CONTRACT = OutputContract(schema_model=NarrativeRating)
 
 DESCRIPTION = """
 ## Overview
@@ -62,7 +71,6 @@ After providing your explanation, you must rate the match on a Likert scale from
 4 = Good match
 5 = Excellent match
 
-Please format your rating strictly as: "Rating: [[X]]" where X is a whole number from 1 to 5.
 
 [Candidate Narrative]
 {candidate}
@@ -97,7 +105,8 @@ Please format your rating strictly as: "Rating: [[X]]" where X is a whole number
 )
 class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,62 +153,24 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
             scores.append(score)
         return scores
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        """
-        Calculate the match score using LLM judge and BERTScore.
-        """
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='rating', output_contract=RATING_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        prompt = NARRATIVE_EVALUATION_TEMPLATE.format(
+            candidate=context.filtered_prediction,
+            reference=context.reference,
         )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        # Initialize score value dictionary
-        score.value = {}
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        rating = case_verdicts[0].value.rating
+        # The official metric is the 1-5 rating normalised onto [0, 1].
+        return ReducedVerdict(value={'judge_score': (rating - 1) / 4.0}, metadata={'rating': rating})
 
-        # Use LLM judge to evaluate narrative quality
-        eval_prompt = NARRATIVE_EVALUATION_TEMPLATE.format(candidate=filtered_prediction, reference=reference)
-
-        judge_response = self.llm_judge.judge(eval_prompt)
-        logger.info(f'LLM judge response received (first 100 chars): {judge_response[:100]}...')
-
-        # Extract rating using regex pattern
-        match = re.search(r'Rating:\s*\[\[([1-5])\]\]', judge_response)
-        if match:
-            rating = int(match.group(1))
-            gpt_score = (rating - 1) / 4.0  # Normalize to 0-1 scale
-            logger.info(f'Rating extracted: {rating}/5 -> {gpt_score}')
-        else:
-            # Try alternative pattern
-            alt_match = re.search(r'(\[\[|\[)([1-5])(\]\]|\])', judge_response)
-            if alt_match:
-                rating = int(alt_match.group(2))
-                gpt_score = (rating - 1) / 4.0
-                logger.info(f'Rating extracted (alt pattern): {rating}/5 -> {gpt_score}')
-            else:
-                # Last resort: standalone digit
-                number_match = re.search(r'(?<!\d)[1-5](?!\d)', judge_response)
-                if number_match:
-                    rating = int(number_match.group(0))
-                    gpt_score = (rating - 1) / 4.0
-                    logger.info(f'Rating extracted (fallback): {rating}/5 -> {gpt_score}')
-                else:
-                    gpt_score = 0.0
-                    logger.warning('No rating found in response, using default 0.0')
-
-        score.value['judge_score'] = gpt_score
-        score.explanation = f'LLM judge rating: {gpt_score:.2f}'
-
-        score.metadata = {
-            'judge_response': judge_response[:300],
-            'model': getattr(self.llm_judge, 'model_id', 'unknown')
-        }
-
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'judge_score'
         return score
 

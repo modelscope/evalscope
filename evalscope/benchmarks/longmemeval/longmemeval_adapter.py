@@ -1,20 +1,31 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from pydantic import BaseModel
+from typing import Any, Dict, List, Literal, Tuple, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 from .utils import QUESTION_TYPES, SUBSET_TO_FILE, build_generation_prompt, get_anscheck_prompt
 
 logger = get_logger()
+
+
+# The official grader prompt ends with "Answer yes or no only."
+class AnswerCheck(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['yes', 'no']
+
+
+ANSCHECK_CONTRACT = OutputContract(schema_model=AnswerCheck)
 
 
 @register_benchmark(
@@ -101,7 +112,8 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 )
 class LongMemEvalAdapter(DefaultDataAdapter):
     """Adapter for LongMemEval."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -236,34 +248,31 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         }
         return Sample(input=[ChatMessageUser(content=prompt)], target=str(record['answer']), metadata=metadata)
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        if not self.llm_judge:
-            raise ValueError('LongMemEval requires an initialized LLM judge.')
-        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
-        judge_prompt = get_anscheck_prompt(
-            task=task_state.metadata['question_type'],
-            question=task_state.metadata['question'],
-            answer=reference,
-            response=filtered_prediction,
-            abstention=task_state.metadata.get('is_abstention', False),
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='anscheck', output_contract=ANSCHECK_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata
+        prompt = get_anscheck_prompt(
+            task=metadata['question_type'],
+            question=metadata['question'],
+            answer=context.reference,
+            response=context.filtered_prediction,
+            abstention=metadata.get('is_abstention', False),
         )
-        judge_response = self.llm_judge.judge(prompt=judge_prompt)
-        is_correct = 'yes' in judge_response.lower()
-        score.value = {'accuracy': 1.0 if is_correct else 0.0}
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-            'question_type': task_state.metadata['question_type'],
-            'is_abstention': task_state.metadata.get('is_abstention', False),
-        }
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        return ReducedVerdict(value={'accuracy': 1.0 if case_verdicts[0].value.verdict == 'yes' else 0.0})
+
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
+        metadata = context.task_state.metadata
+        score.metadata.update({
+            'question_type': metadata['question_type'],
+            'is_abstention': metadata.get('is_abstention', False),
+        })
         score.main_score_name = 'accuracy'
         return score
 

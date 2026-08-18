@@ -1,11 +1,24 @@
-from typing import Any, Dict
+from pydantic import BaseModel
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
+
+
+# The judge prompt requires the verdict as "[[YES]]" or "[[NO]]" after its explanation; a bare
+# "YES" anywhere in that explanation must not decide the score.
+class Equivalence(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['YES', 'NO']
+
+
+EQUIVALENCE_CONTRACT = OutputContract(schema_model=Equivalence)
 
 TEMPLATE_0SHOT = """Please read the following text and answer the question below.
 
@@ -59,7 +72,8 @@ FRAMES is a comprehensive evaluation dataset designed to test the capabilities o
 )
 class FramesAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -146,42 +160,24 @@ class FramesAdapter(DefaultDataAdapter):
 
         return score
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        """
-        Use LLM judge to evaluate the prediction against the reference.
-        """
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+        prompt = ORM_USER_TEMPLATE.format(
+            problem=context.task_state.input_text,
+            answer_1=context.reference,
+            answer_2=context.filtered_prediction,
         )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT), ChatMessageUser(content=prompt)])
 
-        question = task_state.input_text
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'YES' else 0.0})
 
-        # Get grading response
-        prompt = ORM_USER_TEMPLATE.format(problem=question, answer_1=reference, answer_2=filtered_prediction)
-        orm_response = self.llm_judge.judge(prompt, system_prompt=GENERAL_ORM_PROMPT)
-
-        # Parse grading response
-        if 'YES' in orm_response:
-            accuracy = 1.0
-        else:
-            accuracy = 0.0
-
-        score.value = {'acc': accuracy}
-        score.explanation = f'LLM judge: {orm_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'acc'
-
         return score

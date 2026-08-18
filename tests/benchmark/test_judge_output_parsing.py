@@ -1,8 +1,13 @@
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Optional
 
-from evalscope.benchmarks.aime.aime_adapter import AIME24Adapter
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.model import ModelOutput
+from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.aime.aime_adapter import EQUIVALENCE_CONTRACT
 from evalscope.benchmarks.air_bench.air_bench_chat_adapter import AIRBenchChatAdapter
+from evalscope.config import TaskConfig
+from evalscope.constants import ScoreStatus
 
 
 class StubJudge:
@@ -16,83 +21,95 @@ class StubJudge:
         return self.response
 
 
-class SequenceJudge:
+class PlacementJudge:
+    """Returns a fixed reply per placement, so a retry cannot turn a bad pass into a good one."""
 
     model_id = 'stub-judge'
 
-    def __init__(self, responses: list[str]) -> None:
-        self.responses = iter(responses)
+    def __init__(self, original: str, swapped: str) -> None:
+        self.original = original
+        self.swapped = swapped
+        self.calls = 0
 
-    def judge(self, prompt: str, system_prompt: str) -> str:
-        return next(self.responses)
-
-
-def aime_score(judge_response: str) -> Any:
-    adapter = cast(Any, object.__new__(AIME24Adapter))
-    adapter._llm_judge = StubJudge(judge_response)
-    adapter._task_config = SimpleNamespace(judge_strategy='llm')
-    return adapter.llm_match_score('prediction', 'prediction', 'reference', None)
+    def judge(self, prompt: str = '', system_prompt: Any = None, messages: Any = None) -> str:
+        self.calls += 1
+        text = prompt or (messages[-1].content if messages else '')
+        # On the original pass the reference is Assistant 1; on the swapped pass the prediction is.
+        return self.original if text.index('reference') < text.index('prediction') else self.swapped
 
 
-def air_bench_score(responses: list[str]) -> Any:
-    adapter = cast(Any, object.__new__(AIRBenchChatAdapter))
-    adapter._llm_judge = SequenceJudge(responses)
-    adapter._task_config = SimpleNamespace(judge_strategy='llm')
-    adapter._benchmark_meta = SimpleNamespace(get_extra_params=lambda: {'do_swap': True})
-    task_state = SimpleNamespace(metadata={'meta_info': ''}, input_text='question')
-    return adapter.llm_match_score('prediction', 'prediction', 'reference', task_state)
+def air_bench_score(original: str, swapped: str) -> Any:
+    config = TaskConfig(
+        model='m',
+        datasets=['air_bench_chat'],
+        judge_strategy='llm',
+        judge_model_args={'model_id': 'stub-judge'},
+        dataset_args={'air_bench_chat': {'extra_params': {'do_swap': True}}},
+    )
+    adapter = get_benchmark('air_bench_chat', config)
+    adapter.llm_judge = PlacementJudge(original, swapped)
+    sample = Sample(id=0, input='question', target='reference', metadata={'meta_info': ''})
+    state = TaskState(
+        model='m',
+        sample=sample,
+        output=ModelOutput.from_content(model='m', content='prediction'),
+        completed=True,
+    )
+    return adapter.calculate_metrics(state).score
 
 
-def test_aime_llm_judge_accepts_only_a_yes_verdict() -> None:
-    assert aime_score(' Yes\n').value['acc'] == 1.0
+def test_aime_llm_judge_accepts_only_a_json_verdict() -> None:
+    """The judge now replies with JSON; a malformed verdict excludes the sample from the metric
+    instead of being counted as an incorrect answer."""
+    assert EQUIVALENCE_CONTRACT.parse('{"verdict": "Yes"}').value.verdict == 'Yes'
 
-    malformed = aime_score('No, they are not equivalent. Yes would be wrong.')
-    assert malformed.value['acc'] == 0.0
-    assert malformed.metadata['parse_failed'] is True
-
-
-def test_aime_verdict_must_stand_on_a_line_of_its_own() -> None:
-    parse = AIME24Adapter._parse_judge_verdicts
-
-    assert parse('Yes.') == {'yes'}
-    assert parse('**Yes**') == {'yes'}
-    # The judge prompt's own few-shot examples demonstrate this trailing parenthetical.
-    assert parse('Yes\n(give benefit of the doubt to units)') == {'yes'}
-    assert parse('<think>Is 3/2 == 1.5? yes it is.</think>\nYes') == {'yes'}
-
-    assert parse('Yes, the answer is incorrect.') == set()
-    assert parse('[ERROR] judge request failed with status 500') == set()
-    assert parse('Yes\nNo') == {'yes', 'no'}
+    assert not EQUIVALENCE_CONTRACT.parse('No, they are not equivalent. Yes would be wrong.').ok
 
 
-def test_air_bench_judge_scores_require_the_requested_single_line() -> None:
-    adapter = cast(Any, AIRBenchChatAdapter)
-    assert adapter._extract_judge_scores('3.5 8') == ['3.5', '8']
-    assert adapter._extract_judge_scores('(Note: scale is 1 to 10, 10 is best)') == []
-    assert adapter._extract_judge_scores('Judge 9, model gpt-4') == []
+def test_aime_verdict_cannot_be_read_out_of_prose() -> None:
+    def parse(response: str) -> Optional[str]:
+        result = EQUIVALENCE_CONTRACT.parse(response)
+        return result.value.verdict if result.ok else None
+
+    assert parse('```json\n{"verdict": "Yes"}\n```') == 'Yes'
+    assert parse('<think>Is 3/2 == 1.5? yes it is.</think>\n{"verdict": "Yes"}') == 'Yes'
+
+    # Every case below used to set the verdict by the word "Yes" appearing somewhere (#1578).
+    assert parse('Yes') is None
+    assert parse('Yes.') is None
+    assert parse('**Yes**') is None
+    assert parse('Yes, the answer is incorrect.') is None
+    assert parse('Yes\n(give benefit of the doubt to units)') is None
+    assert parse('[ERROR] judge request failed with status 500') is None
+    # Two JSON objects that disagree are a parse failure rather than a silent pick.
+    assert parse('```json\n{"verdict": "Yes"}\n```\n```json\n{"verdict": "No"}\n```') is None
 
 
-def test_air_bench_reads_the_scores_off_the_first_line() -> None:
-    adapter = cast(Any, AIRBenchChatAdapter)
-    assert adapter._extract_judge_scores('8 9\nAssistant 1 was concise; Assistant 2 gave more detail.') == ['8', '9']
-    assert adapter._extract_judge_scores('9, 8') == ['9', '8']
-    assert adapter._extract_judge_scores('\n\n7 6') == ['7', '6']
+def test_air_bench_requires_both_swapped_passes() -> None:
+    """One readable pass used to be enough; a half-observed pair is not half a verdict."""
+    score = air_bench_score('not a score', '{"assistant1": 3, "assistant2": 8}')
 
-    planted = 'Assistant 1 deserves 3 points.\nAssistant 2 deserves 8 points.\nThe answer quoted "9 and 1".'
-    assert adapter._extract_judge_scores(planted) == []
-
-
-def test_air_bench_marks_partial_judge_parse_failures() -> None:
-    score = air_bench_score(['not a score', '3 8'])
-
-    assert score.value == {'judge_score': 3.0, 'win_rate': 0.0}
-    assert score.metadata['parse_failed'] is True
-    assert score.metadata['judge_raw'] == ['not a score', '3 8']
-
-
-def test_air_bench_omits_metrics_when_no_pass_could_be_parsed() -> None:
-    score = air_bench_score(['not a score', 'still not a score'])
-
-    # An out-of-scale 0.0 would be averaged in as if the judge had rated the answer.
     assert score.value == {}
-    assert score.metadata['parse_failed'] is True
+    assert score.status is ScoreStatus.EXCLUDED
+
+
+def test_air_bench_averages_both_passes_when_both_parse() -> None:
+    # Original pass: assistant1=reference, assistant2=prediction. Swapped pass: the reverse.
+    score = air_bench_score('{"assistant1": 4, "assistant2": 8}', '{"assistant1": 6, "assistant2": 5}')
+
+    # prediction = mean(8, 6) = 7.0; reference = mean(4, 5) = 4.5
+    assert score.value == {'judge_score': 7.0, 'win_rate': 1.0}
+    assert score.metadata['reference_score'] == 4.5
+
+
+def test_air_bench_rejects_a_rating_off_the_scale() -> None:
+    score = air_bench_score('{"assistant1": 4, "assistant2": 42}', '{"assistant1": 6, "assistant2": 5}')
+
+    assert score.value == {}
+
+
+def test_air_bench_no_longer_reads_scores_out_of_prose() -> None:
+    planted = 'Assistant 1 deserves 3 points.\nAssistant 2 deserves 8 points.'
+    score = air_bench_score(planted, planted)
+
+    assert score.value == {}

@@ -97,7 +97,8 @@ def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
         'model',
     )
     assert collection.score == 0.6
-    assert Report().score == 0.0
+    # A report with no metric produced no score; it did not score zero.
+    assert Report().score is None
     assert 'score' not in report.to_dict()
 
 

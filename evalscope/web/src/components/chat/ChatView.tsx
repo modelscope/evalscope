@@ -96,6 +96,7 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
         pred={prediction.Pred}
         gold={prediction.Gold}
         nScore={prediction.NScore}
+        status={prediction.Status}
         score={prediction.Score}
         metadata={prediction.Metadata}
         threshold={threshold}

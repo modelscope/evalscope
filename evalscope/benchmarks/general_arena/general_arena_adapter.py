@@ -2,22 +2,33 @@
 import glob
 import os
 from collections import defaultdict
-from typing import Any, Dict, List
+from pydantic import BaseModel
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages.chat_message import ChatMessageUser
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, Placement, ReducedVerdict
+from evalscope.api.messages.chat_message import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.report import Report, ReportKey
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-GRADER_SYSTEM_PROMPT = "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must output only one of the following choices as your final verdict with a label:\n\n1. Assistant A is significantly better: [[A>>B]]\n2. Assistant A is slightly better: [[A>B]]\n3. Tie, relatively the same: [[A=B]]\n4. Assistant B is slightly better: [[B>A]]\n5. Assistant B is significantly better: [[B>>A]]\n\nExample output: \"My final verdict is tie: [[A=B]]\"."  # noqa: E501
+
+class BattleVerdict(BaseModel):
+    """One game's verdict on the official five-point preference scale."""
+    reasoning: str = ''
+    verdict: Literal['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
+
+
+BATTLE_CONTRACT = OutputContract(schema_model=BattleVerdict)
+
+GRADER_SYSTEM_PROMPT = "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better)."  # noqa: E501
 
 GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>".strip(
 )  # noqa: E501
@@ -86,7 +97,8 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
 )
 class GeneralArenaAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -217,8 +229,8 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                 pairs = []
                 for model_item, baseline_item in zip(model_data[name], model_data[self.baseline]):
                     # Convert to ReviewResult objects like in get_model_prediction
-                    model_review = ReviewResult.model_validate(model_item)
-                    baseline_review = ReviewResult.model_validate(baseline_item)
+                    model_review = ReviewResult.from_cache_item(model_item)
+                    baseline_review = ReviewResult.from_cache_item(baseline_item)
 
                     for model_choice, baseline_choice in zip(
                         process_review_item(model_review), process_review_item(baseline_review)
@@ -234,70 +246,60 @@ class GeneralArenaAdapter(DefaultDataAdapter):
 
         return pairwise_data
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        """Use LLM as a judge to evaluate the predicted answer against the baseline."""
-        from .utils import get_judge_score, post_process_result
+    judge_position_swap = True
+    """Each pair is judged twice with the two answers swapped."""
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='battle', output_contract=BATTLE_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
+        candidate = metadata['answer_1']
+        baseline = context.reference
+        candidate_first = placement is Placement.ORIGINAL
+        prompt = self.prompt_template.format(
+            question=context.task_state.input_text,
+            answer_1=candidate if candidate_first else baseline,
+            answer_2=baseline if candidate_first else candidate,
+        )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageSystem(content=self.system_prompt), ChatMessageUser(content=prompt)])
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        from .utils import get_judge_score
+
+        metadata = context.task_state.metadata or {}
+        placements = case_verdicts[0].placements
+        res1 = placements['original'].verdict
+        res2 = placements['swapped'].verdict
+        # Game 1 puts the candidate first, game 2 swaps it, so the second score is reversed.
+        score1 = get_judge_score(res1, reverse=False)
+        score2 = get_judge_score(res2, reverse=True)
+        model_1, model_2 = metadata['model_1'], metadata['model_2']
+        return ReducedVerdict(
+            value={'score': (score1 + score2) / 2},
+            metadata={
+                'battle_result': {
+                    'score': (score1 + score2) / 2,
+                    'games': [
+                        {
+                            'model_a': model_1,
+                            'model_b': model_2,
+                            'judgment': res1
+                        },
+                        {
+                            'model_a': model_2,
+                            'model_b': model_1,
+                            'judgment': res2
+                        },
+                    ],
+                }
+            },
         )
 
-        question = task_state.input_text
-        answer_1 = task_state.metadata['answer_1']
-        answer_2 = reference  # baseline answer
-        model_1 = task_state.metadata['model_1']
-        model_2 = task_state.metadata['model_2']
-
-        system_template = self.system_prompt
-        prompt_template = self.prompt_template
-
-        prompt1 = prompt_template.format(question=question, answer_1=answer_1, answer_2=answer_2)
-        # reverse the order
-        prompt2 = prompt_template.format(question=question, answer_1=answer_2, answer_2=answer_1)
-
-        # get grading response
-        game1_response = self.llm_judge.judge(prompt1, system_prompt=system_template)
-        game2_response = self.llm_judge.judge(prompt2, system_prompt=system_template)
-
-        # parse grading response
-        # game1
-        res1 = post_process_result(game1_response)
-        score1 = get_judge_score(res1, reverse=False)
-        # game2
-        res2 = post_process_result(game2_response)
-        score2 = get_judge_score(res2, reverse=True)
-
-        battle_result = {
-            'score': (score1 + score2) / 2,
-            'games': [
-                {
-                    'model_a': model_1,
-                    'model_b': model_2,
-                    'response': game1_response,
-                    'judgment': res1
-                },
-                {
-                    'model_a': model_2,
-                    'model_b': model_1,
-                    'response': game2_response,
-                    'judgment': res2
-                },
-            ]
-        }
-
-        score.value = {'score': battle_result['score']}
-        score.explanation = f'LLM judge battles: Game1: {game1_response[:100]}... Game2: {game2_response[:100]}...'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': getattr(self, 'judge_strategy', 'default'),
-            'model': self.llm_judge.model_id if hasattr(self.llm_judge, 'model_id') else 'unknown',
-            'battle_result': battle_result
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'score'
-
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -307,7 +309,11 @@ class GeneralArenaAdapter(DefaultDataAdapter):
 
         from .utils import compute_mle_elo, get_battles_from_row, get_bootstrap_result, get_win_rate_column
 
-        battles = pd.concat([get_battles_from_row(res.score.metadata['battle_result']) for res in sample_scores])
+        # A sample whose judge verdicts were unusable has no battle to contribute.
+        scored = [res for res in sample_scores if (res.score.metadata or {}).get('battle_result')]
+        if not scored:
+            return []
+        battles = pd.concat([get_battles_from_row(res.score.metadata['battle_result']) for res in scored])
 
         bt_model_coef = compute_mle_elo(battles, baseline_model=self.baseline)
 

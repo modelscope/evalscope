@@ -2,17 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict
+from typing import Any, Dict, List, Literal, Optional
 
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 from .metadata import DATASET_ID, DEFAULT_MCP_SERVER_URL, DEFAULT_SYSTEM_PROMPT, DESCRIPTION, EXTRA_PARAMS
 from .utils import (
@@ -23,13 +25,24 @@ from .utils import (
     extract_required_servers,
     field,
     mcp_tool_to_tool_info,
-    parse_claim_judge_response,
     parse_enabled_tools,
     server_unavailable_message,
     tool_name_to_server,
 )
 
 logger = get_logger()
+
+
+class ClaimVerdict(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+
+    coverage_outcome: Literal['fulfilled', 'partially_fulfilled', 'not_fulfilled']
+    justification: str = ''
+
+
+# The claim_judge_prompt already asks for this JSON, so no instruction() is appended.
+CLAIM_CONTRACT = OutputContract(schema_model=ClaimVerdict)
+_OUTCOME_SCORE = {'fulfilled': 1.0, 'partially_fulfilled': 0.5, 'not_fulfilled': 0.0}
 
 
 @register_benchmark(
@@ -51,7 +64,8 @@ logger = get_logger()
 )
 class MCPAtlasAdapter(AgentLoopAdapter):
     """EvalScope-native MCP-Atlas adapter using MCP-Atlas agent-environment."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     strategy_name = 'function_calling'
     max_steps_default = 100
@@ -122,46 +136,39 @@ class MCPAtlasAdapter(AgentLoopAdapter):
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         return None
 
-    def match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        raise ValueError('MCP-Atlas requires LLM judge scoring; set judge_strategy to auto/llm with judge_model_args.')
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        # One case per expert claim; each is graded independently by the judge.
+        claims = extract_claims(context.reference)
+        return [
+            JudgeCase(case_id=f'claim_{index}', output_contract=CLAIM_CONTRACT, metadata={'claim': claim})
+            for index, claim in enumerate(claims)
+        ]
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        claims = extract_claims(reference)
-        claim_results = [self._judge_claim(claim, filtered_prediction) for claim in claims]
-        total = len(claim_results)
-        coverage_score = sum(result['score'] for result in claim_results) / total if total else 0.0
-        passed = coverage_score >= self.pass_threshold
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        prompt = claim_judge_prompt(case.metadata['claim'], context.filtered_prediction)
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        outcomes = [verdict.value.coverage_outcome for verdict in case_verdicts]
+        scores = [_OUTCOME_SCORE[outcome] for outcome in outcomes]
+        total = len(scores)
+        coverage_score = sum(scores) / total if total else 0.0
+        return ReducedVerdict(
             value={
                 'coverage_score': coverage_score,
-                'pass': 1.0 if passed else 0.0,
+                'pass': 1.0 if coverage_score >= self.pass_threshold else 0.0,
             },
             metadata={
-                'source': 'mcp_atlas_claim_judge',
                 'pass_threshold': self.pass_threshold,
-                'claims': claim_results,
                 'total_claims': total,
-                'fully_covered_claims': sum(1 for result in claim_results if result['score'] == 1.0),
-                'partially_covered_claims': sum(1 for result in claim_results if result['score'] == 0.5),
-                'model': self.llm_judge.model_id,
+                'fully_covered_claims': scores.count(1.0),
+                'partially_covered_claims': scores.count(0.5),
             },
-            main_score_name='coverage_score',
         )
+
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
+        score.main_score_name = 'coverage_score'
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -246,21 +253,3 @@ class MCPAtlasAdapter(AgentLoopAdapter):
                 return server_unavailable_message(exc.server_name, exc.message)
 
         return _handler
-
-    def _judge_claim(self, claim: str, response: str) -> Dict[str, Any]:
-        prompt = claim_judge_prompt(claim, response)
-        judge_response = self.llm_judge.judge(prompt)
-        outcome, justification, confidence = parse_claim_judge_response(judge_response)
-        score = {
-            'fulfilled': 1.0,
-            'partially_fulfilled': 0.5,
-            'not_fulfilled': 0.0,
-        }.get(outcome, 0.0)
-        return {
-            'claim': claim,
-            'coverage_outcome': outcome,
-            'score': score,
-            'justification': justification,
-            'confidence': confidence,
-            'raw_judge_response': judge_response,
-        }

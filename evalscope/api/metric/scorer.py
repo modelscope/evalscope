@@ -3,8 +3,28 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from evalscope.api.metric.semantics import MetricIdentity
+from evalscope.constants import ScoreStatus
 
 Value = Dict[str, Union[int, float, bool]]
+
+
+class JudgeDetail(BaseModel):
+    """Judge diagnostics attached to a score, for reports and offline inspection."""
+
+    judge_models: List[str] = Field(default_factory=list)
+    """Judge model ids that produced this score."""
+
+    valid_observations: int = Field(default=0)
+    """Observations that yielded a usable verdict."""
+
+    total_observations: int = Field(default=0)
+    """Observations attempted, including invalid ones."""
+
+    failures: Dict[str, int] = Field(default_factory=dict)
+    """Failure counts keyed by :class:`ScoreStatus` value."""
+
+    error: Optional[str] = Field(default=None)
+    """Human-readable reason the score is unavailable, if any."""
 
 
 class Score(BaseModel):
@@ -13,6 +33,13 @@ class Score(BaseModel):
     value: Value = Field(default_factory=dict)
     """Score value as a dictionary. Key is the score name, value is the score value.
     The first key is considered the main score by default."""
+
+    status: ScoreStatus = Field(default=ScoreStatus.SUCCESS)
+    """Whether this score is usable. A non-usable status means the affected metric keys are
+    omitted from :attr:`value` and the sample drops out of aggregation instead of scoring 0."""
+
+    judge_detail: Optional[JudgeDetail] = Field(default=None)
+    """Judge diagnostics, populated only when an LLM judge produced this score."""
 
     extracted_prediction: Optional[str] = Field(default=None)
     """Answer extracted from model output (optional)"""

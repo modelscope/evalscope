@@ -21,19 +21,6 @@ def normalize_answer(s):
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
-def parse_score(score_str: str) -> int:
-    """
-    Parses a score string and returns an integer score.
-    The score should be in the format [[score]].
-    """
-    score_match = re.search(r'\[\[(\d+)\]\]', score_str)
-    if score_match:
-        score = int(score_match.group(1))
-        return score / 10.0
-    else:
-        return 0.0
-
-
 def draw_score_chat(pivot_table, outpath, show_score=False):
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -68,8 +55,7 @@ Score 3: The answer has minor relevance but does not align with the reference.
 Score 5: The answer has moderate relevance but contains inaccuracies.
 Score 7: The answer aligns with the reference but has minor omissions.
 Score 10: The answer is completely accurate and aligns perfectly with the reference.
-
-Only respond with a numberical score with formatted as [[score]]."""  # noqa: E501
+"""  # noqa: E501
 
 ORM_USER_TEMPLATE = """
 Question: {question}

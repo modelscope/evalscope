@@ -10,38 +10,21 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 - **Task Type**: Open-ended audio question answering.
 - **Input**: An audio clip plus a free-form question.
 - **Output**: A textual answer evaluated against the reference response.
+- **Modalities**: Audio (human speech, natural sounds, music) + text.
 
-## Categories (8 tasks → 5 reported categories)
+## Key Features
 
-The 8 Chat tasks are aggregated by the official `cal_score.py` into five categories:
+- ~2k open-ended audio QA pairs across speech, sound, music and mixed-audio scenes; the generative half of AIR-Bench (ACL 2024).
+- 8 Chat tasks aggregated by the official `cal_score.py` into 5 reported categories: `speech` (`speech_QA`, `speech_dialogue_QA`), `sound` (`sound_QA`, `sound_generation_QA`), `music` (`music_QA`, `music_generation_analysis_QA`), `speech_and_sound` (`speech_and_sound_QA`), `speech_and_music` (`speech_and_music_QA`). The paper's Mixed-audio = mean(speech_and_sound, speech_and_music).
+- Position bias is removed by judging every sample twice with reference/prediction order swapped, then averaging (disable via `extra_params={'do_swap': False}` to halve judge cost).
+- Hosted on ModelScope ([`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)) in an audiofolder + JSON layout; the full release is ~49 GB, so limit tasks via `extra_params={'tasks': [...]}` for partial runs.
 
-- `speech`: `speech_QA`, `speech_dialogue_QA`
-- `sound`: `sound_QA`, `sound_generation_QA`
-- `music`: `music_QA`, `music_generation_analysis_QA`
-- `speech_and_sound`: `speech_and_sound_QA`
-- `speech_and_music`: `speech_and_music_QA`
+## Evaluation Notes
 
-The paper's **Mixed-audio = mean(speech_and_sound, speech_and_music)**.
-
-## Dataset Access
-
-- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which tasks are pulled via `extra_params`.
+- Metrics: `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
+- The judge LLM receives the question, the textual audio description (`meta_info`), the reference answer (`answer_gt`), and the model's response, and outputs two integer scores in `[1, 10]`. Use a judge that supports long contexts, since `meta_info` may exceed 4k tokens for dialogue tasks.
+- The official leaderboard uses `gpt-4-0125-preview`. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
 - If the dataset is already on disk, pass `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Chat/`.
-
-## Evaluation Protocol
-
-- The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.
-- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository — disable it via `extra_params={'do_swap': False}` to halve judge cost.
-- Reported metric `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
-
-```{warning}
-The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
-```
-
-## Implementation Notes
-
-- The judge model is selected via `--judge-model-args`; ensure the model id supports long contexts (`meta_info` may exceed 4k tokens for dialogue tasks).
-- Set `extra_params={'tasks': [...]}` to evaluate only specific Chat task names — useful for partial runs.
 
 
 ## Properties

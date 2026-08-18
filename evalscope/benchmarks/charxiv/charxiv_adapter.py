@@ -1,16 +1,40 @@
 # flake8: noqa: E501
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class DescriptiveGrade(BaseModel):
+    """Official descriptive-question reply keys."""
+
+    extract_answer_T1: str = ''
+    score_T1: int = Field(ge=0, le=1)
+
+    @property
+    def score(self) -> int:
+        return self.score_T1
+
+
+class ReasoningGrade(BaseModel):
+    """Official reasoning-question reply keys."""
+
+    extract_answer: str = ''
+    score: int = Field(ge=0, le=1)
+
+
+DESCRIPTIVE_CONTRACT = OutputContract(schema_model=DescriptiveGrade)
+REASONING_CONTRACT = OutputContract(schema_model=ReasoningGrade)
 
 DESCRIPTION = """
 ## Overview
@@ -72,7 +96,8 @@ class CharXivAdapter(VisionLanguageAdapter):
 
     Scoring uses LLM judge for both question types.
     """
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -155,93 +180,31 @@ class CharXivAdapter(VisionLanguageAdapter):
 
         return samples
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        """Custom LLM judge scoring following official CharXiv grading protocol.
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        """Descriptive and reasoning questions use different official reply keys."""
+        descriptive = (context.task_state.metadata or {}).get('question_type', 'reasoning') == 'descriptive'
+        contract = DESCRIPTIVE_CONTRACT if descriptive else REASONING_CONTRACT
+        return [JudgeCase(case_id='grade', output_contract=contract)]
 
-        Dispatches to question-type-specific rubrics:
-        - Descriptive: rubric selected by question_id (title/ocr/quant/bool/enum/trend/layout)
-        - Reasoning: rubric selected by reasoning_a_type (1-4)
-        """
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         from .utils import build_descriptive_judge_prompt, build_reasoning_judge_prompt
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
-        metadata = task_state.metadata or {}
-        question_type = metadata.get('question_type', 'reasoning')
-
-        if question_type == 'descriptive':
-            q_id = metadata.get('question_id', 1)
+        metadata = context.task_state.metadata or {}
+        if metadata.get('question_type', 'reasoning') == 'descriptive':
             prompt = build_descriptive_judge_prompt(
-                q_id=q_id,
-                response=original_prediction,
-                ground_truth=reference,
+                q_id=metadata.get('question_id', 1),
+                response=context.original_prediction,
+                ground_truth=context.reference,
             )
         else:
-            reasoning_a_type = metadata.get('reasoning_a_type', 1)
-            question = task_state.input_text or ''
             prompt = build_reasoning_judge_prompt(
-                reasoning_a_type=reasoning_a_type,
-                question=question,
-                ground_truth=reference,
-                response=original_prediction,
+                reasoning_a_type=metadata.get('reasoning_a_type', 1),
+                question=context.task_state.input_text or '',
+                ground_truth=context.reference,
+                response=context.original_prediction,
             )
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        # Call LLM judge
-        judge_response = self.llm_judge.judge(prompt)
-
-        # Parse score from judge response (expect JSON with "score" key)
-        judge_score = self._parse_charxiv_judge_score(judge_response)
-
-        score.value = {'acc': judge_score}
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-        }
-        return score
-
-    @staticmethod
-    def _parse_charxiv_judge_score(judge_response: str) -> float:
-        """Parse the score from the CharXiv judge response.
-
-        The judge is expected to return JSON with a 'score' or 'score_T1' key.
-        Falls back to keyword matching if JSON parsing fails.
-        """
-        import json
-        import re
-
-        if not judge_response:
-            return 0.0
-
-        # Try to extract JSON from the response
-        try:
-            # Find JSON-like content
-            json_match = re.search(r'\{[^{}]+\}', judge_response)
-            if json_match:
-                data = json.loads(json_match.group())
-                # Single sample: look for 'score' or 'score_T1'
-                for key in ('score', 'score_T1'):
-                    if key in data:
-                        val = int(data[key])
-                        return float(val) if val in (0, 1) else 0.0
-        except (json.JSONDecodeError, ValueError, TypeError):
-            pass
-
-        # Fallback: look for score patterns
-        response_lower = judge_response.strip().lower()
-        if '"score": 1' in response_lower or '"score_t1": 1' in response_lower:
-            return 1.0
-        if '"score": 0' in response_lower or '"score_t1": 0' in response_lower:
-            return 0.0
-
-        return 0.0
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        grade = case_verdicts[0].value
+        return ReducedVerdict(value={'acc': float(grade.score)})

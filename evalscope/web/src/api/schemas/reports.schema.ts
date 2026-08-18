@@ -257,7 +257,10 @@ export const predictionRowSchema = z.object({
   Gold: z.string(),
   Pred: z.string(),
   Score: z.record(z.string(), z.unknown()),
-  NScore: z.number(),
+  /** ``null`` when the sample has no usable score; it is excluded from the metric, not 0. */
+  NScore: z.number().nullable(),
+  /** Mirrors ``ScoreStatus``; absent in reports produced before it existed. */
+  Status: z.string().optional(),
   PerfMetrics: samplePerfMetricsSchema.nullable().optional(),
   Messages: z.array(chatMessageSchema).nullable().optional(),
   AgentTrace: agentTraceSchema.nullable().optional(),

@@ -1,5 +1,8 @@
 import json
-from typing import Any, Dict, List
+from pydantic import BaseModel, Field, model_validator
+from typing import Any, Dict, List, Literal
+
+from evalscope.api.judge import OutputContract
 
 BINARY_SYSTEM_PROMPT = """You are an expert evaluator tasked with assessing whether a document satisfies specific rubric criteria. Your evaluation must be precise, objective, and based solely on the evidence present in the document.
 
@@ -111,80 +114,33 @@ Provide your final evaluation in JSON format:
 """
 
 
-def strip_json_fence(text: str) -> str:
-    text = text.strip()
-    if text.startswith('```json'):
-        text = text[7:]
-    elif text.startswith('```'):
-        text = text[3:]
-    if text.endswith('```'):
-        text = text[:-3]
-    return text.strip()
+class BinaryGrade(BaseModel):
+    """The binary rubric judge reply — official ResearchRubrics format."""
+    verdict: Literal['Not Satisfied', 'Satisfied']
+    score: float
+    confidence: float = Field(ge=0.0, le=1.0)
+    reasoning: str
+    evidence_quotes: List[str]
+    missing_elements: List[str]
+
+    @model_validator(mode='after')
+    def _check_consistency(self) -> 'BinaryGrade':
+        expected = 1.0 if self.verdict == 'Satisfied' else 0.0
+        if self.score != expected:
+            raise ValueError(f'verdict {self.verdict!r} conflicts with score {self.score}')
+        return self
 
 
-def parse_json_object(text: str) -> Dict[str, Any]:
-    data = json.loads(strip_json_fence(text))
-    if not isinstance(data, dict):
-        raise ValueError('Judge response must be a JSON object.')
-    return data
+class ChunkGrade(BaseModel):
+    """Per-chunk evidence extraction reply."""
+    relevant_evidence: List[str]
+    satisfaction: bool
+    confidence_for_chunk: float = Field(ge=0.0, le=1.0)
+    notes: str
 
 
-def validate_binary_result(data: Dict[str, Any]) -> Dict[str, Any]:
-    verdict = data.get('verdict')
-    expected_scores = {'Not Satisfied': 0.0, 'Satisfied': 1.0}
-    if verdict not in expected_scores:
-        raise ValueError(f'Invalid binary verdict: {verdict!r}.')
-    try:
-        score = float(data.get('score'))
-        confidence = float(data.get('confidence'))
-    except (TypeError, ValueError) as exc:
-        raise ValueError('Judge score and confidence must be numeric.') from exc
-    if score != expected_scores[verdict]:
-        raise ValueError(f'Judge verdict {verdict!r} conflicts with score {score}.')
-    if not 0.0 <= confidence <= 1.0:
-        raise ValueError(f'Judge confidence must be between 0 and 1, got {confidence}.')
-    reasoning = data.get('reasoning')
-    evidence_quotes = data.get('evidence_quotes')
-    missing_elements = data.get('missing_elements')
-    if not isinstance(reasoning, str):
-        raise ValueError('Judge reasoning must be a string.')
-    if not isinstance(evidence_quotes, list) or not all(isinstance(item, str) for item in evidence_quotes):
-        raise ValueError('Judge evidence_quotes must be a list of strings.')
-    if not isinstance(missing_elements, list) or not all(isinstance(item, str) for item in missing_elements):
-        raise ValueError('Judge missing_elements must be a list of strings.')
-    return {
-        'verdict': verdict,
-        'score': score,
-        'confidence': confidence,
-        'reasoning': reasoning,
-        'evidence_quotes': evidence_quotes,
-        'missing_elements': missing_elements,
-    }
-
-
-def validate_chunk_result(data: Dict[str, Any]) -> Dict[str, Any]:
-    evidence = data.get('relevant_evidence')
-    satisfaction = data.get('satisfaction')
-    confidence = data.get('confidence_for_chunk')
-    notes = data.get('notes')
-    if not isinstance(evidence, list) or not all(isinstance(item, str) for item in evidence):
-        raise ValueError('Chunk relevant_evidence must be a list of strings.')
-    if not isinstance(satisfaction, bool):
-        raise ValueError('Chunk satisfaction must be a boolean.')
-    try:
-        confidence = float(confidence)
-    except (TypeError, ValueError) as exc:
-        raise ValueError('Chunk confidence_for_chunk must be numeric.') from exc
-    if not 0.0 <= confidence <= 1.0:
-        raise ValueError(f'Chunk confidence must be between 0 and 1, got {confidence}.')
-    if not isinstance(notes, str):
-        raise ValueError('Chunk notes must be a string.')
-    return {
-        'relevant_evidence': evidence,
-        'satisfaction': satisfaction,
-        'confidence_for_chunk': confidence,
-        'notes': notes,
-    }
+BINARY_CONTRACT = OutputContract(schema_model=BinaryGrade)
+CHUNK_CONTRACT = OutputContract(schema_model=ChunkGrade)
 
 
 def chunk_document(content: str, max_tokens: int) -> List[str]:

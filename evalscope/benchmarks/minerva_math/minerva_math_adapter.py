@@ -3,7 +3,7 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -55,7 +55,8 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 )
 class MinervaMathAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

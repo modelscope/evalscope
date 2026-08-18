@@ -3,10 +3,18 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, ReducedVerdict
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
-from .utils import aggregate_official_scores, build_grader_prompt, parse_judge_response, rule_fallback_score
+from evalscope.constants import ScoringPolicy, Tags
+from .utils import (
+    GRADE_CONTRACT,
+    aggregate_official_scores,
+    build_grader_prompt,
+    metrics_from_grade,
+    rule_fallback_score,
+)
 
 DEEPSEARCHQA_DATASET_ID = 'google/deepsearchqa'
 
@@ -64,7 +72,8 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 )
 class DeepSearchQAAdapter(AgentLoopAdapter):
     """Adapter for the DeepSearchQA deep-research benchmark."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -114,38 +123,39 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        answer_type = task_state.metadata['answer_type']
-        prompt = build_grader_prompt(
-            question=task_state.input_text,
-            reference=reference,
-            answer_type=answer_type,
-            response=filtered_prediction,
-        )
-
         if not filtered_prediction:
-            judge_response = ''
-            value, judge_metadata = {}, {
-                'empty_model_response': True,
-                'error_message': 'AI response was empty.',
-            }
-        else:
-            judge_response = self.llm_judge.judge(prompt)
-            value, judge_metadata = parse_judge_response(judge_response)
+            # No answer to grade: score nothing without a judge call, as in the official evaluator.
+            return Score(
+                extracted_prediction=filtered_prediction,
+                prediction=original_prediction,
+                value={},
+                main_score_name='f1',
+                metadata={
+                    'empty_model_response': True,
+                    'error_message': 'AI response was empty.'
+                },
+            )
+        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-            value=value,
-            explanation=f'LLM judge: {judge_response}',
-            main_score_name='f1',
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        prompt = build_grader_prompt(
+            question=context.task_state.input_text,
+            reference=context.reference,
+            answer_type=context.task_state.metadata['answer_type'],
+            response=context.filtered_prediction,
         )
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-            'rating_prompt': prompt,
-            **judge_metadata,
-        }
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        value, metadata = metrics_from_grade(case_verdicts[0].value)
+        return ReducedVerdict(value=value, metadata=metadata)
+
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
+        score.main_score_name = 'f1'
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

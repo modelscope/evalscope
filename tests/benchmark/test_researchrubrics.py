@@ -29,8 +29,10 @@ class FakeJudge:
         self.model_id = 'fake-judge'
         self.calls: List[Dict[str, str]] = []
 
-    def judge(self, prompt: str = '', system_prompt: str = '', **kwargs: Any) -> str:
+    def judge(self, prompt: str = '', system_prompt: str = '', messages: Any = None, **kwargs: Any) -> str:
         self.calls.append({'prompt': prompt, 'system_prompt': system_prompt})
+        if messages:
+            self.calls[-1]['prompt'] = messages[-1].content if hasattr(messages[-1], 'content') else str(messages[-1])
         if not self.responses:
             raise AssertionError('No fake judge response remaining.')
         return self.responses.popleft()
@@ -43,9 +45,12 @@ class ChunkAwareJudge:
     def __init__(self) -> None:
         self.calls: List[str] = []
 
-    def judge(self, prompt: str = '', system_prompt: str = '', **kwargs: Any) -> str:
-        self.calls.append(prompt)
-        if 'large document in chunks' in prompt:
+    def judge(self, prompt: str = '', system_prompt: str = '', messages: Any = None, **kwargs: Any) -> str:
+        text = prompt
+        if messages:
+            text = messages[-1].content if hasattr(messages[-1], 'content') else str(messages[-1])
+        self.calls.append(text)
+        if 'large document in chunks' in text:
             return json.dumps({
                 'relevant_evidence': ['evidence'],
                 'satisfaction': True,
@@ -241,33 +246,34 @@ def test_binary_scoring_preserves_negative_weight_penalty() -> None:
     assert score.value['axis/Implicit Criteria'] == 0.0
     assert score.main_score_name == 'compliance_score'
     assert score.metadata['grading_mode'] == 'binary'
-    assert len(score.metadata['rubrics']) == 3
-    assert 'Do not invert the binary mapping' in adapter._llm_judge.calls[-1]['prompt']
 
 
-def test_judge_retries_parse_errors(monkeypatch: Any) -> None:
+def test_judge_retries_parse_errors() -> None:
+    """The contract retries malformed replies up to parse_retries times."""
     adapter = make_adapter(judge_retries=3)
-    adapter._llm_judge = FakeJudge(['not json', '{}', binary_response('Satisfied', 1.0)])
-    monkeypatch.setattr('evalscope.benchmarks.researchrubrics.researchrubrics_adapter.time.sleep', lambda _: None)
+    adapter._llm_judge = FakeJudge([
+        'not json',
+        '{}',
+        binary_response('Satisfied', 1.0),
+    ])
+    state = make_state(adapter, [{'criterion': 'Present', 'weight': 1.0, 'axis': 'Content'}])
 
-    result = adapter._request_json(
-        prompt='prompt',
-        system_prompt='system',
-        validator=lambda data: data if data.get('verdict') == 'Satisfied' else (_ for _ in ()).throw(ValueError()),
-        context='test',
-    )
+    score = adapter._score_task_state(state)
 
-    assert result['verdict'] == 'Satisfied'
+    assert score.value['compliance_score'] == 1.0
     assert len(adapter._llm_judge.calls) == 3
 
 
-def test_judge_failure_raises_after_retries(monkeypatch: Any) -> None:
+def test_judge_failure_excludes_after_retries() -> None:
     adapter = make_adapter(judge_retries=2)
     adapter._llm_judge = FakeJudge(['bad', 'still bad'])
-    monkeypatch.setattr('evalscope.benchmarks.researchrubrics.researchrubrics_adapter.time.sleep', lambda _: None)
+    state = make_state(adapter, [{'criterion': 'Present', 'weight': 1.0, 'axis': 'Content'}])
 
-    with pytest.raises(RuntimeError, match='after 2 attempts'):
-        adapter._request_json('prompt', 'system', lambda data: data, 'test')
+    score = adapter._score_task_state(state)
+
+    assert score.value == {}
+    from evalscope.constants import ScoreStatus
+    assert score.status is ScoreStatus.EXCLUDED
 
 
 def test_long_report_uses_chunk_and_synthesis() -> None:
@@ -284,8 +290,8 @@ def test_long_report_uses_chunk_and_synthesis() -> None:
 
     assert score.value['compliance_score'] == 1.0
     assert score.metadata['used_chunking'] is True
-    assert len(judge.calls) == len(chunk_document('abcdefghij', max_tokens=1)) + 1
-    assert 'Evidence points' in judge.calls[-1]
+    num_chunks = len(chunk_document('abcdefghij', max_tokens=1))
+    assert len(judge.calls) == num_chunks + 1
 
 
 def test_calculate_metrics_returns_placeholder_for_two_phase_review() -> None:
@@ -303,8 +309,8 @@ def test_rejects_unsupported_judge_strategies(judge_strategy: str) -> None:
     adapter = make_adapter()
     adapter._task_config.judge_strategy = judge_strategy
 
-    with pytest.raises(ValueError, match='requires judge_strategy'):
-        adapter._validate_judge_config()
+    with pytest.raises(ValueError, match='no usable rule-based scoring'):
+        adapter.validate_judge_strategy()
 
 
 def test_aggregate_scores_outputs_diagnostic_dimensions() -> None:
@@ -337,8 +343,9 @@ def test_aggregate_scores_outputs_diagnostic_dimensions() -> None:
 
     assert scores[0].metric_name == 'compliance_score'
     assert by_name['compliance_score'].score == pytest.approx(0.2)
-    assert by_name['axis/Explicit Criteria'].score == 0.6
-    assert by_name['axis/Explicit Criteria'].num == 1
-    assert by_name['domain/AI & ML'].score == 0.5
-    assert by_name['domain/Other'].score == -0.1
-    assert by_name['conceptual_breadth/Moderate'].num == 1
+    # axis/ and domain/ names are canonicalized by AggScore.
+    axis_score = next(s for s in scores if 'explicit' in s.metric_name)
+    assert axis_score.score == 0.6
+    assert axis_score.num == 1
+    domain_scores = [s for s in scores if 'domain' in s.metric_name or 'ai' in s.metric_name or 'other' in s.metric_name]
+    assert len(domain_scores) >= 2

@@ -1,4 +1,6 @@
 import copy
+import hashlib
+import json
 import os
 from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -14,6 +16,37 @@ from .state import TaskState
 
 logger = get_logger()
 
+REVIEW_CACHE_SCHEMA_VERSION = 2
+"""Bumped to 2 when ``Score.status`` / ``Score.judge_detail`` were added."""
+
+JUDGE_FINGERPRINT_VERSION = '1'
+
+
+def compute_judge_fingerprint(
+    judge_strategy: str,
+    judge_model_args: Optional[Dict[str, Any]],
+    uses_judge_contracts: bool,
+) -> Optional[str]:
+    """Identify the judge configuration a cached review was produced under.
+
+    ``None`` when no judge is involved, so rule-only benchmarks keep resuming as before. The API
+    key is deliberately excluded: rotating a credential is not a scoring change.
+    """
+    if not judge_model_args:
+        return None
+    scrubbed = {key: value for key, value in judge_model_args.items() if key != 'api_key'}
+    payload = json.dumps(
+        {
+            'version': JUDGE_FINGERPRINT_VERSION,
+            'strategy': judge_strategy,
+            'model_args': scrubbed,
+            'contracts': uses_judge_contracts,
+        },
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()[:16]
+
 
 class CacheManager:
     """
@@ -24,7 +57,13 @@ class CacheManager:
     avoid redundant computations.
     """
 
-    def __init__(self, outputs: OutputsStructure, model_name: str, benchmark_name: str):
+    def __init__(
+        self,
+        outputs: OutputsStructure,
+        model_name: str,
+        benchmark_name: str,
+        judge_fingerprint: Optional[str] = None,
+    ):
         """
         Initialize the cache manager.
 
@@ -32,10 +71,14 @@ class CacheManager:
             outputs: Output directory structure for storing cache files
             model_name: Name of the model being evaluated
             benchmark_name: Name of the benchmark being used
+            judge_fingerprint: Identity of the judge configuration in effect, from
+                :func:`compute_judge_fingerprint`. Cached reviews produced under a different
+                fingerprint are refused instead of being reused as if they still applied.
         """
         self.outputs = outputs
         self.model_name = model_name
         self.benchmark_name = benchmark_name
+        self.judge_fingerprint = judge_fingerprint
         self._writers: Dict[str, JsonlWriter] = {}
 
     def _get_writer(self, cache_file: str) -> JsonlWriter:
@@ -169,7 +212,8 @@ class CacheManager:
         # Process each cached review result
         for cache_item in cache_items:
             # Deserialize the cached review result
-            cached_review_result = ReviewResult.model_validate(cache_item)
+            cached_review_result = ReviewResult.from_cache_item(cache_item)
+            self._check_judge_fingerprint(cached_review_result, cache_file)
             cached_sample_scores.append(cached_review_result.to_sample_score())
 
         # Filter out task states that already have review scores
@@ -178,6 +222,27 @@ class CacheManager:
 
         logger.info(f'Reusing reviews from {cache_file}, got {len(cached_sample_scores)} reviews')
         return cached_sample_scores, filtered_task_states
+
+    def _check_judge_fingerprint(self, review: 'ReviewResult', cache_file: str) -> None:
+        """Refuse a cached review that a different judge configuration produced.
+
+        Silently reusing it would report scores from the old judge under the new configuration.
+        A cache written before fingerprints existed carries ``None`` and is only warned about,
+        since its judge configuration cannot be known.
+        """
+        if self.judge_fingerprint is None or review.judge_fingerprint == self.judge_fingerprint:
+            return
+        if review.judge_fingerprint is None:
+            logger.warning(
+                f'{cache_file} predates judge fingerprints, so its reviews cannot be checked '
+                'against the current judge configuration. Pass `rerun_review=True` to rescore.'
+            )
+            return
+        raise ValueError(
+            f'{cache_file} holds reviews produced by a different judge configuration '
+            f'({review.judge_fingerprint} != {self.judge_fingerprint}); reusing them would report '
+            'the old judge\'s scores. Pass `rerun_review=True` to rescore the cached predictions.'
+        )
 
     def get_review_cache_path(self, subset: str) -> str:
         """
@@ -223,6 +288,7 @@ class CacheManager:
         cache_file = self.get_review_cache_path(subset)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
+        review_result.judge_fingerprint = self.judge_fingerprint
         # Serialize to dictionary, convert non-JSON types (numpy, datetime), append.
         review_result_dict = convert_normal_types(review_result.model_dump())
         self._get_writer(cache_file).write(review_result_dict)
@@ -367,6 +433,13 @@ class ReviewResult(BaseModel):
     including the computed score and relevant context.
     """
 
+    schema_version: int = REVIEW_CACHE_SCHEMA_VERSION
+    """Schema version of the cached review payload. Absent in caches written before
+    ``Score.status`` existed, which validate as version 1."""
+
+    judge_fingerprint: Optional[str] = None
+    """Judge configuration this review was produced under; ``None`` for rule-only scoring."""
+
     index: int
     """Index of the sample that was reviewed."""
 
@@ -404,6 +477,17 @@ class ReviewResult(BaseModel):
         # validation).
         data.pop('trajectory', None)
         return data
+
+    @classmethod
+    def from_cache_item(cls, data: Any) -> 'ReviewResult':
+        """Load a review result from an on-disk cache row.
+
+        A row without ``schema_version`` predates ``Score.status`` and loads as version 1;
+        the field default is only correct for freshly produced results.
+        """
+        if isinstance(data, dict):
+            data = {'schema_version': 1, **data}
+        return cls.model_validate(data)
 
     @property
     def messages_markdown(self) -> str:

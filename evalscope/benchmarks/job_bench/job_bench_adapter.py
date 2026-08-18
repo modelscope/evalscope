@@ -15,7 +15,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
-from evalscope.constants import HubType, JudgeStrategy, Tags
+from evalscope.constants import HubType, ScoringPolicy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
 from .utils import (
@@ -86,14 +86,12 @@ Your final message may summarize what you produced, but files requested by the t
 class JobBenchAdapter(AgentLoopAdapter):
     """JobBench adapter using ModelScope data and EvalScope's agent loop."""
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
     strategy_name = 'function_calling'
     max_steps_default = 250
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            raise ValueError("JobBench does not support judge_strategy='llm_recall'; use 'auto' or 'llm'.")
         self._snapshot_dir: Optional[Path] = None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -198,28 +196,6 @@ class JobBenchAdapter(AgentLoopAdapter):
             env=env,
             artifact_dir=host_artifact_dir,
             metadata=sample.metadata,
-        )
-
-    def match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        return Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-            value={
-                'normalized_score': 0.0,
-                'pass_rate': 0.0,
-                'judge_score': 0.0,
-            },
-            metadata={
-                'official_score_computed': False,
-                'note': 'JobBench quality scoring requires judge_model_args.',
-            },
-            main_score_name='normalized_score',
         )
 
     def llm_match_score(

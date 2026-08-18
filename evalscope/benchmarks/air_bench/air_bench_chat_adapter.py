@@ -14,15 +14,17 @@ known property of the benchmark, not an implementation difference.
 
 import os
 import re
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, Placement, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 from .utils import (
     CHAT_TASK_TO_CATEGORY,
@@ -36,6 +38,15 @@ from .utils import (
 )
 
 logger = get_logger()
+
+
+class PairRating(BaseModel):
+    """Both assistants' 1-10 ratings from one judge pass."""
+    assistant1: float = Field(ge=1.0, le=10.0)
+    assistant2: float = Field(ge=1.0, le=10.0)
+
+
+PAIR_CONTRACT = OutputContract(schema_model=PairRating)
 
 JUDGE_SYSTEM_PROMPT = ('You are a helpful and precise assistant for checking the quality of the answer.')
 
@@ -51,7 +62,7 @@ JUDGE_TEMPLATE = """[Detailed Audio Description]
 [The End of Assistant 2s Answer]
 [System]
 We would like to request your feedback on the performance of two AI assistants in response to the user question and audio description displayed above. AI assistants are provided with detailed audio descriptions and questions.
-Please rate the helpfulness, relevance, accuracy, and comprehensiveness of their responses. Each assistant receives an overall score on a scale of 1 to 10, where a higher score indicates better overall performance. Please output a single line containing only two values indicating the scores for Assistant 1 and 2, respectively. The two scores are separated by a space."""  # noqa: E501
+Please rate the helpfulness, relevance, accuracy, and comprehensiveness of their responses. Each assistant receives an overall score on a scale of 1 to 10, where a higher score indicates better overall performance. """  # noqa: E501
 
 
 @register_benchmark(
@@ -71,38 +82,21 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 - **Task Type**: Open-ended audio question answering.
 - **Input**: An audio clip plus a free-form question.
 - **Output**: A textual answer evaluated against the reference response.
+- **Modalities**: Audio (human speech, natural sounds, music) + text.
 
-## Categories (8 tasks → 5 reported categories)
+## Key Features
 
-The 8 Chat tasks are aggregated by the official `cal_score.py` into five categories:
+- ~2k open-ended audio QA pairs across speech, sound, music and mixed-audio scenes; the generative half of AIR-Bench (ACL 2024).
+- 8 Chat tasks aggregated by the official `cal_score.py` into 5 reported categories: `speech` (`speech_QA`, `speech_dialogue_QA`), `sound` (`sound_QA`, `sound_generation_QA`), `music` (`music_QA`, `music_generation_analysis_QA`), `speech_and_sound` (`speech_and_sound_QA`), `speech_and_music` (`speech_and_music_QA`). The paper's Mixed-audio = mean(speech_and_sound, speech_and_music).
+- Position bias is removed by judging every sample twice with reference/prediction order swapped, then averaging (disable via `extra_params={'do_swap': False}` to halve judge cost).
+- Hosted on ModelScope ([`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)) in an audiofolder + JSON layout; the full release is ~49 GB, so limit tasks via `extra_params={'tasks': [...]}` for partial runs.
 
-- `speech`: `speech_QA`, `speech_dialogue_QA`
-- `sound`: `sound_QA`, `sound_generation_QA`
-- `music`: `music_QA`, `music_generation_analysis_QA`
-- `speech_and_sound`: `speech_and_sound_QA`
-- `speech_and_music`: `speech_and_music_QA`
+## Evaluation Notes
 
-The paper's **Mixed-audio = mean(speech_and_sound, speech_and_music)**.
-
-## Dataset Access
-
-- The dataset is hosted on ModelScope: [`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset). It uses an *audiofolder + JSON metadata* layout. evalscope downloads it lazily via `modelscope.dataset_snapshot_download` on first run; the full release is ~49 GB, so it is recommended to limit which tasks are pulled via `extra_params`.
+- Metrics: `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
+- The judge LLM receives the question, the textual audio description (`meta_info`), the reference answer (`answer_gt`), and the model's response, and outputs two integer scores in `[1, 10]`. Use a judge that supports long contexts, since `meta_info` may exceed 4k tokens for dialogue tasks.
+- The official leaderboard uses `gpt-4-0125-preview`. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
 - If the dataset is already on disk, pass `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Chat/`.
-
-## Evaluation Protocol
-
-- The judge LLM (default: GPT-4) receives the question, the textual audio description (`meta_info` from the dataset), the reference answer (`answer_gt`), and the model's response. It outputs a single line with two integer scores in `[1, 10]`.
-- To remove position bias, every sample is judged twice with the order of reference and prediction swapped, then averaged. This mirrors `cal_score.py` in the official repository — disable it via `extra_params={'do_swap': False}` to halve judge cost.
-- Reported metric `judge_score` is the model's mean judge score; `win_rate` records how often the model strictly beats the reference.
-
-```{warning}
-The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
-```
-
-## Implementation Notes
-
-- The judge model is selected via `--judge-model-args`; ensure the model id supports long contexts (`meta_info` may exceed 4k tokens for dialogue tasks).
-- Set `extra_params={'tasks': [...]}` to evaluate only specific Chat task names — useful for partial runs.
 """,  # noqa: E501
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',
@@ -130,7 +124,8 @@ The official leaderboard uses `gpt-4-0125-preview` as the judge model. If that e
 )
 class AIRBenchChatAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Chat open-ended audio QA tasks."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     # Per-sample folder layout for audio files. Distinct from Foundation since
     # Chat pre-merges some categories.
@@ -281,121 +276,54 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
     # ------------------------------------------------------------------
     # Scoring (LLM judge with optional position swap)
     # ------------------------------------------------------------------
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    @property
+    def judge_position_swap(self) -> bool:
+        # Official cal_score.py judges each sample twice with the order swapped.
+        return bool(self.extra_params.get('do_swap', True))
+
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='pair', output_contract=PAIR_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
+        # ``assistant1`` is the reference on the original pass and the prediction on the swapped one.
+        reference_first = placement is Placement.ORIGINAL
+        prompt = JUDGE_TEMPLATE.format(
+            meta_info=metadata.get('meta_info', ''),
+            question=metadata.get('question') or context.task_state.input_text,
+            assistant1=context.reference if reference_first else context.filtered_prediction,
+            assistant2=context.filtered_prediction if reference_first else context.reference,
         )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
 
-        meta_info = task_state.metadata.get('meta_info', '')
-        question = task_state.metadata.get('question') or task_state.input_text
-        do_swap = bool(self.extra_params.get('do_swap', True))
-
-        # Pass 1: reference as Assistant 1, prediction as Assistant 2.
-        prompt_a = JUDGE_TEMPLATE.format(
-            meta_info=meta_info,
-            question=question,
-            assistant1=reference,
-            assistant2=filtered_prediction,
-        )
-        ref_score_1, pred_score_1, raw_1 = self._judge_pair(prompt_a)
-
-        scores_ref: List[float] = []
-        scores_pred: List[float] = []
-        if ref_score_1 is not None and pred_score_1 is not None:
-            scores_ref.append(ref_score_1)
-            scores_pred.append(pred_score_1)
-
-        raw_responses = [raw_1]
-        parse_failed = ref_score_1 is None or pred_score_1 is None
-
-        if do_swap:
-            # Pass 2: prediction as Assistant 1, reference as Assistant 2.
-            prompt_b = JUDGE_TEMPLATE.format(
-                meta_info=meta_info,
-                question=question,
-                assistant1=filtered_prediction,
-                assistant2=reference,
-            )
-            pred_score_2, ref_score_2, raw_2 = self._judge_pair(prompt_b)
-            raw_responses.append(raw_2)
-            if pred_score_2 is not None and ref_score_2 is not None:
-                scores_ref.append(ref_score_2)
-                scores_pred.append(pred_score_2)
-            else:
-                parse_failed = True
-
-        if scores_pred and scores_ref:
-            mean_pred = sum(scores_pred) / len(scores_pred)
-            mean_ref = sum(scores_ref) / len(scores_ref)
-            win = 1.0 if mean_pred > mean_ref else 0.0
-            score.value = {
-                'judge_score': mean_pred,
-                'win_rate': win,
-            }
-            score.main_score_name = 'judge_score'
-            score.metadata = {
-                'reference_score': mean_ref,
-                'pred_scores_per_pass': scores_pred,
-                'reference_scores_per_pass': scores_ref,
-                'judge_strategy': self.judge_strategy,
-                'judge_model': getattr(self.llm_judge, 'model_id', 'unknown'),
-                'do_swap': do_swap,
-            }
-            if parse_failed:
-                logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
-                score.metadata.update({'parse_failed': True, 'judge_raw': raw_responses})
-            score.explanation = ' || '.join(raw_responses)
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        placements = case_verdicts[0].placements
+        if placements:
+            # Both sides survived, or the executor would not have produced a verdict at all.
+            original, swapped = placements['original'], placements['swapped']
+            pred_scores = [original.assistant2, swapped.assistant1]
+            ref_scores = [original.assistant1, swapped.assistant2]
         else:
-            logger.warning(f'AIR-Bench Chat: failed to parse judge response(s): {raw_responses!r}')
-            # Omitting the metric keys drops the sample from the mean; a 0.0 would be averaged
-            # in as a real rating even though the judge scale starts at 1.
-            score.value = {}
-            score.metadata = {'parse_failed': True, 'judge_raw': raw_responses}
+            verdict = case_verdicts[0].value
+            pred_scores = [verdict.assistant2]
+            ref_scores = [verdict.assistant1]
+
+        mean_pred = sum(pred_scores) / len(pred_scores)
+        mean_ref = sum(ref_scores) / len(ref_scores)
+        return ReducedVerdict(
+            value={
+                'judge_score': mean_pred,
+                'win_rate': 1.0 if mean_pred > mean_ref else 0.0,
+            },
+            metadata={
+                'reference_score': mean_ref,
+                'pred_scores_per_pass': pred_scores,
+                'reference_scores_per_pass': ref_scores,
+            },
+        )
+
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
+        score.main_score_name = 'judge_score'
         return score
-
-    def _judge_pair(self, prompt: str) -> Tuple[Optional[float], Optional[float], str]:
-        """Call the judge once and parse its two-integer response.
-
-        Returns ``(score_assistant1, score_assistant2, raw_response)``. The two
-        score positions correspond to the order embedded in ``prompt``.
-        """
-        try:
-            judge = self.llm_judge
-            if judge is None:
-                return None, None, '<judge_error: LLM judge is not initialised>'
-            raw = judge.judge(prompt, system_prompt=JUDGE_SYSTEM_PROMPT)
-        except Exception as e:
-            logger.warning(f'AIR-Bench Chat: judge call failed: {e}')
-            return None, None, f'<judge_error: {e}>'
-
-        if raw is None:
-            return None, None, ''
-
-        nums = self._extract_judge_scores(raw)
-        if len(nums) >= 2:
-            try:
-                a, b = float(nums[0]), float(nums[1])
-                if 1 <= a <= 10 and 1 <= b <= 10:
-                    return float(a), float(b), raw
-            except ValueError:
-                pass
-        return None, None, raw
-
-    @staticmethod
-    def _extract_judge_scores(raw: str) -> List[str]:
-        # Anchor to the first non-empty line, the format the prompt asks for. Reading further
-        # lets prose numbers, or numbers quoted back from the candidate answer, become the scores.
-        score_pattern = r'(?:10(?:\.0+)?|[0-9](?:\.\d+)?)'
-        for line in raw.splitlines():
-            if not line.strip():
-                continue
-            match = re.fullmatch(rf'({score_pattern})[\s,]+({score_pattern})', line.strip())
-            return list(match.groups()) if match else []
-        return []

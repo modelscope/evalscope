@@ -2,7 +2,13 @@ import json
 import unittest
 
 from evalscope.api.metric import SampleScore, Score
-from evalscope.benchmarks.deepsearchqa.utils import aggregate_official_scores, parse_judge_response, rule_fallback_score
+from evalscope.benchmarks.deepsearchqa.utils import (
+    GRADE_CONTRACT,
+    aggregate_official_scores,
+    metrics_from_grade,
+    rule_fallback_score,
+)
+from evalscope.constants import ScoreStatus
 
 
 class TestDeepSearchQAUtils(unittest.TestCase):
@@ -37,7 +43,7 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         self.assertEqual(value['precision'], 1.0)
         self.assertEqual(value['recall'], 0.5)
 
-    def test_parse_judge_response_handles_official_json_fence(self):
+    def test_grade_contract_parses_the_official_json_fence(self):
         judge_response = """
         ```json
         {
@@ -50,12 +56,15 @@ class TestDeepSearchQAUtils(unittest.TestCase):
         ```
         """
 
-        value, metadata = parse_judge_response(judge_response)
+        result = GRADE_CONTRACT.parse(judge_response)
+        self.assertTrue(result.ok)
+        value, metadata = metrics_from_grade(result.value)
 
         self.assertEqual(value['f1'], 1.0)
         self.assertEqual(metadata['correctness_details'], {'Belgium': True, 'France': True})
 
-    def test_parse_judge_response_rejects_surrounding_text_to_match_official_parser(self):
+    def test_grade_contract_accepts_json_embedded_in_prose(self):
+        """A reasoning judge may explain before the JSON; the contract reads the single object."""
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Only one expected answer is present.',
@@ -67,12 +76,14 @@ class TestDeepSearchQAUtils(unittest.TestCase):
             }
         }
 
-        value, metadata = parse_judge_response(f'Rating follows:\n{json.dumps(payload)}\nDone.')
+        result = GRADE_CONTRACT.parse(f'Rating follows:\n{json.dumps(payload)}')
+        self.assertTrue(result.ok)
+        value, _ = metrics_from_grade(result.value)
 
-        self.assertEqual(value, {})
-        self.assertTrue(metadata['invalid_auto_rater_response'])
+        self.assertEqual(value['precision'], 0.5)
+        self.assertEqual(value['recall'], 0.5)
 
-    def test_parse_judge_response_rejects_unknown_boolean_strings(self):
+    def test_grade_contract_rejects_unknown_boolean_strings(self):
         payload = {
             'Answer Correctness': {
                 'Explanation': 'Malformed flag.',
@@ -83,12 +94,11 @@ class TestDeepSearchQAUtils(unittest.TestCase):
             }
         }
 
-        value, metadata = parse_judge_response(json.dumps(payload))
+        result = GRADE_CONTRACT.parse(json.dumps(payload))
 
-        self.assertEqual(value, {})
-        self.assertTrue(metadata['invalid_auto_rater_response'])
+        self.assertFalse(result.ok)
 
-    def test_aggregate_scores_excludes_empty_and_invalid_responses_from_means(self):
+    def test_aggregate_scores_excludes_empty_and_failed_responses_from_means(self):
         sample_scores = [
             SampleScore(
                 sample_id=0,
@@ -99,7 +109,7 @@ class TestDeepSearchQAUtils(unittest.TestCase):
                 }, metadata={}),
             ),
             SampleScore(sample_id=1, score=Score(value={}, metadata={'empty_model_response': True})),
-            SampleScore(sample_id=2, score=Score(value={}, metadata={'invalid_auto_rater_response': True})),
+            SampleScore(sample_id=2, score=Score(value={}, status=ScoreStatus.EXCLUDED)),
         ]
 
         scores = {
@@ -109,7 +119,7 @@ class TestDeepSearchQAUtils(unittest.TestCase):
 
         self.assertEqual(scores['mean_precision'].num, 1)
         self.assertEqual(scores['rate_empty_model_response'].score, 1 / 3)
-        self.assertEqual(scores['rate_invalid_auto_rater_response'].score, 1 / 3)
+        self.assertEqual(scores['rate_judge_parse_failure'].score, 1 / 3)
 
 
 if __name__ == '__main__':

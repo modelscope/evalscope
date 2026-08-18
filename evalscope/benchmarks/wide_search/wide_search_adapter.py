@@ -17,7 +17,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
-from evalscope.constants import JudgeStrategy, Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
 from .utils import METRIC_NAMES, WideSearchScorer, aggregate_official_scores
 
@@ -89,7 +89,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 )
 class WideSearchAdapter(AgentLoopAdapter):
     """Official single-agent WideSearch benchmark adapter."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -187,7 +187,6 @@ class WideSearchAdapter(AgentLoopAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        self._validate_judge_config()
         with self._judge_lock:
             judge = self.llm_judge
         scorer = WideSearchScorer(judge=judge.judge)
@@ -204,21 +203,6 @@ class WideSearchAdapter(AgentLoopAdapter):
             metadata=result.diagnostics,
             main_score_name='success_rate',
         )
-
-    def match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        raise ValueError("WideSearch requires judge_strategy='auto' or 'llm' with judge_model_args.")
-
-    def _validate_judge_config(self) -> None:
-        if self.judge_strategy not in {JudgeStrategy.AUTO, JudgeStrategy.LLM}:
-            raise ValueError("WideSearch requires judge_strategy='auto' or 'llm'.")
-        if not self._task_config.judge_model_args:
-            raise ValueError('WideSearch requires judge_model_args for official table alignment and scoring.')
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         return aggregate_official_scores(sample_scores)

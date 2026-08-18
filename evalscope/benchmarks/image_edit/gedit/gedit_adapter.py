@@ -1,15 +1,17 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import os
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, ImageEditAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessage, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import FileConstants, Tags
+from evalscope.constants import FileConstants, ScoringPolicy, Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
@@ -21,6 +23,14 @@ SUBSET_LIST = [
 ]
 
 LANGUAGE_LIST = ['en', 'cn']
+
+
+class GeditGrade(BaseModel):
+    score: List[int] = Field(min_length=1)
+    reasoning: str = ''
+
+
+GEDIT_CONTRACT = OutputContract(schema_model=GeditGrade)
 
 
 @register_benchmark(
@@ -75,7 +85,8 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 )
 class GEditAdapter(ImageEditAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -118,57 +129,43 @@ class GEditAdapter(ImageEditAdapter):
         language = sample.metadata.get('instruction_language', 'en')
         return super().sample_filter(sample) and language == self.language
 
-    def llm_match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [
+            JudgeCase(case_id='SC', output_contract=GEDIT_CONTRACT, metadata={'kind': 'SC'}),
+            JudgeCase(case_id='PQ', output_contract=GEDIT_CONTRACT, metadata={'kind': 'PQ'}),
+        ]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
+        edited_image = metadata[FileConstants.IMAGE_PATH]
+        if case.metadata['kind'] == 'SC':
+            input_image = metadata['input_image']
+            text = self.SC_prompt.replace('<instruction>', metadata['instruction'])
+            content = [ContentImage(image=input_image), ContentImage(image=edited_image), ContentText(text=text)]
+        else:
+            content = [ContentImage(image=edited_image), ContentText(text=self.PQ_prompt)]
+        prompt_text = content[-1].text + case.output_contract.instruction()
+        content[-1] = ContentText(text=prompt_text)
+        return JudgeRequest(messages=[ChatMessageUser(content=content)])
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
         import math
 
-        from .utils import mllm_output_to_dict
-
-        metadata = task_state.metadata
-        text_prompt = metadata['instruction']
-        input_image = metadata['input_image']  # base64 image
-        edited_image = metadata[FileConstants.IMAGE_PATH]  # local image path
-        _SC_prompt = self.SC_prompt.replace('<instruction>', text_prompt)
-
-        # Initialize the score object with prediction details
-        score = Score(
-            extracted_prediction=edited_image,
-            prediction=edited_image,
+        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+        sc_score = min(verdicts_by_case['SC'].value.score)
+        pq_score = min(verdicts_by_case['PQ'].value.score)
+        return ReducedVerdict(
+            value={
+                'semantic_consistency': float(sc_score),
+                'perceptual_similarity': float(pq_score),
+                'normalized_score': math.sqrt(sc_score * pq_score),
+            }
         )
 
-        # Build prompts
-        SC_prompt_final = [
-            ChatMessageUser(
-                content=[
-                    ContentImage(image=input_image),
-                    ContentImage(image=edited_image),
-                    ContentText(text=_SC_prompt)
-                ]
-            )
-        ]
-        PQ_prompt_final = [
-            ChatMessageUser(content=[ContentImage(image=edited_image),
-                                     ContentText(text=self.PQ_prompt)])
-        ]
-
-        guess_if_cannot_parse = True
-        result_SC = self.llm_judge.judge(messages=SC_prompt_final)
-        result_PQ = self.llm_judge.judge(messages=PQ_prompt_final)
-        SC_dict = mllm_output_to_dict(result_SC, give_up_parsing=guess_if_cannot_parse)
-        PQ_dict = mllm_output_to_dict(result_PQ, give_up_parsing=guess_if_cannot_parse)
-
-        SC_score = min(SC_dict['score'])
-        PQ_score = min(PQ_dict['score'])
-        O_score = math.sqrt(SC_score * PQ_score)
-
-        # `normalized_score` is the official Overall: the geometric mean of SC and PQ.
-        score.value = {
-            'semantic_consistency': SC_score,
-            'perceptual_similarity': PQ_score,
-            'normalized_score': O_score,
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'normalized_score'
-        score.metadata = {
-            'SC_dict': SC_dict,
-            'PQ_dict': PQ_dict,
-        }
+        metadata = context.task_state.metadata or {}
+        score.extracted_prediction = metadata.get(FileConstants.IMAGE_PATH, '')
+        score.prediction = score.extracted_prediction
         return score

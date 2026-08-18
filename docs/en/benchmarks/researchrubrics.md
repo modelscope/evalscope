@@ -15,6 +15,15 @@ references, communication quality, and instruction following.
 - **Dataset**: 101 tasks and 2,593 weighted rubric criteria
 - **Metric**: Binary rubric compliance score
 
+## Key Features
+
+- 101 open-ended Deep Research tasks paired with 2,593 expert-written, weighted rubric criteria.
+- Rubrics cover explicit and implicit requirements, information synthesis, references, communication
+  quality, and instruction following, and each is graded independently.
+- Negative-weight criteria capture undesirable behaviours and subtract from the score when present.
+- Long reports are graded with the official chunk-evidence-synthesis procedure once they exceed the
+  configured judge context threshold.
+
 ## Agent Environment
 
 - Uses EvalScope's built-in agent environment by default and does not require ``agent_config``. The agent can use ``bash``

@@ -11,12 +11,14 @@ from evalscope.api.dataset import (
     resolve_snapshot_or_local_path,
 )
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from .utils import (
     OPTION_LABELS,
+    VERDICT_CONTRACT,
     build_mc_judge_prompt,
     build_mc_question,
     build_oe_judge_prompt,
@@ -25,7 +27,6 @@ from .utils import (
     extract_oe_answer,
     match_mc_answer,
     match_oe_answer,
-    parse_judge_verdict,
     parse_options,
 )
 
@@ -71,6 +72,8 @@ class PhyXAdapter(VisionLanguageAdapter):
     are read from the snapshot instead of a tabular split. Subclasses decide how a problem is asked
     (multiple-choice or open-ended) and how a reply is scored.
     """
+
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -175,6 +178,28 @@ class PhyXAdapter(VisionLanguageAdapter):
         score.explanation = explanation
         return score
 
+    # -- Judge contract hooks --
+
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        """Render the official judge prompt for this benchmark's answer format."""
+        raise NotImplementedError
+
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='equivalence', output_contract=VERDICT_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        prompt = self.build_judge_prompt(context.filtered_prediction, context.reference)
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        return ReducedVerdict(value={'acc': float(case_verdicts[0].value.verdict)})
+
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
+        score.main_score_name = 'acc'
+        return score
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -256,9 +281,10 @@ class PhyXMCAdapter(PhyXAdapter):
             # The reply committed to a different option; there is nothing for the judge to weigh.
             return self._build_score(original_prediction, filtered_prediction, False, 'string match')
 
-        judge_response = self.llm_judge.judge(build_mc_judge_prompt(filtered_prediction, reference))
-        correct = parse_judge_verdict(judge_response)
-        return self._build_score(original_prediction, filtered_prediction, correct, f'LLM judge: {judge_response}')
+        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        return build_mc_judge_prompt(prediction, reference)
 
 
 @register_benchmark(
@@ -312,7 +338,7 @@ answer of a university-level physics problem from the figure and state it.
 class PhyXOEAdapter(PhyXAdapter):
     """PhyX in open-ended mode, scored by comparing the final answer with the ground truth."""
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def build_question(self, record: Dict[str, Any], options: Dict[str, str]) -> str:
         return build_oe_question(record['question_simply'], record['question'])
@@ -337,6 +363,7 @@ class PhyXOEAdapter(PhyXAdapter):
         if reference.strip().lower() == filtered_prediction.strip().lower():
             return self._build_score(original_prediction, filtered_prediction, True, 'string match')
 
-        judge_response = self.llm_judge.judge(build_oe_judge_prompt(filtered_prediction, reference))
-        correct = parse_judge_verdict(judge_response)
-        return self._build_score(original_prediction, filtered_prediction, correct, f'LLM judge: {judge_response}')
+        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        return build_oe_judge_prompt(prediction, reference)

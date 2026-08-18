@@ -1,18 +1,19 @@
 # flake8: noqa: E501
 import json
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
-from evalscope.utils.function_utils import retry_call
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 from .utils import (
     CONSULTATION_MAX_QUESTIONS,
-    JUDGE_KEY_TO_METRIC,
     JUDGE_SYSTEM_PROMPTS,
     JUDGE_TYPE_CASE_ANALYSIS,
     JUDGE_TYPE_LEGAL_QA,
@@ -20,13 +21,28 @@ from .utils import (
     TASK_INSTRUCTIONS,
     USER_PROMPTS,
     build_conversation,
-    parse_json_to_dict,
     parse_rubric_sections,
     score_case_analysis,
     score_total_points,
 )
 
 logger = get_logger()
+
+
+class SectionScore(BaseModel):
+    total_points: float
+
+
+class CaseAnalysisGrade(BaseModel):
+    """The ``case_analysis`` judge reply; section denominators come from the dataset, not the judge."""
+    score_details: Dict[str, SectionScore]
+
+
+class TotalPointsGrade(BaseModel):
+    """The single-total judge reply for ``legal_qa`` / ``document_generation``."""
+    total_points: float
+    max_points: Optional[float] = None
+
 
 SUBSET_LIST = [
     'case_analysis',
@@ -124,7 +140,8 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
 class PLawBenchAdapter(DefaultDataAdapter):
     """Rubric-based Chinese legal practice benchmark graded by an LLM judge."""
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -152,71 +169,48 @@ class PLawBenchAdapter(DefaultDataAdapter):
             },
         )
 
-    def match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        raise ValueError(
-            'PLawBench is scored against expert rubrics and requires an LLM judge. '
-            "Set judge_strategy='llm' (or 'auto') and provide judge_model_args."
-        )
-
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        metadata = task_state.metadata or {}
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        metadata = context.task_state.metadata or {}
         judge_type = metadata['judge_type']
-        max_points = float(metadata['max_points'])
+        schema = CaseAnalysisGrade if judge_type == JUDGE_TYPE_CASE_ANALYSIS else TotalPointsGrade
+        return [
+            JudgeCase(
+                case_id='rubric',
+                # ``judge_retries`` is the user-facing knob for a judge that keeps replying off-format.
+                output_contract=OutputContract(schema_model=schema, parse_retries=self.judge_retries - 1),
+            )
+        ]
 
-        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
-
-        rubric_sections = None
-        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
-            rubric_sections = parse_rubric_sections(metadata['rubrics'])
-
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
+        judge_type = metadata['judge_type']
+        rubric_sections = parse_rubric_sections(metadata['rubrics']) \
+            if judge_type == JUDGE_TYPE_CASE_ANALYSIS else None
         system_prompt, user_prompt = self._build_judge_prompts(
             judge_type=judge_type,
             metadata=metadata,
-            response=original_prediction,
+            response=context.original_prediction,
             rubric_sections=rubric_sections,
         )
+        return JudgeRequest(messages=[ChatMessageSystem(content=system_prompt), ChatMessageUser(content=user_prompt)])
 
-        def judge_func() -> Dict[str, Any]:
-            judge_response = self.llm_judge.judge(prompt=user_prompt, system_prompt=system_prompt)
-            judge_json = parse_json_to_dict(judge_response)
-            if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
-                values, details = score_case_analysis(judge_json, rubric_sections)
-            else:
-                acc, details = score_total_points(judge_json, max_points)
-                values = {'acc': acc}
-            return {'values': values, 'details': details, 'response': judge_response}
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        metadata = context.task_state.metadata or {}
+        judge_type = metadata['judge_type']
+        judge_json = case_verdicts[0].value.model_dump()
+        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
+            values, details = score_case_analysis(judge_json, parse_rubric_sections(metadata['rubrics']))
+        else:
+            acc, details = score_total_points(judge_json, float(metadata['max_points']))
+            values = {'acc': acc}
+        return ReducedVerdict(value=values, metadata={'judge_type': judge_type, **details})
 
-        try:
-            result = retry_call(judge_func, retries=self.judge_retries, sleep_interval=1)
-        except Exception as e:
-            logger.warning(f'PLawBench judge failed for sample {metadata.get("id")}: {e}')
-            score.value = self._zero_values(judge_type)
-            score.main_score_name = 'acc'
-            score.explanation = f'Judge failed after {self.judge_retries} attempts: {e}'
-            score.metadata = {
-                'source': 'plawbench_rubric_judge',
-                'judge_type': judge_type,
-                'judge_model': self.llm_judge.model_id,
-                'judge_failed': True,
-            }
-            return score
-
-        score.value = result['values']
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'acc'
-        score.explanation = result['response']
-        score.metadata = {
-            'source': 'plawbench_rubric_judge',
-            'judge_type': judge_type,
-            'judge_model': self.llm_judge.model_id,
-            'judge_failed': False,
-            **result['details'],
-        }
-        # Surface the rubric breakdown in the review target column, which is otherwise empty.
-        task_state.target = self._format_target(judge_type, result['details'])
+        if review.metadata:
+            # Surface the rubric breakdown in the review target column, which is otherwise empty.
+            context.task_state.target = self._format_target(review.metadata['judge_type'], review.metadata)
         return score
 
     def _build_judge_prompts(
@@ -242,13 +236,6 @@ class PLawBenchAdapter(DefaultDataAdapter):
             .replace('<<rubric_item>>', rubric_text) \
             .replace('<<score>>', str(metadata['max_points']))
         return system_prompt, user_prompt
-
-    @staticmethod
-    def _zero_values(judge_type: str) -> Dict[str, float]:
-        # Keep ``acc`` first so a failed sample reports the same primary metric as a scored one.
-        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
-            return {'acc': 0.0, **{metric: 0.0 for metric in JUDGE_KEY_TO_METRIC.values()}}
-        return {'acc': 0.0}
 
     @staticmethod
     def _format_target(judge_type: str, details: Dict[str, Any]) -> str:

@@ -1,15 +1,25 @@
-import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+# The judge replies with the single letter of the better output; 'm' is the baseline and 'M'
+# the evaluated model. Case matters, so an unanchored search would match any m in prose.
+class Preference(BaseModel):
+    verdict: Literal['m', 'M']
+
+
+PREFERENCE_CONTRACT = OutputContract(schema_model=Preference)
 
 GRADER_SYSTEM_PROMPT = """You are a highly efficient assistant, who evaluates and selects the best large language model (LLMs) based on the quality of their responses to a given instruction. This process will be used to create a leaderboard reflecting the most accurate and human-preferred answers."""  # noqa: E501
 
@@ -89,7 +99,8 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 )
 class AlpacaEvalAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -116,42 +127,23 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
             }
         )
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='preference', output_contract=PREFERENCE_CONTRACT)]
 
-        instruction = task_state.input_text
-
-        # Request judge and obtain score
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         # reference is baseline answer 'm', filtered_prediction is model answer 'M'
-        prompt = GRADER_TEMPLATE.format(instruction=instruction, output_1=reference, output_2=filtered_prediction)
-        judge_response = self.llm_judge.judge(prompt, system_prompt=GRADER_SYSTEM_PROMPT)
+        prompt = GRADER_TEMPLATE.format(
+            instruction=context.task_state.input_text,
+            output_1=context.reference,
+            output_2=context.filtered_prediction,
+        )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageSystem(content=GRADER_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
 
-        # parse grading response
-        match = re.search(r'(m|M)', judge_response)
-        res = match.group(0) if match else None
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        return ReducedVerdict(value={'win_rate': 1.0 if case_verdicts[0].value.verdict == 'M' else 0.0})
 
-        if res:
-            winrate = 1 if res == 'M' else 0
-        else:
-            logger.info(f'Failed to parse grading response: {prompt=}\n {judge_response=}')
-            winrate = 0
-
-        # Set score based on the match result
-        score.value = {'win_rate': winrate}
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'win_rate'
         return score

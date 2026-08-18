@@ -1,17 +1,27 @@
 import copy
 import os
-from typing import Any, Dict
+from pydantic import BaseModel
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
-from evalscope.utils.function_utils import retry_call
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class RubricGrade(BaseModel):
+    """The judge's reply per rubric item; GRADER_TEMPLATE already asks for exactly these keys."""
+    explanation: str = ''
+    criteria_met: bool
+
+
+RUBRIC_CONTRACT = OutputContract(schema_model=RubricGrade)
 
 GRADER_TEMPLATE = """
 Your job is to look at a conversation and a rubric item, and score the last turn (i.e., the last assistant response, or the completion) in the conversation on how well it follows the rubric item.
@@ -163,7 +173,8 @@ class HealthBenchAdapter(DefaultDataAdapter):
     This adapter supports multiple dataset versions and uses LLM judges to evaluate
     responses against detailed medical criteria.
     """
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         """
@@ -226,83 +237,53 @@ class HealthBenchAdapter(DefaultDataAdapter):
         theme = tags[0].split(':')[1].strip() if len(tags) > 0 else 'Unknown'
         return Sample(input=input_messages, target='', subset_key=theme, metadata=record)
 
-    def llm_match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
-        """
-        Evaluate AI response using LLM judge against physician-created rubrics.
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        # One case per physician-authored rubric item.
+        rubrics = (context.task_state.metadata or {}).get('rubrics', [])
+        return [
+            JudgeCase(case_id=f'rubric_{index}', output_contract=RUBRIC_CONTRACT, metadata={'rubric_index': index})
+            for index in range(len(rubrics))
+        ]
 
-        Args:
-            original_prediction: The AI model's original response
-            filtered_prediction: Filtered/processed version of the response
-            reference: Reference answer (not used in this evaluation)
-            task_state: Contains metadata including rubric items
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        from .utils import RubricItem
 
-        Returns:
-            Score: Contains overall score, rubric tag scores, and explanations
-        """
-        from .utils import (
-            RubricItem,
-            calculate_rubric_tag_scores,
-            calculate_score,
-            construct_readable_explanation,
-            parse_json_to_dict,
-        )
-
-        # Initialize the score object with prediction details
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
-        # Extract rubric items and conversation from task metadata
-        example = copy.deepcopy(task_state.metadata)
-        rubric_items = [RubricItem.from_dict(d) for d in example['rubrics']]
-        # Construct full conversation including the AI response
-        convo_with_response = example['prompt'] + [dict(content=original_prediction, role='assistant')]
-        # Format conversation as readable string
+        metadata = context.task_state.metadata or {}
+        rubric_item = RubricItem.from_dict(metadata['rubrics'][case.metadata['rubric_index']])
+        convo_with_response = metadata['prompt'] + [dict(content=context.original_prediction, role='assistant')]
         convo_str = '\n\n'.join([f"{m['role']}: {m['content']}" for m in convo_with_response])
+        prompt = GRADER_TEMPLATE.replace('<<conversation>>', convo_str).replace('<<rubric_item>>', str(rubric_item))
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        # Evaluate response against each rubric item using LLM judge
-        grading_response_list = []
-        for rubric_item in rubric_items:
-            # Create judge prompt by substituting conversation and rubric item
-            grader_prompt = GRADER_TEMPLATE.replace('<<conversation>>',
-                                                    convo_str).replace('<<rubric_item>>', str(rubric_item))
-            messages = [ChatMessageUser(content=grader_prompt)]
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        from .utils import RubricItem, calculate_rubric_tag_scores, calculate_score, construct_readable_explanation
 
-            def judge_func():
-                grading_response = self.llm_judge.judge(messages=messages)
-                grading_response_dict = parse_json_to_dict(grading_response)
-                # Validate response format and extract boolean criteria_met field
-                if 'criteria_met' not in grading_response_dict or not isinstance(
-                    grading_response_dict['criteria_met'], bool
-                ):
-                    logger.warning('Grading failed due to bad JSON output, retrying...')
-                    raise ValueError('Grading failed due to bad JSON output')
-                return grading_response_dict
+        metadata = copy.deepcopy(context.task_state.metadata or {})
+        rubric_items = [RubricItem.from_dict(d) for d in metadata['rubrics']]
+        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+        # The official helpers consume plain dicts and zip strictly against the rubric list.
+        grading_response_list = [
+            verdicts_by_case[f'rubric_{index}'].value.model_dump() for index in range(len(rubric_items))
+        ]
 
-            # Retry logic for robust evaluation
-            grading_result = retry_call(judge_func, retries=3, sleep_interval=1)
-            grading_response_list.append(grading_result)
+        overall_score = calculate_score(rubric_items, grading_response_list)
+        rubric_tag_scores, axis_grades = calculate_rubric_tag_scores(rubric_items, grading_response_list)
+        readable_explanation = construct_readable_explanation(rubric_items, grading_response_list)
+        return ReducedVerdict(
+            value={
+                'overall_score': overall_score,
+                **axis_grades,
+            },
+            metadata={
+                'readable_explanation': readable_explanation,
+                'rubric_tag_scores': rubric_tag_scores,
+            },
+        )
 
-        # Calculate final scores and explanations
-        overall_score = calculate_score(rubric_items, grading_response_list)  # Overall weighted score
-        rubric_tag_scores, axis_grades = calculate_rubric_tag_scores(
-            rubric_items, grading_response_list
-        )  # Scores by category
-        readable_explanation = construct_readable_explanation(
-            rubric_items, grading_response_list
-        )  # Human-readable results
-
-        # Set score values and metadata
-        score.value = {
-            'overall_score': overall_score,
-            **axis_grades,  # Include axis scores at top level
-        }
+    def finalize_judge_score(self, review, context) -> Score:
+        score = super().finalize_judge_score(review, context)
         score.main_score_name = 'overall_score'
-        score.metadata = {
-            'readable_explanation': readable_explanation,
-            'rubric_tag_scores': rubric_tag_scores,
-        }
-        # Store explanation in sample target for reference
-        task_state.target = '**Score Explanation**\n\n' + readable_explanation
+        explanation = review.metadata.get('readable_explanation', '')
+        # Surface the per-rubric breakdown in the review Gold column.
+        context.task_state.target = '**Score Explanation**\n\n' + explanation
         return score

@@ -1,18 +1,28 @@
 # flake8: noqa: E501
 import base64
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, Content
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
-from .utils import build_judge_prompt, parse_judge_verdict
+from .utils import build_judge_prompt
 
 logger = get_logger()
+
+
+class Judgment(BaseModel):
+    reasoning: str = ''
+    verdict: bool
+
+
+JUDGMENT_CONTRACT = OutputContract(schema_model=Judgment)
 
 DESCRIPTION = """
 ## Overview
@@ -89,7 +99,8 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
     Interleaves the question with its images following the official `<|image_N|>`
     placeholder convention and scores free-form answers with the official LLM judge.
     """
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
+    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -161,33 +172,33 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
         reference: str,
         task_state: TaskState,
     ) -> Score:
-        """Score a prediction with the official PerceptionBench teacher-grading judge."""
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
         if not original_prediction.strip():
             # Mirrors the official evaluator: unanswered items score 0 without a judge call.
-            score.value = {'acc': 0.0}
-            score.explanation = 'failed to obtain answer'
-            return score
+            return Score(
+                extracted_prediction=filtered_prediction,
+                prediction=original_prediction,
+                value={'acc': 0.0},
+                main_score_name='acc',
+                explanation='failed to obtain answer',
+            )
+        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
 
-        metadata = task_state.metadata or {}
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        return [JudgeCase(case_id='judgment', output_contract=JUDGMENT_CONTRACT)]
+
+    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
         prompt = build_judge_prompt(
-            question=metadata.get('problem', task_state.input_text),
-            prediction=original_prediction,
-            reference=reference,
+            question=metadata.get('problem', context.task_state.input_text),
+            prediction=context.original_prediction,
+            reference=context.reference,
         )
-        judge_response = self.llm_judge.judge(prompt)
-        judge_score, judge_reason = parse_judge_verdict(judge_response)
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        score.value = {'acc': judge_score}
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-            'judge_reason': judge_reason,
-        }
-        return score
+    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        judgment = case_verdicts[0].value
+        return ReducedVerdict(
+            value={'acc': 1.0 if judgment.verdict else 0.0},
+            metadata={'judge_reason': judgment.reasoning[:200]},
+        )

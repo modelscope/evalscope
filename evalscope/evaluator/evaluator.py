@@ -14,13 +14,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.dataset import Dataset, Sample
-from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
+from evalscope.api.evaluator import CacheManager, Evaluator, TaskState, compute_judge_fingerprint
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
 from evalscope.report import Report, gen_perf_table, gen_table
+from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -132,6 +133,11 @@ class DefaultEvaluator(Evaluator):
             outputs=outputs,
             model_name=self.model_name,
             benchmark_name=self.benchmark_name,
+            judge_fingerprint=compute_judge_fingerprint(
+                judge_strategy=task_config.judge_strategy,
+                judge_model_args=get_secret_value(task_config.judge_model_args),
+                uses_judge_contracts=getattr(benchmark, 'uses_judge_contracts', False),
+            ) if getattr(benchmark, 'use_llm_judge', False) else None,
         )
 
         # Initialize batch reviewer for benchmarks that use batch scoring
