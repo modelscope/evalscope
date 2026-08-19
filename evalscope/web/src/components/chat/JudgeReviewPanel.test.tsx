@@ -29,7 +29,7 @@ function renderPanel(score: unknown) {
 describe('JudgeReviewPanel', () => {
   it('shows the judge model, observation count and a single case row', () => {
     renderPanel({
-      judge_detail: { judge_models: ['qwen-plus'], valid_observations: 1, total_observations: 1 },
+      judge_summary: { judge_models: ['qwen-plus'], valid_observations: 1, total_observations: 1 },
       metadata: {
         judge_attempts: [{
           status: 'success',
@@ -142,7 +142,7 @@ describe('JudgeReviewPanel', () => {
 
   it('flags a retry and surfaces the failure count', () => {
     renderPanel({
-      judge_detail: { judge_models: ['qwen-plus'], failures: { parse_error: 1 } },
+      judge_summary: { judge_models: ['qwen-plus'], failures: { parse_error: 1 } },
       metadata: {
         judge_attempts: [
           {
@@ -183,7 +183,7 @@ describe('JudgeReviewPanel', () => {
 
   it('marks a case with no usable verdict instead of inventing one', () => {
     renderPanel({
-      judge_detail: { judge_models: ['j'], valid_observations: 0, total_observations: 1, error: 'no judge produced a usable verdict' },
+      judge_summary: { judge_models: ['j'], valid_observations: 0, total_observations: 1, error: 'no judge produced a usable verdict' },
       metadata: {
         judge_attempts: [{
           status: 'parse_error', case_id: 'grade', judge_id: 'j', attempt_index: 0, raw_response: 'prose',

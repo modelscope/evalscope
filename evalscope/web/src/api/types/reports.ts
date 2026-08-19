@@ -24,7 +24,7 @@ export type {
   AgentTrace,
   // LLM judge diagnostics carried on a score
   JudgeAttempt,
-  JudgeDetail,
+  JudgeSummary,
   PredictionScore,
   PredictionRow,
   PredictionsResponse,

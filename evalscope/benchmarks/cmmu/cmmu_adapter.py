@@ -141,7 +141,7 @@ class CMMUAdapter(VisionLanguageAdapter):
         else:
             return prediction.strip()
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
@@ -157,7 +157,7 @@ class CMMUAdapter(VisionLanguageAdapter):
                 value={'acc': 1.0 if filtered_prediction == reference else 0.0},
                 main_score_name='acc',
             )
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]

@@ -5,7 +5,7 @@ came from scoring ``[ERROR]`` responses as 0.
 """
 import pytest
 
-from evalscope.api.metric import JudgeDetail, Score
+from evalscope.api.metric import JudgeSummary, Score
 from evalscope.api.mixin import LLMJudgeMixin
 from evalscope.constants import ScoreStatus
 
@@ -39,7 +39,7 @@ def test_merge_takes_the_maximum(rule_value, judge_value, expected):
 @pytest.mark.parametrize('status', [ScoreStatus.TRANSPORT_ERROR, ScoreStatus.PARSE_ERROR, ScoreStatus.EXCLUDED])
 def test_an_unusable_judge_keeps_the_rule_score(status):
     rule = Score(value={'acc': 0.6}, main_score_name='acc')
-    judge = Score(value={}, status=status, judge_detail=JudgeDetail(judge_models=['j']))
+    judge = Score(value={}, status=status, judge_summary=JudgeSummary(judge_models=['j']))
 
     merged = Merger()._merge_scores(rule, judge)
 
@@ -47,7 +47,7 @@ def test_an_unusable_judge_keeps_the_rule_score(status):
     assert merged.status is ScoreStatus.FALLBACK
     assert merged.status.is_usable, 'a rule-scored sample must still count towards the metric'
     assert merged.metadata['judge_unavailable'] == status.value
-    assert merged.judge_detail.judge_models == ['j']
+    assert merged.judge_summary.judge_models == ['j']
 
 
 def test_a_judge_fallback_score_is_still_merged():

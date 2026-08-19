@@ -225,7 +225,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         with open(path, 'rb') as f:
             return self._image_bytes_to_base64(f.read(), default_format=ext)
 
-    def llm_match_score(
+    def pre_judge_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         # Both flows short-circuit before touching the judge when there is nothing to grade.
@@ -237,7 +237,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
             if not [strip_boxed(a) for a in metadata['answers']]:
                 return self._empty_score(filtered_prediction, original_prediction, task_state, 'no ground-truth answer')
         task_state.target = self._format_target(metadata)
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def _empty_score(self, filtered: str, original: str, task_state: TaskState, reason: str) -> Score:
         task_state.target = self._format_target(task_state.metadata or {})

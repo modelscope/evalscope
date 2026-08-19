@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
@@ -17,6 +17,36 @@ def collect_metric_names(scores: List[SampleScore]) -> List[str]:
         for metric_name in sample_score.score.value:
             metric_names.setdefault(metric_name, None)
     return list(metric_names)
+
+
+def collect_planned_attempts(scores: List[SampleScore], metric_name: str) -> Dict[Any, Dict[int, SampleScore]]:
+    """Keep generation positions so an unavailable early trial cannot shift later trials forward."""
+    grouped: Dict[Any, Dict[int, SampleScore]] = defaultdict(dict)
+    for score in scores:
+        if metric_name not in score.score.value:
+            continue
+        group_id = score.group_id if score.group_id is not None else score.sample_id
+        position = score.generation_index
+        if position is None:
+            # Legacy caches lack an explicit position. Their existing row order is the only safe
+            # information available; new scores always carry generation_index.
+            position = len(grouped[group_id])
+        grouped[group_id][position] = score
+    return grouped
+
+
+def eligible_prefixes(
+    grouped: Dict[Any, Dict[int, SampleScore]],
+) -> Dict[int, List[Tuple[Any, Dict[int, SampleScore]]]]:
+    """Return groups eligible for each k only when the complete first-k prefix exists."""
+    result: Dict[int, List[Tuple[Any, Dict[int, SampleScore]]]] = defaultdict(list)
+    for group_id, attempts in grouped.items():
+        for k in range(1, max(attempts, default=-1) + 2):
+            if all(index in attempts for index in range(k)):
+                result[k].append((group_id, attempts))
+            else:
+                break
+    return result
 
 
 @register_aggregation(name='mean')
@@ -103,37 +133,17 @@ class MeanPassAtK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
-            # group_id -> list[float] (0/1 correctness values)
-            group_values: Dict[Any, List[float]] = defaultdict(list)
-            for s in scores:
-                if metric_name not in s.score.value:
-                    continue
-                group_id = s.group_id if s.group_id is not None else s.sample_id
-                value = float(s.score.value[metric_name])
-                group_values[group_id].append(value)
-
-            if not group_values:
+            group_attempts = collect_planned_attempts(scores, metric_name)
+            prefixes = eligible_prefixes(group_attempts)
+            if not prefixes:
                 continue
-
-            k = min(len(values) for values in group_values.values())
-
-            # Prepare inputs for calculate_pass_at_k
-            num_samples: List[int] = []
-            num_correct: List[int] = []
-            group_order: List[Any] = []
-            for gid, vals in group_values.items():
-                group_order.append(gid)
-                num_samples.append(len(vals))
-                num_correct.append(int(sum(vals)))
-
-            # Compute per-group pass@n for all n from 1 to k
-            pass_at_n_maps = {}
-            for n in range(1, k + 1):
-                pass_at_n_list = calculate_pass_at_k(num_samples, num_correct, n)
-                pass_at_n_maps[n] = {gid: float(v) for gid, v in zip(group_order, pass_at_n_list)}
-
-            for n in range(1, k + 1):
-                values = list(pass_at_n_maps[n].values())
+            for n, eligible in prefixes.items():
+                group_order = [group_id for group_id, _ in eligible]
+                values_by_group = [[float(score.score.value[metric_name])
+                                    for _, score in sorted(attempts.items())]
+                                   for _, attempts in eligible]
+                values = calculate_pass_at_k([len(items) for items in values_by_group],
+                                             [int(sum(items)) for items in values_by_group], n)
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -142,6 +152,12 @@ class MeanPassAtK(Aggregator):
                         dimensions={'k': n},
                         num=len(values),
                         ids=group_order,
+                        metadata={
+                            'eligible': len(values),
+                            'total': len(group_attempts),
+                            'coverage': len(values) / len(group_attempts),
+                            'excluded': len(group_attempts) - len(values),
+                        },
                     )
                 )
 
@@ -183,29 +199,15 @@ class MeanVoteAtK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
-            # Group samples by group_id, preserving order
-            # Store: (prediction, correctness_score)
-            group_samples: Dict[Any, List[tuple]] = defaultdict(list)
-            for score in scores:
-                if metric_name not in score.score.value:
-                    continue
-                group_id = score.group_id if score.group_id is not None else score.sample_id
-                prediction = getattr(score.score, 'extracted_prediction', None)
-                correctness = score.score.value[metric_name]
-                group_samples[group_id].append((prediction, correctness))
-
-            if not group_samples:
+            group_attempts = collect_planned_attempts(scores, metric_name)
+            prefixes = eligible_prefixes(group_attempts)
+            if not prefixes:
                 continue
-
-            k = min(len(samples) for samples in group_samples.values())
-
-            # Compute vote@n for all n from 1 to k for each group
-            vote_at_n_maps: Dict[int, Dict[str, float]] = {}
-            for n in range(1, k + 1):
-                vote_at_n_maps[n] = {}
-                for group_id, samples in group_samples.items():
-                    # Consider only first n samples for this group
-                    n_samples = samples[:n]
+            for n, eligible in prefixes.items():
+                vote_at_n_map: Dict[Any, float] = {}
+                for group_id, attempts in eligible:
+                    n_samples = [(attempts[index].score.extracted_prediction, attempts[index].score.value[metric_name])
+                                 for index in range(n)]
 
                     # Count prediction frequencies
                     prediction_counts = defaultdict(int)
@@ -220,10 +222,9 @@ class MeanVoteAtK(Aggregator):
                         pred == most_frequent_pred and correctness == 1.0 for pred, correctness in n_samples
                     )
 
-                    vote_at_n_maps[n][group_id] = 1.0 if is_correct else 0.0
+                    vote_at_n_map[group_id] = 1.0 if is_correct else 0.0
 
-            for n in range(1, k + 1):
-                values = list(vote_at_n_maps[n].values())
+                values = list(vote_at_n_map.values())
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -231,7 +232,13 @@ class MeanVoteAtK(Aggregator):
                         aggregation='vote_at_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=list(group_samples),
+                        ids=list(vote_at_n_map),
+                        metadata={
+                            'eligible': len(values),
+                            'total': len(group_attempts),
+                            'coverage': len(values) / len(group_attempts),
+                            'excluded': len(group_attempts) - len(values),
+                        },
                     )
                 )
 
@@ -261,31 +268,17 @@ class MeanPassHatK(Aggregator):
         metrics = collect_metric_names(scores)
 
         for metric_name in metrics:
-            # group_id -> list[float] (0/1 correctness values)
-            group_values: Dict[Any, List[float]] = defaultdict(list)
-            for s in scores:
-                if metric_name not in s.score.value:
-                    continue
-                group_id = s.group_id if s.group_id is not None else s.sample_id
-                value = float(s.score.value[metric_name])
-                group_values[group_id].append(value)
-
-            if not group_values:
+            group_attempts = collect_planned_attempts(scores, metric_name)
+            prefixes = eligible_prefixes(group_attempts)
+            if not prefixes:
                 continue
-
-            k = min(len(values) for values in group_values.values())
-
-            # Compute per-group pass^n for all n from 1 to k
-            pass_hat_n_maps: Dict[int, Dict[str, float]] = {}
-            for n in range(1, k + 1):
-                pass_hat_n_maps[n] = {}
-                for gid, vals in group_values.items():
-                    total = len(vals)
-                    correct = int(sum(vals))
-                    pass_hat_n_maps[n][gid] = float(calculate_pass_hat_k(total, correct, n))
-
-            for n in range(1, k + 1):
-                values = list(pass_hat_n_maps[n].values())
+            for n, eligible in prefixes.items():
+                values = []
+                ids = []
+                for group_id, attempts in eligible:
+                    attempt_values = [float(score.score.value[metric_name]) for _, score in sorted(attempts.items())]
+                    values.append(float(calculate_pass_hat_k(len(attempt_values), int(sum(attempt_values)), n)))
+                    ids.append(group_id)
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values),
@@ -293,7 +286,13 @@ class MeanPassHatK(Aggregator):
                         aggregation='pass_hat_k',
                         dimensions={'k': n},
                         num=len(values),
-                        ids=list(group_values),
+                        ids=ids,
+                        metadata={
+                            'eligible': len(values),
+                            'total': len(group_attempts),
+                            'coverage': len(values) / len(group_attempts),
+                            'excluded': len(group_attempts) - len(values),
+                        },
                     )
                 )
 

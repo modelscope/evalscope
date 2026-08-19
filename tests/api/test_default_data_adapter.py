@@ -91,10 +91,10 @@ def test_auto_judge_strategy_uses_adapter_class_default() -> None:
 
     assert adapter.use_llm_judge is True
 
-    adapter._task_config.judge_strategy = JudgeStrategy.RULE
+    adapter._task_config.judge.strategy = JudgeStrategy.RULE
     assert adapter.use_llm_judge is False
 
-    adapter._task_config.judge_strategy = JudgeStrategy.LLM
+    adapter._task_config.judge.strategy = JudgeStrategy.LLM
     assert adapter.use_llm_judge is True
 
 

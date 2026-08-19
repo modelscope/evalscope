@@ -14,11 +14,13 @@ def make_sample_score(
     group_id: Optional[str] = None,
     sample_id: Optional[str] = None,
     prediction: Optional[str] = None,
+    generation_index: Optional[int] = None,
 ) -> SampleScore:
     return SampleScore(
         score=Score(value=value, extracted_prediction=prediction),
         sample_id=sample_id or group_id,
         group_id=group_id,
+        generation_index=generation_index,
     )
 
 
@@ -125,3 +127,18 @@ def test_mean_only_counts_present_values():
     assert len(agg_scores) == 1
     assert agg_scores[0].score == pytest.approx(1.0)
     assert agg_scores[0].num == 1
+
+
+@pytest.mark.parametrize('aggregator_cls', K_AGGREGATORS)
+def test_missing_first_generation_never_promotes_a_later_generation_to_k_one(aggregator_cls):
+    scores = [
+        make_sample_score({'judge_score': 1.0}, group_id='g0', sample_id='g0-1', prediction='right', generation_index=1),
+        make_sample_score({'judge_score': 0.0}, group_id='g1', sample_id='g1-0', prediction='wrong', generation_index=0),
+    ]
+
+    at_one = find_agg(aggregator_cls()(scores),
+                      'vote_at_k' if aggregator_cls is MeanVoteAtK else
+                      'pass_at_k' if aggregator_cls is MeanPassAtK else 'pass_hat_k', 1)
+
+    assert at_one.num == 1
+    assert at_one.metadata['excluded'] == 1

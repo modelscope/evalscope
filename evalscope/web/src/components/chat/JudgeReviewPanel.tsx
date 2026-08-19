@@ -134,11 +134,11 @@ function CaseRow({ view, showCaseId }: { view: JudgeCaseView; showCaseId: boolea
             </div>
           )}
           {view.attempts.map((attempt, index) => (
-            <div key={`${attempt.case_id}-${attempt.attempt_index ?? index}-${attempt.placement ?? ''}`}>
+            <div key={`${attempt.judge_id}-${attempt.repeat_id ?? 0}-${attempt.case_id}-${attempt.placement ?? ''}-${index}`}>
               <div className="type-label-xs mb-1 flex items-center gap-1.5 text-[var(--text-muted)]">
                 <span>{t('prediction.judgeRawResponse')}</span>
                 <span className="font-mono normal-case opacity-70">
-                  {t('prediction.judgeAttemptLabel').replace('${index}', String((attempt.attempt_index ?? index) + 1))}
+                  {t('prediction.judgeAttemptLabel').replace('${index}', String(index + 1))}
                   {attempt.placement ? ` · ${attempt.placement}` : ''}
                 </span>
                 <StatusPill status={attempt.status} />
@@ -166,7 +166,7 @@ export interface JudgeReviewPanelProps {
 /**
  * Structured view of the LLM judge's work on one sample.
  *
- * Rendered only for a judge-scored sample; a rule-scored one has no `judge_detail` and
+ * Rendered only for a judge-scored sample; a rule-scored one has no `judge_summary` and
  * `selectJudgeReview` returns `null`.
  */
 export function JudgeReviewPanel({ review }: JudgeReviewPanelProps) {

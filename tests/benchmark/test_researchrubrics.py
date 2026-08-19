@@ -308,7 +308,7 @@ def test_calculate_metrics_returns_placeholder_for_two_phase_review() -> None:
 @pytest.mark.parametrize('judge_strategy', [JudgeStrategy.RULE, JudgeStrategy.LLM_RECALL])
 def test_rejects_unsupported_judge_strategies(judge_strategy: str) -> None:
     adapter = make_adapter()
-    adapter._task_config.judge_strategy = judge_strategy
+    adapter._task_config.judge.strategy = judge_strategy
 
     with pytest.raises(ValueError, match='no usable rule-based scoring'):
         adapter.validate_judge_strategy()

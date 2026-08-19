@@ -1,92 +1,79 @@
-"""A cached review must not be reused under a different judge configuration.
-
-Doing so reports the old judge's scores as if the new configuration had produced them.
-"""
+"""Review reuse is permitted only for the exact Native judge semantics."""
 import pytest
 
 from evalscope.api.evaluator.cache import CacheManager, ReviewResult, compute_judge_fingerprint
 from evalscope.api.metric import SampleScore, Score
+from evalscope.config import JudgeConfig
 from evalscope.utils.io_utils import OutputsStructure
 
-JUDGE_ARGS = {'model_id': 'judge-a', 'generation_config': {'temperature': 0.0}}
+
+def fingerprint(**overrides):
+    values = {'strategy': 'llm', 'models': [{'model_id': 'judge-a'}]}
+    values.update(overrides)
+    return compute_judge_fingerprint(JudgeConfig(**values), judge_revision='7')
 
 
-def make_manager(tmp_path, fingerprint):
-    outputs = OutputsStructure(str(tmp_path), is_make=True)
-    return CacheManager(outputs=outputs, model_name='m', benchmark_name='b', judge_fingerprint=fingerprint)
+def make_manager(tmp_path, value):
+    return CacheManager(OutputsStructure(str(tmp_path), is_make=True), 'm', 'b', judge_fingerprint=value)
 
 
-def review(fingerprint):
+def review(value):
     result = ReviewResult(index=0, sample_score=SampleScore(score=Score(value={'acc': 1.0}), sample_id=0))
-    result.judge_fingerprint = fingerprint
+    result.judge_fingerprint = value
     return result
 
 
-def test_fingerprint_is_none_without_a_judge():
-    assert compute_judge_fingerprint('rule', None) is None
-    assert compute_judge_fingerprint('auto', {}) is None
+def test_rule_only_config_has_no_fingerprint():
+    assert compute_judge_fingerprint(JudgeConfig(), judge_revision='1') is None
 
 
-def test_fingerprint_changes_with_the_judge_configuration():
-    base = compute_judge_fingerprint('llm', JUDGE_ARGS)
-
-    assert base != compute_judge_fingerprint('llm_recall', JUDGE_ARGS)
-    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'model_id': 'judge-b'})
-    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'generation_config': {'temperature': 1.0}})
-
-
-def test_adding_a_second_judge_changes_the_fingerprint():
-    """Scores averaged over two judges must not be reused for one."""
-    one = compute_judge_fingerprint('llm', JUDGE_ARGS)
-    two = compute_judge_fingerprint('llm', [JUDGE_ARGS, {**JUDGE_ARGS, 'model_id': 'judge-b'}])
-
-    assert one != two
-
-
-def test_a_single_judge_list_matches_the_bare_mapping():
-    """``judge_model_args`` accepts either shape; one judge is one configuration either way."""
-    assert compute_judge_fingerprint('llm', [JUDGE_ARGS]) == compute_judge_fingerprint('llm', JUDGE_ARGS)
+@pytest.mark.parametrize(
+    'changed',
+    [
+        {'strategy': 'llm_recall'},
+        {'models': [{'model_id': 'judge-b'}]},
+        {'repeats': 2},
+        {'position_swap': 'on'},
+        {'aggregation': 'median'},
+        {'models': [{'model_id': 'judge-a'}, {'model_id': 'judge-b'}], 'min_valid_judges': 2},
+    ],
+)
+def test_every_scoring_semantic_changes_the_fingerprint(changed):
+    assert fingerprint() != fingerprint(**changed)
 
 
-def test_rotating_the_api_key_does_not_invalidate_reviews():
-    """A credential change is not a scoring change, and the key must not reach the cache file."""
-    with_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k1'})
-    other_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k2'})
-
-    assert with_key == other_key == compute_judge_fingerprint('llm', JUDGE_ARGS)
+def test_api_key_is_scrubbed_from_the_fingerprint():
+    assert fingerprint(models=[{'model_id': 'judge-a', 'api_key': 'old'}]) == fingerprint(
+        models=[{'model_id': 'judge-a', 'api_key': 'new'}]
+    )
 
 
-def test_rotating_the_api_key_of_a_listed_judge_does_not_invalidate_reviews():
-    keyed = compute_judge_fingerprint('llm', [{**JUDGE_ARGS, 'api_key': 'k1'}])
-
-    assert keyed == compute_judge_fingerprint('llm', [JUDGE_ARGS])
-
-
-def test_matching_fingerprint_is_reused(tmp_path):
-    manager = make_manager(tmp_path, 'abc123')
-
-    manager._check_judge_fingerprint(review('abc123'), 'reviews.jsonl')
-
-
-def test_mismatched_fingerprint_is_refused(tmp_path):
-    manager = make_manager(tmp_path, 'abc123')
+def test_missing_or_mismatched_fingerprint_is_refused(tmp_path):
+    manager = make_manager(tmp_path, 'new')
 
     with pytest.raises(ValueError, match='rerun_review=True'):
-        manager._check_judge_fingerprint(review('def456'), 'reviews.jsonl')
+        manager._check_judge_fingerprint(review(None), 'reviews.jsonl')
+    with pytest.raises(ValueError, match='rerun_review=True'):
+        manager._check_judge_fingerprint(review('old'), 'reviews.jsonl')
 
 
-def test_a_legacy_cache_without_a_fingerprint_only_warns(tmp_path):
-    manager = make_manager(tmp_path, 'abc123')
-
-    manager._check_judge_fingerprint(review(None), 'reviews.jsonl')
-
-
-def test_rule_only_runs_never_check_fingerprints(tmp_path):
+def test_judge_cache_is_not_reused_by_a_rule_run(tmp_path):
     manager = make_manager(tmp_path, None)
 
-    manager._check_judge_fingerprint(review('anything'), 'reviews.jsonl')
+    with pytest.raises(ValueError, match='different judge configuration'):
+        manager._check_judge_fingerprint(review('judge'), 'reviews.jsonl')
 
 
-def test_saved_reviews_carry_the_current_fingerprint(tmp_path):
-    manager = make_manager(tmp_path, 'abc123')
-    assert manager.judge_fingerprint == 'abc123'
+def test_rerun_is_atomic(tmp_path):
+    manager = make_manager(tmp_path, 'new')
+    target = manager.get_review_cache_path('default')
+    with open(target, 'w', encoding='utf-8') as file:
+        file.write('old\n')
+
+    manager.delete_review_cache('default')
+
+    with open(target, encoding='utf-8') as file:
+        assert file.read() == 'old\n'
+    manager.commit_review_reruns()
+    with open(target, encoding='utf-8') as file:
+        assert file.read() == 'old\n'

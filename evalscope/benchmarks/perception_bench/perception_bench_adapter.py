@@ -164,7 +164,7 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
             logger.warning(f'Failed to decode image data URI: {e}')
             return None
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
@@ -180,7 +180,7 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
                 main_score_name='acc',
                 explanation='failed to obtain answer',
             )
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         return [JudgeCase(case_id='judgment', output_contract=JUDGMENT_CONTRACT)]

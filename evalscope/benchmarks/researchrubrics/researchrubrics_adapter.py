@@ -308,9 +308,8 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         rubrics = json.loads(context.reference)
         report = context.filtered_prediction
         used_chunking = self._uses_chunking(report)
-        retries = max(self.judge_retries - 1, 0)
-        binary_contract = OutputContract(schema_model=BinaryGrade, parse_retries=retries)
-        chunk_contract = OutputContract(schema_model=ChunkGrade, parse_retries=retries)
+        binary_contract = OutputContract(schema_model=BinaryGrade)
+        chunk_contract = OutputContract(schema_model=ChunkGrade)
         cases: List[JudgeCase] = []
         for idx, rubric in enumerate(rubrics):
             criterion = str(rubric.get('criterion', '')).strip()
@@ -371,9 +370,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             synthesis_cases.append(
                 JudgeCase(
                     case_id=f'rubric_{rubric_idx}_synthesis',
-                    output_contract=OutputContract(
-                        schema_model=BinaryGrade, parse_retries=max(self.judge_retries - 1, 0)
-                    ),
+                    output_contract=OutputContract(schema_model=BinaryGrade),
                     metadata={
                         'kind': 'synthesis',
                         'rubric_idx': rubric_idx,

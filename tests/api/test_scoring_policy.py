@@ -87,7 +87,7 @@ def test_rule_default_benchmark_scores_by_rule_under_auto():
 def test_missing_judge_model_args_fails_before_generating():
     cfg = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy=JudgeStrategy.LLM)
 
-    with pytest.raises(ValueError, match='judge_model_args must be provided'):
+    with pytest.raises(ValueError, match='judge.models must be provided'):
         get_benchmark('simple_qa', cfg)
 
 

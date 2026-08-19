@@ -9,7 +9,7 @@
 import type { JudgeAttempt, PredictionScore } from '@/api/types'
 
 /** Statuses that carry a usable verdict; mirrors `ScoreStatus.is_usable`. */
-const USABLE_STATUSES = new Set(['success', 'fallback'])
+const USABLE_STATUSES = new Set(['success', 'fallback', 'degraded'])
 
 export interface JudgeCaseView {
   caseId: string
@@ -48,12 +48,12 @@ export interface JudgeReviewView {
 /**
  * Build the view model, or `null` when this sample was not judged by an LLM.
  *
- * A rule-scored sample has neither `judge_detail` nor `judge_attempts`, so the panel is absent
+ * A rule-scored sample has neither `judge_summary` nor `judge_attempts`, so the panel is absent
  * rather than empty.
  */
 export function selectJudgeReview(score: PredictionScore | undefined): JudgeReviewView | null {
   if (!score) return null
-  const detail = score.judge_detail
+  const detail = score.judge_summary
   const attempts = score.metadata?.judge_attempts ?? []
   if (!detail && attempts.length === 0) return null
 
@@ -75,12 +75,14 @@ export function selectJudgeReview(score: PredictionScore | undefined): JudgeRevi
 function groupByCase(attempts: JudgeAttempt[]): JudgeCaseView[] {
   const byCase = new Map<string, JudgeAttempt[]>()
   for (const attempt of attempts) {
-    const bucket = byCase.get(attempt.case_id)
+    const key = `${attempt.judge_id}:${attempt.repeat_id ?? 0}:${attempt.case_id}:${attempt.placement ?? 'original'}`
+    const bucket = byCase.get(key)
     if (bucket) bucket.push(attempt)
-    else byCase.set(attempt.case_id, [attempt])
+    else byCase.set(key, [attempt])
   }
 
-  return [...byCase.entries()].map(([caseId, caseAttempts]) => {
+  return [...byCase.values()].map((caseAttempts) => {
+    const caseId = caseAttempts[0].case_id
     const usable = caseAttempts.filter(a => USABLE_STATUSES.has(a.status))
     const decisive = usable.length > 0 ? usable[usable.length - 1] : undefined
     const placements = [...new Set(caseAttempts.map(a => a.placement).filter((p): p is string => !!p))]

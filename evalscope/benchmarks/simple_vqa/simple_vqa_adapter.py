@@ -23,7 +23,6 @@ class Grade(BaseModel):
 GRADE_CONTRACT = OutputContract(
     schema_model=Grade,
     # Upstream falls back to NOT_ATTEMPTED rather than retrying a malformed verdict.
-    parse_retries=0,
 )
 
 GRADER_TEMPLATE = """

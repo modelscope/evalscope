@@ -138,7 +138,7 @@ class CLBenchAdapter(DefaultDataAdapter):
         metadata = record.get('metadata') or record.get('meta_data') or {}
         return Sample(input=messages, target=rubrics, metadata=metadata)
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
@@ -154,7 +154,7 @@ class CLBenchAdapter(DefaultDataAdapter):
                 main_score_name='acc',
                 explanation='Empty model output; scored as 0.',
             )
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]

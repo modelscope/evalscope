@@ -189,9 +189,10 @@ class ClawEvalAdapter(AgentAdapter):
         trace_root = output_root / 'traces'
         api_key = self._resolve_api_key(model)
         base_url = self._resolve_base_url(model)
-        judge_args = self._task_config.judge_model_args or {}
+        judge_args = self._task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True) \
+            if self._task_config.judge.models else {}
         judge_model = judge_args.get('model_id')
-        no_judge = self._task_config.judge_strategy == JudgeStrategy.RULE
+        no_judge = self._task_config.judge.strategy == JudgeStrategy.RULE
         official_config = self._build_official_config(
             model=model,
             tasks_dir=tasks_dir,

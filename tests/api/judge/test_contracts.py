@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 from typing import Literal
 
 from evalscope.api.judge import OutputContract
-from evalscope.metrics.judge.llm_judge import JUDGE_ERROR_PREFIX
 
 
 class Grade(BaseModel):
@@ -85,12 +84,6 @@ def test_rejects_prose_containing_the_verdict_letter():
 
 def test_rejects_a_bare_verdict_token():
     assert not GRADE.parse('A').ok
-
-
-def test_rejects_a_transport_error_sentinel():
-    result = GRADE.parse(f'{JUDGE_ERROR_PREFIX} connection refused')
-
-    assert not result.ok
 
 
 def test_rejects_truncated_json():
@@ -210,19 +203,6 @@ def test_a_reply_following_the_instruction_parses():
     reply = '{"extracted_final_answer": "42", "reasoning": "matches", "correct": "yes", "confidence": 90}'
 
     assert MULTI.parse(reply).ok
-
-
-# ---------------------------------------------------------------------------
-# Retry declaration
-# ---------------------------------------------------------------------------
-
-
-def test_parse_retries_defaults_to_three():
-    assert OutputContract(schema_model=Grade).parse_retries == 3
-
-
-def test_parse_retries_can_be_declared_zero():
-    assert OutputContract(schema_model=Grade, parse_retries=0).parse_retries == 0
 
 
 def test_accepts_json_after_a_reasoning_block():

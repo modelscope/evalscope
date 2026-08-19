@@ -1,3 +1,5 @@
+import hashlib
+import inspect
 import threading
 from functools import lru_cache
 from pydantic import BaseModel, Field, create_model
@@ -49,6 +51,9 @@ class LLMJudgeMixin:
     scoring_policy: ScoringPolicy = ScoringPolicy.RULE_DEFAULT
     """Declares what this benchmark's rule and judge paths can do. See :class:`ScoringPolicy`."""
 
+    judge_revision: str = '1'
+    """Bump when this adapter changes its prompt, cases, reducer, or fallback semantics."""
+
     llm_judge_default: Optional[bool] = None
     """[Deprecated] Superseded by :attr:`scoring_policy`. Will be removed in v2.0.0."""
 
@@ -79,6 +84,21 @@ class LLMJudgeMixin:
         super().__init__()
 
     @property
+    def judge_cache_revision(self) -> str:
+        """Bind cached reviews to both the declared revision and the adapter source.
+
+        ``judge_revision`` remains the human-auditable change marker. The source digest closes the
+        historical loophole where a prompt or reducer changed without a bump and an old review
+        cache was silently reused.
+        """
+        source_path = inspect.getsourcefile(type(self))
+        if source_path is None:
+            return self.judge_revision
+        with open(source_path, 'rb') as source:
+            digest = hashlib.sha256(source.read()).hexdigest()[:16]
+        return f'{self.judge_revision}:{digest}'
+
+    @property
     def llm_judges(self) -> List[LLMJudge]:
         """Every configured judge model, lazily built."""
         if self._llm_judges is None and self.use_llm_judge:
@@ -101,7 +121,7 @@ class LLMJudgeMixin:
     @property
     def judge_strategy(self) -> str:
         """Get the judge strategy from the task configuration."""
-        return self._task_config.judge_strategy
+        return self._task_config.judge.strategy
 
     @property
     def use_llm_judge(self) -> bool:
@@ -132,88 +152,33 @@ class LLMJudgeMixin:
                 'cannot produce a meaningful score. '
                 "Use judge_strategy='auto' or 'llm' with judge_model_args."
             )
-        if self.use_llm_judge and not self._task_config.judge_model_args:
+        if self.use_llm_judge and not self._task_config.judge.models:
             raise ValueError(
                 f"Benchmark '{name}' scores with an LLM judge under judge_strategy='{strategy}', "
-                'so judge_model_args must be provided.'
+                'so judge.models must be provided.'
             )
-        self._validate_judge_repeats()
-
-    def _validate_judge_repeats(self) -> None:
-        """Reject repeated observations of a deterministic judge, which carry no extra information."""
-        repeats = self._task_config.judge_repeats
-        if repeats <= 1 or not self.use_llm_judge:
-            return
-        for spec in self._judge_specs():
-            temperature = (spec.get('generation_config') or {}).get('temperature')
-            if temperature is None or float(temperature) <= 0:
-                raise ValueError(
-                    f'judge_repeats={repeats} requires an explicit non-zero judge temperature: repeating a '
-                    'deterministic judge only multiplies cost. Set '
-                    "judge_model_args['generation_config']['temperature'] above 0."
-                )
 
     def _judge_specs(self) -> List[dict]:
-        """The configured judge specs, normalised to a list."""
-        specs = self._task_config.judge_model_args
-        if not specs:
-            return []
-        return [specs] if isinstance(specs, dict) else list(specs)
+        """Return typed judge model specifications as model-construction dictionaries."""
+        return [spec.model_dump(exclude={'judge_id'}, exclude_none=True) for spec in self._task_config.judge.models]
 
     def init_llm_judges(self) -> List[LLMJudge]:
         """Build every configured judge model.
 
         Returns:
-            List[LLMJudge]: One judge per entry in ``judge_model_args``, empty for rule scoring.
+            List[LLMJudge]: One judge per entry in ``judge.models``, empty for rule scoring.
         """
         if self.judge_strategy == JudgeStrategy.RULE:
             return []
-        if not self._task_config.judge_model_args:
+        if not self._task_config.judge.models:
             raise ValueError(
                 'LLM judge model arguments must be provided for LLM-based judge strategies. '
                 'Please check your task configuration.'
             )
         judges = [LLMJudge(**get_secret_value(spec)) for spec in self._judge_specs()]
-        if len(judges) > 1:
-            self._validate_judge_agreement(judges)
+        for judge, spec in zip(judges, self._task_config.judge.models):
+            judge.judge_id = spec.judge_id
         return judges
-
-    @staticmethod
-    def _validate_judge_agreement(judges: List[LLMJudge]) -> None:
-        """Reject several judges that would not be asked the same question.
-
-        The judge hooks build one request and one reduction per sample from the primary judge, so a
-        second judge configured differently would be graded against the first one's contract.
-        """
-        model_ids = [judge.model_id for judge in judges]
-        duplicates = sorted({model_id for model_id in model_ids if model_ids.count(model_id) > 1})
-        if duplicates:
-            # Verdicts aggregate per judge id, so two judges sharing one would silently merge.
-            raise ValueError(
-                f'judge_model_args declares duplicate judge model_id(s): {duplicates}. '
-                'Give each judge a distinct model_id.'
-            )
-        shapes = {(
-            judge.score_type,
-            tuple(sorted(judge.score_mapping.items())),
-            judge.prompt_template,
-            judge.system_prompt,
-        )
-                  for judge in judges}
-        if len(shapes) > 1:
-            raise ValueError(
-                'Every judge in judge_model_args must share the same score_type, score_mapping, '
-                'prompt_template and system_prompt: their verdicts are averaged, so they have to be '
-                'answering the same question.'
-            )
-
-    def init_llm_judge(self) -> Optional[LLMJudge]:
-        """[Deprecated] Superseded by :meth:`init_llm_judges`. Will be removed in v2.0.0."""
-        deprecated_warning(
-            logger, '`init_llm_judge` is deprecated and will be removed in v2.0.0. Use `init_llm_judges`.'
-        )
-        judges = self.init_llm_judges()
-        return judges[0] if judges else None
 
     # ------------------------------------------------------------------
     # Declarative judge path (evalscope.api.judge)
@@ -233,11 +198,27 @@ class LLMJudgeMixin:
                     self._judge_executor = JudgeExecutor(
                         self.llm_judges,
                         JudgeExecutorConfig(
-                            repeats=self._task_config.judge_repeats if self._task_config else 1,
-                            position_swap=self.judge_position_swap,
+                            repeats=self._task_config.judge.repeats if self._task_config else 1,
+                            position_swap=self._resolved_position_swap(),
+                            aggregation=self._task_config.judge.aggregation if self._task_config else 'mean',
+                            min_valid_judges=self._task_config.judge.min_valid_judges if self._task_config else 1,
                         ),
                     )
         return self._judge_executor
+
+    def _resolved_position_swap(self) -> bool:
+        """Resolve the user override against the benchmark's official position policy."""
+        configured = self._task_config.judge.position_swap if self._task_config else 'auto'
+        if configured == 'auto':
+            return bool(self.judge_position_swap)
+        if not self.judge_position_swap:
+            if configured == 'on':
+                logger.warning(
+                    f"Benchmark '{self._benchmark_meta.name}' has no pairwise position dimension; "
+                    "ignoring judge.position_swap='on'."
+                )
+            return False
+        return configured == 'on'
 
     def score_with_judge_contracts(
         self,
@@ -249,6 +230,10 @@ class LLMJudgeMixin:
         """Run this sample through the executor. Adapters do not override this."""
         from evalscope.api.judge import JudgeContext
 
+        precomputed = self.pre_judge_score(original_prediction, filtered_prediction, reference, task_state)
+        if precomputed is not None:
+            return precomputed
+
         context = JudgeContext(
             task_state=task_state,
             original_prediction=original_prediction,
@@ -257,7 +242,31 @@ class LLMJudgeMixin:
         )
         executor = self.judge_executor
         review = executor.execute(self, context)
-        return executor.build_score(self, review, context)
+        score = executor.build_score(self, review, context)
+        if score.judge_summary is not None and self._task_config is not None:
+            from evalscope.api.evaluator import compute_judge_fingerprint
+
+            score.judge_summary.fingerprint = compute_judge_fingerprint(
+                self._task_config.judge, self.judge_cache_revision
+            )
+            score.judge_summary.provenance = {
+                'position_swap': self._task_config.judge.position_swap,
+                'resolved_position_swap': self._resolved_position_swap(),
+                'official_position_swap': self.judge_position_swap,
+                'aggregation': self._task_config.judge.aggregation,
+                'min_valid_judges': self._task_config.judge.min_valid_judges,
+            }
+        return score
+
+    def pre_judge_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Optional[Score]:
+        """Return an official rule-only short-circuit, or ``None`` to run the judge contract."""
+        return None
 
     # Default judge hooks. A benchmark with one verdict per sample relies on these and overrides
     # only ``judge_prompt`` to change wording. Benchmarks with multiple cases or non-binary
@@ -346,76 +355,24 @@ class LLMJudgeMixin:
             metadata={
                 'source': 'llm_judge',
                 'judge_strategy': self.judge_strategy,
-                'model': self.llm_judge.model_id,
+                'model': getattr(self.llm_judge, 'judge_id', self.llm_judge.model_id),
+                'non_official_position_swap': self._task_config is not None and self.judge_position_swap
+                and self._task_config.judge.position_swap != 'auto',
                 **review.metadata,
             },
         )
 
-    def maybe_llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-        rule_based_score: Optional[Score] = None,
-    ) -> Score:
-        """
-        Compute the match score between the original and filtered predictions against the reference.
-
-        Args:
-            original_prediction: The original prediction output from the model.
-            filtered_prediction: The filtered prediction output from the model.
-            reference: The ground truth reference output.
-            task_state: The current task state.
-            original_score: Optional original score to be used for comparison.
-
-        Returns:
-            Score: The computed match score.
-        """
-        # If LLM judge is not used, return the rule-based score directly
-        if not self.use_llm_judge:
-            return rule_based_score
-
-        # A perfect rule score cannot be raised, so asking the judge would only cost money.
-        # The threshold is exact because ``_merge_scores`` takes the maximum.
-        if float(rule_based_score.main_value or 0.0) >= 1.0:
-            return rule_based_score
-
-        # Compute LLM judge score
-        llm_score = self.llm_match_score(
-            original_prediction=original_prediction,
-            filtered_prediction=filtered_prediction,
-            reference=reference,
-            task_state=task_state,
-        )
-
-        # For LLM RECALL, merge the scores
-        return self._merge_scores(rule_based_score, llm_score)
-
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        """Compute the LLM match score, always through the judge output contract.
-
-        Args:
-            original_prediction (str): The original prediction output from the model.
-            filtered_prediction (str): The filtered prediction output from the model.
-            reference (str): The ground truth reference output.
-            task_state (TaskState): The current task state.
-
-        Returns:
-            Score: The computed match score.
-        """
-        return self.score_with_judge_contracts(
-            original_prediction=original_prediction,
-            filtered_prediction=filtered_prediction,
-            reference=reference,
-            task_state=task_state,
-        )
+    def fallback_to_rule_score(self, rule_based_score: Score, judge_score: Score) -> Score:
+        """Retain rule evidence when a ``JUDGE_DEFAULT`` review is unavailable."""
+        fallback = rule_based_score.model_copy(deep=True)
+        fallback.status = ScoreStatus.DEGRADED
+        fallback.judge_summary = judge_score.judge_summary
+        fallback.metadata = {
+            **(fallback.metadata or {}),
+            **(judge_score.metadata or {}),
+            'judge_unavailable': judge_score.status.value,
+        }
+        return fallback
 
     def _merge_scores(self, rule_based_score: Score, llm_score: Score) -> Score:
         """Merge the rule score with the judge score for the LLM_RECALL strategy.
@@ -426,7 +383,7 @@ class LLMJudgeMixin:
         if not llm_score.status.is_usable or not llm_score.value:
             # The rule score stands, so the sample is still scored -- it just fell back.
             rule_based_score.status = ScoreStatus.FALLBACK
-            rule_based_score.judge_detail = llm_score.judge_detail
+            rule_based_score.judge_summary = llm_score.judge_summary
             rule_based_score.metadata = {
                 **(rule_based_score.metadata or {}),
                 'judge_unavailable': llm_score.status.value,
@@ -439,6 +396,6 @@ class LLMJudgeMixin:
         rule_based_score.explanation = llm_score.explanation
         rule_based_score.metadata = {**(rule_based_score.metadata or {}), **(llm_score.metadata or {})}
         rule_based_score.status = llm_score.status
-        rule_based_score.judge_detail = llm_score.judge_detail
+        rule_based_score.judge_summary = llm_score.judge_summary
 
         return rule_based_score

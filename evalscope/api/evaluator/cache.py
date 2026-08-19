@@ -2,49 +2,62 @@ import copy
 import hashlib
 import json
 import os
+import uuid
 from pydantic import BaseModel, Field, model_validator
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
+from evalscope.config import JudgeConfig
+from evalscope.constants import JUDGE_ENGINE_REVISION
 from evalscope.utils.io_utils import JsonlWriter, OutputsStructure, convert_normal_types, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .state import TaskState
 
 logger = get_logger()
 
-REVIEW_CACHE_SCHEMA_VERSION = 2
-"""Bumped to 2 when ``Score.status`` / ``Score.judge_detail`` were added."""
+REVIEW_CACHE_SCHEMA_VERSION = 3
+"""Bumped for first-class ``Score.judge_summary`` and semantic judge review fingerprints."""
 
-JUDGE_FINGERPRINT_VERSION = '2'
+JUDGE_FINGERPRINT_VERSION = '3'
 
 
 def compute_judge_fingerprint(
-    judge_strategy: str,
-    judge_model_args: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]],
+    judge_config: JudgeConfig,
+    judge_revision: str,
 ) -> Optional[str]:
     """Identify the judge configuration a cached review was produced under.
 
     ``None`` when no judge is involved, so rule-only benchmarks keep resuming as before.
     """
-    if not judge_model_args:
+    if not judge_config.models:
         return None
-    specs = judge_model_args if isinstance(judge_model_args, list) else [judge_model_args]
-    # The API key is deliberately excluded: rotating a credential is not a scoring change.
-    scrubbed = [{key: value for key, value in spec.items() if key != 'api_key'} for spec in specs]
+    # Credentials are deliberately excluded: rotating one is not a scoring change and must not
+    # leak to a cache file. Everything that changes verdict semantics is included.
+    config = judge_config.model_dump(exclude_none=True)
+    scrubbed = _scrub_judge_secrets(config)
     payload = json.dumps(
         {
             'version': JUDGE_FINGERPRINT_VERSION,
-            'strategy': judge_strategy,
-            'model_args': scrubbed,
+            'engine_revision': JUDGE_ENGINE_REVISION,
+            'adapter_judge_revision': judge_revision,
+            'judge': scrubbed,
         },
         sort_keys=True,
         default=str,
     )
     return hashlib.sha256(payload.encode('utf-8')).hexdigest()[:16]
+
+
+def _scrub_judge_secrets(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _scrub_judge_secrets(item) for key, item in value.items() if key != 'api_key'}
+    if isinstance(value, list):
+        return [_scrub_judge_secrets(item) for item in value]
+    return value
 
 
 class CacheManager:
@@ -79,6 +92,7 @@ class CacheManager:
         self.benchmark_name = benchmark_name
         self.judge_fingerprint = judge_fingerprint
         self._writers: Dict[str, JsonlWriter] = {}
+        self._review_reruns: Dict[str, str] = {}
 
     def _get_writer(self, cache_file: str) -> JsonlWriter:
         """Return a persistent writer for *cache_file*, opening on first use.
@@ -230,14 +244,13 @@ class CacheManager:
 
         Silently reusing it would report the old judge's scores under the new configuration.
         """
-        if self.judge_fingerprint is None or review.judge_fingerprint == self.judge_fingerprint:
+        if review.judge_fingerprint == self.judge_fingerprint:
             return
         if review.judge_fingerprint is None:
-            logger.warning(
-                f'{cache_file} predates judge fingerprints, so its reviews cannot be checked '
-                'against the current judge configuration. Pass `rerun_review=True` to rescore.'
+            raise ValueError(
+                f'{cache_file} predates judge fingerprints and cannot be safely reused. '
+                'Pass `rerun_review=True` to rescore the cached predictions.'
             )
-            return
         raise ValueError(
             f'{cache_file} holds reviews produced by a different judge configuration '
             f'({review.judge_fingerprint} != {self.judge_fingerprint}); reusing them would report '
@@ -261,11 +274,22 @@ class CacheManager:
         return file_path
 
     def delete_review_cache(self, subset: str):
-        """Delete the review cache for a specific subset. If the cache exists, it will be removed."""
+        """Start a transactional review rerun without touching the previous review file."""
         file_path = self.get_review_cache_path(subset)
-        if os.path.exists(file_path):
-            logger.info(f'Deleting review cache file: {file_path}')
-            os.remove(file_path)
+        temporary = f'{file_path}.rerun-{uuid.uuid4().hex}'
+        self._review_reruns[file_path] = temporary
+        logger.info(f'Rescoring reviews into temporary cache: {temporary}')
+
+    def commit_review_reruns(self) -> None:
+        """Atomically publish every fully written review rerun."""
+        for file_path, temporary in list(self._review_reruns.items()):
+            writer = self._writers.pop(temporary, None)
+            if writer is not None:
+                writer.close()
+            if not os.path.exists(temporary):
+                continue
+            os.replace(temporary, file_path)
+            del self._review_reruns[file_path]
 
     def save_review_cache(
         self,
@@ -286,6 +310,7 @@ class CacheManager:
             The saved review result object
         """
         cache_file = self.get_review_cache_path(subset)
+        cache_file = self._review_reruns.get(cache_file, cache_file)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
         review_result.judge_fingerprint = self.judge_fingerprint

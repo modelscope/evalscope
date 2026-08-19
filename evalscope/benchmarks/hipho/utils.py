@@ -90,9 +90,6 @@ _CRITERION_POINTS_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Sentinel that ``LLMJudge.judge`` returns instead of raising on a failed request.
-JUDGE_ERROR_PREFIX = '[ERROR]'
-
 
 def is_chinese_exam(source: str) -> bool:
     """Return True when the exam's problems are written in Chinese."""

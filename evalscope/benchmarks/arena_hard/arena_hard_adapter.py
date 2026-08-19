@@ -118,29 +118,37 @@ class ArenaHardAdapter(DefaultDataAdapter):
         from .utils import get_judge_score
 
         placements = case_verdicts[0].placements
-        res1 = placements['original'].verdict
-        res2 = placements['swapped'].verdict
+        res1 = placements.get('original', case_verdicts[0].value).verdict
+        res2 = placements.get('swapped')
         # ``reverse`` accounts for which side the candidate occupied in that game.
         score1 = get_judge_score(res1, reverse=True)
-        score2 = get_judge_score(res2, reverse=False)
+        score2 = get_judge_score(res2.verdict, reverse=False) if res2 is not None else None
         return ReducedVerdict(
-            value={'score': (score1 + score2) / 2},
-            metadata={
-                'battle_result': {
-                    'model_a': 'gpt4-0314',
-                    'model_b': 'test_model',
-                    'games': [{
-                        'score': res1
-                    }, {
-                        'score': res2
-                    }],
-                }
+            value={'score': (score1 + score2) / 2 if score2 is not None else score1},
+            outcome={
+                'original': res1,
+                **({
+                    'swapped': res2.verdict
+                } if res2 is not None else {}),
             },
         )
 
     def finalize_judge_score(self, review, context) -> Score:
         score = super().finalize_judge_score(review, context)
         score.main_score_name = 'score'
+        if review.outcome is not None:
+            score.metadata['battle_result'] = {
+                'model_a': 'gpt4-0314',
+                'model_b': 'test_model',
+                'games': [
+                    {
+                        'score': review.outcome['original']
+                    },
+                    *([{
+                        'score': review.outcome['swapped']
+                    }] if 'swapped' in review.outcome else []),
+                ],
+            }
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

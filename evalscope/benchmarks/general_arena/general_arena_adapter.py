@@ -269,36 +269,42 @@ class GeneralArenaAdapter(DefaultDataAdapter):
 
         metadata = context.task_state.metadata or {}
         placements = case_verdicts[0].placements
-        res1 = placements['original'].verdict
-        res2 = placements['swapped'].verdict
+        res1 = placements.get('original', case_verdicts[0].value).verdict
+        res2 = placements.get('swapped')
         # Game 1 puts the candidate first, game 2 swaps it, so the second score is reversed.
         score1 = get_judge_score(res1, reverse=False)
-        score2 = get_judge_score(res2, reverse=True)
-        model_1, model_2 = metadata['model_1'], metadata['model_2']
+        score2 = get_judge_score(res2.verdict, reverse=True) if res2 is not None else None
         return ReducedVerdict(
-            value={'score': (score1 + score2) / 2},
-            metadata={
-                'battle_result': {
-                    'score': (score1 + score2) / 2,
-                    'games': [
-                        {
-                            'model_a': model_1,
-                            'model_b': model_2,
-                            'judgment': res1
-                        },
-                        {
-                            'model_a': model_2,
-                            'model_b': model_1,
-                            'judgment': res2
-                        },
-                    ],
-                }
+            value={'score': (score1 + score2) / 2 if score2 is not None else score1},
+            outcome={
+                'original': res1,
+                **({
+                    'swapped': res2.verdict
+                } if res2 is not None else {}),
             },
         )
 
     def finalize_judge_score(self, review, context) -> Score:
         score = super().finalize_judge_score(review, context)
         score.main_score_name = 'score'
+        if review.outcome is not None:
+            metadata = context.task_state.metadata or {}
+            model_1, model_2 = metadata['model_1'], metadata['model_2']
+            score.metadata['battle_result'] = {
+                'score': review.value['score'],
+                'games': [
+                    {
+                        'model_a': model_1,
+                        'model_b': model_2,
+                        'judgment': review.outcome['original'],
+                    },
+                    *([{
+                        'model_a': model_2,
+                        'model_b': model_1,
+                        'judgment': review.outcome['swapped'],
+                    }] if 'swapped' in review.outcome else []),
+                ],
+            }
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

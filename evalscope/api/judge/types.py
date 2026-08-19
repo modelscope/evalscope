@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Sequence
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage
+from evalscope.api.model import ModelOutput
 from evalscope.constants import ScoreStatus
 from .contracts import OutputContract
 
@@ -50,7 +51,6 @@ class JudgeRequest(BaseModel):
     the identity (judge, repeat, placement)."""
 
     messages: List[ChatMessage]
-    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class JudgeAttempt(BaseModel):
@@ -63,9 +63,8 @@ class JudgeAttempt(BaseModel):
     judge_id: str
     repeat_id: int = 0
     placement: Placement = Placement.ORIGINAL
-    attempt_index: int = 0
-    """0 for the first try; higher for a contract-declared parse retry."""
-
+    messages: List[ChatMessage] = Field(default_factory=list)
+    model_output: Optional[ModelOutput] = None
     raw_response: Optional[str] = None
     parsed_value: Any = None
     error: Optional[str] = None
@@ -89,6 +88,13 @@ class ReducedVerdict(BaseModel):
     """One observation's worth of verdicts folded into per-metric values by the adapter."""
 
     value: Dict[str, float] = Field(default_factory=dict)
+    outcome: Any = None
+    """Optional typed non-numeric outcome used by a benchmark's finalizer.
+
+    This is deliberately separate from ``metadata``: it participates in the same repeat and
+    cross-judge aggregation as ``value``. Pairwise benchmarks use it to derive battle records
+    without letting a first observation's diagnostic metadata decide the final score.
+    """
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -123,6 +129,12 @@ class JudgeReview(BaseModel):
     """Attempt counts keyed by :class:`ScoreStatus` value."""
 
     error: Optional[str] = None
+
+    outcome: Any = None
+    """Aggregated typed benchmark outcome, if the adapter declared one."""
+
+    disagreement: Dict[str, Any] = Field(default_factory=dict)
+    """Per-sample repeat, cross-judge, and position-consistency statistics."""
 
     @property
     def valid_observations(self) -> List[JudgeObservation]:

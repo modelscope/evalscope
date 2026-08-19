@@ -263,7 +263,7 @@ class PhyXMCAdapter(PhyXAdapter):
         correct = match_mc_answer(filtered_prediction, original_prediction, reference)
         return self._build_score(original_prediction, filtered_prediction, correct, 'string match')
 
-    def llm_match_score(
+    def pre_judge_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         """Score with the official judge, which only arbitrates replies without a clear letter.
@@ -279,7 +279,7 @@ class PhyXMCAdapter(PhyXAdapter):
             # The reply committed to a different option; there is nothing for the judge to weigh.
             return self._build_score(original_prediction, filtered_prediction, False, 'string match')
 
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_prompt(self, prediction: str, reference: str) -> str:
         return build_mc_judge_prompt(prediction, reference)
@@ -354,14 +354,14 @@ class PhyXOEAdapter(PhyXAdapter):
         correct = match_oe_answer(filtered_prediction, original_prediction, reference)
         return self._build_score(original_prediction, filtered_prediction, correct, 'string match')
 
-    def llm_match_score(
+    def pre_judge_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         """Score with the official judge, which decides whether the answers are equivalent."""
         if reference.strip().lower() == filtered_prediction.strip().lower():
             return self._build_score(original_prediction, filtered_prediction, True, 'string match')
 
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_prompt(self, prediction: str, reference: str) -> str:
         return build_oe_judge_prompt(prediction, reference)

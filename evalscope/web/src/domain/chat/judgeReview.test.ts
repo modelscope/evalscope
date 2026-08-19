@@ -20,10 +20,10 @@ describe('selectJudgeReview', () => {
     expect(selectJudgeReview(undefined)).toBeNull()
   })
 
-  it('surfaces judge_detail even when no attempts were saved', () => {
+  it('surfaces judge_summary even when no attempts were saved', () => {
     const score = {
       value: { acc: 1 },
-      judge_detail: { judge_models: ['qwen-plus'], valid_observations: 1, total_observations: 1 },
+      judge_summary: { judge_models: ['qwen-plus'], valid_observations: 1, total_observations: 1 },
     } as unknown as PredictionScore
 
     const review = selectJudgeReview(score)!
@@ -33,7 +33,7 @@ describe('selectJudgeReview', () => {
 
   it('promotes the usable attempt to the case verdict', () => {
     const score = {
-      judge_detail: { judge_models: ['qwen-plus'] },
+      judge_summary: { judge_models: ['qwen-plus'] },
       metadata: {
         judge_attempts: [attempt({ parsed_value: { verdict: 'A' }, latency: 1.5 })],
       },

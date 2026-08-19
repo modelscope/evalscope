@@ -13,7 +13,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.wide_search.utils import (
     METRIC_NAMES,
-    WideSearchScorer,
+    WideSearchSession,
     aggregate_official_scores,
     date_near,
     extract_number,
@@ -48,89 +48,56 @@ def _evaluation(metric: str = 'exact_match') -> dict:
     }
 
 
-def _mapping_judge(prompt: str) -> str:
-    if 'idx_0' in prompt:
-        return '```json\n{"idx_0": 1}\n```'
-    return '```json\n{}\n```'
-
-
-class TestWideSearchScorer(unittest.TestCase):
+class TestWideSearchSession(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.scorer = WideSearchScorer(judge=_mapping_judge)
         self.gold = 'id,value\nA,one\nB,two\n'
+
+    def _score(self, prediction: str) -> tuple[dict, dict]:
+        session = WideSearchSession.create(prediction, self.gold, _evaluation())
+        return session.score({}, primary_key_maps={'id': {}})
 
     def test_perfect_markdown_table(self) -> None:
         prediction = '```markdown\n| id | value |\n| --- | --- |\n| A | one |\n| B | two |\n```'
 
-        result = self.scorer.evaluate(prediction, self.gold, _evaluation())
+        values, diagnostics = self._score(prediction)
 
-        self.assertEqual(result.diagnostics['stage'], 'complete')
-        self.assertEqual(result.values, {name: 1.0 for name in METRIC_NAMES})
+        self.assertEqual(diagnostics['matched_rows'], 2)
+        self.assertEqual(values, {name: 1.0 for name in METRIC_NAMES})
 
     def test_row_and_item_metrics_handle_missing_extra_and_wrong_cells(self) -> None:
-        missing = self.scorer.evaluate('| id | value |\n| --- | --- |\n| A | one |', self.gold, _evaluation())
-        extra = self.scorer.evaluate(
-            '| id | value |\n| --- | --- |\n| A | one |\n| B | two |\n| C | three |',
-            self.gold,
-            _evaluation(),
-        )
-        wrong = self.scorer.evaluate(
-            '| id | value |\n| --- | --- |\n| A | wrong |\n| B | two |',
-            self.gold,
-            _evaluation(),
-        )
+        missing, _ = self._score('| id | value |\n| --- | --- |\n| A | one |')
+        extra, _ = self._score('| id | value |\n| --- | --- |\n| A | one |\n| B | two |\n| C | three |')
+        wrong, _ = self._score('| id | value |\n| --- | --- |\n| A | wrong |\n| B | two |')
 
-        self.assertEqual(missing.values['row_recall'], 0.5)
-        self.assertEqual(extra.values['row_precision'], 2 / 3)
-        self.assertEqual(wrong.values['row_precision'], 0.5)
-        self.assertEqual(wrong.values['item_precision'], 0.75)
+        self.assertEqual(missing['row_recall'], 0.5)
+        self.assertEqual(extra['row_precision'], 2 / 3)
+        self.assertEqual(wrong['row_precision'], 0.5)
+        self.assertEqual(wrong['item_precision'], 0.75)
 
     def test_invalid_table_returns_zero_scores(self) -> None:
-        result = self.scorer.evaluate('not a table', self.gold, _evaluation())
+        values, diagnostics = self._score('not a table')
 
-        self.assertEqual(result.values, {name: 0.0 for name in METRIC_NAMES})
-        self.assertEqual(result.diagnostics['stage'], 'parse')
+        self.assertEqual(values, {name: 0.0 for name in METRIC_NAMES})
+        self.assertEqual(diagnostics['error'], 'response_df is None')
 
     def test_duplicate_column_mapping_does_not_crash(self) -> None:
 
-        def judge(prompt: str) -> str:
-            if "['identifier', 'alias', 'value']" in prompt:
-                return '```json\n{"identifier": "id", "alias": "id"}\n```'
-            return '```json\n{}\n```'
-
-        scorer = WideSearchScorer(judge=judge)
         prediction = '| identifier | alias | value |\n| --- | --- | --- |\n| A | A | one |'
+        session = WideSearchSession.create(prediction, 'id,value\nA,one\n', _evaluation())
+        values, diagnostics = session.score({}, column_map={'identifier': 'id', 'alias': 'id'})
 
-        result = scorer.evaluate(prediction, 'id,value\nA,one\n', _evaluation())
-
-        self.assertEqual(result.values, {name: 0.0 for name in METRIC_NAMES})
-        self.assertEqual(result.diagnostics['stage'], 'parse')
-        self.assertIn('required columns do not match', result.diagnostics['error'])
+        self.assertEqual(values, {name: 0.0 for name in METRIC_NAMES})
+        self.assertIn('required columns do not match', diagnostics['error'])
 
     def test_empty_join_skips_column_judge(self) -> None:
 
-        def judge(prompt: str) -> str:
-            if 'expert in grading answers' in prompt:
-                raise AssertionError('column judge should not be called when no rows match')
-            return '```json\n{}\n```'
-
-        scorer = WideSearchScorer(judge=judge)
         prediction = '| id | value |\n| --- | --- |\n| B | candidate |'
+        session = WideSearchSession.create(prediction, 'id,value\nA,reference\n', _evaluation('llm_judge'))
+        inner, diagnostics = session.inner_frame(primary_key_maps={'id': {}})
 
-        result = scorer.evaluate(prediction, 'id,value\nA,reference\n', _evaluation('llm_judge'))
-
-        self.assertEqual(result.values, {name: 0.0 for name in METRIC_NAMES})
-        self.assertEqual(result.diagnostics['matched_rows'], 0)
-
-    def test_llm_judge_failures_score_affected_cells_zero(self) -> None:
-        invalid = WideSearchScorer(judge=lambda _: 'invalid')
-        prediction = '| id | value |\n| --- | --- |\n| A | equivalent |'
-
-        result = invalid.evaluate(prediction, 'id,value\nA,reference\n', _evaluation('llm_judge'))
-
-        self.assertEqual(result.values['row_f1'], 0.0)
-        self.assertEqual(result.values['item_f1'], 0.5)
+        self.assertTrue(inner.empty)
+        self.assertEqual(diagnostics['matched_rows'], 0)
 
     def test_official_number_date_and_url_boundaries(self) -> None:
         self.assertEqual(extract_number('about 1,234.5 kg'), '1234.5')
@@ -242,7 +209,7 @@ class TestWideSearchAdapter(unittest.TestCase):
             judge_model_args={'model_id': 'mock'},
         )
         adapter = get_benchmark('wide_search', config=config)
-        adapter.llm_judge = Mock(judge=_mapping_judge)
+        adapter.llm_judge = Mock(generate=Mock(return_value=ModelOutput.from_content(model='mock', content='{"mapping": {}}')))
         sample = Sample(
             id=3,
             group_id=2,

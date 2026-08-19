@@ -259,7 +259,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
         return score
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,

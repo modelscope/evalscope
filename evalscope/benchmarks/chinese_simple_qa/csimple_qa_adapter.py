@@ -23,7 +23,6 @@ JUDGE_SYSTEM_PROMPT = '你是一个智能助手，请根据给定问题、标准
 GRADE_CONTRACT = OutputContract(
     schema_model=Grade,
     # Upstream falls back to 未尝试 (NOT_ATTEMPTED) rather than retrying a malformed verdict.
-    parse_retries=0,
 )
 
 GRADER_TEMPLATE = """

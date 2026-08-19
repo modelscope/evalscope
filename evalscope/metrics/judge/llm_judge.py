@@ -1,17 +1,14 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import ModelOutput
 from evalscope.constants import EvalType, JudgeScoreType
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
 from .base import BaseJudge
 
 logger = get_logger()
-
-# Sentinel that ``judge`` returns instead of raising on a failed request. Consumers must fail
-# closed on it: an ``[ERROR]`` string must never reach a parser, and never be scored.
-JUDGE_ERROR_PREFIX = '[ERROR]'
 
 # The templates state the grading criteria only. The reply format is appended by
 # ``OutputContract.instruction()`` so the prompt and the parser cannot drift apart.
@@ -123,42 +120,14 @@ class LLMJudge(BaseJudge):
             model_args=self.model_args,
         )
 
-    def judge(
-        self,
-        prompt: str = '',
-        system_prompt: Optional[str] = None,
-        messages: Optional[List[ChatMessage]] = None
-    ) -> str:
-        """
-        Generate a response from the LLM based on the provided prompt and context.
-        If messages is provided, it will be used as the input context.
+    def generate(self, messages: List[ChatMessage]) -> ModelOutput:
+        """Run one judge request and preserve the provider response unchanged.
 
-        Args:
-            prompt (str): The prompt to evaluate
-            system_prompt (str, optional): The system prompt to use for the evaluation
-            messages (List[ChatMessage], optional): A list of chat messages to include in the evaluation
-        Returns:
-            str: The response from the LLM
+        Transport failures deliberately propagate to the executor, where they become typed
+        ``transport_error`` attempts.  Returning a magic string here used to make failures look
+        like malformed judge verdicts or, worse, valid zero scores.
         """
-        # parse messages
-        if messages is not None:
-            input_messages = messages
-        else:
-            system_content = system_prompt or self.system_prompt
-            input_messages = [ChatMessageUser(content=prompt)]
-            if system_content:
-                input_messages.insert(0, ChatMessageSystem(content=system_content))
-        try:
-            # Send request using ServerModelAdapter
-            response = self.model.generate(input_messages)
-
-            # Extract content from response
-            llm_response = response.completion
-            return llm_response
-        except Exception as e:
-            error_message = f'Error occurred during {self.model_id}@{self.api_url} LLM judge evaluation: {e}'
-            logger.error(error_message)
-            return f'{JUDGE_ERROR_PREFIX} {error_message}'
+        return self.model.generate(messages)
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None) -> str:
         if question is None:

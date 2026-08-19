@@ -72,6 +72,9 @@ def get_battles_from_row(row, first_game_only=False, multiplier=3):
     if first_game_only:
         return pd.DataFrame(results)
 
+    if len(row['games']) == 1:
+        return pd.DataFrame(results)
+
     # game 2
     output = {'model_a': row['model_a'], 'model_b': row['model_b']}
 

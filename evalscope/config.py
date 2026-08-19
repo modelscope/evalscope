@@ -5,7 +5,7 @@ import json
 import os
 from argparse import Namespace
 from pydantic import Field, SecretStr, field_validator, model_validator
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
@@ -109,6 +109,51 @@ class SandboxTaskConfig(BaseArgument):
     pool_size: Optional[int] = None
     """Warm-pool size for pooled execution.  Defaults to ``eval_batch_size``
     when ``None``."""
+
+
+class JudgeModelConfig(BaseArgument):
+    """One independently identified judge model."""
+
+    model_id: str
+    judge_id: Optional[str] = None
+    api_key: Optional[SecretStr] = None
+    api_url: Optional[str] = None
+    eval_type: Optional[str] = None
+    model_args: Dict[str, Any] = Field(default_factory=dict)
+    system_prompt: Optional[str] = None
+    prompt_template: Optional[str] = None
+    generation_config: Dict[str, Any] = Field(default_factory=dict)
+    score_mapping: Optional[Dict[str, float]] = None
+    score_type: str = 'pattern'
+
+
+class JudgeConfig(BaseArgument):
+    """Typed configuration for Native LLM judging."""
+
+    strategy: str = JudgeStrategy.AUTO
+    models: List[JudgeModelConfig] = Field(default_factory=list)
+    repeats: int = Field(default=1, ge=1)
+    position_swap: Literal['auto', 'on', 'off'] = 'auto'
+    aggregation: Literal['mean', 'median', 'majority_vote'] = 'mean'
+    min_valid_judges: int = Field(default=1, ge=1)
+
+    @model_validator(mode='after')
+    def _validate_models(self) -> 'JudgeConfig':
+        seen = set()
+        model_ids = [model.model_id for model in self.models]
+        for model in self.models:
+            if model.judge_id is None:
+                if model_ids.count(model.model_id) != 1:
+                    raise ValueError(
+                        f'Judge model_id {model.model_id!r} is configured more than once; each entry needs judge_id.'
+                    )
+                model.judge_id = model.model_id
+            if model.judge_id in seen:
+                raise ValueError(f'duplicate judge_id: {model.judge_id!r}')
+            seen.add(model.judge_id)
+        if self.min_valid_judges > len(self.models) and self.models:
+            raise ValueError('judge.min_valid_judges cannot exceed the configured judge model count.')
+        return self
 
 
 class TaskConfig(BaseArgument):
@@ -218,26 +263,12 @@ class TaskConfig(BaseArgument):
     """[Deprecated] Use `generation_config.stream` instead. Will be removed in v2.0.0.
     When set, value is forwarded to `generation_config.stream` with a deprecation warning."""
 
-    # LLMJudge arguments
-    judge_strategy: str = JudgeStrategy.AUTO
-    """How to score model outputs. One of:
-    - 'auto': follow the benchmark's default (LLM judge only if the benchmark needs one).
-    - 'rule': force rule-based scoring; never invoke an LLM judge.
-    - 'llm': force LLM judge for every sample.
-    - 'llm_recall': run rule-based scoring first, then pass the rule score to the LLM
-       judge to produce the final score (useful when LLM should refine/recall rule misses)."""
+    # Native judge configuration
+    judge: JudgeConfig = Field(default_factory=JudgeConfig)
+    """Typed configuration for Native LLM judging."""
 
     judge_worker_num: Optional[int] = None
     """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
-
-    judge_model_args: Optional[Union[Dict, List[Dict]]] = Field(default_factory=dict)
-    """Judge model configuration. One mapping for a single judge, or a list of mappings to score
-    with several judges and average their verdicts with equal weight. Each judge needs a distinct
-    `model_id`."""
-
-    judge_repeats: int = Field(default=1, ge=1)
-    """How many times each judge reviews a sample. Verdicts are averaged with equal weight.
-    Above 1 requires an explicit non-zero judge `generation_config.temperature`."""
 
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""
@@ -341,10 +372,36 @@ class TaskConfig(BaseArgument):
             f'got {type(v).__name__}.'
         )
 
-    @field_validator('judge_model_args', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def _validate_judge_model_args(cls, v: Any) -> Any:
-        return _secretize_api_keys(v)
+    def _migrate_legacy_judge_config(cls, data: Any) -> Any:
+        """Convert the pre-#1601 single-judge input once, at the public boundary."""
+        if not isinstance(data, dict):
+            return data
+        values = dict(data)
+        if 'judge_repeats' in values:
+            raise ValueError('`judge_repeats` was introduced by #1601 and has been removed; use `judge.repeats`.')
+
+        legacy_keys = {'judge_strategy', 'judge_model_args'} & set(values)
+        if 'judge' in values and legacy_keys:
+            raise ValueError('Use either `judge` or legacy judge_strategy/judge_model_args, not both.')
+        if legacy_keys:
+            legacy_args = values.pop('judge_model_args', None)
+            strategy = values.pop('judge_strategy', JudgeStrategy.AUTO)
+            if isinstance(legacy_args, list):
+                raise ValueError(
+                    'list-valued `judge_model_args` was introduced by #1601 and has been removed; '
+                    'use `judge.models`.'
+                )
+            deprecated_warning(
+                logger,
+                '`judge_strategy` and `judge_model_args` are deprecated; use the typed `judge` configuration.',
+            )
+            values['judge'] = {
+                'strategy': strategy,
+                'models': [legacy_args] if legacy_args else [],
+            }
+        return values
 
     @field_validator('sandbox', mode='before')
     @classmethod

@@ -105,6 +105,9 @@ def get_battles_from_row(row, first_game_only=False, multiplier=3):
     if first_game_only:
         return pd.DataFrame(results)
 
+    if len(row['games']) == 1:
+        return pd.DataFrame(results)
+
     # Dont change the order of model_a and model_b
     output = {'model_a': game['model_a'], 'model_b': game['model_b']}
 

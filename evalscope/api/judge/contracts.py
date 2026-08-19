@@ -1,8 +1,8 @@
 """The judge's output contract: a single JSON object, validated against a Pydantic schema.
 
 The contract owns both halves of the format agreement -- the requirement written into the prompt
-and the parser that reads the reply -- so the two cannot drift apart. Parsing is strict: a reply
-that does not satisfy the schema is a ``parse_error``, never a silently-zero score.
+and the parser that reads the reply -- so the two cannot drift apart. A reply that does not
+satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
 import json
 from pydantic import BaseModel, ConfigDict, Field
@@ -34,10 +34,6 @@ class OutputContract(BaseModel):
 
     schema_model: Type[BaseModel]
 
-    parse_retries: int = Field(default=3, ge=0)
-    """Extra attempts at the same case when the reply does not satisfy the schema. Benchmarks whose
-    upstream defines a fallback verdict instead of a retry declare ``0``."""
-
     def instruction(self) -> str:
         """The format requirement appended to the benchmark's own prompt."""
         # The alias is the key the judge must actually emit when a schema declares one.
@@ -48,7 +44,7 @@ class OutputContract(BaseModel):
                 f'{fields}')
 
     def parse(self, response: str) -> ParseResult:
-        """Parse a judge reply, strictly."""
+        """Parse one judge reply through the schema's normal Pydantic coercion rules."""
         if not response:
             return ParseResult.failure('empty response')
 

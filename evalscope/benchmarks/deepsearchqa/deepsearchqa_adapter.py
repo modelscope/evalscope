@@ -115,7 +115,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             main_score_name='f1',
         )
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
@@ -134,7 +134,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                     'error_message': 'AI response was empty.'
                 },
             )
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]

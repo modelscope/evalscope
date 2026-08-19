@@ -254,12 +254,12 @@ export const judgeAttemptSchema = z.object({
   status: z.string(),
   case_id: z.string(),
   judge_id: z.string(),
-  /** Which planned observation this attempt belongs to, when `judge_repeats > 1`. */
+  /** Which planned observation this attempt belongs to. */
   repeat_id: z.number().optional(),
   /** `original` or `swapped` for a pairwise benchmark that judges both orders. */
   placement: z.string().optional(),
-  /** 0 for the first try; higher for a contract-declared parse retry. */
-  attempt_index: z.number().optional(),
+  messages: z.array(z.unknown()).optional(),
+  model_output: z.unknown().optional(),
   raw_response: z.string().optional(),
   /** The parsed verdict; its shape is the benchmark's own `schema_model`. */
   parsed_value: z.unknown().optional(),
@@ -267,14 +267,21 @@ export const judgeAttemptSchema = z.object({
   latency: z.number().optional(),
 })
 
-/** Judge diagnostics attached to a score. Mirrors `JudgeDetail`. */
-export const judgeDetailSchema = z.object({
+/** First-class judge execution summary. Mirrors `JudgeSummary`. */
+export const judgeSummarySchema = z.object({
+  status: z.string().optional(),
+  scored: z.number().optional(),
+  total: z.number().optional(),
+  coverage: z.number().optional(),
   judge_models: z.array(z.string()).optional(),
   valid_observations: z.number().optional(),
   total_observations: z.number().optional(),
   /** Attempt counts keyed by `ScoreStatus` value. */
   failures: z.record(z.string(), z.number()).optional(),
+  disagreement: z.record(z.string(), z.unknown()).optional(),
   error: z.string().optional(),
+  fingerprint: z.string().optional(),
+  provenance: z.record(z.string(), z.unknown()).optional(),
 })
 
 /**
@@ -285,7 +292,7 @@ export const predictionScoreSchema = z.looseObject({
   value: z.record(z.string(), z.unknown()).optional(),
   /** Mirrors `ScoreStatus`; absent in reports produced before it existed. */
   status: z.string().optional(),
-  judge_detail: judgeDetailSchema.optional(),
+  judge_summary: judgeSummarySchema.optional(),
   explanation: z.string().optional(),
   main_score_name: z.string().optional(),
   metadata: z
@@ -345,7 +352,7 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
 export type JudgeAttempt = z.infer<typeof judgeAttemptSchema>
-export type JudgeDetail = z.infer<typeof judgeDetailSchema>
+export type JudgeSummary = z.infer<typeof judgeSummarySchema>
 export type PredictionScore = z.infer<typeof predictionScoreSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>

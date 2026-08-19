@@ -176,7 +176,7 @@ class PLawBenchAdapter(DefaultDataAdapter):
             JudgeCase(
                 case_id='rubric',
                 # ``judge_retries`` is the user-facing knob for a judge that keeps replying off-format.
-                output_contract=OutputContract(schema_model=schema, parse_retries=self.judge_retries - 1),
+                output_contract=OutputContract(schema_model=schema),
             )
         ]
 

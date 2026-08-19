@@ -21,12 +21,8 @@ PARSER_CALLS = ('search', 'match', 'fullmatch', 'findall', 'finditer', 'loads')
 # ``{}`` would be a dict and would silently break the set algebra below.
 PENDING_MIGRATION: Set[str] = set()
 
-# These use the judge as a data transformer (not a verdict producer) or have a scoring
-# architecture that does not fit the OutputContract model.
-PERMANENTLY_EXEMPT: Set[str] = {
-    'job_bench/job_bench_adapter.py',
-    'wide_search/wide_search_adapter.py',
-}
+# Empty by design. Native benchmark adapters and their helpers all use OutputContract.
+PERMANENTLY_EXEMPT: Set[str] = set()
 
 
 def adapter_files() -> List[str]:

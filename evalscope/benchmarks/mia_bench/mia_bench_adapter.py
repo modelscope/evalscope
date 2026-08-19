@@ -98,7 +98,7 @@ class MIABenchAdapter(VisionLanguageAdapter):
             },
         )
 
-    def llm_match_score(
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
@@ -114,7 +114,7 @@ class MIABenchAdapter(VisionLanguageAdapter):
                 value={'judge_score': 0.0},
                 main_score_name='judge_score',
             )
-        return super().llm_match_score(original_prediction, filtered_prediction, reference, task_state)
+        return None
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         # The schema is per-sample: one bounded field per instruction component, so a raw score

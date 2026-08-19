@@ -1,106 +1,63 @@
-"""Judge configuration is validated before any sample is generated.
-
-``judge_model_args`` accepts one mapping or a list of them; ``judge_repeats`` above 1 needs a
-non-deterministic judge to be worth its cost.
-"""
+"""Judge configuration is typed before the Native judge subsystem sees it."""
 import pytest
 
-from evalscope.api.registry import get_benchmark
-from evalscope.config import TaskConfig
-
-JUDGE = {'model_id': 'judge-a', 'generation_config': {'temperature': 0.0}}
-HOT_JUDGE = {'model_id': 'judge-a', 'generation_config': {'temperature': 0.7}}
+from evalscope.config import JudgeConfig, TaskConfig
 
 
-def make_adapter(**overrides):
-    config = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy='llm', **overrides)
-    return get_benchmark('simple_qa', config, validate_judge=False)
+def test_typed_config_assigns_unique_model_id_as_judge_id():
+    config = JudgeConfig(models=[{'model_id': 'judge-a'}])
+
+    assert config.models[0].judge_id == 'judge-a'
 
 
-def test_a_single_mapping_is_one_judge_spec():
-    adapter = make_adapter(judge_model_args=JUDGE)
-
-    assert adapter._judge_specs() == [JUDGE]
-
-
-def test_a_list_is_kept_as_several_judge_specs():
-    adapter = make_adapter(judge_model_args=[JUDGE, {'model_id': 'judge-b'}])
-
-    assert adapter._judge_specs() == [JUDGE, {'model_id': 'judge-b'}]
+def test_duplicate_model_id_requires_explicit_judge_ids():
+    with pytest.raises(ValueError, match='needs judge_id'):
+        JudgeConfig(models=[{'model_id': 'same'}, {'model_id': 'same'}])
 
 
-def test_no_judge_args_is_no_spec():
-    adapter = make_adapter(judge_model_args={})
+def test_duplicate_model_id_is_allowed_with_distinct_judge_ids():
+    config = JudgeConfig(models=[{'model_id': 'same', 'judge_id': 'a'}, {'model_id': 'same', 'judge_id': 'b'}])
 
-    assert adapter._judge_specs() == []
-
-
-def test_repeats_default_to_one():
-    assert TaskConfig(model='m', datasets=['simple_qa']).judge_repeats == 1
+    assert [model.judge_id for model in config.models] == ['a', 'b']
 
 
-def test_repeats_below_one_are_rejected():
-    with pytest.raises(ValueError):
-        TaskConfig(model='m', datasets=['simple_qa'], judge_repeats=0)
-
-
-def test_repeats_on_a_deterministic_judge_are_rejected():
-    """Repeating a temperature-0 judge multiplies cost without adding information."""
-    adapter = make_adapter(judge_model_args=JUDGE, judge_repeats=3)
-
-    with pytest.raises(ValueError, match='non-zero judge temperature'):
-        adapter.validate_judge_strategy()
-
-
-def test_repeats_without_an_explicit_temperature_are_rejected():
-    adapter = make_adapter(judge_model_args={'model_id': 'judge-a'}, judge_repeats=3)
-
-    with pytest.raises(ValueError, match='non-zero judge temperature'):
-        adapter.validate_judge_strategy()
-
-
-def test_repeats_on_a_sampling_judge_are_accepted():
-    adapter = make_adapter(judge_model_args=HOT_JUDGE, judge_repeats=3)
-
-    adapter.validate_judge_strategy()
-
-
-def test_every_listed_judge_must_allow_repeats():
-    adapter = make_adapter(judge_model_args=[HOT_JUDGE, {'model_id': 'judge-b'}], judge_repeats=2)
-
-    with pytest.raises(ValueError, match='non-zero judge temperature'):
-        adapter.validate_judge_strategy()
-
-
-def test_one_repeat_ignores_the_temperature():
-    adapter = make_adapter(judge_model_args=JUDGE, judge_repeats=1)
-
-    adapter.validate_judge_strategy()
-
-
-def test_duplicate_judge_model_ids_are_rejected():
-    """Verdicts aggregate per judge id, so a shared id would silently merge two judges."""
-    adapter = make_adapter(judge_model_args=[JUDGE, dict(JUDGE)])
-
-    with pytest.raises(ValueError, match='duplicate judge model_id'):
-        adapter.init_llm_judges()
-
-
-def test_judges_disagreeing_on_the_contract_are_rejected():
-    """One request shape is built per sample, so a differently configured judge would be graded
-    against the primary judge's contract."""
-    adapter = make_adapter(
-        judge_model_args=[JUDGE, {
-            'model_id': 'judge-b',
-            'score_type': 'numeric'
-        }],
+def test_new_config_exposes_repeats_swap_aggregation_and_quorum():
+    config = TaskConfig(
+        model='m',
+        datasets=['simple_qa'],
+        judge={
+            'strategy': 'llm',
+            'models': [{'model_id': 'judge-a'}],
+            'repeats': 2,
+            'position_swap': 'on',
+            'aggregation': 'median',
+            'min_valid_judges': 1,
+        },
     )
 
-    with pytest.raises(ValueError, match='same score_type'):
-        adapter.init_llm_judges()
+    assert config.judge.repeats == 2
+    assert config.judge.position_swap == 'on'
+    assert config.judge.aggregation == 'median'
 
 
-def test_judges_agreeing_on_the_contract_are_accepted():
-    adapter = make_adapter(judge_model_args=[JUDGE, {'model_id': 'judge-b'}])
+def test_legacy_single_mapping_is_converted_at_the_boundary():
+    config = TaskConfig(
+        model='m',
+        datasets=['simple_qa'],
+        judge_strategy='llm',
+        judge_model_args={'model_id': 'judge-a'},
+    )
 
-    assert [judge.model_id for judge in adapter.init_llm_judges()] == ['judge-a', 'judge-b']
+    assert config.judge.strategy == 'llm'
+    assert config.judge.models[0].model_id == 'judge-a'
+    assert 'judge_model_args' not in config.model_dump()
+
+
+def test_pr_only_list_legacy_shape_is_rejected():
+    with pytest.raises(ValueError, match='list-valued'):
+        TaskConfig(model='m', datasets=['simple_qa'], judge_model_args=[{'model_id': 'judge-a'}])
+
+
+def test_pr_only_judge_repeats_alias_is_rejected():
+    with pytest.raises(ValueError, match='judge_repeats'):
+        TaskConfig(model='m', datasets=['simple_qa'], judge_repeats=2)

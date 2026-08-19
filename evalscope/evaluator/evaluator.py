@@ -8,6 +8,7 @@ and report generation.
 """
 
 import os
+import threading
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
@@ -21,7 +22,6 @@ from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
 from evalscope.report import Report, gen_perf_table, gen_table
-from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -52,6 +52,9 @@ class _WorkItem:
 
     task_state: Optional[TaskState] = None
     """Cached task state. Set when only review is required."""
+
+    prediction_persisted: bool = False
+    """Whether a newly generated prediction was durably written before review began."""
 
     @property
     def needs_predict(self) -> bool:
@@ -134,8 +137,8 @@ class DefaultEvaluator(Evaluator):
             model_name=self.model_name,
             benchmark_name=self.benchmark_name,
             judge_fingerprint=compute_judge_fingerprint(
-                judge_strategy=task_config.judge_strategy,
-                judge_model_args=get_secret_value(task_config.judge_model_args),
+                judge_config=task_config.judge,
+                judge_revision=getattr(benchmark, 'judge_cache_revision', getattr(benchmark, 'judge_revision', '1')),
             ) if getattr(benchmark, 'use_llm_judge', False) else None,
         )
 
@@ -148,6 +151,7 @@ class DefaultEvaluator(Evaluator):
 
         # Initialize PerfCollector for collecting per-request performance metrics
         self.perf_collector = PerfCollector()
+        self._prediction_cache_lock = threading.Lock()
 
     def eval(self) -> Report:
         """
@@ -205,6 +209,7 @@ class DefaultEvaluator(Evaluator):
 
             # Phase 3 – aggregate scores per subset (batch review happens here too)
             agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
+            self.cache_manager.commit_review_reruns()
 
             # Phase 4 – generate report
             if not agg_score_dict:
@@ -357,9 +362,13 @@ class DefaultEvaluator(Evaluator):
             ``(task_state, sample_score)`` where ``sample_score`` is ``None``
             for batch-scoring benchmarks (review deferred).
         """
-        task_state = (
-            self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
-        )
+        task_state = self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+        if item.needs_predict:
+            # A review can fail independently of inference. Persist prediction first so offline
+            # re-review never has to regenerate an already completed answer.
+            with self._prediction_cache_lock:
+                self.cache_manager.save_prediction_cache(item.subset, task_state, self.benchmark.save_metadata)
+            item.prediction_persisted = True
         sample_score = (None if self.benchmark.use_batch_scoring else self._review_task_state(task_state))
         return task_state, sample_score
 
@@ -381,7 +390,7 @@ class DefaultEvaluator(Evaluator):
             task_state: The completed task state (prediction output).
             sample_score: The review score, or ``None`` for batch-scoring.
         """
-        if item.needs_predict:
+        if item.needs_predict and not item.prediction_persisted:
             model_result = self.cache_manager.save_prediction_cache(
                 item.subset, task_state, self.benchmark.save_metadata
             )

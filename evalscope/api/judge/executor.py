@@ -1,20 +1,13 @@
-"""Drives every judge call for one sample: repeats, stages, cases, placements, aggregation.
-
-Retry boundaries are deliberately separate: transport failures belong to the model layer
-(``GenerateConfig.retries``), a reply that violates the output contract is retried only as many
-times as the contract declares, and judge repeats are planned observations rather than failure
-compensation.
-"""
+"""The single execution path for Native LLM judge contracts."""
+import math
+import statistics
 import time
-from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from collections import Counter, defaultdict
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Literal, Optional, Sequence
 
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
-from evalscope.api.metric import JudgeDetail, Score
+from evalscope.api.metric import JudgeSummary, Score
 from evalscope.constants import ScoreStatus
-from evalscope.metrics.judge.llm_judge import JUDGE_ERROR_PREFIX, LLMJudge
 from evalscope.utils.logger import get_logger
 from .types import (
     CaseVerdict,
@@ -30,90 +23,53 @@ from .types import (
 logger = get_logger()
 
 MAX_STAGES = 4
-"""Bounds stage expansion so a buggy adapter cannot loop up unbounded judge cost."""
 
 
 class JudgeExecutorConfig(BaseModel):
-    """Runtime knobs for one executor."""
+    """The resolved execution policy for one benchmark run."""
 
     model_config = ConfigDict(frozen=True)
 
     repeats: int = Field(default=1, ge=1)
     position_swap: bool = False
-    save_io: bool = True
+    aggregation: Literal['mean', 'median', 'majority_vote'] = 'mean'
+    min_valid_judges: int = Field(default=1, ge=1)
 
 
 class JudgeExecutor:
-    """Executes a :class:`JudgeProtocol` adapter's cases against one or more judge models."""
+    """Execute one complete judge session at a time, serially within each sample."""
 
-    def __init__(
-        self,
-        judges: Sequence[LLMJudge],
-        config: Optional[JudgeExecutorConfig] = None,
-    ) -> None:
+    def __init__(self, judges: Sequence[Any], config: Optional[JudgeExecutorConfig] = None) -> None:
         self.judges = list(judges)
         self.config = config or JudgeExecutorConfig()
         if not self.judges:
             raise ValueError('JudgeExecutor requires at least one judge model.')
 
-    # ------------------------------------------------------------------
-    # Entry points
-    # ------------------------------------------------------------------
-
     def execute(self, adapter: JudgeProtocol, context: JudgeContext) -> JudgeReview:
-        """Score one sample."""
+        """Score one sample through every configured judge and repeat."""
         review = JudgeReview()
         for judge in self.judges:
             for repeat_id in range(self.config.repeats):
-                observation = self._run_observation(adapter, context, judge, repeat_id, review)
-                review.observations.append(observation)
-
+                review.observations.append(self._run_observation(adapter, context, judge, repeat_id, review))
         review.failure_counts = dict(
             Counter(attempt.status.value for attempt in review.attempts if not attempt.status.is_usable)
         )
-        self._aggregate(adapter, review, context)
+        self._aggregate(review)
         return review
-
-    def execute_batch(
-        self,
-        adapter: JudgeProtocol,
-        contexts: Sequence[JudgeContext],
-        max_workers: int = 1,
-    ) -> List[JudgeReview]:
-        """Score many samples, concurrently across samples but serially within one sample.
-
-        Batch-scoring benchmarks route through here instead of building their own thread pool, so
-        judge concurrency, failure counting and cost live in one place.
-        """
-        if not contexts:
-            return []
-        workers = max(1, min(int(max_workers), len(contexts)))
-        if workers == 1:
-            return [self.execute(adapter, context) for context in contexts]
-        with ThreadPoolExecutor(max_workers=workers) as pool:
-            return list(pool.map(lambda context: self.execute(adapter, context), contexts))
-
-    # ------------------------------------------------------------------
-    # One observation
-    # ------------------------------------------------------------------
 
     def _run_observation(
         self,
         adapter: JudgeProtocol,
         context: JudgeContext,
-        judge: LLMJudge,
+        judge: Any,
         repeat_id: int,
         review: JudgeReview,
     ) -> JudgeObservation:
-        judge_id = judge.model_id
-        observation = JudgeObservation(judge_id=judge_id, repeat_id=repeat_id)
-
+        observation = JudgeObservation(judge_id=_judge_id(judge), repeat_id=repeat_id)
         pending = list(adapter.build_judge_cases(context))
         declared = len(pending)
         completed: List[CaseVerdict] = []
         for stage in range(MAX_STAGES):
-            if not pending:
-                break
             for case in pending:
                 verdict = self._run_case(adapter, context, judge, repeat_id, case, completed, review)
                 if verdict is None:
@@ -122,16 +78,14 @@ class JudgeExecutor:
                     return observation
                 completed.append(verdict)
             pending = list(adapter.expand_judge_cases(stage + 1, completed, context))
+            declared += len(pending)
         if pending:
             raise RuntimeError(f'Judge case expansion exceeded {MAX_STAGES} stages; adapter bug.')
-
-        observation.case_verdicts = completed
         if declared and not completed:
             observation.status = ScoreStatus.EXCLUDED
             observation.error = 'no case produced a usable verdict'
             return observation
-
-        # Declaring no cases is legitimate: the adapter's rules already settled the sample.
+        observation.case_verdicts = completed
         observation.reduced = adapter.reduce_judge_verdicts(completed, context)
         if any(verdict.status is ScoreStatus.FALLBACK for verdict in completed):
             observation.status = ScoreStatus.FALLBACK
@@ -141,37 +95,30 @@ class JudgeExecutor:
         self,
         adapter: JudgeProtocol,
         context: JudgeContext,
-        judge: LLMJudge,
+        judge: Any,
         repeat_id: int,
         case: JudgeCase,
         completed: Sequence[CaseVerdict],
         review: JudgeReview,
     ) -> Optional[CaseVerdict]:
-        """Resolve one case over all required placements, or fall back, or give up."""
         placements = (Placement.ORIGINAL, Placement.SWAPPED) if self.config.position_swap else (Placement.ORIGINAL, )
-
         values: Dict[str, Any] = {}
         for placement in placements:
             value = self._resolve_placement(adapter, context, judge, repeat_id, case, placement, completed, review)
             if value is None:
-                # Both sides of a swap form one atomic observation: a single successful side is
-                # not half a verdict.
                 fallback = adapter.judge_fallback_verdict(case, context)
                 if fallback is not None:
                     return fallback.model_copy(
                         update={
                             'status': ScoreStatus.FALLBACK,
-                            'metadata': fallback.metadata or dict(case.metadata),
+                            'metadata': fallback.metadata or dict(case.metadata)
                         }
                     )
                 return None
             values[placement.value] = value
-
         if len(placements) == 1:
             return CaseVerdict(
-                case_id=case.case_id,
-                value=values[Placement.ORIGINAL.value],
-                metadata=dict(case.metadata),
+                case_id=case.case_id, value=values[Placement.ORIGINAL.value], metadata=dict(case.metadata)
             )
         return CaseVerdict(
             case_id=case.case_id,
@@ -184,130 +131,307 @@ class JudgeExecutor:
         self,
         adapter: JudgeProtocol,
         context: JudgeContext,
-        judge: LLMJudge,
+        judge: Any,
         repeat_id: int,
         case: JudgeCase,
         placement: Placement,
         completed: Sequence[CaseVerdict],
         review: JudgeReview,
     ) -> Any:
-        """Send one request, parse it strictly, and retry only as the contract allows."""
-        contract = case.output_contract
+        """Make exactly one request. Transport retry belongs to the model implementation."""
         request = adapter.build_judge_request(case, placement, completed, context)
-        messages = list(request.messages)
-
-        for attempt_index in range(contract.parse_retries + 1):
-            started = time.perf_counter()
-            raw = judge.judge(messages=messages)
-            latency = time.perf_counter() - started
-
-            attempt = JudgeAttempt(
-                status=ScoreStatus.SUCCESS,
-                case_id=case.case_id,
-                judge_id=judge.model_id,
-                repeat_id=repeat_id,
-                placement=placement,
-                attempt_index=attempt_index,
-                raw_response=raw if self.config.save_io else None,
-                latency=latency,
+        started = time.perf_counter()
+        try:
+            output = judge.generate(list(request.messages))
+        except Exception as exc:  # provider exceptions become inspectable failed attempts
+            review.attempts.append(
+                JudgeAttempt(
+                    status=ScoreStatus.TRANSPORT_ERROR,
+                    case_id=case.case_id,
+                    judge_id=_judge_id(judge),
+                    repeat_id=repeat_id,
+                    placement=placement,
+                    messages=list(request.messages),
+                    error=f'{type(exc).__name__}: {exc}',
+                    latency=time.perf_counter() - started,
+                )
             )
-
-            if raw is None or raw.startswith(JUDGE_ERROR_PREFIX):
-                # ``judge`` reports a failed request as an [ERROR] string; its embedded digits and
-                # letters must never reach a parser.
-                attempt.status = ScoreStatus.TRANSPORT_ERROR
-                attempt.error = raw
-                review.attempts.append(attempt)
-                return None
-
-            result = contract.parse(raw)
-            if result.ok:
-                attempt.parsed_value = _jsonable(result.value)
-                review.attempts.append(attempt)
-                return result.value
-
-            attempt.status = ScoreStatus.PARSE_ERROR
-            attempt.error = result.error
-            review.attempts.append(attempt)
-            # Name the fault in the retry: resending the identical prompt would only rely on the
-            # provider not being bit-deterministic.
-            messages = messages + [
-                ChatMessageAssistant(content=raw),
-                ChatMessageUser(content=(f'That reply could not be used: {result.error}.'
-                                         f'{contract.instruction()}')),
-            ]
-
-        logger.warning(
-            f'Judge {judge.model_id} failed the output contract for case {case.case_id} after '
-            f'{contract.parse_retries + 1} attempt(s); the sample is excluded from this metric.'
+            return None
+        raw = output.completion
+        attempt = JudgeAttempt(
+            status=ScoreStatus.SUCCESS,
+            case_id=case.case_id,
+            judge_id=_judge_id(judge),
+            repeat_id=repeat_id,
+            placement=placement,
+            messages=list(request.messages),
+            model_output=output,
+            raw_response=raw,
+            latency=time.perf_counter() - started,
         )
+        result = case.output_contract.parse(raw)
+        if result.ok:
+            attempt.parsed_value = _jsonable(result.value)
+            review.attempts.append(attempt)
+            return result.value
+        attempt.status = ScoreStatus.PARSE_ERROR
+        attempt.error = result.error
+        review.attempts.append(attempt)
+        logger.warning(f'Judge {_judge_id(judge)} failed the output contract for case {case.case_id}; excluding it.')
         return None
 
-    # ------------------------------------------------------------------
-    # Aggregation
-    # ------------------------------------------------------------------
-
-    def _aggregate(self, adapter: JudgeProtocol, review: JudgeReview, context: JudgeContext) -> None:
-        """Average repeats within a judge, then judges with equal weight.
-
-        Only usable observations count, so a judge or repeat that failed shrinks the average
-        instead of dragging it toward zero.
-        """
-        per_judge: Dict[str, List[Dict[str, float]]] = {}
+    def _aggregate(self, review: JudgeReview) -> None:
+        """Reduce repeats inside a judge, then combine equally weighted judge outcomes."""
+        per_judge: Dict[str, List[Dict[str, float]]] = defaultdict(list)
         for observation in review.valid_observations:
-            per_judge.setdefault(observation.judge_id, []).append(observation.reduced.value)
-
+            per_judge[observation.judge_id].append(observation.reduced.value)
         if not per_judge:
             review.status = ScoreStatus.EXCLUDED
-            review.value = {}
-            review.error = review.error or 'no judge produced a usable verdict'
+            review.error = 'no judge produced a usable verdict'
             return
+        if len(per_judge) < self.config.min_valid_judges:
+            review.status = ScoreStatus.EXCLUDED
+            review.error = f'only {len(per_judge)} judge(s) produced valid verdicts; need {self.config.min_valid_judges}'
+            return
+        judge_values = {
+            judge_id: _aggregate_values(values, self.config.aggregation)
+            for judge_id, values in per_judge.items()
+        }
+        combined, tie_broken = _aggregate_across_judges(
+            judge_values, self.config.aggregation, _judge_id(self.judges[0])
+        )
+        if combined is None:
+            review.status = ScoreStatus.EXCLUDED
+            review.error = 'primary judge has no valid verdict to break a majority_vote tie'
+            return
+        review.value = combined
+        review.outcome = _aggregate_outcomes(review.valid_observations, _judge_id(self.judges[0]))
+        review.disagreement = _disagreement(per_judge, review.valid_observations)
+        expected = len(self.judges) * self.config.repeats
+        if tie_broken:
+            review.metadata['tie_broken_by_primary'] = True
+            review.status = ScoreStatus.DEGRADED
+        elif len(review.valid_observations) != expected or any(
+            observation.status is ScoreStatus.FALLBACK for observation in review.valid_observations
+        ):
+            review.status = ScoreStatus.DEGRADED
 
-        judge_values = [_combine(values) for values in per_judge.values()]
-        review.value = _combine(judge_values)
-        # Diagnostics are per-observation and cannot be averaged, so the first usable one stands.
-        review.metadata = dict(review.valid_observations[0].reduced.metadata)
-        if any(obs.status is ScoreStatus.FALLBACK for obs in review.valid_observations):
-            review.status = ScoreStatus.FALLBACK
-
-    def build_score(
-        self,
-        adapter: JudgeProtocol,
-        review: JudgeReview,
-        context: JudgeContext,
-    ) -> Score:
-        """Let the adapter shape the final score, then attach judge diagnostics."""
+    def build_score(self, adapter: JudgeProtocol, review: JudgeReview, context: JudgeContext) -> Score:
+        """Build the final score and persist all judge I/O in the review payload."""
         score = adapter.finalize_judge_score(review, context)
         score.status = review.status
-        if not review.status.is_usable and score.value:
-            # The invariant this subsystem exists to protect: an unusable review is excluded from
-            # the metric, never reported as a real number.
-            logger.warning(
-                f'{type(adapter).__name__} returned values {sorted(score.value)} for an unusable '
-                f'judge review ({review.status.value}); dropping them.'
-            )
+        if not review.status.is_usable:
             score.value = {}
-        score.judge_detail = JudgeDetail(
-            judge_models=[judge.model_id for judge in self.judges],
+        score.judge_summary = JudgeSummary(
+            status=review.status,
+            scored=int(review.status.is_usable),
+            total=1,
+            coverage=float(review.status.is_usable),
+            judge_models=[_judge_id(judge) for judge in self.judges],
             valid_observations=len(review.valid_observations),
             total_observations=len(review.observations),
             failures=review.failure_counts,
+            disagreement=review.disagreement,
             error=review.error,
         )
-        if self.config.save_io:
-            # Keeps the raw judge text inspectable in the reviews file.
-            score.metadata = dict(score.metadata or {})
-            score.metadata['judge_attempts'] = [attempt.model_dump(exclude_none=True) for attempt in review.attempts]
+        score.metadata = dict(score.metadata or {})
+        score.metadata['judge_attempts'] = [attempt.model_dump(exclude_none=True) for attempt in review.attempts]
         return score
 
 
-def _combine(values: Sequence[Dict[str, float]]) -> Dict[str, float]:
-    """Average per-metric dicts, only over the keys each entry actually carries."""
-    buckets: Dict[str, List[float]] = {}
-    for entry in values:
-        for name, value in entry.items():
-            buckets.setdefault(name, []).append(float(value))
+def _judge_id(judge: Any) -> str:
+    return str(getattr(judge, 'judge_id', getattr(judge, 'model_id', 'unknown-judge')))
+
+
+def _aggregate_values(values: Sequence[Dict[str, float]], method: str) -> Dict[str, float]:
+    buckets: Dict[str, List[float]] = defaultdict(list)
+    for value in values:
+        for name, item in value.items():
+            buckets[name].append(float(item))
+    if method == 'median':
+        return {name: float(statistics.median(items)) for name, items in buckets.items()}
+    if method == 'majority_vote':
+        return {name: _majority(items)[0] for name, items in buckets.items()}
     return {name: sum(items) / len(items) for name, items in buckets.items()}
+
+
+def _aggregate_across_judges(judge_values: Dict[str, Dict[str, float]], method: str,
+                             primary: str) -> tuple[Optional[Dict[str, float]], bool]:
+    buckets: Dict[str, List[float]] = defaultdict(list)
+    for values in judge_values.values():
+        for name, value in values.items():
+            buckets[name].append(value)
+    result: Dict[str, float] = {}
+    tie_broken = False
+    for name, values in buckets.items():
+        if method == 'median':
+            result[name] = float(statistics.median(values))
+        elif method == 'majority_vote':
+            winner, tied = _majority(values)
+            if tied:
+                if primary not in judge_values or name not in judge_values[primary]:
+                    return None, False
+                winner = judge_values[primary][name]
+                tie_broken = True
+            result[name] = winner
+        else:
+            result[name] = sum(values) / len(values)
+    return result, tie_broken
+
+
+def _majority(values: Sequence[float]) -> tuple[float, bool]:
+    counts = Counter(values)
+    top = max(counts.values())
+    winners = [value for value, count in counts.items() if count == top]
+    return winners[0], len(winners) > 1
+
+
+def _disagreement(per_judge: Dict[str, List[Dict[str, float]]],
+                  observations: Sequence[JudgeObservation]) -> Dict[str, Any]:
+    all_values: Dict[str, List[float]] = defaultdict(list)
+    for judge_id, values in per_judge.items():
+        for value in values:
+            for name, item in value.items():
+                all_values[name].append(float(item))
+    numeric = {
+        name: {
+            'std': statistics.pstdev(values) if len(values) > 1 else 0.0,
+            'range': max(values) - min(values)
+        }
+        for name, values in all_values.items()
+    }
+    repeat_numeric = {
+        judge_id: _numeric_disagreement(values)
+        for judge_id, values in per_judge.items()
+        if len(values) > 1
+    }
+    per_judge_aggregate = {judge_id: _aggregate_values(values, 'mean') for judge_id, values in per_judge.items()}
+    cross_judge_numeric = _numeric_disagreement(list(per_judge_aggregate.values()))
+    categorical: Dict[str, Dict[str, Any]] = {}
+    categories: Dict[str, List[tuple[str, str]]] = defaultdict(list)
+    for observation in observations:
+        for verdict in observation.case_verdicts:
+            label = _categorical_label(verdict.value)
+            if label is not None:
+                categories[verdict.case_id].append((observation.judge_id, label))
+    for case_id, labels in categories.items():
+        all_labels = [label for _, label in labels]
+        per_judge_labels: Dict[str, List[str]] = defaultdict(list)
+        for judge_id, label in labels:
+            per_judge_labels[judge_id].append(label)
+        per_judge_vote = [_majority_label(values) for values in per_judge_labels.values()]
+        categorical[case_id] = {
+            **_categorical_disagreement(all_labels),
+            'repeats': {
+                judge_id: _categorical_disagreement(values)
+                for judge_id, values in per_judge_labels.items()
+                if len(values) > 1
+            },
+            'cross_judge': _categorical_disagreement(per_judge_vote),
+        }
+    positions = []
+    for observation in observations:
+        for verdict in observation.case_verdicts:
+            if verdict.placements:
+                positions.append(len({str(value) for value in verdict.placements.values()}) == 1)
+    return {
+        'numeric': {
+            'all_observations': numeric,
+            'repeats': repeat_numeric,
+            'cross_judge': cross_judge_numeric,
+        },
+        'categorical': categorical,
+        'position_consistency': sum(positions) / len(positions) if positions else None,
+        'swap_flip_count': sum(not value for value in positions),
+    }
+
+
+def _numeric_disagreement(values: Sequence[Dict[str, float]]) -> Dict[str, Dict[str, float]]:
+    buckets: Dict[str, List[float]] = defaultdict(list)
+    for value in values:
+        for name, item in value.items():
+            buckets[name].append(float(item))
+    return {
+        name: {
+            'std': statistics.pstdev(items) if len(items) > 1 else 0.0,
+            'range': max(items) - min(items),
+        }
+        for name, items in buckets.items()
+    }
+
+
+def _categorical_label(value: Any) -> Optional[str]:
+    if isinstance(value, BaseModel) and hasattr(value, 'verdict'):
+        return str(value.verdict)
+    if isinstance(value, str):
+        return value
+    return None
+
+
+def _categorical_disagreement(labels: Sequence[str]) -> Dict[str, float]:
+    if not labels:
+        return {'agreement_ratio': 0.0, 'vote_entropy': 0.0}
+    counts = Counter(labels)
+    total = len(labels)
+    entropy = -sum((count / total) * math.log2(count / total) for count in counts.values())
+    return {
+        'agreement_ratio': max(counts.values()) / total,
+        'vote_entropy': entropy,
+    }
+
+
+def _majority_label(labels: Sequence[str]) -> str:
+    return Counter(labels).most_common(1)[0][0]
+
+
+def _aggregate_outcomes(observations: Sequence[JudgeObservation], primary: str) -> Any:
+    """Aggregate typed categorical outcomes by repeat, then by judge.
+
+    Only mappings with a common scalar leaf structure are aggregated. Other adapter-specific
+    diagnostic payloads remain observation metadata and never influence final scoring.
+    """
+    per_judge: Dict[str, List[Any]] = defaultdict(list)
+    for observation in observations:
+        if observation.reduced is not None and observation.reduced.outcome is not None:
+            per_judge[observation.judge_id].append(observation.reduced.outcome)
+    if not per_judge:
+        return None
+
+    per_judge_outcome = {judge_id: _majority_outcome(values, primary=False) for judge_id, values in per_judge.items()}
+    return _majority_outcome(
+        list(per_judge_outcome.values()),
+        primary=True,
+        primary_value=per_judge_outcome.get(primary),
+    )
+
+
+def _majority_outcome(values: Sequence[Any], primary: bool, primary_value: Any = None) -> Any:
+    """Vote recursively over mapping leaves; only identical shapes are meaningful outcomes."""
+    if not values:
+        return None
+    if all(isinstance(value, dict) for value in values):
+        keys = set(values[0])
+        if any(set(value) != keys for value in values):
+            return None
+        return {
+            key: _majority_outcome(
+                [value[key]
+                 for value in values],
+                primary,
+                primary_value.get(key) if isinstance(primary_value, dict) else None,
+            )
+            for key in keys
+        }
+    counts = Counter(_freeze_outcome(value) for value in values)
+    winner_count = max(counts.values())
+    winners = [value for value in values if counts[_freeze_outcome(value)] == winner_count]
+    if len({_freeze_outcome(value) for value in winners}) == 1:
+        return winners[0]
+    return primary_value if primary and primary_value is not None else winners[0]
+
+
+def _freeze_outcome(value: Any) -> str:
+    return repr(value)
 
 
 def _jsonable(value: Any) -> Any:

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-import threading
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -12,14 +12,21 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageSystem
+from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
-from .utils import METRIC_NAMES, WideSearchScorer, aggregate_official_scores
+from .utils import (
+    EVAL_COLUMN_PROMPT,
+    METRIC_NAMES,
+    PRIMARY_KEY_PREPROCESS_PROMPT,
+    WideSearchSession,
+    aggregate_official_scores,
+)
 
 DATASET_ID = 'bytedance-community/WideSearch'
 
@@ -65,7 +72,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 ## Evaluation Notes
 
 - Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
-- Requires ``judge_strategy='auto'`` or ``'llm'`` with explicit ``judge_model_args``; rule-only scoring is unsupported.
+- Requires ``judge.strategy='auto'`` or ``'llm'`` with at least one ``judge.models`` entry; rule-only scoring is unsupported.
 - See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime
   examples and paper-style repeat settings.
 """
@@ -90,6 +97,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 class WideSearchAdapter(AgentLoopAdapter):
     """Official single-agent WideSearch benchmark adapter."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -100,7 +108,6 @@ class WideSearchAdapter(AgentLoopAdapter):
         super().__init__(**kwargs)
         check_import('dateparser', extra='wide_search', raise_error=True, feature_name='WideSearch evaluation')
         self._dataset_root: Optional[Path] = None
-        self._judge_lock = threading.Lock()
 
     def load(self) -> Tuple[DatasetDict, None]:
         # NOTE: download the full snapshot rather than an ``allow_file_pattern`` list.
@@ -180,29 +187,173 @@ class WideSearchAdapter(AgentLoopAdapter):
     def should_finalize_after_max_steps(self, result: AgentLoopResult) -> bool:
         return True
 
-    def llm_match_score(
+    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        session = self._session(context)
+        if not session.needs_column_alignment():
+            return []
+        return [JudgeCase(case_id='column_alignment', output_contract=OutputContract(schema_model=_MappingVerdict))]
+
+    def build_judge_request(
+        self,
+        case: JudgeCase,
+        placement: Any,
+        completed_cases: Sequence[CaseVerdict],
+        context: JudgeContext,
+    ) -> JudgeRequest:
+        session = self._session(context)
+        if case.metadata.get('kind') == 'column_score':
+            response = case.metadata['response']
+            prompt = EVAL_COLUMN_PROMPT.format(criterion=case.metadata.get('criterion'), response=response)
+        else:
+            prompt = PRIMARY_KEY_PREPROCESS_PROMPT.format(
+                response=case.metadata.get(
+                    'response',
+                    session.response_df.columns.tolist() if session.response_df is not None else []
+                ),
+                reference=case.metadata.get('reference', session.required_columns),
+            )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+    def expand_judge_cases(
+        self,
+        stage: int,
+        completed_cases: Sequence[CaseVerdict],
+        context: JudgeContext,
+    ) -> List[JudgeCase]:
+        session = self._session(context)
+        column_map = self._mapping(completed_cases, 'column_alignment')
+        if stage == 1:
+            answer_df, response_df, _ = session.frames(column_map)
+            if answer_df is None or response_df is None:
+                return []
+            cases = []
+            for column in session.unique_columns:
+                pipeline = session.evaluation['eval_pipeline'].get(column, {})
+                if {'llm_judge', 'exact_match'} & set(pipeline.get('metric', [])):
+                    cases.append(
+                        JudgeCase(
+                            case_id=f'primary_key:{column}',
+                            output_contract=OutputContract(schema_model=_MappingVerdict),
+                            metadata={
+                                'response': response_df[column].tolist(),
+                                'reference': answer_df[column].tolist(),
+                            },
+                        )
+                    )
+            return cases
+        if stage != 2:
+            return []
+        primary_key_maps = {
+            case.case_id.removeprefix('primary_key:'): self._mapping_value(case)
+            for case in completed_cases
+            if case.case_id.startswith('primary_key:')
+        }
+        inner_df, _ = session.inner_frame(column_map, primary_key_maps)
+        if inner_df is None or inner_df.empty:
+            return []
+        cases = []
+        for column in session.required_columns:
+            if column in session.unique_columns:
+                continue
+            pipeline = session.evaluation['eval_pipeline'][column]
+            if 'llm_judge' not in pipeline.get('metric', []):
+                continue
+            response = {
+                f'idx_{index}': {
+                    'response': response_value,
+                    'target': target_value,
+                }
+                for index, (response_value, target_value
+                            ) in enumerate(zip(inner_df[f'{column}_response'], inner_df[f'{column}_query']))
+            }
+            cases.append(
+                JudgeCase(
+                    case_id=f'column_score:{column}',
+                    output_contract=OutputContract(schema_model=_column_score_model(len(inner_df))),
+                    metadata={
+                        'kind': 'column_score',
+                        'criterion': pipeline.get('criterion'),
+                        'response': response,
+                    },
+                )
+            )
+        return cases
+
+    def reduce_judge_verdicts(
+        self,
+        case_verdicts: Sequence[CaseVerdict],
+        context: JudgeContext,
+    ) -> ReducedVerdict:
+        session = self._session(context)
+        column_map = self._mapping(case_verdicts, 'column_alignment')
+        primary_key_maps = {
+            case.case_id.removeprefix('primary_key:'): self._mapping_value(case)
+            for case in case_verdicts
+            if case.case_id.startswith('primary_key:')
+        }
+        column_scores = {
+            f'{case.case_id.removeprefix("column_score:")}_llm_judge': self._score_values(case)
+            for case in case_verdicts
+            if case.case_id.startswith('column_score:')
+        }
+        values, diagnostics = session.score(column_scores, column_map, primary_key_maps)
+        return ReducedVerdict(value=values, metadata=diagnostics)
+
+    def finalize_judge_score(self, review, context: JudgeContext) -> Score:
+        score = super().finalize_judge_score(review, context)
+        score.main_score_name = 'success_rate'
+        return score
+
+    @staticmethod
+    def _mapping(cases: Sequence[CaseVerdict], case_id: str) -> Dict[str, str]:
+        for case in cases:
+            if case.case_id == case_id:
+                return WideSearchAdapter._mapping_value(case)
+        return {}
+
+    @staticmethod
+    def _mapping_value(case: CaseVerdict) -> Dict[str, str]:
+        return {str(key): str(value) for key, value in case.value.mapping.items()}
+
+    @staticmethod
+    def _score_values(case: CaseVerdict) -> List[float]:
+        values = case.value.model_dump()
+        return [float(values[f'idx_{index}']) for index in range(len(values))]
+
+    @staticmethod
+    def _session(context: JudgeContext) -> WideSearchSession:
+        return WideSearchSession.create(
+            prediction=context.filtered_prediction,
+            gold_csv=context.reference,
+            evaluation=context.task_state.metadata['evaluation'],
+        )
+
+    def pre_judge_score(
         self,
         original_prediction: str,
         filtered_prediction: str,
         reference: str,
         task_state: TaskState,
-    ) -> Score:
-        with self._judge_lock:
-            judge = self.llm_judge
-        scorer = WideSearchScorer(judge=judge.judge)
-        result = scorer.evaluate(
-            prediction=filtered_prediction,
-            gold_csv=reference,
-            evaluation=task_state.metadata['evaluation'],
-        )
-        return Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-            value=result.values,
-            explanation=result.diagnostics.get('error') or 'Official WideSearch table evaluation completed.',
-            metadata=result.diagnostics,
-            main_score_name='success_rate',
-        )
+    ) -> Optional[Score]:
+        return None
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         return aggregate_official_scores(sample_scores)
+
+
+class _MappingVerdict(BaseModel):
+    """A semantic alignment returned through the shared JSON judge contract."""
+
+    mapping: Dict[str, str]
+
+
+def _column_score_model(size: int) -> type[BaseModel]:
+    """Build the exact per-row 0/1 output shape for one WideSearch column case."""
+    from pydantic import create_model
+
+    return create_model(
+        f'WideSearchColumnScore{size}',
+        **{f'idx_{index}': (float, Field(ge=0.0, le=1.0))
+           for index in range(size)},
+    )
