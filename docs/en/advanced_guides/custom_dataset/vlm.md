@@ -47,7 +47,7 @@ messages	answer
 - Local path: `"url": "custom_eval/multimodal/videos/sample.mp4"`
 - HTTP URL: `"url": "https://example.com/video.mp4"` (requires model service support)
 - Base64 encoding: `"url": "data:video/mp4;base64,AAAAIGZ0eX..."`
-- Video format is inferred from the path, URL, or data URI; supported formats are `"mp4"`, `"mpeg"`, and `"mov"`.
+- Video format is inferred from the path, URL, or data URI; supported formats are `"mp4"`, `"mpeg"`, `"mov"`, and `"avi"`.
 
 **Multi-image Input**
 
@@ -363,7 +363,7 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `image_k`: Image string (local/remote path, base64 Data URL) or [Image Feature][HFImage], k ∈ [1, 100]
 - `images`: List of images equivalent to consecutive `image_1`, `image_2`. Only used when `image_k` not present.
 - `video_k`: Video string (local/remote path or base64 Data URL) or [Video Feature][HFVideo], k ∈ [1, 100]
-- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, and `"mov"`
+- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, `"mov"`, and `"avi"`
 - `videos`: Video list equivalent to consecutive `video_1`, `video_2`. Only used when `video_k` not present.
 - `audio_k`: Audio string (local/remote path, URL, or base64 Data URL) or [Audio Feature][HFAudio], k ∈ [1, 100]
 - `audio_k_format`: Optional audio format hint; supports `"wav"` and `"mp3"`

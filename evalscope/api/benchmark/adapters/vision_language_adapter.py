@@ -1,14 +1,34 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
 from evalscope.api.messages.content import Content, ContentAudio, ContentImage, ContentText, ContentVideo
+from evalscope.utils import get_logger
 from evalscope.utils.io_utils import bytes_to_base64, compress_image_to_limit, parse_size
-from evalscope.utils.media_utils import guess_audio_format, guess_video_format
+from evalscope.utils.media_utils import (
+    SUPPORTED_AUDIO_FORMATS,
+    SUPPORTED_VIDEO_FORMATS,
+    guess_audio_format,
+    guess_video_format,
+)
 from .default_data_adapter import DefaultDataAdapter
+
+logger = get_logger()
+
+MediaType = Literal['audio', 'image', 'video']
+
+# Media types whose payload carries an explicit format hint; images have no ContentImage.format field.
+SUPPORTED_MEDIA_FORMATS: Dict[str, Tuple[str, ...]] = {
+    'audio': SUPPORTED_AUDIO_FORMATS,
+    'video': SUPPORTED_VIDEO_FORMATS,
+}
 
 
 class VisionLanguageAdapter(DefaultDataAdapter):
     """Adapter for vision-language benchmarks. e.g., image captioning, visual question answering, etc."""
+
+    MAX_IMAGES: int = 100
+    MAX_VIDEOS: int = 100
+    MAX_AUDIOS: int = 100
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -16,6 +36,7 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         # Can be configured via dataset_args: {'<benchmark_name>': {'max_image_bytes': <int|str>}}
         # Accepts integers (bytes) or human-readable strings like '5mb', '500kb', '1.5gb'.
         self._max_image_bytes: Optional[int] = parse_size(self._benchmark_meta.max_image_bytes)
+        self._missing_media_warned: Set[str] = set()
 
     def _image_bytes_to_base64(
         self, image_bytes: bytes, default_format: str = 'png', guess_mimetype: bool = False
@@ -90,6 +111,8 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 content_list.append(self._content_video_from_value(video_map[media_num]))
             elif media_type == 'audio' and audio_map.get(media_num):
                 content_list.append(self._content_audio_from_value(audio_map[media_num]))
+            else:
+                self._warn_missing_media(media_type, media_num)
 
             last_end = match.end()
 
@@ -101,100 +124,144 @@ class VisionLanguageAdapter(DefaultDataAdapter):
 
         return content_list
 
+    def _warn_missing_media(self, media_type: str, media_num: int) -> None:
+        """Report an unresolved placeholder once per index, so sparse datasets stay diagnosable."""
+        placeholder = f'<{media_type} {media_num}>'
+        if placeholder in self._missing_media_warned:
+            return
+        self._missing_media_warned.add(placeholder)
+        logger.warning(f'No {media_type} supplied for {placeholder}; dropping the placeholder from the prompt.')
+
     def _normalize_media_value(
         self,
         media_value: Union[str, Dict[str, Any]],
         *,
-        media_type: Literal['audio', 'image', 'video'],
+        media_type: MediaType,
         media_format: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Normalize one raw media cell into a payload dict whose ``url`` key holds the resolved media.
+
+        Accepts a plain string (local path, URL or data URI), an undecoded Hugging Face dict
+        (``{'path': ...}`` or ``{'bytes': ...}``, the latter converted to a base64 data URI) or an
+        API-ready dict keyed by ``url`` / ``data`` / ``<media_type>``. Keys other than the payload
+        are preserved, so video hints such as ``start`` / ``end`` / ``fps`` survive.
+
+        Args:
+            media_value (str | dict): Raw cell value taken from the record.
+            media_type (MediaType): Media family the cell belongs to.
+            media_format (str, optional): Format hint from the ``<media_type>_<n>_format`` column.
+
+        Returns:
+            Dict[str, Any]: Payload with a resolved ``url`` key plus ``format`` and any extra keys.
+
+        Raises:
+            ValueError: The dict holds no recognizable payload, the bytes do not decode to
+                *media_type*, or the resolved format is unsupported for *media_type*.
+        """
         if isinstance(media_value, str):
-            return {'url': media_value, 'format': media_format}
-
-        normalized_value = dict(media_value)
-
-        # prefer bytes, which skips another read
-        if isinstance((bytes_obj := media_value.get('bytes')), (bytes, bytearray)):
-            if media_type == 'image':
-                base64_url = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
-            else:
-                base64_url = bytes_to_base64(bytes_obj, add_header=True, guess_mimetype=True)
-
-            if not base64_url.startswith(f'data:{media_type}/'):
-                raise ValueError(f'{media_type.title()} is invalid as base64 {media_type}, got {base64_url[:30]!r}...')
-            normalized_value.pop('bytes')
-            normalized_value.setdefault('format', media_format)
-            return normalized_value | {'url': base64_url}
-
-        if isinstance((path := media_value.get('path')), str):
-            normalized_value.pop('path')
-            normalized_value.setdefault('format', media_format)
-            return normalized_value | {'url': path}
-
-        # for future-migration, openai format, include 'url', 'data', or 'video'/'image'/'audio' keys
-        fallback = (media_value.get('url') or media_value.get('data') or media_value.get(media_type))
-        if isinstance(fallback, str):
-            normalized_value.setdefault('format', media_format)
-            return normalized_value | {'url': fallback}
-
-        raise ValueError('Expected undecoded dict of {"path": ""} or {"bytes": b"..."}'
-                         f', got {media_value!r}')
-
-    def _extract_media(self, record: Dict[str, Any], mtype: Literal['audio', 'image',
-                                                                    'video']) -> Dict[int, Union[str, Dict[str, Any]]]:
-        medias: dict[int, Any] = {}
-        mformats: dict[int, Optional[str]] = {}
-
-        # prefer 'image_n' > 'images', 'video_n' > 'videos', 'audio_n' > 'audios'
-        # where n is 1..MAX_IMAGES/MAX_VIDEOS/MAX_AUDIOS
-        max_n_media: int = getattr(self, f'MAX_{mtype}S'.upper(), 100)
-        if any(record.get(f'{mtype}_{i + 1}') for i in range(max_n_media)):
-            for i in range(max_n_media):
-                medias[i + 1] = record.get(f'{mtype}_{i + 1}')
-                mformats[i + 1] = record.get(f'{mtype}_{i + 1}_format')
-        elif media_list := record.get(f'{mtype}s'):
-            if not isinstance(media_list, list):
-                raise TypeError(f'"{mtype}s" must be a list of media values, got {type(media_list).__name__}.')
-            # intentionally allow unlimited list of media, when 'xxx_n' is not feasible/readable.
-            # e.g. long-context benchmarks like OCR may have >100 images.
-            for i, media in enumerate(media_list):
-                medias[i + 1] = media
+            normalized_value: Dict[str, Any] = {}
+            url = media_value
         else:
-            return {}
+            normalized_value = dict(media_value)
+            # popping both keys keeps a stale path out of the payload when bytes win
+            bytes_obj = normalized_value.pop('bytes', None)
+            path = normalized_value.pop('path', None)
 
-        # normalize raw media values into a consistent payload shape.
-        media_map: Dict[int, Union[str, Dict[str, Any]]] = {}
-        for k, v in medias.items():
-            # empty cells are common in sparse csv/tsv columns; their placeholders stay unresolved.
-            if not v:
+            if isinstance(bytes_obj, (bytes, bytearray)):
+                if media_type == 'image':
+                    url = self._image_bytes_to_base64(bytes_obj, guess_mimetype=True)
+                else:
+                    url = bytes_to_base64(bytes_obj, add_header=True, guess_mimetype=True)
+                # fail closed: a mimetype outside the expected family means the column is mislabeled
+                if not url.startswith(f'data:{media_type}/'):
+                    raise ValueError(f'{media_type.title()} is invalid as base64 {media_type}, got {url[:30]!r}...')
+            elif isinstance(path, str):
+                url = path
+            else:
+                # for future-migration, openai format, include 'url', 'data', or 'video'/'image'/'audio' keys
+                payload = media_value.get('url') or media_value.get('data') or media_value.get(media_type)
+                if not isinstance(payload, str):
+                    raise ValueError(
+                        f'Expected undecoded dict of {{"path": "..."}} or {{"bytes": b"..."}}, got {media_value!r}'
+                    )
+                url = payload
+
+        normalized_value.setdefault('format', media_format)
+        resolved_format = normalized_value['format']
+        supported_formats = SUPPORTED_MEDIA_FORMATS.get(media_type)
+        if resolved_format and supported_formats and resolved_format not in supported_formats:
+            raise ValueError(
+                f'Unsupported {media_type} format {resolved_format!r}, expected one of {supported_formats}'
+            )
+        normalized_value['url'] = url
+        return normalized_value
+
+    def _extract_media(self, record: Dict[str, Any], media_type: MediaType) -> Dict[int, Dict[str, Any]]:
+        """Collect and normalize every media cell of *media_type* found in one record.
+
+        Indexed columns (``image_1`` .. ``image_<MAX_IMAGES>``) take precedence over the plural list
+        column (``images``), which is intentionally unbounded because long-context benchmarks such as
+        OCR may carry more media than the indexed limit allows. Absent cells (``None`` or ``''``) are
+        skipped, leaving their placeholders unresolved rather than failing the whole record.
+
+        Args:
+            record (dict): Raw record from the dataset.
+            media_type (MediaType): Media family to collect.
+
+        Returns:
+            Dict[int, Dict[str, Any]]: 1-based media index to payload, shaped by
+                :meth:`_normalize_media_value`.
+
+        Raises:
+            TypeError: The plural column is not a list, or a cell is neither a string nor a dict.
+            ValueError: A cell cannot be normalized; the message names the offending index.
+        """
+        max_media = {'audio': self.MAX_AUDIOS, 'image': self.MAX_IMAGES, 'video': self.MAX_VIDEOS}[media_type]
+        raw_media: Dict[int, Any] = {}
+        media_formats: Dict[int, Optional[str]] = {}
+
+        for index in range(1, max_media + 1):
+            value = record.get(f'{media_type}_{index}')
+            if value is None or value == '':
                 continue
+            raw_media[index] = value
+            if media_type in SUPPORTED_MEDIA_FORMATS:
+                media_formats[index] = record.get(f'{media_type}_{index}_format')
 
-            # Hugging Face Media columns may surface undecoded values as dicts.
-            # https://huggingface.co/docs/datasets/about_dataset_features#image-feature
-            # https://huggingface.co/docs/datasets/about_dataset_features#audio-feature
-            # https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
-            if not isinstance(v, (str, dict)):
+        if not raw_media:
+            media_list = record.get(f'{media_type}s')
+            if not media_list:
+                return {}
+            if not isinstance(media_list, list):
+                raise TypeError(f'"{media_type}s" must be a list of media values, got {type(media_list).__name__}.')
+            raw_media = {i + 1: media for i, media in enumerate(media_list) if media is not None and media != ''}
+
+        media_map: Dict[int, Dict[str, Any]] = {}
+        for index, value in raw_media.items():
+            # Hugging Face media columns surface undecoded values as dicts.
+            if not isinstance(value, (str, dict)):
                 raise TypeError(
-                    f'Expect {k}th {mtype} as string (path, URL, or base64) or undecoded dict, got {type(v)}'
+                    f'Expect {index}th {media_type} as string (path, URL, or base64) or undecoded dict, '
+                    f'got {type(value)}'
                 )
 
             try:
-                media_map[k] = self._normalize_media_value(
-                    v,
-                    media_type=mtype,
-                    media_format=mformats.get(k),
+                media_map[index] = self._normalize_media_value(
+                    value,
+                    media_type=media_type,
+                    media_format=media_formats.get(index),
                 )
             except ValueError as e:
-                raise ValueError(f'Failed to parse {k}th {mtype}: {v!r}') from e
+                raise ValueError(f'Failed to parse {index}th {media_type}: {value!r}') from e
         return media_map
 
     @staticmethod
     def _content_video_from_value(video_value: Union[str, Dict[str, Any]]) -> ContentVideo:
         if isinstance(video_value, dict):
-            video = video_value.get('url') or video_value.get('video') or video_value.get('data')
+            video = video_value.get('url')
             if not video:
-                raise ValueError('Video field must include one of "url", "video", or "data".')
-            video_format = video_value.get('format') or guess_video_format(str(video))
+                raise ValueError(f'Video payload must include "url", got {video_value!r}')
+            video_format = video_value.get('format') or guess_video_format(video)
             start = video_value.get('start')
             end = video_value.get('end')
             fps = video_value.get('fps')
@@ -204,28 +271,26 @@ class VisionLanguageAdapter(DefaultDataAdapter):
             start = None
             end = None
             fps = None
-        return ContentVideo(video=str(video), format=video_format, start=start, end=end, fps=fps)
+        return ContentVideo(video=video, format=video_format, start=start, end=end, fps=fps)
 
     @staticmethod
     def _content_audio_from_value(audio_value: Union[str, Dict[str, Any]]) -> ContentAudio:
         if isinstance(audio_value, dict):
-            audio = audio_value.get('url') or audio_value.get('audio') or audio_value.get('data')
+            audio = audio_value.get('url')
             if not audio:
-                raise ValueError('Audio field must include one of "url", "audio", or "data".')
-            audio_format = audio_value.get('format') or guess_audio_format(str(audio))
+                raise ValueError(f'Audio payload must include "url", got {audio_value!r}')
+            audio_format = audio_value.get('format') or guess_audio_format(audio)
         else:
             audio = audio_value
             audio_format = guess_audio_format(audio)
-        # pydantic may complain if audio format is invalid
-        return ContentAudio(audio=str(audio), format=audio_format)
+        return ContentAudio(audio=audio, format=audio_format)
 
     @staticmethod
     def _content_image_from_value(image_value: Union[str, Dict[str, Any]]) -> ContentImage:
         if isinstance(image_value, dict):
-            image = image_value.get('url') or image_value.get('image') or image_value.get('data')
+            image = image_value.get('url')
             if not image:
-                raise ValueError('Image field must include one of "url", "image", or "data".')
+                raise ValueError(f'Image payload must include "url", got {image_value!r}')
         else:
             image = image_value
-        # pydantic may complain if image format is invalid
-        return ContentImage(image=str(image))
+        return ContentImage(image=image)

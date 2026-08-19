@@ -47,7 +47,7 @@ messages	answer
 - 本地路径：`"url": "custom_eval/multimodal/videos/sample.mp4"`
 - HTTP URL：`"url": "https://example.com/video.mp4"`（需模型服务侧支持）
 - Base64 编码：`"url": "data:video/mp4;base64,AAAAIGZ0eX..."`
-- 视频格式会从路径、URL 或 data URI 中推断；支持 `"mp4"`、`"mpeg"` 和 `"mov"`。
+- 视频格式会从路径、URL 或 data URI 中推断；支持 `"mp4"`、`"mpeg"`、`"mov"` 和 `"avi"`。
 
 **多图片输入**
 
@@ -363,7 +363,7 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `image_k`: 图片字符串（本地/远程路径、base64 Data URL）或 [Image Feature][HFImage]，k ∈ [1, 100]
 - `images`: 图片列表，相当于连续的 `image_1`、`image_2`。仅在不存在 `image_k` 时使用。
 - `video_k`: 视频字符串（本地/远程路径或 base64 Data URL）或 [Video Feature][HFVideo]，k ∈ [1, 100]
-- `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"` 和 `"mov"`
+- `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"`、`"mov"` 和 `"avi"`
 - `videos`: 视频列表，相当于连续的 `video_1`、`video_2`。仅在不存在 `video_k` 时使用。
 - `audio_k`: 音频字符串（本地/远程路径、URL 或 base64 Data URL）或 [Audio Feature][HFAudio]，k ∈ [1, 100]
 - `audio_k_format`: 可选的音频格式提示；支持 `"wav"` 和 `"mp3"`

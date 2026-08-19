@@ -1,6 +1,7 @@
 import pytest
 from io import BytesIO
 from PIL import Image as PILImage
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -11,7 +12,7 @@ from evalscope.utils.io_utils import bytes_to_base64
 
 class DummyVisionLanguageAdapter(VisionLanguageAdapter):
 
-    def record_to_sample(self, record):
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         return Sample(input='', target='')
 
 
@@ -54,13 +55,13 @@ def test_bytes_to_base64_guess_mimetype_falls_back_when_unknown() -> None:
 
 
 def test_extract_media_normalizes_hf_image_bytes(adapter: DummyVisionLanguageAdapter, png_bytes: bytes) -> None:
-    image_map = adapter._extract_media({'images': [{'bytes': png_bytes}]}, mtype='image')
+    image_map = adapter._extract_media({'images': [{'bytes': png_bytes}]}, media_type='image')
 
     assert isinstance(image_map[1], dict) and image_map[1]['url'].startswith('data:image/png;base64,')
 
 
 def test_extract_media_accepts_api_ready_image_dict(adapter: DummyVisionLanguageAdapter) -> None:
-    image_map = adapter._extract_media({'images': [{'url': 'https://example.com/cat.png'}]}, mtype='image')
+    image_map = adapter._extract_media({'images': [{'url': 'https://example.com/cat.png'}]}, media_type='image')
     content_list = adapter._parse_text_with_media('<image 1> Describe the animal.', image_map=image_map)
 
     assert any(
@@ -71,24 +72,47 @@ def test_extract_media_accepts_api_ready_image_dict(adapter: DummyVisionLanguage
 
 def test_extract_media_rejects_plural_scalar_container(adapter: DummyVisionLanguageAdapter) -> None:
     with pytest.raises(TypeError):
-        adapter._extract_media({'images': 'https://example.com/cat.png'}, mtype='image')
+        adapter._extract_media({'images': 'https://example.com/cat.png'}, media_type='image')
 
 
 def test_extract_media_rejects_wrong_mime_for_audio_bytes(
     adapter: DummyVisionLanguageAdapter, png_bytes: bytes
 ) -> None:
     with pytest.raises(ValueError):
-        adapter._extract_media({'audios': [{'bytes': png_bytes}]}, mtype='audio')
+        adapter._extract_media({'audios': [{'bytes': png_bytes}]}, media_type='audio')
 
 
 def test_extract_media_skips_empty_cells(adapter: DummyVisionLanguageAdapter) -> None:
     """Sparse csv/tsv columns yield empty strings, whose placeholders must stay unresolved."""
     record = {'image_1': 'https://example.com/cat.png', 'image_2': '', 'image_3': None}
-    image_map = adapter._extract_media(record, mtype='image')
+    image_map = adapter._extract_media(record, media_type='image')
     content_list = adapter._parse_text_with_media('<image 1> vs <image 2> vs <image 3>', image_map=image_map)
 
     assert set(image_map) == {1}
     assert len([content for content in content_list if isinstance(content, ContentImage)]) == 1
+
+
+def test_extract_media_raises_on_malformed_empty_dict(adapter: DummyVisionLanguageAdapter) -> None:
+    with pytest.raises(ValueError):
+        adapter._extract_media({'image_1': {}}, media_type='image')
+
+
+def test_extract_media_bytes_drops_stale_path(adapter: DummyVisionLanguageAdapter, png_bytes: bytes) -> None:
+    image_map = adapter._extract_media({'image_1': {'bytes': png_bytes, 'path': 'stale.png'}}, media_type='image')
+
+    assert image_map[1]['url'].startswith('data:image/png;base64,')
+    assert 'path' not in image_map[1]
+
+
+def test_extract_media_rejects_unsupported_format_hint(adapter: DummyVisionLanguageAdapter) -> None:
+    with pytest.raises(ValueError):
+        adapter._extract_media({'audio_1': 'crowd.wav', 'audio_1_format': 'flac'}, media_type='audio')
+
+
+def test_parse_text_warns_once_per_missing_placeholder(adapter: DummyVisionLanguageAdapter) -> None:
+    adapter._parse_text_with_media('<image 2> and <image 2> and <image 3>', image_map={})
+
+    assert adapter._missing_media_warned == {'<image 2>', '<image 3>'}
 
 
 @pytest.mark.parametrize(
@@ -105,7 +129,7 @@ def test_extract_media_skips_empty_cells(adapter: DummyVisionLanguageAdapter) ->
 def test_content_audio_keeps_declared_format(
     adapter: DummyVisionLanguageAdapter, audio: str, expected_format: str
 ) -> None:
-    audio_map = adapter._extract_media({'audio_1': audio}, mtype='audio')
+    audio_map = adapter._extract_media({'audio_1': audio}, media_type='audio')
     content_list = adapter._parse_text_with_media('Hear <audio 1>.', audio_map=audio_map)
 
     assert [content.format for content in content_list if isinstance(content, ContentAudio)] == [expected_format]
@@ -114,9 +138,9 @@ def test_content_audio_keeps_declared_format(
 def test_parse_text_with_media_preserves_video_and_audio_metadata(adapter: DummyVisionLanguageAdapter) -> None:
     video_map = adapter._extract_media(
         {'videos': [{'path': 'https://example.com/rally.mov', 'format': 'mov', 'start': 1.25, 'end': 3.5, 'fps': 2}]},
-        mtype='video',
+        media_type='video'
     )
-    audio_map = adapter._extract_media({'audios': [{'path': 'https://example.com/crowd.wav'}]}, mtype='audio')
+    audio_map = adapter._extract_media({'audios': [{'path': 'https://example.com/crowd.wav'}]}, media_type='audio')
 
     content_list = adapter._parse_text_with_media(
         'Watch <video 1> then hear <audio 1> and answer.',
