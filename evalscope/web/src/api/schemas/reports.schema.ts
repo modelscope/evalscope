@@ -248,6 +248,53 @@ export const agentTraceSchema = z.object({
   events: z.array(agentTraceEventSchema),
 })
 
+/** One judge request/response round trip, including the ones that failed. Mirrors `JudgeAttempt`. */
+export const judgeAttemptSchema = z.object({
+  /** Mirrors `ScoreStatus`: success, transport_error, parse_error, invalid_session, fallback, excluded. */
+  status: z.string(),
+  case_id: z.string(),
+  judge_id: z.string(),
+  /** Which planned observation this attempt belongs to, when `judge_repeats > 1`. */
+  repeat_id: z.number().optional(),
+  /** `original` or `swapped` for a pairwise benchmark that judges both orders. */
+  placement: z.string().optional(),
+  /** 0 for the first try; higher for a contract-declared parse retry. */
+  attempt_index: z.number().optional(),
+  raw_response: z.string().optional(),
+  /** The parsed verdict; its shape is the benchmark's own `schema_model`. */
+  parsed_value: z.unknown().optional(),
+  error: z.string().optional(),
+  latency: z.number().optional(),
+})
+
+/** Judge diagnostics attached to a score. Mirrors `JudgeDetail`. */
+export const judgeDetailSchema = z.object({
+  judge_models: z.array(z.string()).optional(),
+  valid_observations: z.number().optional(),
+  total_observations: z.number().optional(),
+  /** Attempt counts keyed by `ScoreStatus` value. */
+  failures: z.record(z.string(), z.number()).optional(),
+  error: z.string().optional(),
+})
+
+/**
+ * Mirrors `Score`. Left open with `loose` because `value` and `metadata` keys are
+ * benchmark-defined; only the fields the UI reads are typed.
+ */
+export const predictionScoreSchema = z.looseObject({
+  value: z.record(z.string(), z.unknown()).optional(),
+  /** Mirrors `ScoreStatus`; absent in reports produced before it existed. */
+  status: z.string().optional(),
+  judge_detail: judgeDetailSchema.optional(),
+  explanation: z.string().optional(),
+  main_score_name: z.string().optional(),
+  metadata: z
+    .looseObject({
+      judge_attempts: z.array(judgeAttemptSchema).optional(),
+    })
+    .optional(),
+})
+
 /** Mirrors `PredictionRow`. */
 export const predictionRowSchema = z.object({
   Index: z.string(),
@@ -256,7 +303,7 @@ export const predictionRowSchema = z.object({
   Generated: z.string(),
   Gold: z.string(),
   Pred: z.string(),
-  Score: z.record(z.string(), z.unknown()),
+  Score: predictionScoreSchema,
   /** ``null`` when the sample has no usable score; it is excluded from the metric, not 0. */
   NScore: z.number().nullable(),
   /** Mirrors ``ScoreStatus``; absent in reports produced before it existed. */
@@ -297,6 +344,9 @@ export type ToolCall = z.infer<typeof toolCallSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
+export type JudgeAttempt = z.infer<typeof judgeAttemptSchema>
+export type JudgeDetail = z.infer<typeof judgeDetailSchema>
+export type PredictionScore = z.infer<typeof predictionScoreSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
 export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>
