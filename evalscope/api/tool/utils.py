@@ -13,8 +13,8 @@ def parse_tool_call(id: str, function: str, arguments: str, tools: Optional[List
     """Parse a tool call from a JSON payload.
 
     Note that this function doesn't know about internal tool names so the caller
-    should ammend the returned `ToolCall` by mapping the parsed `function` field from
-    an internal name to an tool name and fixing up the `ToolCall` object
+    should amend the returned `ToolCall` by mapping the parsed `function` field from
+    an internal name to a tool name and fixing up the `ToolCall` object
     as required to reflect this change.
     """
     error: Optional[str] = None
