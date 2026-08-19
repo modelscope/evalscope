@@ -182,7 +182,7 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 payload = media_value.get('url') or media_value.get('data') or media_value.get(media_type)
                 if not isinstance(payload, str):
                     raise ValueError(
-                        f'Expected undecoded dict of {{"path": "..."}} or {{"bytes": b"..."}}, got {media_value!r}'
+                        f'Expected media dict with one of "path", "bytes", "url", "data", or "{media_type}" keys, got {media_value!r}'
                     )
                 url = payload
 
