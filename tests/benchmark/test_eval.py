@@ -1005,6 +1005,47 @@ class TestNativeBenchmark(TestBenchmark):
         """Test GSM8K-Indic benchmark with mock."""
         self._run_dataset_test('gsm8k_indic', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True)
 
+    # Indic-language benchmarks (phase 2)
+    def test_sanskriti_mock(self):
+        """Test Sanskriti Indian-culture trivia benchmark with mock."""
+        self._run_dataset_test(
+            'sanskriti', dataset_args={'subset_list': ['gk']}, limit=2, use_mock=True, dataset_hub='huggingface'
+        )
+
+    def test_hellaswag_hi_mock(self):
+        """Test HellaSwag-Hindi commonsense benchmark with mock."""
+        self._run_dataset_test(
+            'hellaswag_hi', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True, dataset_hub='huggingface'
+        )
+
+    def test_indic_param_mock(self):
+        """Test IndicParam low-resource-language UGC-NET benchmark with mock."""
+        self._run_dataset_test('indic_param', dataset_args={'subset_list': ['Sanskrit']}, limit=2, use_mock=True)
+
+    def test_bhasha_bench_multi_ayur_mock(self):
+        """Test BhashaBench-Multi (Ayurveda) benchmark with mock."""
+        self._run_dataset_test(
+            'bhasha_bench_multi_ayur', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True
+        )
+
+    def test_bhasha_bench_multi_finance_mock(self):
+        """Test BhashaBench-Multi (Finance) benchmark with mock."""
+        self._run_dataset_test(
+            'bhasha_bench_multi_finance', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True
+        )
+
+    def test_bhasha_bench_multi_krishi_mock(self):
+        """Test BhashaBench-Multi (Krishi) benchmark with mock."""
+        self._run_dataset_test(
+            'bhasha_bench_multi_krishi', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True
+        )
+
+    def test_bhasha_bench_multi_legal_mock(self):
+        """Test BhashaBench-Multi (Legal) benchmark with mock."""
+        self._run_dataset_test(
+            'bhasha_bench_multi_legal', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True
+        )
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
