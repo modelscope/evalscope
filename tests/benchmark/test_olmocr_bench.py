@@ -7,12 +7,7 @@ import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.benchmarks.olmocr_bench.olmocr_bench_adapter import (
-    PROMPT_TEMPLATE,
-    SUBSET_LIST,
-    UNSUPPORTED_SUBSETS,
-    OlmocrBenchAdapter,
-)
+from evalscope.benchmarks.olmocr_bench.olmocr_bench_adapter import PROMPT_TEMPLATE, SUBSET_LIST, OlmocrBenchAdapter
 from evalscope.benchmarks.olmocr_bench.table_parsing import parse_html_tables, parse_markdown_tables
 from evalscope.benchmarks.olmocr_bench.unit_tests import (
     BaselineTest,
@@ -267,8 +262,10 @@ class TestAdapterContract:
         )
 
     def test_math_only_subsets_are_excluded(self) -> None:
-        assert set(UNSUPPORTED_SUBSETS) == {'arxiv_math', 'old_scans_math'}
-        assert not set(UNSUPPORTED_SUBSETS) & set(SUBSET_LIST)
+        # The published parquet also carries the two math-only sources; they must not be among the
+        # evaluated subsets because their rules need KaTeX rendering.
+        assert set(SUBSET_LIST) == {'headers_footers', 'long_tiny_text', 'multi_column', 'old_scans', 'table_tests'}
+        assert 'arxiv_math' not in SUBSET_LIST and 'old_scans_math' not in SUBSET_LIST
 
     def test_extract_answer_maps_null_to_empty(self) -> None:
         adapter = self.make_adapter()
@@ -318,10 +315,40 @@ class TestAdapterContract:
         assert len(aggregated) == 1
         assert aggregated[0].metric_name == 'pass_rate'
         assert aggregated[0].score == pytest.approx(4 / 6)
-        assert aggregated[0].num == 6
+        # num counts PDF pages (samples), so Report.num matches the prediction records; the pooled
+        # test counts are kept in metadata for the per-source pass rate.
+        assert aggregated[0].num == 2
+        assert aggregated[0].metadata == {'tests_passed': 4, 'tests_total': 6}
 
     def test_empty_metadata_scores_zero(self) -> None:
         adapter = self.make_adapter()
         task_state = make_task_state({})
         score = adapter.match_score('anything', 'anything', '', task_state)
         assert score.value == {'pass_rate': 0.0, 'tests_passed': 0, 'tests_total': 0}
+
+    def test_record_to_sample_from_parquet_row(self) -> None:
+        # A parquet row carries the image bytes, the subset key, and the tests as a JSON string;
+        # record_to_sample must embed the image, route the subset key, and parse the tests.
+        import json as _json
+        import types as _types
+
+        adapter = self.make_adapter()
+        adapter._benchmark_meta = _types.SimpleNamespace(prompt_template=PROMPT_TEMPLATE)
+        png_1x1 = (
+            b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00'
+            b'\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xf6\x178U\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+        tests = [{'pdf': 'tables/a_pg4.pdf', 'page': 1, 'id': 'a_pg4_t1', 'type': 'baseline'}]
+        record = {
+            'image': {'bytes': png_1x1, 'path': 'tables/a_pg4_p1.png'},
+            'subset': 'table_tests',
+            'pdf': 'tables/a_pg4.pdf',
+            'page': 1,
+            'tests': _json.dumps(tests),
+        }
+        sample = adapter.record_to_sample(record)
+        assert sample.subset_key == 'table_tests'
+        assert sample.metadata['tests'] == tests
+        assert sample.target == 'tables/a_pg4.pdf#page=1'
+        contents = sample.input[0].content
+        assert any(getattr(c, 'image', None) and str(c.image).startswith('data:image') for c in contents)

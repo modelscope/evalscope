@@ -1,32 +1,28 @@
-# olmOCR-Bench adapter: unit-test style evaluation of end-to-end PDF-to-Markdown transcription.
+# olmOCR-Bench adapter: unit-test style evaluation of end-to-end document-to-Markdown transcription.
 #
-# Dataset: https://huggingface.co/datasets/allenai/olmOCR-bench (ODC-BY-1.0)
+# Dataset: https://modelscope.cn/datasets/evalscope/olmOCR-Bench (ODC-BY-1.0), a pre-rendered
+# page-image mirror of https://huggingface.co/datasets/allenai/olmOCR-bench.
 # Official evaluation code: https://github.com/allenai/olmocr (Apache-2.0)
 
-import io
 import json
-from collections import defaultdict
-from pathlib import Path
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, download_dataset_file
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
+from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from .unit_tests import load_single_test
 
 logger = get_logger()
 
-# Data is only published on the Hugging Face hub; there is no ModelScope mirror.
-DATASET_HUB = HubType.HUGGINGFACE
-
-# Sources whose rules are entirely math type; excluded until KaTeX-rendered comparison lands.
-UNSUPPORTED_SUBSETS = ['arxiv_math', 'old_scans_math']
-
+# The published parquet also carries the two math-only sources (arxiv_math, old_scans_math); they
+# are omitted from SUBSET_LIST because their rules need KaTeX-rendered equation comparison, so the
+# standard loader simply filters them out of the evaluated subsets.
 SUBSET_LIST = ['headers_footers', 'long_tiny_text', 'multi_column', 'old_scans', 'table_tests']
 
 # Official no-document-anchoring transcription prompt
@@ -59,8 +55,8 @@ unit tests instead of a single reference answer.
 
 ## Key Features
 
-- 1,403 PDFs and 7,010 unit tests from the official release; each test states one property a
-  correct transcription must satisfy (text present, text absent, reading order, table structure,
+- 1,403 PDF pages and 7,019 unit tests in the released bench data; each test states one property
+  a correct transcription must satisfy (text present, text absent, reading order, table structure,
   or a baseline sanity check)
 - Scoring rules are ported 1:1 from the official `olmocr` bench implementation, so per-subset
   scores are directly comparable with the official report
@@ -68,25 +64,34 @@ unit tests instead of a single reference answer.
   `multi_column`, `old_scans`, `table_tests`), 845 pages and 3,634 unit tests; the two math-only
   sources (`arxiv_math`, `old_scans_math`) require KaTeX-rendered equation comparison and are not
   included
-- Pages are rendered with `pypdfium2` at 150 DPI; models receive one image per sample
+- Pages are pre-rendered once to PNG images (longest side 2048 px, matching the official renderer
+  `render_pdf_to_base64png` with `target_longest_image_dim=2048`) and packaged, together with the
+  unit tests, into a single parquet on ModelScope; the adapter loads it through the standard remote
+  flow (one download, native parsing) with no PDF rasterization at eval time
 
 ## Evaluation Notes
 
 - Each sample is one PDF page; its unit tests are evaluated against the model transcription and
   the subset score is the fraction of unit tests that pass, matching the official per-source
   metric
-- The primary metric is `pass_rate`; each subset score equals the official per-source pass rate.
-  The report's overall score pools all unit tests across subsets (weighted by test count), which
-  differs slightly from the official total (an unweighted mean of the per-JSONL-file scores);
-  compare per-subset scores for exact parity with the official report
+- The primary metric is `pass_rate`. Each subset score equals the official per-source pass rate
+  (the fraction of that source's unit tests that pass), so per-subset scores match the official
+  report exactly
+- The official total is the unweighted mean of the per-source pass rates. It is recorded as the
+  report's `macro_score` (per category), while the headline overall score is EvalScope's native
+  sample-weighted (per-page) micro average; the two differ unless the subsets have equal page
+  counts, so compare per-subset scores or `macro_score` for parity with the official report
+- `num` reports the number of PDF pages (samples) per subset, so the overall sample count matches
+  the prediction records rather than the unit-test count
 - Fuzzy matching thresholds (`max_diffs`), positional constraints (`first_n`/`last_n`), case
   sensitivity, and table relationship checks follow the official implementation exactly
 - A bare `null` reply is treated as an empty transcription, mirroring how the official harness
   stores `natural_text=null` as an empty file
-- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4,
-  pypdfium2); the dataset is downloaded from Hugging Face
+- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4); the
+  benchmark is a single parquet on ModelScope (`evalscope/olmOCR-Bench`, image bytes + unit tests),
+  a mirror of the Hugging Face release, loaded natively in one download
 - [Paper](https://arxiv.org/abs/2502.18443) | [Code](https://github.com/allenai/olmocr) |
-  [Dataset](https://huggingface.co/datasets/allenai/olmOCR-bench)
+  [Dataset](https://modelscope.cn/datasets/evalscope/olmOCR-Bench)
 """
 
 
@@ -96,7 +101,7 @@ unit tests instead of a single reference answer.
         pretty_name='olmOCR-Bench',
         tags=[Tags.MULTI_MODAL, Tags.QA],
         description=DESCRIPTION,
-        dataset_id='allenai/olmOCR-bench',
+        dataset_id='evalscope/olmOCR-Bench',
         paper_url='https://arxiv.org/abs/2502.18443',
         metric_list=['pass_rate'],
         primary_metric='pass_rate',
@@ -106,100 +111,35 @@ unit tests instead of a single reference answer.
     )
 )
 class OlmocrBenchAdapter(VisionLanguageAdapter):
-    """Data adapter for allenai/olmOCR-bench.
+    """Data adapter for evalscope/olmOCR-Bench.
 
-    Unit tests are grouped by (pdf, page) so each sample transcribes one page once; the grouped
-    rules are carried in sample metadata and replayed against the transcription in match_score.
+    The dataset is a single parquet loaded through the standard remote flow: one row per
+    ``(pdf, page)`` carrying the pre-rendered page image, the ``subset`` key, and the page's unit
+    tests (a JSON string). Rows are split into subsets by ``subset_key`` and the grouped rules are
+    replayed against the transcription in ``match_score``.
     """
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.split_as_subset = True
-        self.add_overall_metric = True
-
-    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Load one source's unit-test JSONL and group it into per-page records."""
-        if subset in UNSUPPORTED_SUBSETS:
-            raise ValueError(
-                f"Subset '{subset}' contains math rules only, which require KaTeX rendering and are "
-                f'not supported. Valid subsets are: {SUBSET_LIST}'
-            )
-
-        jsonl_path = Path(
-            download_dataset_file(
-                data_id_or_path=self.dataset_id,
-                file_path=f'bench_data/{subset}.jsonl',
-                data_source=DATASET_HUB,
-                force_redownload=self.force_redownload,
-                cache_dir=self.dataset_dir,
-            )
-        )
-
-        tests_by_page: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
-        for line in jsonl_path.read_text(encoding='utf-8').splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            test = json.loads(line)
-            tests_by_page[(test['pdf'], test['page'])].append(test)
-
-        page_records = [{
-            'pdf': pdf,
-            'page': page,
-            'tests': tests,
-        } for (pdf, page), tests in tests_by_page.items()]
-
-        return DictDataLoader(
-            dict_list=page_records,
-            sample_fields=self.record_to_sample,
-            filter_func=self.sample_filter,
-            limit=self.limit,
-            repeats=self.repeats,
-            shuffle=self.shuffle,
-            shuffle_choices=self.shuffle_choices,
-            seed=self.seed,
-        ).load()
+        # One flat parquet split; group rows into subsets by the per-row ``subset`` field.
+        self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        """Render one PDF page and attach its unit tests as metadata."""
-        pdf_path = Path(
-            download_dataset_file(
-                data_id_or_path=self.dataset_id,
-                file_path=f"bench_data/pdfs/{record['pdf']}",
-                data_source=DATASET_HUB,
-                force_redownload=self.force_redownload,
-                cache_dir=self.dataset_dir,
-            )
-        )
-        image_b64 = self._render_pdf_page(pdf_path, record['page'])
-        content: List[Content] = [
-            ContentImage(image=image_b64),
-            ContentText(text=self.prompt_template),
-        ]
+        """Build a sample from a parquet row: pre-rendered image + this page's unit tests."""
+        content: List[Content] = [ContentText(text=self.prompt_template)]
+        image = record.get('image')
+        if image and image.get('bytes'):
+            content.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
         return Sample(
             input=[ChatMessageUser(content=content)],
             target=f"{record['pdf']}#page={record['page']}",
+            subset_key=record['subset'],
             metadata={
                 'pdf': record['pdf'],
                 'page': record['page'],
-                'tests': record['tests'],
+                'tests': json.loads(record['tests']),
             },
         )
-
-    def _render_pdf_page(self, pdf_path: Path, page_number: int, dpi: int = 150) -> str:
-        """Render a 1-based PDF page to a base64 JPEG data-URI at the given DPI."""
-        import pypdfium2 as pdfium
-
-        document = pdfium.PdfDocument(str(pdf_path))
-        try:
-            page = document[page_number - 1]
-            bitmap = page.render(scale=dpi / 72.0)
-            pil_image = bitmap.to_pil().convert('RGB')
-            buffer = io.BytesIO()
-            pil_image.save(buffer, format='JPEG', quality=90)
-            return self._image_bytes_to_base64(buffer.getvalue(), default_format='jpeg')
-        finally:
-            document.close()
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         """Keep the full transcription; map a bare `null` reply to an empty transcription.
@@ -259,8 +199,9 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate as the fraction of unit tests that pass (official per-source metric).
 
-        `num` counts unit tests (and doubles as the aggregation weight), while `ids` lists
-        page-level sample ids; the two intentionally differ.
+        The subset score is the pooled pass rate over all unit tests in the subset, matching the
+        official per-source metric. ``num`` counts PDF pages (samples), so the report's sample
+        count reflects the prediction records; the pooled test counts are kept in metadata.
         """
         tests_passed = 0
         tests_total = 0
@@ -277,7 +218,7 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
                 score=pass_rate,
                 metric_name='pass_rate',
                 aggregation='unit_test_pass_rate',
-                num=tests_total,
+                num=len(sample_scores),
                 ids=ids,
                 metadata={
                     'tests_passed': tests_passed,

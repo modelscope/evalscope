@@ -1,7 +1,7 @@
 {
   "meta": {
     "pretty_name": "olmOCR-Bench",
-    "dataset_id": "allenai/olmOCR-bench",
+    "dataset_id": "evalscope/olmOCR-Bench",
     "paper_url": "https://arxiv.org/abs/2502.18443",
     "tags": [
       "MultiModal",
@@ -20,7 +20,7 @@
       "old_scans",
       "table_tests"
     ],
-    "description": "\n## Overview\n\nolmOCR-Bench evaluates end-to-end document transcription: a model reads one rendered PDF page and\nreturns the full Markdown transcription of that page, which is then checked against human-written\nunit tests instead of a single reference answer.\n\n## Task Description\n\n- **Task Type**: PDF page to Markdown transcription\n- **Input**: A rendered PDF page image\n- **Output**: The complete Markdown transcription of the page\n- **Domain**: Academic papers, scanned books, historical scans, and internal documents\n\n## Key Features\n\n- 1,403 PDFs and 7,010 unit tests from the official release; each test states one property a\n  correct transcription must satisfy (text present, text absent, reading order, table structure,\n  or a baseline sanity check)\n- Scoring rules are ported 1:1 from the official `olmocr` bench implementation, so per-subset\n  scores are directly comparable with the official report\n- This adapter covers the five non-math sources (`headers_footers`, `long_tiny_text`,\n  `multi_column`, `old_scans`, `table_tests`), 845 pages and 3,634 unit tests; the two math-only\n  sources (`arxiv_math`, `old_scans_math`) require KaTeX-rendered equation comparison and are not\n  included\n- Pages are rendered with `pypdfium2` at 150 DPI; models receive one image per sample\n\n## Evaluation Notes\n\n- Each sample is one PDF page; its unit tests are evaluated against the model transcription and\n  the subset score is the fraction of unit tests that pass, matching the official per-source\n  metric\n- The primary metric is `pass_rate`; each subset score equals the official per-source pass rate.\n  The report's overall score pools all unit tests across subsets (weighted by test count), which\n  differs slightly from the official total (an unweighted mean of the per-JSONL-file scores);\n  compare per-subset scores for exact parity with the official report\n- Fuzzy matching thresholds (`max_diffs`), positional constraints (`first_n`/`last_n`), case\n  sensitivity, and table relationship checks follow the official implementation exactly\n- A bare `null` reply is treated as an empty transcription, mirroring how the official harness\n  stores `natural_text=null` as an empty file\n- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4,\n  pypdfium2); the dataset is downloaded from Hugging Face\n- [Paper](https://arxiv.org/abs/2502.18443) | [Code](https://github.com/allenai/olmocr) |\n  [Dataset](https://huggingface.co/datasets/allenai/olmOCR-bench)\n",
+    "description": "\n## Overview\n\nolmOCR-Bench evaluates end-to-end document transcription: a model reads one rendered PDF page and\nreturns the full Markdown transcription of that page, which is then checked against human-written\nunit tests instead of a single reference answer.\n\n## Task Description\n\n- **Task Type**: PDF page to Markdown transcription\n- **Input**: A rendered PDF page image\n- **Output**: The complete Markdown transcription of the page\n- **Domain**: Academic papers, scanned books, historical scans, and internal documents\n\n## Key Features\n\n- 1,403 PDF pages and 7,019 unit tests in the released bench data; each test states one property\n  a correct transcription must satisfy (text present, text absent, reading order, table structure,\n  or a baseline sanity check)\n- Scoring rules are ported 1:1 from the official `olmocr` bench implementation, so per-subset\n  scores are directly comparable with the official report\n- This adapter covers the five non-math sources (`headers_footers`, `long_tiny_text`,\n  `multi_column`, `old_scans`, `table_tests`), 845 pages and 3,634 unit tests; the two math-only\n  sources (`arxiv_math`, `old_scans_math`) require KaTeX-rendered equation comparison and are not\n  included\n- Pages are pre-rendered once to PNG images (longest side 2048 px, matching the official renderer\n  `render_pdf_to_base64png` with `target_longest_image_dim=2048`) and packaged, together with the\n  unit tests, into a single parquet on ModelScope; the adapter loads it through the standard remote\n  flow (one download, native parsing) with no PDF rasterization at eval time\n\n## Evaluation Notes\n\n- Each sample is one PDF page; its unit tests are evaluated against the model transcription and\n  the subset score is the fraction of unit tests that pass, matching the official per-source\n  metric\n- The primary metric is `pass_rate`. Each subset score equals the official per-source pass rate\n  (the fraction of that source's unit tests that pass), so per-subset scores match the official\n  report exactly\n- The official total is the unweighted mean of the per-source pass rates. It is recorded as the\n  report's `macro_score` (per category), while the headline overall score is EvalScope's native\n  sample-weighted (per-page) micro average; the two differ unless the subsets have equal page\n  counts, so compare per-subset scores or `macro_score` for parity with the official report\n- `num` reports the number of PDF pages (samples) per subset, so the overall sample count matches\n  the prediction records rather than the unit-test count\n- Fuzzy matching thresholds (`max_diffs`), positional constraints (`first_n`/`last_n`), case\n  sensitivity, and table relationship checks follow the official implementation exactly\n- A bare `null` reply is treated as an empty transcription, mirroring how the official harness\n  stores `natural_text=null` as an empty file\n- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4); the\n  benchmark is a single parquet on ModelScope (`evalscope/olmOCR-Bench`, image bytes + unit tests),\n  a mirror of the Hugging Face release, loaded natively in one download\n- [Paper](https://arxiv.org/abs/2502.18443) | [Code](https://github.com/allenai/olmocr) |\n  [Dataset](https://modelscope.cn/datasets/evalscope/olmOCR-Bench)\n",
     "prompt_template": "Below is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers and footers, but keep references and footnotes.\nRead any natural handwriting.\nThis is likely one page out of several in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate.",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -34,13 +34,317 @@
       "dimensions": {}
     }
   },
-  "statistics": {},
-  "sample_example": {},
+  "statistics": {
+    "total_samples": 845,
+    "subset_stats": [
+      {
+        "name": "headers_footers",
+        "sample_count": 266,
+        "prompt_length_mean": 599,
+        "prompt_length_min": 599,
+        "prompt_length_max": 599,
+        "prompt_length_std": null,
+        "target_length_mean": 76.06,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 266,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1199x2048",
+              "1294x2048",
+              "1301x2048",
+              "1335x2048",
+              "1336x2048",
+              "1337x2048",
+              "1347x2048",
+              "1351x2048",
+              "1366x2048",
+              "1368x2048"
+            ],
+            "resolution_range": {
+              "min": "2048x1182",
+              "max": "2048x1957"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "long_tiny_text",
+        "sample_count": 62,
+        "prompt_length_mean": 599,
+        "prompt_length_min": 599,
+        "prompt_length_max": 599,
+        "prompt_length_std": null,
+        "target_length_mean": 36.29,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 62,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1248x2048",
+              "1254x2048",
+              "1259x2048",
+              "1265x2048",
+              "1330x2048",
+              "1331x2048",
+              "1340x2048",
+              "1445x2048",
+              "1448x2048",
+              "1468x2048"
+            ],
+            "resolution_range": {
+              "min": "1248x2048",
+              "max": "1603x2048"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "multi_column",
+        "sample_count": 231,
+        "prompt_length_mean": 599,
+        "prompt_length_min": 599,
+        "prompt_length_max": 599,
+        "prompt_length_std": null,
+        "target_length_mean": 71.26,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 231,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1025x2048",
+              "1395x2048",
+              "1403x2048",
+              "1408x2048",
+              "1432x2048",
+              "1447x2048",
+              "1448x2048",
+              "1449x2048",
+              "1499x2048",
+              "1505x2048"
+            ],
+            "resolution_range": {
+              "min": "2048x773",
+              "max": "1723x2048"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "old_scans",
+        "sample_count": 98,
+        "prompt_length_mean": 599,
+        "prompt_length_min": 599,
+        "prompt_length_max": 599,
+        "prompt_length_std": null,
+        "target_length_mean": 22.91,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 98,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1134x2048",
+              "1278x2048",
+              "1282x2048",
+              "1283x2048",
+              "1289x2048",
+              "1292x2048",
+              "1293x2048",
+              "1306x2048",
+              "1309x2048",
+              "1315x2048"
+            ],
+            "resolution_range": {
+              "min": "2048x1002",
+              "max": "1946x2048"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "table_tests",
+        "sample_count": 188,
+        "prompt_length_mean": 599,
+        "prompt_length_min": 599,
+        "prompt_length_max": 599,
+        "prompt_length_std": null,
+        "target_length_mean": 60.3,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 188,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1244x2048",
+              "1326x2048",
+              "1366x2048",
+              "1404x2048",
+              "1408x2048",
+              "1424x2048",
+              "1437x2048",
+              "1444x2048",
+              "1445x2048",
+              "1446x2048"
+            ],
+            "resolution_range": {
+              "min": "2048x1152",
+              "max": "1733x2048"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 599,
+      "min": 599,
+      "max": 599,
+      "std": null
+    },
+    "target_length_mean": 62.16,
+    "computed_at": "2026-08-19T19:15:08.756825+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 845,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1025x2048",
+          "1134x2048",
+          "1199x2048",
+          "1244x2048",
+          "1248x2048",
+          "1254x2048",
+          "1259x2048",
+          "1265x2048",
+          "1278x2048",
+          "1282x2048"
+        ],
+        "resolution_range": {
+          "min": "2048x773",
+          "max": "2048x1957"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0c5d3fad",
+          "content": [
+            {
+              "text": "Below is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers  ... [TRUNCATED 115 chars] ... l in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate."
+            },
+            {
+              "image": "[BASE64_IMAGE: png, ~297.1KB]"
+            }
+          ]
+        }
+      ],
+      "target": "headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf#page=1",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "headers_footers",
+      "metadata": {
+        "pdf": "headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf",
+        "page": 1,
+        "tests": [
+          {
+            "pdf": "headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf",
+            "page": 1,
+            "id": "0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_01",
+            "type": "absent",
+            "max_diffs": 2,
+            "checked": "verified",
+            "url": "https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285",
+            "text": "Certificado de publicación disponible en http://fandango.accv.es:8070/fa",
+            "case_sensitive": false,
+            "first_n": null,
+            "last_n": null
+          },
+          {
+            "pdf": "headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf",
+            "page": 1,
+            "id": "0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_02",
+            "type": "absent",
+            "max_diffs": 4,
+            "checked": "verified",
+            "url": "https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285",
+            "text": "Este documento será custodiado por la Agencia de Tecnología y Certificación Electrónica - ISTEC Pista de Ademuz S/N. 46100 Burjassot (Valencia). Tel. 902 482 481 Correo-e: accv@accv.es",
+            "case_sensitive": false,
+            "first_n": null,
+            "last_n": null
+          }
+        ]
+      }
+    },
+    "subset": "headers_footers",
+    "truncated": true
+  },
   "readme": {
-    "en": "# olmOCR-Bench\n\n\n## Overview\n\nolmOCR-Bench evaluates end-to-end document transcription: a model reads one rendered PDF page and\nreturns the full Markdown transcription of that page, which is then checked against human-written\nunit tests instead of a single reference answer.\n\n## Task Description\n\n- **Task Type**: PDF page to Markdown transcription\n- **Input**: A rendered PDF page image\n- **Output**: The complete Markdown transcription of the page\n- **Domain**: Academic papers, scanned books, historical scans, and internal documents\n\n## Key Features\n\n- 1,403 PDFs and 7,010 unit tests from the official release; each test states one property a\n  correct transcription must satisfy (text present, text absent, reading order, table structure,\n  or a baseline sanity check)\n- Scoring rules are ported 1:1 from the official `olmocr` bench implementation, so per-subset\n  scores are directly comparable with the official report\n- This adapter covers the five non-math sources (`headers_footers`, `long_tiny_text`,\n  `multi_column`, `old_scans`, `table_tests`), 845 pages and 3,634 unit tests; the two math-only\n  sources (`arxiv_math`, `old_scans_math`) require KaTeX-rendered equation comparison and are not\n  included\n- Pages are rendered with `pypdfium2` at 150 DPI; models receive one image per sample\n\n## Evaluation Notes\n\n- Each sample is one PDF page; its unit tests are evaluated against the model transcription and\n  the subset score is the fraction of unit tests that pass, matching the official per-source\n  metric\n- The primary metric is `pass_rate`; each subset score equals the official per-source pass rate.\n  The report's overall score pools all unit tests across subsets (weighted by test count), which\n  differs slightly from the official total (an unweighted mean of the per-JSONL-file scores);\n  compare per-subset scores for exact parity with the official report\n- Fuzzy matching thresholds (`max_diffs`), positional constraints (`first_n`/`last_n`), case\n  sensitivity, and table relationship checks follow the official implementation exactly\n- A bare `null` reply is treated as an empty transcription, mirroring how the official harness\n  stores `natural_text=null` as an empty file\n- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4,\n  pypdfium2); the dataset is downloaded from Hugging Face\n- [Paper](https://arxiv.org/abs/2502.18443) | [Code](https://github.com/allenai/olmocr) |\n  [Dataset](https://huggingface.co/datasets/allenai/olmOCR-bench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `olmocr_bench` |\n| **Dataset ID** | [allenai/olmOCR-bench](https://modelscope.cn/datasets/allenai/olmOCR-bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2502.18443) |\n| **Tags** | `MultiModal`, `QA` |\n| **Metrics** | `pass_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nBelow is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers and footers, but keep references and footnotes.\nRead any natural handwriting.\nThis is likely one page out of several in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olmocr_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olmocr_bench'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "# olmOCR-Bench\n\n\n## 概述\n\nolmOCR-Bench 评估端到端的文档转录能力：模型读取一张渲染后的 PDF 页面图像，返回该页完整的 Markdown 转录，随后不是与单一参考答案比对，而是用人工编写的单元测试逐条校验。\n\n## 任务描述\n\n- **任务类型**：PDF 页面转 Markdown 转录\n- **输入**：一张渲染后的 PDF 页面图像\n- **输出**：该页完整的 Markdown 转录\n- **领域**：学术论文、扫描书籍、历史扫描件与内部文档\n\n## 主要特点\n\n- 官方发布共 1,403 个 PDF、7,010 条单元测试；每条测试描述正确转录必须满足的一项属性（文本存在、文本缺失、阅读顺序、表格结构或基线健全性检查）\n- 评分规则从官方 `olmocr` bench 实现 1:1 移植，各子集得分可与官方报告直接对比\n- 本适配器覆盖五个非数学来源（`headers_footers`、`long_tiny_text`、`multi_column`、`old_scans`、`table_tests`），共 845 页、3,634 条单元测试；两个纯数学来源（`arxiv_math`、`old_scans_math`）依赖 KaTeX 渲染的公式比对，暂不包含\n- 页面使用 `pypdfium2` 以 150 DPI 渲染；每个样本对应一张图像\n\n## 评估说明\n\n- 每个样本对应一个 PDF 页面；该页的单元测试逐条对模型转录执行，子集得分为通过的单元测试占比，与官方按来源统计的口径一致\n- 主指标为 `pass_rate`；各子集得分即官方按来源统计的通过率。总报告得分为跨子集全部单元测试的（按测试数加权）通过率，与官方总分（对各 JSONL 得分求未加权平均）略有差异；需与官方报告精确对齐时请按子集分数对比\n- 模糊匹配阈值（`max_diffs`）、位置约束（`first_n`/`last_n`）、大小写敏感性与表格关系检查均严格遵循官方实现\n- 模型回复裸 `null` 时按空转录处理，与官方 harness 将 `natural_text=null` 存为空文件的方式一致\n- 需要安装 `pip install evalscope[olmocr_bench]`（rapidfuzz、fuzzysearch、beautifulsoup4、pypdfium2）；数据集从 Hugging Face 下载\n- [论文](https://arxiv.org/abs/2502.18443) | [代码](https://github.com/allenai/olmocr) | [数据集](https://huggingface.co/datasets/allenai/olmOCR-bench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `olmocr_bench` |\n| **数据集ID** | [allenai/olmOCR-bench](https://modelscope.cn/datasets/allenai/olmOCR-bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2502.18443) |\n| **标签** | `MultiModal`, `QA` |\n| **指标** | `pass_rate` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n*统计数据不可用。*\n\n## 样例示例\n\n*样例示例不可用。*\n\n## 提示模板\n\n**提示模板：**\n```text\nBelow is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers and footers, but keep references and footnotes.\nRead any natural handwriting.\nThis is likely one page out of several in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olmocr_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olmocr_bench'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```\n",
-    "content_hash": "20712dfa13a69c2dc642a08c12ff4d6d",
+    "en": "# olmOCR-Bench\n\n\n## Overview\n\nolmOCR-Bench evaluates end-to-end document transcription: a model reads one rendered PDF page and\nreturns the full Markdown transcription of that page, which is then checked against human-written\nunit tests instead of a single reference answer.\n\n## Task Description\n\n- **Task Type**: PDF page to Markdown transcription\n- **Input**: A rendered PDF page image\n- **Output**: The complete Markdown transcription of the page\n- **Domain**: Academic papers, scanned books, historical scans, and internal documents\n\n## Key Features\n\n- 1,403 PDF pages and 7,019 unit tests in the released bench data; each test states one property\n  a correct transcription must satisfy (text present, text absent, reading order, table structure,\n  or a baseline sanity check)\n- Scoring rules are ported 1:1 from the official `olmocr` bench implementation, so per-subset\n  scores are directly comparable with the official report\n- This adapter covers the five non-math sources (`headers_footers`, `long_tiny_text`,\n  `multi_column`, `old_scans`, `table_tests`), 845 pages and 3,634 unit tests; the two math-only\n  sources (`arxiv_math`, `old_scans_math`) require KaTeX-rendered equation comparison and are not\n  included\n- Pages are pre-rendered once to PNG images (longest side 2048 px, matching the official renderer\n  `render_pdf_to_base64png` with `target_longest_image_dim=2048`) and packaged, together with the\n  unit tests, into a single parquet on ModelScope; the adapter loads it through the standard remote\n  flow (one download, native parsing) with no PDF rasterization at eval time\n\n## Evaluation Notes\n\n- Each sample is one PDF page; its unit tests are evaluated against the model transcription and\n  the subset score is the fraction of unit tests that pass, matching the official per-source\n  metric\n- The primary metric is `pass_rate`. Each subset score equals the official per-source pass rate\n  (the fraction of that source's unit tests that pass), so per-subset scores match the official\n  report exactly\n- The official total is the unweighted mean of the per-source pass rates. It is recorded as the\n  report's `macro_score` (per category), while the headline overall score is EvalScope's native\n  sample-weighted (per-page) micro average; the two differ unless the subsets have equal page\n  counts, so compare per-subset scores or `macro_score` for parity with the official report\n- `num` reports the number of PDF pages (samples) per subset, so the overall sample count matches\n  the prediction records rather than the unit-test count\n- Fuzzy matching thresholds (`max_diffs`), positional constraints (`first_n`/`last_n`), case\n  sensitivity, and table relationship checks follow the official implementation exactly\n- A bare `null` reply is treated as an empty transcription, mirroring how the official harness\n  stores `natural_text=null` as an empty file\n- Requires `pip install evalscope[olmocr_bench]` (rapidfuzz, fuzzysearch, beautifulsoup4); the\n  benchmark is a single parquet on ModelScope (`evalscope/olmOCR-Bench`, image bytes + unit tests),\n  a mirror of the Hugging Face release, loaded natively in one download\n- [Paper](https://arxiv.org/abs/2502.18443) | [Code](https://github.com/allenai/olmocr) |\n  [Dataset](https://modelscope.cn/datasets/evalscope/olmOCR-Bench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `olmocr_bench` |\n| **Dataset ID** | [evalscope/olmOCR-Bench](https://modelscope.cn/datasets/evalscope/olmOCR-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2502.18443) |\n| **Tags** | `MultiModal`, `QA` |\n| **Metrics** | `pass_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 845 |\n| Prompt Length (Mean) | 599 chars |\n| Prompt Length (Min/Max) | 599 / 599 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `headers_footers` | 266 | 599 | 599 | 599 |\n| `long_tiny_text` | 62 | 599 | 599 | 599 |\n| `multi_column` | 231 | 599 | 599 | 599 |\n| `old_scans` | 98 | 599 | 599 | 599 |\n| `table_tests` | 188 | 599 | 599 | 599 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 845 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 2048x773 - 2048x1957 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `headers_footers`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0c5d3fad\",\n      \"content\": [\n        {\n          \"text\": \"Below is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers  ... [TRUNCATED 115 chars] ... l in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\\nIf there is no text at all that you think you should read, you can output null.\\nDo not hallucinate.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~297.1KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf#page=1\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"headers_footers\",\n  \"metadata\": {\n    \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n    \"page\": 1,\n    \"tests\": [\n      {\n        \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n        \"page\": 1,\n        \"id\": \"0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_01\",\n        \"type\": \"absent\",\n        \"max_diffs\": 2,\n        \"checked\": \"verified\",\n        \"url\": \"https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285\",\n        \"text\": \"Certificado de publicación disponible en http://fandango.accv.es:8070/fa\",\n        \"case_sensitive\": false,\n        \"first_n\": null,\n        \"last_n\": null\n      },\n      {\n        \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n        \"page\": 1,\n        \"id\": \"0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_02\",\n        \"type\": \"absent\",\n        \"max_diffs\": 4,\n        \"checked\": \"verified\",\n        \"url\": \"https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285\",\n        \"text\": \"Este documento será custodiado por la Agencia de Tecnología y Certificación Electrónica - ISTEC Pista de Ademuz S/N. 46100 Burjassot (Valencia). Tel. 902 482 481 Correo-e: accv@accv.es\",\n        \"case_sensitive\": false,\n        \"first_n\": null,\n        \"last_n\": null\n      }\n    ]\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nBelow is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers and footers, but keep references and footnotes.\nRead any natural handwriting.\nThis is likely one page out of several in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate.\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olmocr_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olmocr_bench'],\n    dataset_args={\n        'olmocr_bench': {\n            # subset_list: ['headers_footers', 'long_tiny_text', 'multi_column']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# olmOCR-Bench\n\n\n## 概述\n\nolmOCR-Bench 评估端到端的文档转录能力：模型读取一页渲染后的 PDF 页面，并返回该页面完整的 Markdown 转录结果，随后通过人工编写的单元测试（而非单一参考答案）进行验证。\n\n## 任务描述\n\n- **任务类型**：PDF 页面到 Markdown 的转录\n- **输入**：一张渲染后的 PDF 页面图像\n- **输出**：该页面完整的 Markdown 转录文本\n- **领域**：学术论文、扫描书籍、历史文档扫描件及内部文件\n\n## 核心特性\n\n- 发布的基准数据包含 1,403 页 PDF 和 7,019 个单元测试；每个测试定义了正确转录必须满足的一项属性（如文本存在性、文本缺失性、阅读顺序、表格结构或基础合理性检查）\n- 评分规则与官方 `olmocr` 基准实现完全一致（1:1 移植），因此各子集得分可直接与官方报告对比\n- 本适配器覆盖五个非数学来源（`headers_footers`、`long_tiny_text`、`multi_column`、`old_scans`、`table_tests`），共 845 页和 3,634 个单元测试；两个纯数学来源（`arxiv_math`、`old_scans_math`）需进行 KaTeX 渲染公式比对，未包含在内\n- 所有页面已预先渲染为 PNG 图像（长边为 2048 像素，与官方渲染器 `render_pdf_to_base64png` 使用 `target_longest_image_dim=2048` 的设置一致），并与单元测试一同打包为单个 parquet 文件托管于 ModelScope；适配器通过标准远程加载流程（一次下载，原生解析）加载数据，评估时无需进行 PDF 光栅化\n\n## 评估说明\n\n- 每个样本对应一页 PDF；其单元测试将针对模型转录结果进行评估，子集得分为通过测试的比例，与官方按来源计算的指标一致\n- 主要指标为 `pass_rate`。每个子集得分等于官方对应来源的通过率（即该来源中通过的单元测试占比），因此子集得分与官方报告完全一致\n- 官方总分为各来源通过率的无权重平均值，记录为报告中的 `macro_score`（按类别）；而 EvalScope 默认显示的总体得分为样本加权（按页面）的微平均值；除非各子集页面数量相等，否则两者不同，因此若需与官方报告对齐，请比较子集得分或 `macro_score`\n- `num` 表示每个子集的 PDF 页面数（样本数），因此总样本数与预测记录一致，而非单元测试总数\n- 模糊匹配阈值（`max_diffs`）、位置约束（`first_n`/`last_n`）、大小写敏感性及表格关系检查均严格遵循官方实现\n- 空的 `null` 回复被视为空转录，与官方评测框架将 `natural_text=null` 存储为空文件的行为一致\n- 需安装依赖：`pip install evalscope[olmocr_bench]`（包含 rapidfuzz、fuzzysearch、beautifulsoup4）；基准数据为 ModelScope 上的单个 parquet 文件（`evalscope/olmOCR-Bench`，含图像字节与单元测试），是 Hugging Face 版本的镜像，支持单次下载原生加载\n- [论文](https://arxiv.org/abs/2502.18443) | [代码](https://github.com/allenai/olmocr) | [数据集](https://modelscope.cn/datasets/evalscope/olmOCR-Bench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `olmocr_bench` |\n| **数据集ID** | [evalscope/olmOCR-Bench](https://modelscope.cn/datasets/evalscope/olmOCR-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2502.18443) |\n| **标签** | `MultiModal`, `QA` |\n| **指标** | `pass_rate` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 845 |\n| 提示词长度（平均） | 599 字符 |\n| 提示词长度（最小/最大） | 599 / 599 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `headers_footers` | 266 | 599 | 599 | 599 |\n| `long_tiny_text` | 62 | 599 | 599 | 599 |\n| `multi_column` | 231 | 599 | 599 | 599 |\n| `old_scans` | 98 | 599 | 599 | 599 |\n| `table_tests` | 188 | 599 | 599 | 599 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 845 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 2048x773 - 2048x1957 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `headers_footers`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0c5d3fad\",\n      \"content\": [\n        {\n          \"text\": \"Below is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers  ... [TRUNCATED 115 chars] ... l in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\\nIf there is no text at all that you think you should read, you can output null.\\nDo not hallucinate.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~297.1KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf#page=1\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"headers_footers\",\n  \"metadata\": {\n    \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n    \"page\": 1,\n    \"tests\": [\n      {\n        \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n        \"page\": 1,\n        \"id\": \"0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_01\",\n        \"type\": \"absent\",\n        \"max_diffs\": 2,\n        \"checked\": \"verified\",\n        \"url\": \"https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285\",\n        \"text\": \"Certificado de publicación disponible en http://fandango.accv.es:8070/fa\",\n        \"case_sensitive\": false,\n        \"first_n\": null,\n        \"last_n\": null\n      },\n      {\n        \"pdf\": \"headers_footers/0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed.pdf\",\n        \"page\": 1,\n        \"id\": \"0058e04004009cc0df75aab998d3e107dc646b46_page_1_processed_pg1_header_02\",\n        \"type\": \"absent\",\n        \"max_diffs\": 4,\n        \"checked\": \"verified\",\n        \"url\": \"https://webges.uv.es/uvTaeWeb/DescargarCertificadoPublicacion.do?codigo=ANUNCIO-C9-2022-1285\",\n        \"text\": \"Este documento será custodiado por la Agencia de Tecnología y Certificación Electrónica - ISTEC Pista de Ademuz S/N. 46100 Burjassot (Valencia). Tel. 902 482 481 Correo-e: accv@accv.es\",\n        \"case_sensitive\": false,\n        \"first_n\": null,\n        \"last_n\": null\n      }\n    ]\n  }\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nBelow is the image of one page of a PDF document. Just return the plain text representation of this document as if you were reading it naturally.\nTurn equations into a LaTeX representation, and tables into markdown format. Remove the headers and footers, but keep references and footnotes.\nRead any natural handwriting.\nThis is likely one page out of several in the document, so be sure to preserve any sentences that come from the previous page, or continue onto the next page, exactly as they are.\nIf there is no text at all that you think you should read, you can output null.\nDo not hallucinate.\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets olmocr_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['olmocr_bench'],\n    dataset_args={\n        'olmocr_bench': {\n            # subset_list: ['headers_footers', 'long_tiny_text', 'multi_column']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "53b5f66f3346d259352960995cbf8a8c",
     "needs_translation": false
   },
-  "updated_at": "2026-08-18T16:41:17.158984"
+  "updated_at": "2026-08-19T19:15:12.332002+08:00",
+  "translation_updated_at": "2026-08-19T19:15:15+08:00"
 }
