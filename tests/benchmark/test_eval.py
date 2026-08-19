@@ -5,6 +5,7 @@ load_dotenv('.env')
 
 env = dotenv_values('.env')
 
+import os
 import pytest
 import unittest
 
@@ -1044,6 +1045,52 @@ class TestNativeBenchmark(TestBenchmark):
         """Test BhashaBench-Multi (Legal) benchmark with mock."""
         self._run_dataset_test(
             'bhasha_bench_multi_legal', dataset_args={'subset_list': ['Hindi']}, limit=2, use_mock=True
+        )
+
+    # bhashabenchv1: gated on HuggingFace (dataset_hub='auto' approval, but still requires an
+    # HF_TOKEN whose account has accepted the terms), so these only run where that's configured.
+    @unittest.skipUnless(os.environ.get('HF_TOKEN'), 'Requires HF_TOKEN with accepted BhashaBench-V1 gated-dataset terms')
+    def test_bhashabenchv1_ayur_mock(self):
+        """Test BhashaBench-V1 (Ayurveda) benchmark with mock."""
+        self._run_dataset_test(
+            'bhashabenchv1_ayur',
+            dataset_args={'subset_list': ['Hindi']},
+            limit=2,
+            use_mock=True,
+            dataset_hub='huggingface'
+        )
+
+    @unittest.skipUnless(os.environ.get('HF_TOKEN'), 'Requires HF_TOKEN with accepted BhashaBench-V1 gated-dataset terms')
+    def test_bhashabenchv1_finance_mock(self):
+        """Test BhashaBench-V1 (Finance) benchmark with mock."""
+        self._run_dataset_test(
+            'bhashabenchv1_finance',
+            dataset_args={'subset_list': ['Hindi']},
+            limit=2,
+            use_mock=True,
+            dataset_hub='huggingface'
+        )
+
+    @unittest.skipUnless(os.environ.get('HF_TOKEN'), 'Requires HF_TOKEN with accepted BhashaBench-V1 gated-dataset terms')
+    def test_bhashabenchv1_krishi_mock(self):
+        """Test BhashaBench-V1 (Krishi) benchmark with mock."""
+        self._run_dataset_test(
+            'bhashabenchv1_krishi',
+            dataset_args={'subset_list': ['Hindi']},
+            limit=2,
+            use_mock=True,
+            dataset_hub='huggingface'
+        )
+
+    @unittest.skipUnless(os.environ.get('HF_TOKEN'), 'Requires HF_TOKEN with accepted BhashaBench-V1 gated-dataset terms')
+    def test_bhashabenchv1_legal_mock(self):
+        """Test BhashaBench-V1 (Legal) benchmark with mock."""
+        self._run_dataset_test(
+            'bhashabenchv1_legal',
+            dataset_args={'subset_list': ['Hindi']},
+            limit=2,
+            use_mock=True,
+            dataset_hub='huggingface'
         )
 
 
