@@ -146,6 +146,18 @@ class DataCollectionAdapter(DefaultDataAdapter):
         # Build sample-level dataframe (includes per-sample weight)
         df = self._build_sample_dataframe(sample_scores)
 
+        # Every sample was excluded (e.g. an all-unusable judge run), so there are no columns to
+        # group by; return empty levels instead of letting groupby raise KeyError.
+        if df.empty:
+            return {
+                'subset_level': [],
+                'dataset_level': [],
+                'task_level': [],
+                'tag_level': [],
+                'category_level': [],
+                'df': df,
+            }
+
         # Compute all reports from sample-level data; macro is hierarchical where applicable
         subset_report_df = self._group_and_compute(df, ['task_type', 'dataset_name', 'subset_name'])
         # Only keep micro_avg. for subset level (drop macro_avg. and weighted_avg.)
@@ -205,6 +217,11 @@ class DataCollectionAdapter(DefaultDataAdapter):
             main_score = sample_score.score.main_value
             main_metric = sample_score.score.main_score_name
             sample_weight = float(collection_info.get('weight', 1.0))
+
+            # A sample whose judge review was unusable has no value and no main score; it is
+            # excluded from every aggregate rather than counted as 0.
+            if main_score is None:
+                continue
 
             # Each row represents one sample
             records.append({

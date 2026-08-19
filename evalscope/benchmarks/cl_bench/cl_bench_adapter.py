@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # align with official CL-bench eval.py(https://github.com/Tencent-Hunyuan/CL-bench/blob/main/eval.py)
 from typing import Any, Dict, List, Literal
@@ -21,6 +21,15 @@ class CLGrade(BaseModel):
     grading_rationale: str = Field(alias='Grading Rationale', default='')
     requirement_status: List[str] = Field(alias='List of Requirement Satisfaction Status', default_factory=list)
     overall_score: Literal[0, 1] = Field(alias='Overall Score')
+
+    @field_validator('overall_score', mode='before')
+    @classmethod
+    def _coerce_score(cls, value: Any) -> Any:
+        # The contract instruction renders the allowed labels quoted (`"0"` / `"1"`), so a
+        # compliant judge replies with a string; accept it instead of wasting a parse retry.
+        if isinstance(value, str) and value.strip() in ('0', '1'):
+            return int(value.strip())
+        return value
 
 
 GRADE_CONTRACT = OutputContract(schema_model=CLGrade)

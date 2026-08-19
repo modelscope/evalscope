@@ -963,6 +963,24 @@ def test_cl_bench_reads_the_binary_overall_score():
     assert score.main_score_name == 'acc'
 
 
+def test_cl_bench_accepts_a_quoted_score_without_wasting_a_retry():
+    """The contract renders the labels quoted, so a compliant judge replies with a string;
+    it must parse on the first attempt rather than only after a retry."""
+    adapter = make_adapter(
+        'cl_bench', [
+            '{"Grading Rationale": "all met", "List of Requirement Satisfaction Status": [], '
+            '"Overall Score": "0"}'
+        ],
+        judge_strategy='llm'
+    )
+
+    sample_score = adapter.calculate_metrics(_cl_bench_state('un')).score
+
+    assert sample_score.value == {'acc': 0.0}
+    attempts = (sample_score.metadata or {}).get('judge_attempts', [])
+    assert [attempt['status'] for attempt in attempts] == ['success']
+
+
 def test_cl_bench_rejects_a_score_outside_the_binary_scale():
     """The old code coerced anything that was not 1 into 0, hiding a malformed verdict."""
     adapter = make_adapter('cl_bench', ['{"Overall Score": 2}'], judge_strategy='llm')

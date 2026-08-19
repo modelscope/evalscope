@@ -66,7 +66,7 @@ Question: {question}
 Output sentence: {given_answer}
 Correct answer: {ground_truth}
 Judge whether the output sentence correctly answers the question.
-""" ''
+"""
 
 # Step-level judge (HiPhO paper, Appendix B.3). The criterion text itself states the
 # points to award, so the judge returns the awarded points as a single number.
@@ -82,7 +82,7 @@ Instructions:
 2. Award points strictly according to the criterion.
 3. Consider both conceptual understanding and technical accuracy.
 Award points strictly according to the criterion.
-""" ''
+"""
 
 # Every criterion states its own allocation, e.g. "Award 0.1 pt if ..." or "得 0.5 分".
 _CRITERION_POINTS_RE = re.compile(

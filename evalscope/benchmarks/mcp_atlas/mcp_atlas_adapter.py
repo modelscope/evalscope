@@ -173,9 +173,14 @@ class MCPAtlasAdapter(AgentLoopAdapter):
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         if not sample_scores:
             return []
-        coverage_values = [float(sample_score.score.value.get('coverage_score', 0.0)) for sample_score in sample_scores]
-        pass_values = [float(sample_score.score.value.get('pass', 0.0)) for sample_score in sample_scores]
-        sample_ids = [sample_score.sample_id for sample_score in sample_scores]
+        # A sample whose judge review was unusable carries an empty value dict; it is excluded from
+        # the means rather than counted as 0.
+        scored = [sample_score for sample_score in sample_scores if sample_score.score.value]
+        if not scored:
+            return []
+        coverage_values = [float(sample_score.score.value.get('coverage_score', 0.0)) for sample_score in scored]
+        pass_values = [float(sample_score.score.value.get('pass', 0.0)) for sample_score in scored]
+        sample_ids = [sample_score.sample_id for sample_score in scored]
         return [
             AggScore(
                 metric_name='coverage_score',

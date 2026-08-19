@@ -176,38 +176,26 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Aggregate scores across all samples.
+
+        Each metric is averaged only over the samples that actually carry it: a sample whose judge
+        review was unusable has no ``judge_score`` and is excluded from that mean rather than
+        counted as 0, while its rule-based ``bert_score`` still contributes.
         """
-        if not sample_scores:
-            return [
-                AggScore(metric_name='judge_score', score=0.0, num=0, metadata={}),
-                AggScore(metric_name='bert_score', score=0.0, num=0, metadata={})
-            ]
-
-        # Extract scores
-        gpt_scores = [ss.score.value.get('judge_score', 0.0) for ss in sample_scores]
-        bert_scores = [ss.score.value.get('bert_score', 0.0) for ss in sample_scores]
-
-        # Calculate averages
-        avg_gpt_score = sum(gpt_scores) / len(gpt_scores) if gpt_scores else 0.0
-        avg_bert_score = sum(bert_scores) / len(bert_scores) if bert_scores else 0.0
-
-        return [
-            AggScore(
-                metric_name='judge_score',
-                score=avg_gpt_score,
-                num=len(sample_scores),
-                metadata={
-                    'min_score': min(gpt_scores),
-                    'max_score': max(gpt_scores)
-                }
-            ),
-            AggScore(
-                metric_name='bert_score',
-                score=avg_bert_score,
-                num=len(sample_scores),
-                metadata={
-                    'min_score': min(bert_scores),
-                    'max_score': max(bert_scores)
-                }
+        results: List[AggScore] = []
+        for metric_name in ('judge_score', 'bert_score'):
+            values = [ss.score.value[metric_name] for ss in sample_scores if metric_name in ss.score.value]
+            if not values:
+                results.append(AggScore(metric_name=metric_name, score=0.0, num=0, metadata={}))
+                continue
+            results.append(
+                AggScore(
+                    metric_name=metric_name,
+                    score=sum(values) / len(values),
+                    num=len(values),
+                    metadata={
+                        'min_score': min(values),
+                        'max_score': max(values),
+                    },
+                )
             )
-        ]
+        return results

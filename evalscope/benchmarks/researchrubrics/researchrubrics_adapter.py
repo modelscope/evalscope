@@ -250,7 +250,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             if metric_name == 'compliance_score':
                 continue
             results.append(self._mean_agg_score(metric_name, scores, 'compliance_score'))
-        return results
+        return [result for result in results if result is not None]
 
     def _score_task_state(self, task_state: TaskState) -> Score:
         report = task_state.output.completion or ''
@@ -482,12 +482,18 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         return numerator / denominator
 
     @staticmethod
-    def _mean_agg_score(metric_name: str, sample_scores: List[SampleScore], value_key: str) -> AggScore:
-        values = [float(sample_score.score.value[value_key]) for sample_score in sample_scores]
+    def _mean_agg_score(metric_name: str, sample_scores: List[SampleScore], value_key: str) -> Optional[AggScore]:
+        # A sample whose judge review was unusable carries an empty value dict, so it holds no
+        # value for this key: it is excluded from the mean rather than counted as 0. A group with
+        # no usable sample yields no metric row at all.
+        scored = [sample_score for sample_score in sample_scores if value_key in sample_score.score.value]
+        if not scored:
+            return None
+        values = [float(sample_score.score.value[value_key]) for sample_score in scored]
         return AggScore(
             metric_name=metric_name,
             score=sum(values) / len(values),
             aggregation='mean',
             num=len(values),
-            ids=[sample_score.sample_id for sample_score in sample_scores],
+            ids=[sample_score.sample_id for sample_score in scored],
         )
