@@ -3,7 +3,7 @@
 This framework supports two custom multimodal evaluation methods:
 
 - **General-VQA Format**: Based on OpenAI message format, supports multi-image/audio input, system prompts, and base64 encoding, suitable for Q&A-based multimodal evaluation tasks.
-- **General-VMCQ Format**: Similar to MMMU format, question text can contain image placeholders `<image x>`, suitable for multiple-choice multimodal evaluation tasks.
+- **General-VMCQ Format**: Similar to MMMU format, question text can contain image, video, and audio placeholders such as `<image x>`, `<video x>`, and `<audio x>`, suitable for multiple-choice multimodal evaluation tasks.
 
 ## General-VQA Format
 
@@ -47,7 +47,7 @@ messages	answer
 - Local path: `"url": "custom_eval/multimodal/videos/sample.mp4"`
 - HTTP URL: `"url": "https://example.com/video.mp4"` (requires model service support)
 - Base64 encoding: `"url": "data:video/mp4;base64,AAAAIGZ0eX..."`
-- Video format is inferred from the path, URL, or data URI; supported formats are `"mp4"`, `"mpeg"`, and `"mov"`.
+- Video format is inferred from the path, URL, or data URI; supported formats are `"mp4"`, `"mpeg"`, `"mov"`, and `"avi"`.
 
 **Multi-image Input**
 
@@ -325,16 +325,22 @@ Evaluation will output accuracy metrics:
 
 ### 1. Data Preparation
 
-General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>` and video placeholders `<video x>`; `options` is a Python list string, options can be text or media placeholders.
+General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>`, video placeholders `<video x>`, and audio placeholders `<audio x>`; `options` is a Python list string, options can be text or media placeholders.
 
 Media support the following forms (all strings unless otherwise specified):
 - Image local or remote path/URL: `"custom_eval/multimodal/images/dog.jpg"` or `"https://.../dog.jpg"`
 - Image Base64 Data URL: `"data:image/jpeg;base64,/9j/4AAQSk..."`
-- Image in [Hugging Face Image format](https://huggingface.co/docs/datasets/about_dataset_features#image-feature): `{"path": "..."}` or `{"bytes": b"..."}` (binaries from parquet only).
 - Video local or remote path/URL: `"custom_eval/multimodal/videos/sample.mp4"` or `"https://.../sample.mp4"`
 - Video Base64 Data URL: `"data:video/mp4;base64,AAAAIGZ0eX..."`
+- Audio local or remote path/URL: `"custom_eval/multimodal/audio/sample.wav"` or `"https://.../sample.wav"`
+- Audio Base64 Data URL: `"data:audio/wav;base64,UklGRiQ..."`
+- Image/Video/Audio in undecoded dict: `{"path": "..."}` or `{"bytes": b"..."}`, or Hugging Face [Image feature][HFImage], [Video feature][HFVideo], [Audio feature][HFAudio]. Binaries can only be loaded from parquet files.
 
-Supports up to 100 images (`image_1` to `image_100`, or `images` for an unlimited list of images) and 100 videos (`video_1` to `video_100`). Missing media placeholders are ignored.
+[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
+[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
+[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
+
+Supports up to 100 images (`image_1` to `image_100`), 100 videos (`video_1` to `video_100`), and 100 audios (`audio_1` to `audio_100`); supplying `images`/`videos`/`audios` with a list of media is not bounded by the 100 limit. Missing media placeholders are ignored.
 
 **JSONL Example** (`example.jsonl`):
 ```json
@@ -351,13 +357,17 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 ```
 
 **Field Descriptions**:
-- `question`: Question text, can contain `<image x>` or `<video x>` placeholders
-- `options`: List (JSON array), elements can be text (e.g., `"School"`) or media placeholders (e.g., `"<image 1>"`, `"<video 1>"`), no need to add prefixes like `A.`, `B.`
+- `question`: Question text, can contain `<image x>`, `<video x>`, or `<audio x>` placeholders
+- `options`: List (JSON array), elements can be text (e.g., `"School"`) or media placeholders (e.g., `"<image 1>"`, `"<video 1>"`, `"<audio 1>"`), no need to add prefixes like `A.`, `B.`
 - `answer`: Correct answer letter (e.g., `"A"`, `"B"`)
-- `image_k`: Image string (local/remote path, base64 Data URL or [Huggingface Image Feature](https://huggingface.co/docs/datasets/about_dataset_features#image-feature)), k ∈ [1, 100]
+- `image_k`: Image string (local/remote path, base64 Data URL) or [Image Feature][HFImage], k ∈ [1, 100]
 - `images`: List of images equivalent to consecutive `image_1`, `image_2`. Only used when `image_k` not present.
-- `video_k`: Video string (local/remote path or base64 Data URL), k ∈ [1, 100]
-- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, and `"mov"`
+- `video_k`: Video string (local/remote path or base64 Data URL) or [Video Feature][HFVideo], k ∈ [1, 100]
+- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, `"mov"`, and `"avi"`
+- `videos`: Video list equivalent to consecutive `video_1`, `video_2`. Only used when `video_k` not present.
+- `audio_k`: Audio string (local/remote path, URL, or base64 Data URL) or [Audio Feature][HFAudio], k ∈ [1, 100]
+- `audio_k_format`: Optional audio format hint; supports `"wav"` and `"mp3"`
+- `audios`: Audio list equivalent to consecutive `audio_1`, `audio_2`. Only used when `audio_k` not present.
 
 ### 2. Configure Evaluation Task
 

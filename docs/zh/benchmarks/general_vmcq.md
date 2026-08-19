@@ -3,22 +3,22 @@
 
 ## 概述
 
-General-VMCQ 是一个可自定义的视觉多项选择题问答基准测试，适用于多模态模型。
-它采用 MMMU 风格的格式，在文本中使用图像/视频占位符，支持灵活的媒体输入。
+General-VMCQ 是一个可自定义的视觉多项选择题问答基准测试，用于评估多模态模型。
+它采用 MMMU 风格的格式，在文本中使用 `<image N>`/`<video N>`/`<audio N>` 占位符，支持灵活的媒体输入。
 
 ## 任务描述
 
 - **任务类型**：视觉多项选择题问答（Visual Multiple-Choice Question Answering）
-- **输入**：包含 `<image N>`/`<video N>` 占位符的问题 + 选项 + 媒体内容
+- **输入**：包含 `<image N>`/`<video N>`/`<audio N>` 占位符的问题 + 选项 + 媒体文件
 - **输出**：所选答案选项
-- **灵活性**：通过本地文件支持自定义数据集
+- **灵活性**：支持通过本地文件加载自定义数据集
 
 ## 主要特性
 
-- 采用 MMMU 风格格式（非 OpenAI 消息格式），每个样本最多支持 100 张图像和 100 个视频
-- 灵活的图像/视频输入方式（路径、URL、base64 数据 URL，或 Hugging Face Image 格式如 `{"path": ...}` 或 `{"bytes": ...}`）
-- 额外支持 `images` 列以容纳不限数量的图像
-- 提供思维链（Chain-of-thought）提示模板选项
+- 采用 MMMU 风格格式（非 OpenAI 消息格式），每个样本最多支持 100 张图像/视频/音频
+- 灵活的图像/视频/音频输入方式（路径、URL、base64 数据 URL，或 Hugging Face 媒体列，格式为 `{"path": ...}` 或 `{"bytes": ...}`）
+- 额外支持 `images`/`videos`/`audios` 列，可包含不限数量的媒体列表
+- 支持链式思维（Chain-of-thought）提示模板
 - 支持通过本地文件加载自定义数据集
 
 ## 评估说明
@@ -26,7 +26,7 @@ General-VMCQ 是一个可自定义的视觉多项选择题问答基准测试，�
 - 默认配置使用 **0-shot** 评估
 - 主要指标：**准确率（Accuracy）**
 - 训练集划分：**dev**，评估集划分：**val**
-- 图像/视频以纯字符串形式提供（不要包装成 `{{"url": ...}}` 格式）
+- 原始媒体字节数据需使用 parquet 格式；纯文本文件应包含路径、URL 或 base64 数据 URL
 - 数据集格式详情请参阅 [用户指南](https://evalscope.readthedocs.io/zh-cn/latest/advanced_guides/custom_dataset/vlm.html)
 
 ## 属性
@@ -39,8 +39,8 @@ General-VMCQ 是一个可自定义的视觉多项选择题问答基准测试，�
 | **标签** | `Custom`, `MCQ`, `MultiModal` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `val` |
-| **训练划分** | `dev` |
+| **评估集划分** | `val` |
+| **训练集划分** | `dev` |
 
 
 ## 数据统计
