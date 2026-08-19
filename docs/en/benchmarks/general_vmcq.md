@@ -4,20 +4,20 @@
 ## Overview
 
 General-VMCQ is a customizable visual multiple-choice question answering benchmark for multimodal models.
-It uses MMMU-style format with image/video placeholders in text, supporting flexible media inputs.
+It uses MMMU-style format with image/video/audio placeholders in text, supporting flexible media inputs.
 
 ## Task Description
 
 - **Task Type**: Visual Multiple-Choice Question Answering
-- **Input**: Question with `<image N>`/`<video N>` placeholders + choice options + media
+- **Input**: Question with `<image N>`/`<video N>`/`<audio N>` placeholders + choice options + media
 - **Output**: Selected answer choice
 - **Flexibility**: Supports custom datasets via local files
 
 ## Key Features
 
-- MMMU-style format (not OpenAI message format), supporting up to 100 images and 100 videos per sample
-- Flexible image/video input (path, URL, base64 data URL, or Hugging Face Image with `{"path": ...}` or `{"bytes": ...}`)
-- Additional format support for `images` column for unlimited number of images
+- MMMU-style format (not OpenAI message format), supporting up to 100 images/videos/audios per sample
+- Flexible image/video/audio input (path, URL, base64 data URL, or Hugging Face media columns with `{"path": ...}` or `{"bytes": ...}`)
+- Additional format support for `images`/`videos`/`audios` column for unlimited list of media
 - Chain-of-thought prompt template option
 - Custom dataset support via local file loading
 
@@ -26,7 +26,7 @@ It uses MMMU-style format with image/video placeholders in text, supporting flex
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
 - Train split: **dev**, Eval split: **val**
-- Images/videos are plain strings (do not wrap in `{{"url": ...}}`)
+- Raw media bytes require parquet; plaintext files carry paths, URLs, or base64 data URLs
 - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html) for dataset format
 
 
