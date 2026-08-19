@@ -13,8 +13,6 @@ import json
 import re
 import unicodedata
 from dataclasses import dataclass
-from fuzzysearch import find_near_matches
-from rapidfuzz import fuzz
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .table_parsing import parse_html_tables, parse_markdown_tables
@@ -189,9 +187,9 @@ class TextPresenceTest(BasePDFTest):
             raise ValidationError('Text field cannot be empty')
 
     def run(self, md_content: str) -> Tuple[bool, str]:
-        reference_query = self.text
+        from rapidfuzz import fuzz
 
-        # Normalize whitespace in the md_content
+        reference_query = self.text
         md_content = normalize_text(md_content)
 
         if not self.case_sensitive:
@@ -249,8 +247,9 @@ class TextOrderTest(BasePDFTest):
             raise ValidationError('Max diffs is too large for this test, greater than 50% of the search string')
 
     def run(self, md_content: str) -> Tuple[bool, str]:
-        md_content = normalize_text(md_content)
+        from fuzzysearch import find_near_matches
 
+        md_content = normalize_text(md_content)
         before_matches = find_near_matches(self.before, md_content, max_l_dist=self.max_diffs)
         after_matches = find_near_matches(self.after, md_content, max_l_dist=self.max_diffs)
 
@@ -306,20 +305,14 @@ class TableTest(BasePDFTest):
         self.left_heading = normalize_text(self.left_heading)
 
     def run(self, content: str) -> Tuple[bool, str]:
-        """Run the table test on provided content.
+        from rapidfuzz import fuzz
 
-        Finds all tables (markdown and/or HTML based on content_type) and checks if any cell
-        matches the target cell and satisfies the specified relationships.
-        """
-        # Initialize variables to track tables and results
         tables_to_check = []
         failed_reasons = []
 
-        # Threshold for fuzzy matching derived from max_diffs
         threshold = 1.0 - (self.max_diffs / (len(self.cell) if len(self.cell) > 0 else 1))
         threshold = max(0.5, threshold)
 
-        # Parse tables based on content_type
         if not self.ignore_markdown_tables:
             md_tables = parse_markdown_tables(content)
             tables_to_check.extend(md_tables)

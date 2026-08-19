@@ -5,7 +5,6 @@
 # Only typing annotations, formatting, and a `_rows_to_specs` extraction of the two duplicated
 # markdown-row-to-spec blocks were adjusted to match this repository's style.
 
-from bs4 import BeautifulSoup
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple, Union
@@ -362,6 +361,8 @@ def parse_html_tables(html_content: str) -> List[TableData]:
 
     Identifies header rows and columns, and maps them properly handling rowspan/colspan.
     """
+    from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html_content, 'html.parser')
     tables = soup.find_all('table')
 

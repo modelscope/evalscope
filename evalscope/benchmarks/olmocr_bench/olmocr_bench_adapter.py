@@ -20,13 +20,10 @@ from .unit_tests import load_single_test
 
 logger = get_logger()
 
-# The published parquet also carries the two math-only sources (arxiv_math, old_scans_math); they
-# are omitted from SUBSET_LIST because their rules need KaTeX-rendered equation comparison, so the
-# standard loader simply filters them out of the evaluated subsets.
+# Math-only sources (arxiv_math, old_scans_math) are excluded: their rules need KaTeX rendering.
 SUBSET_LIST = ['headers_footers', 'long_tiny_text', 'multi_column', 'old_scans', 'table_tests']
 
-# Official no-document-anchoring transcription prompt
-# (olmocr/bench/prompts.py, build_openai_silver_data_prompt_no_document_anchoring).
+# Official prompt (olmocr/bench/prompts.py, build_openai_silver_data_prompt_no_document_anchoring).
 PROMPT_TEMPLATE = (
     'Below is the image of one page of a PDF document. '
     'Just return the plain text representation of this document as if you were reading it naturally.\n'
@@ -121,7 +118,6 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # One flat parquet split; group rows into subsets by the per-row ``subset`` field.
         self.reformat_subset = True
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -142,12 +138,7 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        """Keep the full transcription; map a bare `null` reply to an empty transcription.
-
-        The official harness stores `natural_text=null` as an empty .md file, so a model that
-        follows the prompt and answers `null` for a blank page must be scored against an empty
-        transcription, not the literal string "null".
-        """
+        """Map a bare `null` reply to empty transcription (official harness stores it as empty .md)."""
         if prediction is None:
             return ''
         if prediction.strip().lower() == 'null':
@@ -172,8 +163,6 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
             try:
                 test = load_single_test(test_data)
             except Exception as e:
-                # A load failure means the dataset row is malformed; fail fast instead of silently
-                # scoring it as a model mistake.
                 raise ValueError(
                     f'Failed to load unit test {test_data.get("id")!r}; the dataset JSONL row may be malformed'
                 ) from e
@@ -197,12 +186,7 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
-        """Aggregate as the fraction of unit tests that pass (official per-source metric).
-
-        The subset score is the pooled pass rate over all unit tests in the subset, matching the
-        official per-source metric. ``num`` counts PDF pages (samples), so the report's sample
-        count reflects the prediction records; the pooled test counts are kept in metadata.
-        """
+        """Pooled pass rate over all unit tests in the subset (official per-source metric)."""
         tests_passed = 0
         tests_total = 0
         ids = []

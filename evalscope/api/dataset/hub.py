@@ -166,10 +166,7 @@ def download_dataset_file(
         if cache_dir:
             download_kwargs['cache_dir'] = cache_dir
         if not force_redownload:
-            # Fast path: try to satisfy the request from the local cache only. This is an
-            # optimization probe, so any failure (a missing file may surface as ValueError or a
-            # hub-specific CacheNotFound depending on the modelscope_hub version) must fall
-            # through to the real download rather than propagate.
+            # Cache probe: any failure falls through to the real download below.
             try:
                 return dataset_file_download(data_id_or_path, file_path, local_files_only=True, **download_kwargs)
             except Exception:
