@@ -75,7 +75,6 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
 class ArenaHardAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -171,5 +170,5 @@ class ArenaHardAdapter(DefaultDataAdapter):
         return [AggScore(
             score=score,
             metric_name='win_rate',
-            num=len(sample_scores),
+            num=len(scored),
         )]

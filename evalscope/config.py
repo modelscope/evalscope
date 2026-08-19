@@ -230,8 +230,14 @@ class TaskConfig(BaseArgument):
     judge_worker_num: Optional[int] = None
     """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
 
-    judge_model_args: Optional[Dict] = Field(default_factory=dict)
-    """Additional arguments for the judge model configuration."""
+    judge_model_args: Optional[Union[Dict, List[Dict]]] = Field(default_factory=dict)
+    """Judge model configuration. One mapping for a single judge, or a list of mappings to score
+    with several judges and average their verdicts with equal weight. Each judge needs a distinct
+    `model_id`."""
+
+    judge_repeats: int = Field(default=1, ge=1)
+    """How many times each judge reviews a sample. Verdicts are averaged with equal weight.
+    Above 1 requires an explicit non-zero judge `generation_config.temperature`."""
 
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""

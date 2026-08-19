@@ -19,28 +19,27 @@ logger = get_logger()
 REVIEW_CACHE_SCHEMA_VERSION = 2
 """Bumped to 2 when ``Score.status`` / ``Score.judge_detail`` were added."""
 
-JUDGE_FINGERPRINT_VERSION = '1'
+JUDGE_FINGERPRINT_VERSION = '2'
 
 
 def compute_judge_fingerprint(
     judge_strategy: str,
-    judge_model_args: Optional[Dict[str, Any]],
-    uses_judge_contracts: bool,
+    judge_model_args: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]],
 ) -> Optional[str]:
     """Identify the judge configuration a cached review was produced under.
 
-    ``None`` when no judge is involved, so rule-only benchmarks keep resuming as before. The API
-    key is deliberately excluded: rotating a credential is not a scoring change.
+    ``None`` when no judge is involved, so rule-only benchmarks keep resuming as before.
     """
     if not judge_model_args:
         return None
-    scrubbed = {key: value for key, value in judge_model_args.items() if key != 'api_key'}
+    specs = judge_model_args if isinstance(judge_model_args, list) else [judge_model_args]
+    # The API key is deliberately excluded: rotating a credential is not a scoring change.
+    scrubbed = [{key: value for key, value in spec.items() if key != 'api_key'} for spec in specs]
     payload = json.dumps(
         {
             'version': JUDGE_FINGERPRINT_VERSION,
             'strategy': judge_strategy,
             'model_args': scrubbed,
-            'contracts': uses_judge_contracts,
         },
         sort_keys=True,
         default=str,
@@ -213,8 +212,11 @@ class CacheManager:
         for cache_item in cache_items:
             # Deserialize the cached review result
             cached_review_result = ReviewResult.from_cache_item(cache_item)
-            self._check_judge_fingerprint(cached_review_result, cache_file)
             cached_sample_scores.append(cached_review_result.to_sample_score())
+
+        if cache_items:
+            # One file is written under one judge configuration, so one row settles it.
+            self._check_judge_fingerprint(ReviewResult.from_cache_item(cache_items[0]), cache_file)
 
         # Filter out task states that already have review scores
         cached_sample_ids = {review.sample_id for review in cached_sample_scores}
@@ -226,9 +228,7 @@ class CacheManager:
     def _check_judge_fingerprint(self, review: 'ReviewResult', cache_file: str) -> None:
         """Refuse a cached review that a different judge configuration produced.
 
-        Silently reusing it would report scores from the old judge under the new configuration.
-        A cache written before fingerprints existed carries ``None`` and is only warned about,
-        since its judge configuration cannot be known.
+        Silently reusing it would report the old judge's scores under the new configuration.
         """
         if self.judge_fingerprint is None or review.judge_fingerprint == self.judge_fingerprint:
             return
@@ -482,8 +482,8 @@ class ReviewResult(BaseModel):
     def from_cache_item(cls, data: Any) -> 'ReviewResult':
         """Load a review result from an on-disk cache row.
 
-        A row without ``schema_version`` predates ``Score.status`` and loads as version 1;
-        the field default is only correct for freshly produced results.
+        A row without ``schema_version`` predates ``Score.status`` and loads as version 1; the
+        field default is only correct for freshly produced results.
         """
         if isinstance(data, dict):
             data = {'schema_version': 1, **data}

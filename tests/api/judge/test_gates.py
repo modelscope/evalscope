@@ -1,8 +1,8 @@
 """Structural gates that stop the judge-parsing debt from growing back.
 
-A benchmark adapter must not call a judge model, must not touch a raw judge response, and must
-not define its own parser. ``PENDING_MIGRATION`` is empty: every adapter that scores with a judge
-now goes through ``evalscope.api.judge``, and nothing may be added back.
+A benchmark must not call a judge model, must not touch a raw judge response, and must not define
+its own parser -- in an adapter or in any helper module beside it. ``PENDING_MIGRATION`` is empty:
+every benchmark that scores with a judge now goes through ``evalscope.api.judge``.
 """
 import ast
 import os
@@ -21,8 +21,8 @@ PARSER_CALLS = ('search', 'match', 'fullmatch', 'findall', 'finditer', 'loads')
 # ``{}`` would be a dict and would silently break the set algebra below.
 PENDING_MIGRATION: Set[str] = set()
 
-# These adapters use the judge as a data transformer (not a verdict/score producer) or have a
-# fundamentally different scoring architecture that does not fit the OutputContract model.
+# These use the judge as a data transformer (not a verdict producer) or have a scoring
+# architecture that does not fit the OutputContract model.
 PERMANENTLY_EXEMPT: Set[str] = {
     'job_bench/job_bench_adapter.py',
     'wide_search/wide_search_adapter.py',
@@ -30,10 +30,17 @@ PERMANENTLY_EXEMPT: Set[str] = {
 
 
 def adapter_files() -> List[str]:
+    """Every benchmark source file, not just ``*_adapter.py``.
+
+    Helper modules are in scope because moving a parser into ``utils.py`` would otherwise slip
+    past the gate.
+    """
     paths = []
     for dirpath, _, filenames in os.walk(BENCHMARKS_ROOT):
+        if '__pycache__' in dirpath or os.path.basename(dirpath) == '_meta':
+            continue
         for name in filenames:
-            if name.endswith('_adapter.py'):
+            if name.endswith('.py') and name != '__init__.py':
                 paths.append(os.path.join(dirpath, name))
     return sorted(paths)
 
@@ -119,6 +126,21 @@ def test_pending_migration_list_has_no_stale_entries():
     assert not stale, f'These adapters no longer violate the gate; remove them from PENDING_MIGRATION: {stale}'
 
 
+def test_exempt_list_has_no_stale_entries():
+    """An exemption that no longer corresponds to a violation is dead weight."""
+    violating = set(current_violations())
+    stale = sorted(PERMANENTLY_EXEMPT - violating)
+
+    assert not stale, f'These files no longer violate the gate; remove them from PERMANENTLY_EXEMPT: {stale}'
+
+
+def test_helper_modules_are_scanned():
+    """The gate covers helper modules, not only ``*_adapter.py``."""
+    scanned = {os.path.basename(path) for path in adapter_files()}
+
+    assert 'utils.py' in scanned
+
+
 def test_gate_detects_a_synthetic_violation(tmp_path):
     source = '''
 class Adapter:
@@ -147,6 +169,21 @@ class Adapter:
     path.write_text(source, encoding='utf-8')
 
     assert 'passes the judge model to a helper' in scan(str(path))
+
+
+def test_gate_catches_a_parser_hidden_in_a_helper_module(tmp_path):
+    """Moving the parser out of the adapter file must not evade the gate."""
+    source = '''
+def grade(judge_response):
+    return re.search(r'(A|B)', judge_response)
+'''
+    path = tmp_path / 'utils.py'
+    path.write_text(source, encoding='utf-8')
+
+    found = scan(str(path))
+
+    assert any('parses a raw judge response' in item for item in found)
+    assert 'grade() takes a raw judge response' in found
 
 
 def test_gate_ignores_an_unrelated_judger(tmp_path):

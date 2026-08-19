@@ -19,7 +19,3 @@ class BaseJudge(ABC):
     @abstractmethod
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None) -> str:
         """Build the evaluation prompt."""
-
-    @abstractmethod
-    def get_score(self, response: str) -> float:
-        """Extract a numeric score from the judge response."""

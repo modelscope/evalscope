@@ -194,7 +194,8 @@ def test_instruction_lists_the_allowed_verdicts():
 def test_instruction_states_the_numeric_bounds():
     instruction = RATING.instruction()
 
-    assert '>= 0.0' in instruction or '<= 10.0' in instruction
+    # Both bounds, not either: a judge told only the floor will happily return 42.
+    assert 'a number >= 0.0 and <= 10.0' in instruction
 
 
 def test_instruction_covers_every_field_of_a_multi_field_schema():

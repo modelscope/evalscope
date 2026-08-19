@@ -6,16 +6,11 @@ from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
 from evalscope.metrics.utils.functions import calculate_pass_at_k, calculate_pass_hat_k, mean
 
-# pass@k / pass^k stay on the HumanEval combinatorial estimator over all available
-# attempts; an unusable attempt (e.g. a judge that could not be parsed) shows up as a
-# smaller n, never as a zero. Do not switch these to "did any of the first k pass".
-
 
 def collect_metric_names(scores: List[SampleScore]) -> List[str]:
     """Collect metric names across all samples, in first-seen order.
 
-    A sample may legitimately carry no value for a metric (an LLM judge that failed is
-    excluded rather than scored 0), so the name set cannot be read off ``scores[0]``.
+    A sample may carry no value for a metric, so the name set cannot be read off ``scores[0]``.
     """
     metric_names: Dict[str, None] = {}
     for sample_score in scores:

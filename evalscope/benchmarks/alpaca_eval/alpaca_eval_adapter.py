@@ -100,7 +100,6 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 class AlpacaEvalAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

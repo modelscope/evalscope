@@ -58,19 +58,14 @@ class SimpleAdapter:
         self,
         contract: OutputContract = YES_NO,
         case_ids: Sequence[str] = ('only', ),
-        required: bool = True,
         fallback: Optional[float] = None,
     ) -> None:
         self.contract = contract
         self.case_ids = list(case_ids)
-        self.required = required
         self.fallback = fallback
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [
-            JudgeCase(case_id=case_id, output_contract=self.contract, required=self.required)
-            for case_id in self.case_ids
-        ]
+        return [JudgeCase(case_id=case_id, output_contract=self.contract) for case_id in self.case_ids]
 
     def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         return JudgeRequest(messages=[ChatMessageUser(content=f'{case.case_id}/{placement.value}')])
@@ -213,6 +208,46 @@ def test_a_retry_that_parses_is_used():
     assert review.failure_counts == {'parse_error': 1}
 
 
+def test_a_retry_tells_the_judge_what_was_wrong():
+    """Resending the identical prompt would only bet on the provider being non-deterministic."""
+    contract = OutputContract(schema_model=Verdict, parse_retries=1)
+    executor, judge = make_executor(['unparseable', YES_REPLY])
+
+    executor.execute(SimpleAdapter(contract=contract), {})
+
+    retry_messages = judge.calls[1]
+    assert len(retry_messages) > len(judge.calls[0])
+    assert retry_messages[-2].content == 'unparseable'
+    assert 'could not be used' in retry_messages[-1].content
+
+
+def test_a_verdict_carries_its_case_metadata():
+    """A reduce step reads its context off the verdict instead of parsing ``case_id``."""
+    executor, _ = make_executor([YES_REPLY])
+
+    class TaggedAdapter(SimpleAdapter):
+
+        def build_judge_cases(self, context):
+            return [JudgeCase(case_id='only', output_contract=self.contract, metadata={'rubric_idx': 7})]
+
+    review = executor.execute(TaggedAdapter(), {})
+
+    assert review.observations[0].case_verdicts[0].metadata == {'rubric_idx': 7}
+
+
+def test_a_fallback_verdict_also_carries_the_case_metadata():
+    executor, _ = make_executor([ERROR_RESPONSE])
+
+    class TaggedAdapter(SimpleAdapter):
+
+        def build_judge_cases(self, context):
+            return [JudgeCase(case_id='only', output_contract=self.contract, metadata={'rubric_idx': 3})]
+
+    review = executor.execute(TaggedAdapter(fallback=1.0), {})
+
+    assert review.observations[0].case_verdicts[0].metadata == {'rubric_idx': 3}
+
+
 def test_rule_fallback_fills_in_a_case_the_judge_could_not_answer():
     executor, _ = make_executor([ERROR_RESPONSE])
 
@@ -222,17 +257,7 @@ def test_rule_fallback_fills_in_a_case_the_judge_could_not_answer():
     assert review.value == {'acc': 1.0}
 
 
-def test_an_optional_case_failure_does_not_invalidate_the_observation():
-    executor, _ = make_executor(['unparseable', YES_REPLY])
-    adapter = SimpleAdapter(case_ids=('a', 'b'), required=False)
-
-    review = executor.execute(adapter, {})
-
-    assert review.status is ScoreStatus.SUCCESS
-    assert review.value == {'acc': 1.0}
-
-
-def test_a_required_case_failure_invalidates_the_whole_observation():
+def test_a_case_failure_invalidates_the_whole_observation():
     executor, _ = make_executor(['unparseable', YES_REPLY])
     adapter = SimpleAdapter(case_ids=('a', 'b'))
 
@@ -355,14 +380,53 @@ def test_execute_batch_on_no_contexts():
     assert executor.execute_batch(SimpleAdapter(), []) == []
 
 
-def test_multiple_judges_are_rejected_until_supported():
-    with pytest.raises(ValueError, match='Multiple judge models'):
-        JudgeExecutor([ScriptedJudge(['yes']), ScriptedJudge(['yes'])])
+def test_several_judges_are_averaged_with_equal_weight():
+    yes_judge = ScriptedJudge([YES_REPLY], model_id='judge-a')
+    no_judge = ScriptedJudge([NO_REPLY], model_id='judge-b')
+    executor = JudgeExecutor([yes_judge, no_judge])
+
+    review = executor.execute(SimpleAdapter(), {})
+
+    assert review.value == {'acc': 0.5}
+    assert len(review.observations) == 2
 
 
-def test_repeats_are_rejected_until_supported():
-    with pytest.raises(ValueError, match='repeats'):
-        JudgeExecutor([ScriptedJudge(['yes'])], JudgeExecutorConfig(repeats=2))
+def test_repeats_of_one_judge_are_averaged():
+    executor = JudgeExecutor(
+        [ScriptedJudge([YES_REPLY, YES_REPLY, NO_REPLY])],
+        JudgeExecutorConfig(repeats=3),
+    )
+
+    review = executor.execute(SimpleAdapter(), {})
+
+    assert review.value == {'acc': pytest.approx(2 / 3)}
+    assert len(review.observations) == 3
+
+
+def test_an_unusable_observation_shrinks_the_average_instead_of_scoring_zero():
+    executor = JudgeExecutor(
+        [ScriptedJudge([YES_REPLY, 'unparseable', YES_REPLY])],
+        JudgeExecutorConfig(repeats=3),
+    )
+
+    review = executor.execute(SimpleAdapter(YES_NO), {})
+
+    # Two usable observations both said yes; the failed one is excluded, not averaged in as 0.
+    assert review.value == {'acc': 1.0}
+    assert len(review.valid_observations) == 2
+    assert review.status is ScoreStatus.SUCCESS
+
+
+def test_all_observations_failing_excludes_the_sample():
+    executor = JudgeExecutor(
+        [ScriptedJudge(['unparseable'])],
+        JudgeExecutorConfig(repeats=2),
+    )
+
+    review = executor.execute(SimpleAdapter(YES_NO), {})
+
+    assert review.value == {}
+    assert review.status is ScoreStatus.EXCLUDED
 
 
 def test_no_judge_is_a_configuration_error():
@@ -442,7 +506,7 @@ def test_an_adapter_declaring_no_cases_is_scored_not_excluded():
 def test_declared_cases_that_all_fail_are_still_excluded():
     executor, _ = make_executor(['unparseable'])
 
-    review = executor.execute(SimpleAdapter(required=False), {})
+    review = executor.execute(SimpleAdapter(), {})
 
     assert review.value == {}
     assert review.status is ScoreStatus.EXCLUDED

@@ -243,6 +243,11 @@ run_task(task_cfg=task_cfg)
 
 完整的judge参数说明请[参考文档](../../get_started/parameters.md#judge参数)。
 
+```{note}
+裁判模型以单个 JSON 对象回复。无法解析为 JSON 的回复会先重试，之后该样本被**排除**在指标之外而不是记为 0 分，
+因此 `Num` 可能小于样本数。自定义 `prompt_template` 只需描述打分标准，回复格式要求会自动追加。
+```
+
 ```python
 import os
 from evalscope import TaskConfig, run_task

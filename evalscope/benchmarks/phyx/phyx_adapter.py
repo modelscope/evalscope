@@ -73,8 +73,6 @@ class PhyXAdapter(VisionLanguageAdapter):
     (multiple-choice or open-ended) and how a reply is scored.
     """
 
-    uses_judge_contracts = True
-
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         # Set during load(); record_to_sample resolves figures relative to it.

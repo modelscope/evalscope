@@ -3,9 +3,6 @@
 The contract owns both halves of the format agreement -- the requirement written into the prompt
 and the parser that reads the reply -- so the two cannot drift apart. Parsing is strict: a reply
 that does not satisfy the schema is a ``parse_error``, never a silently-zero score.
-
-Benchmarks declare a schema with a ``verdict`` field (plus ``reasoning`` when the judge should
-explain itself). Benchmarks whose upstream already defines a JSON reply keep their official keys.
 """
 import json
 from pydantic import BaseModel, ConfigDict, Field
@@ -38,11 +35,8 @@ class OutputContract(BaseModel):
     schema_model: Type[BaseModel]
 
     parse_retries: int = Field(default=3, ge=0)
-    """Extra attempts at the same request when the reply does not satisfy the schema.
-
-    Retrying only helps because providers are not bit-deterministic at ``temperature=0``.
-    Benchmarks whose upstream defines a fallback verdict instead of a retry declare ``0``.
-    """
+    """Extra attempts at the same case when the reply does not satisfy the schema. Benchmarks whose
+    upstream defines a fallback verdict instead of a retry declare ``0``."""
 
     def instruction(self) -> str:
         """The format requirement appended to the benchmark's own prompt."""
@@ -80,9 +74,8 @@ class OutputContract(BaseModel):
 def _payloads(response: str) -> List[str]:
     """Return every top-level JSON object in the reply.
 
-    Scanning instead of anchoring lets a reasoning judge emit a ``<think>`` block or a fence around
-    its answer. Requiring exactly one object keeps a reply that states two different verdicts a
-    parse failure rather than a coin flip.
+    Scanning rather than anchoring lets a reasoning judge wrap its answer in a ``<think>`` block
+    or a fence; requiring exactly one object keeps a two-verdict reply a failure, not a coin flip.
     """
     found: List[str] = []
     depth = 0

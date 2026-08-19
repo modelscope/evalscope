@@ -151,7 +151,6 @@ SimpleQA is a benchmark by OpenAI designed to evaluate language models' ability 
 class SimpleQAAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

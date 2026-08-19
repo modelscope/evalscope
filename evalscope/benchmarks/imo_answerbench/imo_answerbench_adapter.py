@@ -71,7 +71,6 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
 class IMOAnswerBenchAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
-    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

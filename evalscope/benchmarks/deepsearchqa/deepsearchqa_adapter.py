@@ -73,7 +73,6 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 class DeepSearchQAAdapter(AgentLoopAdapter):
     """Adapter for the DeepSearchQA deep-research benchmark."""
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
-    uses_judge_contracts = True
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

@@ -136,7 +136,6 @@ class DefaultEvaluator(Evaluator):
             judge_fingerprint=compute_judge_fingerprint(
                 judge_strategy=task_config.judge_strategy,
                 judge_model_args=get_secret_value(task_config.judge_model_args),
-                uses_judge_contracts=getattr(benchmark, 'uses_judge_contracts', False),
             ) if getattr(benchmark, 'use_llm_judge', False) else None,
         )
 

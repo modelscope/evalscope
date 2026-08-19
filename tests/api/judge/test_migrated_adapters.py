@@ -11,14 +11,27 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.constants import ScoreStatus
-from evalscope.metrics.judge.llm_judge import JUDGE_ERROR_PREFIX
+from evalscope.constants import JudgeScoreType, ScoreStatus
+from evalscope.metrics.judge.llm_judge import (
+    DEFAULT_NUMERIC_SCORE_TEMPLATE,
+    DEFAULT_PROMPT_TEMPLATE,
+    JUDGE_ERROR_PREFIX,
+    LLMJudge,
+)
 
 ERROR_RESPONSE = f'{JUDGE_ERROR_PREFIX} connection refused'
 
 
 class ScriptedJudge:
     """Stands in for ``LLMJudge``; returns queued responses, repeating the last one."""
+
+    # The default judge hooks read these off the judge, so the double carries the real defaults
+    # and the real prompt builder rather than a second copy of them.
+    score_type = JudgeScoreType.PATTERN
+    score_mapping = {'A': 1.0, 'B': 0.0}
+    prompt_template = DEFAULT_PROMPT_TEMPLATE
+    system_prompt = None
+    build_prompt = LLMJudge.build_prompt
 
     def __init__(self, responses: Sequence[str], model_id: str = 'scripted-judge') -> None:
         self.responses = list(responses)
@@ -28,6 +41,13 @@ class ScriptedJudge:
     def judge(self, prompt: str = '', system_prompt: Optional[str] = None, messages: Any = None) -> str:
         self.prompts.append(prompt or (messages[-1].content if messages else ''))
         return self.responses[min(len(self.prompts) - 1, len(self.responses) - 1)]
+
+
+class RatingJudge(ScriptedJudge):
+    """A judge configured for the reference-free ``numeric`` contract."""
+
+    score_type = JudgeScoreType.NUMERIC
+    prompt_template = DEFAULT_NUMERIC_SCORE_TEMPLATE
 
 
 def make_adapter(name: str, responses: Sequence[str], judge_strategy: str = 'auto'):
@@ -1022,7 +1042,9 @@ class PlacementJudge:
         self.prompts: List[str] = []
 
     def judge(self, prompt: str = '', system_prompt: Optional[str] = None, messages: Any = None) -> str:
-        text = prompt or (messages[-1].content if messages else '')
+        # Scans the whole conversation, not just the last message: a parse retry appends a
+        # correction, and the placement is only stated in the original case prompt.
+        text = prompt or '\n'.join(str(message.content) for message in (messages or []))
         self.prompts.append(text)
         return self.original if text.index('baseline') < text.index('candidate') else self.swapped
 
@@ -1180,8 +1202,7 @@ def test_researchrubrics_rejects_unparseable_verdict():
 
 
 # ---------------------------------------------------------------------------
-# Default binary-correctness path (LLMJudgeMixin): benchmarks that turn on
-# ``uses_judge_contracts`` without overriding the judge hooks.
+# Default judge path (LLMJudgeMixin): benchmarks that do not override the hooks.
 # ---------------------------------------------------------------------------
 
 DEFAULT_PATH_BENCHMARKS = ['minerva_math', 'imo_answerbench', 'math_verse', 'world_vqa', 'zerobench', 'baby_vision']
@@ -1223,3 +1244,89 @@ def test_default_path_prompt_carries_question_target_and_prediction():
     assert 'gold 42' in prompt
     assert 'predicted 7' in prompt
     assert 'JSON object' in prompt
+
+
+def test_default_path_prompt_states_no_conflicting_format():
+    """The old template ended with "just return A or B", contradicting the JSON instruction."""
+    adapter = make_adapter('minerva_math', ['{"verdict": "A"}'], judge_strategy='llm')
+    state = make_state('p', 'g')
+    adapter.llm_match_score('p', 'p', 'g', state)
+
+    prompt = adapter.llm_judge.prompts[0]
+
+    assert 'with no text around it' not in prompt
+    assert prompt.count('JSON object') == 1
+
+
+def test_default_path_honours_a_custom_score_mapping():
+    """``score_mapping`` drives both the allowed labels and the value, as it documented."""
+    adapter = make_adapter('minerva_math', ['{"verdict": "GOOD"}'], judge_strategy='llm')
+    adapter.llm_judge.score_mapping = {'GOOD': 1.0, 'BAD': 0.25}
+    state = make_state('p', 'g')
+
+    score = adapter.llm_match_score('p', 'p', 'g', state)
+
+    assert score.value == {'acc': 1.0}
+    assert 'exactly one of "BAD" or "GOOD"' in adapter.llm_judge.prompts[0]
+
+
+def test_default_path_rejects_a_label_outside_the_score_mapping():
+    adapter = make_adapter('minerva_math', ['{"verdict": "A"}'], judge_strategy='llm')
+    adapter.llm_judge.score_mapping = {'GOOD': 1.0, 'BAD': 0.0}
+    state = make_state('p', 'g')
+
+    score = adapter.llm_match_score('p', 'p', 'g', state)
+
+    assert score.value == {}
+    assert score.status is ScoreStatus.EXCLUDED
+
+
+# ---- numeric (reference-free rating) mode ----
+
+
+def _numeric_score(response: str):
+    """The documented ``score_type='numeric'`` flow: rate a response without a reference."""
+    adapter = make_adapter('general_qa', [response], judge_strategy='llm')
+    adapter.llm_judge = RatingJudge([response])
+    state = make_state('an answer', 'a target')
+    return adapter.llm_match_score('an answer', 'an answer', 'a target', state)
+
+
+def test_numeric_mode_scores_the_rating():
+    assert _numeric_score('{"reasoning": "good", "score": 0.75}').value == {'acc': 0.75}
+    assert _numeric_score('{"reasoning": "bad", "score": 0}').value == {'acc': 0.0}
+
+
+def test_numeric_mode_rejects_a_rating_off_the_scale():
+    score = _numeric_score('{"reasoning": "great", "score": 42}')
+
+    assert score.value == {}
+    assert score.status is ScoreStatus.EXCLUDED
+
+
+def test_numeric_mode_no_longer_reads_a_rating_out_of_prose():
+    """The old extractor pulled ``[[0.5]]`` out of free text, and scored 0 when it could not."""
+    score = _numeric_score('I would rate this response [[0.5]] overall.')
+
+    assert score.value == {}
+    assert score.status is ScoreStatus.EXCLUDED
+
+
+def test_numeric_mode_transport_failure_excludes_instead_of_scoring_zero():
+    score = _numeric_score(ERROR_RESPONSE)
+
+    assert score.value == {}
+    assert score.status is ScoreStatus.EXCLUDED
+
+
+def test_numeric_mode_prompt_asks_for_a_bounded_number():
+    adapter = make_adapter('general_qa', ['{"score": 1}'], judge_strategy='llm')
+    adapter.llm_judge = RatingJudge(['{"score": 1}'])
+    state = make_state('an answer', 'a target', question='Explain gravity.')
+
+    adapter.llm_match_score('an answer', 'an answer', 'a target', state)
+
+    prompt = adapter.llm_judge.prompts[0]
+    assert 'Explain gravity.' in prompt
+    assert '"score": a number >= 0.0 and <= 1.0' in prompt
+    assert '[[rating]]' not in prompt

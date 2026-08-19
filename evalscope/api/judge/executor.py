@@ -1,12 +1,9 @@
 """Drives every judge call for one sample: repeats, stages, cases, placements, aggregation.
 
-Retry boundaries are deliberately separate:
-
-- transport failures are retried by the model layer (``GenerateConfig.retries``); the executor
-  does not add its own network retry;
-- a response that arrived but does not satisfy the output contract is retried only as many times
-  as the contract declares, and each try is recorded as its own ``JudgeAttempt``;
-- judge repeats are planned observations, never failure compensation.
+Retry boundaries are deliberately separate: transport failures belong to the model layer
+(``GenerateConfig.retries``), a reply that violates the output contract is retried only as many
+times as the contract declares, and judge repeats are planned observations rather than failure
+compensation.
 """
 import time
 from collections import Counter
@@ -14,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Optional, Sequence
 
+from evalscope.api.messages import ChatMessageAssistant, ChatMessageUser
 from evalscope.api.metric import JudgeDetail, Score
 from evalscope.constants import ScoreStatus
 from evalscope.metrics.judge.llm_judge import JUDGE_ERROR_PREFIX, LLMJudge
@@ -31,12 +29,12 @@ from .types import (
 
 logger = get_logger()
 
-MAX_STAGES = 8
-"""Stage expansion is bounded so a buggy adapter cannot loop up unbounded judge cost."""
+MAX_STAGES = 4
+"""Bounds stage expansion so a buggy adapter cannot loop up unbounded judge cost."""
 
 
 class JudgeExecutorConfig(BaseModel):
-    """Runtime knobs for one executor. Multi-judge and repeats are reserved, not yet enabled."""
+    """Runtime knobs for one executor."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -57,10 +55,6 @@ class JudgeExecutor:
         self.config = config or JudgeExecutorConfig()
         if not self.judges:
             raise ValueError('JudgeExecutor requires at least one judge model.')
-        if len(self.judges) > 1:
-            raise ValueError('Multiple judge models are not supported yet; pass exactly one.')
-        if self.config.repeats != 1:
-            raise ValueError('Judge repeats are not supported yet; use repeats=1.')
 
     # ------------------------------------------------------------------
     # Entry points
@@ -123,11 +117,9 @@ class JudgeExecutor:
             for case in pending:
                 verdict = self._run_case(adapter, context, judge, repeat_id, case, completed, review)
                 if verdict is None:
-                    if case.required:
-                        observation.status = ScoreStatus.INVALID_SESSION
-                        observation.error = f'required case {case.case_id} produced no usable verdict'
-                        return observation
-                    continue
+                    observation.status = ScoreStatus.INVALID_SESSION
+                    observation.error = f'case {case.case_id} produced no usable verdict'
+                    return observation
                 completed.append(verdict)
             pending = list(adapter.expand_judge_cases(stage + 1, completed, context))
         if pending:
@@ -135,7 +127,6 @@ class JudgeExecutor:
 
         observation.case_verdicts = completed
         if declared and not completed:
-            # Cases were asked for but none survived; the sample has no usable judge verdict.
             observation.status = ScoreStatus.EXCLUDED
             observation.error = 'no case produced a usable verdict'
             return observation
@@ -167,16 +158,26 @@ class JudgeExecutor:
                 # not half a verdict.
                 fallback = adapter.judge_fallback_verdict(case, context)
                 if fallback is not None:
-                    return fallback.model_copy(update={'status': ScoreStatus.FALLBACK})
+                    return fallback.model_copy(
+                        update={
+                            'status': ScoreStatus.FALLBACK,
+                            'metadata': fallback.metadata or dict(case.metadata),
+                        }
+                    )
                 return None
             values[placement.value] = value
 
         if len(placements) == 1:
-            return CaseVerdict(case_id=case.case_id, value=values[Placement.ORIGINAL.value])
+            return CaseVerdict(
+                case_id=case.case_id,
+                value=values[Placement.ORIGINAL.value],
+                metadata=dict(case.metadata),
+            )
         return CaseVerdict(
             case_id=case.case_id,
             value=[values[Placement.ORIGINAL.value], values[Placement.SWAPPED.value]],
             placements=values,
+            metadata=dict(case.metadata),
         )
 
     def _resolve_placement(
@@ -193,10 +194,11 @@ class JudgeExecutor:
         """Send one request, parse it strictly, and retry only as the contract allows."""
         contract = case.output_contract
         request = adapter.build_judge_request(case, placement, completed, context)
+        messages = list(request.messages)
 
         for attempt_index in range(contract.parse_retries + 1):
             started = time.perf_counter()
-            raw = judge.judge(messages=request.messages)
+            raw = judge.judge(messages=messages)
             latency = time.perf_counter() - started
 
             attempt = JudgeAttempt(
@@ -227,6 +229,13 @@ class JudgeExecutor:
             attempt.status = ScoreStatus.PARSE_ERROR
             attempt.error = result.error
             review.attempts.append(attempt)
+            # Name the fault in the retry: resending the identical prompt would only rely on the
+            # provider not being bit-deterministic.
+            messages = messages + [
+                ChatMessageAssistant(content=raw),
+                ChatMessageUser(content=(f'That reply could not be used: {result.error}.'
+                                         f'{contract.instruction()}')),
+            ]
 
         logger.warning(
             f'Judge {judge.model_id} failed the output contract for case {case.case_id} after '
@@ -239,7 +248,11 @@ class JudgeExecutor:
     # ------------------------------------------------------------------
 
     def _aggregate(self, adapter: JudgeProtocol, review: JudgeReview, context: JudgeContext) -> None:
-        """Aggregate repeats within a judge, then judges with equal weight."""
+        """Average repeats within a judge, then judges with equal weight.
+
+        Only usable observations count, so a judge or repeat that failed shrinks the average
+        instead of dragging it toward zero.
+        """
         per_judge: Dict[str, List[Dict[str, float]]] = {}
         for observation in review.valid_observations:
             per_judge.setdefault(observation.judge_id, []).append(observation.reduced.value)
@@ -252,9 +265,8 @@ class JudgeExecutor:
 
         judge_values = [_combine(values) for values in per_judge.values()]
         review.value = _combine(judge_values)
-        # Diagnostics are per-observation and not averaged; with several judges the last one wins.
-        for observation in review.valid_observations:
-            review.metadata.update(observation.reduced.metadata)
+        # Diagnostics are per-observation and cannot be averaged, so the first usable one stands.
+        review.metadata = dict(review.valid_observations[0].reduced.metadata)
         if any(obs.status is ScoreStatus.FALLBACK for obs in review.valid_observations):
             review.status = ScoreStatus.FALLBACK
 
@@ -283,12 +295,9 @@ class JudgeExecutor:
             error=review.error,
         )
         if self.config.save_io:
-            # Keeps the raw judge text inspectable in the reviews file, as ``Score.explanation``
-            # used to before adapters stopped seeing responses.
+            # Keeps the raw judge text inspectable in the reviews file.
             score.metadata = dict(score.metadata or {})
-            score.metadata['judge_attempts'] = [
-                attempt.model_dump(exclude_none=True, exclude={'usage'}) for attempt in review.attempts
-            ]
+            score.metadata['judge_attempts'] = [attempt.model_dump(exclude_none=True) for attempt in review.attempts]
         return score
 
 

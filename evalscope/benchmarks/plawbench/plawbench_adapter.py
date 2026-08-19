@@ -141,7 +141,6 @@ class PLawBenchAdapter(DefaultDataAdapter):
     """Rubric-based Chinese legal practice benchmark graded by an LLM judge."""
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

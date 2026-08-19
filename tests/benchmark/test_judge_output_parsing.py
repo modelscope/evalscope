@@ -33,7 +33,9 @@ class PlacementJudge:
 
     def judge(self, prompt: str = '', system_prompt: Any = None, messages: Any = None) -> str:
         self.calls += 1
-        text = prompt or (messages[-1].content if messages else '')
+        # Scans the whole conversation: a parse retry appends a correction, and the placement is
+        # only stated in the original case prompt.
+        text = prompt or '\n'.join(str(message.content) for message in (messages or []))
         # On the original pass the reference is Assistant 1; on the swapped pass the prediction is.
         return self.original if text.index('reference') < text.index('prediction') else self.swapped
 

@@ -3,18 +3,19 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.constants import EvalType, JudgeScoreType
+from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
 from .base import BaseJudge
-from .score_extractors import NumericScoreExtractor, PatternScoreExtractor, ScoreExtractor
 
 logger = get_logger()
 
-# Sentinel that ``judge`` returns instead of raising on a failed request.
-# Consumers must fail closed on it (score 0, never full credit) — the same
-# contract as ``evalscope/benchmarks/hipho/utils.py#JUDGE_ERROR_PREFIX``.
+# Sentinel that ``judge`` returns instead of raising on a failed request. Consumers must fail
+# closed on it: an ``[ERROR]`` string must never reach a parser, and never be scored.
 JUDGE_ERROR_PREFIX = '[ERROR]'
 
-DEFAULT_PROMPT_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
+# The templates state the grading criteria only. The reply format is appended by
+# ``OutputContract.instruction()`` so the prompt and the parser cannot drift apart.
+DEFAULT_PROMPT_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and decide whether the predicted answer is correct or incorrect.
 
 [Question]
 {question}
@@ -28,22 +29,18 @@ DEFAULT_PROMPT_TEMPLATE = """Your job is to look at a question, a gold target, a
 Evaluate the model's answer based on correctness compared to the reference answer.
 Grade the predicted answer of this new question as one of:
 A: CORRECT
-B: INCORRECT
-
-Just return the letters "A" or "B", with no text around it.
-"""  # noqa: E501
+B: INCORRECT"""  # noqa: E501
 
 
 DEFAULT_NUMERIC_SCORE_TEMPLATE = """Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
 Begin your evaluation by providing a short explanation. Be as objective as possible.
-After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: \"[[rating]]\", for example: \"Rating: [[0.5]]\"
+Rate the response on a scale of 0 (worst) to 1 (best).
 
 [Question]
 {question}
 
 [Response]
-{pred}
-"""  # noqa: E501
+{pred}"""  # noqa: E501
 
 DEFAULT_JUDGE_MODEL = 'Qwen/Qwen3-235B-A22B'
 DEFAULT_API_URL = 'https://api-inference.modelscope.cn/v1/'
@@ -81,11 +78,11 @@ class LLMJudge(BaseJudge):
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
-            score_pattern (str, optional): Regex pattern to extract score from LLM response
-            score_mapping (dict, optional): Mapping from extracted score to float value
-            score_type (str, optional): Type of score extraction strategy ('pattern', 'numeric') defaults to 'pattern'.
-                - 'pattern': Use score_pattern and score_mapping to extract categorical scores
-                - 'numeric': Treat the extracted value as a direct numerical score
+            score_pattern (str, optional): [Deprecated] No longer has any effect.
+            score_mapping (dict, optional): Allowed verdict labels mapped to their score values
+            score_type (str, optional): Which built-in judge contract to use, defaults to 'pattern'.
+                - 'pattern': grade against a reference answer, choosing one of the score_mapping labels
+                - 'numeric': rate the response on a 0-1 scale without a reference
         """
         self.api_key = api_key or os.environ.get('MODELSCOPE_SDK_TOKEN', 'EMPTY')
         self.api_url = api_url or os.environ.get('MODELSCOPE_API_BASE', DEFAULT_API_URL)
@@ -95,25 +92,22 @@ class LLMJudge(BaseJudge):
         self.generation_config = generation_config or {'temperature': 0.0, 'max_tokens': 4096}
         self.model_args = model_args or {}
 
-        # Build score extractor based on score_type (Strategy pattern)
         self.score_type = score_type
         if self.score_type == JudgeScoreType.NUMERIC:
-            pattern = score_pattern or r'\[\[(\d+(?:\.\d+)?)\]\]'
             self.prompt_template = prompt_template or os.environ.get(
                 'JUDGE_PROMPT_TEMPLATE', DEFAULT_NUMERIC_SCORE_TEMPLATE
             )
-            self._score_extractor: ScoreExtractor = NumericScoreExtractor(pattern=pattern)
         elif self.score_type == JudgeScoreType.PATTERN:
-            # Anchor to only accept a standalone A or B (avoid false positives)
-            pattern = score_pattern or r'^\s*([AB])\s*$'
             self.prompt_template = prompt_template or os.environ.get('JUDGE_PROMPT_TEMPLATE', DEFAULT_PROMPT_TEMPLATE)
-            self._score_extractor = PatternScoreExtractor(pattern=pattern, score_mapping=score_mapping)
         else:
             raise ValueError(f"Invalid score_type: {self.score_type}. Must be 'pattern' or 'numeric'.")
 
-        # Keep score_pattern and score_mapping as public attrs for backward compatibility
-        self.score_pattern = pattern
         self.score_mapping = score_mapping or {'A': 1.0, 'B': 0.0}
+        if score_pattern:
+            deprecated_warning(
+                logger, 'The `score_pattern` judge parameter is deprecated and no longer has any effect: the '
+                'judge now replies with a JSON object validated against a schema. It will be removed in v2.0.0.'
+            )
 
         self._init_server_adapter()
 
@@ -179,24 +173,3 @@ class LLMJudge(BaseJudge):
         if '{gold}' in self.prompt_template:
             prompt = prompt.replace('{gold}', gold)
         return prompt
-
-    def get_score(self, response: str) -> float:
-        """
-        Extract score from LLM response using the configured extractor strategy.
-
-        Args:
-            response (str): The response from the LLM
-
-        Returns:
-            float: The numeric score extracted from the response
-        """
-        if response is None:
-            return 0.0
-        # A failed judge request must score 0, never full credit: ``judge`` reports
-        # failures as an ``[ERROR] ...`` string whose embedded digits (model id,
-        # endpoint, HTTP code) could otherwise be parsed as a score by a loose
-        # pattern. Same guard as ``benchmarks/hipho/utils.py``.
-        if response.startswith(JUDGE_ERROR_PREFIX):
-            logger.warning(f'LLM judge failed; returning 0.0. Response: {response}')
-            return 0.0
-        return self._score_extractor.extract(response)

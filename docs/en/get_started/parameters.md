@@ -167,7 +167,8 @@ LLM-as-a-Judge evaluation parameters using a judge model to determine correctnes
 |-----------|------|-------------|---------|
 | `--judge-strategy` | `str` | Judge model strategy<br>• `auto`: Automatically decide based on dataset requirements<br>• `llm`: Always use judge model<br>• `rule`: Use rule-based judgment only<br>• `llm_recall`: Use judge model after rule-based judgment fails | `auto` |
 | `--judge-worker-num` | `int` | **[Deprecated]** Use `--eval-batch-size` instead. Will be removed in v2.0.0. | `1` |
-| `--judge-model-args` | `str` | Judge model configuration (JSON string), see table below | - |
+| `--judge-model-args` | `str` | Judge model configuration (JSON string), see table below. Accepts a single object, or a list of objects to score with several judges and average their verdicts with equal weight (each needs a distinct `model_id`). | - |
+| `--judge-repeats` | `int` | How many times each judge reviews a sample; verdicts are averaged with equal weight. Values above 1 require an explicit non-zero judge `generation_config.temperature`, since repeating a deterministic judge only multiplies cost. | `1` |
 | `--analysis-report` | `bool` | Whether to generate analysis report (language auto-detected) | `false` |
 
 ### judge-model-args Configuration Options
@@ -178,12 +179,18 @@ LLM-as-a-Judge evaluation parameters using a judge model to determine correctnes
 | `api_url` | `str` | API endpoint | Read from `MODELSCOPE_API_BASE`,<br>default `https://api-inference.modelscope.cn/v1/` |
 | `model_id` | `str` | Model ID | Read from `MODELSCOPE_JUDGE_LLM`,<br>default `Qwen/Qwen3-235B-A22B` |
 | `system_prompt` | `str` | System prompt | - |
-| `prompt_template` | `str` | Prompt template | Auto-selected based on `score_type` |
+| `prompt_template` | `str` | Prompt template, stating the grading criteria only. The required reply format is appended automatically. | Auto-selected based on `score_type` |
 | `generation_config` | `dict` | Generation parameters (same as `--generation-config`) | - |
 | `model_args` | `dict` | Judge model loading parameters (same as `--model-args`), e.g. `{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
-| `score_type` | `str` | Scoring method<br>• `pattern`: Judge if answer matches reference<br>• `numeric`: Score without reference (0-1) | `pattern` |
-| `score_pattern` | `str` | Regex to parse output | `pattern` mode: `(A\|B)`<br>`numeric` mode: `\[\[(\d+(?:\.\d+)?)\]\]` |
-| `score_mapping` | `dict` | Score mapping for `pattern` mode | `{'A': 1.0, 'B': 0.0}` |
+| `score_type` | `str` | Which built-in judge contract to use<br>• `pattern`: judge whether the answer matches the reference, choosing one of the `score_mapping` labels<br>• `numeric`: score without a reference (0-1) | `pattern` |
+| `score_mapping` | `dict` | `pattern` mode: the verdict labels the judge may return, mapped to their score values | `{'A': 1.0, 'B': 0.0}` |
+| `score_pattern` | `str` | **[Deprecated]** No longer has any effect: the judge replies with a JSON object validated against a schema. Will be removed in v2.0.0. | - |
+
+```{note}
+The judge replies with a single JSON object. A reply that does not satisfy the contract is retried,
+and then **excluded** from the metric rather than scored 0, so a metric's sample count (`Num`) can
+be lower than the number of samples evaluated.
+```
 
 ```{seealso}
 For more information on ModelScope model inference services, refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro)

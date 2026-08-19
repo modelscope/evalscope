@@ -149,7 +149,6 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 class ResearchRubricsAdapter(AgentLoopAdapter):
     """Deep Research agent benchmark with binary rubric-based LLM judging."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -287,10 +286,28 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
 
     # -- Judge contract hooks --
 
+    def _uses_chunking(self, report: str) -> bool:
+        """Whether the report is judged chunk-by-chunk. Read by both the case and expansion hooks:
+        if the two disagreed, chunk cases would be emitted with no synthesis to fold them."""
+        return len(report) // 4 > self.judge_context_limit
+
+    def _report_chunks(self, report: str) -> List[str]:
+        """Chunks of one report, cached so each rubric and request does not re-split it.
+
+        The cached tuple is read once: samples are scored on worker threads, so a two-step
+        read could hand one sample's chunks to another.
+        """
+        cached = getattr(self, '_chunk_cache', None)
+        if cached is not None and cached[0] == report:
+            return cached[1]
+        chunks = chunk_document(report, max_tokens=self.judge_chunk_size)
+        self._chunk_cache = (report, chunks)
+        return chunks
+
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         rubrics = json.loads(context.reference)
         report = context.filtered_prediction
-        used_chunking = len(report) // 4 > self.judge_context_limit
+        used_chunking = self._uses_chunking(report)
         retries = max(self.judge_retries - 1, 0)
         binary_contract = OutputContract(schema_model=BinaryGrade, parse_retries=retries)
         chunk_contract = OutputContract(schema_model=ChunkGrade, parse_retries=retries)
@@ -300,7 +317,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             axis = str(rubric.get('axis', '')).strip()
             weight = float(rubric.get('weight', 0))
             if used_chunking:
-                chunks = chunk_document(report, max_tokens=self.judge_chunk_size)
+                chunks = self._report_chunks(report)
                 for chunk_idx in range(len(chunks)):
                     cases.append(
                         JudgeCase(
@@ -340,16 +357,14 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         # Emit synthesis cases for rubrics whose chunks are all complete.
         rubrics = json.loads(context.reference)
         report = context.filtered_prediction
-        if len(report) // 4 <= self.judge_context_limit:
+        if not self._uses_chunking(report):
             return []
         # Collect evidence per rubric from completed chunk verdicts.
         evidence_by_rubric: Dict[int, List[str]] = defaultdict(list)
         for cv in completed_cases:
-            if '_chunk_' not in cv.case_id:
+            if cv.metadata.get('kind') != 'chunk':
                 continue
-            parts = cv.case_id.split('_')
-            rubric_idx = int(parts[1])
-            evidence_by_rubric[rubric_idx].extend(cv.value.relevant_evidence)
+            evidence_by_rubric[cv.metadata['rubric_idx']].extend(cv.value.relevant_evidence)
         synthesis_cases: List[JudgeCase] = []
         for rubric_idx, evidence in evidence_by_rubric.items():
             rubric = rubrics[rubric_idx]
@@ -386,8 +401,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                           ChatMessageUser(content=prompt)]
             )
         elif kind == 'chunk':
-            report = context.filtered_prediction
-            chunks = chunk_document(report, max_tokens=self.judge_chunk_size)
+            chunks = self._report_chunks(context.filtered_prediction)
             chunk_content = chunks[meta['chunk_idx']]
             chunk_num = meta['chunk_idx'] + 1
             prompt = CHUNK_USER_PROMPT.format(

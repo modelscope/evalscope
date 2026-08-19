@@ -142,8 +142,6 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 )
 class AIME24Adapter(DefaultDataAdapter):
 
-    uses_judge_contracts = True
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

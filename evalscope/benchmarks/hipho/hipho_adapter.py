@@ -133,7 +133,6 @@ class HiPhOAdapter(VisionLanguageAdapter):
     """
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

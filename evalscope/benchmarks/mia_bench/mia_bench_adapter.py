@@ -69,7 +69,6 @@ class MIABenchAdapter(VisionLanguageAdapter):
     response satisfies each weighted instruction component.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

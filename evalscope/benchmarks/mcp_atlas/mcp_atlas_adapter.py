@@ -65,7 +65,6 @@ _OUTCOME_SCORE = {'fulfilled': 1.0, 'partially_fulfilled': 0.5, 'not_fulfilled':
 class MCPAtlasAdapter(AgentLoopAdapter):
     """EvalScope-native MCP-Atlas adapter using MCP-Atlas agent-environment."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     strategy_name = 'function_calling'
     max_steps_default = 100

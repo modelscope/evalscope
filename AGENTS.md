@@ -128,17 +128,17 @@ Don't try to learn the architecture from this file — read these and grep:
 
 ## Adding a judge-scored benchmark
 
-An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply itself — that debt is fenced off by `tests/api/judge/test_gates.py`. Score through the JSON output contract in `evalscope/api/judge/` instead:
+An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply itself — that debt is fenced off by `tests/api/judge/test_gates.py`, which scans every file under `evalscope/benchmarks/` (helpers included, so moving a parser into `utils.py` does not evade it). Score through the JSON output contract in `evalscope/api/judge/` instead:
 
-1. Set `uses_judge_contracts = True` and pick a `scoring_policy` (`JUDGE_ONLY` or `JUDGE_DEFAULT`).
-2. **Simple binary correct/incorrect:** do nothing else. `LLMJudgeMixin` supplies a default `build_judge_cases` / `build_judge_request` / `reduce_judge_verdicts` that grade one JSON verdict into `{'acc': 1.0|0.0}`. Override only `judge_prompt(context)` to change wording, or `judge_metric_name` to change the key.
+1. Pick a `scoring_policy` (`JUDGE_ONLY` or `JUDGE_DEFAULT`). Judge scoring always goes through the contract; there is no opt-in flag and no legacy path.
+2. **Single verdict per sample:** do nothing else. `LLMJudgeMixin` supplies the hooks and picks a built-in contract from the judge's `score_type` — `pattern` grades one of the `score_mapping` labels, `numeric` takes a 0-1 rating. Override only `judge_prompt(context)` to change wording, or `judge_metric_name` to change the key. A `prompt_template` must state grading criteria only: `OutputContract.instruction()` appends the reply format, so a template that also dictates a format contradicts it.
 3. **Custom shape (multiple cases, ratings, rubrics):** declare a Pydantic `schema_model`, wrap it in `OutputContract`, and implement the three hooks:
    - `build_judge_cases(context)` → one `JudgeCase(case_id, output_contract, metadata)` per thing to judge.
    - `build_judge_request(case, placement, completed, context)` → the messages; append `case.output_contract.instruction()` so the prompt and parser cannot drift.
-   - `reduce_judge_verdicts(verdicts, context)` → fold parsed verdicts into `{metric: value}`.
+   - `reduce_judge_verdicts(verdicts, context)` → fold parsed verdicts into `{metric: value}`. Read a verdict's context from `CaseVerdict.metadata`, never by parsing `case_id`.
    - Optional: `expand_judge_cases()` for staged/derived cases, `judge_fallback_verdict()` for a rule fallback, `finalize_judge_score()` to set `main_score_name`.
-4. The executor owns retries, position swap, aggregation and fail-closed exclusion; a reply that fails the contract excludes the sample from the metric — it is never scored 0 or full credit.
-5. Add a scripted-judge test in `tests/api/judge/test_migrated_adapters.py` covering: a valid verdict, a parse failure (prose / malformed), and a transport `[ERROR]` — each must exclude, not silently score.
+4. The executor owns parse retries (each retry tells the judge what was wrong), position swap, repeats, multi-judge aggregation and fail-closed exclusion. A reply that fails the contract excludes the sample from the metric — never scored 0 or full credit — so a metric's `num` can be below the sample count.
+5. Add a scripted-judge test in `tests/api/judge/test_migrated_adapters.py` covering: a valid verdict, a parse failure (prose / malformed), and a transport `[ERROR]` — each must exclude, not silently score. A judge double must carry the surface the default hooks read (`score_type`, `score_mapping`, `build_prompt`), and be injected through the `llm_judge` setter rather than a private attribute.
 
 ## Conventions & gotchas
 

@@ -126,7 +126,6 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 class BrowseCompAdapter(AgentAdapter):
     """Adapter for the BrowseComp browsing-agent benchmark."""
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
-    uses_judge_contracts = True
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

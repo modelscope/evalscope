@@ -228,7 +228,7 @@ def test_max_steps_requests_a_tool_free_final_report() -> None:
 
 def test_binary_scoring_preserves_negative_weight_penalty() -> None:
     adapter = make_adapter()
-    adapter._llm_judge = FakeJudge([
+    adapter.llm_judge = FakeJudge([
         binary_response('Satisfied', 1.0),
         binary_response('Not Satisfied', 0.0),
         binary_response('Satisfied', 1.0),
@@ -251,22 +251,23 @@ def test_binary_scoring_preserves_negative_weight_penalty() -> None:
 def test_judge_retries_parse_errors() -> None:
     """The contract retries malformed replies up to parse_retries times."""
     adapter = make_adapter(judge_retries=3)
-    adapter._llm_judge = FakeJudge([
+    judge = FakeJudge([
         'not json',
         '{}',
         binary_response('Satisfied', 1.0),
     ])
+    adapter.llm_judge = judge
     state = make_state(adapter, [{'criterion': 'Present', 'weight': 1.0, 'axis': 'Content'}])
 
     score = adapter._score_task_state(state)
 
     assert score.value['compliance_score'] == 1.0
-    assert len(adapter._llm_judge.calls) == 3
+    assert len(judge.calls) == 3
 
 
 def test_judge_failure_excludes_after_retries() -> None:
     adapter = make_adapter(judge_retries=2)
-    adapter._llm_judge = FakeJudge(['bad', 'still bad'])
+    adapter.llm_judge = FakeJudge(['bad', 'still bad'])
     state = make_state(adapter, [{'criterion': 'Present', 'weight': 1.0, 'axis': 'Content'}])
 
     score = adapter._score_task_state(state)
@@ -279,7 +280,7 @@ def test_judge_failure_excludes_after_retries() -> None:
 def test_long_report_uses_chunk_and_synthesis() -> None:
     adapter = make_adapter(judge_context_limit=1, judge_chunk_size=1)
     judge = ChunkAwareJudge()
-    adapter._llm_judge = judge
+    adapter.llm_judge = judge
     state = make_state(
         adapter,
         [{'criterion': 'Uses evidence', 'weight': 5.0, 'axis': 'Synthesis of Information'}],

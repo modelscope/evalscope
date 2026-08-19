@@ -97,7 +97,6 @@ class CharXivAdapter(VisionLanguageAdapter):
     Scoring uses LLM judge for both question types.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -64,7 +64,6 @@ ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Model
 class ZeroBenchAdapter(VisionLanguageAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_judge_contracts = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

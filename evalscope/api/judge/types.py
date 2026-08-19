@@ -1,8 +1,4 @@
-"""Contracts for one judge review: what is asked, what came back, and what the adapter must do.
-
-``JudgeProtocol`` lives here rather than in its own module because it is the adapter-facing half
-of the same contract as the models below.
-"""
+"""Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Sequence
@@ -45,16 +41,13 @@ class JudgeCase(BaseModel):
     output_contract: OutputContract
     """Declares the verdict shape and is the only thing allowed to parse the response."""
 
-    required: bool = True
-    """A failed required case invalidates the whole observation."""
-
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    """Adapter-defined data carried through to ``build_judge_request``."""
+    """Adapter-defined data carried through to ``build_judge_request`` and onto the verdict."""
 
 
 class JudgeRequest(BaseModel):
-    """What to send the judge for one case. Identity (judge, repeat, placement) is the
-    executor's; the adapter only decides the content."""
+    """What to send the judge for one case. The adapter decides the content; the executor owns
+    the identity (judge, repeat, placement)."""
 
     messages: List[ChatMessage]
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -87,6 +80,9 @@ class CaseVerdict(BaseModel):
     status: ScoreStatus = ScoreStatus.SUCCESS
     placements: Dict[str, Any] = Field(default_factory=dict)
     """Per-placement parsed values, present when the case was judged on both sides."""
+
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    """Copied from the case, so a reduce step reads its context instead of parsing ``case_id``."""
 
 
 class ReducedVerdict(BaseModel):
@@ -137,8 +133,7 @@ class JudgeProtocol(Protocol):
     """The adapter-side hooks :class:`JudgeExecutor` drives.
 
     An adapter declares what to ask and how to fold the answers into a score. It never calls the
-    judge model, never sees a raw response, and never parses one -- that is the executor's and the
-    output contract's job respectively.
+    judge model and never parses a response.
     """
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:

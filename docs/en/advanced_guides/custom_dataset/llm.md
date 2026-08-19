@@ -244,6 +244,13 @@ LLM-based evaluation can conveniently assess the correctness of model outputs (o
 
 For a complete explanation of judge parameters, please refer to [documentation](../../get_started/parameters.md#judge-parameters).
 
+```{note}
+The judge replies with a single JSON object. A reply that cannot be read as one is retried and then
+**excluded** from the metric rather than scored 0, so `Num` may be lower than the sample count. A
+custom `prompt_template` should state the grading criteria only; the reply format is appended
+automatically.
+```
+
 ```python
 import os
 from evalscope import TaskConfig, run_task

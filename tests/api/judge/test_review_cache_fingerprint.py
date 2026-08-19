@@ -23,25 +23,43 @@ def review(fingerprint):
 
 
 def test_fingerprint_is_none_without_a_judge():
-    assert compute_judge_fingerprint('rule', None, False) is None
-    assert compute_judge_fingerprint('auto', {}, False) is None
+    assert compute_judge_fingerprint('rule', None) is None
+    assert compute_judge_fingerprint('auto', {}) is None
 
 
 def test_fingerprint_changes_with_the_judge_configuration():
-    base = compute_judge_fingerprint('llm', JUDGE_ARGS, True)
+    base = compute_judge_fingerprint('llm', JUDGE_ARGS)
 
-    assert base != compute_judge_fingerprint('llm_recall', JUDGE_ARGS, True)
-    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'model_id': 'judge-b'}, True)
-    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'generation_config': {'temperature': 1.0}}, True)
-    assert base != compute_judge_fingerprint('llm', JUDGE_ARGS, False)
+    assert base != compute_judge_fingerprint('llm_recall', JUDGE_ARGS)
+    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'model_id': 'judge-b'})
+    assert base != compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'generation_config': {'temperature': 1.0}})
+
+
+def test_adding_a_second_judge_changes_the_fingerprint():
+    """Scores averaged over two judges must not be reused for one."""
+    one = compute_judge_fingerprint('llm', JUDGE_ARGS)
+    two = compute_judge_fingerprint('llm', [JUDGE_ARGS, {**JUDGE_ARGS, 'model_id': 'judge-b'}])
+
+    assert one != two
+
+
+def test_a_single_judge_list_matches_the_bare_mapping():
+    """``judge_model_args`` accepts either shape; one judge is one configuration either way."""
+    assert compute_judge_fingerprint('llm', [JUDGE_ARGS]) == compute_judge_fingerprint('llm', JUDGE_ARGS)
 
 
 def test_rotating_the_api_key_does_not_invalidate_reviews():
     """A credential change is not a scoring change, and the key must not reach the cache file."""
-    with_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k1'}, True)
-    other_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k2'}, True)
+    with_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k1'})
+    other_key = compute_judge_fingerprint('llm', {**JUDGE_ARGS, 'api_key': 'k2'})
 
-    assert with_key == other_key == compute_judge_fingerprint('llm', JUDGE_ARGS, True)
+    assert with_key == other_key == compute_judge_fingerprint('llm', JUDGE_ARGS)
+
+
+def test_rotating_the_api_key_of_a_listed_judge_does_not_invalidate_reviews():
+    keyed = compute_judge_fingerprint('llm', [{**JUDGE_ARGS, 'api_key': 'k1'}])
+
+    assert keyed == compute_judge_fingerprint('llm', [JUDGE_ARGS])
 
 
 def test_matching_fingerprint_is_reused(tmp_path):

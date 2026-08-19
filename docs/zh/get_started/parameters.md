@@ -163,7 +163,8 @@ LLM-as-a-Judge评测参数，使用裁判模型判断正误：
 |------|------|------|--------|
 | `--judge-strategy` | `str` | 裁判模型策略<br>• `auto`: 根据数据集自动决定<br>• `llm`: 总是使用裁判模型<br>• `rule`: 只使用规则判断<br>• `llm_recall`: 规则失败后使用裁判模型 | `auto` |
 | `--judge-worker-num` | `int` | **[已废弃]** 请使用 `--eval-batch-size` 代替，将在 v2.0.0 中移除 | `1` |
-| `--judge-model-args` | `dict` | 裁判模型配置（JSON字符串），详见下表 | - |
+| `--judge-model-args` | `dict` | 裁判模型配置（JSON字符串），详见下表。可传入单个对象，也可传入对象数组以使用多个裁判模型并对判据等权平均（每个裁判需有不同的 `model_id`） | - |
+| `--judge-repeats` | `int` | 每个裁判模型对同一样本评审的次数，多次判据等权平均。大于 1 时必须显式设置非零的裁判 `generation_config.temperature`，否则重复评审确定性裁判只会成倍增加开销 | `1` |
 | `--analysis-report` | `bool` | 是否生成分析报告（自动判断语言） | `false` |
 
 ### judge-model-args 配置项
@@ -174,12 +175,17 @@ LLM-as-a-Judge评测参数，使用裁判模型判断正误：
 | `api_url` | `str` | API端点 | 从`MODELSCOPE_API_BASE`读取，<br>默认`https://api-inference.modelscope.cn/v1/` |
 | `model_id` | `str` | 模型ID | 从`MODELSCOPE_JUDGE_LLM`读取，<br>默认`Qwen/Qwen3-235B-A22B` |
 | `system_prompt` | `str` | 系统prompt | - |
-| `prompt_template` | `str` | Prompt模板 | 根据`score_type`自动选择 |
+| `prompt_template` | `str` | Prompt模板，只需描述打分标准，回复格式要求会自动追加 | 根据`score_type`自动选择 |
 | `generation_config` | `dict` | 生成参数（同`--generation-config`） | - |
 | `model_args` | `dict` | 裁判模型加载参数（同`--model-args`），例如`{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
-| `score_type` | `str` | 打分方式<br>• `pattern`: 判断与参考答案是否相同<br>• `numeric`: 无参考答案打分（0-1） | `pattern` |
-| `score_pattern` | `str` | 解析输出的正则表达式 | `pattern`模式：`(A\|B)`<br>`numeric`模式：`\[\[(\d+(?:\.\d+)?)\]\]` |
-| `score_mapping` | `dict` | `pattern`模式的分数映射 | `{'A': 1.0, 'B': 0.0}` |
+| `score_type` | `str` | 使用哪个内置判据契约<br>• `pattern`: 判断与参考答案是否相同，从 `score_mapping` 的标签中选择<br>• `numeric`: 无参考答案打分（0-1） | `pattern` |
+| `score_mapping` | `dict` | `pattern`模式下裁判可返回的判据标签及其对应分值 | `{'A': 1.0, 'B': 0.0}` |
+| `score_pattern` | `str` | **[已废弃]** 不再生效：裁判现以 JSON 对象回复并按 schema 校验，将在 v2.0.0 中移除 | - |
+
+```{note}
+裁判模型以单个 JSON 对象回复。不满足契约的回复会先重试，之后该样本将被**排除**在该指标之外，
+而不是记为 0 分，因此指标的样本数（`Num`）可能小于实际评测的样本数。
+```
 
 ```{seealso}
 关于ModelScope模型推理服务，请参考[ModelScope API推理服务](https://modelscope.cn/docs/model-service/API-Inference/intro)
