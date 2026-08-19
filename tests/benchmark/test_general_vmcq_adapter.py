@@ -1,6 +1,9 @@
 import json
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
-from datasets import Dataset, Features, Image, Sequence, Value
+import wave
+from datasets import Audio, Dataset, Features, Image, Sequence, Value
 from io import BytesIO
 from pathlib import Path
 from PIL import Image as PILImage
@@ -39,6 +42,17 @@ def jpeg_bytes() -> bytes:
     image = PILImage.new(mode='RGB', size=(10, 10), color=(0, 0, 255))
     buffer = BytesIO()
     image.save(buffer, format='JPEG')
+    return buffer.getvalue()
+
+
+@pytest.fixture
+def wav_bytes() -> bytes:
+    buffer = BytesIO()
+    with wave.open(buffer, 'wb') as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(8000)
+        writer.writeframes(b'\x00\x00' * 800)
     return buffer.getvalue()
 
 
@@ -142,3 +156,42 @@ def test_local_loader_supports_parquet_with_hf_image_column(
         isinstance(content, ContentImage) and content.image.startswith('data:image/png;base64,')
         for content in content_list
     )
+
+
+def test_local_loader_supports_parquet_with_hf_audio_column(
+    adapter: GeneralVMCQAdapter, tmp_path: Path, wav_bytes: bytes
+) -> None:
+    parquet_path = tmp_path / 'general_vmcq_audio.parquet'
+    features = Features(
+        {
+            'question': Value('string'),
+            'options': Sequence(Value('string')),
+            'audio_1': Audio(),
+            'answer': Value('string'),
+        }
+    )
+    # datasets needs torchcodec to encode an Audio column, so write the arrow table directly.
+    table = pa.Table.from_pydict(
+        {
+            'question': ['<audio 1> Which sport is being played?'],
+            'options': [['Tennis', 'Basketball']],
+            'audio_1': [{'bytes': wav_bytes, 'path': 'crowd.wav'}],
+            'answer': ['A'],
+        },
+        schema=features.arrow_schema,
+    )
+    pq.write_table(table, str(parquet_path))
+
+    loaded_dataset = LocalDataLoader(
+        data_id_or_path=str(parquet_path),
+        split='test',
+        subset='default',
+        sample_fields=adapter.record_to_sample,
+    ).load()
+    audio_content = [
+        content for content in loaded_dataset[0].input[0].content if isinstance(content, ContentAudio)
+    ]
+
+    assert len(audio_content) == 1
+    assert audio_content[0].audio.startswith('data:audio/')
+    assert audio_content[0].format == 'wav'

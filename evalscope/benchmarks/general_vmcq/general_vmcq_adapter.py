@@ -24,6 +24,7 @@ logger = get_logger()
 
 General-VMCQ is a customizable visual multiple-choice question answering benchmark for multimodal models.
 It uses MMMU-style format with image/video/audio placeholders in text, supporting flexible media inputs.
+
 ## Task Description
 
 - **Task Type**: Visual Multiple-Choice Question Answering
@@ -44,7 +45,7 @@ It uses MMMU-style format with image/video/audio placeholders in text, supportin
 - Default configuration uses **0-shot** evaluation
 - Primary metric: **Accuracy**
 - Train split: **dev**, Eval split: **val**
-- Wrapped dict only supported for parquet. Use plain strings in plaintext files (do not wrap in `{{"url": ...}}`)
+- Raw media bytes require parquet; plaintext files carry paths, URLs, or base64 data URLs
 - See [User Guide](https://evalscope.readthedocs.io/en/latest/advanced_guides/custom_dataset/vlm.html) for dataset format
 """,  # noqa: E501
         tags=[Tags.MULTIPLE_CHOICE, Tags.CUSTOM, Tags.MULTI_MODAL],

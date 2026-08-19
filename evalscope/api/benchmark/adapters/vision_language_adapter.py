@@ -165,7 +165,8 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         # normalize raw media values into a consistent payload shape.
         media_map: Dict[int, Union[str, Dict[str, Any]]] = {}
         for k, v in medias.items():
-            if v is None:
+            # empty cells are common in sparse csv/tsv columns; their placeholders stay unresolved.
+            if not v:
                 continue
 
             # Hugging Face Media columns may surface undecoded values as dicts.
