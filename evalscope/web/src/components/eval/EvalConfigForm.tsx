@@ -9,12 +9,12 @@ import {
   validateDatasetArgs,
   FORM_MESSAGE_KEYS,
 } from '@/domain/form/validation'
-import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
+import { ApiKeyField, ApiUrlField, ModelField, OutputDirField } from '@/components/tasks/TaskFormFields'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
 interface Props {
-  onSubmit: (config: Record<string, unknown>) => void
+  onSubmit: (config: Record<string, unknown>, outputDirName?: string) => void
   disabled?: boolean
   initialDataset?: string
   /**
@@ -50,6 +50,7 @@ const IDS = {
   sandboxImage: 'eval-sandboxImage',
   sandboxPool: 'eval-sandboxPool',
   sandboxEnable: 'eval-sandboxEnable',
+  outputDir: 'eval-outputDir',
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -68,6 +69,7 @@ const DOM_ORDER: string[] = [
   IDS.topK,
   IDS.datasetArgs,
   IDS.sandboxPool,
+  IDS.outputDir,
 ]
 
 /** Fields that live inside the collapsible "More Parameters" section. */
@@ -80,6 +82,7 @@ const MORE_PARAMS_IDS: string[] = [
   IDS.topK,
   IDS.datasetArgs,
   IDS.sandboxPool,
+  IDS.outputDir,
 ]
 
 export default function EvalConfigForm({ onSubmit, disabled, initialDataset, initialModel }: Props) {
@@ -103,6 +106,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
   const [sandboxUrl, setSandboxUrl] = useState('')
   const [sandboxImage, setSandboxImage] = useState('')
   const [sandboxPoolSize, setSandboxPoolSize] = useState('')
+  const [outputDirName, setOutputDirName] = useState('')
 
   const { errorFor: errMsg, clearError: clearErr, showMore, toggleMore, submitHandler } = useTaskForm({
     domOrder: DOM_ORDER,
@@ -187,7 +191,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
 
       config.sandbox = sandbox
     }
-    onSubmit(config)
+    onSubmit(config, outputDirName.trim() || undefined)
   }
 
   // Dataset autocomplete
@@ -335,6 +339,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
             />
           )}
         </Field>
+        <OutputDirField id={IDS.outputDir} value={outputDirName} onChange={setOutputDirName} />
         <hr className="md:col-span-3 my-2" />
         <h3 className="md:col-span-3 font-semibold">{t('eval.sandbox')}</h3>
         <Field id={IDS.sandboxEnable} name="sandbox_enabled" labelKey="eval.sandboxEnable">

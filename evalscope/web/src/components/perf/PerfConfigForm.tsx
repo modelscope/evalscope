@@ -8,12 +8,12 @@ import {
   validatePositiveIntegerList,
   FORM_MESSAGE_KEYS,
 } from '@/domain/form/validation'
-import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
+import { ApiKeyField, ApiUrlField, ModelField, OutputDirField } from '@/components/tasks/TaskFormFields'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
 interface Props {
-  onSubmit: (config: Record<string, unknown>) => void
+  onSubmit: (config: Record<string, unknown>, outputDirName?: string) => void
   disabled?: boolean
 }
 
@@ -32,6 +32,7 @@ const IDS = {
   maxPromptLen: 'perf-maxPromptLen',
   minPromptLen: 'perf-minPromptLen',
   tokenizerPath: 'perf-tokenizerPath',
+  outputDir: 'perf-outputDir',
 } as const
 
 /** DOM order of focusable fields, drives first-invalid focus on submit. */
@@ -49,10 +50,11 @@ const DOM_ORDER: string[] = [
   IDS.maxPromptLen,
   IDS.minPromptLen,
   IDS.tokenizerPath,
+  IDS.outputDir,
 ]
 
 /** Fields that live inside the collapsible "More Parameters" section. */
-const MORE_PARAMS_IDS: string[] = [IDS.tokenizerPath]
+const MORE_PARAMS_IDS: string[] = [IDS.tokenizerPath, IDS.outputDir]
 
 export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const { t } = useLocale()
@@ -69,6 +71,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [maxPromptLen, setMaxPromptLen] = useState('')
   const [minPromptLen, setMinPromptLen] = useState('')
   const [tokenizerPath, setTokenizerPath] = useState('')
+  const [outputDirName, setOutputDirName] = useState('')
 
   const { errorFor: errMsg, clearError: clearErr, showMore, toggleMore, submitHandler } = useTaskForm({
     domOrder: DOM_ORDER,
@@ -114,7 +117,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     if (maxPromptLen) config.max_prompt_length = Number(maxPromptLen)
     if (minPromptLen) config.min_prompt_length = Number(minPromptLen)
     if (tokenizerPath) config.tokenizer_path = tokenizerPath
-    onSubmit(config)
+    onSubmit(config, outputDirName.trim() || undefined)
   }
 
   return (
@@ -127,11 +130,14 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
       submitLabel={t('perf.task.startPerf')}
       disabled={disabled}
       moreParams={(
-        <Field id={IDS.tokenizerPath} name="tokenizer_path" labelKey="perf.task.tokenizerPath">
-          {(aria) => (
-            <input {...aria} type="text" value={tokenizerPath} onChange={(e) => setTokenizerPath(e.target.value)} className={FORM_INPUT_CLASS} placeholder="/path/to/tokenizer" />
-          )}
-        </Field>
+        <>
+          <Field id={IDS.tokenizerPath} name="tokenizer_path" labelKey="perf.task.tokenizerPath">
+            {(aria) => (
+              <input {...aria} type="text" value={tokenizerPath} onChange={(e) => setTokenizerPath(e.target.value)} className={FORM_INPUT_CLASS} placeholder="/path/to/tokenizer" />
+            )}
+          </Field>
+          <OutputDirField id={IDS.outputDir} value={outputDirName} onChange={setOutputDirName} />
+        </>
       )}
     >
       <ModelField
