@@ -47,6 +47,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `mvbench` | [MVBench](../../benchmarks/mvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `ocr_bench` | [OCRBench](../../benchmarks/ocr_bench.md) | `Knowledge`, `MultiModal`, `QA` |
 | `ocr_bench_v2` | [OCRBench-v2](../../benchmarks/ocr_bench_v2.md) | `Knowledge`, `MultiModal`, `QA` |
+| `olmocr_bench` | [olmOCR-Bench](../../benchmarks/olmocr_bench.md) | `MultiModal`, `QA` |
 | `olympiad_bench` | [OlympiadBench](../../benchmarks/olympiad_bench.md) | `Math`, `Reasoning` |
 | `omni_bench` | [OmniBench](../../benchmarks/omni_bench.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `omni_doc_bench` | [OmniDocBench](../../benchmarks/omni_doc_bench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -120,6 +121,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mvbench.md
 ../../benchmarks/ocr_bench.md
 ../../benchmarks/ocr_bench_v2.md
+../../benchmarks/olmocr_bench.md
 ../../benchmarks/olympiad_bench.md
 ../../benchmarks/omni_bench.md
 ../../benchmarks/omni_doc_bench.md

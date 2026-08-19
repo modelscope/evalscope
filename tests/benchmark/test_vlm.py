@@ -612,3 +612,11 @@ class TestVLMBenchmark(TestBenchmark):
     def test_slake_mock(self):
         """Test SLAKE with mock LLM."""
         self._run_dataset_test('slake', limit=5, use_mock=True)
+
+    def test_olmocr_bench(self):
+        """Test olmOCR-Bench PDF page transcription benchmark."""
+        self._run_dataset_test('olmocr_bench', limit=5)
+
+    def test_olmocr_bench_mock(self):
+        """Test olmOCR-Bench with mock LLM."""
+        self._run_dataset_test('olmocr_bench', limit=5, use_mock=True)

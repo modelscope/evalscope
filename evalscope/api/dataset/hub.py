@@ -166,9 +166,10 @@ def download_dataset_file(
         if cache_dir:
             download_kwargs['cache_dir'] = cache_dir
         if not force_redownload:
+            # Cache probe: any failure falls through to the real download below.
             try:
                 return dataset_file_download(data_id_or_path, file_path, local_files_only=True, **download_kwargs)
-            except ValueError:
+            except Exception:
                 pass
         return dataset_file_download(data_id_or_path, file_path, **download_kwargs)
 
