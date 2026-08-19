@@ -5,7 +5,7 @@ import Card from '@/components/ui/Card'
 import TaskMonitor from '@/components/eval/TaskMonitor'
 
 interface FormRenderProps {
-  onSubmit: (config: Record<string, unknown>) => Promise<void>
+  onSubmit: (config: Record<string, unknown>, outputDirName?: string) => Promise<void>
   disabled: boolean
 }
 
@@ -25,6 +25,17 @@ interface TaskRunnerShellProps {
 
 function createTaskId(prefix: string): string {
   return `${prefix}_${Date.now()}`
+}
+
+/**
+ * Turn a user-supplied output directory name into a task id. Filesystem- and
+ * header-safe: only word characters and dashes survive, so the result can
+ * never traverse out of the task's storage root or break the
+ * `EvalScope-Task-Id` request header.
+ */
+function taskIdFromName(prefix: string, name: string): string {
+  const cleaned = name.trim().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100)
+  return cleaned ? `${prefix}_${cleaned}` : createTaskId(prefix)
 }
 
 export default function TaskRunnerShell({
@@ -47,8 +58,8 @@ export default function TaskRunnerShell({
   const [logLine, setLogLine] = useState(0)
   const [progress, setProgress] = useState(0)
 
-  const handleSubmit = async (config: Record<string, unknown>) => {
-    const id = createTaskId(idPrefix)
+  const handleSubmit = async (config: Record<string, unknown>, outputDirName?: string) => {
+    const id = outputDirName ? taskIdFromName(idPrefix, outputDirName) : createTaskId(idPrefix)
     setTaskId(id)
     setRunning(true)
     setLogText('')

@@ -65,3 +65,20 @@ export function ApiKeyField({ id, value, onChange }: TaskTextFieldProps) {
     </Field>
   )
 }
+
+export function OutputDirField({ id, value, onChange }: TaskTextFieldProps) {
+  return (
+    <Field id={id} name="output_dir_name" labelKey="tasks.outputDirName" autoComplete="off">
+      {(aria) => (
+        <input
+          {...aria}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={FORM_INPUT_CLASS}
+          placeholder="Auto-generated if left blank"
+        />
+      )}
+    </Field>
+  )
+}
