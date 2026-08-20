@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages.chat_message import ChatMessageUser, dict_to_chat_message
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -236,53 +236,46 @@ class HealthBenchAdapter(DefaultDataAdapter):
         theme = tags[0].split(':')[1].strip() if len(tags) > 0 else 'Unknown'
         return Sample(input=input_messages, target='', subset_key=theme, metadata=record)
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        # One case per physician-authored rubric item.
-        rubrics = (context.task_state.metadata or {}).get('rubrics', [])
-        return [
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        cases = [
             JudgeCase(case_id=f'rubric_{index}', output_contract=RUBRIC_CONTRACT, metadata={'rubric_index': index})
-            for index in range(len(rubrics))
+            for index in range(len((context.task_state.metadata or {}).get('rubrics', [])))
         ]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import RubricItem
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import RubricItem
+            metadata = judge_context.task_state.metadata or {}
+            rubric = RubricItem.from_dict(metadata['rubrics'][case.metadata['rubric_index']])
+            conversation = metadata['prompt'] + [dict(content=judge_context.original_prediction, role='assistant')]
+            prompt = GRADER_TEMPLATE.replace(
+                '<<conversation>>', '\n\n'.join(f"{message['role']}: {message['content']}" for message in conversation)
+            ).replace('<<rubric_item>>', str(rubric))
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        metadata = context.task_state.metadata or {}
-        rubric_item = RubricItem.from_dict(metadata['rubrics'][case.metadata['rubric_index']])
-        convo_with_response = metadata['prompt'] + [dict(content=context.original_prediction, role='assistant')]
-        convo_str = '\n\n'.join([f"{m['role']}: {m['content']}" for m in convo_with_response])
-        prompt = GRADER_TEMPLATE.replace('<<conversation>>', convo_str).replace('<<rubric_item>>', str(rubric_item))
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            from .utils import RubricItem, calculate_rubric_tag_scores, calculate_score, construct_readable_explanation
+            metadata = copy.deepcopy(judge_context.task_state.metadata or {})
+            items = [RubricItem.from_dict(item) for item in metadata['rubrics']]
+            by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+            responses = [by_case[f'rubric_{index}'].value.model_dump() for index in range(len(items))]
+            tags, axes = calculate_rubric_tag_scores(items, responses)
+            return ReducedVerdict(
+                value={
+                    'overall_score': calculate_score(items, responses),
+                    **axes
+                },
+                metadata={
+                    'readable_explanation': construct_readable_explanation(items, responses),
+                    'rubric_tag_scores': tags,
+                }
+            )
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        from .utils import RubricItem, calculate_rubric_tag_scores, calculate_score, construct_readable_explanation
+        def finalize(score, review, judge_context) -> Score:
+            judge_context.task_state.target = '**Score Explanation**\n\n' + review.metadata.get(
+                'readable_explanation', ''
+            )
+            return score
 
-        metadata = copy.deepcopy(context.task_state.metadata or {})
-        rubric_items = [RubricItem.from_dict(d) for d in metadata['rubrics']]
-        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
-        # The official helpers consume plain dicts and zip strictly against the rubric list.
-        grading_response_list = [
-            verdicts_by_case[f'rubric_{index}'].value.model_dump() for index in range(len(rubric_items))
-        ]
-
-        overall_score = calculate_score(rubric_items, grading_response_list)
-        rubric_tag_scores, axis_grades = calculate_rubric_tag_scores(rubric_items, grading_response_list)
-        readable_explanation = construct_readable_explanation(rubric_items, grading_response_list)
-        return ReducedVerdict(
-            value={
-                'overall_score': overall_score,
-                **axis_grades,
-            },
-            metadata={
-                'readable_explanation': readable_explanation,
-                'rubric_tag_scores': rubric_tag_scores,
-            },
+        return JudgeDefinition.workflow(
+            cases=cases, request=request, reduce=reduce, main_score_name='overall_score', finalize=finalize
         )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'overall_score'
-        explanation = review.metadata.get('readable_explanation', '')
-        # Surface the per-rubric breakdown in the review Gold column.
-        context.task_state.target = '**Score Explanation**\n\n' + explanation
-        return score

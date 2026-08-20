@@ -12,7 +12,15 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
@@ -220,7 +228,16 @@ class JobBenchAdapter(AgentLoopAdapter):
             metadata=sample.metadata,
         )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
+            main_score_name='normalized_score',
+            finalize=self._finalize_score
+        )
+
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
         output_dir = Path(context.task_state.metadata['artifact_dir']) / SANDBOX_OUTPUT_DIR
         rubrics = parse_rubrics(context.task_state.metadata.get('rubric_json'))
         if not rubrics or not output_dir.exists() or not any(path.is_file() for path in output_dir.rglob('*')):
@@ -242,7 +259,7 @@ class JobBenchAdapter(AgentLoopAdapter):
             ) for index, rubric in enumerate(rubrics)
         ]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         rubric = case.metadata['rubric']
         attachments = case.metadata['image_attachments'] if rubric_needs_vision(rubric) else []
         prompt = build_judge_prompt(rubric, case.metadata['file_contents'], vision_used=bool(attachments))
@@ -264,7 +281,7 @@ class JobBenchAdapter(AgentLoopAdapter):
             ]
         )
 
-    def reduce_judge_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
+    def _reduce_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
         results = []
         for verdict in case_verdicts:
             rubric = verdict.metadata['rubric']
@@ -306,21 +323,10 @@ class JobBenchAdapter(AgentLoopAdapter):
             },
         )
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'normalized_score'
+    def _finalize_score(self, score: Score, review, context) -> Score:
         score.metadata.update({
             'task_id': context.task_state.metadata.get('task_id'),
             'artifact_dir': context.task_state.metadata.get('artifact_dir'),
             'output_files': context.task_state.metadata.get('output_files') or [],
         })
         return score
-
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        return None

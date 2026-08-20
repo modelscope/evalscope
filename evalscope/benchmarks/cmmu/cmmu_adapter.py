@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -141,50 +141,46 @@ class CMMUAdapter(VisionLanguageAdapter):
         else:
             return prediction.strip()
 
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        # Multiple-choice items are graded by comparing the parsed letters; only fill-in-the-blank
-        # items go to the judge.
-        if task_state.metadata['type'] in (MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE):
-            return Score(
-                extracted_prediction=filtered_prediction,
-                prediction=original_prediction,
-                value={'acc': 1.0 if filtered_prediction == reference else 0.0},
-                main_score_name='acc',
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if context.task_state.metadata['type'] in (MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE):
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={'acc': 1.0 if context.filtered_prediction == context.reference else 0.0},
+                    main_score_name='acc'
+                ),
+                reason='deterministic_choice_scoring',
             )
-        return None
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
+            prompt_text = EVALUATION_USER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                target=judge_context.reference,
+                predicted_answer=judge_context.original_prediction,
+            )
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=EVALUATION_SYSTEM_PROMPT),
+                          ChatMessageUser(content=prompt_text)]
+            )
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade = case_verdicts[0].value
+            return ReducedVerdict(value={'acc': grade.correct}, metadata={'analysis': grade.analysis})
 
-        prompt_text = EVALUATION_USER_TEMPLATE.format(
-            question=context.task_state.input_text,
-            target=context.reference,
-            predicted_answer=context.original_prediction,
+        def finalize(score, review, judge_context) -> Score:
+            for observation in review.valid_observations:
+                score.metadata.update(observation.reduced.metadata)
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
         )
-        return JudgeRequest(
-            messages=[ChatMessageSystem(content=EVALUATION_SYSTEM_PROMPT),
-                      ChatMessageUser(content=prompt_text)]
-        )
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value
-        return ReducedVerdict(value={'acc': grade.correct}, metadata={'analysis': grade.analysis})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        for observation in review.valid_observations:
-            score.metadata.update(observation.reduced.metadata)
-        score.main_score_name = 'acc'
-        return score
 
     @staticmethod
     def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:

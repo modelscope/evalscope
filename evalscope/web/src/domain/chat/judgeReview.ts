@@ -31,6 +31,10 @@ export interface JudgeCaseView {
 }
 
 export interface JudgeReviewView {
+  /** True when a deterministic rule produced the score without calling an LLM judge. */
+  skipped: boolean
+  /** Machine-readable reason supplied by ``JudgeDefinition.skip``. */
+  skipReason?: string
   judgeModels: string[]
   validObservations?: number
   totalObservations?: number
@@ -46,20 +50,23 @@ export interface JudgeReviewView {
 }
 
 /**
- * Build the view model, or `null` when this sample was not judged by an LLM.
+ * Build the view model, or `null` when this sample has neither judge diagnostics nor a rule short-circuit.
  *
- * A rule-scored sample has neither `judge_summary` nor `judge_attempts`, so the panel is absent
- * rather than empty.
+ * A rule short-circuit has no judge attempts but remains visible so users can see why an LLM was
+ * not called.
  */
 export function selectJudgeReview(score: PredictionScore | undefined): JudgeReviewView | null {
   if (!score) return null
   const detail = score.judge_summary
   const attempts = score.metadata?.judge_attempts ?? []
-  if (!detail && attempts.length === 0) return null
+  const skipped = score.metadata?.judge_skipped === true
+  if (!detail && attempts.length === 0 && !skipped) return null
 
   const latencies = attempts.map(a => a.latency).filter((v): v is number => typeof v === 'number')
 
   return {
+    skipped,
+    skipReason: score.metadata?.judge_skip_reason,
     judgeModels: detail?.judge_models ?? [],
     validObservations: detail?.valid_observations,
     totalObservations: detail?.total_observations,

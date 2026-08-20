@@ -7,6 +7,7 @@ from evalscope.api.judge import (
     CaseVerdict,
     JudgeCase,
     JudgeContext,
+    JudgeDefinition,
     JudgeRequest,
     OutputContract,
     PairwiseOutcome,
@@ -138,35 +139,38 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
             }
         )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='preference', output_contract=PREFERENCE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        # The official labels name output slots, so a swapped pass also reverses the label map.
-        candidate_first = placement is Placement.SWAPPED
-        prompt = GRADER_TEMPLATE.format(
-            instruction=context.task_state.input_text,
-            output_1=context.filtered_prediction if candidate_first else context.reference,
-            output_2=context.reference if candidate_first else context.filtered_prediction,
-        )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=GRADER_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        placements = case_verdicts[0].placements
-        values = placements or {'original': case_verdicts[0].value}
-        outcomes = {
-            name: PairwisePlacementOutcome(
-                result='win' if verdict.verdict == ('m' if name == 'swapped' else 'M') else 'loss'
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            candidate_first = placement is Placement.SWAPPED
+            prompt = GRADER_TEMPLATE.format(
+                instruction=judge_context.task_state.input_text,
+                output_1=judge_context.filtered_prediction if candidate_first else judge_context.reference,
+                output_2=judge_context.reference if candidate_first else judge_context.filtered_prediction,
             )
-            for name, verdict in values.items()
-        }
-        result = next(iter(outcome.result for outcome in outcomes.values())) \
-            if len({outcome.result for outcome in outcomes.values()}) == 1 else 'tie'
-        outcome = PairwiseOutcome(metric_name='win_rate', result=result, placements=outcomes)
-        return ReducedVerdict(value={'win_rate': outcome.score}, outcome=outcome)
+            return JudgeRequest(
+                messages=[
+                    ChatMessageSystem(content=GRADER_SYSTEM_PROMPT),
+                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                ]
+            )
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'win_rate'
-        return score
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            values = case_verdicts[0].placements or {'original': case_verdicts[0].value}
+            outcomes = {
+                name: PairwisePlacementOutcome(
+                    result='win' if verdict.verdict == ('m' if name == 'swapped' else 'M') else 'loss'
+                )
+                for name, verdict in values.items()
+            }
+            result = next(iter(item.result for item in outcomes.values())) \
+                if len({item.result for item in outcomes.values()}) == 1 else 'tie'
+            outcome = PairwiseOutcome(metric_name='win_rate', result=result, placements=outcomes)
+            return ReducedVerdict(value={'win_rate': outcome.score}, outcome=outcome)
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='preference', output_contract=PREFERENCE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='win_rate',
+        )

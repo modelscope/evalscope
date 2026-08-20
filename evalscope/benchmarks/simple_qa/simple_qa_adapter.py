@@ -1,12 +1,10 @@
 import ast
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
-from evalscope.api.messages import ChatMessageUser
-from evalscope.api.metric import Score
+from evalscope.api.judge import JudgeContext, JudgeDefinition
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
@@ -18,11 +16,6 @@ class Grade(BaseModel):
     reasoning: str = ''
     verdict: Literal['A', 'B', 'C']
 
-
-GRADE_CONTRACT = OutputContract(
-    schema_model=Grade,
-    # Upstream simple-evals does not retry a malformed verdict; it falls back to NOT_ATTEMPTED.
-)
 
 GRADER_TEMPLATE = """
 Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -170,38 +163,33 @@ class SimpleQAAdapter(DefaultDataAdapter):
 
         return Sample(input=question, target=answer, metadata=ast.literal_eval(metadata))
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
-
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         prompt = GRADER_TEMPLATE.format(
             question=context.task_state.input_text,
             target=context.reference,
             predicted_answer=context.filtered_prediction,
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def judge_fallback_verdict(self, case, context) -> CaseVerdict:
-        # Upstream simple-evals grades an unreadable verdict as NOT_ATTEMPTED rather than
-        # dropping the sample, so the three rates keep summing to 1.
-        return CaseVerdict(
-            case_id=case.case_id,
-            value=Grade(verdict='C'),
-            metadata={'official_not_attempted_fallback': True},
+        return JudgeDefinition.labels(
+            prompt=prompt,
+            schema_model=Grade,
+            case_id='grade',
+            scores={
+                'A': {
+                    'is_correct': 1.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 0.0
+                },
+                'B': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 1.0,
+                    'is_not_attempted': 0.0
+                },
+                'C': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 1.0
+                },
+            },
+            fallback_verdict='C',
+            main_score_name='is_correct',
         )
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value.verdict
-        return ReducedVerdict(
-            value={
-                'is_correct': 1.0 if grade == 'A' else 0.0,
-                'is_incorrect': 1.0 if grade == 'B' else 0.0,
-                'is_not_attempted': 1.0 if grade == 'C' else 0.0,
-            }
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'is_correct'
-        return score

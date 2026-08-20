@@ -20,7 +20,15 @@ from typing import Any, Dict, List, Optional, Tuple
 from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, Placement, ReducedVerdict
+from evalscope.api.judge import (
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    Placement,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentAudio, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -282,58 +290,58 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
         # Official cal_score.py judges each sample twice with the order swapped.
         return bool(self.extra_params.get('do_swap', True))
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='pair', output_contract=PAIR_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata or {}
-        # ``assistant1`` is the reference on the original pass and the prediction on the swapped one.
-        reference_first = placement is Placement.ORIGINAL
-        prompt = JUDGE_TEMPLATE.format(
-            meta_info=metadata.get('meta_info', ''),
-            question=metadata.get('question') or context.task_state.input_text,
-            assistant1=context.reference if reference_first else context.filtered_prediction,
-            assistant2=context.filtered_prediction if reference_first else context.reference,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            metadata = judge_context.task_state.metadata or {}
+            reference_first = placement is Placement.ORIGINAL
+            prompt = JUDGE_TEMPLATE.format(
+                meta_info=metadata.get('meta_info', ''),
+                question=metadata.get('question') or judge_context.task_state.input_text,
+                assistant1=judge_context.reference if reference_first else judge_context.filtered_prediction,
+                assistant2=judge_context.filtered_prediction if reference_first else judge_context.reference,
+            )
+            return JudgeRequest(
+                messages=[
+                    ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT),
+                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                ]
+            )
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            placements = case_verdicts[0].placements
+            position_results = {}
+            if placements:
+                original, swapped = placements['original'], placements['swapped']
+                pred_scores, ref_scores = [original.assistant2,
+                                           swapped.assistant1], [original.assistant1, swapped.assistant2]
+                position_results = {
+                    'original': _compare_scores(original.assistant2, original.assistant1),
+                    'swapped': _compare_scores(swapped.assistant1, swapped.assistant2),
+                }
+            else:
+                verdict = case_verdicts[0].value
+                pred_scores, ref_scores = [verdict.assistant2], [verdict.assistant1]
+            mean_pred, mean_ref = sum(pred_scores) / len(pred_scores), sum(ref_scores) / len(ref_scores)
+            return ReducedVerdict(
+                value={
+                    'judge_score': mean_pred,
+                    'win_rate': 1.0 if mean_pred > mean_ref else 0.0
+                },
+                metadata={
+                    'reference_score': mean_ref,
+                    'pred_scores_per_pass': pred_scores,
+                    'reference_scores_per_pass': ref_scores
+                },
+                position_results=position_results,
+            )
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='pair', output_contract=PAIR_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='judge_score'
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        placements = case_verdicts[0].placements
-        position_results = {}
-        if placements:
-            # Both sides survived, or the executor would not have produced a verdict at all.
-            original, swapped = placements['original'], placements['swapped']
-            pred_scores = [original.assistant2, swapped.assistant1]
-            ref_scores = [original.assistant1, swapped.assistant2]
-            position_results = {
-                'original': _compare_scores(original.assistant2, original.assistant1),
-                'swapped': _compare_scores(swapped.assistant1, swapped.assistant2),
-            }
-        else:
-            verdict = case_verdicts[0].value
-            pred_scores = [verdict.assistant2]
-            ref_scores = [verdict.assistant1]
-
-        mean_pred = sum(pred_scores) / len(pred_scores)
-        mean_ref = sum(ref_scores) / len(ref_scores)
-        return ReducedVerdict(
-            value={
-                'judge_score': mean_pred,
-                'win_rate': 1.0 if mean_pred > mean_ref else 0.0,
-            },
-            metadata={
-                'reference_score': mean_ref,
-                'pred_scores_per_pass': pred_scores,
-                'reference_scores_per_pass': ref_scores,
-            },
-            position_results=position_results,
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'judge_score'
-        return score
 
 
 def _compare_scores(candidate: float, reference: float) -> str:

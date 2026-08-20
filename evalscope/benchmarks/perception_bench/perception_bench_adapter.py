@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, Content
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -164,40 +164,37 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
             logger.warning(f'Failed to decode image data URI: {e}')
             return None
 
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        if not original_prediction.strip():
-            # Mirrors the official evaluator: unanswered items score 0 without a judge call.
-            return Score(
-                extracted_prediction=filtered_prediction,
-                prediction=original_prediction,
-                value={'acc': 0.0},
-                main_score_name='acc',
-                explanation='failed to obtain answer',
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if not context.original_prediction.strip():
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={'acc': 0.0},
+                    main_score_name='acc',
+                    explanation='failed to obtain answer'
+                ),
+                reason='empty_model_output',
             )
-        return None
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='judgment', output_contract=JUDGMENT_CONTRACT)]
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            metadata = judge_context.task_state.metadata or {}
+            prompt = build_judge_prompt(
+                question=metadata.get('problem', judge_context.task_state.input_text),
+                prediction=judge_context.original_prediction,
+                reference=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata or {}
-        prompt = build_judge_prompt(
-            question=metadata.get('problem', context.task_state.input_text),
-            prediction=context.original_prediction,
-            reference=context.reference,
-        )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            judgment = case_verdicts[0].value
+            return ReducedVerdict(
+                value={'acc': 1.0 if judgment.verdict else 0.0}, metadata={'judge_reason': judgment.reasoning[:200]}
+            )
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        judgment = case_verdicts[0].value
-        return ReducedVerdict(
-            value={'acc': 1.0 if judgment.verdict else 0.0},
-            metadata={'judge_reason': judgment.reasoning[:200]},
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='judgment', output_contract=JUDGMENT_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc'
         )

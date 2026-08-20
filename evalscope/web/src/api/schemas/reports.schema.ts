@@ -297,6 +297,8 @@ export const predictionScoreSchema = z.looseObject({
   metadata: z
     .looseObject({
       judge_attempts: z.array(judgeAttemptSchema).optional(),
+      judge_skipped: z.boolean().optional(),
+      judge_skip_reason: z.string().optional(),
     })
     .optional(),
 })

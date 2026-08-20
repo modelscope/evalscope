@@ -12,7 +12,15 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
@@ -297,7 +305,17 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         self._chunk_cache = (report, chunks)
         return chunks
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
+            main_score_name='compliance_score',
+            expand=self._expand_cases,
+            finalize=self._finalize_score
+        )
+
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
         rubrics = json.loads(context.reference)
         report = context.filtered_prediction
         used_chunking = self._uses_chunking(report)
@@ -342,8 +360,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 )
         return cases
 
-    def expand_judge_cases(self, stage: int, completed_cases: List[CaseVerdict],
-                           context: JudgeContext) -> List[JudgeCase]:
+    def _expand_cases(self, stage: int, completed_cases: List[CaseVerdict], context: JudgeContext) -> List[JudgeCase]:
         if stage != 1:
             return []
         # Emit synthesis cases for rubrics whose chunks are all complete.
@@ -376,7 +393,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             )
         return synthesis_cases
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         meta = case.metadata
         kind = meta['kind']
         if kind == 'binary':
@@ -417,7 +434,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                           ChatMessageUser(content=synthesis_prompt)]
             )
 
-    def reduce_judge_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
+    def _reduce_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
         rubrics = json.loads(context.reference)
         # Collect final scores: binary verdicts + synthesis verdicts (skip raw chunk verdicts).
         rubric_scores: Dict[int, Dict[str, Any]] = {}
@@ -457,9 +474,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             },
         )
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'compliance_score'
+    def _finalize_score(self, score: Score, review, context) -> Score:
         score.explanation = f'Binary rubric compliance across {len(json.loads(context.reference))} criteria.'
         return score
 

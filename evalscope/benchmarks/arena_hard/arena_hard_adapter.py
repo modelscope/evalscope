@@ -8,6 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import (
     JudgeCase,
     JudgeContext,
+    JudgeDefinition,
     JudgeRequest,
     OutputContract,
     PairwiseOutcome,
@@ -110,50 +111,53 @@ class ArenaHardAdapter(DefaultDataAdapter):
     official_position_swap = True
     """Arena-Hard plays each pair twice with the answers swapped."""
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='battle', output_contract=BATTLE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        # Answer 1 is the baseline on the original pass and the candidate on the swapped one.
-        baseline_first = placement is Placement.ORIGINAL
-        prompt = GRADER_TEMPLATE.format(
-            question=context.task_state.input_text,
-            answer_1=context.reference if baseline_first else context.filtered_prediction,
-            answer_2=context.filtered_prediction if baseline_first else context.reference,
-        )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=GRADER_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            baseline_first = placement is Placement.ORIGINAL
+            prompt = GRADER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                answer_1=judge_context.reference if baseline_first else judge_context.filtered_prediction,
+                answer_2=judge_context.filtered_prediction if baseline_first else judge_context.reference,
+            )
+            return JudgeRequest(
+                messages=[
+                    ChatMessageSystem(content=GRADER_SYSTEM_PROMPT),
+                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                ]
+            )
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        placements = case_verdicts[0].placements
-        res1 = placements.get('original', case_verdicts[0].value).verdict
-        res2 = placements.get('swapped')
-        outcomes = {'original': _placement_outcome(res1, candidate_is_a=False)}
-        if res2 is not None:
-            outcomes['swapped'] = _placement_outcome(res2.verdict, candidate_is_a=True)
-        result, strength = _reduce_placements(outcomes)
-        return ReducedVerdict(
-            value={'score': PairwiseOutcome(metric_name='score', result=result, strength=strength).score},
-            outcome=PairwiseOutcome(metric_name='score', result=result, strength=strength, placements=outcomes),
-        )
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            placements = case_verdicts[0].placements
+            res1 = placements.get('original', case_verdicts[0].value).verdict
+            res2 = placements.get('swapped')
+            outcomes = {'original': _placement_outcome(res1, candidate_is_a=False)}
+            if res2 is not None:
+                outcomes['swapped'] = _placement_outcome(res2.verdict, candidate_is_a=True)
+            result, strength = _reduce_placements(outcomes)
+            outcome = PairwiseOutcome(metric_name='score', result=result, strength=strength, placements=outcomes)
+            return ReducedVerdict(value={'score': outcome.score}, outcome=outcome)
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'score'
-        if review.outcome is not None:
-            score.metadata['battle_result'] = {
-                'model_a': 'gpt4-0314',
-                'model_b': 'test_model',
-                'games': [
-                    {
+        def finalize(score, review, judge_context) -> Score:
+            if review.outcome is not None:
+                score.metadata['battle_result'] = {
+                    'model_a': 'gpt4-0314',
+                    'model_b': 'test_model',
+                    'games': [{
                         'score': _battle_label(review.outcome.placements['original'], candidate_is_a=False)
-                    },
-                    *([{
+                    }, *([{
                         'score': _battle_label(review.outcome.placements['swapped'], candidate_is_a=True)
-                    }] if 'swapped' in review.outcome.placements else []),
-                ],
-            }
-        return score
+                    }] if 'swapped' in review.outcome.placements else [])],
+                }
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='battle', output_contract=BATTLE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='score',
+            finalize=finalize,
+        )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         import pandas as pd

@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, ImageEditAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator.state import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessage, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -128,43 +128,44 @@ class GEditAdapter(ImageEditAdapter):
         language = sample.metadata.get('instruction_language', 'en')
         return super().sample_filter(sample) and language == self.language
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        cases = [
             JudgeCase(case_id='SC', output_contract=GEDIT_CONTRACT, metadata={'kind': 'SC'}),
-            JudgeCase(case_id='PQ', output_contract=GEDIT_CONTRACT, metadata={'kind': 'PQ'}),
+            JudgeCase(case_id='PQ', output_contract=GEDIT_CONTRACT, metadata={'kind': 'PQ'})
         ]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata or {}
-        edited_image = metadata[FileConstants.IMAGE_PATH]
-        if case.metadata['kind'] == 'SC':
-            input_image = metadata['input_image']
-            text = self.SC_prompt.replace('<instruction>', metadata['instruction'])
-            content = [ContentImage(image=input_image), ContentImage(image=edited_image), ContentText(text=text)]
-        else:
-            content = [ContentImage(image=edited_image), ContentText(text=self.PQ_prompt)]
-        prompt_text = content[-1].text + case.output_contract.instruction()
-        content[-1] = ContentText(text=prompt_text)
-        return JudgeRequest(messages=[ChatMessageUser(content=content)])
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            metadata = judge_context.task_state.metadata or {}
+            edited_image = metadata[FileConstants.IMAGE_PATH]
+            if case.metadata['kind'] == 'SC':
+                content = [
+                    ContentImage(image=metadata['input_image']),
+                    ContentImage(image=edited_image),
+                    ContentText(text=self.SC_prompt.replace('<instruction>', metadata['instruction']))
+                ]
+            else:
+                content = [ContentImage(image=edited_image), ContentText(text=self.PQ_prompt)]
+            content[-1] = ContentText(text=content[-1].text + case.output_contract.instruction())
+            return JudgeRequest(messages=[ChatMessageUser(content=content)])
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        import math
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            import math
+            by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+            semantic, perceptual = min(by_case['SC'].value.score), min(by_case['PQ'].value.score)
+            return ReducedVerdict(
+                value={
+                    'semantic_consistency': float(semantic),
+                    'perceptual_similarity': float(perceptual),
+                    'normalized_score': math.sqrt(semantic * perceptual)
+                }
+            )
 
-        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
-        sc_score = min(verdicts_by_case['SC'].value.score)
-        pq_score = min(verdicts_by_case['PQ'].value.score)
-        return ReducedVerdict(
-            value={
-                'semantic_consistency': float(sc_score),
-                'perceptual_similarity': float(pq_score),
-                'normalized_score': math.sqrt(sc_score * pq_score),
-            }
+        def finalize(score, review, judge_context) -> Score:
+            image_path = (judge_context.task_state.metadata or {}).get(FileConstants.IMAGE_PATH, '')
+            score.extracted_prediction = image_path
+            score.prediction = image_path
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=cases, request=request, reduce=reduce, main_score_name='normalized_score', finalize=finalize
         )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'normalized_score'
-        metadata = context.task_state.metadata or {}
-        score.extracted_prediction = metadata.get(FileConstants.IMAGE_PATH, '')
-        score.prediction = score.extracted_prediction
-        return score

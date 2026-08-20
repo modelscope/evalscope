@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -159,24 +159,26 @@ class FramesAdapter(DefaultDataAdapter):
 
         return score
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+            prompt = ORM_USER_TEMPLATE.format(
+                problem=judge_context.task_state.input_text,
+                answer_1=judge_context.reference,
+                answer_2=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT),
+                          ChatMessageUser(content=prompt)]
+            )
 
-        prompt = ORM_USER_TEMPLATE.format(
-            problem=context.task_state.input_text,
-            answer_1=context.reference,
-            answer_2=context.filtered_prediction,
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'YES' else 0.0})
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc'
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT), ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'YES' else 0.0})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'acc'
-        return score

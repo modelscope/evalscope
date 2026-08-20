@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -159,46 +159,50 @@ class PLawBenchAdapter(DefaultDataAdapter):
             },
         )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         metadata = context.task_state.metadata or {}
         judge_type = metadata['judge_type']
         schema = CaseAnalysisGrade if judge_type == JUDGE_TYPE_CASE_ANALYSIS else TotalPointsGrade
-        return [JudgeCase(
-            case_id='rubric',
-            output_contract=OutputContract(schema_model=schema),
-        )]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata or {}
-        judge_type = metadata['judge_type']
-        rubric_sections = parse_rubric_sections(metadata['rubrics']) \
-            if judge_type == JUDGE_TYPE_CASE_ANALYSIS else None
-        system_prompt, user_prompt = self._build_judge_prompts(
-            judge_type=judge_type,
-            metadata=metadata,
-            response=context.original_prediction,
-            rubric_sections=rubric_sections,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            current_metadata = judge_context.task_state.metadata or {}
+            current_type = current_metadata['judge_type']
+            rubric_sections = parse_rubric_sections(current_metadata['rubrics']) \
+                if current_type == JUDGE_TYPE_CASE_ANALYSIS else None
+            system_prompt, user_prompt = self._build_judge_prompts(
+                judge_type=current_type,
+                metadata=current_metadata,
+                response=judge_context.original_prediction,
+                rubric_sections=rubric_sections,
+            )
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=system_prompt),
+                          ChatMessageUser(content=user_prompt)]
+            )
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            current_metadata = judge_context.task_state.metadata or {}
+            current_type = current_metadata['judge_type']
+            judge_json = case_verdicts[0].value.model_dump()
+            if current_type == JUDGE_TYPE_CASE_ANALYSIS:
+                values, details = score_case_analysis(judge_json, parse_rubric_sections(current_metadata['rubrics']))
+            else:
+                acc, details = score_total_points(judge_json, float(current_metadata['max_points']))
+                values = {'acc': acc}
+            return ReducedVerdict(value=values, metadata={'judge_type': current_type, **details})
+
+        def finalize(score, review, judge_context) -> Score:
+            if review.metadata:
+                judge_context.task_state.target = self._format_target(review.metadata['judge_type'], review.metadata)
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='rubric', output_contract=OutputContract(schema_model=schema))],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
         )
-        return JudgeRequest(messages=[ChatMessageSystem(content=system_prompt), ChatMessageUser(content=user_prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        metadata = context.task_state.metadata or {}
-        judge_type = metadata['judge_type']
-        judge_json = case_verdicts[0].value.model_dump()
-        if judge_type == JUDGE_TYPE_CASE_ANALYSIS:
-            values, details = score_case_analysis(judge_json, parse_rubric_sections(metadata['rubrics']))
-        else:
-            acc, details = score_total_points(judge_json, float(metadata['max_points']))
-            values = {'acc': acc}
-        return ReducedVerdict(value=values, metadata={'judge_type': judge_type, **details})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'acc'
-        if review.metadata:
-            # Surface the rubric breakdown in the review target column, which is otherwise empty.
-            context.task_state.target = self._format_target(review.metadata['judge_type'], review.metadata)
-        return score
 
     def _build_judge_prompts(
         self,

@@ -20,6 +20,20 @@ describe('selectJudgeReview', () => {
     expect(selectJudgeReview(undefined)).toBeNull()
   })
 
+  it('surfaces a rule short-circuit without judge attempts', () => {
+    const score = {
+      value: { acc: 1 },
+      metadata: { judge_skipped: true, judge_skip_reason: 'exact_string_match' },
+    } as unknown as PredictionScore
+
+    expect(selectJudgeReview(score)).toMatchObject({
+      skipped: true,
+      skipReason: 'exact_string_match',
+      judgeModels: [],
+      cases: [],
+    })
+  })
+
   it('surfaces judge_summary even when no attempts were saved', () => {
     const score = {
       value: { acc: 1 },

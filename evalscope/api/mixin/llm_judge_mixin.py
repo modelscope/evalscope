@@ -1,7 +1,6 @@
 import threading
-from functools import lru_cache
-from pydantic import BaseModel, Field, create_model
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Tuple, Type
+from pydantic import BaseModel, Field
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
@@ -13,17 +12,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
-    from evalscope.api.judge import (
-        CaseVerdict,
-        JudgeCase,
-        JudgeContext,
-        JudgeExecutor,
-        JudgeRequest,
-        JudgeReview,
-        OutputContract,
-        Placement,
-        ReducedVerdict,
-    )
+    from evalscope.api.judge import JudgeContext, JudgeDefinition, JudgeExecutor
     from evalscope.config import JudgeConfig, TaskConfig
 
 logger = get_logger()
@@ -34,12 +23,6 @@ class _RatingVerdict(BaseModel):
 
     reasoning: str = ''
     score: float = Field(ge=0.0, le=1.0)
-
-
-@lru_cache(maxsize=None)
-def _correctness_model(labels: Tuple[str, ...]) -> Type[BaseModel]:
-    """The ``pattern`` judge contract, whose allowed labels are the judge's ``score_mapping`` keys."""
-    return create_model('CorrectnessVerdict', reasoning=(str, ''), verdict=(Literal[labels], ...))
 
 
 class LLMJudgeMixin:
@@ -227,117 +210,29 @@ class LLMJudgeMixin:
         """Run this sample through the executor. Adapters do not override this."""
         from evalscope.api.judge import JudgeContext
 
-        precomputed = self.pre_judge_score(original_prediction, filtered_prediction, reference, task_state)
-        if precomputed is not None:
-            return precomputed
-
         context = JudgeContext(
             task_state=task_state,
             original_prediction=original_prediction,
             filtered_prediction=filtered_prediction,
             reference=reference,
         )
+        definition = self.judge_definition(context)
+        if definition.immediate_score is not None:
+            return definition.immediate_score.model_copy(
+                update={
+                    'metadata': {
+                        **(definition.immediate_score.metadata or {}),
+                        'judge_skipped': True,
+                        'judge_skip_reason': definition.skip_reason,
+                    }
+                }
+            )
         executor = self.judge_executor
-        review = executor.execute(self, context)
-        return executor.build_score(self, review, context)
-
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Optional[Score]:
-        """Return an official rule-only short-circuit, or ``None`` to run the judge contract."""
-        return None
-
-    # Default judge hooks. A benchmark with one verdict per sample relies on these and overrides
-    # only ``judge_prompt`` to change wording. Benchmarks with multiple cases or non-binary
-    # scoring override the hooks instead.
-
-    judge_metric_name: str = 'acc'
-    """Metric key the default single-verdict ``reduce_judge_verdicts`` writes."""
-
-    def judge_prompt(self, context: 'JudgeContext') -> str:
-        """The default judge prompt for one sample, without any format instruction."""
-        return self._primary_judge().build_prompt(
-            pred=context.original_prediction,
-            gold=context.reference,
-            question=context.task_state.input_text,
-        )
-
-    def default_judge_contract(self) -> 'OutputContract':
-        """The built-in contract the judge's ``score_type`` selects."""
-        from evalscope.api.judge import OutputContract
-
-        judge = self._primary_judge()
-        if judge.score_type == JudgeScoreType.NUMERIC:
-            return OutputContract(schema_model=_RatingVerdict)
-        return OutputContract(schema_model=_correctness_model(tuple(sorted(judge.score_mapping))))
-
-    def build_judge_cases(self, context: 'JudgeContext') -> List['JudgeCase']:
-        """One verdict case by default."""
-        from evalscope.api.judge import JudgeCase
-
-        return [JudgeCase(case_id='match', output_contract=self.default_judge_contract())]
-
-    def build_judge_request(
-        self,
-        case: 'JudgeCase',
-        placement: 'Placement',
-        completed_cases: Sequence['CaseVerdict'],
-        context: 'JudgeContext',
-    ) -> 'JudgeRequest':
-        """Render the default correctness case into a single judge message."""
-        from evalscope.api.judge import JudgeRequest
-        from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
-
-        judge = self._primary_judge()
-        prompt = self.judge_prompt(context) + case.output_contract.instruction()
-        messages: List[Any] = []
-        system = getattr(judge, 'system_prompt', None)
-        if system:
-            messages.append(ChatMessageSystem(content=system))
-        messages.append(ChatMessageUser(content=prompt))
-        return JudgeRequest(messages=messages)
-
-    def reduce_judge_verdicts(
-        self,
-        case_verdicts: Sequence['CaseVerdict'],
-        context: 'JudgeContext',
-    ) -> 'ReducedVerdict':
-        """Fold the default single verdict into ``{judge_metric_name: value}``."""
-        from evalscope.api.judge import ReducedVerdict
-
-        if not case_verdicts:
-            return ReducedVerdict()
-        judge = self._primary_judge()
-        verdict = case_verdicts[0].value
-        if judge.score_type == JudgeScoreType.NUMERIC:
-            value = float(verdict.score)
-        else:
-            value = float(judge.score_mapping[verdict.verdict])
-        return ReducedVerdict(value={self.judge_metric_name: value})
-
-    def expand_judge_cases(
-        self,
-        stage: int,
-        completed_cases: Sequence['CaseVerdict'],
-        context: 'JudgeContext',
-    ) -> List['JudgeCase']:
-        """No derived cases by default; only staged benchmarks override this."""
-        return []
-
-    def judge_fallback_verdict(self, case: 'JudgeCase', context: 'JudgeContext') -> Optional['CaseVerdict']:
-        """No rule fallback by default: an unanswerable case excludes the sample."""
-        return None
-
-    def finalize_judge_score(self, review: 'JudgeReview', context: 'JudgeContext') -> Score:
-        """Wrap the aggregated values in a ``Score`` carrying the sample's predictions."""
-        return Score(
-            extracted_prediction=context.filtered_prediction,
-            prediction=context.original_prediction,
-            value=dict(review.value),
+        review = executor.execute(definition, context)
+        return executor.build_score(
+            definition,
+            review,
+            context,
             metadata={
                 'source': 'llm_judge',
                 'judge_strategy': self.judge_strategy,
@@ -346,6 +241,26 @@ class LLMJudgeMixin:
                 and self._resolved_position_swap() != self.official_position_swap,
                 **review.metadata,
             },
+        )
+
+    def judge_definition(self, context: 'JudgeContext') -> 'JudgeDefinition':
+        """Declare this sample's judge review.
+
+        Ordinary adapters return :meth:`JudgeDefinition.labels` or
+        :meth:`JudgeDefinition.numeric`; multi-case benchmarks use ``workflow``.
+        """
+        from evalscope.api.judge import JudgeDefinition
+
+        judge = self._primary_judge()
+        prompt = judge.build_prompt(
+            pred=context.original_prediction,
+            gold=context.reference,
+            question=context.task_state.input_text,
+        )
+        if judge.score_type == JudgeScoreType.NUMERIC:
+            return JudgeDefinition.numeric(prompt=prompt, schema_model=_RatingVerdict)
+        raise NotImplementedError(
+            f"Benchmark '{self._benchmark_meta.name}' must implement judge_definition() for pattern judges."
         )
 
     def _primary_judge(self) -> LLMJudge:

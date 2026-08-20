@@ -1,12 +1,14 @@
 """JudgeExecutor tests use a scripted transport and never call a provider."""
 import pytest
 from pydantic import BaseModel
+from types import SimpleNamespace
 from typing import Any, List, Literal, Optional, Sequence
 
 from evalscope.api.judge import (
     CaseVerdict,
     JudgeCase,
     JudgeContext,
+    JudgeDefinition,
     JudgeExecutor,
     JudgeExecutorConfig,
     JudgeRequest,
@@ -31,6 +33,7 @@ class Verdict(BaseModel):
 
 
 YES_NO = OutputContract(schema_model=Verdict)
+TEST_CONTEXT = SimpleNamespace(filtered_prediction='', original_prediction='')
 
 
 class ScriptedJudge:
@@ -48,39 +51,50 @@ class ScriptedJudge:
         return ModelOutput.from_content(model=self.model_id, content=response)
 
 
-class SimpleAdapter:
+class SimpleAdapter(JudgeDefinition):
     def __init__(self, fallback: Optional[float] = None) -> None:
-        self.fallback = fallback
+        self.fallback_value = fallback
+        super().__init__(
+            cases=self._cases(),
+            request=self._request,
+            reduce=self._reduce,
+            fallback=self._fallback,
+            main_score_name='acc',
+            finalize=self._finalize,
+        )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def _cases(self) -> List[JudgeCase]:
         return [JudgeCase(case_id='only', output_contract=YES_NO)]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def _request(self, case, placement, completed_cases, context) -> JudgeRequest:
         return JudgeRequest(messages=[ChatMessageUser(content=f'{case.case_id}/{placement.value}')])
 
-    def expand_judge_cases(self, stage, completed_cases, context) -> List[JudgeCase]:
-        return []
-
-    def judge_fallback_verdict(self, case, context) -> Optional[CaseVerdict]:
-        if self.fallback is None:
+    def _fallback(self, case, context) -> Optional[CaseVerdict]:
+        if self.fallback_value is None:
             return None
-        return CaseVerdict(case_id=case.case_id, value=Verdict(verdict='yes' if self.fallback else 'no'))
+        return CaseVerdict(case_id=case.case_id, value=Verdict(verdict='yes' if self.fallback_value else 'no'))
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+    def _reduce(self, case_verdicts, context) -> ReducedVerdict:
         return ReducedVerdict(value={'acc': float(case_verdicts[0].value.verdict == 'yes')})
 
-    def finalize_judge_score(self, review: JudgeReview, context) -> Score:
-        return Score(value=dict(review.value), main_score_name='acc')
+    def _finalize(self, score: Score, review: JudgeReview, context) -> Score:
+        score.main_score_name = 'acc'
+        return score
 
 
 class PairwiseAdapter(SimpleAdapter):
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+    def __init__(self, fallback: Optional[float] = None) -> None:
+        super().__init__(fallback)
+        self.main_score_name = 'win_rate'
+
+    def _reduce(self, case_verdicts, context) -> ReducedVerdict:
         result = case_verdicts[0].value.verdict
         outcome = PairwiseOutcome(metric_name='win_rate', result=result)
         return ReducedVerdict(value={'win_rate': outcome.score}, outcome=outcome)
 
-    def finalize_judge_score(self, review: JudgeReview, context) -> Score:
-        return Score(value=dict(review.value), main_score_name='win_rate')
+    def _finalize(self, score: Score, review: JudgeReview, context) -> Score:
+        score.main_score_name = 'win_rate'
+        return score
 
 
 def make_executor(responses: Sequence[Any], **config: Any):
@@ -188,7 +202,7 @@ def test_swap_never_uses_a_one_sided_fallback():
 
 def test_empty_reducer_output_never_satisfies_judge_quorum():
     class EmptyAdapter(SimpleAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             return ReducedVerdict()
 
     executor = JudgeExecutor(
@@ -204,7 +218,7 @@ def test_empty_reducer_output_never_satisfies_judge_quorum():
 
 def test_metrics_without_individual_quorum_are_excluded():
     class DisjointMetricAdapter(SimpleAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             return ReducedVerdict(
                 value={'yes': 1.0} if case_verdicts[0].value.verdict == 'yes' else {'no': 1.0}
             )
@@ -222,7 +236,7 @@ def test_metrics_without_individual_quorum_are_excluded():
 
 def test_outcome_without_a_numeric_metric_is_not_a_usable_score():
     class OutcomeOnlyAdapter(SimpleAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             return ReducedVerdict(outcome=PairwiseOutcome(metric_name='win_rate', result='win'))
 
     executor = JudgeExecutor([ScriptedJudge([YES_REPLY])], JudgeExecutorConfig())
@@ -235,14 +249,14 @@ def test_outcome_without_a_numeric_metric_is_not_a_usable_score():
 
 def test_unresolved_metric_tie_does_not_discard_other_metrics():
     class PartialMetricAdapter(SimpleAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             verdict = case_verdicts[0].value.verdict
             if verdict == 'yes':
                 return ReducedVerdict(value={'settled': 1.0, 'tied': 1.0})
             return ReducedVerdict(value={'settled': 1.0, 'tied': 0.0})
 
     class PrimaryAdapter(PartialMetricAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             return ReducedVerdict(value={'settled': 1.0})
 
     primary = ScriptedJudge([YES_REPLY], 'primary')
@@ -251,17 +265,17 @@ def test_unresolved_metric_tie_does_not_discard_other_metrics():
         JudgeExecutorConfig(aggregation='majority_vote'),
     )
     adapter = PartialMetricAdapter()
-    original_reduce = adapter.reduce_judge_verdicts
+    original_reduce = adapter._reduce
     calls = 0
 
     def reduce_by_judge(case_verdicts, context):
         nonlocal calls
         calls += 1
-        return PrimaryAdapter().reduce_judge_verdicts(case_verdicts, context) if calls == 1 else original_reduce(
+        return PrimaryAdapter()._reduce(case_verdicts, context) if calls == 1 else original_reduce(
             case_verdicts, context
         )
 
-    adapter.reduce_judge_verdicts = reduce_by_judge
+    adapter.reduce = reduce_by_judge
     review = executor.execute(adapter, {})
 
     assert review.status is ScoreStatus.DEGRADED
@@ -317,7 +331,7 @@ def test_pairwise_cross_judge_tie_uses_primary_semantic_result():
         verdict: Literal['win', 'loss']
 
     class Adapter(PairwiseAdapter):
-        def build_judge_cases(self, context):
+        def _cases(self):
             return [JudgeCase(case_id='only', output_contract=OutputContract(schema_model=PairVerdict))]
 
     executor = JudgeExecutor(
@@ -338,7 +352,7 @@ def test_pairwise_repeat_tie_becomes_a_semantic_draw():
         verdict: Literal['win', 'loss']
 
     class Adapter(PairwiseAdapter):
-        def build_judge_cases(self, context):
+        def _cases(self):
             return [JudgeCase(case_id='only', output_contract=OutputContract(schema_model=PairVerdict))]
 
     executor = JudgeExecutor(
@@ -358,10 +372,10 @@ def test_pairwise_placements_are_aggregated_as_separate_games():
         verdict: Literal['win', 'loss']
 
     class Adapter(PairwiseAdapter):
-        def build_judge_cases(self, context):
+        def _cases(self):
             return [JudgeCase(case_id='only', output_contract=OutputContract(schema_model=PairVerdict))]
 
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             placements = {
                 'original': PairwisePlacementOutcome(result='win', strength='strong'),
                 'swapped': PairwisePlacementOutcome(result='loss'),
@@ -384,7 +398,7 @@ def test_pairwise_placements_are_aggregated_as_separate_games():
 
 def test_display_metadata_comes_from_primary_first_valid_observation():
     class MetadataAdapter(SimpleAdapter):
-        def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        def _reduce(self, case_verdicts, context) -> ReducedVerdict:
             return ReducedVerdict(
                 value={'acc': float(case_verdicts[0].value.verdict == 'yes')},
                 metadata={'verdict': case_verdicts[0].value.verdict},
@@ -396,7 +410,7 @@ def test_display_metadata_comes_from_primary_first_valid_observation():
     )
 
     review = executor.execute(MetadataAdapter(), {})
-    score = executor.build_score(MetadataAdapter(), review, {})
+    score = executor.build_score(MetadataAdapter(), review, TEST_CONTEXT)
 
     assert review.metadata == {'verdict': 'yes'}
     assert score.metadata['judge_observation_metadata'][1]['metadata'] == {'verdict': 'no'}
@@ -418,7 +432,7 @@ def test_build_score_never_turns_an_unavailable_review_into_zero():
     executor, _ = make_executor(['not JSON'])
     adapter = SimpleAdapter()
 
-    score = executor.build_score(adapter, executor.execute(adapter, {}), {})
+    score = executor.build_score(adapter, executor.execute(adapter, {}), TEST_CONTEXT)
 
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}

@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import AgentLoopAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
@@ -115,47 +115,41 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             main_score_name='f1',
         )
 
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        if not filtered_prediction:
-            # No answer to grade: score nothing without a judge call, as in the official evaluator.
-            return Score(
-                extracted_prediction=filtered_prediction,
-                prediction=original_prediction,
-                value={},
-                main_score_name='f1',
-                metadata={
-                    'empty_model_response': True,
-                    'error_message': 'AI response was empty.'
-                },
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if not context.filtered_prediction:
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={},
+                    main_score_name='f1',
+                    metadata={
+                        'empty_model_response': True,
+                        'error_message': 'AI response was empty.'
+                    }
+                ),
+                reason='empty_model_output',
             )
-        return None
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = build_grader_prompt(
+                question=judge_context.task_state.input_text,
+                reference=judge_context.reference,
+                answer_type=judge_context.task_state.metadata['answer_type'],
+                response=judge_context.filtered_prediction,
+            )
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        prompt = build_grader_prompt(
-            question=context.task_state.input_text,
-            reference=context.reference,
-            answer_type=context.task_state.metadata['answer_type'],
-            response=context.filtered_prediction,
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            value, metadata = metrics_from_grade(case_verdicts[0].value)
+            return ReducedVerdict(value=value, metadata=metadata)
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='f1'
         )
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        value, metadata = metrics_from_grade(case_verdicts[0].value)
-        return ReducedVerdict(value=value, metadata=metadata)
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'f1'
-        return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         return aggregate_official_scores(sample_scores)

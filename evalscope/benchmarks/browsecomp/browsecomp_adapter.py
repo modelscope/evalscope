@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Literal
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -171,30 +171,29 @@ class BrowseCompAdapter(AgentAdapter):
         score.metadata = {'source': 'rule_exact_match'}
         return score
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        task_state = context.task_state
-        metadata = task_state.metadata or {}
-        prompt = GRADER_TEMPLATE.format(
-            question=metadata.get('question') or task_state.input_text,
-            response=context.original_prediction,
-            correct_answer=context.reference,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            task_state = judge_context.task_state
+            prompt = GRADER_TEMPLATE.format(
+                question=(task_state.metadata or {}).get('question') or task_state.input_text,
+                response=judge_context.original_prediction,
+                correct_answer=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            is_correct = case_verdicts[0].value.correct == 'yes'
+            return ReducedVerdict(
+                value={
+                    'is_correct': 1.0 if is_correct else 0.0,
+                    'is_incorrect': 0.0 if is_correct else 1.0
+                }
+            )
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='is_correct'
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        is_correct = case_verdicts[0].value.correct == 'yes'
-        return ReducedVerdict(
-            value={
-                'is_correct': 1.0 if is_correct else 0.0,
-                'is_incorrect': 0.0 if is_correct else 1.0,
-            }
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'is_correct'
-        return score

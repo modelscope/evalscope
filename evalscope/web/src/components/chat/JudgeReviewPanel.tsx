@@ -164,10 +164,9 @@ export interface JudgeReviewPanelProps {
 }
 
 /**
- * Structured view of the LLM judge's work on one sample.
+ * Structured view of a sample's judge work or deterministic rule short-circuit.
  *
- * Rendered only for a judge-scored sample; a rule-scored one has no `judge_summary` and
- * `selectJudgeReview` returns `null`.
+ * Rule short-circuits deliberately have no judge attempts, but still render their reason.
  */
 export function JudgeReviewPanel({ review }: JudgeReviewPanelProps) {
   const { t } = useLocale()
@@ -176,6 +175,26 @@ export function JudgeReviewPanel({ review }: JudgeReviewPanelProps) {
   const cases = expanded ? review.cases : review.cases.slice(0, VISIBLE_CASES)
   // A single-case benchmark needs no case column: the row is the verdict.
   const showCaseId = review.cases.length > 1
+
+  if (review.skipped) {
+    return (
+      <section
+        className="overflow-hidden rounded-xl border border-[var(--border-md)] bg-[var(--bg-card)] shadow-[var(--shadow-sm)]"
+        style={{ animation: 'fadeInUp 300ms ease-out 200ms both' }}
+      >
+        <div className="flex items-center gap-2 border-b border-[var(--border)] bg-[var(--bg-card2)] px-4 py-3">
+          <Scale size={15} className="text-[var(--text-muted)]" />
+          <span className="type-label-xs">{t('prediction.ruleBasedScore')}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3">
+          <span className="type-body-xs text-[var(--text-muted)]">{t('prediction.judgeNotCalled')}</span>
+          <span className="font-mono type-body-xs text-[var(--text)]">
+            {t('prediction.judgeSkipReason')}: {review.skipReason ?? 'unknown'}
+          </span>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section

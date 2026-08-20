@@ -1,7 +1,7 @@
 """Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Protocol, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage
@@ -43,7 +43,7 @@ class JudgeCase(BaseModel):
     """Declares the verdict shape and is the only thing allowed to parse the response."""
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    """Adapter-defined data carried through to ``build_judge_request`` and onto the verdict."""
+    """Adapter-defined data carried through the request callback and onto the verdict."""
 
 
 class JudgeRequest(BaseModel):
@@ -192,57 +192,12 @@ class JudgeReview(BaseModel):
         return self.valid_observations + self.fallback_observations
 
 
-class JudgeProtocol(Protocol):
-    """The adapter-side hooks :class:`JudgeExecutor` drives.
-
-    An adapter declares what to ask and how to fold the answers into a score. It never calls the
-    judge model and never parses a response.
-    """
-
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        """Return the cases for one sample. May depend on the prediction, not on judge output."""
-        ...
-
-    def build_judge_request(
-        self,
-        case: JudgeCase,
-        placement: Placement,
-        completed_cases: Sequence[CaseVerdict],
-        context: JudgeContext,
-    ) -> JudgeRequest:
-        """Render one case into messages. ``completed_cases`` holds earlier stages' verdicts."""
-        ...
-
-    def expand_judge_cases(
-        self,
-        stage: int,
-        completed_cases: Sequence[CaseVerdict],
-        context: JudgeContext,
-    ) -> List[JudgeCase]:
-        """Return cases derived from a finished stage, e.g. per-column checks that depend on an
-        alignment produced by stage 0. Return an empty list when nothing is derived."""
-        ...
-
-    def judge_fallback_verdict(self, case: JudgeCase, context: JudgeContext) -> Optional[CaseVerdict]:
-        """Return a rule-derived verdict for a case the judge could not answer, or ``None``."""
-        ...
-
-    def reduce_judge_verdicts(self, case_verdicts: Sequence[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
-        """Fold one observation's verdicts into per-metric values."""
-        ...
-
-    def finalize_judge_score(self, review: JudgeReview, context: JudgeContext) -> 'Score':
-        """Turn the aggregated review into the sample's ``Score``."""
-        ...
-
-
 __all__: Sequence[str] = (
     'CaseVerdict',
     'JudgeAttempt',
     'JudgeCase',
     'JudgeContext',
     'JudgeObservation',
-    'JudgeProtocol',
     'JudgeRequest',
     'JudgeReview',
     'Placement',

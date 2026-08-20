@@ -27,6 +27,17 @@ function renderPanel(score: unknown) {
 }
 
 describe('JudgeReviewPanel', () => {
+  it('shows a rule short-circuit reason without inventing judge activity', () => {
+    renderPanel({
+      metadata: { judge_skipped: true, judge_skip_reason: 'exact_string_match' },
+    })
+
+    expect(screen.getByText('Rule-based score')).toBeTruthy()
+    expect(screen.getByText('LLM judge was not called')).toBeTruthy()
+    expect(screen.getByText('Reason: exact_string_match')).toBeTruthy()
+    expect(screen.queryByText('observations')).toBeNull()
+  })
+
   it('shows the judge model, observation count and a single case row', () => {
     renderPanel({
       judge_summary: { judge_models: ['qwen-plus'], valid_observations: 1, total_observations: 1 },

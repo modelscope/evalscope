@@ -8,6 +8,7 @@ The judge must be a model that can follow a structured-output instruction reliab
 shows up as a high parse-failure rate in ``JudgeSummary.failures``.
 """
 from .contracts import OutputContract, ParseResult
+from .definition import JudgeDefinition
 from .executor import JudgeExecutor, JudgeExecutorConfig
 from .summary import summarize_judge_disagreement, summarize_judge_runs
 from .types import (
@@ -16,7 +17,6 @@ from .types import (
     JudgeCase,
     JudgeContext,
     JudgeObservation,
-    JudgeProtocol,
     JudgeRequest,
     JudgeReview,
     PairwiseOutcome,
@@ -30,10 +30,10 @@ __all__ = [
     'JudgeAttempt',
     'JudgeCase',
     'JudgeContext',
+    'JudgeDefinition',
     'JudgeExecutor',
     'JudgeExecutorConfig',
     'JudgeObservation',
-    'JudgeProtocol',
     'JudgeRequest',
     'JudgeReview',
     'OutputContract',

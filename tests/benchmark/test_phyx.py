@@ -192,11 +192,15 @@ def _judged_score(
 
 def test_mc_judge_is_not_consulted_when_the_reply_names_a_letter() -> None:
     """Upstream settles a committed letter by string comparison and never pays for a judge call."""
-    acc, judge = _judged_score('phyx_mc', 'C', 'C')
-    assert (acc, judge.prompts) == (1.0, [])
+    score, judge = _judged_result('phyx_mc', 'C', 'C')
+    assert (score.value['acc'], judge.prompts) == (1.0, [])
+    assert score.metadata['judge_skipped'] is True
+    assert score.metadata['judge_skip_reason'] == 'exact_string_match'
 
-    acc, judge = _judged_score('phyx_mc', 'B', 'C')
-    assert (acc, judge.prompts) == (0.0, [])
+    score, judge = _judged_result('phyx_mc', 'B', 'C')
+    assert (score.value['acc'], judge.prompts) == (0.0, [])
+    assert score.metadata['judge_skipped'] is True
+    assert score.metadata['judge_skip_reason'] == 'invalid_option_label'
 
 
 def test_mc_judge_arbitrates_only_replies_without_a_letter() -> None:

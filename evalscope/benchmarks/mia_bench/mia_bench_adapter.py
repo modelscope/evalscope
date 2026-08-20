@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Type
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -98,64 +98,47 @@ class MIABenchAdapter(VisionLanguageAdapter):
             },
         )
 
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        components = (task_state.metadata or {}).get('components', [])
-        if not components:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        metadata = context.task_state.metadata or {}
+        if not metadata.get('components', []):
             logger.warning('No components found in sample metadata; assigning zero score.')
-            return Score(
-                extracted_prediction=filtered_prediction,
-                prediction=original_prediction,
-                value={'judge_score': 0.0},
-                main_score_name='judge_score',
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={'judge_score': 0.0},
+                    main_score_name='judge_score'
+                ),
+                reason='missing_components',
             )
-        return None
-
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        # The schema is per-sample: one bounded field per instruction component, so a raw score
-        # above a component's weight is a parse failure rather than a silently clamped value.
-        metadata = context.task_state.metadata or {}
         contract = OutputContract(schema_model=_build_grade_schema(metadata.get('component_weight', [])))
-        return [JudgeCase(case_id='grade', output_contract=contract)]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import generate_mia_judge_prompt
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import generate_mia_judge_prompt
+            current = judge_context.task_state.metadata or {}
+            prompt = generate_mia_judge_prompt(
+                instruction=current.get('instruction', judge_context.task_state.input_text),
+                components=current.get('components', []),
+                component_weight=current.get('component_weight', []),
+                response=judge_context.filtered_prediction or judge_context.original_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        metadata = context.task_state.metadata or {}
-        prompt = generate_mia_judge_prompt(
-            instruction=metadata.get('instruction', context.task_state.input_text),
-            components=metadata.get('components', []),
-            component_weight=metadata.get('component_weight', []),
-            response=context.filtered_prediction or context.original_prediction,
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade, current = case_verdicts[0].value, judge_context.task_state.metadata or {}
+            values, raw_sum = {}, 0.0
+            weights = current.get('component_weight', [])
+            for index, component_type in enumerate(current.get('component_type', [])):
+                raw = float(getattr(grade, f'component_{index + 1}'))
+                weight = weights[index] if index < len(weights) else 1
+                values[f'component_{index + 1}_{component_type}'] = raw / weight if weight else 0.0
+                raw_sum += raw
+            values['judge_score'] = raw_sum / sum(weights) if sum(weights) else 0.0
+            return ReducedVerdict(value=values)
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=contract)],
+            request=request,
+            reduce=reduce,
+            main_score_name='judge_score'
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value
-        metadata = context.task_state.metadata or {}
-        component_type: List[str] = metadata.get('component_type', [])
-        weights: List[int] = metadata.get('component_weight', [])
-
-        value: Dict[str, float] = {}
-        raw_sum = 0.0
-        for i, ctype in enumerate(component_type):
-            raw = float(getattr(grade, f'component_{i + 1}'))
-            weight = weights[i] if i < len(weights) else 1
-            value[f'component_{i + 1}_{ctype}'] = raw / weight if weight else 0.0
-            raw_sum += raw
-        # `judge_score` is derived from the components, the single source of truth, rather than
-        # trusting a separate total the judge might miscompute.
-        total_weight = sum(weights)
-        value['judge_score'] = raw_sum / total_weight if total_weight else 0.0
-        return ReducedVerdict(value=value)
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'judge_score'
-        return score

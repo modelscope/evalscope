@@ -12,7 +12,7 @@ from evalscope.api.dataset import (
     resolve_snapshot_or_local_path,
 )
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -225,19 +225,39 @@ class HiPhOAdapter(VisionLanguageAdapter):
         with open(path, 'rb') as f:
             return self._image_bytes_to_base64(f.read(), default_format=ext)
 
-    def pre_judge_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        immediate, skip_reason = self._rule_score(
+            context.original_prediction, context.filtered_prediction, context.reference, context.task_state
+        )
+        if immediate is not None:
+            assert skip_reason is not None
+            return JudgeDefinition.skip(immediate, reason=skip_reason)
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
+            main_score_name='acc',
+            finalize=self._finalize_score
+        )
+
+    def _rule_score(self, original_prediction: str, filtered_prediction: str, reference: str,
+                    task_state: TaskState) -> Tuple[Optional[Score], Optional[str]]:
         # Both flows short-circuit before touching the judge when there is nothing to grade.
         metadata = task_state.metadata or {}
         if metadata.get('marking'):
             if not any(scheme for scheme in metadata['marking']):
-                return self._empty_score(filtered_prediction, original_prediction, task_state, 'no marking criteria')
+                return (
+                    self._empty_score(filtered_prediction, original_prediction, task_state, 'no marking criteria'),
+                    'no_marking_criteria',
+                )
         else:
             if not [strip_boxed(a) for a in metadata['answers']]:
-                return self._empty_score(filtered_prediction, original_prediction, task_state, 'no ground-truth answer')
+                return (
+                    self._empty_score(filtered_prediction, original_prediction, task_state, 'no ground-truth answer'),
+                    'missing_ground_truth_answer',
+                )
         task_state.target = self._format_target(metadata)
-        return None
+        return None, None
 
     def _empty_score(self, filtered: str, original: str, task_state: TaskState, reason: str) -> Score:
         task_state.target = self._format_target(task_state.metadata or {})
@@ -249,7 +269,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
             explanation=reason,
         )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
         metadata = context.task_state.metadata or {}
         if metadata.get('marking'):
             return self._build_step_cases(metadata)
@@ -306,7 +326,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
             )
         return cases
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         metadata = context.task_state.metadata or {}
         if case.metadata['kind'] == 'step':
             prompt = STEP_JUDGE_PROMPT.format(
@@ -323,7 +343,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         prompt += case.output_contract.instruction()
         return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+    def _reduce_verdicts(self, case_verdicts, context) -> ReducedVerdict:
         metadata = context.task_state.metadata or {}
         if metadata.get('marking'):
             return self._reduce_step(case_verdicts, metadata)
@@ -387,9 +407,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
             },
         )
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'acc'
+    def _finalize_score(self, score: Score, review, context) -> Score:
         score.explanation = review.metadata.get('detail', '')
         return score
 

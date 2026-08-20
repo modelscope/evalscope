@@ -13,9 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 from .types import JudgeObservation, PairwiseOutcome, PairwisePlacementOutcome
 
 
-def aggregate_repeat_values(
-    values: Sequence[Dict[str, float]], method: str
-) -> tuple[Dict[str, float], List[str]]:
+def aggregate_repeat_values(values: Sequence[Dict[str, float]], method: str) -> tuple[Dict[str, float], List[str]]:
     """Reduce one judge's repeats and return metrics that needed a first-observation tie-break."""
     buckets = _metric_buckets(values)
     if method == 'median':
@@ -35,9 +33,8 @@ def aggregate_repeat_values(
     return {name: sum(items) / len(items) for name, items in buckets.items()}, []
 
 
-def aggregate_judge_values(
-    judge_values: Dict[str, Dict[str, float]], method: str, primary: str
-) -> tuple[Optional[Dict[str, float]], bool, List[str]]:
+def aggregate_judge_values(judge_values: Dict[str, Dict[str, float]], method: str,
+                           primary: str) -> tuple[Optional[Dict[str, float]], bool, List[str]]:
     """Combine equally weighted judges, using the primary judge only for a tied majority vote."""
     buckets = _metric_buckets(judge_values.values())
     result: Dict[str, float] = {}
@@ -60,9 +57,8 @@ def aggregate_judge_values(
     return result or None, tie_broken, unresolved_ties
 
 
-def aggregate_pairwise_outcomes(
-    observations: Sequence[JudgeObservation], primary: str, min_valid_judges: int
-) -> tuple[Optional[PairwiseOutcome], bool]:
+def aggregate_pairwise_outcomes(observations: Sequence[JudgeObservation], primary: str,
+                                min_valid_judges: int) -> tuple[Optional[PairwiseOutcome], bool]:
     """Vote candidate-oriented pairwise results and their presentation-order diagnostics."""
     per_judge: Dict[str, List[PairwiseOutcome]] = defaultdict(list)
     for observation in observations:
@@ -104,9 +100,8 @@ def aggregate_pairwise_outcomes(
     return outcome.model_copy(update={'placements': placements}), tied
 
 
-def judge_disagreement(
-    per_judge: Dict[str, List[Dict[str, float]]], observations: Sequence[JudgeObservation]
-) -> Dict[str, Any]:
+def judge_disagreement(per_judge: Dict[str, List[Dict[str, float]]],
+                       observations: Sequence[JudgeObservation]) -> Dict[str, Any]:
     """Build per-sample numeric, categorical, and position-consistency diagnostics."""
     all_values = _metric_buckets(value for values in per_judge.values() for value in values)
     numeric = {
@@ -117,7 +112,9 @@ def judge_disagreement(
         for name, values in all_values.items()
     }
     repeat_numeric = {
-        judge_id: _numeric_disagreement(values) for judge_id, values in per_judge.items() if len(values) > 1
+        judge_id: _numeric_disagreement(values)
+        for judge_id, values in per_judge.items()
+        if len(values) > 1
     }
     per_judge_mean = {judge_id: aggregate_repeat_values(values, 'mean')[0] for judge_id, values in per_judge.items()}
     categorical = _categorical_disagreement_by_case(observations)
@@ -179,7 +176,9 @@ def _categorical_disagreement_by_case(observations: Sequence[JudgeObservation]) 
         result[case_id] = {
             **_categorical_disagreement([label for _, label in labels]),
             'repeats': {
-                judge_id: _categorical_disagreement(values) for judge_id, values in per_judge.items() if len(values) > 1
+                judge_id: _categorical_disagreement(values)
+                for judge_id, values in per_judge.items()
+                if len(values) > 1
             },
             'cross_judge': _categorical_disagreement([_majority_label(values) for values in per_judge.values()]),
         }
@@ -217,9 +216,9 @@ def _position_consistency(observations: Sequence[JudgeObservation]) -> List[bool
     return positions
 
 
-def _vote_pairwise(
-    outcomes: Sequence[PairwiseOutcome], repeat_vote: bool, primary: Optional[PairwiseOutcome] = None
-) -> tuple[PairwiseOutcome, bool]:
+def _vote_pairwise(outcomes: Sequence[PairwiseOutcome],
+                   repeat_vote: bool,
+                   primary: Optional[PairwiseOutcome] = None) -> tuple[PairwiseOutcome, bool]:
     """Return a semantic majority; ties within a judge's repeats deliberately become a draw."""
     counts = Counter(outcome.result for outcome in outcomes)
     top = max(counts.values())
@@ -239,7 +238,9 @@ def _vote_pairwise_placements(
     repeat_vote: bool,
     primary: Optional[PairwisePlacementOutcome] = None,
 ) -> tuple[PairwisePlacementOutcome, bool]:
-    proxies = [PairwiseOutcome(metric_name='placement', result=item.result, strength=item.strength) for item in outcomes]
+    proxies = [
+        PairwiseOutcome(metric_name='placement', result=item.result, strength=item.strength) for item in outcomes
+    ]
     primary_proxy = (
         PairwiseOutcome(metric_name='placement', result=primary.result, strength=primary.strength)
         if primary is not None else None

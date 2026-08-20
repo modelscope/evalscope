@@ -11,6 +11,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.judge import (
     JudgeCase,
     JudgeContext,
+    JudgeDefinition,
     JudgeRequest,
     OutputContract,
     PairwiseOutcome,
@@ -258,57 +259,62 @@ class GeneralArenaAdapter(DefaultDataAdapter):
     official_position_swap = True
     """Each pair is judged twice with the two answers swapped."""
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='battle', output_contract=BATTLE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata or {}
-        candidate = metadata['answer_1']
-        baseline = context.reference
-        candidate_first = placement is Placement.ORIGINAL
-        prompt = self.prompt_template.format(
-            question=context.task_state.input_text,
-            answer_1=candidate if candidate_first else baseline,
-            answer_2=baseline if candidate_first else candidate,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            metadata = judge_context.task_state.metadata or {}
+            candidate_first = placement is Placement.ORIGINAL
+            prompt = self.prompt_template.format(
+                question=judge_context.task_state.input_text,
+                answer_1=metadata['answer_1'] if candidate_first else judge_context.reference,
+                answer_2=judge_context.reference if candidate_first else metadata['answer_1'],
+            )
+            return JudgeRequest(
+                messages=[
+                    ChatMessageSystem(content=self.system_prompt),
+                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                ]
+            )
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            placements = case_verdicts[0].placements
+            res1 = placements.get('original', case_verdicts[0].value).verdict
+            res2 = placements.get('swapped')
+            outcomes = {'original': _placement_outcome(res1, candidate_is_a=True)}
+            if res2 is not None:
+                outcomes['swapped'] = _placement_outcome(res2.verdict, candidate_is_a=False)
+            result, strength = _reduce_placements(outcomes)
+            outcome = PairwiseOutcome(metric_name='score', result=result, strength=strength, placements=outcomes)
+            return ReducedVerdict(value={'score': outcome.score}, outcome=outcome)
+
+        def finalize(score, review, judge_context) -> Score:
+            if review.outcome is not None:
+                metadata = judge_context.task_state.metadata or {}
+                model_1, model_2 = metadata['model_1'], metadata['model_2']
+                score.metadata['battle_result'] = {
+                    'score': review.value['score'],
+                    'games': [
+                        {
+                            'model_a': model_1,
+                            'model_b': model_2,
+                            'judgment': _battle_label(review.outcome.placements['original'], candidate_is_a=True)
+                        },
+                        *([{
+                            'model_a': model_2,
+                            'model_b': model_1,
+                            'judgment': _battle_label(review.outcome.placements['swapped'], candidate_is_a=False)
+                        }] if 'swapped' in review.outcome.placements else []),
+                    ],
+                }
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='battle', output_contract=BATTLE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='score',
+            finalize=finalize
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=self.system_prompt), ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        placements = case_verdicts[0].placements
-        res1 = placements.get('original', case_verdicts[0].value).verdict
-        res2 = placements.get('swapped')
-        outcomes = {'original': _placement_outcome(res1, candidate_is_a=True)}
-        if res2 is not None:
-            outcomes['swapped'] = _placement_outcome(res2.verdict, candidate_is_a=False)
-        result, strength = _reduce_placements(outcomes)
-        return ReducedVerdict(
-            value={'score': PairwiseOutcome(metric_name='score', result=result, strength=strength).score},
-            outcome=PairwiseOutcome(metric_name='score', result=result, strength=strength, placements=outcomes),
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'score'
-        if review.outcome is not None:
-            metadata = context.task_state.metadata or {}
-            model_1, model_2 = metadata['model_1'], metadata['model_2']
-            score.metadata['battle_result'] = {
-                'score': review.value['score'],
-                'games': [
-                    {
-                        'model_a': model_1,
-                        'model_b': model_2,
-                        'judgment': _battle_label(review.outcome.placements['original'], candidate_is_a=True),
-                    },
-                    *([{
-                        'model_a': model_2,
-                        'model_b': model_1,
-                        'judgment': _battle_label(review.outcome.placements['swapped'], candidate_is_a=False),
-                    }] if 'swapped' in review.outcome.placements else []),
-                ],
-            }
-        return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate scores to compute winrate."""

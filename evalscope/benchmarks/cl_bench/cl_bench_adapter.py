@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import dict_to_chat_message
 from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
@@ -138,48 +138,46 @@ class CLBenchAdapter(DefaultDataAdapter):
         metadata = record.get('metadata') or record.get('meta_data') or {}
         return Sample(input=messages, target=rubrics, metadata=metadata)
 
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: List[str],
-        task_state: TaskState,
-    ) -> Score:
-        if not filtered_prediction or not filtered_prediction.strip():
-            # Nothing to grade: score 0 without a judge call, as the official evaluator does.
-            return Score(
-                extracted_prediction=filtered_prediction,
-                prediction=original_prediction,
-                value={'acc': 0.0},
-                main_score_name='acc',
-                explanation='Empty model output; scored as 0.',
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if not context.filtered_prediction.strip():
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={'acc': 0.0},
+                    main_score_name='acc',
+                    explanation='Empty model output; scored as 0.'
+                ),
+                reason='empty_model_output',
             )
-        return None
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import build_rubrics_text
+            target = judge_context.task_state.target
+            prompt = GRADING_TEMPLATE.format(
+                rubrics=build_rubrics_text(target if isinstance(target, list) else [target]),
+                response=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import build_rubrics_text
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade = case_verdicts[0].value
+            return ReducedVerdict(
+                value={'acc': float(grade.overall_score)},
+                metadata={
+                    'requirement_status': grade.requirement_status,
+                    'grading_rationale': grade.grading_rationale,
+                }
+            )
 
-        target = context.task_state.target
-        rubrics_text = build_rubrics_text(target if isinstance(target, list) else [target])
-        prompt = GRADING_TEMPLATE.format(rubrics=rubrics_text, response=context.filtered_prediction)
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+        def finalize(score, review, judge_context) -> Score:
+            score.explanation = review.metadata.get('grading_rationale', '')
+            return score
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value
-        return ReducedVerdict(
-            value={'acc': float(grade.overall_score)},
-            metadata={
-                'requirement_status': grade.requirement_status,
-                'grading_rationale': grade.grading_rationale,
-            },
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
         )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'acc'
-        score.explanation = review.metadata.get('grading_rationale', '')
-        return score

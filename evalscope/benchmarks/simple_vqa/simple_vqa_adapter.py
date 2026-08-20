@@ -4,7 +4,15 @@ from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -175,36 +183,35 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
             }
         )
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        prompt = GRADER_TEMPLATE.format(
-            question=context.task_state.input_text,
-            target=context.reference,
-            predicted_answer=context.filtered_prediction,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = GRADER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                target=judge_context.reference,
+                predicted_answer=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade = case_verdicts[0].value.verdict
+            return ReducedVerdict(
+                value={
+                    'is_correct': 1.0 if grade == 'A' else 0.0,
+                    'is_incorrect': 1.0 if grade == 'B' else 0.0,
+                    'is_not_attempted': 1.0 if grade == 'C' else 0.0,
+                }
+            )
+
+        def fallback(case, judge_context) -> CaseVerdict:
+            return CaseVerdict(
+                case_id=case.case_id, value=Grade(verdict='C'), metadata={'official_not_attempted_fallback': True}
+            )
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            fallback=fallback,
+            main_score_name='is_correct'
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def judge_fallback_verdict(self, case, context) -> CaseVerdict:
-        return CaseVerdict(
-            case_id=case.case_id,
-            value=Grade(verdict='C'),
-            metadata={'official_not_attempted_fallback': True},
-        )
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value.verdict
-        return ReducedVerdict(
-            value={
-                'is_correct': 1.0 if grade == 'A' else 0.0,
-                'is_incorrect': 1.0 if grade == 'B' else 0.0,
-                'is_not_attempted': 1.0 if grade == 'C' else 0.0,
-            }
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'is_correct'
-        return score

@@ -7,7 +7,15 @@ from typing import Any, Dict, List, Literal, Tuple, Union
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
@@ -247,33 +255,37 @@ class LongMemEvalAdapter(DefaultDataAdapter):
         }
         return Sample(input=[ChatMessageUser(content=prompt)], target=str(record['answer']), metadata=metadata)
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='anscheck', output_contract=ANSCHECK_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        metadata = context.task_state.metadata
-        prompt = get_anscheck_prompt(
-            task=metadata['question_type'],
-            question=metadata['question'],
-            answer=context.reference,
-            response=context.filtered_prediction,
-            abstention=metadata.get('is_abstention', False),
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            metadata = judge_context.task_state.metadata
+            prompt = get_anscheck_prompt(
+                task=metadata['question_type'],
+                question=metadata['question'],
+                answer=judge_context.reference,
+                response=judge_context.filtered_prediction,
+                abstention=metadata.get('is_abstention', False),
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'accuracy': 1.0 if case_verdicts[0].value.verdict == 'yes' else 0.0})
+
+        def finalize(score, review, judge_context) -> Score:
+            metadata = judge_context.task_state.metadata
+            score.metadata.update({
+                'question_type': metadata['question_type'],
+                'is_abstention': metadata.get('is_abstention', False)
+            })
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='anscheck', output_contract=ANSCHECK_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='accuracy',
+            finalize=finalize
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        return ReducedVerdict(value={'accuracy': 1.0 if case_verdicts[0].value.verdict == 'yes' else 0.0})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        metadata = context.task_state.metadata
-        score.metadata.update({
-            'question_type': metadata['question_type'],
-            'is_abstention': metadata.get('is_abstention', False),
-        })
-        score.main_score_name = 'accuracy'
-        return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         valid_scores = [s for s in sample_scores if s.score and 'accuracy' in s.score.value]

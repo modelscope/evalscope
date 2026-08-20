@@ -5,7 +5,15 @@ from typing import Any, Dict, List, Literal
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -147,26 +155,30 @@ class HLEAdapter(DefaultDataAdapter):
                 return False
         return True
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        prompt = JUDGE_PROMPT.format(
-            question=context.task_state.input_text,
-            response=context.filtered_prediction,
-            correct_answer=context.reference,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = JUDGE_PROMPT.format(
+                question=judge_context.task_state.input_text,
+                response=judge_context.filtered_prediction,
+                correct_answer=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'C' else 0.0})
+
+        def finalize(score, review, judge_context) -> Score:
+            score.metadata['confidence'] = self._stated_confidence(judge_context.task_state)
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'C' else 0.0})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.metadata['confidence'] = self._stated_confidence(context.task_state)
-        score.main_score_name = 'acc'
-        return score
 
     @staticmethod
     def _stated_confidence(task_state: TaskState) -> int:

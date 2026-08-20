@@ -1,11 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
-from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
-from evalscope.api.metric import Score
+from evalscope.api.judge import JudgeContext, JudgeDefinition
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
@@ -19,11 +17,6 @@ class Grade(BaseModel):
 
 
 JUDGE_SYSTEM_PROMPT = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
-
-GRADE_CONTRACT = OutputContract(
-    schema_model=Grade,
-    # Upstream falls back to 未尝试 (NOT_ATTEMPTED) rather than retrying a malformed verdict.
-)
 
 GRADER_TEMPLATE = """
 请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。您的任务是将结果评定为：【正确】、【错误】或【未尝试】。
@@ -172,36 +165,34 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
         return Sample(input=question, target=answer, subset_key=subset_key, metadata=metadata)
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)]
-
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         prompt = GRADER_TEMPLATE.format(
             question=context.task_state.input_text,
             target=context.reference,
             predicted_answer=context.filtered_prediction,
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
-
-    def judge_fallback_verdict(self, case, context) -> CaseVerdict:
-        return CaseVerdict(
-            case_id=case.case_id,
-            value=Grade(verdict='C'),
-            metadata={'official_not_attempted_fallback': True},
+        return JudgeDefinition.labels(
+            prompt=prompt,
+            system_prompt=JUDGE_SYSTEM_PROMPT,
+            schema_model=Grade,
+            case_id='grade',
+            scores={
+                'A': {
+                    'is_correct': 1.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 0.0
+                },
+                'B': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 1.0,
+                    'is_not_attempted': 0.0
+                },
+                'C': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 1.0
+                },
+            },
+            fallback_verdict='C',
+            main_score_name='is_correct',
         )
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value.verdict
-        return ReducedVerdict(
-            value={
-                'is_correct': 1.0 if grade == 'A' else 0.0,
-                'is_incorrect': 1.0 if grade == 'B' else 0.0,
-                'is_not_attempted': 1.0 if grade == 'C' else 0.0,
-            }
-        )
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'is_correct'
-        return score

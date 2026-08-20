@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
@@ -398,28 +398,30 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
 
         return score
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        return [JudgeCase(case_id='score', output_contract=SCORE_CONTRACT)]
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        metric_name = self._metric_name(context.task_state)
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+            prompt = ORM_USER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                gold=judge_context.reference,
+                pred=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT),
+                          ChatMessageUser(content=prompt)]
+            )
 
-        prompt = ORM_USER_TEMPLATE.format(
-            question=context.task_state.input_text,
-            gold=context.reference,
-            pred=context.filtered_prediction,
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={metric_name: case_verdicts[0].value.verdict / 10.0})
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='score', output_contract=SCORE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name=metric_name
         )
-        prompt += case.output_contract.instruction()
-        return JudgeRequest(messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT), ChatMessageUser(content=prompt)])
-
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        # The judge rates 0-10; the metric is a 0-1 ratio keyed by the needle's position.
-        return ReducedVerdict(value={self._metric_name(context.task_state): case_verdicts[0].value.verdict / 10.0})
-
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = self._metric_name(context.task_state)
-        return score
 
     @staticmethod
     def _metric_name(task_state: TaskState) -> str:

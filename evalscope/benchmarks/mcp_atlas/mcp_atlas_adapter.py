@@ -9,7 +9,7 @@ from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
@@ -135,40 +135,39 @@ class MCPAtlasAdapter(AgentLoopAdapter):
     def build_environment(self, sample: Sample) -> Optional[AgentEnvironment]:
         return None
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        # One case per expert claim; each is graded independently by the judge.
-        claims = extract_claims(context.reference)
-        return [
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        cases = [
             JudgeCase(case_id=f'claim_{index}', output_contract=CLAIM_CONTRACT, metadata={'claim': claim})
-            for index, claim in enumerate(claims)
+            for index, claim in enumerate(extract_claims(context.reference))
         ]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        prompt = claim_judge_prompt(case.metadata['claim'], context.filtered_prediction)
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            return JudgeRequest(
+                messages=[
+                    ChatMessageUser(
+                        content=claim_judge_prompt(case.metadata['claim'], judge_context.filtered_prediction)
+                    )
+                ]
+            )
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        outcomes = [verdict.value.coverage_outcome for verdict in case_verdicts]
-        scores = [_OUTCOME_SCORE[outcome] for outcome in outcomes]
-        total = len(scores)
-        coverage_score = sum(scores) / total if total else 0.0
-        return ReducedVerdict(
-            value={
-                'coverage_score': coverage_score,
-                'pass': 1.0 if coverage_score >= self.pass_threshold else 0.0,
-            },
-            metadata={
-                'pass_threshold': self.pass_threshold,
-                'total_claims': total,
-                'fully_covered_claims': scores.count(1.0),
-                'partially_covered_claims': scores.count(0.5),
-            },
-        )
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            scores = [_OUTCOME_SCORE[verdict.value.coverage_outcome] for verdict in case_verdicts]
+            total = len(scores)
+            coverage_score = sum(scores) / total if total else 0.0
+            return ReducedVerdict(
+                value={
+                    'coverage_score': coverage_score,
+                    'pass': 1.0 if coverage_score >= self.pass_threshold else 0.0
+                },
+                metadata={
+                    'pass_threshold': self.pass_threshold,
+                    'total_claims': total,
+                    'fully_covered_claims': scores.count(1.0),
+                    'partially_covered_claims': scores.count(0.5)
+                },
+            )
 
-    def finalize_judge_score(self, review, context) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'coverage_score'
-        return score
+        return JudgeDefinition.workflow(cases=cases, request=request, reduce=reduce, main_score_name='coverage_score')
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         if not sample_scores:

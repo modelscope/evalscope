@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Union
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -179,31 +179,34 @@ class CharXivAdapter(VisionLanguageAdapter):
 
         return samples
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
-        """Descriptive and reasoning questions use different official reply keys."""
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         descriptive = (context.task_state.metadata or {}).get('question_type', 'reasoning') == 'descriptive'
         contract = DESCRIPTIVE_CONTRACT if descriptive else REASONING_CONTRACT
-        return [JudgeCase(case_id='grade', output_contract=contract)]
 
-    def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
-        from .utils import build_descriptive_judge_prompt, build_reasoning_judge_prompt
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import build_descriptive_judge_prompt, build_reasoning_judge_prompt
+            metadata = judge_context.task_state.metadata or {}
+            if metadata.get('question_type', 'reasoning') == 'descriptive':
+                prompt = build_descriptive_judge_prompt(
+                    q_id=metadata.get('question_id', 1),
+                    response=judge_context.original_prediction,
+                    ground_truth=judge_context.reference,
+                )
+            else:
+                prompt = build_reasoning_judge_prompt(
+                    reasoning_a_type=metadata.get('reasoning_a_type', 1),
+                    question=judge_context.task_state.input_text or '',
+                    ground_truth=judge_context.reference,
+                    response=judge_context.original_prediction,
+                )
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        metadata = context.task_state.metadata or {}
-        if metadata.get('question_type', 'reasoning') == 'descriptive':
-            prompt = build_descriptive_judge_prompt(
-                q_id=metadata.get('question_id', 1),
-                response=context.original_prediction,
-                ground_truth=context.reference,
-            )
-        else:
-            prompt = build_reasoning_judge_prompt(
-                reasoning_a_type=metadata.get('reasoning_a_type', 1),
-                question=context.task_state.input_text or '',
-                ground_truth=context.reference,
-                response=context.original_prediction,
-            )
-        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': float(case_verdicts[0].value.score)})
 
-    def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        grade = case_verdicts[0].value
-        return ReducedVerdict(value={'acc': float(grade.score)})
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=contract)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc'
+        )

@@ -13,16 +13,8 @@ from .aggregation import (
     aggregate_repeat_values,
     judge_disagreement,
 )
-from .types import (
-    CaseVerdict,
-    JudgeAttempt,
-    JudgeCase,
-    JudgeContext,
-    JudgeObservation,
-    JudgeProtocol,
-    JudgeReview,
-    Placement,
-)
+from .definition import JudgeDefinition
+from .types import CaseVerdict, JudgeAttempt, JudgeCase, JudgeContext, JudgeObservation, JudgeReview, Placement
 
 logger = get_logger()
 
@@ -51,12 +43,12 @@ class JudgeExecutor:
         if self.config.min_valid_judges > len(self.judges):
             raise ValueError('min_valid_judges cannot exceed the configured judge count.')
 
-    def execute(self, adapter: JudgeProtocol, context: JudgeContext) -> JudgeReview:
+    def execute(self, definition: JudgeDefinition, context: JudgeContext) -> JudgeReview:
         """Score one sample through every configured judge and repeat."""
         review = JudgeReview()
         for judge in self.judges:
             for repeat_id in range(self.config.repeats):
-                review.observations.append(self._run_observation(adapter, context, judge, repeat_id, review))
+                review.observations.append(self._run_observation(definition, context, judge, repeat_id, review))
         review.failure_counts = dict(
             Counter(attempt.status.value for attempt in review.attempts if not attempt.status.is_usable)
         )
@@ -65,25 +57,25 @@ class JudgeExecutor:
 
     def _run_observation(
         self,
-        adapter: JudgeProtocol,
+        definition: JudgeDefinition,
         context: JudgeContext,
         judge: Any,
         repeat_id: int,
         review: JudgeReview,
     ) -> JudgeObservation:
         observation = JudgeObservation(judge_id=_judge_id(judge), repeat_id=repeat_id)
-        pending = list(adapter.build_judge_cases(context))
+        pending = list(definition.build_cases(context))
         declared = len(pending)
         completed: List[CaseVerdict] = []
         for stage in range(MAX_STAGES):
             for case in pending:
-                verdict = self._run_case(adapter, context, judge, repeat_id, case, completed, review)
+                verdict = self._run_case(definition, context, judge, repeat_id, case, completed, review)
                 if verdict is None:
                     observation.status = ScoreStatus.INVALID_SESSION
                     observation.error = f'case {case.case_id} produced no usable verdict'
                     return observation
                 completed.append(verdict)
-            pending = list(adapter.expand_judge_cases(stage + 1, completed, context))
+            pending = list(definition.expand_cases(stage + 1, completed, context))
             declared += len(pending)
         if pending:
             raise RuntimeError(f'Judge case expansion exceeded {MAX_STAGES} stages; adapter bug.')
@@ -92,14 +84,14 @@ class JudgeExecutor:
             observation.error = 'no case produced a usable verdict'
             return observation
         observation.case_verdicts = completed
-        observation.reduced = adapter.reduce_judge_verdicts(completed, context)
+        observation.reduced = definition.reduce_verdicts(completed, context)
         if any(verdict.status is ScoreStatus.FALLBACK for verdict in completed):
             observation.status = ScoreStatus.FALLBACK
         return observation
 
     def _run_case(
         self,
-        adapter: JudgeProtocol,
+        definition: JudgeDefinition,
         context: JudgeContext,
         judge: Any,
         repeat_id: int,
@@ -110,13 +102,13 @@ class JudgeExecutor:
         placements = (Placement.ORIGINAL, Placement.SWAPPED) if self.config.position_swap else (Placement.ORIGINAL, )
         values: Dict[str, Any] = {}
         for placement in placements:
-            value = self._resolve_placement(adapter, context, judge, repeat_id, case, placement, completed, review)
+            value = self._resolve_placement(definition, context, judge, repeat_id, case, placement, completed, review)
             if value is None:
                 # A swapped pair is atomic. One rule fallback must not impersonate the missing
                 # opposite presentation.
                 if len(placements) > 1:
                     return None
-                fallback = adapter.judge_fallback_verdict(case, context)
+                fallback = definition.fallback_verdict(case, context)
                 if fallback is not None:
                     return fallback.model_copy(
                         update={
@@ -139,7 +131,7 @@ class JudgeExecutor:
 
     def _resolve_placement(
         self,
-        adapter: JudgeProtocol,
+        definition: JudgeDefinition,
         context: JudgeContext,
         judge: Any,
         repeat_id: int,
@@ -149,7 +141,7 @@ class JudgeExecutor:
         review: JudgeReview,
     ) -> Any:
         """Make exactly one request. Transport retry belongs to the model implementation."""
-        request = adapter.build_judge_request(case, placement, completed, context)
+        request = definition.build_request(case, placement, completed, context)
         started = time.perf_counter()
         try:
             output = judge.generate(list(request.messages))
@@ -301,9 +293,24 @@ class JudgeExecutor:
         } for observation in review.fallback_observations]
         review.status = ScoreStatus.DEGRADED
 
-    def build_score(self, adapter: JudgeProtocol, review: JudgeReview, context: JudgeContext) -> Score:
+    def build_score(
+        self,
+        definition: JudgeDefinition,
+        review: JudgeReview,
+        context: JudgeContext,
+        *,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Score:
         """Build the final score and persist all judge I/O in the review payload."""
-        score = adapter.finalize_judge_score(review, context)
+        score = Score(
+            extracted_prediction=context.filtered_prediction,
+            prediction=context.original_prediction,
+            value=dict(review.value),
+            main_score_name=definition.main_score_name,
+            metadata=dict(metadata or {}),
+        )
+        if definition.finalize is not None:
+            score = definition.finalize(score, review, context)
         score.status = review.status
         if not review.status.is_usable:
             score.value = {}

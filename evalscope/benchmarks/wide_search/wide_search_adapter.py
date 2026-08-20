@@ -12,7 +12,15 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
@@ -186,13 +194,22 @@ class WideSearchAdapter(AgentLoopAdapter):
     def should_finalize_after_max_steps(self, result: AgentLoopResult) -> bool:
         return True
 
-    def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
+            main_score_name='success_rate',
+            expand=self._expand_cases
+        )
+
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
         session = self._session(context)
         if not session.needs_column_alignment():
             return []
         return [JudgeCase(case_id='column_alignment', output_contract=OutputContract(schema_model=_MappingVerdict))]
 
-    def build_judge_request(
+    def _build_request(
         self,
         case: JudgeCase,
         placement: Any,
@@ -214,7 +231,7 @@ class WideSearchAdapter(AgentLoopAdapter):
         prompt += case.output_contract.instruction()
         return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-    def expand_judge_cases(
+    def _expand_cases(
         self,
         stage: int,
         completed_cases: Sequence[CaseVerdict],
@@ -279,7 +296,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             )
         return cases
 
-    def reduce_judge_verdicts(
+    def _reduce_verdicts(
         self,
         case_verdicts: Sequence[CaseVerdict],
         context: JudgeContext,
@@ -298,11 +315,6 @@ class WideSearchAdapter(AgentLoopAdapter):
         }
         values, diagnostics = session.score(column_scores, column_map, primary_key_maps)
         return ReducedVerdict(value=values, metadata=diagnostics)
-
-    def finalize_judge_score(self, review, context: JudgeContext) -> Score:
-        score = super().finalize_judge_score(review, context)
-        score.main_score_name = 'success_rate'
-        return score
 
     @staticmethod
     def _mapping(cases: Sequence[CaseVerdict], case_id: str) -> Dict[str, str]:
@@ -327,15 +339,6 @@ class WideSearchAdapter(AgentLoopAdapter):
             gold_csv=context.reference,
             evaluation=context.task_state.metadata['evaluation'],
         )
-
-    def pre_judge_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Optional[Score]:
-        return None
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         return aggregate_official_scores(sample_scores)
