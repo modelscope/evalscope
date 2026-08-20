@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "pretty_name": "BhashaBench-Multi (Legal)",
+    "dataset_id": "bharatgenai/BhashaBench-Multi",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Assamese",
+      "Bengali",
+      "Bodo",
+      "Dogri",
+      "Gujarati",
+      "Hindi",
+      "Kannada",
+      "Kashmiri",
+      "Konkani",
+      "Maithili",
+      "Malayalam",
+      "Manipuri",
+      "Marathi",
+      "Nepali",
+      "Oriya",
+      "Punjabi",
+      "Sanskrit",
+      "Santhali",
+      "Sindhi",
+      "Tamil",
+      "Telugu",
+      "Urdu"
+    ],
+    "description": "\n## Overview\n\nBhashaBench-Multi (Legal) is a domain-specific multiple-choice benchmark evaluating LLM knowledge\nof Indian law across 22 Indic languages. Each question originates in English and is machine\ntranslated (with LLM-judged translation quality scores) into the target language; this adapter uses\nthe translated question/choices.\n\n## Task Description\n\n- **Task Type**: Domain-Specific Multiple-Choice Question Answering\n- **Input**: A Indian law question with 4 answer choices, in one of 22 Indic languages\n- **Output**: Correct answer letter\n- **Languages**: Assamese, Bengali, Bodo, Dogri, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili,\n  Malayalam, Manipuri, Marathi, Nepali, Oriya, Punjabi, Sanskrit, Santhali, Sindhi, Tamil, Telugu, Urdu\n\n## Key Features\n\n- ~14,963 questions per language across 22 Indic languages per domain (~330k total per domain)\n- Machine-translated from English with LLM-judged translation quality scores\n- 22 scheduled languages of India, all in native script; no English split\n- Four domains available as separate benchmarks: Ayurveda, Finance, Krishi, Legal\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap\n  sample count — each domain is ~14,963 questions per language across 22 languages (~330k total),\n  so evaluating every language's full split is a large run\n- No English split exists for this dataset\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 536030,
+    "subset_stats": [
+      {
+        "name": "Assamese",
+        "sample_count": 24365,
+        "prompt_length_mean": 475.08,
+        "prompt_length_min": 232,
+        "prompt_length_max": 2556,
+        "prompt_length_std": 177.07,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Bengali",
+        "sample_count": 24365,
+        "prompt_length_mean": 482.5,
+        "prompt_length_min": 235,
+        "prompt_length_max": 2066,
+        "prompt_length_std": 195.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Bodo",
+        "sample_count": 24365,
+        "prompt_length_mean": 521.23,
+        "prompt_length_min": 225,
+        "prompt_length_max": 4608,
+        "prompt_length_std": 362.97,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Dogri",
+        "sample_count": 24365,
+        "prompt_length_mean": 487.72,
+        "prompt_length_min": 225,
+        "prompt_length_max": 4432,
+        "prompt_length_std": 313.51,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Gujarati",
+        "sample_count": 24365,
+        "prompt_length_mean": 463.64,
+        "prompt_length_min": 232,
+        "prompt_length_max": 1954,
+        "prompt_length_std": 164.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Hindi",
+        "sample_count": 24365,
+        "prompt_length_mean": 489.37,
+        "prompt_length_min": 232,
+        "prompt_length_max": 2202,
+        "prompt_length_std": 197.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Kannada",
+        "sample_count": 24365,
+        "prompt_length_mean": 475.35,
+        "prompt_length_min": 232,
+        "prompt_length_max": 2068,
+        "prompt_length_std": 173.19,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Kashmiri",
+        "sample_count": 24365,
+        "prompt_length_mean": 514.54,
+        "prompt_length_min": 242,
+        "prompt_length_max": 5037,
+        "prompt_length_std": 332.42,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Konkani",
+        "sample_count": 24365,
+        "prompt_length_mean": 473.95,
+        "prompt_length_min": 225,
+        "prompt_length_max": 4000,
+        "prompt_length_std": 296.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Maithili",
+        "sample_count": 24365,
+        "prompt_length_mean": 473.11,
+        "prompt_length_min": 225,
+        "prompt_length_max": 4011,
+        "prompt_length_std": 290.52,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Malayalam",
+        "sample_count": 24365,
+        "prompt_length_mean": 511.29,
+        "prompt_length_min": 236,
+        "prompt_length_max": 2218,
+        "prompt_length_std": 196.06,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Manipuri",
+        "sample_count": 24365,
+        "prompt_length_mean": 548.36,
+        "prompt_length_min": 238,
+        "prompt_length_max": 6384,
+        "prompt_length_std": 389.22,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Marathi",
+        "sample_count": 24365,
+        "prompt_length_mean": 487.86,
+        "prompt_length_min": 232,
+        "prompt_length_max": 2113,
+        "prompt_length_std": 196.14,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Nepali",
+        "sample_count": 24365,
+        "prompt_length_mean": 475.87,
+        "prompt_length_min": 234,
+        "prompt_length_max": 2058,
+        "prompt_length_std": 181.18,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Oriya",
+        "sample_count": 24365,
+        "prompt_length_mean": 458.86,
+        "prompt_length_min": 232,
+        "prompt_length_max": 1936,
+        "prompt_length_std": 164.31,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Punjabi",
+        "sample_count": 24365,
+        "prompt_length_mean": 483.03,
+        "prompt_length_min": 232,
+        "prompt_length_max": 2138,
+        "prompt_length_std": 196.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Sanskrit",
+        "sample_count": 24365,
+        "prompt_length_mean": 489.0,
+        "prompt_length_min": 233,
+        "prompt_length_max": 1979,
+        "prompt_length_std": 194.56,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Santhali",
+        "sample_count": 24365,
+        "prompt_length_mean": 549.75,
+        "prompt_length_min": 233,
+        "prompt_length_max": 5074,
+        "prompt_length_std": 382.55,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Sindhi",
+        "sample_count": 24365,
+        "prompt_length_mean": 455.74,
+        "prompt_length_min": 234,
+        "prompt_length_max": 1830,
+        "prompt_length_std": 161.03,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Tamil",
+        "sample_count": 24365,
+        "prompt_length_mean": 522.97,
+        "prompt_length_min": 237,
+        "prompt_length_max": 2479,
+        "prompt_length_std": 214.2,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Telugu",
+        "sample_count": 24365,
+        "prompt_length_mean": 481.32,
+        "prompt_length_min": 234,
+        "prompt_length_max": 1992,
+        "prompt_length_std": 174.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Urdu",
+        "sample_count": 24365,
+        "prompt_length_mean": 479.13,
+        "prompt_length_min": 235,
+        "prompt_length_max": 2120,
+        "prompt_length_std": 185.35,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 490.89,
+      "min": 225,
+      "max": 6384,
+      "std": 246.8
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-20T16:59:51.509962"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "e631cc6e",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nকোনো আদেশ প্ৰকাশ কৰাৰ পূৰ্বতে কোনো সমস্যা সংশোধন কৰাৰ বা নতুন সমস্যা উত্থাপন কৰাৰ ক্ষমতা আদালতৰ ওচৰত থাকে, আৰু এই ক্ষমতা দিয়া হয় দেৱানী প্রক্রিয়া বিধি, ১৯০৮-ৰ কোনটো ব্যৱস্থাৰ দ্বাৰা?\n\nA) অধ্যায় ১৪, বিধি ১\nB) অধ্যায় ১৪, বিধি ৫\nC) অধ্যায় XIV, বিধি ৬\nD) ধাৰা ১৫১"
+        }
+      ],
+      "choices": [
+        "অধ্যায় ১৪, বিধি ১",
+        "অধ্যায় ১৪, বিধি ৫",
+        "অধ্যায় XIV, বিধি ৬",
+        "ধাৰা ১৫১"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "language": "Assamese",
+        "topic": "Procedural Law"
+      }
+    },
+    "subset": "Assamese",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BhashaBench-Multi (Legal)\n\n\n## Overview\n\nBhashaBench-Multi (Legal) is a domain-specific multiple-choice benchmark evaluating LLM knowledge\nof Indian law across 22 Indic languages. Each question originates in English and is machine\ntranslated (with LLM-judged translation quality scores) into the target language; this adapter uses\nthe translated question/choices.\n\n## Task Description\n\n- **Task Type**: Domain-Specific Multiple-Choice Question Answering\n- **Input**: A Indian law question with 4 answer choices, in one of 22 Indic languages\n- **Output**: Correct answer letter\n- **Languages**: Assamese, Bengali, Bodo, Dogri, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili,\n  Malayalam, Manipuri, Marathi, Nepali, Oriya, Punjabi, Sanskrit, Santhali, Sindhi, Tamil, Telugu, Urdu\n\n## Key Features\n\n- ~14,963 questions per language across 22 Indic languages per domain (~330k total per domain)\n- Machine-translated from English with LLM-judged translation quality scores\n- 22 scheduled languages of India, all in native script; no English split\n- Four domains available as separate benchmarks: Ayurveda, Finance, Krishi, Legal\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages (e.g., `['Hindi', 'Tamil']`), or `limit` to cap\n  sample count — each domain is ~14,963 questions per language across 22 languages (~330k total),\n  so evaluating every language's full split is a large run\n- No English split exists for this dataset\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bhasha_bench_multi_legal` |\n| **Dataset ID** | [bharatgenai/BhashaBench-Multi](https://modelscope.cn/datasets/bharatgenai/BhashaBench-Multi/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 536,030 |\n| Prompt Length (Mean) | 490.89 chars |\n| Prompt Length (Min/Max) | 225 / 6384 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Assamese` | 24,365 | 475.08 | 232 | 2556 |\n| `Bengali` | 24,365 | 482.5 | 235 | 2066 |\n| `Bodo` | 24,365 | 521.23 | 225 | 4608 |\n| `Dogri` | 24,365 | 487.72 | 225 | 4432 |\n| `Gujarati` | 24,365 | 463.64 | 232 | 1954 |\n| `Hindi` | 24,365 | 489.37 | 232 | 2202 |\n| `Kannada` | 24,365 | 475.35 | 232 | 2068 |\n| `Kashmiri` | 24,365 | 514.54 | 242 | 5037 |\n| `Konkani` | 24,365 | 473.95 | 225 | 4000 |\n| `Maithili` | 24,365 | 473.11 | 225 | 4011 |\n| `Malayalam` | 24,365 | 511.29 | 236 | 2218 |\n| `Manipuri` | 24,365 | 548.36 | 238 | 6384 |\n| `Marathi` | 24,365 | 487.86 | 232 | 2113 |\n| `Nepali` | 24,365 | 475.87 | 234 | 2058 |\n| `Oriya` | 24,365 | 458.86 | 232 | 1936 |\n| `Punjabi` | 24,365 | 483.03 | 232 | 2138 |\n| `Sanskrit` | 24,365 | 489.0 | 233 | 1979 |\n| `Santhali` | 24,365 | 549.75 | 233 | 5074 |\n| `Sindhi` | 24,365 | 455.74 | 234 | 1830 |\n| `Tamil` | 24,365 | 522.97 | 237 | 2479 |\n| `Telugu` | 24,365 | 481.32 | 234 | 1992 |\n| `Urdu` | 24,365 | 479.13 | 235 | 2120 |\n\n## Sample Example\n\n**Subset**: `Assamese`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e631cc6e\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nকোনো আদেশ প্ৰকাশ কৰাৰ পূৰ্বতে কোনো সমস্যা সংশোধন কৰাৰ বা নতুন সমস্যা উত্থাপন কৰাৰ ক্ষমতা আদালতৰ ওচৰত থাকে, আৰু এই ক্ষমতা দিয়া হয় দেৱানী প্রক্রিয়া বিধি, ১৯০৮-ৰ কোনটো ব্যৱস্থাৰ দ্বাৰা?\\n\\nA) অধ্যায় ১৪, বিধি ১\\nB) অধ্যায় ১৪, বিধি ৫\\nC) অধ্যায় XIV, বিধি ৬\\nD) ধাৰা ১৫১\"\n    }\n  ],\n  \"choices\": [\n    \"অধ্যায় ১৪, বিধি ১\",\n    \"অধ্যায় ১৪, বিধি ৫\",\n    \"অধ্যায় XIV, বিধি ৬\",\n    \"ধাৰা ১৫১\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"Assamese\",\n    \"topic\": \"Procedural Law\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bhasha_bench_multi_legal \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bhasha_bench_multi_legal'],\n    dataset_args={\n        'bhasha_bench_multi_legal': {\n            # subset_list: ['Assamese', 'Bengali', 'Bodo']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BhashaBench-Multi (Legal)\n\n\n## 概述\n\nBhashaBench-Multi (Legal) 是一个领域特定的多项选择题基准测试，用于评估大语言模型（LLM）在22种印度语言中对印度法律知识的掌握情况。每个问题最初以英文编写，随后通过机器翻译（并附有基于LLM判断的翻译质量评分）转换为目标语言；本适配器使用的是翻译后的问题和选项。\n\n## 任务描述\n\n- **任务类型**：领域特定的多项选择题问答\n- **输入**：一道印度法律问题，包含4个选项，使用22种印度语言之一\n- **输出**：正确答案对应的字母\n- **语言**：阿萨姆语、孟加拉语、博多语、多格拉语、古吉拉特语、印地语、卡纳达语、克什米尔语、孔卡尼语、迈蒂利语、马拉雅拉姆语、曼尼普尔语、马拉地语、尼泊尔语、奥里亚语、旁遮普语、梵语、桑塔利语、信德语、泰米尔语、泰卢固语、乌尔都语\n\n## 主要特点\n\n- 每种语言约14,963道题目，覆盖22种印度语言（每个领域总计约33万题）\n- 从英文机器翻译而来，并附带基于LLM判断的翻译质量评分\n- 覆盖印度宪法规定的22种预定语言，全部使用本地文字书写；不包含英文版本\n- 提供四个独立领域的基准测试：阿育吠陀（Ayurveda）、金融（Finance）、农业（Krishi）、法律（Legal）\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估（仅提供测试集）\n- 可通过 `subset_list` 参数指定评估特定语言（例如 `['Hindi', 'Tamil']`），或使用 `limit` 限制样本数量 —— 每个领域在22种语言中每种语言约14,963道题（总计约33万题），因此完整评估所有语言将是一次大规模运行\n- 该数据集不包含英文版本\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bhasha_bench_multi_legal` |\n| **数据集ID** | [bharatgenai/BhashaBench-Multi](https://modelscope.cn/datasets/bharatgenai/BhashaBench-Multi/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认Shots数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 536,030 |\n| 提示词长度（平均） | 490.89 字符 |\n| 提示词长度（最小/最大） | 225 / 6384 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Assamese` | 24,365 | 475.08 | 232 | 2556 |\n| `Bengali` | 24,365 | 482.5 | 235 | 2066 |\n| `Bodo` | 24,365 | 521.23 | 225 | 4608 |\n| `Dogri` | 24,365 | 487.72 | 225 | 4432 |\n| `Gujarati` | 24,365 | 463.64 | 232 | 1954 |\n| `Hindi` | 24,365 | 489.37 | 232 | 2202 |\n| `Kannada` | 24,365 | 475.35 | 232 | 2068 |\n| `Kashmiri` | 24,365 | 514.54 | 242 | 5037 |\n| `Konkani` | 24,365 | 473.95 | 225 | 4000 |\n| `Maithili` | 24,365 | 473.11 | 225 | 4011 |\n| `Malayalam` | 24,365 | 511.29 | 236 | 2218 |\n| `Manipuri` | 24,365 | 548.36 | 238 | 6384 |\n| `Marathi` | 24,365 | 487.86 | 232 | 2113 |\n| `Nepali` | 24,365 | 475.87 | 234 | 2058 |\n| `Oriya` | 24,365 | 458.86 | 232 | 1936 |\n| `Punjabi` | 24,365 | 483.03 | 232 | 2138 |\n| `Sanskrit` | 24,365 | 489.0 | 233 | 1979 |\n| `Santhali` | 24,365 | 549.75 | 233 | 5074 |\n| `Sindhi` | 24,365 | 455.74 | 234 | 1830 |\n| `Tamil` | 24,365 | 522.97 | 237 | 2479 |\n| `Telugu` | 24,365 | 481.32 | 234 | 1992 |\n| `Urdu` | 24,365 | 479.13 | 235 | 2120 |\n\n## 样例示例\n\n**子集**: `Assamese`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"e631cc6e\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nকোনো আদেশ প্ৰকাশ কৰাৰ পূৰ্বতে কোনো সমস্যা সংশোধন কৰাৰ বা নতুন সমস্যা উত্থাপন কৰাৰ ক্ষমতা আদালতৰ ওচৰত থাকে, আৰু এই ক্ষমতা দিয়া হয় দেৱানী প্রক্রিয়া বিধি, ১৯০৮-ৰ কোনটো ব্যৱস্থাৰ দ্বাৰা?\\n\\nA) অধ্যায় ১৪, বিধি ১\\nB) অধ্যায় ১৪, বিধি ৫\\nC) অধ্যায় XIV, বিধি ৬\\nD) ধাৰা ১৫১\"\n    }\n  ],\n  \"choices\": [\n    \"অধ্যায় ১৪, বিধি ১\",\n    \"অধ্যায় ১৪, বিধি ৫\",\n    \"অধ্যায় XIV, বিধি ৬\",\n    \"ধাৰা ১৫১\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"Assamese\",\n    \"topic\": \"Procedural Law\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bhasha_bench_multi_legal \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bhasha_bench_multi_legal'],\n    dataset_args={\n        'bhasha_bench_multi_legal': {\n            # subset_list: ['Assamese', 'Bengali', 'Bodo']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b1115f911244879ee4336a2f40ccd01f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-20T17:03:27.440410",
+  "translation_updated_at": "2026-08-20T17:14:57"
+}
