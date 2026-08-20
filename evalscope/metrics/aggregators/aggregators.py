@@ -1,6 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
 from evalscope.api.registry import register_aggregation
@@ -19,30 +19,30 @@ def collect_metric_names(scores: List[SampleScore]) -> List[str]:
     return list(metric_names)
 
 
-def collect_planned_attempts(scores: List[SampleScore], metric_name: str) -> Dict[Any, Dict[int, SampleScore]]:
-    """Keep generation positions so an unavailable early trial cannot shift later trials forward."""
-    grouped: Dict[Any, Dict[int, SampleScore]] = defaultdict(dict)
+def collect_planned_attempts(scores: List[SampleScore],
+                             metric_name: str) -> Dict[Any, Dict[int, Optional[SampleScore]]]:
+    """Keep every planned position so unavailable attempts cannot shift later trials forward."""
+    grouped: Dict[Any, Dict[int, Optional[SampleScore]]] = defaultdict(dict)
     for score in scores:
-        if metric_name not in score.score.value:
-            continue
         group_id = score.group_id if score.group_id is not None else score.sample_id
         position = score.generation_index
         if position is None:
             # Legacy caches lack an explicit position. Their existing row order is the only safe
             # information available; new scores always carry generation_index.
             position = len(grouped[group_id])
-        grouped[group_id][position] = score
+        grouped[group_id][position] = score if metric_name in score.score.value else None
     return grouped
 
 
 def eligible_prefixes(
-    grouped: Dict[Any, Dict[int, SampleScore]],
-) -> Dict[int, List[Tuple[Any, Dict[int, SampleScore]]]]:
-    """Return groups eligible for each k only when the complete first-k prefix exists."""
-    result: Dict[int, List[Tuple[Any, Dict[int, SampleScore]]]] = defaultdict(list)
+    grouped: Dict[Any, Dict[int, Optional[SampleScore]]],
+) -> Dict[int, List[Tuple[Any, Dict[int, Optional[SampleScore]]]]]:
+    """Return eligible groups for each k without extending beyond the shortest planned group."""
+    max_k = min((max(attempts, default=-1) + 1 for attempts in grouped.values()), default=0)
+    result: Dict[int, List[Tuple[Any, Dict[int, Optional[SampleScore]]]]] = defaultdict(list)
     for group_id, attempts in grouped.items():
-        for k in range(1, max(attempts, default=-1) + 2):
-            if all(index in attempts for index in range(k)):
+        for k in range(1, max_k + 1):
+            if all(attempts.get(index) is not None for index in range(k)):
                 result[k].append((group_id, attempts))
             else:
                 break
@@ -139,14 +139,14 @@ class MeanPassAtK(Aggregator):
                 continue
             for n, eligible in prefixes.items():
                 group_order = [group_id for group_id, _ in eligible]
-                values_by_group = [[float(score.score.value[metric_name])
-                                    for _, score in sorted(attempts.items())]
-                                   for _, attempts in eligible]
+                values_by_group = [[
+                    float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None
+                ] for _, attempts in eligible]
                 values = calculate_pass_at_k([len(items) for items in values_by_group],
                                              [int(sum(items)) for items in values_by_group], n)
                 aggregated_scores.append(
                     AggScore(
-                        score=mean(values),
+                        score=mean(values.tolist()),
                         metric_name=metric_name,
                         aggregation='pass_at_k',
                         dimensions={'k': n},
@@ -276,7 +276,9 @@ class MeanPassHatK(Aggregator):
                 values = []
                 ids = []
                 for group_id, attempts in eligible:
-                    attempt_values = [float(score.score.value[metric_name]) for _, score in sorted(attempts.items())]
+                    attempt_values = [
+                        float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None
+                    ]
                     values.append(float(calculate_pass_hat_k(len(attempt_values), int(sum(attempt_values)), n)))
                     ids.append(group_id)
                 aggregated_scores.append(

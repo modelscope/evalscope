@@ -124,6 +124,20 @@ def test_llm_recall_skips_judge_when_rule_score_is_perfect(monkeypatch) -> None:
     assert score.value == {'acc': 1.0}
 
 
+def test_sample_score_preserves_repeat_position() -> None:
+    adapter = make_adapter(repeats=3)
+    state = TaskState(
+        model='m',
+        sample=Sample(id=4, group_id=1, input='question', target='answer'),
+        output=ModelOutput(model='m', completion='answer'),
+        completed=True,
+    )
+
+    sample_score = adapter.calculate_metrics(state)
+
+    assert sample_score.generation_index == 1
+
+
 def test_sample_example_detects_parameterized_truncation_marker() -> None:
     sample = Sample(input='prefix ... [TRUNCATED 123 chars] ... suffix', target='answer')
 

@@ -142,3 +142,25 @@ def test_missing_first_generation_never_promotes_a_later_generation_to_k_one(agg
 
     assert at_one.num == 1
     assert at_one.metadata['excluded'] == 1
+
+
+@pytest.mark.parametrize('aggregator_cls', K_AGGREGATORS)
+def test_missing_middle_generation_excludes_only_affected_higher_k_groups(aggregator_cls):
+    scores = [
+        make_sample_score({'judge_score': 1.0}, group_id='g0', sample_id='g0-0', generation_index=0),
+        make_sample_score({}, group_id='g0', sample_id='g0-1', generation_index=1),
+        make_sample_score({'judge_score': 1.0}, group_id='g0', sample_id='g0-2', generation_index=2),
+        make_sample_score({'judge_score': 0.0}, group_id='g1', sample_id='g1-0', generation_index=0),
+        make_sample_score({'judge_score': 0.0}, group_id='g1', sample_id='g1-1', generation_index=1),
+        make_sample_score({'judge_score': 0.0}, group_id='g1', sample_id='g1-2', generation_index=2),
+    ]
+
+    aggregation = (
+        'vote_at_k' if aggregator_cls is MeanVoteAtK else
+        'pass_at_k' if aggregator_cls is MeanPassAtK else 'pass_hat_k'
+    )
+    at_two = find_agg(aggregator_cls()(scores), aggregation, 2)
+
+    assert at_two is not None
+    assert at_two.num == 1
+    assert at_two.metadata == {'eligible': 1, 'total': 2, 'coverage': 0.5, 'excluded': 1}
