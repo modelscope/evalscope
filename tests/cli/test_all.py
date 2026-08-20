@@ -164,12 +164,11 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            judge_strategy=JudgeStrategy.AUTO,
-            judge_model_args={
+            judge={'strategy': JudgeStrategy.AUTO, 'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
-            }
+            }}
         )
 
         run_task(task_cfg=task_cfg)
@@ -205,12 +204,11 @@ class TestRun(unittest.TestCase):
                 'image_width': 512,
                 'image_num': 2,
             },
-            judge_strategy=JudgeStrategy.AUTO,
-            judge_model_args={
+            judge={'strategy': JudgeStrategy.AUTO, 'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
-            }
+            }}
         )
 
         run_task(task_cfg=task_cfg)
@@ -251,12 +249,11 @@ class TestRun(unittest.TestCase):
                 'n': 1,
                 'max_tokens': 4096,
             },
-            judge_strategy=JudgeStrategy.AUTO,
-            judge_model_args={
+            judge={'strategy': JudgeStrategy.AUTO, 'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
-            }
+            }}
         )
 
         run_task(task_cfg=task_cfg)

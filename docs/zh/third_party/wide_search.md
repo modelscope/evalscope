@@ -39,12 +39,14 @@ run_task(TaskConfig(
     api_key=os.getenv('MODEL_API_KEY'),
     eval_type='openai_api',
     datasets=['wide_search'],
-    judge_strategy='llm',
-    judge_model_args={
-        'model_id': 'YOUR_JUDGE_MODEL',
-        'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
-        'api_key': os.getenv('JUDGE_API_KEY'),
-        'generation_config': {'temperature': 0.0},
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'YOUR_JUDGE_MODEL',
+            'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
+            'api_key': os.getenv('JUDGE_API_KEY'),
+            'generation_config': {'temperature': 0.0},
+        },
     },
     eval_batch_size=1,
     limit=1,  # 正式评测 200 题时删除
@@ -74,8 +76,7 @@ run_task(TaskConfig(
             'network_enabled': True,
         },
     ),
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
+    judge={'strategy': 'llm', 'models': {'model_id': 'YOUR_JUDGE_MODEL'}},
     limit=1,
 ))
 ```
@@ -109,8 +110,7 @@ run_task(TaskConfig(
             )
         ],
     ),
-    judge_strategy='llm',
-    judge_model_args={'model_id': 'YOUR_JUDGE_MODEL'},
+    judge={'strategy': 'llm', 'models': {'model_id': 'YOUR_JUDGE_MODEL'}},
 ))
 ```
 

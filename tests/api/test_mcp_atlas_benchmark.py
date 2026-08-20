@@ -67,19 +67,20 @@ class FakeClient:
 
 class PromptJudge:
     model_id = 'judge-model'
+    judge_id = 'judge-model'
 
-    def judge(self, prompt: str = '', system_prompt: Any = None, messages: Any = None) -> str:
-        text = prompt or (messages[-1].content if messages else '')
+    def generate(self, messages: Any) -> ModelOutput:
+        text = messages[-1].content if messages else ''
         outcome = 'not_fulfilled'
         if 'claim one' in text:
             outcome = 'fulfilled'
         elif 'claim two' in text:
             outcome = 'partially_fulfilled'
-        return json.dumps({
+        return ModelOutput.from_content(self.model_id, json.dumps({
             'coverage_outcome': outcome,
             'justification': outcome,
             'confidence_level': 0.9,
-        })
+        }))
 
 
 def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -> MCPAtlasAdapter:
@@ -127,7 +128,7 @@ def write_rows(path: Path, rows: List[Dict[str, Any]]) -> None:
 
 
 def test_mcp_atlas_registered_under_short_name() -> None:
-    cfg = TaskConfig(datasets=['mcp_atlas'], judge_model_args={'model_id': 'judge'})
+    cfg = TaskConfig(datasets=['mcp_atlas'], judge={'models': {'model_id': 'judge'}})
 
     adapter = get_benchmark('mcp_atlas', cfg)
 
@@ -136,7 +137,7 @@ def test_mcp_atlas_registered_under_short_name() -> None:
 
 
 def test_mcp_atlas_rejects_rule_scoring_before_generating() -> None:
-    cfg = TaskConfig(datasets=['mcp_atlas'], judge_strategy='rule')
+    cfg = TaskConfig(datasets=['mcp_atlas'], judge={'strategy': 'rule'})
 
     with pytest.raises(ValueError, match='no usable rule-based scoring'):
         get_benchmark('mcp_atlas', cfg)
@@ -533,9 +534,10 @@ def test_claim_coverage_excludes_a_sample_whose_claim_cannot_be_parsed() -> None
 
     class ProseJudge:
         model_id = 'judge-model'
+        judge_id = 'judge-model'
 
-        def judge(self, prompt: str = '', system_prompt: Any = None, messages: Any = None) -> str:
-            return 'The claim is clearly fulfilled by the response.'
+        def generate(self, messages: Any) -> ModelOutput:
+            return ModelOutput.from_content(self.model_id, 'The claim is clearly fulfilled by the response.')
 
     adapter = make_adapter()
     adapter.llm_judge = ProseJudge()

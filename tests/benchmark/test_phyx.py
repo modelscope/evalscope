@@ -143,28 +143,30 @@ class _StubJudge:
     """Records whether the judge was consulted and with which prompt."""
 
     model_id = 'stub-judge'
+    judge_id = 'stub-judge'
 
-    def __init__(self, response: str = '{"verdict": true}') -> None:
+    def __init__(self, response: Any = '{"verdict": true}') -> None:
         self.response = response
         self.prompts: List[str] = []
 
-    def judge(self, prompt: str = '', system_prompt: Optional[str] = None, messages: Any = None) -> str:
-        self.prompts.append(prompt or (messages[-1].content if messages else ''))
-        return self.response
+    def generate(self, messages: Any) -> ModelOutput:
+        self.prompts.append(messages[-1].content if messages else '')
+        if isinstance(self.response, Exception):
+            raise self.response
+        return ModelOutput.from_content(self.model_id, self.response)
 
 
 def _judged_result(
     name: str,
     prediction: str,
     target: str,
-    response: str = '{"verdict": true}',
+    response: Any = '{"verdict": true}',
 ) -> Tuple[Score, _StubJudge]:
     """Run one prediction through the benchmark's judged scoring path."""
     config = TaskConfig(
         model='mock',
         datasets=[name],
-        judge_strategy=JudgeStrategy.LLM,
-        judge_model_args={'model_id': 'stub-judge'},
+        judge={'strategy': JudgeStrategy.LLM, 'models': {'model_id': 'stub-judge'}},
     )
     adapter = get_benchmark(name, config)
     judge = _StubJudge(response)
@@ -173,9 +175,9 @@ def _judged_result(
         model='mock',
         sample=Sample(input='q', target=target),
         output=ModelOutput.from_content('mock', prediction),
+        completed=True,
     )
-    extracted = adapter.extract_answer(prediction, state)
-    return adapter.llm_match_score(prediction, extracted, target, state), judge
+    return adapter.calculate_metrics(state).score, judge
 
 
 def _judged_score(
@@ -227,12 +229,12 @@ def test_oe_judge_settles_answers_that_do_not_match_literally() -> None:
 
 
 def test_oe_judge_error_excludes_the_sample() -> None:
-    """A failed judge request fails the contract, so the sample is excluded instead of scored 0."""
+    """A JUDGE_DEFAULT benchmark retains its official rule score when judging is unavailable."""
     score, _ = _judged_result(
-        'phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response='[ERROR] request failed for model 1'
+        'phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response=ConnectionError('request failed')
     )
-    assert score.value == {}
-    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {'acc': 0.0}
+    assert score.status is ScoreStatus.DEGRADED
 
 
 def test_oe_judge_no_longer_reads_a_bare_flag_out_of_prose() -> None:
@@ -240,8 +242,8 @@ def test_oe_judge_no_longer_reads_a_bare_flag_out_of_prose() -> None:
     score, _ = _judged_result(
         'phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response='The values differ, so the judgement is 1'
     )
-    assert score.value == {}
-    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {'acc': 0.0}
+    assert score.status is ScoreStatus.DEGRADED
 
 
 def test_partially_parsed_options_are_rejected() -> None:

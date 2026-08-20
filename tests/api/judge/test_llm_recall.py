@@ -48,6 +48,7 @@ def test_an_unusable_judge_keeps_the_rule_score(status):
     assert merged.status.is_usable, 'a rule-scored sample must still count towards the metric'
     assert merged.metadata['judge_unavailable'] == status.value
     assert merged.judge_summary.judge_models == ['j']
+    assert merged.judge_summary.status is ScoreStatus.FALLBACK
 
 
 def test_a_judge_fallback_score_is_still_merged():

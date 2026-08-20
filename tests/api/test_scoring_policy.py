@@ -48,7 +48,7 @@ def test_legacy_llm_judge_default_maps_conservatively():
 
 @pytest.mark.parametrize('strategy', [JudgeStrategy.RULE, JudgeStrategy.LLM_RECALL])
 def test_judge_only_benchmark_rejects_rule_dependent_strategies(strategy):
-    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy=strategy, judge_model_args=JUDGE_ARGS)
+    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': strategy, 'models': JUDGE_ARGS})
 
     with pytest.raises(ValueError, match='no usable rule-based scoring'):
         get_benchmark('simple_qa', cfg)
@@ -56,12 +56,12 @@ def test_judge_only_benchmark_rejects_rule_dependent_strategies(strategy):
 
 def test_judge_only_benchmark_accepts_llm_and_auto():
     for strategy in (JudgeStrategy.LLM, JudgeStrategy.AUTO):
-        cfg = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy=strategy, judge_model_args=JUDGE_ARGS)
+        cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': strategy, 'models': JUDGE_ARGS})
         assert get_benchmark('simple_qa', cfg).use_llm_judge
 
 
 def test_judge_default_benchmark_still_allows_rule():
-    cfg = TaskConfig(model='m', datasets=['minerva_math'], judge_strategy=JudgeStrategy.RULE)
+    cfg = TaskConfig(model='m', datasets=['minerva_math'], judge={'strategy': JudgeStrategy.RULE})
 
     adapter = get_benchmark('minerva_math', cfg)
 
@@ -70,7 +70,7 @@ def test_judge_default_benchmark_still_allows_rule():
 
 
 def test_judge_default_benchmark_uses_judge_under_auto():
-    cfg = TaskConfig(model='m', datasets=['minerva_math'], judge_model_args=JUDGE_ARGS)
+    cfg = TaskConfig(model='m', datasets=['minerva_math'], judge={'models': JUDGE_ARGS})
 
     assert get_benchmark('minerva_math', cfg).use_llm_judge
 
@@ -84,15 +84,15 @@ def test_rule_default_benchmark_scores_by_rule_under_auto():
     assert not adapter.use_llm_judge
 
 
-def test_missing_judge_model_args_fails_before_generating():
-    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy=JudgeStrategy.LLM)
+def test_missing_judge_models_fails_before_generating():
+    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': JudgeStrategy.LLM})
 
     with pytest.raises(ValueError, match='judge.models must be provided'):
         get_benchmark('simple_qa', cfg)
 
 
 def test_validation_can_be_skipped_for_metadata_only_use():
-    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge_strategy=JudgeStrategy.RULE)
+    cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': JudgeStrategy.RULE})
 
     assert get_benchmark('simple_qa', cfg, validate_judge=False) is not None
 

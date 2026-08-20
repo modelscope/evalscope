@@ -4,9 +4,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 from evalscope.constants import EvalType, JudgeScoreType
-from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
-from .base import BaseJudge
 
 logger = get_logger()
 
@@ -43,7 +41,7 @@ DEFAULT_JUDGE_MODEL = 'Qwen/Qwen3-235B-A22B'
 DEFAULT_API_URL = 'https://api-inference.modelscope.cn/v1/'
 
 
-class LLMJudge(BaseJudge):
+class LLMJudge:
     """
     A metric that uses LLM to judge the quality of model predictions by comparing them with reference answers.
     """
@@ -58,10 +56,8 @@ class LLMJudge(BaseJudge):
         system_prompt: Optional[str] = None,
         prompt_template: Optional[str] = None,
         generation_config: Optional[Dict[str, Any]] = None,
-        score_pattern: Optional[str] = None,
         score_mapping: Optional[Dict[str, float]] = None,
         score_type: str = JudgeScoreType.PATTERN,  # 'pattern', 'numeric'
-        **kwargs
     ):
         """
         Initialize LLMJudge metric.
@@ -75,7 +71,6 @@ class LLMJudge(BaseJudge):
             system_prompt (str, optional): System prompt for the judge
             prompt_template (str, optional): Prompt template for the judge
             generation_config (dict, optional): Generation configuration for the judge
-            score_pattern (str, optional): [Deprecated] No longer has any effect.
             score_mapping (dict, optional): Allowed verdict labels mapped to their score values
             score_type (str, optional): Which built-in judge contract to use, defaults to 'pattern'.
                 - 'pattern': grade against a reference answer, choosing one of the score_mapping labels
@@ -100,11 +95,6 @@ class LLMJudge(BaseJudge):
             raise ValueError(f"Invalid score_type: {self.score_type}. Must be 'pattern' or 'numeric'.")
 
         self.score_mapping = score_mapping or {'A': 1.0, 'B': 0.0}
-        if score_pattern:
-            deprecated_warning(
-                logger, 'The `score_pattern` judge parameter is deprecated and no longer has any effect: the '
-                'judge now replies with a JSON object validated against a schema. It will be removed in v2.0.0.'
-            )
 
         self._init_server_adapter()
 

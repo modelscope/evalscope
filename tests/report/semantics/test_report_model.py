@@ -3,8 +3,10 @@ import pytest
 from pydantic import ValidationError
 from typing import Dict, List, Optional
 
-from evalscope.api.metric import AggScore
+from evalscope.api.metric import AggScore, JudgeSummary, SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector
+from evalscope.constants import ScoreStatus
+from evalscope.evaluator.evaluator import _summarize_judge_runs
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
@@ -125,6 +127,61 @@ def test_v2_serialization_contains_no_v1_metric_fields() -> None:
     for metric in data['metrics']:
         assert set(('name', 'semantic_id')).isdisjoint(metric)
         assert set(('identity', 'semantics')).issubset(metric)
+
+
+def test_report_persists_first_class_judge_summary() -> None:
+    report = _report()
+    report.judge_summary = JudgeSummary(status=ScoreStatus.DEGRADED, scored=8, total=10, coverage=0.8)
+
+    assert report.to_dict()['judge_summary']['coverage'] == 0.8
+
+
+def test_run_judge_summary_keeps_unavailable_samples_out_of_scores() -> None:
+    usable = SampleScore(score=Score(judge_summary=JudgeSummary(
+        status=ScoreStatus.SUCCESS,
+        scored=1,
+        total=1,
+        coverage=1.0,
+        judge_models=['primary'],
+        valid_observations=1,
+        total_observations=1,
+    )))
+    unavailable = SampleScore(score=Score(judge_summary=JudgeSummary(
+        status=ScoreStatus.EXCLUDED,
+        scored=0,
+        total=1,
+        coverage=0.0,
+        judge_models=['primary'],
+        total_observations=1,
+        failures={'parse_error': 1},
+    )))
+
+    summary = _summarize_judge_runs([[usable, unavailable]])
+
+    assert summary.status is ScoreStatus.DEGRADED
+    assert (summary.scored, summary.total, summary.coverage) == (1, 2, 0.5)
+    assert summary.failures == {'parse_error': 1}
+
+
+def test_run_judge_summary_preserves_degradation_and_rolls_up_disagreement() -> None:
+    degraded = SampleScore(score=Score(judge_summary=JudgeSummary(
+        status=ScoreStatus.DEGRADED,
+        scored=1,
+        total=1,
+        coverage=1.0,
+        disagreement={
+            'numeric': {'all_observations': {'acc': {'std': 0.2, 'range': 0.5}}},
+            'categorical': {'pair': {'agreement_ratio': 0.5, 'vote_entropy': 1.0}},
+            'position_consistency': 0.5,
+            'swap_flip_count': 1,
+        },
+    )))
+
+    summary = _summarize_judge_runs([[degraded]])
+
+    assert summary.status is ScoreStatus.DEGRADED
+    assert summary.disagreement['numeric']['acc'] == {'mean_std': 0.2, 'max_range': 0.5, 'samples': 1}
+    assert summary.disagreement['position_consistency']['swap_flip_count'] == 1
 
 
 def test_v2_round_trip_uses_persisted_semantics_without_resolution() -> None:

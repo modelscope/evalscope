@@ -24,7 +24,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType, JudgeStrategy, ModelTask
+from evalscope.constants import EvalType, ModelTask
 
 task_config = TaskConfig(
     model='Qwen/Qwen-Image-Edit', # Model ID or local path
@@ -50,15 +50,14 @@ task_config = TaskConfig(
     },
     eval_batch_size=5,
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={  # Configure a VLM model for automatic scoring
-        'model_id': 'qwen2.5-vl-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096,
-        }
+    judge={
+        'strategy': 'auto',
+        'models': {  # Configure a VLM model for automatic scoring
+            'model_id': 'qwen2.5-vl-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
+        },
     },
 )
 
@@ -173,7 +172,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType, JudgeStrategy, ModelTask
+from evalscope.constants import EvalType, ModelTask
 
 task_config = TaskConfig(
     model_id='offline-model', # No need to configure a model, just provide a custom ID
@@ -191,15 +190,14 @@ task_config = TaskConfig(
     },
     eval_batch_size=5,
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={  # Configure a VLM model for automatic scoring
-        'model_id': 'qwen2.5-vl-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096,
-        }
+    judge={
+        'strategy': 'auto',
+        'models': {  # Configure a VLM model for automatic scoring
+            'model_id': 'qwen2.5-vl-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
+        },
     },
 )
 

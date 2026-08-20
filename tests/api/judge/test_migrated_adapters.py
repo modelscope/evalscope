@@ -78,6 +78,19 @@ def test_position_swap_off_keeps_one_official_pairwise_game():
     assert score.metadata['battle_result']['games'] == [{'score': 'A>B'}]
 
 
+def test_arena_hard_preserves_each_placement_game_after_candidate_summary():
+    config = TaskConfig(model='m', datasets=['arena_hard'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('arena_hard', config)
+    # Original: candidate B wins. Swapped: candidate A loses. The candidate summary is a tie,
+    # but the official battle stream must retain the two non-tie games.
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "B>A"}', '{"verdict": "B>A"}'])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.value['score'] == 0.5
+    assert score.metadata['battle_result']['games'] == [{'score': 'B>A'}, {'score': 'B>A'}]
+
+
 def test_position_swap_on_is_ignored_for_non_pairwise_contracts():
     config = TaskConfig(
         model='m',
@@ -95,3 +108,24 @@ def test_position_swap_on_is_ignored_for_non_pairwise_contracts():
 
     assert score.status is ScoreStatus.SUCCESS
     assert len(score.metadata['judge_attempts']) == 1
+
+
+def test_position_swap_on_overrides_alpaca_eval_official_single_pass():
+    config = TaskConfig(
+        model='m',
+        datasets=['alpaca_eval'],
+        judge={
+            'strategy': 'llm',
+            'models': [{'model_id': 'j'}],
+            'position_swap': 'on',
+        },
+    )
+    adapter = get_benchmark('alpaca_eval', config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "M"}', '{"verdict": "m"}'])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value['win_rate'] == 0.75
+    assert len(score.metadata['judge_attempts']) == 2
+    assert score.metadata['non_official_position_swap'] is True

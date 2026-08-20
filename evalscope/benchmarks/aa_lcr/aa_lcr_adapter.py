@@ -111,6 +111,7 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
 class AALCRAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

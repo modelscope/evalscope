@@ -40,7 +40,7 @@ recognition, and visual tracking.
 - Primary metric: **Accuracy** via LLM-as-judge
 - Subsets organized by `type` field (4 categories)
 - LLM judge evaluates both choice and blank answer types uniformly
-- Requires `judge_model_args` configuration for LLM judge
+- Requires an LLM judge configured through `judge.models`
 """
 
 SUBSET_LIST = [
@@ -72,6 +72,7 @@ class BabyVisionAdapter(VisionLanguageAdapter):
     Handles both choice and blank answer types uniformly with LLM judge scoring.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

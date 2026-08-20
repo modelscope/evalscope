@@ -196,8 +196,8 @@ task_cfg = TaskConfig(
             }
         }
     },
-    # 配置judge模型参数
-    judge_model_args={
+    # 配置 Judge 模型参数
+    judge={'models': {
         'model_id': 'qwen-plus',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
@@ -205,7 +205,7 @@ task_cfg = TaskConfig(
             'temperature': 0.0,
             'max_tokens': 8000
         },
-    },
+    }},
     eval_batch_size=5,
     # use_cache='outputs/xxx' # 可选，若想在已有评测结果上添加新的候选模型，可以指定已有评测结果路径
 )

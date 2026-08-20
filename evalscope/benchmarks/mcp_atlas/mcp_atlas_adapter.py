@@ -65,6 +65,11 @@ _OUTCOME_SCORE = {'fulfilled': 1.0, 'partially_fulfilled': 0.5, 'not_fulfilled':
 class MCPAtlasAdapter(AgentLoopAdapter):
     """EvalScope-native MCP-Atlas adapter using MCP-Atlas agent-environment."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
+
+    @property
+    def judge_cache_key(self) -> Dict[str, Any]:
+        return {**super().judge_cache_key, 'pass_threshold': self.pass_threshold}
 
     strategy_name = 'function_calling'
     max_steps_default = 100

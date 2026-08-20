@@ -140,6 +140,7 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
 class NeedleHaystackAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

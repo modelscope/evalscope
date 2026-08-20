@@ -150,6 +150,7 @@ SimpleQA is a benchmark by OpenAI designed to evaluate language models' ability 
 class SimpleQAAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,7 +186,11 @@ class SimpleQAAdapter(DefaultDataAdapter):
     def judge_fallback_verdict(self, case, context) -> CaseVerdict:
         # Upstream simple-evals grades an unreadable verdict as NOT_ATTEMPTED rather than
         # dropping the sample, so the three rates keep summing to 1.
-        return CaseVerdict(case_id=case.case_id, value=Grade(verdict='C'))
+        return CaseVerdict(
+            case_id=case.case_id,
+            value=Grade(verdict='C'),
+            metadata={'official_not_attempted_fallback': True},
+        )
 
     def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
         grade = case_verdicts[0].value.verdict

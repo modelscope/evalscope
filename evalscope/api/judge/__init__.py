@@ -18,6 +18,8 @@ from .types import (
     JudgeProtocol,
     JudgeRequest,
     JudgeReview,
+    PairwiseOutcome,
+    PairwisePlacementOutcome,
     Placement,
     ReducedVerdict,
 )
@@ -36,5 +38,7 @@ __all__ = [
     'OutputContract',
     'ParseResult',
     'Placement',
+    'PairwiseOutcome',
+    'PairwisePlacementOutcome',
     'ReducedVerdict',
 ]

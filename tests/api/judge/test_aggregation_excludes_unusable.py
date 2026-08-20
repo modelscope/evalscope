@@ -33,7 +33,7 @@ def excluded(sample_id: int, metadata: Optional[dict] = None) -> SampleScore:
 
 
 def _judge_benchmark(name: str):
-    cfg = TaskConfig(model='m', datasets=[name], judge_strategy='llm', judge_model_args=JUDGE_ARGS)
+    cfg = TaskConfig(model='m', datasets=[name], judge={'strategy': 'llm', 'models': JUDGE_ARGS})
     return get_benchmark(name, config=cfg)
 
 

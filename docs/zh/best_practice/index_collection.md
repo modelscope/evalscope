@@ -170,11 +170,11 @@ task_cfg = TaskConfig(
         'temperature': 0.0 # 评测通常设为 0 以保证结果可复现
     },
     # 使用强大的模型作为 judge 进行自动评分 (chinese_simpleqa 需要)
-    judge_model_args={
+    judge={'models': {
         'model_id': 'qwen3-max',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
-    },
+    }},
     eval_batch_size=5, # 并发数，根据实际情况调整
 )
 

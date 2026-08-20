@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
+from . import utils as deepsearchqa_utils
 from .utils import (
     GRADE_CONTRACT,
     aggregate_official_scores,
@@ -73,6 +74,8 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 class DeepSearchQAAdapter(AgentLoopAdapter):
     """Adapter for the DeepSearchQA deep-research benchmark."""
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    judge_revision = '1'
+    judge_cache_dependencies = (deepsearchqa_utils.__file__, )
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

@@ -161,80 +161,57 @@ Refer to the [other backend usage guide](../user_guides/backend/index.md)
 
 ## Judge Parameters
 
-LLM-as-a-Judge evaluation parameters using a judge model to determine correctness:
+Native LLM judging is configured through one typed `judge` object. In Python/YAML use `judge={...}`; on the CLI use
+`--judge '<JSON object>'`.
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `--judge-strategy` | `str` | Judge model strategy<br>• `auto`: Automatically decide based on dataset requirements<br>• `llm`: Always use judge model<br>• `rule`: Use rule-based judgment only<br>• `llm_recall`: Use judge model after rule-based judgment fails | `auto` |
-| `--judge-worker-num` | `int` | **[Deprecated]** Use `--eval-batch-size` instead. Will be removed in v2.0.0. | `1` |
-| `--judge-model-args` | `str` | Judge model configuration (JSON string), see table below. Accepts a single object, or a list of objects to score with several judges and average their verdicts with equal weight (each needs a distinct `model_id`). | - |
-| `--judge-repeats` | `int` | How many times each judge reviews a sample; verdicts are averaged with equal weight. Values above 1 require an explicit non-zero judge `generation_config.temperature`, since repeating a deterministic judge only multiplies cost. | `1` |
-| `--analysis-report` | `bool` | Whether to generate analysis report (language auto-detected) | `false` |
-
-### judge-model-args Configuration Options
-
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `api_key` | `str` | API key | Read from `MODELSCOPE_SDK_TOKEN`, default `EMPTY` |
-| `api_url` | `str` | API endpoint | Read from `MODELSCOPE_API_BASE`,<br>default `https://api-inference.modelscope.cn/v1/` |
-| `model_id` | `str` | Model ID | Read from `MODELSCOPE_JUDGE_LLM`,<br>default `Qwen/Qwen3-235B-A22B` |
-| `system_prompt` | `str` | System prompt | - |
-| `prompt_template` | `str` | Prompt template, stating the grading criteria only. The required reply format is appended automatically. | Auto-selected based on `score_type` |
-| `generation_config` | `dict` | Generation parameters (same as `--generation-config`) | - |
-| `model_args` | `dict` | Judge model loading parameters (same as `--model-args`), e.g. `{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
-| `score_type` | `str` | Which built-in judge contract to use<br>• `pattern`: judge whether the answer matches the reference, choosing one of the `score_mapping` labels<br>• `numeric`: score without a reference (0-1) | `pattern` |
-| `score_mapping` | `dict` | `pattern` mode: the verdict labels the judge may return, mapped to their score values | `{'A': 1.0, 'B': 0.0}` |
-| `score_pattern` | `str` | **[Deprecated]** No longer has any effect: the judge replies with a JSON object validated against a schema. Will be removed in v2.0.0. | - |
-
-```{note}
-The judge replies with a single JSON object. A reply that does not satisfy the contract is retried,
-and then **excluded** from the metric rather than scored 0, so a metric's sample count (`Num`) can
-be lower than the number of samples evaluated.
+```python
+TaskConfig(
+    model='MODEL',
+    datasets=['simple_qa'],
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'JUDGE_MODEL',
+            'api_url': 'OPENAI_COMPATIBLE_URL',
+            'api_key': 'JUDGE_API_KEY',
+            'generation_config': {'temperature': 0.0, 'retries': 3},
+        },
+        'repeats': 1,
+        'position_swap': 'auto',
+        'aggregation': 'mean',
+        'min_valid_judges': 1,
+    },
+)
 ```
 
-```{seealso}
-For more information on ModelScope model inference services, refer to [ModelScope API Inference Services](https://modelscope.cn/docs/model-service/API-Inference/intro)
-```
+`models` accepts one object or a list of objects. A list enables independent judges; every entry needs a unique
+`judge_id` when the same `model_id` occurs more than once. `judge_id` defaults to a unique `model_id`.
 
-<details><summary>pattern Mode Default Prompt Template</summary>
+| Field | Type | Description | Default |
+|-------|------|-------------|---------|
+| `strategy` | `auto\|rule\|llm\|llm_recall` | `auto` follows benchmark policy; `llm_recall` judges only rule-based misses and takes `max(rule, judge)`. | `auto` |
+| `models` | `object\|list[object]` | One or more Judge model configurations. `model_id` is required for reproducible review caching. | `[]` |
+| `repeats` | `int >= 1` | Independent verdict observations per Judge, distinct from transport retries. | `1` |
+| `position_swap` | `auto\|on\|off` | `auto` preserves the benchmark's official position-swap policy. | `auto` |
+| `aggregation` | `mean\|median\|majority_vote` | Cross-observation aggregation for ordinary metrics. | `mean` |
+| `min_valid_judges` | `int >= 1` | Minimum valid Judge verdicts required for a metric. | `1` |
 
-```text
-Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
+Each entry in `models` supports `judge_id`, `model_id`, `api_key`, `api_url`, `eval_type`, `model_args`, and
+`generation_config`. Provider-specific model initialization options belong in `model_args`; transport retry belongs
+in `generation_config.retries`.
 
-[Question]
-{question}
+`judge.contract` configures the generic single-verdict judge only: `system_prompt`, `prompt_template`,
+`score_mapping`, and `score_type`. `pattern` asks the Judge for a JSON verdict label selected from `score_mapping`;
+`numeric` asks for a JSON score in `[0, 1]`. The framework appends the JSON-format instruction, parses the normal
+model response once, and never uses constrained decoding, regex score extraction, or corrective follow-up prompts.
+An invalid reply is unavailable and excluded from the metric rather than reported as zero.
 
-[Reference Answer]
-{gold}
+Reports include `JudgeSummary` with coverage, failure counts, disagreement, provenance, and the semantic review
+fingerprint. Cached reviews whose fingerprint differs from the current Judge configuration must be recomputed with
+`rerun_review=True`; predictions are reused and the review cache is atomically replaced after success.
 
-[Predicted Answer]
-{pred}
-
-Evaluate the model's answer based on correctness compared to the reference answer.
-Grade the predicted answer of this new question as one of:
-A: CORRECT
-B: INCORRECT
-
-Just return the letters "A" or "B", with no text around it.
-```
-</details>
-
-<details><summary>numeric Mode Default Prompt Template</summary>
-
-```text
-Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
-
-Begin your evaluation by providing a short explanation. Be as objective as possible.
-
-After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: "[[rating]]", for example: "Rating: [[0.5]]"
-
-[Question]
-{question}
-
-[Response]
-{pred}
-```
-</details>
+`judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
+removed `judge_worker_num` and `score_pattern` are rejected.
 
 ## Sandbox Parameters
 
@@ -282,7 +259,7 @@ For full usage, examples and Trace visualization, see [Agent Evaluation](../user
 | `--work-dir` | `str` | Evaluation output path (see directory structure below) | `./outputs` |
 | `--no-timestamp` | `bool` | Do not add timestamp to work_dir | `false` |
 | `--use-cache` | `str` | Reuse local cache path (e.g., `outputs/20241210_194434`)<br>Reuses inference and evaluation results | `None` |
-| `--rerun-review` | `bool` | Used with `--use-cache`: deletes the existing reviews cache and re-runs the review/scoring stage while still reusing prediction cache | `false` |
+| `--rerun-review` | `bool` | Used with `--use-cache`: re-runs review/scoring from cached predictions and atomically replaces the review cache after success | `false` |
 | `--enable-progress-tracker` | `bool` | Whether to enable progress tracking, writing hierarchical evaluation progress to `progress.json` in real time, queryable via the service API | `false` |
 | `--collect-perf` | `bool` | Collect per-request performance metrics (latency, TTFT, token usage) and write them into the evaluation report. TTFT requires `--generation-config stream=true`. Use `--no-collect-perf` to disable | `true` |
 | `--seed` | `int` | Random seed | `42` |

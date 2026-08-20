@@ -1,7 +1,7 @@
 """Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
 from enum import Enum
 from pydantic import BaseModel, ConfigDict, Field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Protocol, Sequence
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage
@@ -84,11 +84,39 @@ class CaseVerdict(BaseModel):
     """Copied from the case, so a reduce step reads its context instead of parsing ``case_id``."""
 
 
+class PairwisePlacementOutcome(BaseModel):
+    """One presentation order's candidate-oriented pairwise result."""
+
+    result: Literal['win', 'tie', 'loss']
+    strength: Literal['weak', 'strong'] = 'weak'
+
+
+class PairwiseOutcome(BaseModel):
+    """A candidate-oriented pairwise result, independent of presentation order.
+
+    ``placements`` retains the separately aggregated official games. ``result`` is the semantic
+    vote used for the candidate-oriented summary and is never reconstructed from raw labels.
+    """
+
+    metric_name: str
+    result: Literal['win', 'tie', 'loss']
+    strength: Literal['weak', 'strong'] = 'weak'
+    placements: Dict[str, PairwisePlacementOutcome] = Field(default_factory=dict)
+
+    @property
+    def score(self) -> float:
+        if self.result == 'tie':
+            return 0.5
+        if self.result == 'win':
+            return 1.0 if self.strength == 'strong' else 0.75
+        return 0.0 if self.strength == 'strong' else 0.25
+
+
 class ReducedVerdict(BaseModel):
     """One observation's worth of verdicts folded into per-metric values by the adapter."""
 
     value: Dict[str, float] = Field(default_factory=dict)
-    outcome: Any = None
+    outcome: Optional[PairwiseOutcome] = None
     """Optional typed non-numeric outcome used by a benchmark's finalizer.
 
     This is deliberately separate from ``metadata``: it participates in the same repeat and
@@ -96,6 +124,12 @@ class ReducedVerdict(BaseModel):
     without letting a first observation's diagnostic metadata decide the final score.
     """
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    position_results: Dict[str, Literal['win', 'tie', 'loss']] = Field(default_factory=dict)
+    """Placement-level results used only for position-bias statistics.
+
+    Numeric pairwise benchmarks such as AIR-Bench keep their official scalar reducer instead of
+    using :class:`PairwiseOutcome`, but still expose this typed signal for swap consistency.
+    """
 
 
 class JudgeObservation(BaseModel):
@@ -110,7 +144,11 @@ class JudgeObservation(BaseModel):
 
     @property
     def is_valid(self) -> bool:
-        return self.status.is_usable and self.reduced is not None
+        return self.status is ScoreStatus.SUCCESS and self.reduced is not None and bool(self.reduced.value)
+
+    @property
+    def is_fallback(self) -> bool:
+        return self.status is ScoreStatus.FALLBACK and self.reduced is not None and bool(self.reduced.value)
 
 
 class JudgeReview(BaseModel):
@@ -123,14 +161,17 @@ class JudgeReview(BaseModel):
     """Aggregated per-metric values; empty when no observation was usable."""
 
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    """Diagnostics the adapter's reduce step attached, carried onto ``Score.metadata``."""
+    """Display metadata from the primary judge's first valid observation only."""
+
+    observation_metadata: List[Dict[str, Any]] = Field(default_factory=list)
+    """Per-observation reducer metadata retained for audit, never for scoring."""
 
     failure_counts: Dict[str, int] = Field(default_factory=dict)
     """Attempt counts keyed by :class:`ScoreStatus` value."""
 
     error: Optional[str] = None
 
-    outcome: Any = None
+    outcome: Optional[PairwiseOutcome] = None
     """Aggregated typed benchmark outcome, if the adapter declared one."""
 
     disagreement: Dict[str, Any] = Field(default_factory=dict)
@@ -139,6 +180,16 @@ class JudgeReview(BaseModel):
     @property
     def valid_observations(self) -> List[JudgeObservation]:
         return [obs for obs in self.observations if obs.is_valid]
+
+    @property
+    def fallback_observations(self) -> List[JudgeObservation]:
+        """Rule-derived observations, retained for official fallbacks but never Judge quorum."""
+        return [obs for obs in self.observations if obs.is_fallback]
+
+    @property
+    def usable_observations(self) -> List[JudgeObservation]:
+        """All observations with a reducer output, including official rule fallbacks."""
+        return self.valid_observations + self.fallback_observations
 
 
 class JudgeProtocol(Protocol):
@@ -195,5 +246,7 @@ __all__: Sequence[str] = (
     'JudgeRequest',
     'JudgeReview',
     'Placement',
+    'PairwiseOutcome',
+    'PairwisePlacementOutcome',
     'ReducedVerdict',
 )

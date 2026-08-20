@@ -30,8 +30,9 @@ class TestVLMBenchmark(TestBenchmark):
                 'parallel_tool_calls': True,
                 'retries': 1
             },
-            'judge_strategy': JudgeStrategy.AUTO,
-            'judge_model_args': {
+            'judge': {
+                'strategy': JudgeStrategy.AUTO,
+                'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -39,6 +40,7 @@ class TestVLMBenchmark(TestBenchmark):
                     'temperature': 0.0,
                     'max_tokens': 4096,
                 }
+                },
             },
             'debug': True,
         }
@@ -547,7 +549,7 @@ class TestVLMBenchmark(TestBenchmark):
             dataset_args=dataset_args,
             limit=3,
             use_mock=True,
-            judge_model_args={'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM},
+            judge={'models': {'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM}},
         )
 
     def test_logic_vista(self):
@@ -597,7 +599,7 @@ class TestVLMBenchmark(TestBenchmark):
             dataset_args=dataset_args,
             limit=5,
             use_mock=True,
-            judge_model_args={'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM},
+            judge={'models': {'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM}},
         )
 
     def test_phyx_oe_testmini(self):

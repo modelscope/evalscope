@@ -122,15 +122,12 @@ task_cfg = TaskConfig(
     # limit=20,  # 限制评测数量，便于快速测试，正式评测时建议去掉此项
     ignore_errors=True,  # 忽略错误，可能会被模型拒绝的测试用例
     stream=True,  # 启用流式输出
-    judge_model_args={ # 配置Judge模型参数
+    judge={'models': { # 配置 Judge 模型参数
         'model_id': 'qwen2.5-72b-instruct',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
-        }
-    },
+        'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
+    }},
 )
 
 run_task(task_cfg=task_cfg)    

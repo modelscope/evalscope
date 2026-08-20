@@ -123,10 +123,13 @@ task_cfg = TaskConfig(
     # limit=20,  # Limit number of evaluations for quick tests; remove for full evaluation
     ignore_errors=True,  # Ignore errors; some test cases may be refused by the model
     stream=True,  # Enable streaming output
-    judge_model_args={ # Judge model configuration
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    judge={
+        'strategy': 'auto',
+        'models': { # Judge model configuration
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        },
         'generation_config': {
             'temperature': 0.0,
             'max_tokens': 4096

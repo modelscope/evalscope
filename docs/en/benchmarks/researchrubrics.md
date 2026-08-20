@@ -39,7 +39,7 @@ references, communication quality, and instruction following.
 
 ## Evaluation Notes
 
-- ResearchRubrics requires ``judge_model_args`` and ``judge_strategy='auto'`` or ``'llm'``. Gemini 2.5 Pro is the
+- ResearchRubrics requires ``judge.models`` and ``judge.strategy='auto'`` or ``'llm'``. Gemini 2.5 Pro is the
   recommended judge for comparison with the paper, but no provider or model is hard-coded.
 - Every rubric is graded independently as Satisfied (1) or Not Satisfied (0), matching the public binary grader. The
   paper's ternary scores are not directly comparable.
@@ -54,7 +54,6 @@ references, communication quality, and instruction following.
 
 - ``judge_context_limit``: 150,000 estimated tokens
 - ``judge_chunk_size``: 100,000 estimated tokens
-- ``judge_retries``: 3 attempts per judge request
 
 The judge must be configured explicitly. For example:
 
@@ -64,12 +63,14 @@ from evalscope import TaskConfig, run_task
 run_task(TaskConfig(
     model='YOUR_AGENT_MODEL',
     datasets=['researchrubrics'],
-    judge_strategy='llm',
-    judge_model_args={
-        'model_id': 'YOUR_JUDGE_MODEL',
-        'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
-        'api_key': 'YOUR_JUDGE_API_KEY',
-        'generation_config': {'temperature': 0.0},
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'YOUR_JUDGE_MODEL',
+            'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
+            'api_key': 'YOUR_JUDGE_API_KEY',
+            'generation_config': {'temperature': 0.0},
+        },
     },
     limit=1,
 ))
@@ -163,7 +164,6 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 |-----------|------|---------|-------------|
 | `judge_context_limit` | `int` | `150000` | Estimated token limit before rubric judging switches to chunking. |
 | `judge_chunk_size` | `int` | `100000` | Maximum estimated tokens in each document chunk sent to the judge. |
-| `judge_retries` | `int` | `3` | Maximum attempts for each rubric judge request and JSON parse. |
 
 ## Usage
 

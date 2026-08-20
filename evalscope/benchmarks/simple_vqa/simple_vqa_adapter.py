@@ -148,6 +148,7 @@ SimpleVQA is the first comprehensive multimodal benchmark to evaluate the factua
 class SimpleVQAAdapter(VisionLanguageAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -188,7 +189,11 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
         return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
     def judge_fallback_verdict(self, case, context) -> CaseVerdict:
-        return CaseVerdict(case_id=case.case_id, value=Grade(verdict='C'))
+        return CaseVerdict(
+            case_id=case.case_id,
+            value=Grade(verdict='C'),
+            metadata={'official_not_attempted_fallback': True},
+        )
 
     def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
         grade = case_verdicts[0].value.verdict

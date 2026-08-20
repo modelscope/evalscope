@@ -56,6 +56,7 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 class MinervaMathAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

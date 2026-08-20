@@ -51,13 +51,7 @@ SUBSET_LIST = [
     'defendant_statement',
 ]
 
-_EXTRA_PARAMS = {
-    'judge_retries': {
-        'type': 'int',
-        'description': 'Maximum attempts per rubric judge request before the sample is scored as 0.',
-        'value': 3,
-    },
-}
+_EXTRA_PARAMS: Dict[str, Any] = {}
 
 _DESCRIPTION = """
 ## Overview
@@ -92,8 +86,8 @@ rubric rather than against a single reference answer.
 
 ## Evaluation Notes
 
-- Requires an LLM judge: run with `judge_strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
-  and provide `judge_model_args`. `judge_strategy='rule'` is not supported.
+- Requires an LLM judge: set `judge.strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
+  and provide `judge.models`. `judge.strategy='rule'` is not supported.
 - Metrics are point ratios in `[0, 1]`. `acc` is reported for every subset; `case_analysis` additionally reports
   `conclusion_acc`, `fact_acc`, `reasoning_acc`, and `law_acc`. These map one-to-one onto the official leaderboard
   columns: `legal_consultation` is Task1, `case_analysis` is Task2-Avg with its four dimensions, and the two
@@ -106,10 +100,10 @@ rubric rather than against a single reference answer.
   `[0, max_points]`, so a judge that mis-reports the denominator cannot distort the score.
 - The judge output template for `case_analysis` is repaired relative to the official script, which ships malformed
   JSON and pins the conclusion section to zero points; every section is graded on its rubric allocation here.
-- Judge requests are retried up to `judge_retries` times when the response cannot be parsed; a sample that still
-  fails is scored 0 and flagged via `judge_failed` in the review metadata.
+- The judge model's transport retry policy is configured through its `generation_config`. A reply that still
+  fails the output contract is unavailable and excluded rather than silently scored as zero.
 - Case-analysis judging returns a long per-item breakdown. Give the judge a generous `max_tokens`
-  (for example 8192) in `judge_model_args.generation_config`.
+  (for example 8192) in `judge.models[].generation_config`.
 - The drafting subsets ask for a 2,500-3,000 character legal document, so the evaluated model also needs a generous
   `generation_config.max_tokens`. A truncated filing is graded as an incomplete document and scores near zero, which
   depresses Task3 for reasons unrelated to legal ability.
@@ -141,12 +135,10 @@ class PLawBenchAdapter(DefaultDataAdapter):
     """Rubric-based Chinese legal practice benchmark graded by an LLM judge."""
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.judge_retries = int(self.extra_params.get('judge_retries', 3))
-        if self.judge_retries <= 0:
-            raise ValueError('PLawBench judge_retries must be greater than 0.')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         judge_type = record['judge_type']
@@ -172,13 +164,10 @@ class PLawBenchAdapter(DefaultDataAdapter):
         metadata = context.task_state.metadata or {}
         judge_type = metadata['judge_type']
         schema = CaseAnalysisGrade if judge_type == JUDGE_TYPE_CASE_ANALYSIS else TotalPointsGrade
-        return [
-            JudgeCase(
-                case_id='rubric',
-                # ``judge_retries`` is the user-facing knob for a judge that keeps replying off-format.
-                output_contract=OutputContract(schema_model=schema),
-            )
-        ]
+        return [JudgeCase(
+            case_id='rubric',
+            output_contract=OutputContract(schema_model=schema),
+        )]
 
     def build_judge_request(self, case, placement, completed_cases, context) -> JudgeRequest:
         metadata = context.task_state.metadata or {}

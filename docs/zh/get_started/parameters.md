@@ -157,79 +157,56 @@
 
 ## Judge参数
 
-LLM-as-a-Judge评测参数，使用裁判模型判断正误：
+Native LLM Judge 通过一个 typed `judge` 对象配置：Python/YAML 使用 `judge={...}`，CLI 使用
+`--judge '<JSON object>'`。
 
-| 参数 | 类型 | 说明 | 默认值 |
+```python
+TaskConfig(
+    model='MODEL',
+    datasets=['simple_qa'],
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'JUDGE_MODEL',
+            'api_url': 'OPENAI_COMPATIBLE_URL',
+            'api_key': 'JUDGE_API_KEY',
+            'generation_config': {'temperature': 0.0, 'retries': 3},
+        },
+        'repeats': 1,
+        'position_swap': 'auto',
+        'aggregation': 'mean',
+        'min_valid_judges': 1,
+    },
+)
+```
+
+`models` 可传单个对象或对象列表。列表表示独立 Judge；重复的 `model_id` 必须显式指定不同的
+`judge_id`，唯一 `model_id` 默认同时作为 `judge_id`。
+
+| 字段 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--judge-strategy` | `str` | 裁判模型策略<br>• `auto`: 根据数据集自动决定<br>• `llm`: 总是使用裁判模型<br>• `rule`: 只使用规则判断<br>• `llm_recall`: 规则失败后使用裁判模型 | `auto` |
-| `--judge-worker-num` | `int` | **[已废弃]** 请使用 `--eval-batch-size` 代替，将在 v2.0.0 中移除 | `1` |
-| `--judge-model-args` | `dict` | 裁判模型配置（JSON字符串），详见下表。可传入单个对象，也可传入对象数组以使用多个裁判模型并对判据等权平均（每个裁判需有不同的 `model_id`） | - |
-| `--judge-repeats` | `int` | 每个裁判模型对同一样本评审的次数，多次判据等权平均。大于 1 时必须显式设置非零的裁判 `generation_config.temperature`，否则重复评审确定性裁判只会成倍增加开销 | `1` |
-| `--analysis-report` | `bool` | 是否生成分析报告（自动判断语言） | `false` |
+| `strategy` | `auto\|rule\|llm\|llm_recall` | `auto` 遵循 benchmark 策略；`llm_recall` 仅复核规则漏判，并取 `max(rule, judge)`。 | `auto` |
+| `models` | `object\|list[object]` | 一个或多个 Judge 模型配置；为保证 review cache 可复现，必须给出 `model_id`。 | `[]` |
+| `repeats` | `int >= 1` | 每个 Judge 的独立判分观测次数，不等同于 transport retry。 | `1` |
+| `position_swap` | `auto\|on\|off` | `auto` 保持 benchmark 官方的位置交换策略。 | `auto` |
+| `aggregation` | `mean\|median\|majority_vote` | 普通指标的跨观测聚合方式。 | `mean` |
+| `min_valid_judges` | `int >= 1` | 一个指标所需的最少有效 Judge verdict 数。 | `1` |
 
-### judge-model-args 配置项
+`models` 的每项支持 `judge_id`、`model_id`、`api_key`、`api_url`、`eval_type`、`model_args` 与
+`generation_config`。provider 私有的模型初始化参数放入 `model_args`；transport 重试放入
+`generation_config.retries`。
 
-| 参数 | 类型 | 说明 | 默认值 |
-|------|------|------|--------|
-| `api_key` | `str` | API密钥 | 从`MODELSCOPE_SDK_TOKEN`读取，默认`EMPTY` |
-| `api_url` | `str` | API端点 | 从`MODELSCOPE_API_BASE`读取，<br>默认`https://api-inference.modelscope.cn/v1/` |
-| `model_id` | `str` | 模型ID | 从`MODELSCOPE_JUDGE_LLM`读取，<br>默认`Qwen/Qwen3-235B-A22B` |
-| `system_prompt` | `str` | 系统prompt | - |
-| `prompt_template` | `str` | Prompt模板，只需描述打分标准，回复格式要求会自动追加 | 根据`score_type`自动选择 |
-| `generation_config` | `dict` | 生成参数（同`--generation-config`） | - |
-| `model_args` | `dict` | 裁判模型加载参数（同`--model-args`），例如`{"default_headers": {"X-API-KEY": "your-api-key"}}` | `{}` |
-| `score_type` | `str` | 使用哪个内置判据契约<br>• `pattern`: 判断与参考答案是否相同，从 `score_mapping` 的标签中选择<br>• `numeric`: 无参考答案打分（0-1） | `pattern` |
-| `score_mapping` | `dict` | `pattern`模式下裁判可返回的判据标签及其对应分值 | `{'A': 1.0, 'B': 0.0}` |
-| `score_pattern` | `str` | **[已废弃]** 不再生效：裁判现以 JSON 对象回复并按 schema 校验，将在 v2.0.0 中移除 | - |
+`judge.contract` 仅配置通用单 verdict Judge：`system_prompt`、`prompt_template`、`score_mapping` 和
+`score_type`。`pattern` 要求 Judge 在 JSON 中返回 `score_mapping` 之一；`numeric` 要求 JSON 分数位于
+`[0, 1]`。框架会在 prompt 中追加 JSON 格式要求，只解析一次普通模型回复；不使用 constrained decoding、
+正则提分或纠正性追问。无效回复显示为 unavailable，并从指标中排除，而非记为 0。
 
-```{note}
-裁判模型以单个 JSON 对象回复。不满足契约的回复会先重试，之后该样本将被**排除**在该指标之外，
-而不是记为 0 分，因此指标的样本数（`Num`）可能小于实际评测的样本数。
-```
+报告包含 `JudgeSummary`：覆盖率、失败计数、分歧、provenance 与语义 fingerprint。若 review cache 的
+fingerprint 与当前 Judge 配置不一致，必须设置 `rerun_review=True` 重算；prediction 会复用，新的 review
+文件只有成功后才原子替换旧文件。
 
-```{seealso}
-关于ModelScope模型推理服务，请参考[ModelScope API推理服务](https://modelscope.cn/docs/model-service/API-Inference/intro)
-```
-
-<details><summary>pattern 模式默认prompt模板</summary>
-
-```text
-Your job is to look at a question, a gold target, and a predicted answer, and return a letter "A" or "B" to indicate whether the predicted answer is correct or incorrect.
-
-[Question]
-{question}
-
-[Reference Answer]
-{gold}
-
-[Predicted Answer]
-{pred}
-
-Evaluate the model's answer based on correctness compared to the reference answer.
-Grade the predicted answer of this new question as one of:
-A: CORRECT
-B: INCORRECT
-
-Just return the letters "A" or "B", with no text around it.
-```
-</details>
-
-<details><summary>numeric 模式默认prompt模板</summary>
-
-```text
-Please act as an impartial judge and evaluate the quality of the response provided by an AI assistant to the user question displayed below. Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of the response.
-
-Begin your evaluation by providing a short explanation. Be as objective as possible.
-
-After providing your explanation, you must rate the response on a scale of 0 (worst) to 1 (best) by strictly following this format: "[[rating]]", for example: "Rating: [[0.5]]"
-
-[Question]
-{question}
-
-[Response]
-{pred}
-```
-</details>
+旧 `judge_strategy` 和单个 mapping `judge_model_args` 仅保留一轮输入迁移并会告警。已删除的
+`judge_worker_num` 和 `score_pattern` 会明确报错。
 
 ## Sandbox参数
 
@@ -277,7 +254,7 @@ EvalScope 使用嵌套的 `--sandbox` 配置（对应 `SandboxTaskConfig`）统�
 | `--work-dir` | `str` | 评测输出路径（详见下方目录结构） | `./outputs` |
 | `--no-timestamp` | `bool` | 是否不在工作目录中添加时间戳 | `false` |
 | `--use-cache` | `str` | 复用本地缓存路径（如`outputs/20241210_194434`）<br>重用推理结果和评测结果 | `None` |
-| `--rerun-review` | `bool` | 配合 `--use-cache` 使用：删除已有 reviews 缓存并重跑评测/打分阶段，但仍复用 predictions 缓存 | `false` |
+| `--rerun-review` | `bool` | 配合 `--use-cache` 使用：基于 predictions 缓存重跑评测/打分，并仅在成功后原子替换 reviews 缓存 | `false` |
 | `--enable-progress-tracker` | `bool` | 是否开启进度追踪，将层级评测进度实时写入`progress.json`，可通过服务接口查询 | `false` |
 | `--collect-perf` | `bool` | 采集每次推理请求的性能指标（延迟、TTFT、Token 用量），汇总后写入评测报告。采集 TTFT 需开启 `--generation-config stream=true`；使用 `--no-collect-perf` 可禁用 | `true` |
 | `--seed` | `int` | 随机种子 | `42` |

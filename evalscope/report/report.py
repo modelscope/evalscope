@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, field_seriali
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Self
 
+from evalscope.api.metric import JudgeSummary
 from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSemantics
 from evalscope.metrics import macro_mean, micro_mean
 from evalscope.utils import get_logger
@@ -173,6 +174,8 @@ class Report(BaseModel):
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
     primary_metric_identity: Optional[MetricIdentity] = None
+    judge_summary: Optional[JudgeSummary] = None
+    """Run-level Native Judge coverage and failure summary, when this report used a judge."""
 
     @model_validator(mode='before')
     @classmethod
@@ -345,8 +348,8 @@ class Report(BaseModel):
             # Reuse the primary judge's transport configuration without making analysis part of
             # the scoring fingerprint.
             if task_config.judge.models:
-                judge_model_args = task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True)
-                judge_llm = LLMJudge(**get_secret_value(judge_model_args))
+                judge_model_config = task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True)
+                judge_llm = LLMJudge(**get_secret_value(judge_model_config))
             else:
                 judge_llm = LLMJudge(
                     api_key=get_secret_value(task_config.api_key),

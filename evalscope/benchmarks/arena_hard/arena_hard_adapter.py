@@ -5,7 +5,16 @@ from typing import Any, Dict, List, Literal
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.judge import JudgeCase, JudgeContext, JudgeRequest, OutputContract, Placement, ReducedVerdict
+from evalscope.api.judge import (
+    JudgeCase,
+    JudgeContext,
+    JudgeRequest,
+    OutputContract,
+    PairwiseOutcome,
+    PairwisePlacementOutcome,
+    Placement,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
@@ -75,6 +84,8 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
 class ArenaHardAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
+    uses_pairwise_outcome = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -97,7 +108,8 @@ class ArenaHardAdapter(DefaultDataAdapter):
             input=question, target=baseline_prediction, metadata={'capability': record.get('capability', 'unknown')}
         )
 
-    judge_position_swap = True
+    supports_position_swap = True
+    official_position_swap = True
     """Arena-Hard plays each pair twice with the answers swapped."""
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
@@ -115,22 +127,16 @@ class ArenaHardAdapter(DefaultDataAdapter):
         return JudgeRequest(messages=[ChatMessageSystem(content=GRADER_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
 
     def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
-        from .utils import get_judge_score
-
         placements = case_verdicts[0].placements
         res1 = placements.get('original', case_verdicts[0].value).verdict
         res2 = placements.get('swapped')
-        # ``reverse`` accounts for which side the candidate occupied in that game.
-        score1 = get_judge_score(res1, reverse=True)
-        score2 = get_judge_score(res2.verdict, reverse=False) if res2 is not None else None
+        outcomes = {'original': _placement_outcome(res1, candidate_is_a=False)}
+        if res2 is not None:
+            outcomes['swapped'] = _placement_outcome(res2.verdict, candidate_is_a=True)
+        result, strength = _reduce_placements(outcomes)
         return ReducedVerdict(
-            value={'score': (score1 + score2) / 2 if score2 is not None else score1},
-            outcome={
-                'original': res1,
-                **({
-                    'swapped': res2.verdict
-                } if res2 is not None else {}),
-            },
+            value={'score': PairwiseOutcome(metric_name='score', result=result, strength=strength).score},
+            outcome=PairwiseOutcome(metric_name='score', result=result, strength=strength, placements=outcomes),
         )
 
     def finalize_judge_score(self, review, context) -> Score:
@@ -142,11 +148,11 @@ class ArenaHardAdapter(DefaultDataAdapter):
                 'model_b': 'test_model',
                 'games': [
                     {
-                        'score': review.outcome['original']
+                        'score': _battle_label(review.outcome.placements['original'], candidate_is_a=False)
                     },
                     *([{
-                        'score': review.outcome['swapped']
-                    }] if 'swapped' in review.outcome else []),
+                        'score': _battle_label(review.outcome.placements['swapped'], candidate_is_a=True)
+                    }] if 'swapped' in review.outcome.placements else []),
                 ],
             }
         return score
@@ -180,3 +186,33 @@ class ArenaHardAdapter(DefaultDataAdapter):
             metric_name='win_rate',
             num=len(scored),
         )]
+
+
+def _candidate_outcome(label: str, candidate_is_a: bool) -> str:
+    if label == 'A=B':
+        return 'tie'
+    return 'win' if label.startswith('A') == candidate_is_a else 'loss'
+
+
+def _placement_outcome(label: str, candidate_is_a: bool) -> PairwisePlacementOutcome:
+    return PairwisePlacementOutcome(
+        result=_candidate_outcome(label, candidate_is_a),
+        strength='strong' if label in ('A>>B', 'B>>A') else 'weak',
+    )
+
+
+def _reduce_placements(placements: Dict[str, PairwisePlacementOutcome]) -> tuple[str, str]:
+    results = [placement.result for placement in placements.values()]
+    result = results[0] if len(set(results)) == 1 else 'tie'
+    strength = 'strong' if result != 'tie' and any(
+        placement.result == result and placement.strength == 'strong' for placement in placements.values()
+    ) else 'weak'
+    return result, strength
+
+
+def _battle_label(outcome: PairwisePlacementOutcome, candidate_is_a: bool) -> str:
+    if outcome.result == 'tie':
+        return 'A=B'
+    a_wins = (outcome.result == 'win') == candidate_is_a
+    marker = '>>' if outcome.strength == 'strong' else '>'
+    return f'A{marker}B' if a_wins else f'B{marker}A'

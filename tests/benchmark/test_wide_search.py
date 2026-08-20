@@ -163,7 +163,7 @@ class TestWideSearchAdapter(unittest.TestCase):
                 dataset_args={'wide_search': {
                     'local_path': tmp_dir
                 }},
-                judge_model_args={'model_id': 'mock'},
+                judge={'models': {'model_id': 'mock'}},
             )
 
             dataset = get_benchmark('wide_search', config=config).load_dataset()['default']
@@ -180,7 +180,7 @@ class TestWideSearchAdapter(unittest.TestCase):
             config = TaskConfig(
                 model='mock',
                 datasets=['wide_search'],
-                judge_model_args={'model_id': 'mock'},
+                judge={'models': {'model_id': 'mock'}},
             )
 
             with patch(
@@ -205,8 +205,7 @@ class TestWideSearchAdapter(unittest.TestCase):
         config = TaskConfig(
             model='mock',
             datasets=['wide_search'],
-            judge_strategy=JudgeStrategy.LLM,
-            judge_model_args={'model_id': 'mock'},
+            judge={'strategy': JudgeStrategy.LLM, 'models': {'model_id': 'mock'}},
         )
         adapter = get_benchmark('wide_search', config=config)
         adapter.llm_judge = Mock(generate=Mock(return_value=ModelOutput.from_content(model='mock', content='{"mapping": {}}')))
@@ -238,12 +237,11 @@ class TestWideSearchAdapter(unittest.TestCase):
         config = TaskConfig(
             model='mock',
             datasets=['wide_search'],
-            judge_strategy=JudgeStrategy.RULE,
-            judge_model_args={'model_id': 'mock'},
+            judge={'strategy': JudgeStrategy.RULE, 'models': {'model_id': 'mock'}},
         )
 
         # ``get_benchmark`` is the only construction path, so the run fails before generation.
-        with self.assertRaisesRegex(ValueError, "judge_strategy='auto' or 'llm'"):
+        with self.assertRaisesRegex(ValueError, "judge.strategy='auto' or 'llm'"):
             get_benchmark('wide_search', config=config)
 
     @unittest.skipUnless(_ENCLAVE_AVAILABLE, 'ms_enclave (sandbox extra) is not installed')
@@ -258,7 +256,7 @@ class TestWideSearchAdapter(unittest.TestCase):
                     'network_enabled': False,
                 },
             ),
-            judge_model_args={'model_id': 'mock'},
+            judge={'models': {'model_id': 'mock'}},
         )
         adapter = get_benchmark('wide_search', config=config)
         sample = Sample(input='question', metadata={'instance_id': 'docker-test', 'language': 'en'})
@@ -280,7 +278,7 @@ class TestWideSearchAdapter(unittest.TestCase):
             model='mock',
             datasets=['wide_search'],
             agent_config=NativeAgentConfig(max_steps=7, command_timeout=12),
-            judge_model_args={'model_id': 'mock'},
+            judge={'models': {'model_id': 'mock'}},
         )
         adapter = get_benchmark('wide_search', config=config)
         sample = Sample(

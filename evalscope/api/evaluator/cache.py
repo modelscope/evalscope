@@ -28,6 +28,7 @@ JUDGE_FINGERPRINT_VERSION = '3'
 def compute_judge_fingerprint(
     judge_config: JudgeConfig,
     judge_revision: str,
+    judge_cache_key: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """Identify the judge configuration a cached review was produced under.
 
@@ -44,6 +45,7 @@ def compute_judge_fingerprint(
             'version': JUDGE_FINGERPRINT_VERSION,
             'engine_revision': JUDGE_ENGINE_REVISION,
             'adapter_judge_revision': judge_revision,
+            'adapter_judge_cache_key': judge_cache_key or {},
             'judge': scrubbed,
         },
         sort_keys=True,
@@ -228,9 +230,8 @@ class CacheManager:
             cached_review_result = ReviewResult.from_cache_item(cache_item)
             cached_sample_scores.append(cached_review_result.to_sample_score())
 
-        if cache_items:
-            # One file is written under one judge configuration, so one row settles it.
-            self._check_judge_fingerprint(ReviewResult.from_cache_item(cache_items[0]), cache_file)
+        for cache_item in cache_items:
+            self._check_judge_fingerprint(ReviewResult.from_cache_item(cache_item), cache_file)
 
         # Filter out task states that already have review scores
         cached_sample_ids = {review.sample_id for review in cached_sample_scores}
@@ -289,6 +290,16 @@ class CacheManager:
             if not os.path.exists(temporary):
                 continue
             os.replace(temporary, file_path)
+            del self._review_reruns[file_path]
+
+    def discard_review_reruns(self) -> None:
+        """Close and remove incomplete transactional review files after a failed rerun."""
+        for file_path, temporary in list(self._review_reruns.items()):
+            writer = self._writers.pop(temporary, None)
+            if writer is not None:
+                writer.close()
+            if os.path.exists(temporary):
+                os.unlink(temporary)
             del self._review_reruns[file_path]
 
     def save_review_cache(

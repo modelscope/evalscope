@@ -145,6 +145,7 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,7 +186,11 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
         return JudgeRequest(messages=[ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT), ChatMessageUser(content=prompt)])
 
     def judge_fallback_verdict(self, case, context) -> CaseVerdict:
-        return CaseVerdict(case_id=case.case_id, value=Grade(verdict='C'))
+        return CaseVerdict(
+            case_id=case.case_id,
+            value=Grade(verdict='C'),
+            metadata={'official_not_attempted_fallback': True},
+        )
 
     def reduce_judge_verdicts(self, case_verdicts, context) -> ReducedVerdict:
         grade = case_verdicts[0].value.verdict

@@ -31,7 +31,7 @@ chart element perception (descriptive) and high-level reasoning about chart data
 - Each chart yields 5 samples: 4 descriptive + 1 reasoning
 - Primary metric: **Accuracy** via LLM-as-judge
 - Subsets: `descriptive` and `reasoning` (also by category)
-- Requires `judge_model_args` configuration for LLM judge
+- Requires an LLM judge configured through `judge.models`
 - [Paper](https://arxiv.org/abs/2406.18521) | [GitHub](https://github.com/princeton-nlp/CharXiv)
 
 
@@ -50,28 +50,7 @@ chart element perception (descriptive) and high-level reasoning about chart data
 
 ## Data Statistics
 
-| Metric | Value |
-|--------|-------|
-| Total Samples | 5,000 |
-| Prompt Length (Mean) | 276.24 chars |
-| Prompt Length (Min/Max) | 80 / 687 chars |
-
-**Per-Subset Statistics:**
-
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
-|--------|---------|-------------|------------|------------|
-| `descriptive` | 4,000 | 261.51 | 156 | 432 |
-| `reasoning` | 1,000 | 335.14 | 80 | 687 |
-
-**Image Statistics:**
-
-| Metric | Value |
-|--------|-------|
-| Total Images | 5,000 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 1023x139 - 1024x1024 |
-| Formats | jpeg |
-
+*Statistics not available.*
 
 ## Sample Example
 
@@ -81,7 +60,7 @@ chart element perception (descriptive) and high-level reasoning about chart data
 {
   "input": [
     {
-      "id": "44ff5b8a",
+      "id": "dd588b4d",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~70.0KB]"
@@ -133,11 +112,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['charxiv'],
-    dataset_args={
-        'charxiv': {
-            # subset_list: ['descriptive', 'reasoning']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

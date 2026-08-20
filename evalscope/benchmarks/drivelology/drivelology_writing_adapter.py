@@ -106,6 +106,7 @@ After providing your explanation, you must rate the match on a Likert scale from
 class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -42,11 +42,6 @@ _EXTRA_PARAMS: Dict[str, Any] = {
         'description': 'Maximum estimated tokens in each document chunk sent to the judge.',
         'value': 100000,
     },
-    'judge_retries': {
-        'type': 'int',
-        'description': 'Maximum attempts for each rubric judge request and JSON parse.',
-        'value': 3,
-    },
 }
 
 _DESCRIPTION = """
@@ -88,7 +83,7 @@ references, communication quality, and instruction following.
 
 ## Evaluation Notes
 
-- ResearchRubrics requires ``judge_model_args`` and ``judge_strategy='auto'`` or ``'llm'``. Gemini 2.5 Pro is the
+- ResearchRubrics requires ``judge.models`` and ``judge.strategy='auto'`` or ``'llm'``. Gemini 2.5 Pro is the
   recommended judge for comparison with the paper, but no provider or model is hard-coded.
 - Every rubric is graded independently as Satisfied (1) or Not Satisfied (0), matching the public binary grader. The
   paper's ternary scores are not directly comparable.
@@ -103,7 +98,6 @@ references, communication quality, and instruction following.
 
 - ``judge_context_limit``: 150,000 estimated tokens
 - ``judge_chunk_size``: 100,000 estimated tokens
-- ``judge_retries``: 3 attempts per judge request
 
 The judge must be configured explicitly. For example:
 
@@ -113,12 +107,14 @@ from evalscope import TaskConfig, run_task
 run_task(TaskConfig(
     model='YOUR_AGENT_MODEL',
     datasets=['researchrubrics'],
-    judge_strategy='llm',
-    judge_model_args={
-        'model_id': 'YOUR_JUDGE_MODEL',
-        'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
-        'api_key': 'YOUR_JUDGE_API_KEY',
-        'generation_config': {'temperature': 0.0},
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'YOUR_JUDGE_MODEL',
+            'api_url': 'OPENAI_COMPATIBLE_JUDGE_URL',
+            'api_key': 'YOUR_JUDGE_API_KEY',
+            'generation_config': {'temperature': 0.0},
+        },
     },
     limit=1,
 ))
@@ -149,6 +145,7 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 class ResearchRubricsAdapter(AgentLoopAdapter):
     """Deep Research agent benchmark with binary rubric-based LLM judging."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '2'
 
     strategy_name = 'function_calling'
     max_steps_default = 50
@@ -157,12 +154,17 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
         super().__init__(**kwargs)
         self.judge_context_limit = int(self.extra_params.get('judge_context_limit', 150000))
         self.judge_chunk_size = int(self.extra_params.get('judge_chunk_size', 100000))
-        self.judge_retries = int(self.extra_params.get('judge_retries', 3))
         if self.judge_context_limit <= 0 or self.judge_chunk_size <= 0:
             raise ValueError('ResearchRubrics judge context and chunk limits must be greater than 0.')
-        if self.judge_retries <= 0:
-            raise ValueError('ResearchRubrics judge_retries must be greater than 0.')
         self.use_batch_scoring = True
+
+    @property
+    def judge_cache_key(self) -> Dict[str, Any]:
+        return {
+            **super().judge_cache_key,
+            'judge_context_limit': self.judge_context_limit,
+            'judge_chunk_size': self.judge_chunk_size,
+        }
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         rubrics = record.get('rubrics')

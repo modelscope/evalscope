@@ -42,7 +42,7 @@ and medical knowledge that has to be recalled on top of what the image shows.
   accuracy on the knowledge-graph questions is expected to be low
 - Strictness also costs answers that differ from the reference only in wording or granularity
   (`Right` answered as `Right Side`, 胸腔 answered as 胸部, one item of a multi-item reference). Set
-  `judge_strategy='llm_recall'` to have an LLM judge re-check only the rule-based failures; that
+  `judge.strategy='llm_recall'` to have an LLM judge re-check only the rule-based failures; that
   score is more lenient than the published numbers and is not directly comparable to them
 - Images ship as a single `imgs.zip` (about 200 MB) and are read directly from the archive
 - [Paper](https://arxiv.org/abs/2102.09542) | [Project page](https://www.med-vqa.com/slake/)

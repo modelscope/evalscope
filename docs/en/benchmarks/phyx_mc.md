@@ -35,7 +35,7 @@ with a figure and four answer options, and the model has to name the correct opt
 - Default scoring is the official string-level match: the chosen letter is extracted from the reply
   and compared with the ground truth, accepting replies that mark the correct option the way the
   prompt prints it (`D:`) or emphasises it (`**D**`).
-- Setting `judge_strategy='llm'` (with `judge_model_args`) reproduces the official LLM-judged mode.
+- Setting `judge.strategy='llm'` with `judge.models` reproduces the official LLM-judged mode.
   The judge is only consulted for replies whose option letter could not be extracted, matching
   upstream.
 - Figures are sent inline as base64 and the largest is ~5 MB; set `max_image_bytes` in `dataset_args`

@@ -32,9 +32,10 @@ class TestImageEditBenchmark(TestBenchmark):
                 'num_inference_steps': 50,
                 'negative_prompt': ' ',
             },
-            'judge_strategy': JudgeStrategy.AUTO,
+            'judge': {
+                'strategy': JudgeStrategy.AUTO,
             'eval_batch_size': 5,
-            'judge_model_args': {
+                'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -42,6 +43,7 @@ class TestImageEditBenchmark(TestBenchmark):
                     'temperature': 0.0,
                     'max_tokens': 4096,
                 }
+                },
             },
             'debug': True,
         }

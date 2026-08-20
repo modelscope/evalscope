@@ -17,6 +17,8 @@ from .types import (
     JudgeObservation,
     JudgeProtocol,
     JudgeReview,
+    PairwiseOutcome,
+    PairwisePlacementOutcome,
     Placement,
 )
 
@@ -106,6 +108,10 @@ class JudgeExecutor:
         for placement in placements:
             value = self._resolve_placement(adapter, context, judge, repeat_id, case, placement, completed, review)
             if value is None:
+                # A swapped pair is atomic. One rule fallback must not impersonate the missing
+                # opposite presentation.
+                if len(placements) > 1:
+                    return None
                 fallback = adapter.judge_fallback_verdict(case, context)
                 if fallback is not None:
                     return fallback.model_copy(
@@ -186,10 +192,16 @@ class JudgeExecutor:
         for observation in review.valid_observations:
             per_judge[observation.judge_id].append(observation.reduced.value)
         if not per_judge:
+            if review.fallback_observations:
+                self._aggregate_rule_fallback(review)
+                return
             review.status = ScoreStatus.EXCLUDED
             review.error = 'no judge produced a usable verdict'
             return
         if len(per_judge) < self.config.min_valid_judges:
+            if review.fallback_observations:
+                self._aggregate_rule_fallback(review)
+                return
             review.status = ScoreStatus.EXCLUDED
             review.error = f'only {len(per_judge)} judge(s) produced valid verdicts; need {self.config.min_valid_judges}'
             return
@@ -197,24 +209,85 @@ class JudgeExecutor:
             judge_id: _aggregate_values(values, self.config.aggregation)
             for judge_id, values in per_judge.items()
         }
-        combined, tie_broken = _aggregate_across_judges(
+        eligible_metrics = {
+            metric_name
+            for values in judge_values.values()
+            for metric_name in values
+            if sum(metric_name in judge_value for judge_value in judge_values.values()) >= self.config.min_valid_judges
+        }
+        if not eligible_metrics:
+            review.status = ScoreStatus.EXCLUDED
+            review.error = 'no metric received enough valid judge verdicts'
+            return
+        excluded_metrics = sorted({metric_name
+                                   for values in judge_values.values()
+                                   for metric_name in values} - eligible_metrics)
+        judge_values = {
+            judge_id: {
+                metric_name: value
+                for metric_name, value in values.items()
+                if metric_name in eligible_metrics
+            }
+            for judge_id, values in judge_values.items()
+        }
+        combined, tie_broken, unresolved_ties = _aggregate_across_judges(
             judge_values, self.config.aggregation, _judge_id(self.judges[0])
         )
         if combined is None:
             review.status = ScoreStatus.EXCLUDED
-            review.error = 'primary judge has no valid verdict to break a majority_vote tie'
+            review.error = 'no metric could be aggregated after applying the majority_vote tie-break rule'
             return
         review.value = combined
-        review.outcome = _aggregate_outcomes(review.valid_observations, _judge_id(self.judges[0]))
+        pairwise, pairwise_tie_broken = _aggregate_pairwise_outcomes(
+            review.valid_observations, _judge_id(self.judges[0]), self.config.min_valid_judges
+        )
+        if pairwise is not None:
+            review.outcome = pairwise
+            review.value[pairwise.metric_name] = pairwise.score
+        tie_broken = tie_broken or pairwise_tie_broken
+        primary_observation = next(
+            (
+                observation for observation in review.valid_observations
+                if observation.judge_id == _judge_id(self.judges[0])
+            ),
+            review.valid_observations[0],
+        )
+        review.metadata = dict(primary_observation.reduced.metadata)
+        review.observation_metadata = [{
+            'judge_id': observation.judge_id,
+            'repeat_id': observation.repeat_id,
+            'status': observation.status.value,
+            'metadata': dict(observation.reduced.metadata),
+        } for observation in review.usable_observations]
         review.disagreement = _disagreement(per_judge, review.valid_observations)
+        if excluded_metrics:
+            review.metadata['metrics_without_quorum'] = excluded_metrics
+        if unresolved_ties:
+            review.metadata['metrics_without_primary_tiebreak'] = unresolved_ties
         expected = len(self.judges) * self.config.repeats
         if tie_broken:
             review.metadata['tie_broken_by_primary'] = True
             review.status = ScoreStatus.DEGRADED
-        elif len(review.valid_observations) != expected or any(
-            observation.status is ScoreStatus.FALLBACK for observation in review.valid_observations
-        ):
+        elif len(review.valid_observations) != expected or unresolved_ties:
             review.status = ScoreStatus.DEGRADED
+
+    def _aggregate_rule_fallback(self, review: JudgeReview) -> None:
+        """Use one deterministic official fallback without treating it as a Judge vote."""
+        primary = _judge_id(self.judges[0])
+        fallback = next(
+            (observation for observation in review.fallback_observations if observation.judge_id == primary),
+            review.fallback_observations[0],
+        )
+        review.value = dict(fallback.reduced.value)
+        review.outcome = fallback.reduced.outcome
+        review.metadata = dict(fallback.reduced.metadata)
+        review.observation_metadata = [{
+            'judge_id': observation.judge_id,
+            'repeat_id': observation.repeat_id,
+            'status': observation.status.value,
+            'metadata': dict(observation.reduced.metadata),
+        } for observation in review.fallback_observations]
+        review.status = ScoreStatus.DEGRADED
 
     def build_score(self, adapter: JudgeProtocol, review: JudgeReview, context: JudgeContext) -> Score:
         """Build the final score and persist all judge I/O in the review payload."""
@@ -236,6 +309,7 @@ class JudgeExecutor:
         )
         score.metadata = dict(score.metadata or {})
         score.metadata['judge_attempts'] = [attempt.model_dump(exclude_none=True) for attempt in review.attempts]
+        score.metadata['judge_observation_metadata'] = review.observation_metadata
         return score
 
 
@@ -256,13 +330,14 @@ def _aggregate_values(values: Sequence[Dict[str, float]], method: str) -> Dict[s
 
 
 def _aggregate_across_judges(judge_values: Dict[str, Dict[str, float]], method: str,
-                             primary: str) -> tuple[Optional[Dict[str, float]], bool]:
+                             primary: str) -> tuple[Optional[Dict[str, float]], bool, List[str]]:
     buckets: Dict[str, List[float]] = defaultdict(list)
     for values in judge_values.values():
         for name, value in values.items():
             buckets[name].append(value)
     result: Dict[str, float] = {}
     tie_broken = False
+    unresolved_ties: List[str] = []
     for name, values in buckets.items():
         if method == 'median':
             result[name] = float(statistics.median(values))
@@ -270,13 +345,14 @@ def _aggregate_across_judges(judge_values: Dict[str, Dict[str, float]], method: 
             winner, tied = _majority(values)
             if tied:
                 if primary not in judge_values or name not in judge_values[primary]:
-                    return None, False
+                    unresolved_ties.append(name)
+                    continue
                 winner = judge_values[primary][name]
                 tie_broken = True
             result[name] = winner
         else:
             result[name] = sum(values) / len(values)
-    return result, tie_broken
+    return result or None, tie_broken, unresolved_ties
 
 
 def _majority(values: Sequence[float]) -> tuple[float, bool]:
@@ -310,6 +386,10 @@ def _disagreement(per_judge: Dict[str, List[Dict[str, float]]],
     categorical: Dict[str, Dict[str, Any]] = {}
     categories: Dict[str, List[tuple[str, str]]] = defaultdict(list)
     for observation in observations:
+        outcome = observation.reduced.outcome if observation.reduced is not None else None
+        if outcome is not None:
+            categories[f'pairwise/{outcome.metric_name}'].append((observation.judge_id, outcome.result))
+            continue
         for verdict in observation.case_verdicts:
             label = _categorical_label(verdict.value)
             if label is not None:
@@ -331,9 +411,12 @@ def _disagreement(per_judge: Dict[str, List[Dict[str, float]]],
         }
     positions = []
     for observation in observations:
-        for verdict in observation.case_verdicts:
-            if verdict.placements:
-                positions.append(len({str(value) for value in verdict.placements.values()}) == 1)
+        reduced = observation.reduced
+        outcome = reduced.outcome if reduced is not None else None
+        if outcome is not None and outcome.placements:
+            positions.append(len({value.result for value in outcome.placements.values()}) == 1)
+        elif reduced is not None and reduced.position_results:
+            positions.append(len(set(reduced.position_results.values())) == 1)
     return {
         'numeric': {
             'all_observations': numeric,
@@ -384,54 +467,96 @@ def _majority_label(labels: Sequence[str]) -> str:
     return Counter(labels).most_common(1)[0][0]
 
 
-def _aggregate_outcomes(observations: Sequence[JudgeObservation], primary: str) -> Any:
-    """Aggregate typed categorical outcomes by repeat, then by judge.
-
-    Only mappings with a common scalar leaf structure are aggregated. Other adapter-specific
-    diagnostic payloads remain observation metadata and never influence final scoring.
-    """
-    per_judge: Dict[str, List[Any]] = defaultdict(list)
+def _aggregate_pairwise_outcomes(
+    observations: Sequence[JudgeObservation],
+    primary: str,
+    min_valid_judges: int,
+) -> tuple[Optional[PairwiseOutcome], bool]:
+    """Vote pairwise results by semantic candidate win/tie/loss, never raw placement labels."""
+    per_judge: Dict[str, List[PairwiseOutcome]] = defaultdict(list)
     for observation in observations:
-        if observation.reduced is not None and observation.reduced.outcome is not None:
-            per_judge[observation.judge_id].append(observation.reduced.outcome)
+        outcome = observation.reduced.outcome if observation.reduced is not None else None
+        if outcome is not None:
+            per_judge[observation.judge_id].append(outcome)
     if not per_judge:
-        return None
-
-    per_judge_outcome = {judge_id: _majority_outcome(values, primary=False) for judge_id, values in per_judge.items()}
-    return _majority_outcome(
-        list(per_judge_outcome.values()),
-        primary=True,
-        primary_value=per_judge_outcome.get(primary),
+        return None, False
+    if len(per_judge) < min_valid_judges:
+        return None, False
+    judge_outcomes = {judge_id: _vote_pairwise(values, repeat_vote=True)[0] for judge_id, values in per_judge.items()}
+    outcome, tied = _vote_pairwise(
+        list(judge_outcomes.values()), repeat_vote=False, primary=judge_outcomes.get(primary)
     )
-
-
-def _majority_outcome(values: Sequence[Any], primary: bool, primary_value: Any = None) -> Any:
-    """Vote recursively over mapping leaves; only identical shapes are meaningful outcomes."""
-    if not values:
-        return None
-    if all(isinstance(value, dict) for value in values):
-        keys = set(values[0])
-        if any(set(value) != keys for value in values):
-            return None
-        return {
-            key: _majority_outcome(
-                [value[key]
-                 for value in values],
-                primary,
-                primary_value.get(key) if isinstance(primary_value, dict) else None,
-            )
-            for key in keys
+    if tied and primary not in judge_outcomes:
+        return None, False
+    placements: Dict[str, PairwisePlacementOutcome] = {}
+    by_placement: Dict[str, Dict[str, List[PairwisePlacementOutcome]]] = defaultdict(lambda: defaultdict(list))
+    for judge_id, outcomes in per_judge.items():
+        for candidate_outcome in outcomes:
+            for placement, placement_outcome in candidate_outcome.placements.items():
+                by_placement[placement][judge_id].append(placement_outcome)
+    for placement, per_judge_placements in by_placement.items():
+        if len(per_judge_placements) < min_valid_judges:
+            continue
+        judge_placements = {
+            judge_id: _vote_pairwise_placements(values, repeat_vote=True)[0]
+            for judge_id, values in per_judge_placements.items()
         }
-    counts = Counter(_freeze_outcome(value) for value in values)
-    winner_count = max(counts.values())
-    winners = [value for value in values if counts[_freeze_outcome(value)] == winner_count]
-    if len({_freeze_outcome(value) for value in winners}) == 1:
-        return winners[0]
-    return primary_value if primary and primary_value is not None else winners[0]
+        placement_outcome, placement_tied = _vote_pairwise_placements(
+            list(judge_placements.values()),
+            repeat_vote=False,
+            primary=judge_placements.get(primary),
+        )
+        if placement_tied and primary not in judge_placements:
+            return None, False
+        placements[placement] = placement_outcome
+        tied = tied or placement_tied
+    return outcome.model_copy(update={'placements': placements}), tied
 
 
-def _freeze_outcome(value: Any) -> str:
-    return repr(value)
+def _vote_pairwise(
+    outcomes: Sequence[PairwiseOutcome],
+    repeat_vote: bool,
+    primary: Optional[PairwiseOutcome] = None,
+) -> tuple[PairwiseOutcome, bool]:
+    """Return a semantic majority; repeat ties deliberately become a tie verdict."""
+    counts = Counter(outcome.result for outcome in outcomes)
+    top = max(counts.values())
+    winners = [result for result, count in counts.items() if count == top]
+    tied = len(winners) > 1
+    if tied:
+        result = 'tie' if repeat_vote else (primary.result if primary is not None else 'tie')
+    else:
+        result = winners[0]
+    selected = [outcome for outcome in outcomes if outcome.result == result]
+    strength = 'weak'
+    if result != 'tie' and selected:
+        strong = sum(outcome.strength == 'strong' for outcome in selected)
+        strength = 'strong' if strong * 2 > len(selected) else 'weak'
+    template = selected[0] if selected else outcomes[0]
+    return PairwiseOutcome(
+        metric_name=template.metric_name,
+        result=result,
+        strength=strength,
+        placements={},
+    ), tied
+
+
+def _vote_pairwise_placements(
+    outcomes: Sequence[PairwisePlacementOutcome],
+    repeat_vote: bool,
+    primary: Optional[PairwisePlacementOutcome] = None,
+) -> tuple[PairwisePlacementOutcome, bool]:
+    """Apply the same repeat and primary-tie rule to one official placement game."""
+    proxies = [
+        PairwiseOutcome(metric_name='placement', result=outcome.result, strength=outcome.strength)
+        for outcome in outcomes
+    ]
+    primary_proxy = (
+        PairwiseOutcome(metric_name='placement', result=primary.result, strength=primary.strength)
+        if primary is not None else None
+    )
+    voted, tied = _vote_pairwise(proxies, repeat_vote, primary_proxy)
+    return PairwisePlacementOutcome(result=voted.result, strength=voted.strength), tied
 
 
 def _jsonable(value: Any) -> Any:

@@ -31,21 +31,19 @@ class PlacementJudge:
         self.swapped = swapped
         self.calls = 0
 
-    def judge(self, prompt: str = '', system_prompt: Any = None, messages: Any = None) -> str:
+    def generate(self, messages: Any) -> ModelOutput:
         self.calls += 1
-        # Scans the whole conversation: a parse retry appends a correction, and the placement is
-        # only stated in the original case prompt.
-        text = prompt or '\n'.join(str(message.content) for message in (messages or []))
+        text = '\n'.join(str(message.content) for message in messages)
         # On the original pass the reference is Assistant 1; on the swapped pass the prediction is.
-        return self.original if text.index('reference') < text.index('prediction') else self.swapped
+        response = self.original if text.index('reference') < text.index('prediction') else self.swapped
+        return ModelOutput.from_content(model=self.model_id, content=response)
 
 
 def air_bench_score(original: str, swapped: str) -> Any:
     config = TaskConfig(
         model='m',
         datasets=['air_bench_chat'],
-        judge_strategy='llm',
-        judge_model_args={'model_id': 'stub-judge'},
+        judge={'strategy': 'llm', 'models': {'model_id': 'stub-judge'}},
         dataset_args={'air_bench_chat': {'extra_params': {'do_swap': True}}},
     )
     adapter = get_benchmark('air_bench_chat', config)
@@ -102,6 +100,7 @@ def test_air_bench_averages_both_passes_when_both_parse() -> None:
     # prediction = mean(8, 6) = 7.0; reference = mean(4, 5) = 4.5
     assert score.value == {'judge_score': 7.0, 'win_rate': 1.0}
     assert score.metadata['reference_score'] == 4.5
+    assert 'pairwise_aggregation' not in score.judge_summary.provenance
 
 
 def test_air_bench_rejects_a_rating_off_the_scale() -> None:

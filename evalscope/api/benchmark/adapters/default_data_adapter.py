@@ -704,14 +704,17 @@ class DefaultDataAdapter(DataAdapter):
                 task_state=task_state
             )
 
-            # Step 2: A valid judge may raise the rule score; an unavailable judge preserves it.
-            judge_score = self.score_with_judge_contracts(
-                original_prediction=prediction,
-                filtered_prediction=filtered_prediction,
-                reference=task_state.target,
-                task_state=task_state,
-            )
-            final_score = self._merge_scores(rule_based_score, judge_score)
+            if float(rule_based_score.main_value or 0.0) > 0.99:
+                final_score = rule_based_score
+            else:
+                # A valid judge may raise the rule score; an unavailable judge preserves it.
+                judge_score = self.score_with_judge_contracts(
+                    original_prediction=prediction,
+                    filtered_prediction=filtered_prediction,
+                    reference=task_state.target,
+                    task_state=task_state,
+                )
+                final_score = self._merge_scores(rule_based_score, judge_score)
         else:
             if self.use_llm_judge:
                 # Judge-default benchmarks retain their usable rule score when the judge fails.

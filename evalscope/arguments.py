@@ -3,7 +3,7 @@ import argparse
 import ast
 import json
 
-from evalscope.constants import EvalBackend, EvalType, JudgeStrategy, ModelTask
+from evalscope.constants import EvalBackend, EvalType, ModelTask
 
 
 class ParseStrArgsAction(argparse.Action):
@@ -98,10 +98,10 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--timeout', type=float, default=None, help='[Deprecated] Use --generation-config timeout=... instead. Will be removed in v2.0.0.')  # noqa: E501
     parser.add_argument('--stream', action='store_true', default=None, help='[Deprecated] Use --generation-config stream=True instead. Will be removed in v2.0.0.')  # noqa: E501
 
-    # LLMJudge arguments
-    parser.add_argument('--judge-strategy', type=str, default=JudgeStrategy.AUTO, help='The judge strategy.')
-    parser.add_argument('--judge-model-args', type=json.loads, default='{}', help='The judge model args, should be a json string.')  # noqa: E501
-    parser.add_argument('--judge-worker-num', type=int, default=1, help='The number of workers for the judge model.')
+    # Native judge arguments
+    parser.add_argument('--judge', type=json.loads, default=None, help='The typed judge configuration as a JSON object.')
+    parser.add_argument('--judge-strategy', type=str, default=None, help='[Deprecated] Use --judge JSON instead.')
+    parser.add_argument('--judge-model-args', type=json.loads, default=None, help='[Deprecated] Use --judge JSON instead.')
     parser.add_argument('--analysis-report', action='store_true', default=False, help='Generate analysis report for the evaluation results using judge model.')  # noqa: E501
     parser.add_argument('--collect-perf', action=argparse.BooleanOptionalAction, default=True, help='Collect per-request performance metrics (latency, TTFT, token usage) during evaluation. TTFT requires streaming (--generation-config stream=True). Use --no-collect-perf to disable.')  # noqa: E501
 

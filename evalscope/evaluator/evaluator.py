@@ -12,13 +12,13 @@ import threading
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple
 
 from evalscope.api.dataset import Dataset, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState, compute_judge_fingerprint
-from evalscope.api.metric import AggScore, SampleScore
+from evalscope.api.metric import AggScore, JudgeSummary, SampleScore
 from evalscope.api.registry import register_evaluator
-from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC, ScoreStatus
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
 from evalscope.report import Report, gen_perf_table, gen_table
@@ -139,6 +139,7 @@ class DefaultEvaluator(Evaluator):
             judge_fingerprint=compute_judge_fingerprint(
                 judge_config=task_config.judge,
                 judge_revision=getattr(benchmark, 'judge_cache_revision', getattr(benchmark, 'judge_revision', '1')),
+                judge_cache_key=getattr(benchmark, 'judge_cache_key', {}),
             ) if getattr(benchmark, 'use_llm_judge', False) else None,
         )
 
@@ -152,6 +153,7 @@ class DefaultEvaluator(Evaluator):
         # Initialize PerfCollector for collecting per-request performance metrics
         self.perf_collector = PerfCollector()
         self._prediction_cache_lock = threading.Lock()
+        self._sample_scores_by_subset: Dict[str, List[SampleScore]] = {}
 
     def eval(self) -> Report:
         """
@@ -224,6 +226,9 @@ class DefaultEvaluator(Evaluator):
 
             logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
             return report
+        except Exception:
+            self.cache_manager.discard_review_reruns()
+            raise
         finally:
             self.finalize()
 
@@ -469,6 +474,7 @@ class DefaultEvaluator(Evaluator):
                 continue
 
             logger.info(f'Aggregating scores for subset: {subset}')
+            self._sample_scores_by_subset[subset] = all_scores
             agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
 
         return agg_score_dict
@@ -527,6 +533,7 @@ class DefaultEvaluator(Evaluator):
         report = self.benchmark.generate_report(
             scores=agg_score_dict, model_name=self.model_name, output_dir=report_path
         )
+        report.judge_summary = _summarize_judge_runs(self._sample_scores_by_subset.values())
 
         # Generate and display a summary table of results
         try:
@@ -569,3 +576,90 @@ class DefaultEvaluator(Evaluator):
     def finalize(self, *args, **kwargs):
         self.benchmark.finalize(*args, **kwargs)
         self.cache_manager.close()
+
+
+def _summarize_judge_runs(score_groups: Iterable[List[SampleScore]]) -> Optional[JudgeSummary]:
+    """Combine per-sample judge summaries without treating unavailable samples as zero scores."""
+    summaries = [
+        score.score.judge_summary
+        for scores in score_groups
+        for score in scores
+        if score.score.judge_summary is not None
+    ]
+    if not summaries:
+        return None
+    total = len(summaries)
+    scored = sum(summary.status.is_usable for summary in summaries)
+    failures: Dict[str, int] = defaultdict(int)
+    models = []
+    for summary in summaries:
+        for name, count in summary.failures.items():
+            failures[name] += count
+        models.extend(model for model in summary.judge_models if model not in models)
+    status = (
+        ScoreStatus.EXCLUDED if not scored else ScoreStatus.DEGRADED if scored != total
+        or any(summary.status is not ScoreStatus.SUCCESS for summary in summaries) else ScoreStatus.SUCCESS
+    )
+    fingerprints = {summary.fingerprint for summary in summaries}
+    provenance = summaries[0].provenance if all(summary.provenance == summaries[0].provenance
+                                                for summary in summaries) else {}
+    return JudgeSummary(
+        status=status,
+        scored=scored,
+        total=total,
+        coverage=scored / total,
+        judge_models=models,
+        valid_observations=sum(summary.valid_observations for summary in summaries),
+        total_observations=sum(summary.total_observations for summary in summaries),
+        failures=dict(failures),
+        disagreement=_summarize_disagreement(summaries),
+        fingerprint=fingerprints.pop() if len(fingerprints) == 1 else None,
+        provenance=provenance,
+    )
+
+
+def _summarize_disagreement(summaries: List[JudgeSummary]) -> Dict[str, object]:
+    """Aggregate comparable disagreement diagnostics without pretending sample variances are global variance."""
+    numeric: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+    categorical: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+    position_consistency: List[float] = []
+    swap_flip_count = 0
+    for summary in summaries:
+        detail = summary.disagreement
+        for name, values in detail.get('numeric', {}).get('all_observations', {}).items():
+            for key in ('std', 'range'):
+                if key in values:
+                    numeric[name][key].append(float(values[key]))
+        for name, values in detail.get('categorical', {}).items():
+            for key in ('agreement_ratio', 'vote_entropy'):
+                if key in values:
+                    categorical[name][key].append(float(values[key]))
+        if detail.get('position_consistency') is not None:
+            position_consistency.append(float(detail['position_consistency']))
+        swap_flip_count += int(detail.get('swap_flip_count', 0))
+
+    return {
+        'numeric': {
+            name: {
+                'mean_std': sum(values['std']) / len(values['std']) if values['std'] else 0.0,
+                'max_range': max(values['range']) if values['range'] else 0.0,
+                'samples': max(len(values['std']), len(values['range'])),
+            }
+            for name, values in numeric.items()
+        },
+        'categorical': {
+            name: {
+                'mean_agreement_ratio': sum(values['agreement_ratio'])
+                / len(values['agreement_ratio']) if values['agreement_ratio'] else 0.0,
+                'mean_vote_entropy': sum(values['vote_entropy'])
+                / len(values['vote_entropy']) if values['vote_entropy'] else 0.0,
+                'samples': max(len(values['agreement_ratio']), len(values['vote_entropy'])),
+            }
+            for name, values in categorical.items()
+        },
+        'position_consistency': {
+            'mean': sum(position_consistency) / len(position_consistency) if position_consistency else None,
+            'samples': len(position_consistency),
+            'swap_flip_count': swap_flip_count,
+        },
+    }

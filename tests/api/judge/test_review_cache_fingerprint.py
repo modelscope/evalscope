@@ -3,6 +3,7 @@ import pytest
 
 from evalscope.api.evaluator.cache import CacheManager, ReviewResult, compute_judge_fingerprint
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.mixin.llm_judge_mixin import LLMJudgeMixin
 from evalscope.config import JudgeConfig
 from evalscope.utils.io_utils import OutputsStructure
 
@@ -40,6 +41,30 @@ def test_rule_only_config_has_no_fingerprint():
 )
 def test_every_scoring_semantic_changes_the_fingerprint(changed):
     assert fingerprint() != fingerprint(**changed)
+
+
+def test_adapter_runtime_semantics_change_the_fingerprint():
+    config = JudgeConfig(strategy='llm', models=[{'model_id': 'judge-a'}])
+
+    assert compute_judge_fingerprint(config, '7', {'pass_threshold': 0.75}) != compute_judge_fingerprint(
+        config, '7', {'pass_threshold': 0.8}
+    )
+
+
+def test_declared_semantic_helper_changes_the_adapter_cache_revision(tmp_path):
+    helper = tmp_path / 'judge_helper.py'
+    helper.write_text('prompt = "one"\n', encoding='utf-8')
+
+    class Adapter:
+        judge_revision = '1'
+        judge_cache_dependencies = (str(helper), )
+        judge_cache_revision = LLMJudgeMixin.judge_cache_revision
+
+    adapter = Adapter()
+    before = adapter.judge_cache_revision
+    helper.write_text('prompt = "two"\n', encoding='utf-8')
+
+    assert adapter.judge_cache_revision != before
 
 
 def test_api_key_is_scrubbed_from_the_fingerprint():

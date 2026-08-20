@@ -380,11 +380,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
         for score in scoped_scores:
             group_id = score.group_id if score.group_id is not None else score.sample_id
             grouped[group_id].append(score)
-        repeat_counts = {len(group) for group in grouped.values()}
-        if len(repeat_counts) != 1:
-            raise ValueError(f'WideSearch requires the same number of trials per task, got {sorted(repeat_counts)}.')
-        repeats = repeat_counts.pop()
-        sample_ids = [score.sample_id for score in scoped_scores]
+        repeats = max(len(group) for group in grouped.values())
         for metric_name in METRIC_NAMES:
             if metric_name.startswith('row_'):
                 canonical_name = metric_name[4:]
@@ -395,10 +391,13 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
             else:
                 canonical_name = metric_name
                 target = None
+            metric_scores = [score for score in scoped_scores if metric_name in score.score.value]
+            if not metric_scores:
+                continue
             dimensions = {'scope': scope, 'k': repeats}
             if target is not None:
                 dimensions['target'] = target
-            all_values = [float(score.score.value[metric_name]) for score in scoped_scores]
+            all_values = [float(score.score.value[metric_name]) for score in metric_scores]
             results.append(
                 AggScore(
                     metric_name=canonical_name,
@@ -406,10 +405,30 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
                     aggregation='mean',
                     dimensions=dimensions,
                     num=len(all_values),
-                    ids=sample_ids,
+                    ids=[score.sample_id for score in metric_scores],
+                    metadata={
+                        'eligible': len(metric_scores),
+                        'total': len(scoped_scores),
+                        'coverage': len(metric_scores) / len(scoped_scores),
+                    },
                 )
             )
-            group_maxima = [max(float(score.score.value[metric_name]) for score in group) for group in grouped.values()]
+            eligible_groups = []
+            for group_id, group in grouped.items():
+                indexed = sorted(
+                    ((score.generation_index if score.generation_index is not None else index, score)
+                     for index, score in enumerate(group)
+                     if metric_name in score.score.value),
+                    key=lambda item: item[0],
+                )
+                if [index for index, _ in indexed] != list(range(repeats)):
+                    continue
+                eligible_groups.append((group_id, [score for _, score in indexed]))
+            if not eligible_groups:
+                continue
+            group_maxima = [
+                max(float(score.score.value[metric_name]) for score in group) for _, group in eligible_groups
+            ]
             aggregate_name = 'pass' if metric_name == 'success_rate' else 'max'
             results.append(
                 AggScore(
@@ -418,7 +437,13 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
                     aggregation='pass_at_k' if aggregate_name == 'pass' else 'max',
                     dimensions=dimensions,
                     num=len(group_maxima),
-                    ids=list(grouped.keys()),
+                    ids=[group_id for group_id, _ in eligible_groups],
+                    metadata={
+                        'eligible': len(eligible_groups),
+                        'total': len(grouped),
+                        'excluded': len(grouped) - len(eligible_groups),
+                        'coverage': len(eligible_groups) / len(grouped),
+                    },
                 )
             )
     return results

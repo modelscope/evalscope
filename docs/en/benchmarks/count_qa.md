@@ -34,7 +34,7 @@ well-separated objects.
   rule the paper states for its rewriter LLM. A reply with no digit scores 0, so `max_tokens` must
   leave the model room to reach its answer; a model that narrates its count ("row 1 has 3 ...") is
   scored on the first number it mentions rather than on its stated total
-- Scoring is deterministic arithmetic and needs no LLM judge: keep `judge_strategy` at `rule` or
+- Scoring is deterministic arithmetic and needs no LLM judge: keep `judge.strategy` at `rule` or
   `auto`, since `llm` replaces both metrics with a generic judge score. To read a different number
   out of a model that ignores the output format, prepend a per-run filter such as
   `filters={'regex': {'regex_pattern': '(\d+)', 'group_select': -1}}` (last number) via
@@ -57,56 +57,11 @@ well-separated objects.
 
 ## Data Statistics
 
-| Metric | Value |
-|--------|-------|
-| Total Samples | 1,528 |
-| Prompt Length (Mean) | 467.52 chars |
-| Prompt Length (Min/Max) | 459 / 508 chars |
-
-**Image Statistics:**
-
-| Metric | Value |
-|--------|-------|
-| Total Images | 1,528 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 1714x178 - 2482x2500 |
-| Formats | jpeg, png |
-
+*Statistics not available.*
 
 ## Sample Example
 
-**Subset**: `default`
-
-```json
-{
-  "input": [
-    {
-      "id": "dd3eebdf",
-      "content": "You are a helpful assistant that counts the number of items in an image. The user will provide an image and ask a question about the number of a certain type of item in the image. If the user question is referring to multiple objects, it means that you need to provide a sum of the number of items. You will count the number of items and return the number as an integer. Your output should STRICTLY be a single integer and nothing else."
-    },
-    {
-      "id": "ba0d838c",
-      "content": [
-        {
-          "image": "[BASE64_IMAGE: jpeg, ~202.2KB]"
-        },
-        {
-          "text": "How many tiles are on the wall with the shower?"
-        }
-      ]
-    }
-  ],
-  "target": "18",
-  "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "is_focused": false,
-    "categories": [
-      "Outdoor, Vehicles & Structural"
-    ]
-  }
-}
-```
+*Sample example not available.*
 
 ## Prompt Template
 

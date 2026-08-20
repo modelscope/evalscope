@@ -174,6 +174,7 @@ class HealthBenchAdapter(DefaultDataAdapter):
     responses against detailed medical criteria.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
 
     def __init__(self, *args, **kwargs):
         """

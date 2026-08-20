@@ -94,6 +94,23 @@ export const perfMetricsSchema = z.object({
   metric_semantics: z.record(z.string(), metricSemanticsSchema),
 })
 
+/** First-class judge execution summary. Mirrors `JudgeSummary`. */
+export const judgeSummarySchema = z.object({
+  status: z.string().optional(),
+  scored: z.number().optional(),
+  total: z.number().optional(),
+  coverage: z.number().optional(),
+  judge_models: z.array(z.string()).optional(),
+  valid_observations: z.number().optional(),
+  total_observations: z.number().optional(),
+  /** Attempt counts keyed by `ScoreStatus` value. */
+  failures: z.record(z.string(), z.number()).optional(),
+  disagreement: z.record(z.string(), z.unknown()).optional(),
+  error: z.string().optional(),
+  fingerprint: z.string().optional(),
+  provenance: z.record(z.string(), z.unknown()).optional(),
+})
+
 /** Runtime contract for one dataset report. */
 export const reportDataSchema = z.object({
   schema_version: z.literal(2),
@@ -107,6 +124,7 @@ export const reportDataSchema = z.object({
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
   primary_metric_identity: metricIdentitySchema.nullable(),
+  judge_summary: judgeSummarySchema.optional(),
 })
 
 /** Runtime contract for a report detail response. */
@@ -265,23 +283,6 @@ export const judgeAttemptSchema = z.object({
   parsed_value: z.unknown().optional(),
   error: z.string().optional(),
   latency: z.number().optional(),
-})
-
-/** First-class judge execution summary. Mirrors `JudgeSummary`. */
-export const judgeSummarySchema = z.object({
-  status: z.string().optional(),
-  scored: z.number().optional(),
-  total: z.number().optional(),
-  coverage: z.number().optional(),
-  judge_models: z.array(z.string()).optional(),
-  valid_observations: z.number().optional(),
-  total_observations: z.number().optional(),
-  /** Attempt counts keyed by `ScoreStatus` value. */
-  failures: z.record(z.string(), z.number()).optional(),
-  disagreement: z.record(z.string(), z.unknown()).optional(),
-  error: z.string().optional(),
-  fingerprint: z.string().optional(),
-  provenance: z.record(z.string(), z.unknown()).optional(),
 })
 
 /**

@@ -4,7 +4,10 @@ from typing import Any, ClassVar, List, Optional
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.benchmark.statistics import SampleExample
 from evalscope.api.dataset import DataLoader, DatasetDict, MemoryDataset, Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
+from evalscope.api.metric import Score
+from evalscope.api.model import ModelOutput
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeStrategy
 
@@ -86,7 +89,7 @@ def test_auto_judge_strategy_uses_adapter_class_default() -> None:
     benchmark_meta = BenchmarkMeta(name='dummy_judge', dataset_id='dummy', eval_split='test')
     adapter = DummyLLMJudgeAdapter(
         benchmark_meta=benchmark_meta,
-        task_config=TaskConfig(datasets=['dummy_judge'], judge_strategy=JudgeStrategy.AUTO),
+        task_config=TaskConfig(datasets=['dummy_judge'], judge={'strategy': JudgeStrategy.AUTO}),
     )
 
     assert adapter.use_llm_judge is True
@@ -96,6 +99,29 @@ def test_auto_judge_strategy_uses_adapter_class_default() -> None:
 
     adapter._task_config.judge.strategy = JudgeStrategy.LLM
     assert adapter.use_llm_judge is True
+
+
+def test_llm_recall_skips_judge_when_rule_score_is_perfect(monkeypatch) -> None:
+    benchmark_meta = BenchmarkMeta(name='dummy_judge', dataset_id='dummy', eval_split='test')
+    adapter = DummyLLMJudgeAdapter(
+        benchmark_meta=benchmark_meta,
+        task_config=TaskConfig(
+            datasets=['dummy_judge'],
+            judge={'strategy': 'llm_recall', 'models': {'model_id': 'judge'}},
+        ),
+    )
+    state = TaskState(
+        model='m',
+        sample=Sample(input='question', target='answer'),
+        output=ModelOutput(model='m', completion='answer'),
+        completed=True,
+    )
+    monkeypatch.setattr(adapter, 'match_score', lambda **_: Score(value={'acc': 1.0}, main_score_name='acc'))
+    monkeypatch.setattr(adapter, 'score_with_judge_contracts', lambda **_: (_ for _ in ()).throw(AssertionError()))
+
+    score = adapter.calculate_metrics(state).score
+
+    assert score.value == {'acc': 1.0}
 
 
 def test_sample_example_detects_parameterized_truncation_marker() -> None:

@@ -77,6 +77,7 @@ MathVerse is an all-around visual math benchmark designed for equitable and in-d
 class MathVerseAdapter(VisionLanguageAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

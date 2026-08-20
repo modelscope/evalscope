@@ -54,6 +54,9 @@ class LLMJudgeMixin:
     judge_revision: str = '1'
     """Bump when this adapter changes its prompt, cases, reducer, or fallback semantics."""
 
+    judge_cache_dependencies: Tuple[str, ...] = ()
+    """Files outside the adapter that define its judge prompt, contract, reducer, or fallback."""
+
     llm_judge_default: Optional[bool] = None
     """[Deprecated] Superseded by :attr:`scoring_policy`. Will be removed in v2.0.0."""
 
@@ -85,18 +88,25 @@ class LLMJudgeMixin:
 
     @property
     def judge_cache_revision(self) -> str:
-        """Bind cached reviews to both the declared revision and the adapter source.
+        """Bind cached reviews to both the declared revision and adapter source.
 
-        ``judge_revision`` remains the human-auditable change marker. The source digest closes the
-        historical loophole where a prompt or reducer changed without a bump and an old review
-        cache was silently reused.
+        The revision is the human-auditable semantic marker. The digest covers the adapter and
+        declared semantic helpers, preventing stale reuse when those files change.
         """
         source_path = inspect.getsourcefile(type(self))
-        if source_path is None:
+        paths = tuple(path for path in (source_path, *self.judge_cache_dependencies) if path)
+        if not paths:
             return self.judge_revision
-        with open(source_path, 'rb') as source:
-            digest = hashlib.sha256(source.read()).hexdigest()[:16]
-        return f'{self.judge_revision}:{digest}'
+        digest = hashlib.sha256()
+        for path in sorted(set(paths)):
+            with open(path, 'rb') as source:
+                digest.update(source.read())
+        return f'{self.judge_revision}:{digest.hexdigest()[:16]}'
+
+    @property
+    def judge_cache_key(self) -> dict:
+        """Runtime adapter settings that change judge semantics but are not in ``JudgeConfig``."""
+        return {'resolved_position_swap': self._resolved_position_swap()}
 
     @property
     def llm_judges(self) -> List[LLMJudge]:
@@ -150,7 +160,7 @@ class LLMJudgeMixin:
             raise ValueError(
                 f"Benchmark '{name}' has no usable rule-based scoring, so judge_strategy='{strategy}' "
                 'cannot produce a meaningful score. '
-                "Use judge_strategy='auto' or 'llm' with judge_model_args."
+                "Use judge.strategy='auto' or 'llm' with judge.models."
             )
         if self.use_llm_judge and not self._task_config.judge.models:
             raise ValueError(
@@ -160,7 +170,11 @@ class LLMJudgeMixin:
 
     def _judge_specs(self) -> List[dict]:
         """Return typed judge model specifications as model-construction dictionaries."""
-        return [spec.model_dump(exclude={'judge_id'}, exclude_none=True) for spec in self._task_config.judge.models]
+        contract = self._task_config.judge.contract.model_dump(exclude_none=True)
+        return [{
+            **spec.model_dump(exclude={'judge_id'}, exclude_none=True),
+            **contract,
+        } for spec in self._task_config.judge.models]
 
     def init_llm_judges(self) -> List[LLMJudge]:
         """Build every configured judge model.
@@ -184,8 +198,14 @@ class LLMJudgeMixin:
     # Declarative judge path (evalscope.api.judge)
     # ------------------------------------------------------------------
 
-    judge_position_swap: bool = False
-    """Ask each case in both orders and treat the pair as one atomic observation."""
+    supports_position_swap: bool = False
+    """Whether this benchmark has a meaningful pairwise placement dimension."""
+
+    uses_pairwise_outcome: bool = False
+    """Whether the adapter emits semantic pairwise outcomes instead of only swapped numeric scores."""
+
+    official_position_swap: bool = False
+    """Whether the benchmark's official protocol judges both placements by default."""
 
     @property
     def judge_executor(self) -> 'JudgeExecutor':
@@ -210,8 +230,8 @@ class LLMJudgeMixin:
         """Resolve the user override against the benchmark's official position policy."""
         configured = self._task_config.judge.position_swap if self._task_config else 'auto'
         if configured == 'auto':
-            return bool(self.judge_position_swap)
-        if not self.judge_position_swap:
+            return bool(self.official_position_swap)
+        if not self.supports_position_swap:
             if configured == 'on':
                 logger.warning(
                     f"Benchmark '{self._benchmark_meta.name}' has no pairwise position dimension; "
@@ -247,15 +267,21 @@ class LLMJudgeMixin:
             from evalscope.api.evaluator import compute_judge_fingerprint
 
             score.judge_summary.fingerprint = compute_judge_fingerprint(
-                self._task_config.judge, self.judge_cache_revision
+                self._task_config.judge, self.judge_cache_revision, self.judge_cache_key
             )
-            score.judge_summary.provenance = {
+            provenance = {
                 'position_swap': self._task_config.judge.position_swap,
                 'resolved_position_swap': self._resolved_position_swap(),
-                'official_position_swap': self.judge_position_swap,
+                'official_position_swap': self.official_position_swap,
                 'aggregation': self._task_config.judge.aggregation,
                 'min_valid_judges': self._task_config.judge.min_valid_judges,
             }
+            if self.uses_pairwise_outcome:
+                # Pairwise summaries intentionally use a semantic vote.  The scalar aggregation
+                # setting remains applicable to ordinary numeric metrics, so record the exception
+                # instead of presenting a misleading mean/median provenance for battles.
+                provenance['pairwise_aggregation'] = 'majority_vote'
+            score.judge_summary.provenance = provenance
         return score
 
     def pre_judge_score(
@@ -356,8 +382,8 @@ class LLMJudgeMixin:
                 'source': 'llm_judge',
                 'judge_strategy': self.judge_strategy,
                 'model': getattr(self.llm_judge, 'judge_id', self.llm_judge.model_id),
-                'non_official_position_swap': self._task_config is not None and self.judge_position_swap
-                and self._task_config.judge.position_swap != 'auto',
+                'non_official_position_swap': self._task_config is not None
+                and self._resolved_position_swap() != self.official_position_swap,
                 **review.metadata,
             },
         )
@@ -366,7 +392,9 @@ class LLMJudgeMixin:
         """Retain rule evidence when a ``JUDGE_DEFAULT`` review is unavailable."""
         fallback = rule_based_score.model_copy(deep=True)
         fallback.status = ScoreStatus.DEGRADED
-        fallback.judge_summary = judge_score.judge_summary
+        fallback.judge_summary = judge_score.judge_summary.model_copy(
+            update={'status': ScoreStatus.DEGRADED}
+        ) if judge_score.judge_summary is not None else None
         fallback.metadata = {
             **(fallback.metadata or {}),
             **(judge_score.metadata or {}),
@@ -383,7 +411,9 @@ class LLMJudgeMixin:
         if not llm_score.status.is_usable or not llm_score.value:
             # The rule score stands, so the sample is still scored -- it just fell back.
             rule_based_score.status = ScoreStatus.FALLBACK
-            rule_based_score.judge_summary = llm_score.judge_summary
+            rule_based_score.judge_summary = llm_score.judge_summary.model_copy(
+                update={'status': ScoreStatus.FALLBACK}
+            ) if llm_score.judge_summary is not None else None
             rule_based_score.metadata = {
                 **(rule_based_score.metadata or {}),
                 'judge_unavailable': llm_score.status.value,

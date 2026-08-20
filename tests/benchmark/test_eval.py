@@ -35,8 +35,9 @@ class TestNativeBenchmark(TestBenchmark):
                 'extra_body': {'enable_thinking': True},
                 'stream': True
             },
-            'judge_strategy': JudgeStrategy.AUTO,
-            'judge_model_args': {
+            'judge': {
+                'strategy': JudgeStrategy.AUTO,
+                'models': {
                 'model_id': 'qwen3-max',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -45,6 +46,7 @@ class TestNativeBenchmark(TestBenchmark):
                     # 'max_tokens': 4096,
                     'extra_body': {'enable_thinking': False}
                 }
+                },
             },
             'debug': True,
         }
@@ -855,7 +857,7 @@ class TestNativeBenchmark(TestBenchmark):
             use_mock=True,
             limit=1,
             eval_batch_size=1,
-            judge_strategy=JudgeStrategy.RULE,
+            judge={'strategy': JudgeStrategy.RULE},
             generation_config={
                 'max_tokens': 128,
                 'temperature': 0.0,
@@ -873,7 +875,7 @@ class TestNativeBenchmark(TestBenchmark):
             use_mock=True,
             limit=1,
             eval_batch_size=1,
-            judge_strategy=JudgeStrategy.RULE,
+            judge={'strategy': JudgeStrategy.RULE},
             generation_config={
                 'max_tokens': 128,
                 'temperature': 0.0,
@@ -944,15 +946,12 @@ class TestNativeBenchmark(TestBenchmark):
             'plawbench',
             limit=2,
             use_mock=True,
-            judge_model_args={
-                'model_id': 'mock-judge',
-                'eval_type': EvalType.MOCK_LLM
-            },
+            judge={'models': {'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM}},
         )
 
     def test_plawbench(self):
         """Test PLawBench rubric-based legal practice benchmark with real API."""
-        judge_model_args = {
+        judge = {'models': {
             'model_id': 'qwen3-max',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -963,8 +962,8 @@ class TestNativeBenchmark(TestBenchmark):
                     'enable_thinking': False
                 }
             }
-        }
-        self._run_dataset_test('plawbench', limit=2, judge_model_args=judge_model_args)
+        }}
+        self._run_dataset_test('plawbench', limit=2, judge=judge)
 
     # Indic-language benchmarks
     def test_milu_mock(self):

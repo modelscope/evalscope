@@ -29,8 +29,9 @@ class TestCodeBenchmark(TestBenchmark):
                 'parallel_tool_calls': True,
                 'stream': True,
             },
-            'judge_strategy': JudgeStrategy.AUTO,
-            'judge_model_args': {
+            'judge': {
+                'strategy': JudgeStrategy.AUTO,
+                'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -38,6 +39,7 @@ class TestCodeBenchmark(TestBenchmark):
                     'temperature': 0.0,
                     'max_tokens': 4096,
                 }
+                },
             },
             'use_sandbox': True,
             'sandbox_type': 'docker',

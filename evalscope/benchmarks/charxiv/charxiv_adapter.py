@@ -67,7 +67,7 @@ chart element perception (descriptive) and high-level reasoning about chart data
 - Each chart yields 5 samples: 4 descriptive + 1 reasoning
 - Primary metric: **Accuracy** via LLM-as-judge
 - Subsets: `descriptive` and `reasoning` (also by category)
-- Requires `judge_model_args` configuration for LLM judge
+- Requires an LLM judge configured through `judge.models`
 - [Paper](https://arxiv.org/abs/2406.18521) | [GitHub](https://github.com/princeton-nlp/CharXiv)
 """
 
@@ -97,6 +97,7 @@ class CharXivAdapter(VisionLanguageAdapter):
     Scoring uses LLM judge for both question types.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

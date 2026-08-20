@@ -73,6 +73,7 @@ FRAMES is a comprehensive evaluation dataset designed to test the capabilities o
 class FramesAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
+    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

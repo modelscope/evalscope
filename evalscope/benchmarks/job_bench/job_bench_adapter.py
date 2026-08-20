@@ -72,7 +72,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 ## Evaluation Notes
 
 - The default evaluation split is `main`.
-- Configure `judge_model_args` for rubric scoring.
+- Configure `judge.models` for rubric scoring.
 - `normalized_score` is the primary weighted score (raw total / max score); `pass_rate` is the unweighted
   proportion of fully passed rubrics; `judge_score` is the raw sum of passed rubric weights, reported as a diagnostic.
 - Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,
@@ -109,6 +109,7 @@ class JobBenchAdapter(AgentLoopAdapter):
     """JobBench adapter using ModelScope data and EvalScope's agent loop."""
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
+    judge_revision = '1'
     strategy_name = 'function_calling'
     max_steps_default = 250
 
