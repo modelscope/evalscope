@@ -79,9 +79,10 @@ TaskConfig(
 对于 adapter 开发者，judge 的 I/O 统一由 `evalscope.api.judge` 处理；不要在 adapter 中调用 `self.llm_judge.judge()`，也不要自行解析模型回复。
 
 1. 声明 `scoring_policy`：规则评分没有意义时使用 `JUDGE_ONLY`；规则评分仍可用、但 `auto` 应使用 Judge 时使用 `JUDGE_DEFAULT`；`auto` 应保留规则评分时使用 `RULE_DEFAULT`。
-2. 普通的单 verdict 任务可直接使用默认 hook。仅需重写 `judge_prompt(context)` 来定义评分标准，必要时重写 `judge_metric_name`。mixin 会追加 JSON 输出要求，并按配置的 `pattern` 或 `numeric` contract 归约结果。
-3. 对 rubric、多 claim 或分阶段任务，定义 Pydantic verdict schema 和 `OutputContract`，然后实现 `build_judge_cases`、`build_judge_request` 与 `reduce_judge_verdicts`。自定义 request 中应追加 `case.output_contract.instruction()`；仅当官方固定 JSON 要求与 schema 完全一致时才可保留官方格式。通过 `CaseVerdict.metadata` 传递上下文，不要把状态编码到 `case_id`。
-4. 添加 scripted judge 测试，覆盖有效 JSON verdict、错误 JSON/自然语言回复和 transport error。无效 Judge 回复会从指标中排除，不会记为 0，executor 也不会自动纠错重试。
+2. 实现 adapter 唯一的入口 `judge_definition(context)`。普通的单 verdict 任务返回带有 Pydantic verdict schema 的 `JudgeDefinition.labels(...)` 或 `JudgeDefinition.numeric(...)`。这些 helper 会追加 JSON 输出要求，并将 prompt、schema 与指标映射保持在同一处。
+3. 对 rubric、多 claim 或分阶段任务，定义 Pydantic verdict schema 和 `OutputContract`，然后返回 `JudgeDefinition.workflow(cases=..., request=..., reduce=...)`。只有工作流需要时才传入 `expand=...`、`fallback=...` 或 `finalize=...`。这些 callback 可以嵌套在 `judge_definition()` 中，也可以作为 adapter 的私有 helper，但必须由返回的 definition 持有，不能再作为 adapter hook 暴露。自定义 request 中应追加 `case.output_contract.instruction()`；仅当官方固定 JSON 要求与 schema 完全一致时才可保留官方格式。通过 `CaseVerdict.metadata` 传递上下文，不要把状态编码到 `case_id`。
+4. 当确定性的规则无需调用模型即可判定样本时，返回 `JudgeDefinition.skip(score, reason='...')`。`reason` 为必填字段，会以 `Score.metadata['judge_skip_reason']` 及 `Score.metadata['judge_skipped'] = True` 保存；Web review 面板会将其标为规则直接判分，而非 LLM verdict。
+5. 添加 scripted judge 测试，覆盖有效 JSON verdict、错误 JSON/自然语言回复和 transport error。无效 Judge 回复会从指标中排除，不会记为 0，executor 也不会自动纠错重试。
 
 executor 负责请求调度、位置交换、重复次数、多 Judge quorum、聚合和 review 诊断；模型 transport 的重试策略由 `generation_config` 负责。
 

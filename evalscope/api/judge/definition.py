@@ -1,12 +1,10 @@
 """Adapter-facing declarations for one Native LLM judge review."""
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Sequence, Type
-
 from pydantic import BaseModel
+from typing import Any, Callable, Dict, Optional, Sequence, Type
 
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
-
 from .contracts import OutputContract
 from .types import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, JudgeReview, Placement, ReducedVerdict
 
@@ -78,11 +76,13 @@ class JudgeDefinition:
 
         fallback = None
         if fallback_verdict is not None:
+
             def fallback_builder(current: JudgeCase, context: JudgeContext) -> CaseVerdict:
                 return CaseVerdict(
                     case_id=current.case_id,
                     value=schema_model.model_validate({verdict_field: fallback_verdict}),
                 )
+
             fallback = fallback_builder
         return cls(
             cases=[case],
