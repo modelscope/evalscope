@@ -207,7 +207,7 @@ class CacheManager:
         file_path = self.get_review_cache_path(subset)
         temporary = f'{file_path}.rerun-{uuid.uuid4().hex}'
         self._review_reruns[file_path] = temporary
-        logger.info(f'Rescoring reviews into temporary cache: {temporary}')
+        logger.debug(f'Rescoring reviews into temporary cache: {temporary}')
 
     def commit_review_reruns(self) -> None:
         """Atomically publish every fully written review rerun."""
