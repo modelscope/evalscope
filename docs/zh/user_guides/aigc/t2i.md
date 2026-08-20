@@ -18,12 +18,25 @@ EvalScope框架支持多种评测指标，用户可以根据需求选择合适�
 | `BLIPv2Score`     | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 1]（通常）      | 使用BLIP的ITM评估图像与文本的匹配程度 |
 | `PickScore`       | [Github](https://github.com/yuvalkirstain/PickScore) | [0, 0.3]（通常）      | 基于 CLIP 模型的评分系统，预测用户对生成图像的偏好 |
 | `HPSv2Score`/`HPSv2.1Score` | [Github](https://github.com/tgxs002/HPSv2) | [0, 0.3]（通常）      | 基于人类偏好的评估指标，在人类偏好数据集（HPD v2）上进行训练 |
-| `ImageReward`     | [Github](https://github.com/THUDM/ImageReward) | [-3, 1]（通常）      | 一种奖励模型，通过人类反馈训练，反映人类对图片的偏好 |
+| `ImageRewardScore` | [Github](https://github.com/THUDM/ImageReward) | [-3, 1]（通常）      | 一种奖励模型，通过人类反馈训练，反映人类对图片的偏好 |
 | `MPS`             | [Github](https://github.com/Kwai-Kolors/MPS) | [0, 15]（通常）      | 快手：一种多维度的偏好评分方法，综合考虑生成图像的多个属性（如逼真度、语义对齐等）来评估其质量 |
 | `FGA_BLIP2Score`  | [Github](https://github.com/DYEvaLab/EvalMuse) | 总体 [0, 5]（通常，各维度为[0, 1]） | 字节跳动：用于评估细粒度的生成图像的质量和语义对齐 |
 | `ssim`            | 内置 | [-1, 1]（越高越好） | 全参考结构相似性指标，需要提供参考图像 |
 | `psnr`            | 内置 | [0, 100]（越高越好） | 全参考峰值信噪比指标，完全相同图像上限为100。需要提供参考图像 |
 | `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞)（越低越好） | 学习型感知相似度指标，需要提供参考图像，并安装`evalscope[aigc]` |
+
+### 如何选择和解读指标
+
+不同指标回答的问题不同，分数不能跨指标直接比较：
+
+| 评测目标 | 可选指标 | 如何解读 | 常见误读 |
+|---------|---------|---------|---------|
+| 提示词与图像是否语义一致 | `VQAScore`、`CLIPScore`、`BLIPv2Score` | 关注主体、属性或关系是否与提示词匹配 | 高分不代表构图、清晰度或审美质量一定更好 |
+| 图像是否符合人类偏好 | `PickScore`、`HPSv2Score`/`HPSv2.1Score`、`ImageRewardScore`、`MPS` | 反映偏好模型对图像整体质量和提示词对齐的综合判断 | 表中的常见范围是经验范围，不是百分制，也不能在不同指标之间换算 |
+| 哪类细节出现问题 | `FGA_BLIP2Score` | 除总体得分外，还可查看对象、属性、颜色、空间关系等细粒度结果 | 只看总体得分可能掩盖某个维度的明显短板 |
+| 与指定参考图是否相似 | `ssim`、`psnr`、`lpips` | 需要参考图；`ssim`、`psnr`越高越相似，`lpips`越低越相似 | 参考图相似度高不等于提示词契合度或人类偏好得分高 |
+
+选择指标前应先明确评测问题：关注提示词还原时使用语义一致性指标，关注整体观感时使用偏好指标，有目标参考图时再使用全参考指标。如果需要同时衡量提示词还原和整体观感，可以组合不同类别的指标。比较两个模型时，应保持数据集、提示词、指标及其模型版本、生成参数一致。
 
 
 ## 安装依赖

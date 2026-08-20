@@ -18,12 +18,25 @@ The EvalScope framework supports a variety of evaluation metrics, allowing users
 | `BLIPv2Score`     | [Github](https://github.com/linzhiqiu/t2v_metrics) | [0, 1] (Typically)      | Evaluates image-text matching using BLIP's ITM |
 | `PickScore`       | [Github](https://github.com/yuvalkirstain/PickScore) | [0, 0.3] (Typically)      | A scoring system based on the CLIP model that predicts user preference for generated images |
 | `HPSv2Score`/`HPSv2.1Score` | [Github](https://github.com/tgxs002/HPSv2) | [0, 0.3] (Typically)      | Evaluation metrics based on human preferences, trained on the Human Preference Dataset (HPD v2) |
-| `ImageReward`     | [Github](https://github.com/THUDM/ImageReward) | [-3, 1] (Typically)      | A reward model trained through human feedback, reflecting human preference for images |
+| `ImageRewardScore` | [Github](https://github.com/THUDM/ImageReward) | [-3, 1] (Typically)      | A reward model trained through human feedback, reflecting human preference for images |
 | `MPS`             | [Github](https://github.com/Kwai-Kolors/MPS) | [0, 15] (Typically)      | Kuaishou: A multi-dimensional preference scoring method that comprehensively considers multiple attributes (e.g., realism, semantic alignment) of generated images to assess their quality |
 | `FGA_BLIP2Score`  | [Github](https://github.com/DYEvaLab/EvalMuse) | Overall [0, 5] (Typically, each dimension is [0, 1]) | ByteDance: Used for evaluating the quality and semantic alignment of finely generated images |
 | `ssim`            | Built-in | [-1, 1] (Higher is better) | Full-reference structural similarity. Requires a reference image |
 | `psnr`            | Built-in | [0, 100] (Higher is better) | Full-reference peak signal-to-noise ratio. Identical images are capped at 100. Requires a reference image |
 | `lpips`           | [Github](https://github.com/richzhang/PerceptualSimilarity) | [0, +∞) (Lower is better) | Learned perceptual similarity. Requires a reference image and `evalscope[aigc]` |
+
+### Choosing and Interpreting Metrics
+
+These metric groups answer different questions, so their scores are not directly comparable:
+
+| Evaluation Goal | Candidate Metrics | How to Interpret Them | Common Pitfall |
+|-----------------|-------------------|-----------------------|----------------|
+| Check semantic alignment between a prompt and an image | `VQAScore`, `CLIPScore`, `BLIPv2Score` | Focus on whether subjects, attributes, or relations match the prompt | A high score does not guarantee better composition, sharpness, or aesthetics |
+| Estimate human preference | `PickScore`, `HPSv2Score`/`HPSv2.1Score`, `ImageRewardScore`, `MPS` | Reflect a preference model's combined judgment of overall quality and prompt alignment | The typical ranges above are empirical, not percentages, and cannot be converted across metrics |
+| Locate fine-grained errors | `FGA_BLIP2Score` | Inspect object, attribute, color, spatial-relation, and other dimension scores in addition to the overall score | The overall score can hide a clear weakness in one dimension |
+| Compare against a reference image | `ssim`, `psnr`, `lpips` | Require a reference image; higher `ssim` and `psnr` or lower `lpips` indicate greater similarity | High reference similarity does not imply high prompt alignment or human preference |
+
+Choose metrics based on the evaluation question: use semantic-alignment metrics for prompt fidelity, preference metrics for overall visual appeal, and full-reference metrics only when a target image exists. To assess both prompt fidelity and visual appeal, combine metrics from different groups. When comparing models, keep the dataset, prompts, metric and model versions, and generation settings consistent.
 
 
 ## Install Dependencies
