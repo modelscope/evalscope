@@ -28,21 +28,45 @@ class ScriptedJudge:
         return ModelOutput.from_content('scripted', self.replies[min(len(self.calls) - 1, len(self.replies) - 1)])
 
 
+class TransportFailingJudge(ScriptedJudge):
+
+    def __init__(self) -> None:
+        super().__init__([])
+
+    def generate(self, messages):
+        self.calls.append(messages)
+        raise RuntimeError('judge transport unavailable')
+
+
 def make_state(prediction: str, target: str) -> TaskState:
     sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
     return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
 
 
-def test_simple_qa_uses_the_contract_and_excludes_bad_json():
-    config = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
-    adapter = get_benchmark('simple_qa', config)
+@pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
+def test_three_way_judge_parse_failure_excludes_the_sample(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
     adapter.llm_judge = ScriptedJudge(['not JSON'])
 
     score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
 
-    assert score.status is ScoreStatus.DEGRADED
-    assert score.value['is_not_attempted'] == 1.0
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
     assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+@pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
+def test_three_way_judge_transport_failure_excludes_the_sample(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'
 
 
 @pytest.mark.parametrize(

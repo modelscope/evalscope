@@ -4,15 +4,7 @@ from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.judge import (
-    CaseVerdict,
-    JudgeCase,
-    JudgeContext,
-    JudgeDefinition,
-    JudgeRequest,
-    OutputContract,
-    ReducedVerdict,
-)
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
@@ -28,10 +20,7 @@ class Grade(BaseModel):
     verdict: Literal['A', 'B', 'C']
 
 
-GRADE_CONTRACT = OutputContract(
-    schema_model=Grade,
-    # Upstream falls back to NOT_ATTEMPTED rather than retrying a malformed verdict.
-)
+GRADE_CONTRACT = OutputContract(schema_model=Grade)
 
 GRADER_TEMPLATE = """
 Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -203,15 +192,9 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
                 }
             )
 
-        def fallback(case, judge_context) -> CaseVerdict:
-            return CaseVerdict(
-                case_id=case.case_id, value=Grade(verdict='C'), metadata={'official_not_attempted_fallback': True}
-            )
-
         return JudgeDefinition.workflow(
             cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
             request=request,
             reduce=reduce,
-            fallback=fallback,
             main_score_name='is_correct'
         )

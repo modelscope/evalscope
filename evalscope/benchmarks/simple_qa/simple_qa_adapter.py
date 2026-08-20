@@ -190,6 +190,5 @@ class SimpleQAAdapter(DefaultDataAdapter):
                     'is_not_attempted': 1.0
                 },
             },
-            fallback_verdict='C',
             main_score_name='is_correct',
         )
