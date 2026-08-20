@@ -188,6 +188,7 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
     try:
         report_list = get_report_list([report_model_dir(root, ref)])
     except Exception:
+        logger.warning(f'Skipping report {ref.key}: failed to load', exc_info=True)
         return None
 
     if not report_list:

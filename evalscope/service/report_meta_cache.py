@@ -26,9 +26,12 @@ from evalscope.utils.data_utils import report_model_dir
 Fingerprint = Tuple[Tuple[str, int, int], ...]
 
 # cache key -> (fingerprint, meta_or_None). One entry per (root, reference),
-# replaced when the fingerprint changes, so the cache is bounded by the number
-# of report directories on disk. ``None`` metadata (an unreadable report) is
-# cached too, so a broken report is not re-read on every request.
+# replaced when the fingerprint changes. Per root the cache is bounded by the
+# report directories on disk and pruned every request; across roots it grows
+# with the number of distinct outputs roots the process serves, which is small
+# and stable in practice (the endpoint only lists existing directories).
+# ``None`` metadata (an unreadable report) is cached too, so a broken report is
+# not re-read on every request.
 _CACHE: Dict[str, Tuple[Fingerprint, Optional[dict]]] = {}
 _LOCK = threading.Lock()
 
@@ -107,11 +110,15 @@ def list_etag(fingerprints: Sequence[Tuple[str, Fingerprint]], query_parts: Sequ
 
     ``fingerprints`` is the ``(ref.key, fingerprint)`` pairs gathered while
     serving the list, so this adds no file reads. ``query_parts`` folds in the
-    filter/sort/page values that also shape the response.
+    filter/sort/page values that also shape the response. The digest is built
+    incrementally so no O(N) intermediate payload is allocated.
     """
-    parts: List[str] = sorted(f'{key}:{fp}' for key, fp in fingerprints)
-    parts.extend(f'q:{part}' for part in query_parts)
-    return hashlib.sha256('\n'.join(parts).encode('utf-8')).hexdigest()
+    digest = hashlib.sha256()
+    for key, fingerprint in sorted(fingerprints):
+        digest.update(f'{key}:{fingerprint}\n'.encode('utf-8'))
+    for part in query_parts:
+        digest.update(f'q:{part}\n'.encode('utf-8'))
+    return digest.hexdigest()
 
 
 def clear_report_meta_cache() -> None:
