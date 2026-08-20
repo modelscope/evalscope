@@ -21,8 +21,6 @@ DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
 )  # ~/.cache/evalscope
 HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  # 60 seconds
 DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
-JUDGE_ENGINE_REVISION = '4'
-"""Bump whenever Native judge execution semantics change and cached reviews must be invalidated."""
 USE_OSS = os.getenv('USE_OSS', '0') == '1'  # whether to use OSS/FUSE-mounted filesystem
 BEIJING_TZ = timezone(timedelta(hours=8))  # UTC+8
 

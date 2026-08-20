@@ -113,7 +113,6 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 class LongMemEvalAdapter(DefaultDataAdapter):
     """Adapter for LongMemEval."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)

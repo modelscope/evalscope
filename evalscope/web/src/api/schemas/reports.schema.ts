@@ -107,8 +107,6 @@ export const judgeSummarySchema = z.object({
   failures: z.record(z.string(), z.number()).optional(),
   disagreement: z.record(z.string(), z.unknown()).optional(),
   error: z.string().optional(),
-  fingerprint: z.string().optional(),
-  provenance: z.record(z.string(), z.unknown()).optional(),
 })
 
 /** Runtime contract for one dataset report. */

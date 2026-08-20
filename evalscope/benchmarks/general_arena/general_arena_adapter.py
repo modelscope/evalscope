@@ -107,7 +107,6 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
 class GeneralArenaAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '2'
     uses_pairwise_outcome = True
 
     def __init__(self, *args, **kwargs):

@@ -145,7 +145,6 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '2'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

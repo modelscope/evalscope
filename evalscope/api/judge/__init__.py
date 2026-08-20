@@ -9,6 +9,7 @@ shows up as a high parse-failure rate in ``JudgeSummary.failures``.
 """
 from .contracts import OutputContract, ParseResult
 from .executor import JudgeExecutor, JudgeExecutorConfig
+from .summary import summarize_judge_disagreement, summarize_judge_runs
 from .types import (
     CaseVerdict,
     JudgeAttempt,
@@ -41,4 +42,6 @@ __all__ = [
     'PairwiseOutcome',
     'PairwisePlacementOutcome',
     'ReducedVerdict',
+    'summarize_judge_disagreement',
+    'summarize_judge_runs',
 ]

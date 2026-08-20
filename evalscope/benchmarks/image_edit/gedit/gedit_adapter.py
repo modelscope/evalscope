@@ -86,7 +86,6 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
 class GEditAdapter(ImageEditAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

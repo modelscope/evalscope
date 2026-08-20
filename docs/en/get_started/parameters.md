@@ -206,9 +206,8 @@ in `generation_config.retries`.
 model response once, and never uses constrained decoding, regex score extraction, or corrective follow-up prompts.
 An invalid reply is unavailable and excluded from the metric rather than reported as zero.
 
-Reports include `JudgeSummary` with coverage, failure counts, disagreement, provenance, and the semantic review
-fingerprint. Cached reviews whose fingerprint differs from the current Judge configuration must be recomputed with
-`rerun_review=True`; predictions are reused and the review cache is atomically replaced after success.
+Reports include `JudgeSummary` with coverage, failure counts, and disagreement. With
+`rerun_review=True`, predictions are reused and the review cache is atomically replaced after success.
 
 `judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
 removed `judge_worker_num` and `score_pattern` are rejected.

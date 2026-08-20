@@ -109,7 +109,6 @@ class JobBenchAdapter(AgentLoopAdapter):
     """JobBench adapter using ModelScope data and EvalScope's agent loop."""
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
     strategy_name = 'function_calling'
     max_steps_default = 250
 

@@ -100,7 +100,6 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
     placeholder convention and scores free-form answers with the official LLM judge.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

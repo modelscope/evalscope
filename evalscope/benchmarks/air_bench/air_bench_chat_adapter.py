@@ -125,7 +125,6 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 class AIRBenchChatAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Chat open-ended audio QA tasks."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '2'
 
     # Per-sample folder layout for audio files. Distinct from Foundation since
     # Chat pre-merges some categories.
@@ -282,10 +281,6 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
     def official_position_swap(self) -> bool:
         # Official cal_score.py judges each sample twice with the order swapped.
         return bool(self.extra_params.get('do_swap', True))
-
-    @property
-    def judge_cache_key(self) -> Dict[str, Any]:
-        return {**super().judge_cache_key, 'do_swap': self.official_position_swap}
 
     def build_judge_cases(self, context: JudgeContext) -> List[JudgeCase]:
         return [JudgeCase(case_id='pair', output_contract=PAIR_CONTRACT)]

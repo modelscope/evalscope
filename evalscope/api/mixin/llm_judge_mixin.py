@@ -1,5 +1,3 @@
-import hashlib
-import inspect
 import threading
 from functools import lru_cache
 from pydantic import BaseModel, Field, create_model
@@ -51,12 +49,6 @@ class LLMJudgeMixin:
     scoring_policy: ScoringPolicy = ScoringPolicy.RULE_DEFAULT
     """Declares what this benchmark's rule and judge paths can do. See :class:`ScoringPolicy`."""
 
-    judge_revision: str = '1'
-    """Bump when this adapter changes its prompt, cases, reducer, or fallback semantics."""
-
-    judge_cache_dependencies: Tuple[str, ...] = ()
-    """Files outside the adapter that define its judge prompt, contract, reducer, or fallback."""
-
     llm_judge_default: Optional[bool] = None
     """[Deprecated] Superseded by :attr:`scoring_policy`. Will be removed in v2.0.0."""
 
@@ -85,28 +77,6 @@ class LLMJudgeMixin:
         self._judge_executor_lock = threading.Lock()
 
         super().__init__()
-
-    @property
-    def judge_cache_revision(self) -> str:
-        """Bind cached reviews to both the declared revision and adapter source.
-
-        The revision is the human-auditable semantic marker. The digest covers the adapter and
-        declared semantic helpers, preventing stale reuse when those files change.
-        """
-        source_path = inspect.getsourcefile(type(self))
-        paths = tuple(path for path in (source_path, *self.judge_cache_dependencies) if path)
-        if not paths:
-            return self.judge_revision
-        digest = hashlib.sha256()
-        for path in sorted(set(paths)):
-            with open(path, 'rb') as source:
-                digest.update(source.read())
-        return f'{self.judge_revision}:{digest.hexdigest()[:16]}'
-
-    @property
-    def judge_cache_key(self) -> dict:
-        """Runtime adapter settings that change judge semantics but are not in ``JudgeConfig``."""
-        return {'resolved_position_swap': self._resolved_position_swap()}
 
     @property
     def llm_judges(self) -> List[LLMJudge]:
@@ -263,25 +233,6 @@ class LLMJudgeMixin:
         executor = self.judge_executor
         review = executor.execute(self, context)
         score = executor.build_score(self, review, context)
-        if score.judge_summary is not None and self._task_config is not None:
-            from evalscope.api.evaluator import compute_judge_fingerprint
-
-            score.judge_summary.fingerprint = compute_judge_fingerprint(
-                self._task_config.judge, self.judge_cache_revision, self.judge_cache_key
-            )
-            provenance = {
-                'position_swap': self._task_config.judge.position_swap,
-                'resolved_position_swap': self._resolved_position_swap(),
-                'official_position_swap': self.official_position_swap,
-                'aggregation': self._task_config.judge.aggregation,
-                'min_valid_judges': self._task_config.judge.min_valid_judges,
-            }
-            if self.uses_pairwise_outcome:
-                # Pairwise summaries intentionally use a semantic vote.  The scalar aggregation
-                # setting remains applicable to ordinary numeric metrics, so record the exception
-                # instead of presenting a misleading mean/median provenance for battles.
-                provenance['pairwise_aggregation'] = 'majority_vote'
-            score.judge_summary.provenance = provenance
         return score
 
     def pre_judge_score(

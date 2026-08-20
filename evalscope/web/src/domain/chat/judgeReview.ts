@@ -75,7 +75,8 @@ export function selectJudgeReview(score: PredictionScore | undefined): JudgeRevi
 function groupByCase(attempts: JudgeAttempt[]): JudgeCaseView[] {
   const byCase = new Map<string, JudgeAttempt[]>()
   for (const attempt of attempts) {
-    const key = `${attempt.judge_id}:${attempt.repeat_id ?? 0}:${attempt.case_id}:${attempt.placement ?? 'original'}`
+    // Group by case, not by placement: pairwise swaps are two attempts of the same case.
+    const key = `${attempt.judge_id}:${attempt.repeat_id ?? 0}:${attempt.case_id}`
     const bucket = byCase.get(key)
     if (bucket) bucket.push(attempt)
     else byCase.set(key, [attempt])

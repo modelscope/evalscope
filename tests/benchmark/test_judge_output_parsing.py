@@ -100,7 +100,6 @@ def test_air_bench_averages_both_passes_when_both_parse() -> None:
     # prediction = mean(8, 6) = 7.0; reference = mean(4, 5) = 4.5
     assert score.value == {'judge_score': 7.0, 'win_rate': 1.0}
     assert score.metadata['reference_score'] == 4.5
-    assert 'pairwise_aggregation' not in score.judge_summary.provenance
 
 
 def test_air_bench_rejects_a_rating_off_the_scale() -> None:

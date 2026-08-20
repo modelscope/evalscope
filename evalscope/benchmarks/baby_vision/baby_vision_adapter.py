@@ -72,7 +72,6 @@ class BabyVisionAdapter(VisionLanguageAdapter):
     Handles both choice and blank answer types uniformly with LLM judge scoring.
     """
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

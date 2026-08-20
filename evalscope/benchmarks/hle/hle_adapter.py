@@ -106,7 +106,6 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 class HLEAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

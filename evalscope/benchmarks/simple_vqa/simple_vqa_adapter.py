@@ -148,7 +148,6 @@ SimpleVQA is the first comprehensive multimodal benchmark to evaluate the factua
 class SimpleVQAAdapter(VisionLanguageAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '2'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

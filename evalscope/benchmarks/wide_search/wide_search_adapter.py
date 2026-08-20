@@ -97,7 +97,6 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 class WideSearchAdapter(AgentLoopAdapter):
     """Official single-agent WideSearch benchmark adapter."""
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '2'
 
     strategy_name = 'function_calling'
     max_steps_default = 50

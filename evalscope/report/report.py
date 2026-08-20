@@ -346,7 +346,7 @@ class Report(BaseModel):
             language = 'English' if DEFAULT_LANGUAGE == 'en' else 'Chinese'
 
             # Reuse the primary judge's transport configuration without making analysis part of
-            # the scoring fingerprint.
+            # the scoring process.
             if task_config.judge.models:
                 judge_model_config = task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True)
                 judge_llm = LLMJudge(**get_secret_value(judge_model_config))

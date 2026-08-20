@@ -137,25 +137,6 @@ def test_helper_modules_are_scanned():
     assert 'utils.py' in scanned
 
 
-def test_judge_adapters_declare_a_cache_revision():
-    """Prompt/case/reducer edits require an explicit, reviewable cache invalidation marker."""
-    missing = []
-    for path in adapter_files():
-        with open(path, encoding='utf-8') as handle:
-            tree = ast.parse(handle.read(), filename=path)
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.ClassDef):
-                continue
-            names = {
-                target.id
-                for statement in node.body if isinstance(statement, ast.Assign)
-                for target in statement.targets if isinstance(target, ast.Name)
-            }
-            if 'scoring_policy' in names and 'judge_revision' not in names:
-                missing.append(f'{relative(path)}:{node.name}')
-    assert not missing, f'Judge adapters must declare judge_revision: {missing}'
-
-
 def test_removed_parse_retry_knobs_do_not_return():
     offenders = []
     for path in adapter_files():

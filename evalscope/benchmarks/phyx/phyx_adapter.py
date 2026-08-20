@@ -337,7 +337,6 @@ class PhyXOEAdapter(PhyXAdapter):
     """PhyX in open-ended mode, scored by comparing the final answer with the ground truth."""
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
-    judge_revision = '1'
 
     def build_question(self, record: Dict[str, Any], options: Dict[str, str]) -> str:
         return build_oe_question(record['question_simply'], record['question'])

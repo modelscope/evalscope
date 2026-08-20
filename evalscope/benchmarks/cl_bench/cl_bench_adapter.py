@@ -107,7 +107,6 @@ CL-bench represents a step towards building LMs with this fundamental capability
 class CLBenchAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    judge_revision = '1'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -90,7 +90,6 @@ CMMU is a novel Chinese multi-modal benchmark designed to evaluate domain-specif
 class CMMUAdapter(VisionLanguageAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
-    judge_revision = '1'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

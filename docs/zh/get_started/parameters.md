@@ -201,9 +201,8 @@ TaskConfig(
 `[0, 1]`。框架会在 prompt 中追加 JSON 格式要求，只解析一次普通模型回复；不使用 constrained decoding、
 正则提分或纠正性追问。无效回复显示为 unavailable，并从指标中排除，而非记为 0。
 
-报告包含 `JudgeSummary`：覆盖率、失败计数、分歧、provenance 与语义 fingerprint。若 review cache 的
-fingerprint 与当前 Judge 配置不一致，必须设置 `rerun_review=True` 重算；prediction 会复用，新的 review
-文件只有成功后才原子替换旧文件。
+报告包含 `JudgeSummary`：覆盖率、失败计数与分歧。设置 `rerun_review=True` 可复用 prediction 并重算
+review，新的 review 文件只有成功后才原子替换旧文件。
 
 旧 `judge_strategy` 和单个 mapping `judge_model_args` 仅保留一轮输入迁移并会告警。已删除的
 `judge_worker_num` 和 `score_pattern` 会明确报错。

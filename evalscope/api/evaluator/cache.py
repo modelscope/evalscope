@@ -1,9 +1,7 @@
 import copy
-import hashlib
-import json
 import os
 import uuid
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.agent import AgentTrace
@@ -11,55 +9,11 @@ from evalscope.api.dataset import Dataset
 from evalscope.api.messages import ChatMessage, messages_pretty_str, messages_to_markdown
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
-from evalscope.config import JudgeConfig
-from evalscope.constants import JUDGE_ENGINE_REVISION
 from evalscope.utils.io_utils import JsonlWriter, OutputsStructure, convert_normal_types, jsonl_to_list
 from evalscope.utils.logger import get_logger
 from .state import TaskState
 
 logger = get_logger()
-
-REVIEW_CACHE_SCHEMA_VERSION = 3
-"""Bumped for first-class ``Score.judge_summary`` and semantic judge review fingerprints."""
-
-JUDGE_FINGERPRINT_VERSION = '3'
-
-
-def compute_judge_fingerprint(
-    judge_config: JudgeConfig,
-    judge_revision: str,
-    judge_cache_key: Optional[Dict[str, Any]] = None,
-) -> Optional[str]:
-    """Identify the judge configuration a cached review was produced under.
-
-    ``None`` when no judge is involved, so rule-only benchmarks keep resuming as before.
-    """
-    if not judge_config.models:
-        return None
-    # Credentials are deliberately excluded: rotating one is not a scoring change and must not
-    # leak to a cache file. Everything that changes verdict semantics is included.
-    config = judge_config.model_dump(exclude_none=True)
-    scrubbed = _scrub_judge_secrets(config)
-    payload = json.dumps(
-        {
-            'version': JUDGE_FINGERPRINT_VERSION,
-            'engine_revision': JUDGE_ENGINE_REVISION,
-            'adapter_judge_revision': judge_revision,
-            'adapter_judge_cache_key': judge_cache_key or {},
-            'judge': scrubbed,
-        },
-        sort_keys=True,
-        default=str,
-    )
-    return hashlib.sha256(payload.encode('utf-8')).hexdigest()[:16]
-
-
-def _scrub_judge_secrets(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {key: _scrub_judge_secrets(item) for key, item in value.items() if key != 'api_key'}
-    if isinstance(value, list):
-        return [_scrub_judge_secrets(item) for item in value]
-    return value
 
 
 class CacheManager:
@@ -76,7 +30,6 @@ class CacheManager:
         outputs: OutputsStructure,
         model_name: str,
         benchmark_name: str,
-        judge_fingerprint: Optional[str] = None,
     ):
         """
         Initialize the cache manager.
@@ -85,14 +38,10 @@ class CacheManager:
             outputs: Output directory structure for storing cache files
             model_name: Name of the model being evaluated
             benchmark_name: Name of the benchmark being used
-            judge_fingerprint: Identity of the judge configuration in effect, from
-                :func:`compute_judge_fingerprint`. Cached reviews produced under a different
-                fingerprint are refused instead of being reused as if they still applied.
         """
         self.outputs = outputs
         self.model_name = model_name
         self.benchmark_name = benchmark_name
-        self.judge_fingerprint = judge_fingerprint
         self._writers: Dict[str, JsonlWriter] = {}
         self._review_reruns: Dict[str, str] = {}
 
@@ -230,33 +179,12 @@ class CacheManager:
             cached_review_result = ReviewResult.from_cache_item(cache_item)
             cached_sample_scores.append(cached_review_result.to_sample_score())
 
-        for cache_item in cache_items:
-            self._check_judge_fingerprint(ReviewResult.from_cache_item(cache_item), cache_file)
-
         # Filter out task states that already have review scores
         cached_sample_ids = {review.sample_id for review in cached_sample_scores}
         filtered_task_states = [state for state in task_states if state.sample_id not in cached_sample_ids]
 
         logger.info(f'Reusing reviews from {cache_file}, got {len(cached_sample_scores)} reviews')
         return cached_sample_scores, filtered_task_states
-
-    def _check_judge_fingerprint(self, review: 'ReviewResult', cache_file: str) -> None:
-        """Refuse a cached review that a different judge configuration produced.
-
-        Silently reusing it would report the old judge's scores under the new configuration.
-        """
-        if review.judge_fingerprint == self.judge_fingerprint:
-            return
-        if review.judge_fingerprint is None:
-            raise ValueError(
-                f'{cache_file} predates judge fingerprints and cannot be safely reused. '
-                'Pass `rerun_review=True` to rescore the cached predictions.'
-            )
-        raise ValueError(
-            f'{cache_file} holds reviews produced by a different judge configuration '
-            f'({review.judge_fingerprint} != {self.judge_fingerprint}); reusing them would report '
-            'the old judge\'s scores. Pass `rerun_review=True` to rescore the cached predictions.'
-        )
 
     def get_review_cache_path(self, subset: str) -> str:
         """
@@ -324,7 +252,6 @@ class CacheManager:
         cache_file = self._review_reruns.get(cache_file, cache_file)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
-        review_result.judge_fingerprint = self.judge_fingerprint
         # Serialize to dictionary, convert non-JSON types (numpy, datetime), append.
         review_result_dict = convert_normal_types(review_result.model_dump())
         self._get_writer(cache_file).write(review_result_dict)
@@ -469,12 +396,7 @@ class ReviewResult(BaseModel):
     including the computed score and relevant context.
     """
 
-    schema_version: int = REVIEW_CACHE_SCHEMA_VERSION
-    """Schema version of the cached review payload. Absent in caches written before
-    ``Score.status`` existed, which validate as version 1."""
-
-    judge_fingerprint: Optional[str] = None
-    """Judge configuration this review was produced under; ``None`` for rule-only scoring."""
+    model_config = ConfigDict(extra='ignore')
 
     index: int
     """Index of the sample that was reviewed."""
@@ -516,13 +438,7 @@ class ReviewResult(BaseModel):
 
     @classmethod
     def from_cache_item(cls, data: Any) -> 'ReviewResult':
-        """Load a review result from an on-disk cache row.
-
-        A row without ``schema_version`` predates ``Score.status`` and loads as version 1; the
-        field default is only correct for freshly produced results.
-        """
-        if isinstance(data, dict):
-            data = {'schema_version': 1, **data}
+        """Load a review result from an on-disk cache row."""
         return cls.model_validate(data)
 
     @property

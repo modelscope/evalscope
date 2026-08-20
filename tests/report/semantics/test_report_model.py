@@ -3,10 +3,10 @@ import pytest
 from pydantic import ValidationError
 from typing import Dict, List, Optional
 
+from evalscope.api.judge import summarize_judge_runs
 from evalscope.api.metric import AggScore, JudgeSummary, SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector
 from evalscope.constants import ScoreStatus
-from evalscope.evaluator.evaluator import _summarize_judge_runs
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
@@ -156,7 +156,7 @@ def test_run_judge_summary_keeps_unavailable_samples_out_of_scores() -> None:
         failures={'parse_error': 1},
     )))
 
-    summary = _summarize_judge_runs([[usable, unavailable]])
+    summary = summarize_judge_runs([[usable, unavailable]])
 
     assert summary.status is ScoreStatus.DEGRADED
     assert (summary.scored, summary.total, summary.coverage) == (1, 2, 0.5)
@@ -177,7 +177,7 @@ def test_run_judge_summary_preserves_degradation_and_rolls_up_disagreement() -> 
         },
     )))
 
-    summary = _summarize_judge_runs([[degraded]])
+    summary = summarize_judge_runs([[degraded]])
 
     assert summary.status is ScoreStatus.DEGRADED
     assert summary.disagreement['numeric']['acc'] == {'mean_std': 0.2, 'max_range': 0.5, 'samples': 1}
