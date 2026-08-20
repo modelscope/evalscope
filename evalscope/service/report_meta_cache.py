@@ -3,8 +3,8 @@
 The report-list endpoint derives a small metadata dict from each report by
 reading its JSON files. Those files are immutable audit records once written
 (a rerun rewrites them, changing their mtime; a delete removes the directory),
-so a fingerprint over the files' ``(path, mtime, size)`` is a sound version key:
-an unchanged fingerprint guarantees unchanged derived metadata.
+so a fingerprint over the files' ``(path, mtime, ctime, size)`` and the run
+mtime is a lightweight version key for the metadata inputs.
 
 This lets every list request stat the report files (cheap) while reading and
 parsing them (expensive) only for references that are new or have changed since
@@ -21,18 +21,15 @@ from evalscope.constants import DataCollection
 from evalscope.report import ReportRef
 from evalscope.utils.data_utils import report_model_dir
 
-# Per-file identity: relative path, mtime (ns) and size. The tuple of these over
-# a reference's JSON files is its version key.
-Fingerprint = Tuple[Tuple[str, int, int], ...]
+# Per-path identity: relative path, mtime (ns), ctime (ns), and size.
+Fingerprint = Tuple[Tuple[str, int, int, int], ...]
 
-# cache key -> (fingerprint, meta_or_None). One entry per (root, reference),
+# cache key -> (fingerprint, metadata). One entry per (root, reference),
 # replaced when the fingerprint changes. Per root the cache is bounded by the
 # report directories on disk and pruned every request; across roots it grows
 # with the number of distinct outputs roots the process serves, which is small
 # and stable in practice (the endpoint only lists existing directories).
-# ``None`` metadata (an unreadable report) is cached too, so a broken report is
-# not re-read on every request.
-_CACHE: Dict[str, Tuple[Fingerprint, Optional[dict]]] = {}
+_CACHE: Dict[str, Tuple[Fingerprint, dict]] = {}
 _LOCK = threading.Lock()
 
 # Type of the callable that reads a report and builds its metadata.
@@ -49,14 +46,16 @@ def _cache_key(root: str, ref: ReportRef) -> str:
 
 
 def report_ref_fingerprint(root: str, ref: ReportRef) -> Fingerprint:
-    """Version key for one report reference: its files' paths, mtimes and sizes.
-
-    Stat-only, no file is read. The collection report is skipped to match
-    ``get_report_list``'s own exclusion, so the fingerprint tracks exactly the
-    files the metadata is derived from.
-    """
+    """Version key for the report JSONs and timestamp fallback inputs."""
     model_dir = report_model_dir(root, ref)
-    entries: List[Tuple[str, int, int]] = []
+    entries: List[Tuple[str, int, int, int]] = []
+    run_dir = os.path.join(root, ref.run_id)
+    try:
+        run_stat = os.stat(run_dir)
+        entries.append(('@run', run_stat.st_mtime_ns, run_stat.st_ctime_ns, run_stat.st_size))
+    except OSError:
+        pass
+
     for file_path in glob.glob(os.path.join(model_dir, '**', '*.json'), recursive=True):
         if os.path.basename(file_path) == DataCollection.REPORT_NAME:
             continue
@@ -64,7 +63,7 @@ def report_ref_fingerprint(root: str, ref: ReportRef) -> Fingerprint:
             st = os.stat(file_path)
         except OSError:
             continue
-        entries.append((os.path.relpath(file_path, model_dir), st.st_mtime_ns, st.st_size))
+        entries.append((os.path.relpath(file_path, model_dir), st.st_mtime_ns, st.st_ctime_ns, st.st_size))
     entries.sort()
     return tuple(entries)
 
@@ -79,16 +78,18 @@ def build_report_meta_cached(root: str, ref: ReportRef, fingerprint: Fingerprint
     """
     key = _cache_key(root, ref)
     with _LOCK:
-        cached = _CACHE.get(key)
-        if cached is not None and cached[0] == fingerprint:
-            return cached[1]
+        observed = _CACHE.get(key)
+        if observed is not None and observed[0] == fingerprint:
+            return observed[1]
 
-    # Computed outside the lock to keep file I/O off it; a rare double-compute on
-    # concurrent misses is harmless because the result is idempotent.
     meta = compute(ref, root)
+    if meta is None:
+        return None
 
     with _LOCK:
-        _CACHE[key] = (fingerprint, meta)
+        current = _CACHE.get(key)
+        if current is observed or current is None or current[0] == fingerprint:
+            _CACHE[key] = (fingerprint, meta)
     return meta
 
 
