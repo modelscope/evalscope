@@ -1,16 +1,11 @@
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import format_letter_choices
-
-logger = get_logger()
 
 MULT_CHOICE_PROMPT = r"""
 Answer the following multiple choice question. The last line of your response should be of the following format:
@@ -76,11 +71,8 @@ class BLINKAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         input_text = MULT_CHOICE_PROMPT.format(question=record['prompt'], letters=format_letter_choices(choices))
         content_list: List[Content] = [ContentText(text=input_text)]
 
-        for i in range(1, self.MAX_IMAGES + 1):
-            image = record.get(f'image_{i}')
-            if image:
-                image_base64 = bytes_to_base64(image['bytes'], format='jpeg', add_header=True)
-                content_list.append(ContentImage(image=image_base64))
+        for image in self._extract_media(record, 'image').values():
+            content_list.append(self._content_image_from_value(image))
 
         label_answer = record['answer'].strip('(').strip(')')
         return Sample(input=[ChatMessageUser(content=content_list)], choices=choices, target=label_answer)
