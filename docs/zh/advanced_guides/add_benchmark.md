@@ -47,7 +47,7 @@ DataAdapter采用Pipeline架构，支持通过钩子方法自定义行为。以`
    calculate_metrics()
    ├── filter_prediction()
    │   └── extract_answer() [用户可选实现]
-   ├── match_score() / llm_match_score()
+   ├── match_score() / score_with_judge_contracts()
    └── 返回 SampleScore
 
 4. 结果聚合阶段
@@ -60,6 +60,30 @@ DataAdapter采用Pipeline架构，支持通过钩子方法自定义行为。以`
    └── _on_generate_report_end() [钩子方法]
        └── 返回 Report
 ```
+
+### 接入 LLM Judge Benchmark
+
+使用者通过 [Judge 参数](../get_started/parameters.md#judge参数) 中的 typed `judge` 配置启用判别：
+
+```python
+TaskConfig(
+    model='MODEL_UNDER_TEST',
+    datasets=['your_benchmark'],
+    judge={
+        'strategy': 'llm',
+        'models': {'model_id': 'JUDGE_MODEL', 'api_url': 'OPENAI_COMPATIBLE_URL', 'api_key': 'API_KEY'},
+    },
+)
+```
+
+对于 adapter 开发者，judge 的 I/O 统一由 `evalscope.api.judge` 处理；不要在 adapter 中调用 `self.llm_judge.judge()`，也不要自行解析模型回复。
+
+1. 声明 `scoring_policy`：规则评分没有意义时使用 `JUDGE_ONLY`；规则评分仍可用、但 `auto` 应使用 Judge 时使用 `JUDGE_DEFAULT`；`auto` 应保留规则评分时使用 `RULE_DEFAULT`。
+2. 普通的单 verdict 任务可直接使用默认 hook。仅需重写 `judge_prompt(context)` 来定义评分标准，必要时重写 `judge_metric_name`。mixin 会追加 JSON 输出要求，并按配置的 `pattern` 或 `numeric` contract 归约结果。
+3. 对 rubric、多 claim 或分阶段任务，定义 Pydantic verdict schema 和 `OutputContract`，然后实现 `build_judge_cases`、`build_judge_request` 与 `reduce_judge_verdicts`。自定义 request 中应追加 `case.output_contract.instruction()`；仅当官方固定 JSON 要求与 schema 完全一致时才可保留官方格式。通过 `CaseVerdict.metadata` 传递上下文，不要把状态编码到 `case_id`。
+4. 添加 scripted judge 测试，覆盖有效 JSON verdict、错误 JSON/自然语言回复和 transport error。无效 Judge 回复会从指标中排除，不会记为 0，executor 也不会自动纠错重试。
+
+executor 负责请求调度、位置交换、重复次数、多 Judge quorum、聚合和 review 诊断；模型 transport 的重试策略由 `generation_config` 负责。
 
 ### 核心数据结构
 

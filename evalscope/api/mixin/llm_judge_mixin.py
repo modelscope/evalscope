@@ -1,7 +1,7 @@
 import threading
 from functools import lru_cache
 from pydantic import BaseModel, Field, create_model
-from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Tuple, Type
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
@@ -21,9 +21,10 @@ if TYPE_CHECKING:
         JudgeRequest,
         JudgeReview,
         OutputContract,
+        Placement,
         ReducedVerdict,
     )
-    from evalscope.config import TaskConfig
+    from evalscope.config import JudgeConfig, TaskConfig
 
 logger = get_logger()
 
@@ -101,7 +102,14 @@ class LLMJudgeMixin:
     @property
     def judge_strategy(self) -> str:
         """Get the judge strategy from the task configuration."""
-        return self._task_config.judge.strategy
+        return self._judge_config.strategy
+
+    @property
+    def _judge_config(self) -> 'JudgeConfig':
+        """Return the evaluation judge configuration, with a clear error for metadata-only adapters."""
+        if self._task_config is None:
+            raise RuntimeError('LLM judge scoring requires a TaskConfig.')
+        return self._task_config.judge
 
     @property
     def use_llm_judge(self) -> bool:
@@ -132,7 +140,7 @@ class LLMJudgeMixin:
                 'cannot produce a meaningful score. '
                 "Use judge.strategy='auto' or 'llm' with judge.models."
             )
-        if self.use_llm_judge and not self._task_config.judge.models:
+        if self.use_llm_judge and not self._judge_config.models:
             raise ValueError(
                 f"Benchmark '{name}' scores with an LLM judge under judge_strategy='{strategy}', "
                 'so judge.models must be provided.'
@@ -140,11 +148,12 @@ class LLMJudgeMixin:
 
     def _judge_specs(self) -> List[dict]:
         """Return typed judge model specifications as model-construction dictionaries."""
-        contract = self._task_config.judge.contract.model_dump(exclude_none=True)
+        config = self._judge_config
+        contract = config.contract.model_dump(exclude_none=True)
         return [{
             **spec.model_dump(exclude={'judge_id'}, exclude_none=True),
             **contract,
-        } for spec in self._task_config.judge.models]
+        } for spec in config.models]
 
     def init_llm_judges(self) -> List[LLMJudge]:
         """Build every configured judge model.
@@ -154,13 +163,14 @@ class LLMJudgeMixin:
         """
         if self.judge_strategy == JudgeStrategy.RULE:
             return []
-        if not self._task_config.judge.models:
+        config = self._judge_config
+        if not config.models:
             raise ValueError(
                 'LLM judge model arguments must be provided for LLM-based judge strategies. '
                 'Please check your task configuration.'
             )
         judges = [LLMJudge(**get_secret_value(spec)) for spec in self._judge_specs()]
-        for judge, spec in zip(judges, self._task_config.judge.models):
+        for judge, spec in zip(judges, config.models):
             judge.judge_id = spec.judge_id
         return judges
 
@@ -170,9 +180,6 @@ class LLMJudgeMixin:
 
     supports_position_swap: bool = False
     """Whether this benchmark has a meaningful pairwise placement dimension."""
-
-    uses_pairwise_outcome: bool = False
-    """Whether the adapter emits semantic pairwise outcomes instead of only swapped numeric scores."""
 
     official_position_swap: bool = False
     """Whether the benchmark's official protocol judges both placements by default."""
@@ -188,17 +195,17 @@ class LLMJudgeMixin:
                     self._judge_executor = JudgeExecutor(
                         self.llm_judges,
                         JudgeExecutorConfig(
-                            repeats=self._task_config.judge.repeats if self._task_config else 1,
+                            repeats=self._judge_config.repeats,
                             position_swap=self._resolved_position_swap(),
-                            aggregation=self._task_config.judge.aggregation if self._task_config else 'mean',
-                            min_valid_judges=self._task_config.judge.min_valid_judges if self._task_config else 1,
+                            aggregation=self._judge_config.aggregation,
+                            min_valid_judges=self._judge_config.min_valid_judges,
                         ),
                     )
         return self._judge_executor
 
     def _resolved_position_swap(self) -> bool:
         """Resolve the user override against the benchmark's official position policy."""
-        configured = self._task_config.judge.position_swap if self._task_config else 'auto'
+        configured = self._judge_config.position_swap
         if configured == 'auto':
             return bool(self.official_position_swap)
         if not self.supports_position_swap:
@@ -232,8 +239,7 @@ class LLMJudgeMixin:
         )
         executor = self.judge_executor
         review = executor.execute(self, context)
-        score = executor.build_score(self, review, context)
-        return score
+        return executor.build_score(self, review, context)
 
     def pre_judge_score(
         self,
@@ -254,7 +260,7 @@ class LLMJudgeMixin:
 
     def judge_prompt(self, context: 'JudgeContext') -> str:
         """The default judge prompt for one sample, without any format instruction."""
-        return self.llm_judge.build_prompt(
+        return self._primary_judge().build_prompt(
             pred=context.original_prediction,
             gold=context.reference,
             question=context.task_state.input_text,
@@ -264,9 +270,10 @@ class LLMJudgeMixin:
         """The built-in contract the judge's ``score_type`` selects."""
         from evalscope.api.judge import OutputContract
 
-        if self.llm_judge.score_type == JudgeScoreType.NUMERIC:
+        judge = self._primary_judge()
+        if judge.score_type == JudgeScoreType.NUMERIC:
             return OutputContract(schema_model=_RatingVerdict)
-        return OutputContract(schema_model=_correctness_model(tuple(sorted(self.llm_judge.score_mapping))))
+        return OutputContract(schema_model=_correctness_model(tuple(sorted(judge.score_mapping))))
 
     def build_judge_cases(self, context: 'JudgeContext') -> List['JudgeCase']:
         """One verdict case by default."""
@@ -277,17 +284,18 @@ class LLMJudgeMixin:
     def build_judge_request(
         self,
         case: 'JudgeCase',
-        placement: Any,
-        completed_cases: List['CaseVerdict'],
+        placement: 'Placement',
+        completed_cases: Sequence['CaseVerdict'],
         context: 'JudgeContext',
     ) -> 'JudgeRequest':
         """Render the default correctness case into a single judge message."""
         from evalscope.api.judge import JudgeRequest
         from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 
+        judge = self._primary_judge()
         prompt = self.judge_prompt(context) + case.output_contract.instruction()
         messages: List[Any] = []
-        system = getattr(self.llm_judge, 'system_prompt', None)
+        system = getattr(judge, 'system_prompt', None)
         if system:
             messages.append(ChatMessageSystem(content=system))
         messages.append(ChatMessageUser(content=prompt))
@@ -295,7 +303,7 @@ class LLMJudgeMixin:
 
     def reduce_judge_verdicts(
         self,
-        case_verdicts: List['CaseVerdict'],
+        case_verdicts: Sequence['CaseVerdict'],
         context: 'JudgeContext',
     ) -> 'ReducedVerdict':
         """Fold the default single verdict into ``{judge_metric_name: value}``."""
@@ -303,17 +311,18 @@ class LLMJudgeMixin:
 
         if not case_verdicts:
             return ReducedVerdict()
+        judge = self._primary_judge()
         verdict = case_verdicts[0].value
-        if self.llm_judge.score_type == JudgeScoreType.NUMERIC:
+        if judge.score_type == JudgeScoreType.NUMERIC:
             value = float(verdict.score)
         else:
-            value = float(self.llm_judge.score_mapping[verdict.verdict])
+            value = float(judge.score_mapping[verdict.verdict])
         return ReducedVerdict(value={self.judge_metric_name: value})
 
     def expand_judge_cases(
         self,
         stage: int,
-        completed_cases: List['CaseVerdict'],
+        completed_cases: Sequence['CaseVerdict'],
         context: 'JudgeContext',
     ) -> List['JudgeCase']:
         """No derived cases by default; only staged benchmarks override this."""
@@ -332,12 +341,24 @@ class LLMJudgeMixin:
             metadata={
                 'source': 'llm_judge',
                 'judge_strategy': self.judge_strategy,
-                'model': getattr(self.llm_judge, 'judge_id', self.llm_judge.model_id),
+                'model': self._judge_id(),
                 'non_official_position_swap': self._task_config is not None
                 and self._resolved_position_swap() != self.official_position_swap,
                 **review.metadata,
             },
         )
+
+    def _primary_judge(self) -> LLMJudge:
+        """Return the first configured judge after lazy construction."""
+        judge = self.llm_judge
+        if judge is None:
+            raise RuntimeError('LLM judge scoring requires at least one configured judge model.')
+        return judge
+
+    def _judge_id(self) -> str:
+        """Return the primary judge identifier stored in a sample score."""
+        judge = self._primary_judge()
+        return str(getattr(judge, 'judge_id', None) or judge.model_id)
 
     def fallback_to_rule_score(self, rule_based_score: Score, judge_score: Score) -> Score:
         """Retain rule evidence when a ``JUDGE_DEFAULT`` review is unavailable."""

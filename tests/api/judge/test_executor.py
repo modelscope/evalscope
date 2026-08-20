@@ -88,6 +88,11 @@ def make_executor(responses: Sequence[Any], **config: Any):
     return JudgeExecutor([judge], JudgeExecutorConfig(**config)), judge
 
 
+def test_executor_rejects_an_impossible_judge_quorum():
+    with pytest.raises(ValueError, match='cannot exceed'):
+        JudgeExecutor([ScriptedJudge([YES_REPLY])], JudgeExecutorConfig(min_valid_judges=2))
+
+
 def test_single_request_parses_and_persists_full_io():
     executor, judge = make_executor([YES_REPLY])
 
@@ -291,6 +296,20 @@ def test_missing_repeat_degrades_without_scoring_it_as_zero():
     assert review.value == {'acc': 1.0}
     assert review.status is ScoreStatus.DEGRADED
     assert review.disagreement['numeric']['all_observations']['acc']['range'] == 0.0
+
+
+@pytest.mark.parametrize(
+    ('responses', 'expected'),
+    [([YES_REPLY, NO_REPLY], 1.0), ([NO_REPLY, YES_REPLY], 0.0)],
+)
+def test_repeat_majority_tie_uses_first_valid_observation_and_degrades(responses, expected):
+    executor, _ = make_executor(responses, repeats=2, aggregation='majority_vote')
+
+    review = executor.execute(SimpleAdapter(), {})
+
+    assert review.value == {'acc': expected}
+    assert review.status is ScoreStatus.DEGRADED
+    assert review.metadata['repeat_tie_broken_by_first_observation'] == {'scripted-judge': ['acc']}
 
 
 def test_pairwise_cross_judge_tie_uses_primary_semantic_result():

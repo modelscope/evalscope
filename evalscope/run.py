@@ -144,6 +144,9 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     for dataset_name in task_config.datasets:
         # Create evaluator for each dataset
         benchmark = get_benchmark(dataset_name, task_config)
+        # Validate only on the execution path. ``get_benchmark`` is also a metadata helper and
+        # must not reject a configuration before an evaluation has been requested.
+        benchmark.validate_judge_strategy()
         evaluator = create_evaluator(
             benchmark=benchmark,
             model=model,

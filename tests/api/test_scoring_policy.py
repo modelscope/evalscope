@@ -1,8 +1,4 @@
-"""``scoring_policy`` decides which judge strategies a benchmark can honour.
-
-The check must run at construction time: a JUDGE_ONLY benchmark asked for rule scoring used to
-fail during scoring (after generating samples) or silently report an all-zero result.
-"""
+"""``scoring_policy`` decides which judge strategies a benchmark can honour."""
 import pytest
 
 from evalscope.api.mixin import LLMJudgeMixin
@@ -50,8 +46,9 @@ def test_legacy_llm_judge_default_maps_conservatively():
 def test_judge_only_benchmark_rejects_rule_dependent_strategies(strategy):
     cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': strategy, 'models': JUDGE_ARGS})
 
+    adapter = get_benchmark('simple_qa', cfg)
     with pytest.raises(ValueError, match='no usable rule-based scoring'):
-        get_benchmark('simple_qa', cfg)
+        adapter.validate_judge_strategy()
 
 
 def test_judge_only_benchmark_accepts_llm_and_auto():
@@ -87,14 +84,15 @@ def test_rule_default_benchmark_scores_by_rule_under_auto():
 def test_missing_judge_models_fails_before_generating():
     cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': JudgeStrategy.LLM})
 
+    adapter = get_benchmark('simple_qa', cfg)
     with pytest.raises(ValueError, match='judge.models must be provided'):
-        get_benchmark('simple_qa', cfg)
+        adapter.validate_judge_strategy()
 
 
-def test_validation_can_be_skipped_for_metadata_only_use():
+def test_metadata_construction_never_validates_judge_configuration():
     cfg = TaskConfig(model='m', datasets=['simple_qa'], judge={'strategy': JudgeStrategy.RULE})
 
-    assert get_benchmark('simple_qa', cfg, validate_judge=False) is not None
+    assert get_benchmark('simple_qa', cfg) is not None
 
 
 def test_every_benchmark_declares_a_known_policy():

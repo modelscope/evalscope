@@ -110,7 +110,6 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 class AlpacaEvalAdapter(DefaultDataAdapter):
 
     scoring_policy = ScoringPolicy.JUDGE_ONLY
-    uses_pairwise_outcome = True
     supports_position_swap = True
     official_position_swap = False
 

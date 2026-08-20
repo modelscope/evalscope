@@ -25,7 +25,7 @@ class TestImageEditBenchmark(TestBenchmark):
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'model_task': ModelTask.IMAGE_GENERATION,
             'eval_type': EvalType.IMAGE_EDITING,
-            'eval_batch_size': 1,
+            'eval_batch_size': 5,
             'limit': 5,
             'generation_config': {
                 'true_cfg_scale': 4.0,
@@ -34,7 +34,6 @@ class TestImageEditBenchmark(TestBenchmark):
             },
             'judge': {
                 'strategy': JudgeStrategy.AUTO,
-            'eval_batch_size': 5,
                 'models': {
                 'model_id': 'qwen-plus',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',

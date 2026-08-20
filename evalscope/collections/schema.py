@@ -22,7 +22,7 @@ class DatasetInfo:
         """Load dataset data using the benchmark registry."""
         dataset_args = {self.name: self.args}
         # Metadata/data only; this adapter never scores, so it needs no judge configuration.
-        benchmark_meta = get_benchmark(self.name, config=TaskConfig(dataset_args=dataset_args), validate_judge=False)
+        benchmark_meta = get_benchmark(self.name, config=TaskConfig(dataset_args=dataset_args))
         data_dict = benchmark_meta.load_dataset()
         return data_dict
 

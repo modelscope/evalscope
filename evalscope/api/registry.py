@@ -99,16 +99,13 @@ def register_benchmark(metadata: 'BenchmarkMeta'):
     return register_wrapper
 
 
-def get_benchmark(name: str, config: Optional['TaskConfig'] = None, validate_judge: bool = True) -> 'DataAdapter':
+def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdapter':
     """
     Retrieve a registered benchmark by name.
 
     Args:
         name (str): The name of the benchmark.
         config (Optional['TaskConfig']): The task configuration.
-        validate_judge (bool): Reject a judge configuration the benchmark cannot honour. Pass
-            ``False`` when the adapter is only used to read metadata or load data, never to score.
-
     """
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
@@ -118,14 +115,9 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None, validate_jud
     # Update metadata with dataset-specific configuration
     if config is not None:
         metadata._update(config.dataset_args.get(name, {}))
-    # Return the data adapter initialized with the benchmark metadata
+    # Construction must be side-effect free: callers also use this helper for metadata and docs.
     data_adapter_cls = metadata.data_adapter
-    adapter = data_adapter_cls(benchmark_meta=metadata, task_config=config)
-    # Reject an unhonourable judge config here: this is the only construction path, so the run
-    # fails before a single sample is generated.
-    if validate_judge:
-        adapter.validate_judge_strategy()
-    return adapter
+    return data_adapter_cls(benchmark_meta=metadata, task_config=config)
 
 
 # END: Registry for benchmarks

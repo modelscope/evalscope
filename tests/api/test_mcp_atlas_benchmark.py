@@ -138,9 +138,10 @@ def test_mcp_atlas_registered_under_short_name() -> None:
 
 def test_mcp_atlas_rejects_rule_scoring_before_generating() -> None:
     cfg = TaskConfig(datasets=['mcp_atlas'], judge={'strategy': 'rule'})
+    adapter = get_benchmark('mcp_atlas', cfg)
 
     with pytest.raises(ValueError, match='no usable rule-based scoring'):
-        get_benchmark('mcp_atlas', cfg)
+        adapter.validate_judge_strategy()
 
 
 def test_parse_enabled_tools_accepts_strings_and_objects() -> None:

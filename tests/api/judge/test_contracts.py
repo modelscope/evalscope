@@ -62,6 +62,13 @@ def test_omitted_optional_field_takes_its_default():
     assert GRADE.parse('{"verdict": "A"}').value.reasoning == ''
 
 
+def test_accepts_additional_keys_when_required_keys_exist():
+    result = GRADE.parse('{"verdict": "A", "provider_trace": "kept for audit"}')
+
+    assert result.ok
+    assert result.value.verdict == 'A'
+
+
 # ---------------------------------------------------------------------------
 # Rejected: no readable payload
 # ---------------------------------------------------------------------------
@@ -182,6 +189,7 @@ def test_instruction_lists_the_allowed_verdicts():
     assert '"A" or "B" or "C"' in instruction
     assert '"reasoning"' in instruction
     assert 'single JSON object' in instruction
+    assert 'additional keys are allowed' in instruction
 
 
 def test_instruction_states_the_numeric_bounds():
