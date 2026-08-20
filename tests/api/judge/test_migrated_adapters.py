@@ -1,4 +1,5 @@
 """Smoke tests for migrated Native judge adapters."""
+import pytest
 from typing import Any, List
 
 from evalscope.api.dataset import Sample
@@ -42,6 +43,21 @@ def test_simple_qa_uses_the_contract_and_excludes_bad_json():
     assert score.status is ScoreStatus.DEGRADED
     assert score.value['is_not_attempted'] == 1.0
     assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+@pytest.mark.parametrize(
+    'benchmark_name',
+    ['baby_vision', 'imo_answerbench', 'math_verse', 'minerva_math', 'world_vqa', 'zerobench'],
+)
+def test_generic_pattern_contract_supports_simple_judge_benchmarks(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "A"}'])
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == {'acc': 1.0}
 
 
 def test_arena_hard_swap_is_driven_by_the_executor():

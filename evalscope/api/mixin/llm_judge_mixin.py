@@ -1,6 +1,7 @@
 import threading
-from pydantic import BaseModel, Field
-from typing import TYPE_CHECKING, Any, List, Optional
+from functools import lru_cache
+from pydantic import BaseModel, Field, create_model
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
@@ -23,6 +24,12 @@ class _RatingVerdict(BaseModel):
 
     reasoning: str = ''
     score: float = Field(ge=0.0, le=1.0)
+
+
+@lru_cache(maxsize=None)
+def _correctness_model(labels: Tuple[str, ...]) -> Type[BaseModel]:
+    """Build the JSON schema for the generic pattern-judge verdict."""
+    return create_model('CorrectnessVerdict', reasoning=(str, ''), verdict=(Literal[labels], ...))
 
 
 class LLMJudgeMixin:
@@ -167,6 +174,9 @@ class LLMJudgeMixin:
     official_position_swap: bool = False
     """Whether the benchmark's official protocol judges both placements by default."""
 
+    judge_metric_name: str = 'acc'
+    """Metric key used by the generic single-verdict judge definition."""
+
     @property
     def judge_executor(self) -> 'JudgeExecutor':
         """Lazily build the one executor that owns every judge call for this benchmark."""
@@ -246,8 +256,8 @@ class LLMJudgeMixin:
     def judge_definition(self, context: 'JudgeContext') -> 'JudgeDefinition':
         """Declare this sample's judge review.
 
-        Ordinary adapters return :meth:`JudgeDefinition.labels` or
-        :meth:`JudgeDefinition.numeric`; multi-case benchmarks use ``workflow``.
+        The generic single-verdict contract supports both numeric and pattern judges. Adapters
+        override it only for benchmark-owned labels, metrics, or multi-case workflows.
         """
         from evalscope.api.judge import JudgeDefinition
 
@@ -258,9 +268,23 @@ class LLMJudgeMixin:
             question=context.task_state.input_text,
         )
         if judge.score_type == JudgeScoreType.NUMERIC:
-            return JudgeDefinition.numeric(prompt=prompt, schema_model=_RatingVerdict)
-        raise NotImplementedError(
-            f"Benchmark '{self._benchmark_meta.name}' must implement judge_definition() for pattern judges."
+            return JudgeDefinition.numeric(
+                prompt=prompt,
+                schema_model=_RatingVerdict,
+                metric_name=self.judge_metric_name,
+                system_prompt=judge.system_prompt,
+            )
+        return JudgeDefinition.labels(
+            prompt=prompt,
+            schema_model=_correctness_model(tuple(sorted(judge.score_mapping))),
+            scores={
+                label: {
+                    self.judge_metric_name: score
+                }
+                for label, score in judge.score_mapping.items()
+            },
+            system_prompt=judge.system_prompt,
+            main_score_name=self.judge_metric_name,
         )
 
     def _primary_judge(self) -> LLMJudge:
