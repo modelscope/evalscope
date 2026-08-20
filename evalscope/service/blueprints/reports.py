@@ -12,18 +12,26 @@ import plotly.graph_objects as go
 import shutil
 from datetime import datetime
 from flask import Blueprint, jsonify, request, send_file
+from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
 from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
-from evalscope.report import ReportKey, ReportRef, get_data_frame
+from evalscope.report import ReportKey, ReportRef, get_data_frame, get_report_list
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
     plot_multi_report_radar,
     plot_single_dataset_scores,
     plot_single_report_scores,
     plot_single_report_sunburst,
+)
+from evalscope.service.report_meta_cache import (
+    Fingerprint,
+    build_report_meta_cached,
+    list_etag,
+    prune_report_meta_cache,
+    report_ref_fingerprint,
 )
 from evalscope.utils.data_utils import (
     get_acc_report_df,
@@ -36,6 +44,7 @@ from evalscope.utils.data_utils import (
     load_multi_report_groups,
     load_report_bundle,
     normalize_score,
+    report_model_dir,
     scan_report_refs,
 )
 from evalscope.utils.io_utils import OutputsStructure
@@ -78,7 +87,7 @@ _MEDIA_EXTENSIONS = {
 
 
 @bp_reports.route('/media/file', methods=['GET'])
-def serve_media_file():
+def serve_media_file() -> ResponseReturnValue:
     """Serve a local media file (image / audio / video) via HTTP.
 
     This proxy endpoint allows the browser to load server-side local file
@@ -171,9 +180,13 @@ def _extract_timestamp(ref: ReportRef, root: str) -> str:
 
 
 def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
-    """Load a report and return lightweight metadata for the list endpoint."""
+    """Load a report and return lightweight metadata for the list endpoint.
+
+    Reads only the report JSON files, never the run's YAML config: the list needs
+    none of the config, and requiring it dropped config-less report directories.
+    """
     try:
-        report_list, _, _ = load_report_bundle(root, ref)
+        report_list = get_report_list([report_model_dir(root, ref)])
     except Exception:
         return None
 
@@ -247,9 +260,68 @@ def _refresh_html_report(reports_dir: str) -> None:
 # Endpoints
 # ------------------------------------------------------------------
 
+_SORT_KEYS = {
+    'model': lambda x: x['model_name'].lower(),
+    'dataset': lambda x: x['dataset_name'].lower(),
+    'time': lambda x: x['timestamp'],
+}
+
+
+def _load_report_metas(root: str) -> Tuple[List[dict], List[Tuple[str, Fingerprint]]]:
+    """Load list metadata for every report under ``root``, memoized by fingerprint."""
+    fingerprints: List[Tuple[str, Fingerprint]] = []
+    items: List[dict] = []
+    for ref in scan_report_refs(root):
+        fingerprint = report_ref_fingerprint(root, ref)
+        fingerprints.append((ref.key, fingerprint))
+        meta = build_report_meta_cached(root, ref, fingerprint, _build_report_meta)
+        if meta is not None:
+            items.append(meta)
+    prune_report_meta_cache(root, (ref_key for ref_key, _ in fingerprints))
+    return items, fingerprints
+
+
+def _apply_report_filters(items: List[dict], search: str, models_filter: str, datasets_filter: str) -> List[dict]:
+    """Narrow the metadata list by fuzzy search, model set and dataset set."""
+    if search:
+        items = [
+            it for it in items if search in it['model_name'].lower() or search in it['dataset_name'].lower()
+            or search in it['dataset_pretty_name'].lower()
+        ]
+    if models_filter:
+        model_set = {m.strip().lower() for m in models_filter.split(';') if m.strip()}
+        items = [it for it in items if it['model_name'].lower() in model_set]
+    if datasets_filter:
+        ds_set = {d.strip().lower() for d in datasets_filter.split(';') if d.strip()}
+        items = [it for it in items if any(d.lower() in ds_set for d in it['_datasets'])]
+    return items
+
+
+def _list_response(
+    page_items: List[dict], total: int, page: int, page_size: int, available_models: List[str],
+    available_datasets: List[str], fingerprints: List[Tuple[str, Fingerprint]], query_parts: List[str]
+) -> ResponseReturnValue:
+    """Serialize the page with an ETag so unchanged responses revalidate as 304."""
+    # Project internal keys into fresh dicts: meta objects are shared with the
+    # cache, so mutating them here would corrupt later requests.
+    response_reports = [{k: v for k, v in it.items() if k != '_datasets'} for it in page_items]
+    resp = jsonify({
+        'reports': response_reports,
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'filters': {
+            'available_models': available_models,
+            'available_datasets': available_datasets,
+        },
+    })
+    resp.set_etag(list_etag(fingerprints, query_parts))
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp.make_conditional(request)
+
 
 @bp_reports.route('', methods=['GET'])
-def list_reports():
+def list_reports() -> ResponseReturnValue:
     """Return a filterable, paginated list of reports with metadata.
 
     Query params:
@@ -262,90 +334,58 @@ def list_reports():
         page       (int):   page number (default: 1)
         page_size  (int):   items per page (default: 20)
     """
+    root = _root_path()
+    if not root or not os.path.isdir(root):
+        return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
+
+    removed_score_params = sorted({'score_min', 'score_max'} & set(request.args))
+    if removed_score_params:
+        return jsonify({'error': f"unsupported query parameters: {', '.join(removed_score_params)}"}), 400
+    sort_by = request.args.get('sort_by', 'time')
+    sort_order = request.args.get('sort_order', 'desc')
+    if sort_by not in _SORT_KEYS:
+        return jsonify({'error': f'unsupported sort_by: {sort_by}'}), 400
+    if sort_order not in {'asc', 'desc'}:
+        return jsonify({'error': f'unsupported sort_order: {sort_order}'}), 400
+
     try:
-        root = _root_path()
-        if not root or not os.path.isdir(root):
-            return jsonify({'error': 'root_path is required and must be an existing directory'}), 400
+        items, fingerprints = _load_report_metas(root)
 
-        removed_score_params = sorted({'score_min', 'score_max'} & set(request.args))
-        sort_by = request.args.get('sort_by', 'time')
-        sort_order = request.args.get('sort_order', 'desc')
-        if removed_score_params:
-            return jsonify({'error': f"unsupported query parameters: {', '.join(removed_score_params)}"}), 400
-        if sort_by not in {'model', 'dataset', 'time'}:
-            return jsonify({'error': f'unsupported sort_by: {sort_by}'}), 400
-        if sort_order not in {'asc', 'desc'}:
-            return jsonify({'error': f'unsupported sort_order: {sort_order}'}), 400
-
-        # --- Scan & load metadata ---
-        items = []
-        for ref in scan_report_refs(root):
-            meta = _build_report_meta(ref, root)
-            if meta is not None:
-                items.append(meta)
-
-        # Collect available filter values before filtering
+        # Filter values are offered from the unfiltered set.
         available_models = sorted({it['model_name'] for it in items})
         available_datasets = sorted({ds for it in items for ds in it['_datasets']})
 
-        # --- Filters ---
         search = request.args.get('search', '').strip().lower()
-        if search:
-            items = [
-                it for it in items if search in it['model_name'].lower() or search in it['dataset_name'].lower()
-                or search in it['dataset_pretty_name'].lower()
-            ]
-
         models_filter = request.args.get('models', '').strip()
-        if models_filter:
-            model_set = {m.strip().lower() for m in models_filter.split(';') if m.strip()}
-            items = [it for it in items if it['model_name'].lower() in model_set]
-
         datasets_filter = request.args.get('datasets', '').strip()
-        if datasets_filter:
-            ds_set = {d.strip().lower() for d in datasets_filter.split(';') if d.strip()}
-            items = [it for it in items if any(d.lower() in ds_set for d in it['_datasets'])]
+        items = _apply_report_filters(items, search, models_filter, datasets_filter)
 
-        # --- Sort ---
-        reverse = sort_order == 'desc'
+        items.sort(key=_SORT_KEYS[sort_by], reverse=sort_order == 'desc')
 
-        sort_key_map = {
-            'model': lambda x: x['model_name'].lower(),
-            'dataset': lambda x: x['dataset_name'].lower(),
-            'time': lambda x: x['timestamp'],
-        }
-        key_fn = sort_key_map[sort_by]
-        items.sort(key=key_fn, reverse=reverse)
-
-        # --- Paginate ---
         page = max(1, request.args.get('page', 1, type=int))
         page_size = max(1, min(100, request.args.get('page_size', 20, type=int)))
         total = len(items)
-        start = (page - 1) * page_size
-        page_items = items[start:start + page_size]
+        page_items = items[(page - 1) * page_size:(page - 1) * page_size + page_size]
 
-        # Strip internal keys before returning
-        for it in page_items:
-            it.pop('_datasets', None)
-
-        return jsonify({
-            'reports': page_items,
-            'total': total,
-            'page': page,
-            'page_size': page_size,
-            'filters': {
-                'available_models': available_models,
-                'available_datasets': available_datasets,
-            },
-        }), 200
-
-    except Exception as e:
-        logger.error(f'Failed to list reports: {e}')
-        return jsonify({'error': str(e)}), 500
+        query_parts = [
+            f'search={search}',
+            f'models={models_filter}',
+            f'datasets={datasets_filter}',
+            f'sort_by={sort_by}',
+            f'sort_order={sort_order}',
+            f'page={page}',
+            f'page_size={page_size}',
+        ]
+        return _list_response(
+            page_items, total, page, page_size, available_models, available_datasets, fingerprints, query_parts
+        )
+    except Exception:
+        logger.error('Failed to list reports', exc_info=True)
+        return jsonify({'error': 'Failed to list reports'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>', methods=['DELETE'])
-def delete_report(run_id: str, model_id: str):
+def delete_report(run_id: str, model_id: str) -> ResponseReturnValue:
     """Delete one evaluation report (its per-model artefacts) from disk.
 
     Removes ``<run_id>/{reports,predictions,reviews}/<model_id>``. When no other
@@ -394,13 +434,13 @@ def delete_report(run_id: str, model_id: str):
             _refresh_html_report(reports_dir)
         logger.info(f'Deleted eval report {ref.key} under {run_dir}')
         return jsonify({'success': True, 'run_id': ref.run_id, 'model_id': ref.model_id}), 200
-    except Exception as e:
-        logger.error(f'Failed to delete report {ref.key}: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error(f'Failed to delete report {ref.key}', exc_info=True)
+        return jsonify({'error': 'Failed to delete report'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>', methods=['GET'])
-def load_report(run_id: str, model_id: str):
+def load_report(run_id: str, model_id: str) -> ResponseReturnValue:
     """Load one model report of one run.
 
     Query params:
@@ -421,13 +461,13 @@ def load_report(run_id: str, model_id: str):
     except FileNotFoundError as e:
         logger.warning(f'Report {ref.key} not found: {e}')
         return jsonify({'error': f'Report not found: {ref.key}'}), 404
-    except Exception as e:
-        logger.error(f'Failed to load report {ref.key}: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error(f'Failed to load report {ref.key}', exc_info=True)
+        return jsonify({'error': 'Failed to load report'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>/table', methods=['GET'])
-def get_dataframe(run_id: str, model_id: str):
+def get_dataframe(run_id: str, model_id: str) -> ResponseReturnValue:
     """Get report data as a flat JSON table.
 
     Query params:
@@ -462,13 +502,13 @@ def get_dataframe(run_id: str, model_id: str):
             'columns': list(df.columns),
             'data': _df_to_records(df),
         }), 200
-    except Exception as e:
-        logger.error(f'Failed to get dataframe: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to get report table', exc_info=True)
+        return jsonify({'error': 'Failed to get report table'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>/predictions', methods=['GET'])
-def get_predictions(run_id: str, model_id: str):
+def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
     """Get model predictions for a given subset.
 
     Query params:
@@ -492,13 +532,13 @@ def get_predictions(run_id: str, model_id: str):
         return jsonify({
             'predictions': _df_to_records(df),
         }), 200
-    except Exception as e:
-        logger.error(f'Failed to get predictions: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to get predictions', exc_info=True)
+        return jsonify({'error': 'Failed to get predictions'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>/analysis', methods=['GET'])
-def get_analysis(run_id: str, model_id: str):
+def get_analysis(run_id: str, model_id: str) -> ResponseReturnValue:
     """Get the AI analysis text for a dataset.
 
     Query params:
@@ -518,13 +558,13 @@ def get_analysis(run_id: str, model_id: str):
         report_list, _, _ = load_report_bundle(_root_path(), ref)
         analysis = get_report_analysis(report_list, dataset_name)
         return jsonify({'analysis': analysis}), 200
-    except Exception as e:
-        logger.error(f'Failed to get analysis: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to get analysis', exc_info=True)
+        return jsonify({'error': 'Failed to get analysis'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/html', methods=['GET'])
-def get_html_report(run_id: str):
+def get_html_report(run_id: str) -> ResponseReturnValue:
     """Serve the generated HTML report of a run.
 
     The HTML report covers every model of the run, so it is addressed by run alone.
@@ -549,9 +589,9 @@ def get_html_report(run_id: str):
             }), 404
 
         return send_file(report_html, mimetype='text/html')
-    except Exception as e:
-        logger.error(f'Failed to get HTML report: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to get HTML report', exc_info=True)
+        return jsonify({'error': 'Failed to get HTML report'}), 500
 
 
 def _render_chart_html(fig: Optional[go.Figure]) -> Tuple[str, int, dict]:
@@ -569,7 +609,7 @@ def _render_chart_html(fig: Optional[go.Figure]) -> Tuple[str, int, dict]:
 
 
 @bp_reports.route('/charts/<chart_type>', methods=['GET'])
-def get_compare_chart(chart_type: str):
+def get_compare_chart(chart_type: str) -> ResponseReturnValue:
     """Generate a multi-report comparison chart as standalone HTML.
 
     Query params:
@@ -621,13 +661,13 @@ def get_compare_chart(chart_type: str):
                 plot_bgcolor='rgba(0,0,0,0)',
             )
         return _render_chart_html(fig)
-    except Exception as e:
-        logger.error(f'Failed to generate comparison chart: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to generate comparison chart', exc_info=True)
+        return jsonify({'error': 'Failed to generate comparison chart'}), 500
 
 
 @bp_reports.route('/runs/<run_id>/models/<model_id>/charts/<chart_type>', methods=['GET'])
-def get_chart(run_id: str, model_id: str, chart_type: str):
+def get_chart(run_id: str, model_id: str, chart_type: str) -> ResponseReturnValue:
     """Generate a single-report chart as standalone HTML.
 
     Path params:
@@ -688,6 +728,6 @@ def get_chart(run_id: str, model_id: str, chart_type: str):
                 return jsonify({'error': f'Unknown chart type: {chart_type}'}), 400
 
         return _render_chart_html(fig)
-    except Exception as e:
-        logger.error(f'Failed to generate chart: {e}')
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.error('Failed to generate chart', exc_info=True)
+        return jsonify({'error': 'Failed to generate chart'}), 500
