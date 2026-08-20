@@ -4,8 +4,8 @@ import copy
 import json
 import os
 from argparse import Namespace
-from pydantic import Field, SecretStr, field_validator, model_validator
-from typing import Annotated, Any, Dict, List, Optional, Union
+from pydantic import ConfigDict, Field, SecretStr, field_validator, model_validator
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
@@ -109,6 +109,93 @@ class SandboxTaskConfig(BaseArgument):
     pool_size: Optional[int] = None
     """Warm-pool size for pooled execution.  Defaults to ``eval_batch_size``
     when ``None``."""
+
+
+class JudgeModelConfig(BaseArgument):
+    """Transport and identity for one independently weighted judge model.
+
+    Prompt and verdict semantics belong to :class:`JudgeContractConfig`, shared by every
+    configured judge.  Letting model entries carry those fields made a multi-judge run compare
+    incomparable answers while appearing to aggregate one metric.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid', arbitrary_types_allowed=True, protected_namespaces=(), validate_default=True
+    )
+
+    model_id: str
+    judge_id: Optional[str] = None
+    api_key: Optional[SecretStr] = None
+    api_url: Optional[str] = None
+    eval_type: Optional[str] = None
+    model_args: Dict[str, Any] = Field(default_factory=dict)
+    generation_config: Dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator('model_args', mode='before')
+    @classmethod
+    def _secretize_model_args(cls, value: Any) -> Any:
+        return _secretize_api_keys(value)
+
+
+class JudgeContractConfig(BaseArgument):
+    """Shared semantics for the generic Native Judge contract.
+
+    Custom benchmark contracts keep their official prompt and schema in the adapter; these
+    fields only configure the generic single-verdict mixin.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid', arbitrary_types_allowed=True, protected_namespaces=(), validate_default=True
+    )
+
+    system_prompt: Optional[str] = None
+    prompt_template: Optional[str] = None
+    score_mapping: Optional[Dict[str, float]] = None
+    score_type: Literal['pattern', 'numeric'] = 'pattern'
+
+
+class JudgeConfig(BaseArgument):
+    """Typed configuration for Native LLM judging."""
+
+    model_config = ConfigDict(
+        extra='forbid', arbitrary_types_allowed=True, protected_namespaces=(), validate_default=True
+    )
+
+    strategy: Literal['auto', 'rule', 'llm', 'llm_recall'] = JudgeStrategy.AUTO
+    models: List[JudgeModelConfig] = Field(default_factory=list)
+    contract: JudgeContractConfig = Field(default_factory=JudgeContractConfig)
+    repeats: int = Field(default=1, ge=1)
+    position_swap: Literal['auto', 'on', 'off'] = 'auto'
+    aggregation: Literal['mean', 'median', 'majority_vote'] = 'mean'
+    min_valid_judges: int = Field(default=1, ge=1)
+
+    @model_validator(mode='before')
+    @classmethod
+    def _normalize_models(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        values = dict(data)
+        if isinstance(values.get('models'), dict):
+            values['models'] = [values['models']]
+        return values
+
+    @model_validator(mode='after')
+    def _validate_models(self) -> 'JudgeConfig':
+        seen = set()
+        model_ids = [model.model_id for model in self.models]
+        for model in self.models:
+            if model.judge_id is None:
+                if model_ids.count(model.model_id) != 1:
+                    raise ValueError(
+                        f'Judge model_id {model.model_id!r} is configured more than once; each entry needs judge_id.'
+                    )
+                model.judge_id = model.model_id
+            if model.judge_id in seen:
+                raise ValueError(f'duplicate judge_id: {model.judge_id!r}')
+            seen.add(model.judge_id)
+        if self.min_valid_judges > len(self.models) and self.models:
+            raise ValueError('judge.min_valid_judges cannot exceed the configured judge model count.')
+        return self
 
 
 class TaskConfig(BaseArgument):
@@ -218,20 +305,9 @@ class TaskConfig(BaseArgument):
     """[Deprecated] Use `generation_config.stream` instead. Will be removed in v2.0.0.
     When set, value is forwarded to `generation_config.stream` with a deprecation warning."""
 
-    # LLMJudge arguments
-    judge_strategy: str = JudgeStrategy.AUTO
-    """How to score model outputs. One of:
-    - 'auto': follow the benchmark's default (LLM judge only if the benchmark needs one).
-    - 'rule': force rule-based scoring; never invoke an LLM judge.
-    - 'llm': force LLM judge for every sample.
-    - 'llm_recall': run rule-based scoring first, then pass the rule score to the LLM
-       judge to produce the final score (useful when LLM should refine/recall rule misses)."""
-
-    judge_worker_num: Optional[int] = None
-    """[Deprecated] Use `eval_batch_size` instead. Will be removed in v2.0.0."""
-
-    judge_model_args: Optional[Dict] = Field(default_factory=dict)
-    """Additional arguments for the judge model configuration."""
+    # Native judge configuration
+    judge: JudgeConfig = Field(default_factory=JudgeConfig)
+    """Typed configuration for Native LLM judging."""
 
     analysis_report: bool = False
     """Whether to generate detailed analysis reports after evaluation."""
@@ -335,10 +411,40 @@ class TaskConfig(BaseArgument):
             f'got {type(v).__name__}.'
         )
 
-    @field_validator('judge_model_args', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def _validate_judge_model_args(cls, v: Any) -> Any:
-        return _secretize_api_keys(v)
+    def _migrate_legacy_judge_config(cls, data: Any) -> Any:
+        """Convert the legacy single-judge input once, at the public boundary."""
+        if not isinstance(data, dict):
+            return data
+        values = dict(data)
+        if 'judge_worker_num' in values:
+            raise ValueError('`judge_worker_num` has been removed; use `eval_batch_size`.')
+        legacy_keys = {'judge_strategy', 'judge_model_args'} & set(values)
+        if 'judge' in values and legacy_keys:
+            raise ValueError('Use either `judge` or legacy judge_strategy/judge_model_args, not both.')
+        if legacy_keys:
+            legacy_args = values.pop('judge_model_args', None)
+            if isinstance(legacy_args, dict):
+                legacy_args = dict(legacy_args)
+            strategy = values.pop('judge_strategy', JudgeStrategy.AUTO)
+            if legacy_args and 'score_pattern' in legacy_args:
+                raise ValueError(
+                    '`judge_model_args.score_pattern` is not supported by the JSON judge contract; '
+                    'use `judge.contract.score_mapping`.'
+                )
+            deprecated_warning(
+                logger,
+                '`judge_strategy` and `judge_model_args` are deprecated; use the typed `judge` configuration.',
+            )
+            semantic_keys = {'system_prompt', 'prompt_template', 'score_mapping', 'score_type'}
+            contract = {key: legacy_args.pop(key) for key in semantic_keys if legacy_args and key in legacy_args}
+            values['judge'] = {
+                'strategy': strategy,
+                'models': [legacy_args] if legacy_args else [],
+                'contract': contract,
+            }
+        return values
 
     @field_validator('sandbox', mode='before')
     @classmethod
@@ -354,13 +460,6 @@ class TaskConfig(BaseArgument):
         self._init_default_model_args()
         self._init_default_sandbox_config()
         self._parse_rag_eval_config()
-
-        # Handle deprecated judge_worker_num -> eval_batch_size
-        if self.judge_worker_num is not None:
-            deprecated_warning(
-                logger, 'The `judge_worker_num` parameter is deprecated and will be removed in v2.0.0. '
-                'Use `eval_batch_size` instead.'
-            )
 
         return self
 
@@ -553,6 +652,8 @@ class TaskConfig(BaseArgument):
             merged['sandbox'] = self._coerce_sandbox_config(merged['sandbox'])
         if isinstance(merged.get('agent_config'), dict):
             merged['agent_config'] = self._coerce_agent_config(merged['agent_config'])
+        if isinstance(merged.get('judge'), dict):
+            merged['judge'] = JudgeConfig.model_validate(merged['judge'])
         for key, value in merged.items():
             setattr(self, key, value)
 

@@ -1,6 +1,7 @@
 # flake8: noqa: E501
 import json
 import os
+from pydantic import BaseModel, Field, create_model
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -11,10 +12,11 @@ from evalscope.api.dataset import (
     resolve_snapshot_or_local_path,
 )
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 from .utils import (
     ANSWER_JUDGE_PROMPT,
@@ -25,12 +27,27 @@ from .utils import (
     extract_boxed_answers,
     is_chinese_exam,
     normalize_marking,
-    parse_judge_correct,
-    parse_judge_points,
     strip_boxed,
 )
 
 logger = get_logger()
+
+
+class AnswerVerdict(BaseModel):
+    """The judge's [Correct]/[Incorrect] answer-level verdict, as JSON."""
+    correct: bool
+
+
+ANSWER_CONTRACT = OutputContract(schema_model=AnswerVerdict)
+
+
+def _step_grade_model(max_points: float):
+    """Per-criterion schema whose upper bound matches the criterion's stated allocation."""
+    return create_model(
+        'StepGrade',
+        awarded=(float, Field(ge=0.0, le=float(max_points))),
+    )
+
 
 # One subset per Olympiad exam paper, keyed by the record ``source`` field.
 SUBSET_LIST = [
@@ -78,8 +95,8 @@ range from text-only problems to diagram-based problems.
 
 ## Evaluation Notes
 
-- Requires an LLM judge: run with `judge_strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
-  and provide `judge_model_args`. `judge_strategy='rule'` is not supported.
+- Requires an LLM judge: set `judge.strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
+  and provide `judge.models`. `judge.strategy='rule'` is not supported.
 - Primary metric: `accuracy`, the per-problem awarded/attainable point ratio in `[0, 1]`, aggregated by mean per subset.
   For step-level problems the attainable maximum is the sum of the marking criteria; for problems with several
   official schemes (EuPhO, NBPhO) the highest-scoring scheme is used, matching the paper.
@@ -115,7 +132,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
     without one are graded by matching their boxed final answers.
     """
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -208,36 +225,190 @@ class HiPhOAdapter(VisionLanguageAdapter):
         with open(path, 'rb') as f:
             return self._image_bytes_to_base64(f.read(), default_format=ext)
 
-    def match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        raise ValueError(
-            'HiPhO is graded against official marking schemes and requires an LLM judge. '
-            "Set judge_strategy='llm' (or 'auto') and provide judge_model_args."
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        immediate, skip_reason = self._rule_score(
+            context.original_prediction, context.filtered_prediction, context.reference, context.task_state
+        )
+        if immediate is not None:
+            assert skip_reason is not None
+            return JudgeDefinition.skip(immediate, reason=skip_reason)
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
+            main_score_name='acc',
+            finalize=self._finalize_score
         )
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
+    def _rule_score(self, original_prediction: str, filtered_prediction: str, reference: str,
+                    task_state: TaskState) -> Tuple[Optional[Score], Optional[str]]:
+        # Both flows short-circuit before touching the judge when there is nothing to grade.
         metadata = task_state.metadata or {}
-        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
-
         if metadata.get('marking'):
-            acc, detail = self._score_step_level(original_prediction, metadata)
+            if not any(scheme for scheme in metadata['marking']):
+                return (
+                    self._empty_score(filtered_prediction, original_prediction, task_state, 'no marking criteria'),
+                    'no_marking_criteria',
+                )
         else:
-            acc, detail = self._score_answer_level(original_prediction, metadata)
-
-        score.value = {'acc': acc}
-        score.main_score_name = 'acc'
-        score.explanation = detail
-        score.metadata = {
-            'source': 'hipho_llm_judge',
-            'grading': 'step_level' if metadata.get('marking') else 'answer_level',
-            'judge_model': self.llm_judge.model_id,
-        }
-        # Surface the official answer in the review Gold column, which is otherwise
-        # empty because grading is judge-based rather than reference-based.
+            if not [strip_boxed(a) for a in metadata['answers']]:
+                return (
+                    self._empty_score(filtered_prediction, original_prediction, task_state, 'no ground-truth answer'),
+                    'missing_ground_truth_answer',
+                )
         task_state.target = self._format_target(metadata)
+        return None, None
+
+    def _empty_score(self, filtered: str, original: str, task_state: TaskState, reason: str) -> Score:
+        task_state.target = self._format_target(task_state.metadata or {})
+        return Score(
+            extracted_prediction=filtered,
+            prediction=original,
+            value={'acc': 0.0},
+            main_score_name='acc',
+            explanation=reason,
+        )
+
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        metadata = context.task_state.metadata or {}
+        if metadata.get('marking'):
+            return self._build_step_cases(metadata)
+        return self._build_answer_cases(metadata, context.original_prediction)
+
+    def _build_step_cases(self, metadata: Dict[str, Any]) -> List[JudgeCase]:
+        cases: List[JudgeCase] = []
+        for scheme_idx, scheme in enumerate(metadata['marking']):
+            for crit_idx, criterion in enumerate(scheme):
+                max_points = criterion_points(criterion)
+                if max_points <= 0:
+                    # A criterion with no parseable point allocation cannot be judged; count it as
+                    # zero, as the previous evaluator did, without spending a judge call.
+                    continue
+                cases.append(
+                    JudgeCase(
+                        case_id=f'step:{scheme_idx}:{crit_idx}',
+                        output_contract=OutputContract(schema_model=_step_grade_model(max_points)),
+                        metadata={
+                            'kind': 'step',
+                            'scheme_idx': scheme_idx,
+                            'criterion': criterion,
+                            'max_points': max_points,
+                        },
+                    )
+                )
+        return cases
+
+    def _build_answer_cases(self, metadata: Dict[str, Any], prediction: str) -> List[JudgeCase]:
+        from evalscope.metrics.math import math_equal
+
+        gold_answers = [strip_boxed(a) for a in metadata['answers']]
+        pred_boxed = extract_boxed_answers(prediction)
+        aligned = pred_boxed[-len(gold_answers):] if pred_boxed else []
+        cases: List[JudgeCase] = []
+        for idx, gold in enumerate(gold_answers):
+            pred = aligned[idx] if idx < len(aligned) else ''
+            # Rule check first: only ambiguous cases go to the judge, mirroring the old flow.
+            if pred and math_equal(pred, gold):
+                continue
+            if not pred:
+                continue
+            cases.append(
+                JudgeCase(
+                    case_id=f'answer:{idx}',
+                    output_contract=ANSWER_CONTRACT,
+                    metadata={
+                        'kind': 'answer',
+                        'answer_idx': idx,
+                        'gold': gold,
+                        'pred': pred,
+                    },
+                )
+            )
+        return cases
+
+    def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        metadata = context.task_state.metadata or {}
+        if case.metadata['kind'] == 'step':
+            prompt = STEP_JUDGE_PROMPT.format(
+                question=metadata['question'],
+                prediction=context.original_prediction,
+                criterion=case.metadata['criterion'],
+            )
+        else:
+            prompt = ANSWER_JUDGE_PROMPT.format(
+                question=metadata['question'],
+                given_answer=case.metadata['pred'],
+                ground_truth=case.metadata['gold'],
+            )
+        prompt += case.output_contract.instruction()
+        return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+    def _reduce_verdicts(self, case_verdicts, context) -> ReducedVerdict:
+        metadata = context.task_state.metadata or {}
+        if metadata.get('marking'):
+            return self._reduce_step(case_verdicts, metadata)
+        return self._reduce_answer(case_verdicts, metadata, context.original_prediction)
+
+    def _reduce_step(self, case_verdicts, metadata: Dict[str, Any]) -> ReducedVerdict:
+        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+        best_ratio = 0.0
+        best_detail = ''
+        for scheme_idx, scheme in enumerate(metadata['marking']):
+            awarded = 0.0
+            attainable = 0.0
+            lines: List[str] = []
+            for crit_idx, criterion in enumerate(scheme):
+                max_points = criterion_points(criterion)
+                if max_points <= 0:
+                    continue
+                attainable += max_points
+                verdict = verdicts_by_case.get(f'step:{scheme_idx}:{crit_idx}')
+                # `Field(le=max_points)` bounds the judge's number to the criterion's allocation.
+                points = float(verdict.value.awarded) if verdict is not None else 0.0
+                awarded += points
+                lines.append(f'{points:g}/{max_points:g}')
+            if attainable <= 0:
+                continue
+            ratio = awarded / attainable
+            if ratio >= best_ratio:
+                best_ratio = ratio
+                best_detail = f'scheme {scheme_idx}: {awarded:g}/{attainable:g} [' + ', '.join(lines) + ']'
+        return ReducedVerdict(
+            value={'acc': best_ratio},
+            metadata={
+                'grading': 'step_level',
+                'detail': best_detail
+            },
+        )
+
+    def _reduce_answer(self, case_verdicts, metadata: Dict[str, Any], prediction: str) -> ReducedVerdict:
+        from evalscope.metrics.math import math_equal
+
+        gold_answers = [strip_boxed(a) for a in metadata['answers']]
+        pred_boxed = extract_boxed_answers(prediction)
+        aligned = pred_boxed[-len(gold_answers):] if pred_boxed else []
+        verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
+        correct = 0
+        lines: List[str] = []
+        for idx, gold in enumerate(gold_answers):
+            pred = aligned[idx] if idx < len(aligned) else ''
+            if pred and math_equal(pred, gold):
+                hit = True
+            else:
+                verdict = verdicts_by_case.get(f'answer:{idx}')
+                hit = bool(verdict) and verdict.value.correct
+            correct += int(hit)
+            lines.append(f'{"✓" if hit else "✗"}({pred or "∅"}|{gold})')
+        return ReducedVerdict(
+            value={'acc': correct / len(gold_answers) if gold_answers else 0.0},
+            metadata={
+                'grading': 'answer_level',
+                'detail': ' '.join(lines)
+            },
+        )
+
+    def _finalize_score(self, score: Score, review, context) -> Score:
+        score.explanation = review.metadata.get('detail', '')
         return score
 
     @staticmethod
@@ -249,61 +420,3 @@ class HiPhOAdapter(VisionLanguageAdapter):
         # Open-ended problems ship no reference answer, only a marking scheme.
         criteria = sum(len(scheme) for scheme in metadata['marking'])
         return f'graded on {criteria} marking criteria'
-
-    def _score_step_level(self, prediction: str, metadata: Dict[str, Any]) -> Tuple[float, str]:
-        """Grade every criterion of each official scheme and keep the best scheme."""
-        question = metadata['question']
-        best_ratio = 0.0
-        best_detail = ''
-        for scheme_idx, scheme in enumerate(metadata['marking']):
-            awarded = 0.0
-            attainable = 0.0
-            lines: List[str] = []
-            for criterion in scheme:
-                max_points = criterion_points(criterion)
-                attainable += max_points
-                prompt = STEP_JUDGE_PROMPT.format(question=question, prediction=prediction, criterion=criterion)
-                response = self.llm_judge.judge(prompt)
-                points = parse_judge_points(response, max_points)
-                awarded += points
-                lines.append(f'{points:g}/{max_points:g}')
-            if attainable <= 0:
-                # No criterion stated a point allocation, so the scheme cannot be
-                # graded. Warn instead of silently reporting a zero score.
-                logger.warning(
-                    f'HiPhO sample {metadata["id"]} scheme {scheme_idx} has no parseable point '
-                    f'allocation in its marking criteria; scoring it as 0.'
-                )
-                continue
-            ratio = awarded / attainable
-            if ratio >= best_ratio:
-                best_ratio = ratio
-                best_detail = f'scheme {scheme_idx}: {awarded:g}/{attainable:g} [' + ', '.join(lines) + ']'
-        return best_ratio, best_detail
-
-    def _score_answer_level(self, prediction: str, metadata: Dict[str, Any]) -> Tuple[float, str]:
-        """Match each boxed final answer against the ground truth (rule first, judge fallback)."""
-        from evalscope.metrics.math import math_equal
-
-        gold_answers = [strip_boxed(a) for a in metadata['answers']]
-        if not gold_answers:
-            return 0.0, 'no ground-truth answer'
-
-        pred_boxed = extract_boxed_answers(prediction)
-        # The final answers correspond to the trailing boxed expressions, aligned
-        # in order with the ground-truth sub-answers.
-        aligned = pred_boxed[-len(gold_answers):] if pred_boxed else []
-
-        correct = 0
-        lines: List[str] = []
-        for idx, gold in enumerate(gold_answers):
-            pred = aligned[idx] if idx < len(aligned) else ''
-            hit = bool(pred) and (math_equal(pred, gold) or self._judge_answer(metadata, pred, gold))
-            correct += int(hit)
-            lines.append(f'{"✓" if hit else "✗"}({pred or "∅"}|{gold})')
-        return correct / len(gold_answers), ' '.join(lines)
-
-    def _judge_answer(self, metadata: Dict[str, Any], prediction: str, gold: str) -> bool:
-        """Fall back to the LLM judge for answer equivalence when rules do not match."""
-        prompt = ANSWER_JUDGE_PROMPT.format(question=metadata['question'], given_answer=prediction, ground_truth=gold)
-        return parse_judge_correct(self.llm_judge.judge(prompt))

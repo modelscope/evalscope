@@ -9,6 +9,7 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore, Score
+from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.benchmarks.mcp_atlas.mcp_atlas_adapter import MCPAtlasAdapter
@@ -19,11 +20,10 @@ from evalscope.benchmarks.mcp_atlas.utils import (
     extract_required_servers,
     is_transport_error,
     mcp_tool_to_tool_info,
-    parse_claim_judge_response,
     parse_enabled_tools,
 )
 from evalscope.config import TaskConfig
-from evalscope.constants import HubType
+from evalscope.constants import HubType, ScoreStatus
 
 
 class FakeClient:
@@ -67,18 +67,20 @@ class FakeClient:
 
 class PromptJudge:
     model_id = 'judge-model'
+    judge_id = 'judge-model'
 
-    def judge(self, prompt: str) -> str:
+    def generate(self, messages: Any) -> ModelOutput:
+        text = messages[-1].content if messages else ''
         outcome = 'not_fulfilled'
-        if 'claim one' in prompt:
+        if 'claim one' in text:
             outcome = 'fulfilled'
-        elif 'claim two' in prompt:
+        elif 'claim two' in text:
             outcome = 'partially_fulfilled'
-        return json.dumps({
+        return ModelOutput.from_content(self.model_id, json.dumps({
             'coverage_outcome': outcome,
             'justification': outcome,
             'confidence_level': 0.9,
-        })
+        }))
 
 
 def make_adapter(limit: Any = None, local_path: str = '', **extra_params: Any) -> MCPAtlasAdapter:
@@ -126,12 +128,20 @@ def write_rows(path: Path, rows: List[Dict[str, Any]]) -> None:
 
 
 def test_mcp_atlas_registered_under_short_name() -> None:
-    cfg = TaskConfig(datasets=['mcp_atlas'])
+    cfg = TaskConfig(datasets=['mcp_atlas'], judge={'models': {'model_id': 'judge'}})
 
     adapter = get_benchmark('mcp_atlas', cfg)
 
     assert isinstance(adapter, MCPAtlasAdapter)
     assert adapter.name == 'mcp_atlas'
+
+
+def test_mcp_atlas_rejects_rule_scoring_before_generating() -> None:
+    cfg = TaskConfig(datasets=['mcp_atlas'], judge={'strategy': 'rule'})
+    adapter = get_benchmark('mcp_atlas', cfg)
+
+    with pytest.raises(ValueError, match='no usable rule-based scoring'):
+        adapter.validate_judge_strategy()
 
 
 def test_parse_enabled_tools_accepts_strings_and_objects() -> None:
@@ -495,7 +505,7 @@ def test_build_tools_short_circuits_failed_server() -> None:
     }]
 
 
-def test_llm_match_score_computes_claim_coverage() -> None:
+def test_claim_coverage_averages_per_claim_verdicts() -> None:
     adapter = make_adapter(pass_threshold=0.75)
     adapter.llm_judge = PromptJudge()
     sample = Sample(
@@ -503,63 +513,44 @@ def test_llm_match_score_computes_claim_coverage() -> None:
         target=json.dumps(['claim one', 'claim two', 'claim three']),
         id=0,
     )
-    state = TaskState(model='mock', sample=sample, completed=True)
-
-    score = adapter.llm_match_score(
-        original_prediction='answer',
-        filtered_prediction='answer',
-        reference=sample.target,
-        task_state=state,
+    state = TaskState(
+        model='mock',
+        sample=sample,
+        output=ModelOutput.from_content(model='mock', content='answer'),
+        completed=True,
     )
 
+    score = adapter.calculate_metrics(state).score
+
+    # fulfilled(1.0) + partially(0.5) + not(0.0) over 3 claims = 0.5
     assert score.value['coverage_score'] == pytest.approx(0.5)
     assert score.value['pass'] == 0.0
     assert score.metadata['fully_covered_claims'] == 1
     assert score.metadata['partially_covered_claims'] == 1
 
 
-def test_parse_claim_judge_response_accepts_string_confidence() -> None:
-    outcome, justification, confidence = parse_claim_judge_response(
-        json.dumps({
-            'coverage_outcome': 'fulfilled',
-            'justification': 'covered',
-            'confidence_level': 'high',
-        })
-    )
+def test_claim_coverage_excludes_a_sample_whose_claim_cannot_be_parsed() -> None:
+    """The old fallback set the outcome by any of fulfilled/partially_fulfilled/not_fulfilled
+    appearing anywhere in prose; an unparseable verdict now excludes the sample instead."""
 
-    assert outcome == 'fulfilled'
-    assert justification == 'covered'
-    assert confidence == 1.0
+    class ProseJudge:
+        model_id = 'judge-model'
+        judge_id = 'judge-model'
 
+        def generate(self, messages: Any) -> ModelOutput:
+            return ModelOutput.from_content(self.model_id, 'The claim is clearly fulfilled by the response.')
 
-def test_parse_claim_judge_response_accepts_fallback_keys() -> None:
-    outcome, justification, confidence = parse_claim_judge_response(
-        json.dumps({
-            'outcome': 'partially_fulfilled',
-            'reason': 'partly covered',
-            'confidence': 'medium',
-        })
-    )
-
-    assert outcome == 'partially_fulfilled'
-    assert justification == 'partly covered'
-    assert confidence == 0.5
-
-
-def test_aggregate_scores_returns_mean_coverage_and_pass_rate() -> None:
     adapter = make_adapter()
-    scores = adapter.aggregate_scores([
-        SampleScore(sample_id=0, score=Score(value={
-            'coverage_score': 1.0,
-            'pass': 1.0
-        })),
-        SampleScore(sample_id=1, score=Score(value={
-            'coverage_score': 0.5,
-            'pass': 0.0
-        })),
-    ])
+    adapter.llm_judge = ProseJudge()
+    sample = Sample(input='q', target=json.dumps(['claim one']), id=0)
+    state = TaskState(
+        model='mock',
+        sample=sample,
+        output=ModelOutput.from_content(model='mock', content='answer'),
+        completed=True,
+    )
 
-    assert [(score.metric_name, score.score) for score in scores] == [
-        ('coverage_score', 0.75),
-        ('pass_rate', 0.5),
-    ]
+    score = adapter.calculate_metrics(state).score
+
+    assert score.value == {}
+    assert score.status is ScoreStatus.EXCLUDED

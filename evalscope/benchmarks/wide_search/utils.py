@@ -3,13 +3,12 @@
 
 from __future__ import annotations
 
-import json
 import pandas as pd
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 from evalscope.api.metric import AggScore, SampleScore
@@ -43,8 +42,10 @@ For the `origin`, first find the `transform` that is the closest in meaning and 
 Please output the alignment results in the following format:
 ```json
 {{
-    "origin_str1": "transform_str1",
-    "origin_str2": "transform_str2"
+    "mapping": {{
+        "origin_str1": "transform_str1",
+        "origin_str2": "transform_str2"
+    }}
 }}
 ```
 """  # noqa: E501
@@ -55,7 +56,7 @@ Each answer and each response has an idx. Please score each pair of answers and 
 1. The scoring range is from 0 to 1. A score of 1 indicates a completely correct answer. For deduction items, please refer to the specific grading criteria section.
 2. After reading the standard answers, responses to be graded, and grading criteria, please first analyze and judge them item by item according to the grading criteria.
 3. The score can only be an integer of 0 or 1.
-4. After the analysis and judgment, please provide the final scoring results. Each pair should have a score. Output in Markdown JSON format, as shown below:
+4. After the analysis and judgment, provide the final scoring results. Each pair should have a score. Reply with a single JSON object and no prose, as shown below:
 ```json
 {{
     "idx_xxx": score,
@@ -75,12 +76,6 @@ Each answer and each response has an idx. Please score each pair of answers and 
 Now start scoring. Please make sure to analyze each item step by step before providing the final scoring results.
 
 """  # noqa: E501
-
-
-@dataclass
-class EvaluationResult:
-    values: Dict[str, float] = field(default_factory=lambda: {name: 0.0 for name in METRIC_NAMES})
-    diagnostics: Dict[str, Any] = field(default_factory=dict)
 
 
 def norm_column(column: str) -> str:
@@ -114,17 +109,6 @@ def extract_markdown_table(response: str) -> Optional[pd.DataFrame]:
     markdown = '\n'.join(normalized_lines)
     response_df = pd.read_csv(StringIO(markdown), sep='|')
     return response_df.loc[:, ~response_df.columns.str.startswith('Unnamed')]
-
-
-def parse_markdown_json(completion: str) -> Optional[Dict[str, Any]]:
-    matches = re.findall(r'```json\s*(\{.*?\})\s*```', completion, re.DOTALL)
-    if not matches:
-        return None
-    try:
-        parsed = json.loads(matches[-1])
-    except Exception:
-        return None
-    return parsed if isinstance(parsed, dict) else None
 
 
 def extract_number(content: str) -> str:
@@ -198,198 +182,172 @@ PREPROCESSORS: Dict[str, Callable[[str], str]] = {
 }
 
 
-class WideSearchScorer:
-    """Official WideSearch table aligner and hybrid scorer."""
+@dataclass
+class WideSearchSession:
+    """Pure, official WideSearch table preparation and reduction.
 
-    def __init__(self, judge: Callable[[str], str]) -> None:
-        self.judge = judge
+    The adapter turns the LLM-dependent alignment and column scoring stages into judge cases;
+    this class deliberately contains no model callback and no parsing of judge text.
+    """
 
-    def evaluate(self, prediction: str, gold_csv: str, evaluation: Dict[str, Any]) -> EvaluationResult:
-        diagnostics: Dict[str, Any] = {'stage': 'parse'}
+    answer_df: pd.DataFrame
+    response_df: Optional[pd.DataFrame]
+    evaluation: Dict[str, Any]
+    error: Optional[str] = None
+
+    @classmethod
+    def create(cls, prediction: str, gold_csv: str, evaluation: Dict[str, Any]) -> 'WideSearchSession':
         try:
-            required_columns = list(evaluation['required'])
-            unique_columns = list(evaluation['unique_columns'])
+            required = list(evaluation['required'])
             answer_df = pd.read_csv(StringIO(gold_csv))
             answer_df.columns = [norm_column(column) for column in answer_df.columns]
-            answer_df = answer_df[required_columns]
+            answer_df = answer_df[required]
             response_df = extract_markdown_table(prediction)
             if response_df is None:
-                diagnostics['error'] = 'response_df is None'
-                return EvaluationResult(diagnostics=diagnostics)
-
+                return cls(answer_df=answer_df, response_df=None, evaluation=evaluation, error='response_df is None')
             response_df.columns = [norm_column(column) for column in response_df.columns]
-            if set(required_columns) != set(response_df.columns):
-                column_map, judge_response = self._map_values(response_df.columns.tolist(), required_columns)
-                column_map = _unique_target_map(column_map)
-                diagnostics['column_map'] = column_map
-                diagnostics['column_map_judge'] = judge_response
-                response_df.rename(columns=column_map, inplace=True)
-            if set(required_columns) != set(response_df.columns):
-                diagnostics['error'] = 'required columns do not match response columns'
-                diagnostics['response_columns'] = response_df.columns.tolist()
-                return EvaluationResult(diagnostics=diagnostics)
-
-            diagnostics['stage'] = 'align'
-            for column in required_columns:
-                try:
-                    answer_type = answer_df[column].dtype
-                    response_type = response_df[column].dtype
-                except Exception:
-                    answer_type = None
-                    response_type = None
-                if (response_type == float and answer_type == int) or (response_type == int and answer_type == float):
-                    if response_type == int:
-                        response_df[column] = response_df[column].astype(float)
-                    elif answer_type == int:
-                        answer_df[column] = answer_df[column].astype(float)
-                answer_df[column] = answer_df[column].astype(str)
-                response_df[column] = response_df[column].astype(str)
-
-            response_df.drop_duplicates(subset=unique_columns, inplace=True)
-            answer_df.drop_duplicates(subset=unique_columns, inplace=True)
-            diagnostics['primary_key_maps'] = {}
-            diagnostics['primary_key_judges'] = {}
-            for column in unique_columns:
-                pipeline = evaluation['eval_pipeline'].get(column)
-                if pipeline is None:
-                    continue
-                metrics = pipeline.get('metric', [])
-                if 'llm_judge' in metrics or 'exact_match' in metrics:
-                    value_map, judge_response = self._map_values(
-                        response_df[column].tolist(), answer_df[column].tolist()
-                    )
-                    diagnostics['primary_key_maps'][column] = value_map
-                    diagnostics['primary_key_judges'][column] = judge_response
-                    response_df[column] = response_df[column].apply(lambda value: value_map.get(value, value))
-
-            for column, pipeline in evaluation['eval_pipeline'].items():
-                for preprocess_name in pipeline.get('preprocess', []):
-                    preprocess = PREPROCESSORS[preprocess_name]
-                    response_df[column] = response_df[column].apply(preprocess)
-                    answer_df[column] = answer_df[column].apply(preprocess)
-
-            inner_df = pd.merge(
-                answer_df,
-                response_df,
-                on=unique_columns,
-                how='inner',
-                suffixes=('_query', '_response'),
-            )
-            diagnostics.update({
-                'gold_rows': len(answer_df),
-                'prediction_rows': len(response_df),
-                'matched_rows': len(inner_df),
-            })
-            if inner_df.empty:
-                diagnostics['stage'] = 'complete'
-                return EvaluationResult(values={name: 0.0 for name in METRIC_NAMES}, diagnostics=diagnostics)
-
-            diagnostics['stage'] = 'score'
-            inner_scores = pd.DataFrame(index=inner_df.index)
-            diagnostics['column_judges'] = {}
-            for column in required_columns:
-                if column in unique_columns:
-                    inner_scores[f'{column}_exact_match'] = 1.0
-                    continue
-                pipeline = evaluation['eval_pipeline'][column]
-                criterion = pipeline.get('criterion')
-                for metric_name in pipeline.get('metric', []):
-                    if metric_name == 'llm_judge':
-                        values, judge_response = self._judge_column(
-                            inner_df[f'{column}_response'].tolist(),
-                            inner_df[f'{column}_query'].tolist(),
-                            criterion,
-                        )
-                        diagnostics['column_judges'][column] = judge_response
-                    else:
-                        values = [
-                            self._metric_call(response, target, criterion, metric_name)
-                            for response, target in zip(inner_df[f'{column}_response'], inner_df[f'{column}_query'])
-                        ]
-                    inner_scores[f'{column}_{metric_name}'] = values
-
-            row_scores = inner_scores.min(axis=1)
-            true_positive_rows = float(row_scores.sum())
-            true_positive_items = float(inner_scores.sum().sum())
-            prediction_rows = len(response_df)
-            gold_rows = len(answer_df)
-            prediction_items = prediction_rows * len(required_columns)
-            gold_items = gold_rows * len(required_columns)
-
-            row_precision = true_positive_rows / prediction_rows if prediction_rows else 0.0
-            row_recall = true_positive_rows / gold_rows if gold_rows else 0.0
-            item_precision = true_positive_items / prediction_items if prediction_items else 0.0
-            item_recall = true_positive_items / gold_items if gold_items else 0.0
-            row_f1 = _f1(row_precision, row_recall)
-            item_f1 = _f1(item_precision, item_recall)
-            success_rate = float(
-                row_precision == row_recall == row_f1 == 1.0 and item_precision == item_recall == item_f1 == 1.0
-            )
-            values = {
-                'success_rate': success_rate,
-                'row_precision': row_precision,
-                'row_recall': row_recall,
-                'row_f1': row_f1,
-                'item_precision': item_precision,
-                'item_recall': item_recall,
-                'item_f1': item_f1,
-            }
-            diagnostics['stage'] = 'complete'
-            return EvaluationResult(values=values, diagnostics=diagnostics)
+            return cls(answer_df=answer_df, response_df=response_df, evaluation=evaluation)
         except Exception as error:
-            diagnostics['error'] = f'{type(error).__name__}: {error}'
-            return EvaluationResult(diagnostics=diagnostics)
+            return cls(
+                answer_df=pd.DataFrame(),
+                response_df=None,
+                evaluation=evaluation,
+                error=f'{type(error).__name__}: {error}'
+            )
 
-    def _map_values(self, response: List[str], reference: List[str]) -> Tuple[Dict[str, str], str]:
-        prompt = PRIMARY_KEY_PREPROCESS_PROMPT.format(response=response, reference=reference)
-        judge_response = self.judge(prompt)
-        parsed = parse_markdown_json(judge_response)
-        if parsed is None:
-            return {}, judge_response
-        return {str(key): str(value) for key, value in parsed.items()}, judge_response
+    @property
+    def required_columns(self) -> List[str]:
+        return list(self.evaluation['required'])
 
-    def _judge_column(
+    @property
+    def unique_columns(self) -> List[str]:
+        return list(self.evaluation['unique_columns'])
+
+    def needs_column_alignment(self) -> bool:
+        return self.response_df is not None and set(self.required_columns) != set(self.response_df.columns)
+
+    def frames(
         self,
-        response: List[str],
-        target: List[str],
-        criterion: Optional[str],
-    ) -> Tuple[List[float], str]:
-        response_dict = {
-            f'idx_{index}': {
-                'response': response_value,
-                'target': target_value
-            }
-            for index, (response_value, target_value) in enumerate(zip(response, target))
-        }
-        prompt = EVAL_COLUMN_PROMPT.format(criterion=criterion, response=response_dict)
-        try:
-            judge_response = self.judge(prompt)
-        except Exception as error:
-            return [0.0] * len(response), f'{type(error).__name__}: {error}'
-        parsed = parse_markdown_json(judge_response)
-        if parsed is None:
-            return [0.0] * len(response), judge_response
-        scores = []
-        for index in range(len(response)):
-            try:
-                scores.append(float(parsed.get(f'idx_{index}', 0)))
-            except (TypeError, ValueError):
-                scores.append(0.0)
-        return scores, judge_response
+        column_map: Optional[Dict[str, str]] = None,
+        primary_key_maps: Optional[Dict[str, Dict[str, str]]] = None,
+    ) -> tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Dict[str, Any]]:
+        diagnostics: Dict[str, Any] = {'stage': 'align'}
+        if self.error or self.response_df is None:
+            diagnostics['error'] = self.error or 'response_df is None'
+            return None, None, diagnostics
+        answer_df = self.answer_df.copy()
+        response_df = self.response_df.copy()
+        if column_map:
+            response_df.rename(columns=_unique_target_map(column_map), inplace=True)
+        if set(self.required_columns) != set(response_df.columns):
+            diagnostics['error'] = 'required columns do not match response columns'
+            diagnostics['response_columns'] = response_df.columns.tolist()
+            return None, None, diagnostics
+        for column in self.required_columns:
+            answer_df[column] = answer_df[column].astype(str)
+            response_df[column] = response_df[column].astype(str)
+        response_df.drop_duplicates(subset=self.unique_columns, inplace=True)
+        answer_df.drop_duplicates(subset=self.unique_columns, inplace=True)
+        for column, value_map in (primary_key_maps or {}).items():
+            response_df[column] = response_df[column].apply(lambda value: value_map.get(value, value))
+        for column, pipeline in self.evaluation['eval_pipeline'].items():
+            for preprocess_name in pipeline.get('preprocess', []):
+                preprocess = PREPROCESSORS[preprocess_name]
+                response_df[column] = response_df[column].apply(preprocess)
+                answer_df[column] = answer_df[column].apply(preprocess)
+        return answer_df, response_df, diagnostics
 
-    @staticmethod
-    def _metric_call(response: str, target: str, criterion: Any, metric_name: str) -> float:
-        if metric_name == 'exact_match':
-            return exact_match(response, target)
-        if metric_name == 'url_match':
-            return url_match(response, target)
-        if metric_name == 'in_match':
-            return in_match(response, target)
-        if metric_name == 'number_near':
-            return number_near(response, target, float(criterion))
-        if metric_name == 'date_near':
-            return date_near(response, target)
-        raise ValueError(f'Unsupported WideSearch metric: {metric_name}')
+    def inner_frame(
+        self,
+        column_map: Optional[Dict[str, str]] = None,
+        primary_key_maps: Optional[Dict[str, Dict[str, str]]] = None,
+    ) -> tuple[Optional[pd.DataFrame], Dict[str, Any]]:
+        answer_df, response_df, diagnostics = self.frames(column_map, primary_key_maps)
+        if answer_df is None or response_df is None:
+            return None, diagnostics
+        inner_df = pd.merge(
+            answer_df,
+            response_df,
+            on=self.unique_columns,
+            how='inner',
+            suffixes=('_query', '_response'),
+        )
+        diagnostics.update({
+            'gold_rows': len(answer_df),
+            'prediction_rows': len(response_df),
+            'matched_rows': len(inner_df),
+        })
+        return inner_df, diagnostics
+
+    def score(
+        self,
+        column_scores: Dict[str, List[float]],
+        column_map: Optional[Dict[str, str]] = None,
+        primary_key_maps: Optional[Dict[str, Dict[str, str]]] = None,
+    ) -> tuple[Dict[str, float], Dict[str, Any]]:
+        inner_df, diagnostics = self.inner_frame(column_map, primary_key_maps)
+        if inner_df is None or inner_df.empty:
+            return {name: 0.0 for name in METRIC_NAMES}, diagnostics
+        inner_scores = pd.DataFrame(index=inner_df.index)
+        for column in self.required_columns:
+            if column in self.unique_columns:
+                inner_scores[f'{column}_exact_match'] = 1.0
+                continue
+            pipeline = self.evaluation['eval_pipeline'][column]
+            criterion = pipeline.get('criterion')
+            for metric_name in pipeline.get('metric', []):
+                key = f'{column}_{metric_name}'
+                if metric_name == 'llm_judge':
+                    values = column_scores[key]
+                    if len(values) != len(inner_df):
+                        raise ValueError(
+                            f'WideSearch judge case {key} scored {len(values)} rows, expected {len(inner_df)}.'
+                        )
+                else:
+                    values = [
+                        _metric_call(response, target, criterion, metric_name)
+                        for response, target in zip(inner_df[f'{column}_response'], inner_df[f'{column}_query'])
+                    ]
+                inner_scores[key] = values
+        row_scores = inner_scores.min(axis=1)
+        true_positive_rows = float(row_scores.sum())
+        true_positive_items = float(inner_scores.sum().sum())
+        _, response_df, _ = self.frames(column_map, primary_key_maps)
+        prediction_rows = len(response_df) if response_df is not None else 0
+        gold_rows = len(self.answer_df)
+        row_precision = true_positive_rows / prediction_rows if prediction_rows else 0.0
+        row_recall = true_positive_rows / gold_rows if gold_rows else 0.0
+        item_precision = true_positive_items / (
+            prediction_rows * len(self.required_columns)
+        ) if prediction_rows else 0.0
+        item_recall = true_positive_items / (gold_rows * len(self.required_columns)) if gold_rows else 0.0
+        row_f1 = _f1(row_precision, row_recall)
+        item_f1 = _f1(item_precision, item_recall)
+        return {
+            'success_rate': float(
+                row_precision == row_recall == row_f1 == 1.0 and item_precision == item_recall == item_f1 == 1.0
+            ),
+            'row_precision': row_precision,
+            'row_recall': row_recall,
+            'row_f1': row_f1,
+            'item_precision': item_precision,
+            'item_recall': item_recall,
+            'item_f1': item_f1,
+        }, diagnostics
+
+
+def _metric_call(response: str, target: str, criterion: Any, metric_name: str) -> float:
+    if metric_name == 'exact_match':
+        return exact_match(response, target)
+    if metric_name == 'url_match':
+        return url_match(response, target)
+    if metric_name == 'in_match':
+        return in_match(response, target)
+    if metric_name == 'number_near':
+        return number_near(response, target, float(criterion))
+    if metric_name == 'date_near':
+        return date_near(response, target)
+    raise ValueError(f'Unsupported WideSearch metric: {metric_name}')
 
 
 def _f1(precision: float, recall: float) -> float:
@@ -422,11 +380,7 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
         for score in scoped_scores:
             group_id = score.group_id if score.group_id is not None else score.sample_id
             grouped[group_id].append(score)
-        repeat_counts = {len(group) for group in grouped.values()}
-        if len(repeat_counts) != 1:
-            raise ValueError(f'WideSearch requires the same number of trials per task, got {sorted(repeat_counts)}.')
-        repeats = repeat_counts.pop()
-        sample_ids = [score.sample_id for score in scoped_scores]
+        repeats = max(len(group) for group in grouped.values())
         for metric_name in METRIC_NAMES:
             if metric_name.startswith('row_'):
                 canonical_name = metric_name[4:]
@@ -437,10 +391,13 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
             else:
                 canonical_name = metric_name
                 target = None
+            metric_scores = [score for score in scoped_scores if metric_name in score.score.value]
+            if not metric_scores:
+                continue
             dimensions = {'scope': scope, 'k': repeats}
             if target is not None:
                 dimensions['target'] = target
-            all_values = [float(score.score.value[metric_name]) for score in scoped_scores]
+            all_values = [float(score.score.value[metric_name]) for score in metric_scores]
             results.append(
                 AggScore(
                     metric_name=canonical_name,
@@ -448,10 +405,30 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
                     aggregation='mean',
                     dimensions=dimensions,
                     num=len(all_values),
-                    ids=sample_ids,
+                    ids=[score.sample_id for score in metric_scores],
+                    metadata={
+                        'eligible': len(metric_scores),
+                        'total': len(scoped_scores),
+                        'coverage': len(metric_scores) / len(scoped_scores),
+                    },
                 )
             )
-            group_maxima = [max(float(score.score.value[metric_name]) for score in group) for group in grouped.values()]
+            eligible_groups = []
+            for group_id, group in grouped.items():
+                indexed = sorted(
+                    ((score.generation_index if score.generation_index is not None else index, score)
+                     for index, score in enumerate(group)
+                     if metric_name in score.score.value),
+                    key=lambda item: item[0],
+                )
+                if [index for index, _ in indexed] != list(range(repeats)):
+                    continue
+                eligible_groups.append((group_id, [score for _, score in indexed]))
+            if not eligible_groups:
+                continue
+            group_maxima = [
+                max(float(score.score.value[metric_name]) for score in group) for _, group in eligible_groups
+            ]
             aggregate_name = 'pass' if metric_name == 'success_rate' else 'max'
             results.append(
                 AggScore(
@@ -460,7 +437,13 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
                     aggregation='pass_at_k' if aggregate_name == 'pass' else 'max',
                     dimensions=dimensions,
                     num=len(group_maxima),
-                    ids=list(grouped.keys()),
+                    ids=[group_id for group_id, _ in eligible_groups],
+                    metadata={
+                        'eligible': len(eligible_groups),
+                        'total': len(grouped),
+                        'excluded': len(grouped) - len(eligible_groups),
+                        'coverage': len(eligible_groups) / len(grouped),
+                    },
                 )
             )
     return results

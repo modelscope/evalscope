@@ -26,7 +26,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType, JudgeStrategy, ModelTask
+from evalscope.constants import EvalType, ModelTask
 
 task_config = TaskConfig(
     model='Qwen/Qwen-Image-Edit', # 模型ID 或 本地路径
@@ -52,15 +52,14 @@ task_config = TaskConfig(
     },
     eval_batch_size=5,
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={  # 需要配置一个VLM模型用于自动打分
-        'model_id': 'qwen2.5-vl-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096,
-        }
+    judge={
+        'strategy': 'auto',
+        'models': {  # 需要配置一个VLM模型用于自动打分
+            'model_id': 'qwen2.5-vl-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
+        },
     },
 )
 
@@ -175,7 +174,7 @@ from dotenv import dotenv_values
 env = dotenv_values('.env')
 
 from evalscope import TaskConfig, run_task
-from evalscope.constants import EvalType, JudgeStrategy, ModelTask
+from evalscope.constants import EvalType, ModelTask
 
 task_config = TaskConfig(
     model_id='offline-model', # 无需配置model，只需提供自定义的ID
@@ -193,15 +192,14 @@ task_config = TaskConfig(
     },
     eval_batch_size=5,
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={  # 需要配置一个VLM模型用于自动打分
-        'model_id': 'qwen2.5-vl-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096,
-        }
+    judge={
+        'strategy': 'auto',
+        'models': {  # 需要配置一个VLM模型用于自动打分
+            'model_id': 'qwen2.5-vl-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
+        },
     },
 )
 

@@ -34,6 +34,7 @@ def test_quality_and_diagnostic_semantics_are_valid() -> None:
     [
         {'kind': MetricKind.QUALITY, 'direction': MetricDirection.NONE},
         {'kind': MetricKind.DIAGNOSTIC, 'direction': MetricDirection.HIGHER_IS_BETTER},
+        {'display_name': 'Incorrect rate'},
         {'value_range': None},
         {'display_multiplier': None},
         {'display_multiplier': 0.0},

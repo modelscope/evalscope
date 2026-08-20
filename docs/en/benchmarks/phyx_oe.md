@@ -36,9 +36,9 @@ answer of a university-level physics problem from the figure and state it.
   statement, else the whole reply is compared. A reply truncated before its answer therefore scores
   0 for reasons unrelated to physics ability; give the model a generous `generation_config.max_tokens`.
 - Answers are free-form values with units, so an LLM judge is used by default (the official
-  recommendation): run with `judge_strategy='auto'` or `'llm'` and provide `judge_model_args`. The
+  recommendation): set `judge.strategy='auto'` or `'llm'` and provide `judge.models`. The
   judge is only consulted when the answer does not already match as a string.
-- `judge_strategy='rule'` falls back to the official string-level mode, which understates accuracy
+- `judge.strategy='rule'` falls back to the official string-level mode, which understates accuracy
   because equivalent spellings (`0.5 m` vs `50 cm`) do not match literally.
 - Figures are sent inline as base64 and the largest is ~5 MB; set `max_image_bytes` in `dataset_args`
   if the served model enforces a smaller per-image limit.

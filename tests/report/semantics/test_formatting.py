@@ -218,6 +218,13 @@ class TestMetricLabels:
         assert format_metric_label('judge_failed', diagnostic) == 'judge_failed'
         assert format_metric_label('unknown_metric', None) == 'unknown_metric'
 
+    def test_declared_diagnostic_display_name_overrides_identity(self) -> None:
+        diagnostic = make_percent_semantics(kind=MetricKind.DIAGNOSTIC, direction=MetricDirection.NONE).model_copy(
+            update={'display_name': 'Incorrect rate'}
+        )
+
+        assert format_metric_label('is_incorrect:mean', diagnostic, 'mean_is_incorrect') == 'Incorrect rate'
+
     def test_duplicate_display_names_are_disambiguated(self) -> None:
         labels = format_metric_labels([
             ('mean_acc', make_percent_semantics()),

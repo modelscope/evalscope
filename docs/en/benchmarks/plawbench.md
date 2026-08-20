@@ -33,8 +33,8 @@ rubric rather than against a single reference answer.
 
 ## Evaluation Notes
 
-- Requires an LLM judge: run with `judge_strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
-  and provide `judge_model_args`. `judge_strategy='rule'` is not supported.
+- Requires an LLM judge: set `judge.strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
+  and provide `judge.models`. `judge.strategy='rule'` is not supported.
 - Metrics are point ratios in `[0, 1]`. `acc` is reported for every subset; `case_analysis` additionally reports
   `conclusion_acc`, `fact_acc`, `reasoning_acc`, and `law_acc`. These map one-to-one onto the official leaderboard
   columns: `legal_consultation` is Task1, `case_analysis` is Task2-Avg with its four dimensions, and the two
@@ -47,10 +47,10 @@ rubric rather than against a single reference answer.
   `[0, max_points]`, so a judge that mis-reports the denominator cannot distort the score.
 - The judge output template for `case_analysis` is repaired relative to the official script, which ships malformed
   JSON and pins the conclusion section to zero points; every section is graded on its rubric allocation here.
-- Judge requests are retried up to `judge_retries` times when the response cannot be parsed; a sample that still
-  fails is scored 0 and flagged via `judge_failed` in the review metadata.
+- The judge model's transport retry policy is configured through its `generation_config`. A reply that still
+  fails the output contract is unavailable and excluded rather than silently scored as zero.
 - Case-analysis judging returns a long per-item breakdown. Give the judge a generous `max_tokens`
-  (for example 8192) in `judge_model_args.generation_config`.
+  (for example 8192) in `judge.models[].generation_config`.
 - The drafting subsets ask for a 2,500-3,000 character legal document, so the evaluated model also needs a generous
   `generation_config.max_tokens`. A truncated filing is graded as an incomplete document and scores near zero, which
   depresses Task3 for reasons unrelated to legal ability.
@@ -126,12 +126,6 @@ Resources: [GitHub](https://github.com/skylenage/PLawbench) |
 {question}
 ```
 
-## Extra Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `judge_retries` | `int` | `3` | Maximum attempts per rubric judge request before the sample is scored as 0. |
-
 ## Usage
 
 ### Using CLI
@@ -159,7 +153,6 @@ task_cfg = TaskConfig(
     dataset_args={
         'plawbench': {
             # subset_list: ['case_analysis', 'legal_consultation', 'plaintiff_statement']  # optional, evaluate specific subsets
-            # extra_params: {}  # uses default extra parameters
         }
     },
     limit=10,  # Remove this line for formal evaluation

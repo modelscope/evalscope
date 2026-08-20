@@ -3,32 +3,32 @@
 
 ## 概述
 
-HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评估的基准测试。它汇集了13场近期（2024-2025年）的国际及区域性奥赛试题，涵盖多种模态，包括纯文本题目和基于图表的题目。
+HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评估的基准测试。它汇集了 13 场近期（2024–2025 年）的国际及区域性奥赛试题，涵盖多种模态，包括纯文本题目和基于图表的题目。
 
 ## 任务描述
 
 - **任务类型**：自由形式的物理问题求解，依据官方评分标准进行评分
 - **输入**：一道物理题（包含常数表、上下文和问题），可选附带图表
-- **输出**：分步解答，最终答案用 `<answer>...</answer>` 包裹并放入 `\boxed{}` 中
-- **模态**：纯文本 和 文本+图表（示意图 / 变量图 / 数据图）
+- **输出**：逐步推导的解答，最终答案用 `<answer>...</answer>` 包裹并以 `\boxed{}` 标注
+- **模态**：纯文本，以及文本+图表（示意图 / 变量图 / 数据图）
 
-## 核心特性
+## 主要特性
 
-- 共计403道题目，来自14套试卷（IPhO、APhO、EuPhO、NBPhO、PanPhO、PanMechanics、CPhO、F=MA），每套试卷作为一个独立子集。
-- 英语试卷使用英文提示，中文试卷（CPhO、PanMechanics）使用中文提示，遵循官方语言对应关系。
+- 共计 403 道题目，来自 14 套试卷（IPhO、APhO、EuPhO、NBPhO、PanPhO、PanMechanics、CPhO、F=MA），每套试卷作为一个独立子集。
+- 英文试卷使用英文提示，中文试卷（CPhO、PanMechanics）使用中文提示，遵循官方语言对应关系。
 - 复现论文中的两种评分机制，按题目分别应用：
-  - **步骤级评分**：适用于提供官方评分细则的题目，LLM 评委对每个评分项打分，总分为各项得分之和。
-  - **答案级评分**：适用于无评分细则的题目，通过基于规则的数学检查匹配 `\boxed{}` 中的最终答案；若规则检查失败，则回退至 LLM 评委判断。
+  - **步骤级评分**：适用于提供官方评分标准的题目，LLM 评委会对每个评分项打分，并将得分累加。
+  - **答案级评分**：适用于无评分标准的题目，通过基于规则的数学检查匹配 `\boxed{}` 中的最终答案；若规则检查失败，则由 LLM 评委会作为后备方案。
 
 ## 评估说明
 
-- 需要 LLM 评委：运行时需设置 `judge_strategy='llm'`（或 `'auto'`，该选项会为此基准自动启用评委），并提供 `judge_model_args`。不支持 `judge_strategy='rule'`。
+- 需要 LLM 评委会：设置 `judge.strategy='llm'`（或 `'auto'`，该选项会为此基准自动启用评委会），并提供 `judge.models`。不支持 `judge.strategy='rule'`。
 - 主要指标：`accuracy`，即每道题得分与满分之比（范围 `[0, 1]`），按子集取平均值聚合。
-  - 对于步骤级题目，满分为所有评分项分数之和；
+  - 对于步骤级题目，满分为各评分项分数之和；
   - 对于拥有多个官方评分方案的题目（如 EuPhO、NBPhO），采用得分最高的方案，与论文一致。
-- 报告的是每场考试的标准化得分，**不计算**论文中金/银/铜牌的分数线，因为这需要原始总分和官方截止分数。
-- 解答可能很长，且图表题需要视觉输入；请为被测模型设置较大的 `generation_config.max_tokens`。若解答在 `<answer>` 块前被截断，则无法提取答案，得分接近零，但这与物理能力无关。
-- 图表以内联 base64 形式发送，最大约 1.5 MB；若所用模型对单图有更小限制，请在 `dataset_args` 中设置 `max_image_bytes`。
+- 本基准报告的是每场考试的标准化得分，**不计算**论文中金/银/铜牌的分数线，后者需要原始总分和官方截断值。
+- 解答可能很长，且图表题需要视觉输入；请为被测模型设置较大的 `generation_config.max_tokens`。若解答在 `<answer>` 块前被截断，则无法提取最终答案，导致得分接近零，这与模型的物理能力无关。
+- 图表以内联 base64 形式发送，最大约 1.5 MB；若所用模型对单图有更小的限制，请在 `dataset_args` 中设置 `max_image_bytes`。
 - 资源链接：[论文](https://arxiv.org/abs/2509.07894) | [GitHub](https://github.com/SciYu/HiPhO) | [排行榜](https://phyarena.github.io/)
 
 
@@ -90,7 +90,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 {
   "input": [
     {
-      "id": "9ec40cee",
+      "id": "41868500",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."
@@ -129,7 +129,7 @@ HiPhO 是首个专注于高中物理奥林匹克竞赛并采用人类对齐评�
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注：部分内容为显示目的已截断。*
 
 ## 提示模板
 

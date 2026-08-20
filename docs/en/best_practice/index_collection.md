@@ -170,10 +170,13 @@ task_cfg = TaskConfig(
         'temperature': 0.0 # Usually set to 0 for reproducible results in evaluation
     },
     # Use a powerful model as judge for automatic scoring (required for chinese_simpleqa)
-    judge_model_args={
-        'model_id': 'qwen3-max',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    judge={
+        'strategy': 'auto',
+        'models': {
+            'model_id': 'qwen3-max',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        },
     },
     eval_batch_size=5, # Eval concurrency, adjust according to actual situation
 )

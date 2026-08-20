@@ -1,21 +1,38 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Dict, Set
+from pydantic import BaseModel
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
 
-# Punctuation and markdown a judge may wrap its bare "Yes"/"No" verdict in.
-VERDICT_WRAPPER_CHARS = ' \t*_`"\'.:'
+
+# The judge answers with a bare Yes/No on a line of its own; a judge that explains itself
+# ("Yes, the answer is incorrect") must not set the verdict.
+class Equivalence(BaseModel):
+    verdict: Literal['Yes', 'No']
+
+
+EQUIVALENCE_CONTRACT = OutputContract(schema_model=Equivalence)
 
 JUDGE_PROMPT = """
 Look at the following two expressions (answers to a math problem) and judge whether they are equivalent. Only perform trivial simplifications
@@ -170,47 +187,24 @@ class AIME24Adapter(DefaultDataAdapter):
             score.metadata['acc'] = f'grading_error: {str(e)}'
         return score
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = JUDGE_PROMPT.format(
+                expression1=judge_context.original_prediction,
+                expression2=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'Yes' else 0.0})
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc'
         )
-
-        judge_prompt = JUDGE_PROMPT.format(expression1=original_prediction, expression2=reference)
-
-        judge_response = self.llm_judge.judge(prompt=judge_prompt)
-
-        judge_verdicts = self._parse_judge_verdicts(judge_response)
-        is_correct = judge_verdicts == {'yes'}
-        score.value = {
-            'acc': 1.0 if is_correct else 0.0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-        }
-        if len(judge_verdicts) != 1:
-            logger.warning(f'AIME: failed to parse LLM judge response: {judge_response!r}')
-            score.metadata['parse_failed'] = True
-        score.main_score_name = 'acc'
-        return score
-
-    @staticmethod
-    def _parse_judge_verdicts(judge_response: str) -> Set[str]:
-        """Collect the bare Yes/No verdicts the judge stated on lines of their own.
-
-        Matching anywhere in the response instead lets a judge that explains itself
-        ("Yes, the answer is incorrect") set the opposite verdict.
-        """
-        return {
-            verdict
-            for line in judge_response.splitlines()
-            if (verdict := line.strip(VERDICT_WRAPPER_CHARS).casefold()) in ('yes', 'no')
-        }
 
 
 @register_benchmark(

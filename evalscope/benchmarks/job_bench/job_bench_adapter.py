@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -11,11 +12,21 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
 from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.model import Model
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
-from evalscope.constants import HubType, JudgeStrategy, Tags
+from evalscope.constants import HubType, ScoringPolicy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
 from .utils import (
@@ -23,11 +34,30 @@ from .utils import (
     SANDBOX_REFERENCE_DIR,
     JobBenchArtifactEnvironment,
     artifact_dir,
-    evaluate_job_bench_output,
+    build_judge_prompt,
+    build_scorecard,
+    collect_image_attachments,
+    extract_all_file_contents,
+    normalize_criteria,
     parse_rubrics,
+    rubric_needs_vision,
 )
 
 logger = get_logger()
+
+
+class _CriterionVerdict(BaseModel):
+    index: int
+    passed: bool
+    reasoning: str = ''
+    evidence: str = ''
+
+
+class _RubricVerdict(BaseModel):
+    criteria_results: List[_CriterionVerdict] = Field(default_factory=list)
+    rubric_passed: bool
+    overall_reasoning: str = ''
+
 
 _DATASET_ID = 'evalscope/job-bench'
 _DEFAULT_DOCKER_IMAGE = 'python:3.11-slim-bookworm'
@@ -50,7 +80,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 ## Evaluation Notes
 
 - The default evaluation split is `main`.
-- Configure `judge_model_args` for rubric scoring.
+- Configure `judge.models` for rubric scoring.
 - `normalized_score` is the primary weighted score (raw total / max score); `pass_rate` is the unweighted
   proportion of fully passed rubrics; `judge_score` is the raw sum of passed rubric weights, reported as a diagnostic.
 - Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,
@@ -86,14 +116,12 @@ Your final message may summarize what you produced, but files requested by the t
 class JobBenchAdapter(AgentLoopAdapter):
     """JobBench adapter using ModelScope data and EvalScope's agent loop."""
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
     strategy_name = 'function_calling'
     max_steps_default = 250
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            raise ValueError("JobBench does not support judge_strategy='llm_recall'; use 'auto' or 'llm'.")
         self._snapshot_dir: Optional[Path] = None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -200,62 +228,105 @@ class JobBenchAdapter(AgentLoopAdapter):
             metadata=sample.metadata,
         )
 
-    def match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        return Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-            value={
-                'normalized_score': 0.0,
-                'pass_rate': 0.0,
-                'judge_score': 0.0,
-            },
-            metadata={
-                'official_score_computed': False,
-                'note': 'JobBench quality scoring requires judge_model_args.',
-            },
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        return JudgeDefinition.workflow(
+            cases=self._build_cases(context),
+            request=self._build_request,
+            reduce=self._reduce_verdicts,
             main_score_name='normalized_score',
+            finalize=self._finalize_score
         )
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        if self.llm_judge is None:
-            raise ValueError('JobBench requires judge_model_args for LLM-based rubric scoring.')
+    def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
+        output_dir = Path(context.task_state.metadata['artifact_dir']) / SANDBOX_OUTPUT_DIR
+        rubrics = parse_rubrics(context.task_state.metadata.get('rubric_json'))
+        if not rubrics or not output_dir.exists() or not any(path.is_file() for path in output_dir.rglob('*')):
+            return []
+        contents = extract_all_file_contents(output_dir)
+        if not contents.strip():
+            return []
+        attachments = collect_image_attachments(output_dir)
+        return [
+            JudgeCase(
+                case_id=f'rubric:{index}',
+                output_contract=OutputContract(schema_model=_RubricVerdict),
+                metadata={
+                    'index': index,
+                    'rubric': rubric,
+                    'file_contents': contents,
+                    'image_attachments': attachments,
+                },
+            ) for index, rubric in enumerate(rubrics)
+        ]
 
-        evaluation = evaluate_job_bench_output(
-            output_dir=Path(task_state.metadata['artifact_dir']) / SANDBOX_OUTPUT_DIR,
-            rubrics=parse_rubrics(task_state.metadata.get('rubric_json')),
-            judge=self.llm_judge.judge,
+    def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
+        rubric = case.metadata['rubric']
+        attachments = case.metadata['image_attachments'] if rubric_needs_vision(rubric) else []
+        prompt = build_judge_prompt(rubric, case.metadata['file_contents'], vision_used=bool(attachments))
+        prompt += case.output_contract.instruction()
+        if not attachments:
+            return JudgeRequest(
+                messages=[
+                    ChatMessageSystem(content='You are an evaluation judge. Return JSON only.'),
+                    ChatMessageUser(content=prompt),
+                ]
+            )
+        content = [ContentText(text=prompt)]
+        for index, (name, url) in enumerate(attachments, start=1):
+            content += [ContentText(text=f'Image {index}: {name}'), ContentImage(image=url)]
+        return JudgeRequest(
+            messages=[
+                ChatMessageSystem(content='You are an evaluation judge. Return JSON only.'),
+                ChatMessageUser(content=content),
+            ]
         )
-        scorecard = evaluation['scorecard']
-        return Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+
+    def _reduce_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:
+        results = []
+        for verdict in case_verdicts:
+            rubric = verdict.metadata['rubric']
+            parsed = verdict.value
+            criteria = normalize_criteria(rubric)
+            returned = {item.index: item for item in parsed.criteria_results}
+            criteria_results = [{
+                'index': index,
+                'criterion': criterion,
+                'passed': bool(returned.get(index) and returned[index].passed),
+                'reasoning': returned[index].reasoning if index in returned else '',
+                'evidence': returned[index].evidence if index in returned else '',
+            } for index, criterion in enumerate(criteria)]
+            passed = bool(parsed.rubric_passed) and all(item['passed'] for item in criteria_results)
+            weight = float(rubric.get('weight') or 0)
+            results.append({
+                'index': verdict.metadata['index'],
+                'rubric': rubric.get('rubric', ''),
+                'weight': weight,
+                'result': {
+                    'passed': passed,
+                    'score': weight if passed else 0.0,
+                    'criteria_count': len(criteria),
+                    'criteria_passed': sum(item['passed'] for item in criteria_results),
+                    'criteria_results': criteria_results,
+                    'overall_reasoning': parsed.overall_reasoning,
+                },
+            })
+        scorecard = build_scorecard(results)
+        return ReducedVerdict(
             value={
                 'normalized_score': float(scorecard['normalized_score']),
                 'pass_rate': float(scorecard['pass_rate']),
-                # Raw sum of passed rubric weights: an intermediate judge value, reassigned to a
-                # diagnostic through BENCHMARK_METRIC_OVERRIDES.
                 'judge_score': float(scorecard['total_score']),
             },
             metadata={
-                'judge_model': self.llm_judge.model_id,
-                'task_id': task_state.metadata.get('task_id'),
-                'artifact_dir': task_state.metadata.get('artifact_dir'),
-                'output_files': task_state.metadata.get('output_files') or [],
-                'max_score': float(scorecard['max_score']),
-                'rubrics': evaluation['rubrics'],
-                'error': evaluation.get('error'),
+                'rubrics': results,
+                'max_score': float(scorecard['max_score'])
             },
-            main_score_name='normalized_score',
         )
+
+    def _finalize_score(self, score: Score, review, context) -> Score:
+        score.metadata.update({
+            'task_id': context.task_state.metadata.get('task_id'),
+            'artifact_dir': context.task_state.metadata.get('artifact_dir'),
+            'output_files': context.task_state.metadata.get('output_files') or [],
+        })
+        return score

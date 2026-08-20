@@ -1,0 +1,171 @@
+"""Smoke tests for migrated Native judge adapters."""
+import pytest
+from typing import Any, List
+
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
+from evalscope.api.model import ModelOutput
+from evalscope.api.registry import get_benchmark
+from evalscope.config import TaskConfig
+from evalscope.constants import JudgeScoreType, ScoreStatus
+from evalscope.metrics.judge.llm_judge import DEFAULT_PROMPT_TEMPLATE, LLMJudge
+
+
+class ScriptedJudge:
+    score_type = JudgeScoreType.PATTERN
+    score_mapping = {'A': 1.0, 'B': 0.0}
+    prompt_template = DEFAULT_PROMPT_TEMPLATE
+    system_prompt = None
+    build_prompt = LLMJudge.build_prompt
+
+    def __init__(self, replies: List[str]) -> None:
+        self.replies = replies
+        self.judge_id = self.model_id = 'scripted'
+        self.calls: List[Any] = []
+
+    def generate(self, messages):
+        self.calls.append(messages)
+        return ModelOutput.from_content('scripted', self.replies[min(len(self.calls) - 1, len(self.replies) - 1)])
+
+
+class TransportFailingJudge(ScriptedJudge):
+
+    def __init__(self) -> None:
+        super().__init__([])
+
+    def generate(self, messages):
+        self.calls.append(messages)
+        raise RuntimeError('judge transport unavailable')
+
+
+def make_state(prediction: str, target: str) -> TaskState:
+    sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
+    return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+
+
+@pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
+def test_three_way_judge_parse_failure_excludes_the_sample(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    adapter.llm_judge = ScriptedJudge(['not JSON'])
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+@pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
+def test_three_way_judge_transport_failure_excludes_the_sample(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'
+
+
+@pytest.mark.parametrize(
+    'benchmark_name',
+    ['baby_vision', 'imo_answerbench', 'math_verse', 'minerva_math', 'world_vqa', 'zerobench'],
+)
+def test_generic_pattern_contract_supports_simple_judge_benchmarks(benchmark_name: str) -> None:
+    config = TaskConfig(model='m', datasets=[benchmark_name], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark(benchmark_name, config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "A"}'])
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == {'acc': 1.0}
+
+
+def test_arena_hard_swap_is_driven_by_the_executor():
+    config = TaskConfig(model='m', datasets=['arena_hard'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('arena_hard', config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "A>B"}', '{"verdict": "B>A"}'])
+
+    state = make_state('candidate', 'baseline')
+    score = adapter.calculate_metrics(state).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert len(score.metadata['judge_attempts']) == 2
+    assert score.metadata['battle_result']['games'] == [{'score': 'A>B'}, {'score': 'B>A'}]
+    assert score.judge_summary.status is ScoreStatus.SUCCESS
+
+
+def test_position_swap_off_keeps_one_official_pairwise_game():
+    config = TaskConfig(
+        model='m',
+        datasets=['arena_hard'],
+        judge={
+            'strategy': 'llm',
+            'models': [{'model_id': 'j'}],
+            'position_swap': 'off',
+        },
+    )
+    adapter = get_benchmark('arena_hard', config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "A>B"}'])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert len(score.metadata['judge_attempts']) == 1
+    assert score.metadata['battle_result']['games'] == [{'score': 'A>B'}]
+
+
+def test_arena_hard_preserves_each_placement_game_after_candidate_summary():
+    config = TaskConfig(model='m', datasets=['arena_hard'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('arena_hard', config)
+    # Original: candidate B wins. Swapped: candidate A loses. The candidate summary is a tie,
+    # but the official battle stream must retain the two non-tie games.
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "B>A"}', '{"verdict": "B>A"}'])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.value['score'] == 0.5
+    assert score.metadata['battle_result']['games'] == [{'score': 'B>A'}, {'score': 'B>A'}]
+
+
+def test_position_swap_on_is_ignored_for_non_pairwise_contracts():
+    config = TaskConfig(
+        model='m',
+        datasets=['simple_qa'],
+        judge={
+            'strategy': 'llm',
+            'models': [{'model_id': 'j'}],
+            'position_swap': 'on',
+        },
+    )
+    adapter = get_benchmark('simple_qa', config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "A"}'])
+
+    score = adapter.calculate_metrics(make_state('Shakespeare', 'Shakespeare')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert len(score.metadata['judge_attempts']) == 1
+
+
+def test_position_swap_on_overrides_alpaca_eval_official_single_pass():
+    config = TaskConfig(
+        model='m',
+        datasets=['alpaca_eval'],
+        judge={
+            'strategy': 'llm',
+            'models': [{'model_id': 'j'}],
+            'position_swap': 'on',
+        },
+    )
+    adapter = get_benchmark('alpaca_eval', config)
+    adapter.llm_judge = ScriptedJudge(['{"verdict": "M"}', '{"verdict": "m"}'])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value['win_rate'] == 0.75
+    assert len(score.metadata['judge_attempts']) == 2
+    assert score.metadata['non_official_position_swap'] is True

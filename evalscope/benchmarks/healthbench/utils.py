@@ -7,17 +7,6 @@ from evalscope.utils import get_logger
 logger = get_logger()
 
 
-def parse_json_to_dict(json_string: str) -> dict:
-    # Remove markdown-style ```json``` markers if present
-    json_cleaned = re.sub(r'^```json\s*|\s*```$', '', json_string.strip())
-
-    try:
-        return json.loads(json_cleaned)
-    except json.JSONDecodeError as e:
-        logger.warning(f'JSON decoding failed: {e}')
-        return {}
-
-
 class RubricItem:
 
     def __init__(self, criterion: str, points: float, tags: list[str]):

@@ -23,7 +23,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 ## Evaluation Notes
 
 - Uses the official Markdown table alignment and hybrid rule/LLM scoring semantics.
-- Requires ``judge_strategy='auto'`` or ``'llm'`` with explicit ``judge_model_args``; rule-only scoring is unsupported.
+- Requires ``judge.strategy='auto'`` or ``'llm'`` with at least one ``judge.models`` entry; rule-only scoring is unsupported.
 - See the [WideSearch usage guide](https://evalscope.readthedocs.io/en/latest/third_party/wide_search.html) for runtime
   examples and paper-style repeat settings.
 

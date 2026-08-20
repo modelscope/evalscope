@@ -2,7 +2,6 @@ from evalscope.api.mixin import llm_judge_mixin
 from evalscope.api.model import model as model_module
 from evalscope.api.model.generate_config import GenerateConfig
 from evalscope.config import TaskConfig
-from evalscope.constants import JudgeStrategy
 from evalscope.models.utils.openai import openai_completion_params
 from evalscope.models.utils.openai_responses import openai_response_params
 from evalscope.perf.arguments import Arguments
@@ -50,12 +49,11 @@ def test_task_config_string_omits_api_keys():
         api_url='http://localhost:8080/v1/chat/completions',
         api_key='secret-token',
         datasets=['gsm8k'],
-        judge_model_args={
+        judge={'models': {
+            'model_id': 'judge-model',
             'api_key': 'judge-secret-token',
-            'nested': {
-                'api_key': 'nested-judge-secret-token'
-            },
-        },
+            'model_args': {'nested': {'api_key': 'nested-judge-secret-token'}},
+        }},
     )
 
     task_config_text = str(task_config)
@@ -65,8 +63,9 @@ def test_task_config_string_omits_api_keys():
     assert 'judge-secret-token' not in task_config_text
     assert 'nested-judge-secret-token' not in task_config_text
     assert task_config_dict['api_key'] == '**********'
-    assert task_config_dict['judge_model_args']['api_key'] == '**********'
-    assert task_config_dict['judge_model_args']['nested']['api_key'] == '**********'
+    judge_model = task_config_dict['judge']['models'][0]
+    assert judge_model['api_key'] == '**********'
+    assert judge_model['model_args']['nested']['api_key'] == '**********'
 
 
 def test_task_config_string_omits_extra_auth_headers():
@@ -106,7 +105,7 @@ def test_get_model_with_task_config_uses_raw_secret_value(monkeypatch):
     assert captured['api_key'] == 'secret-token'
 
 
-def test_llm_judge_mixin_uses_raw_nested_judge_model_args(monkeypatch):
+def test_llm_judge_mixin_uses_raw_nested_judge_model_config(monkeypatch):
     captured = {}
 
     class FakeLLMJudge:
@@ -119,19 +118,18 @@ def test_llm_judge_mixin_uses_raw_nested_judge_model_args(monkeypatch):
         model='test-model',
         api_url='http://localhost:8080/v1/chat/completions',
         datasets=['gsm8k'],
-        judge_strategy=JudgeStrategy.LLM,
-        judge_model_args={
+        judge={'strategy': 'llm', 'models': {
+            'model_id': 'judge-model',
             'api_key': 'judge-secret-token',
-            'nested': {
-                'api_key': 'nested-judge-secret-token'
-            },
-        },
+            'model_args': {'nested': {'api_key': 'nested-judge-secret-token'}},
+        }},
     )
 
-    llm_judge_mixin.LLMJudgeMixin(benchmark_meta=object(), task_config=task_config).init_llm_judge()
+    judges = llm_judge_mixin.LLMJudgeMixin(benchmark_meta=object(), task_config=task_config).init_llm_judges()
 
+    assert judges[0].judge_id == 'judge-model'
     assert captured['api_key'] == 'judge-secret-token'
-    assert captured['nested']['api_key'] == 'nested-judge-secret-token'
+    assert captured['model_args']['nested']['api_key'] == 'nested-judge-secret-token'
 
 
 def test_openai_params_use_raw_extra_auth_headers():

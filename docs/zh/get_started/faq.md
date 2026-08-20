@@ -70,15 +70,15 @@
     --dataset-args '{"ifeval": {"filters": {"remove_until": "</think>"}}}'
     ```
     如果您的模型使用不同的思考标签，如 `<|end_of_thinking|>`，只需替换即可。
-3.  **用裁判模型兜底**：设置 `judge_strategy=JudgeStrategy.LLM_RECALL`，规则提取失败的样本会交给裁判模型重新判定，详见下文“结果异常与问题排查”。
+3.  **用裁判模型兜底**：设置 `judge={'strategy': 'llm_recall', 'models': {...}}`。规则已满分的样本不调用 Judge；其余样本会用 Judge 复核，详见下文“结果异常与问题排查”。
 
 **Q: 如何使用本地模型作为裁判模型（Judge Model）？**
 
-**A:** 您可以使用 vLLM 等框架将本地模型部署为一个 API 服务，然后在 `--judge-model-args` 中指定其服务地址。
+**A:** 您可以使用 vLLM 等框架将本地模型部署为一个 API 服务，然后在 `--judge` 的 `models` 中指定其服务地址。
 
 **Q: 如何为裁判模型设置超时时间？**
 
-**A:** 在 `--judge-model-args` 的 `generation_config` 中设置 `timeout` 参数。
+**A:** 在 `--judge` 的 `models.generation_config` 中设置 `timeout` 参数。
 
 **Q: 如何在评测 API 服务时添加自定义请求头（Header）？**
 
@@ -128,12 +128,9 @@ task_config = TaskConfig(
 **A:** 数学问题的答案格式复杂，规则解析难以覆盖所有情况。建议使用 LLM 作为辅助裁判来提升准确率：
 ```python
 # 在 TaskConfig 中设置
-judge_strategy=JudgeStrategy.LLM_RECALL,
-judge_model_args={
-    'model_id': 'qwen2.5-72b-instruct',
-    'api_url': '...',
-    'api_key': '...'
-}
+judge={'strategy': 'llm_recall', 'models': {
+    'model_id': 'qwen2.5-72b-instruct', 'api_url': '...', 'api_key': '...'
+}}
 ```
 参考文档：[裁判模型参数](https://evalscope.readthedocs.io/zh-cn/latest/get_started/parameters.html#judge)。
 
@@ -144,14 +141,13 @@ judge_model_args={
 2.  再配合裁判模型兜底，规则提取失败时自动召回：
     ```python
     # 在 TaskConfig 中设置
-    judge_strategy=JudgeStrategy.LLM_RECALL,
-    judge_model_args={'model_id': '...', 'api_url': '...', 'api_key': '...'}
+    judge={'strategy': 'llm_recall', 'models': {'model_id': '...', 'api_url': '...', 'api_key': '...'}}
     ```
     `llm_recall` 仅在规则得分不满分时才调用裁判模型，不会带来额外的全量开销。
 
 **Q: 评测 `alpaca_eval` 时报错 `Connection error`？**
 
-**A:** `alpaca_eval` 需要指定一个裁判模型（Judge Model）进行打分。默认使用 OpenAI API，如果未配置相关 Key 会导致连接失败。请通过 `--judge-model-args` 指定一个可用的裁判模型。
+**A:** `alpaca_eval` 需要指定一个裁判模型（Judge Model）进行打分。默认使用 OpenAI API，如果未配置相关 Key 会导致连接失败。请通过 `--judge` 指定一个可用的裁判模型。
 
 **Q: 评测中断后，如何从断点处继续？**
 

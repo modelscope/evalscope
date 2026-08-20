@@ -240,14 +240,20 @@ run_task(task_cfg=task_cfg)
 
 **Method 2: Evaluation based on LLM**
 
-LLM-based evaluation can conveniently assess the correctness of model outputs (or other dimensions of metrics, requiring custom prompt settings). Below is an example configuring `judge_model_args` parameters, using the preset `pattern` mode to determine the correctness of model outputs.
+LLM-based evaluation can conveniently assess the correctness of model outputs (or other dimensions of metrics, requiring custom prompt settings). Below is an example using the preset `pattern` JSON contract to determine correctness.
 
 For a complete explanation of judge parameters, please refer to [documentation](../../get_started/parameters.md#judge-parameters).
+
+```{note}
+The judge replies with a single JSON object. A reply that cannot be read as one is **excluded** from
+the metric rather than scored 0, so `Num` may be lower than the sample count. A
+custom `prompt_template` should state the grading criteria only; the reply format is appended
+automatically.
+```
 
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2.5-0.5B-Instruct',
@@ -262,22 +268,18 @@ task_cfg = TaskConfig(
             ],
         }
     },
-    # judge related parameters
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
         },
-        # Determine if the model output is correct based on reference answers and model output
-        'score_type': 'pattern',
+        'contract': {'score_type': 'pattern'},
     },
     # eval concurrency number
     eval_batch_size=5,
-    # Use LLM for evaluation
-    judge_strategy=JudgeStrategy.LLM,
 )
 
 run_task(task_cfg=task_cfg)
@@ -298,13 +300,12 @@ run_task(task_cfg=task_cfg)
 
 If the dataset lacks reference answers, an LLM judge can be used to evaluate the model's output answers. Without configuring an LLM, no scoring results will be available.
 
-Below is an example configuring `judge_model_args` parameters, using the preset `numeric` mode to automatically assess model output scores from dimensions such as accuracy, relevance, and usefulness. Higher scores indicate better model output.
+Below is an example using the preset `numeric` JSON contract to automatically assess model output scores from dimensions such as accuracy, relevance, and usefulness. Higher scores indicate better model output.
 
 For a complete explanation of judge parameters, please refer to [documentation](../../get_started/parameters.md#judge-parameters).
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2.5-0.5B-Instruct',
@@ -319,22 +320,18 @@ task_cfg = TaskConfig(
             ],
         }
     },
-    # judge related parameters
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
         },
-        # Direct scoring
-        'score_type': 'numeric',
+        'contract': {'score_type': 'numeric'},
     },
     # eval concurrency number
     eval_batch_size=5,
-    # Use LLM for evaluation
-    judge_strategy=JudgeStrategy.LLM,
 )
 
 run_task(task_cfg=task_cfg)

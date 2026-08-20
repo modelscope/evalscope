@@ -284,8 +284,10 @@ export default function ComparePage() {
         const f = perModelFilter[name] ?? 'any'
         if (f === 'any') return true
         // The threshold is a view-only filter (above/below), not a pass/fail
-        // verdict.
-        const above = (row.models[name]?.NScore ?? 0) >= threshold
+        // verdict. A sample without a usable score matches neither side.
+        const score = row.models[name]?.NScore
+        if (score == null) return false
+        const above = score >= threshold
         return f === 'above' ? above : !above
       }),
     )
@@ -296,8 +298,10 @@ export default function ComparePage() {
     if (!mergedPredictions.length) return {} as Record<string, number>
     const rates: Record<string, number> = {}
     for (const name of predictionReportNames) {
-      const above = mergedPredictions.filter((r) => (r.models[name]?.NScore ?? 0) >= threshold).length
-      rates[name] = above / mergedPredictions.length
+      const scored = mergedPredictions.filter((r) => r.models[name]?.NScore != null)
+      if (!scored.length) continue
+      const above = scored.filter((r) => (r.models[name]!.NScore as number) >= threshold).length
+      rates[name] = above / scored.length
     }
     return rates
   }, [mergedPredictions, predictionReportNames, threshold])

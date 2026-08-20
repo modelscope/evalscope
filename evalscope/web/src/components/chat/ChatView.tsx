@@ -5,6 +5,8 @@ import { MessageRow, SystemPromptRow, HeaderPerfChip } from './MessageComponents
 import { StructuredMessages, TracedTimeline } from './AgentTraceView'
 import { buildStepGroups } from '@/domain/trace/stepGroups'
 import { EvalResultPanel } from './EvalResultPanel'
+import { JudgeReviewPanel } from './JudgeReviewPanel'
+import { selectJudgeReview, scoreWithoutJudgeAttempts } from '@/domain/chat/judgeReview'
 
 type ChatPresentation = 'traced' | 'structured' | 'legacy'
 
@@ -62,6 +64,11 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
   const presentation = selectChatPresentation(prediction)
   const [highlightedStep, setHighlightedStep] = useState<number | null>(null)
 
+  const judgeReview = useMemo(() => selectJudgeReview(prediction.Score), [prediction.Score])
+  // The raw judge replies are rendered by the review panel below; drop them from the Score Detail
+  // JSON so a rubric sample's 100 KB of attempts is not shown twice.
+  const scoreForDetail = useMemo(() => scoreWithoutJudgeAttempts(prediction.Score), [prediction.Score])
+
   const stepGroups = useMemo(() => {
     if (presentation !== 'traced' || !messages || !agentTrace) return null
     return buildStepGroups(messages, agentTrace)
@@ -96,11 +103,14 @@ export default function ChatView({ prediction, threshold = 0.99, highlightMsgId 
         pred={prediction.Pred}
         gold={prediction.Gold}
         nScore={prediction.NScore}
-        score={prediction.Score}
+        status={prediction.Status}
+        score={scoreForDetail}
         metadata={prediction.Metadata}
         threshold={threshold}
         showPred={!!showPred}
       />
+
+      {judgeReview && <JudgeReviewPanel review={judgeReview} />}
     </div>
   )
 }

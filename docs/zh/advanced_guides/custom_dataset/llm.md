@@ -239,14 +239,18 @@ run_task(task_cfg=task_cfg)
 
 **方法2. 基于LLM的评测**
 
-基于LLM的评测可以方便的评测模型的正确性（或其他维度的指标，需要设置自定义的prompt）。下面是一个示例，配置了`judge_model_args`相关的参数，使用预置的`pattern`模式来判断模型输出是否正确。
+基于 LLM 的评测可以方便地评测模型的正确性（或其他维度的指标，需要设置自定义 prompt）。下面是一个使用预置 `pattern` JSON 契约判断模型输出是否正确的示例。
 
 完整的judge参数说明请[参考文档](../../get_started/parameters.md#judge参数)。
+
+```{note}
+裁判模型以单个 JSON 对象回复。无法解析为 JSON 的回复会被**排除**在指标之外而不是记为 0 分，
+因此 `Num` 可能小于样本数。自定义 `prompt_template` 只需描述打分标准，回复格式要求会自动追加。
+```
 
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2.5-0.5B-Instruct',
@@ -261,22 +265,18 @@ task_cfg = TaskConfig(
             ],
         }
     },
-    # judge 相关参数
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
         },
-        # 根据参考答案和模型输出，判断模型输出是否正确
-        'score_type': 'pattern',
+        'contract': {'score_type': 'pattern'},
     },
     # 评测并发数
     eval_batch_size=5,
-    # 使用 LLM 进行评测
-    judge_strategy=JudgeStrategy.LLM,
 )
 
 run_task(task_cfg=task_cfg)
@@ -297,13 +297,12 @@ run_task(task_cfg=task_cfg)
 
 若数据集没有参考答案，可以使用LLM裁判来评测模型输出的答案，不配置LLM将不会有打分结果。
 
-下面是一个示例，配置了`judge_model_args`相关的参数，使用预置的`numeric`模式，从准确性、相关性、有用性等维度，自动综合判断模型输出得分，分数越高表示模型输出越好。
+下面是一个使用预置 `numeric` JSON 契约的示例，从准确性、相关性、有用性等维度自动综合判断模型输出得分，分数越高表示模型输出越好。
 
 完整的judge参数说明请[参考文档](../../get_started/parameters.md#judge参数)。
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='Qwen/Qwen2.5-0.5B-Instruct',
@@ -318,22 +317,18 @@ task_cfg = TaskConfig(
             ],
         }
     },
-    # judge 相关参数
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
         },
-        # 直接打分
-        'score_type': 'numeric',
+        'contract': {'score_type': 'numeric'},
     },
     # 评测并发数
     eval_batch_size=5,
-    # 使用 LLM 进行评测
-    judge_strategy=JudgeStrategy.LLM,
 )
 
 run_task(task_cfg=task_cfg)

@@ -65,11 +65,8 @@ Special considerations:
 Question: {question}
 Output sentence: {given_answer}
 Correct answer: {ground_truth}
-Final Instruction:
-You must respond with exactly one of the following: [Correct] or [Incorrect].
-Do NOT include any explanation, reasoning, or additional text.
-Any deviation from this format (even a single word) will be considered INVALID.
-Judgement: """
+Judge whether the output sentence correctly answers the question.
+"""
 
 # Step-level judge (HiPhO paper, Appendix B.3). The criterion text itself states the
 # points to award, so the judge returns the awarded points as a single number.
@@ -84,21 +81,14 @@ Instructions:
 1. Analyze the student's solution for physics concepts, mathematical derivations, and calculations.
 2. Award points strictly according to the criterion.
 3. Consider both conceptual understanding and technical accuracy.
-Critical:
-1. You MUST respond with ONLY a single number (e.g., 1.0, 0.5, 0.0).
-2. NO explanations, NO text, NO reasoning - JUST THE NUMBER.
-3. If you provide any text other than the number, your response will be invalid.
-Score: """
+Award points strictly according to the criterion.
+"""
 
 # Every criterion states its own allocation, e.g. "Award 0.1 pt if ..." or "得 0.5 分".
 _CRITERION_POINTS_RE = re.compile(
     r'(?:award|給|给|得|扣)\s*\$?\s*([0-9]*\.?[0-9]+)\s*\$?\s*(?:pts?|points?|分)',
     re.IGNORECASE,
 )
-_JUDGE_NUMBER_RE = re.compile(r'-?[0-9]*\.?[0-9]+')
-
-# Sentinel that ``LLMJudge.judge`` returns instead of raising on a failed request.
-JUDGE_ERROR_PREFIX = '[ERROR]'
 
 
 def is_chinese_exam(source: str) -> bool:
@@ -128,38 +118,6 @@ def criterion_points(criterion: str) -> float:
     """
     values = [float(v) for v in _CRITERION_POINTS_RE.findall(criterion)]
     return max(values) if values else 0.0
-
-
-def parse_judge_points(response: str, max_points: float) -> float:
-    """Parse the awarded points from a step-level judge response.
-
-    The judge is instructed to return a bare number; the first number in the
-    response is used and clamped to ``[0, max_points]`` so a malformed judge
-    reply can never inflate or deflate a criterion beyond its allocation.
-
-    A failed judge request must score 0, never full credit: ``LLMJudge.judge``
-    reports failures as an ``[ERROR] ...`` string that embeds the model id and
-    endpoint, whose digits would otherwise be parsed as an awarded score.
-    """
-    if not response or response.startswith(JUDGE_ERROR_PREFIX):
-        return 0.0
-    match = _JUDGE_NUMBER_RE.search(response)
-    if not match:
-        return 0.0
-    return max(0.0, min(float(match.group()), max_points))
-
-
-def parse_judge_correct(response: str) -> bool:
-    """Parse a ``[Correct]`` / ``[Incorrect]`` answer-level judge verdict."""
-    if not response or response.startswith(JUDGE_ERROR_PREFIX):
-        return False
-    text = response.lower()
-    if '[incorrect]' in text:
-        return False
-    if '[correct]' in text:
-        return True
-    # Fall back to a bare token when the judge omits the brackets.
-    return bool(re.search(r'\bcorrect\b', text)) and 'incorrect' not in text
 
 
 def extract_boxed_answers(text: str) -> List[str]:

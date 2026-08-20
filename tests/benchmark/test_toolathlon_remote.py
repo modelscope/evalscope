@@ -32,7 +32,7 @@ class TestToolathlonRemoteSmoke(unittest.TestCase):
                         }
                     }
                 },
-                judge_strategy=JudgeStrategy.RULE,
+                judge={'strategy': JudgeStrategy.RULE},
                 limit=1,
                 eval_batch_size=1,
                 work_dir=tmp_dir,

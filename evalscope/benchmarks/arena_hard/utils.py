@@ -10,14 +10,6 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-def post_process_arenahard(completion):
-    result = re.findall(r'\[\[([AB<>=]+)\]\]', completion)
-    if result:
-        return result[0]
-    else:
-        return None
-
-
 def get_judge_score(result, reverse=False):
     """
     Calculate the judge score, considering confidence weight.
@@ -78,6 +70,9 @@ def get_battles_from_row(row, first_game_only=False, multiplier=3):
         results += [output] * weight
 
     if first_game_only:
+        return pd.DataFrame(results)
+
+    if len(row['games']) == 1:
         return pd.DataFrame(results)
 
     # game 2

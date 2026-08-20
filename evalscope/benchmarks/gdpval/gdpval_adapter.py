@@ -259,25 +259,6 @@ class GDPvalAdapter(AgentLoopAdapter):
         )
         return score
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = self.match_score(
-            original_prediction=original_prediction,
-            filtered_prediction=filtered_prediction,
-            reference=reference,
-            task_state=task_state,
-        )
-        score.metadata['judge_strategy_note'] = (
-            'GDPval does not use EvalScope local LLM judging. Use OpenAI\'s official GDPval judge on the exported '
-            'submission package.'
-        )
-        return score
-
     def _on_generate_report_end(self, report: Any, output_dir: str, **kwargs: Any) -> None:
         if is_build_doc():
             return

@@ -32,8 +32,9 @@ class TestModels(TestBenchmark):
                 'parallel_tool_calls': True,
                 'stream': True
             },
-            'judge_strategy': JudgeStrategy.AUTO,
-            'judge_model_args': {
+            'judge': {
+                'strategy': JudgeStrategy.AUTO,
+                'models': {
                 'model_id': 'qwen3-235b-a22b',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
@@ -42,6 +43,7 @@ class TestModels(TestBenchmark):
                     'max_tokens': 4096,
                     'extra_body': {'enable_thinking': False}
                 }
+                },
             },
             'debug': True,
         }

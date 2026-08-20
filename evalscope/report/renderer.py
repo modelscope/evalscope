@@ -237,7 +237,7 @@ def gen_html_report_file(
                     model=model,
                     metric=metric_labels.get(primary_metric.name, primary_metric.name) if primary_metric else 'N/A',
                     metric_raw=primary_metric.name if primary_metric else 'N/A',
-                    score=score if score is not None else 0.0,
+                    score=score,
                     score_display=format_metric_value(score, semantics),
                     num=primary_metric.num if primary_metric else 0,
                 )
@@ -268,7 +268,7 @@ def gen_html_report_file(
         info = dataset_info[ds]
         pretty = info['pretty_name']
         model_sections: List[dict] = []
-        overall_score = 0.0
+        overall_score: Optional[float] = None
         overall_score_display = format_metric_value(overall_score, None)
 
         for model in all_models:
@@ -276,7 +276,7 @@ def gen_html_report_file(
             if rpt is None:
                 continue
             primary_metric = rpt.primary_metric
-            overall_score = primary_metric.score if primary_metric else 0.0
+            overall_score = primary_metric.score if primary_metric else None
             overall_score_display = format_metric_value(
                 primary_metric.score if primary_metric else None,
                 primary_metric.semantics if primary_metric else None,

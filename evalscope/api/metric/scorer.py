@@ -3,8 +3,43 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from evalscope.api.metric.semantics import MetricIdentity
+from evalscope.constants import ScoreStatus
 
 Value = Dict[str, Union[int, float, bool]]
+
+
+class JudgeSummary(BaseModel):
+    """First-class summary of a judge session, for reports and offline inspection."""
+
+    status: ScoreStatus = Field(default=ScoreStatus.SUCCESS)
+    """Whether scoring completed, degraded, or was unavailable."""
+
+    scored: int = Field(default=0)
+    """Samples with a usable score in this summary's scope (one for a sample summary)."""
+
+    total: int = Field(default=1)
+    """Samples considered in this summary's scope."""
+
+    coverage: float = Field(default=0.0)
+    """``scored / total``; unavailable samples are reported as zero coverage, not score zero."""
+
+    judge_models: List[str] = Field(default_factory=list)
+    """Judge model ids that produced this score."""
+
+    valid_observations: int = Field(default=0)
+    """Observations that yielded a usable verdict."""
+
+    total_observations: int = Field(default=0)
+    """Observations attempted, including invalid ones."""
+
+    failures: Dict[str, int] = Field(default_factory=dict)
+    """Failure counts keyed by :class:`ScoreStatus` value."""
+
+    disagreement: Dict[str, Any] = Field(default_factory=dict)
+    """Typed disagreement statistics; distinct from execution degradation."""
+
+    error: Optional[str] = Field(default=None)
+    """Human-readable reason the score is unavailable, if any."""
 
 
 class Score(BaseModel):
@@ -13,6 +48,16 @@ class Score(BaseModel):
     value: Value = Field(default_factory=dict)
     """Score value as a dictionary. Key is the score name, value is the score value.
     The first key is considered the main score by default."""
+
+    status: ScoreStatus = Field(default=ScoreStatus.SUCCESS)
+    """Whether this score is usable. A non-usable status means the affected metric keys are
+    omitted from :attr:`value` and the sample drops out of aggregation instead of scoring 0."""
+
+    judge_summary: Optional[JudgeSummary] = Field(
+        default=None,
+        validation_alias=AliasChoices('judge_summary', 'judge_detail'),
+    )
+    """Judge execution summary, populated only when an LLM judge produced this score."""
 
     extracted_prediction: Optional[str] = Field(default=None)
     """Answer extracted from model output (optional)"""
@@ -32,6 +77,15 @@ class Score(BaseModel):
     This selects a value inside one ``Score`` only. ``BenchmarkMeta.primary_metric`` is the
     report-level declaration; this field does not assign report metric roles.
     """
+
+    @property
+    def judge_detail(self) -> Optional[JudgeSummary]:
+        """Deprecated Python compatibility alias for :attr:`judge_summary`."""
+        return self.judge_summary
+
+    @judge_detail.setter
+    def judge_detail(self, value: Optional[JudgeSummary]) -> None:
+        self.judge_summary = value
 
     @property
     def main_value(self) -> Union[int, float, bool]:
@@ -73,6 +127,9 @@ class SampleScore(BaseModel):
 
     group_id: Optional[Union[str, int]] = Field(default=None)
     """A group id for the sample, used for grouping k repeated samples."""
+
+    generation_index: Optional[int] = Field(default=None)
+    """Planned zero-based generation position inside ``group_id``; never compact missing attempts."""
 
     sample_metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Metadata from the sample"""

@@ -4,9 +4,10 @@
 Reference: https://github.com/NastyMarcus/PhyX (``vlmeval/dataset/utils/phyx.py``).
 """
 import re
+from pydantic import BaseModel
 from typing import Dict, List, Optional
 
-from evalscope.metrics.judge.llm_judge import JUDGE_ERROR_PREFIX
+from evalscope.api.judge import OutputContract
 
 # The official instruction suffixes, appended verbatim to the problem statement. The multiple-choice
 # suffix is concatenated without a separator and the open-ended one with a leading space, matching
@@ -46,10 +47,13 @@ _MC_ANSWER_RE = re.compile(rf'\b(?:{_ANSWER_WORDS})\b[\s\S]*?([A-D])')
 # Replies that echo the option list instead of announcing a choice, e.g. 'B: 5.2 mW/cm^2'.
 _MC_LABEL_RE = re.compile(r'([ABCD]):')
 
-# A standalone 0 or 1 verdict. The lookarounds reject digits inside a number so that a judge reply
-# discussing values ('0.49 vs 0.5') cannot be read as a verdict; the last occurrence wins because
-# the judge prompt asks for the verdict at the end.
-_VERDICT_RE = re.compile(r'(?<![\w.])([01])(?![\w.])')
+
+class Judgment(BaseModel):
+    reasoning: str = ''
+    verdict: bool
+
+
+VERDICT_CONTRACT = OutputContract(schema_model=Judgment)
 
 # LaTeX spellings normalised before string comparison, as the official evaluator does. Applied to the
 # prediction only -- the ground truth is left untouched, matching upstream.
@@ -62,7 +66,7 @@ Predicted answer: The mass of block (B) is:
 [
 \\boxed{ 50 \\sqrt{101} }
 ] \n
-Judegement: 1
+{"verdict": true}
 """,
     """
 Ground truth answer: 46.3 kN \n
@@ -70,7 +74,7 @@ Predicted answer: The tension ( T_B ) in the cable is approximately:
 [
 \\boxed{46300 }
 ] \n
-Judegement: 1
+{"verdict": true}
 """,
     """
 Ground truth answer: 12 m/s \n
@@ -78,7 +82,7 @@ Predicted answer: The speed of the box after 2.00 seconds is:
 [
 \\boxed{11.3, \\text{m/s}}
 ] \n
-Judegement: 0
+{"verdict": false}
 """,
     """
 Ground truth answer: 36.00 kg \n
@@ -86,12 +90,12 @@ Predicted answer: The mass of the hanging block ( m_2 ) must be approximately:
 [
 \\boxed{36.1, \\text\\{kg\\}}
 ] \n
-Judegement: 1
+{"verdict": true}
 """,
     """
 Ground truth answer: 3.2 m \n
 Predicted answer: The stuntman and villain slide approximately \\frac\\{10\\}{3.1415} meters**.
-Judegement: 1
+{"verdict": true}
 """,
 ]
 
@@ -99,12 +103,12 @@ _ICE_EXAMPLES_MC = [
     """
 Ground truth answer: A \n
 Predicted answer: A \n
-Judegement: 1
+{"verdict": true}
 """,
     """
 Ground truth answer: B \n
 Predicted answer: A \n
-Judegement: 0
+{"verdict": false}
 """,
     """
 Ground truth answer: C \n
@@ -113,18 +117,18 @@ The lightbulb is ( 2.50, \\text\\{m\\}) above the floor, and the bottom of the m
 [
 \\Delta y_1 = 2.50, \\text\\{m\\} - 0.50, \\text\\{m\\} = 2.00, \\text\\{m\\}.
 ] \n
-Judegement: 0
+{"verdict": false}
 """,
     """
 Ground truth answer: D \n
 Predicted answer: The correct option is D. \n
-Judegement: 1
+{"verdict": true}
 """,
 ]
 
 _OE_JUDGE_TASK = """
 Please read the following example. Given predicted answer and ground truth answer,
-compare the these two answers, then ONLY output judegement 1/0 for matched/unmatched at the end of the prompt.
+compare the these two answers, then decide whether they are matched or unmatched.
 If the meaning is expressed in the same way, it is also considered consistent, for example, 0.5m and 50cm.
 If the given predicted mentions "approximately", then allow the Approximation Error, such as 0.49 and approximately 0.5, 0.81 and approximately 0.8. \n
 """
@@ -132,7 +136,7 @@ If the given predicted mentions "approximately", then allow the Approximation Er
 _MC_JUDGE_TASK = """
 Please read the following example. Given predicted answer and ground truth answer for Multi-Choice question.
 The ground truth answer would be A/B/C/D. The predicted answer would be some words containing A/B/C/D.
-Please compare the these two answers, then ONLY output judegement 1/0 for matched/unmatched at the end of the prompt. \n
+Please compare the these two answers, then decide whether they are matched or unmatched. \n
 """
 
 
@@ -258,17 +262,4 @@ def _build_judge_prompt(task_description: str, examples: List[str], prediction: 
         prompt += example + '\n'
     prompt += f'Ground truth answer: {reference} \n'
     prompt += f'Predicted answer: {prediction} \n'
-    prompt += 'Judegement:'
     return prompt
-
-
-def parse_judge_verdict(response: str) -> bool:
-    """Read the judge's 1/0 verdict.
-
-    A failed judge request fails closed: ``LLMJudge.judge`` reports errors as an ``[ERROR] ...``
-    string whose embedded digits would otherwise be parsed as a verdict.
-    """
-    if not response or response.startswith(JUDGE_ERROR_PREFIX):
-        return False
-    matches = _VERDICT_RE.findall(response)
-    return bool(matches) and matches[-1] == '1'

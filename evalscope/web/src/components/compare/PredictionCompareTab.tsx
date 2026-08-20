@@ -304,11 +304,17 @@ export default function PredictionCompareTab({
                     of the view threshold. The threshold only filters
                     rows in this view and is not a pass/fail verdict.
                   */}
-                  <ScoreBadge
-                    score={modelRow.NScore}
-                    semantics={RATIO_PERCENT_SEMANTICS}
-                    className="ml-2 shrink-0 !font-mono"
-                  />
+                  {modelRow.NScore === null ? (
+                    <span className="ml-2 shrink-0 text-xs font-mono text-[var(--text-muted)]">
+                      {t('prediction.unavailable')}
+                    </span>
+                  ) : (
+                    <ScoreBadge
+                      score={modelRow.NScore}
+                      semantics={RATIO_PERCENT_SEMANTICS}
+                      className="ml-2 shrink-0 !font-mono"
+                    />
+                  )}
                 </div>
 
                 {/* ChatView */}

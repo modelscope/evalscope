@@ -1,15 +1,22 @@
-import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
-from evalscope.api.metric import Score
+from evalscope.api.judge import JudgeContext, JudgeDefinition
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class Grade(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['A', 'B', 'C']
+
+
+JUDGE_SYSTEM_PROMPT = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
 
 GRADER_TEMPLATE = """
 请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。您的任务是将结果评定为：【正确】、【错误】或【未尝试】。
@@ -81,7 +88,6 @@ A:【正确】
 B:【错误】
 C:【未尝试】
 
-只返回字母"A"、"B"或"C"，无须添加其他文本。
 """.strip()
 
 SUBSET_LIST = ['中华文化', '人文与社会科学', '工程、技术与应用科学', '生活、艺术与文化', '社会', '自然与自然科学']
@@ -131,7 +137,7 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 )
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,39 +165,33 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
 
         return Sample(input=question, target=answer, subset_key=subset_key, metadata=metadata)
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        prompt = GRADER_TEMPLATE.format(
+            question=context.task_state.input_text,
+            target=context.reference,
+            predicted_answer=context.filtered_prediction,
         )
-
-        question = task_state.input_text
-
-        # Request judge and obtain score
-        prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
-        system_prompt = '你是一个智能助手，请根据给定问题、标准答案和模型预测的答案来评估模型的回答是否正确。'
-        judge_response = self.llm_judge.judge(prompt, system_prompt=system_prompt)
-        # parse grading response
-        match = re.search(r'(A|B|C)', judge_response)
-        res = match.group(0) if match else 'C'
-
-        # Set score based on the match result
-        score.value = {
-            'is_correct': 1 if res == 'A' else 0,
-            'is_incorrect': 1 if res == 'B' else 0,
-            'is_not_attempted': 1 if res == 'C' else 0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
-        score.main_score_name = 'is_correct'
-        return score
+        return JudgeDefinition.labels(
+            prompt=prompt,
+            system_prompt=JUDGE_SYSTEM_PROMPT,
+            schema_model=Grade,
+            case_id='grade',
+            scores={
+                'A': {
+                    'is_correct': 1.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 0.0
+                },
+                'B': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 1.0,
+                    'is_not_attempted': 0.0
+                },
+                'C': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 1.0
+                },
+            },
+            main_score_name='is_correct',
+        )

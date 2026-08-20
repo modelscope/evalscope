@@ -196,15 +196,12 @@ task_cfg = TaskConfig(
             }
         }
     },
-    # Configure judge model parameters
-    judge_model_args={
+    judge={'models': {
         'model_id': 'qwen-plus',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 8000
-        },
+        'generation_config': {'temperature': 0.0, 'max_tokens': 8000},
+    },
     },
     eval_batch_size=5,
     # use_cache='outputs/xxx' # Optional: to add new candidate models to existing results, specify the existing results path

@@ -16,6 +16,19 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+SAMPLE_COLUMNS = [
+    'task_type',
+    'categories',
+    'dataset_name',
+    'subset_name',
+    'tags',
+    'sample_id',
+    'metric',
+    'score',
+    'sample_weight',
+]
+"""Columns of the per-sample aggregation frame, declared so an all-excluded run still has them."""
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -206,6 +219,11 @@ class DataCollectionAdapter(DefaultDataAdapter):
             main_metric = sample_score.score.main_score_name
             sample_weight = float(collection_info.get('weight', 1.0))
 
+            # A sample whose judge review was unusable has no value and no main score; it is
+            # excluded from every aggregate rather than counted as 0.
+            if main_score is None:
+                continue
+
             # Each row represents one sample
             records.append({
                 'task_type': collection_info['task_type'],
@@ -219,7 +237,9 @@ class DataCollectionAdapter(DefaultDataAdapter):
                 'sample_weight': sample_weight,
             })
         # NOTE: All sample weights are assumed (as per new requirement) to sum to ~1 globally.
-        return pd.DataFrame(records)
+        # The columns are declared so that an all-excluded run still yields a frame every groupby
+        # and the report generator can read, rather than a column-less frame that raises KeyError.
+        return pd.DataFrame(records, columns=SAMPLE_COLUMNS)
 
     def _group_and_compute(self, df, group_cols, macro_child: Optional[str] = None):
         """
@@ -280,6 +300,9 @@ class DataCollectionAdapter(DefaultDataAdapter):
         Category-level hierarchical aggregation using sample-level weights.
         Macro is the mean of subset-level micro averages.
         """
+        if df.empty:
+            # No sample means no category depth to expand, and grouping on no column raises.
+            return []
         df_categories = df.copy()
         max_depth = df_categories['categories'].apply(len).max()
         for level in range(max_depth):

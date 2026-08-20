@@ -30,7 +30,7 @@ recognition, and visual tracking.
 - Primary metric: **Accuracy** via LLM-as-judge
 - Subsets organized by `type` field (4 categories)
 - LLM judge evaluates both choice and blank answer types uniformly
-- Requires `judge_model_args` configuration for LLM judge
+- Requires an LLM judge configured through `judge.models`
 
 
 ## Properties
@@ -48,30 +48,7 @@ recognition, and visual tracking.
 
 ## Data Statistics
 
-| Metric | Value |
-|--------|-------|
-| Total Samples | 388 |
-| Prompt Length (Mean) | 167.37 chars |
-| Prompt Length (Min/Max) | 33 / 450 chars |
-
-**Per-Subset Statistics:**
-
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
-|--------|---------|-------------|------------|------------|
-| `Fine-grained Discrimination` | 163 | 152.09 | 33 | 450 |
-| `Spatial Perception` | 91 | 157.18 | 73 | 370 |
-| `Visual Pattern Recognition` | 51 | 178.92 | 94 | 319 |
-| `Visual Tracking` | 83 | 201.45 | 97 | 389 |
-
-**Image Statistics:**
-
-| Metric | Value |
-|--------|-------|
-| Total Images | 388 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 174x144 - 2378x1448 |
-| Formats | jpeg, png, webp |
-
+*Statistics not available.*
 
 ## Sample Example
 
@@ -81,13 +58,13 @@ recognition, and visual tracking.
 {
   "input": [
     {
-      "id": "8b83904b",
+      "id": "1256c961",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~77.0KB]"
         },
         {
-          "text": "The image shows a total of 49 tiger patterns arranged in 7 rows and 7 columns. One of them is different from the others. Which row and column is it in? The answer format is (x,y). (For example, the answer for the 2nd row and 3rd column is (2,3))."
+          "text": "The image shows a total of 49 tiger patterns arranged in 7 rows and 7 columns. One of them is different from the others. Which row and column is it in? The answer format is (x,y). (For example, the answer for the 2nd row and 3rd column is (2,3)).\nThink about the question and give your final answer in \\boxed{Answer} format."
         }
       ]
     }
@@ -134,11 +111,6 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['baby_vision'],
-    dataset_args={
-        'baby_vision': {
-            # subset_list: ['Fine-grained Discrimination', 'Spatial Perception', 'Visual Pattern Recognition']  # optional, evaluate specific subsets
-        }
-    },
     limit=10,  # Remove this line for formal evaluation
 )
 

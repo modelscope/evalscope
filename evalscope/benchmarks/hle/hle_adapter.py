@@ -1,18 +1,37 @@
 import re
-from typing import Any, Dict, List
+from pydantic import BaseModel
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import (
+    CaseVerdict,
+    JudgeCase,
+    JudgeContext,
+    JudgeDefinition,
+    JudgeRequest,
+    OutputContract,
+    ReducedVerdict,
+)
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 # flake8: noqa
 
 logger = get_logger()
+
+
+# The judge prompt requires "GRADE: C" or "GRADE: I" as the final line.
+class Grade(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['C', 'I']
+
+
+GRADE_CONTRACT = OutputContract(schema_model=Grade)
 
 SUBSET_LIST = [
     'Biology/Medicine',
@@ -94,7 +113,7 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
 )
 class HLEAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -136,48 +155,34 @@ class HLEAdapter(DefaultDataAdapter):
                 return False
         return True
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = JUDGE_PROMPT.format(
+                question=judge_context.task_state.input_text,
+                response=judge_context.filtered_prediction,
+                correct_answer=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': 1.0 if case_verdicts[0].value.verdict == 'C' else 0.0})
+
+        def finalize(score, review, judge_context) -> Score:
+            score.metadata['confidence'] = self._stated_confidence(judge_context.task_state)
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
         )
 
-        confidence = 100
-        if task_state.output and task_state.output.completion:
-            confidence_match = re.search(r'confidence:\s*(\d+)', task_state.output.completion, re.IGNORECASE)
-            if confidence_match:
-                confidence = int(confidence_match.group(1))
-
-        judge_prompt = JUDGE_PROMPT.format(
-            question=task_state.input_text, response=filtered_prediction, correct_answer=reference
-        )
-
-        # Request judge and obtain score
-        judge_response = self.llm_judge.judge(prompt=judge_prompt)
-
-        # Parse judge response to get accuracy score
-        accuracy_score = re.search(r'GRADE:\s*([CI])', judge_response, re.IGNORECASE)
-        if accuracy_score:
-            grade = accuracy_score.group(1).upper()
-            score.value = {
-                'acc': 1.0 if grade == 'C' else 0.0,
-            }
-        else:
-            score.value = {
-                'acc': 0.0,
-            }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-            'confidence': confidence,
-        }
-        score.main_score_name = 'acc'
-        return score
+    @staticmethod
+    def _stated_confidence(task_state: TaskState) -> int:
+        """Read the confidence the evaluated model reported; unrelated to the judge verdict."""
+        completion = task_state.output.completion if task_state.output else ''
+        match = re.search(r'confidence:\s*(\d+)', completion or '', re.IGNORECASE)
+        return int(match.group(1)) if match else 100

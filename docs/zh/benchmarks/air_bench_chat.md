@@ -3,57 +3,40 @@
 
 ## 概述
 
-AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的生成式部分——这是首个面向大音频语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。该数据集包含约 2,000 个开放式音频问答对，覆盖语音、声音、音乐及混合音频场景；模型的回答由 GPT-4 作为裁判，对照参考答案进行评分。
+AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的生成式部分——这是首个面向大音频语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。该数据集包含约 2,000 个开放式音频问答对，覆盖语音、声音、音乐及混合音频场景；模型的回答由 GPT-4 评判器根据参考答案进行评分。
 
 ## 任务描述
 
 - **任务类型**：开放式音频问答。
 - **输入**：一段音频片段加一个自由形式的问题。
-- **输出**：一段文本答案，将根据参考答案进行评估。
+- **输出**：文本答案，与参考答案进行对比评估。
+- **模态**：音频（人类语音、自然声音、音乐）+ 文本。
 
-## 类别（8 项任务 → 5 个报告类别）
+## 核心特性
 
-官方 `cal_score.py` 脚本将 8 项 Chat 任务聚合为以下五个类别：
+- 包含约 2k 个开放式音频问答对，覆盖语音、声音、音乐及混合音频场景；是 AIR-Bench（ACL 2024）的生成式部分。
+- 官方 `cal_score.py` 将 8 个 Chat 任务聚合为 5 个报告类别：`speech`（`speech_QA`, `speech_dialogue_QA`）、`sound`（`sound_QA`, `sound_generation_QA`）、`music`（`music_QA`, `music_generation_analysis_QA`）、`speech_and_sound`（`speech_and_sound_QA`）、`speech_and_music`（`speech_and_music_QA`）。论文中的 Mixed-audio = mean(speech_and_sound, speech_and_music)。
+- 通过将每个样本判断两次（交换参考答案与模型预测的顺序）并取平均值来消除位置偏差（可通过设置 `extra_params={'do_swap': False}` 禁用此机制，以节省一半评判成本）。
+- 数据托管于 ModelScope（[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)），采用 audiofolder + JSON 格式；完整数据集约 49 GB，可通过 `extra_params={'tasks': [...]}` 限制任务范围以进行部分运行。
 
-- `speech`（语音）: `speech_QA`, `speech_dialogue_QA`
-- `sound`（声音）: `sound_QA`, `sound_generation_QA`
-- `music`（音乐）: `music_QA`, `music_generation_analysis_QA`
-- `speech_and_sound`（语音与声音）: `speech_and_sound_QA`
-- `speech_and_music`（语音与音乐）: `speech_and_music_QA`
+## 评估说明
 
-论文中的 **Mixed-audio（混合音频）= mean(speech_and_sound, speech_and_music)**。
-
-## 数据集获取
-
-- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON metadata* 的布局方式。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制仅拉取所需任务。
-- 如果数据集已存在于本地磁盘，请传入 `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Chat/` 文件夹。
-
-## 评估协议
-
-- 裁判 LLM（默认为 GPT-4）接收问题、音频的文本描述（来自数据集的 `meta_info`）、参考答案（`answer_gt`）以及模型的回答，并输出一行包含两个 `[1, 10]` 范围内的整数分数。
-- 为消除位置偏差，每个样本会被评估两次，分别交换参考答案与模型预测的顺序，然后取平均分。此做法与官方仓库中的 `cal_score.py` 一致；可通过设置 `extra_params={'do_swap': False}` 禁用此行为，以节省一半的裁判成本。
-- 报告指标 `judge_score` 表示模型的平均裁判分数；`win_rate` 记录模型严格优于参考答案的频率。
-
-```{warning}
-官方排行榜使用 `gpt-4-0125-preview` 作为裁判模型。如果该特定快照不可用，请使用其他可用的 GPT-4 级别裁判模型；由于裁判模型变更，绝对分数可能与已发表结果存在偏差。
-```
-
-## 实现说明
-
-- 通过 `--judge-model-args` 指定裁判模型；请确保所选模型支持长上下文（对话类任务的 `meta_info` 可能超过 4k tokens）。
-- 设置 `extra_params={'tasks': [...]}` 可仅评估指定的 Chat 任务名称——适用于部分运行场景。
+- **指标**：`judge_score` 表示模型的平均评判分数；`win_rate` 记录模型严格优于参考答案的频率。
+- 评判 LLM 接收问题、音频的文本描述（`meta_info`）、参考答案（`answer_gt`）和模型回答，并输出两个 `[1, 10]` 范围内的整数分数。由于对话类任务的 `meta_info` 可能超过 4k tokens，请使用支持长上下文的评判模型。
+- 官方排行榜使用 `gpt-4-0125-preview`。若该特定快照不可用，请使用其他可用的 GPT-4 级别评判模型；由于评判模型变更，绝对分数可能与已发表结果存在偏差。
+- 若数据集已下载至本地，可通过 `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}` 指定路径；本地根目录应包含 `Chat/` 文件夹。
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `air_bench_chat` |
-| **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
+| **数据集ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `InstructionFollowing`, `QA` |
 | **指标** | `judge_score`, `win_rate` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `test` |
+| **评估划分** | `test` |
 
 
 ## 数据统计
@@ -66,7 +49,7 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 
 **各子集统计信息：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `speech_QA` | 400 | 64.33 | 23 | 148 |
 | `speech_dialogue_QA` | 400 | 77.03 | 29 | 206 |
@@ -133,7 +116,7 @@ AIR-Bench Chat 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuc
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `tasks` | `list` | `None` | 可选的 Chat 任务名称列表（子集包括 ['music_QA', 'music_generation_analysis_QA', 'sound_QA', 'sound_generation_QA', 'speech_QA', 'speech_and_music_QA', 'speech_and_sound_QA', 'speech_dialogue_QA']）。默认评估所有任务。 |
-| `do_swap` | `bool` | `True` | 若为 True（默认），每个样本会评判两次（交换参考答案与模型预测的顺序），然后取平均分。禁用可节省一半裁判成本，但会引入位置偏差。 |
+| `do_swap` | `bool` | `True` | 若为 True（默认），每个样本会被评判两次（交换参考答案与模型预测的顺序），然后取平均分。禁用此选项可节省一半评判成本，但会引入位置偏差。 |
 
 ## 使用方法
 

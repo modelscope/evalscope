@@ -1,0 +1,207 @@
+"""Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
+from enum import Enum
+from pydantic import BaseModel, ConfigDict, Field
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence
+
+from evalscope.api.evaluator import TaskState
+from evalscope.api.messages import ChatMessage
+from evalscope.api.model import ModelOutput
+from evalscope.constants import ScoreStatus
+from .contracts import OutputContract
+
+if TYPE_CHECKING:
+    from evalscope.api.metric import Score
+
+
+class Placement(str, Enum):
+    """Which side of a pairwise comparison a request presents first."""
+
+    ORIGINAL = 'original'
+    SWAPPED = 'swapped'
+
+
+class JudgeContext(BaseModel):
+    """Everything the adapter's judge hooks may read about one sample."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    task_state: TaskState
+    original_prediction: str
+    filtered_prediction: str
+    reference: str
+
+
+class JudgeCase(BaseModel):
+    """One thing the judge is asked about a sample: a rubric, a claim, a criterion, a cell."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    case_id: str
+    """Stable identifier within the sample."""
+
+    output_contract: OutputContract
+    """Declares the verdict shape and is the only thing allowed to parse the response."""
+
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    """Adapter-defined data carried through the request callback and onto the verdict."""
+
+
+class JudgeRequest(BaseModel):
+    """What to send the judge for one case. The adapter decides the content; the executor owns
+    the identity (judge, repeat, placement)."""
+
+    messages: List[ChatMessage]
+
+
+class JudgeAttempt(BaseModel):
+    """One request/response round trip, including the ones that failed."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    status: ScoreStatus
+    case_id: str
+    judge_id: str
+    repeat_id: int = 0
+    placement: Placement = Placement.ORIGINAL
+    messages: List[ChatMessage] = Field(default_factory=list)
+    model_output: Optional[ModelOutput] = None
+    raw_response: Optional[str] = None
+    parsed_value: Any = None
+    error: Optional[str] = None
+    latency: Optional[float] = None
+
+
+class CaseVerdict(BaseModel):
+    """The usable outcome of one case, after any retry and after both placements."""
+
+    case_id: str
+    value: Any
+    status: ScoreStatus = ScoreStatus.SUCCESS
+    placements: Dict[str, Any] = Field(default_factory=dict)
+    """Per-placement parsed values, present when the case was judged on both sides."""
+
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    """Copied from the case, so a reduce step reads its context instead of parsing ``case_id``."""
+
+
+class PairwisePlacementOutcome(BaseModel):
+    """One presentation order's candidate-oriented pairwise result."""
+
+    result: Literal['win', 'tie', 'loss']
+    strength: Literal['weak', 'strong'] = 'weak'
+
+
+class PairwiseOutcome(BaseModel):
+    """A candidate-oriented pairwise result, independent of presentation order.
+
+    ``placements`` retains the separately aggregated official games. ``result`` is the semantic
+    vote used for the candidate-oriented summary and is never reconstructed from raw labels.
+    """
+
+    metric_name: str
+    result: Literal['win', 'tie', 'loss']
+    strength: Literal['weak', 'strong'] = 'weak'
+    placements: Dict[str, PairwisePlacementOutcome] = Field(default_factory=dict)
+
+    @property
+    def score(self) -> float:
+        if self.result == 'tie':
+            return 0.5
+        if self.result == 'win':
+            return 1.0 if self.strength == 'strong' else 0.75
+        return 0.0 if self.strength == 'strong' else 0.25
+
+
+class ReducedVerdict(BaseModel):
+    """One observation's worth of verdicts folded into per-metric values by the adapter."""
+
+    value: Dict[str, float] = Field(default_factory=dict)
+    outcome: Optional[PairwiseOutcome] = None
+    """Optional typed non-numeric outcome used by a benchmark's finalizer.
+
+    This is deliberately separate from ``metadata``: it participates in the same repeat and
+    cross-judge aggregation as ``value``. Pairwise benchmarks use it to derive battle records
+    without letting a first observation's diagnostic metadata decide the final score.
+    """
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    position_results: Dict[str, Literal['win', 'tie', 'loss']] = Field(default_factory=dict)
+    """Placement-level results used only for position-bias statistics.
+
+    Numeric pairwise benchmarks such as AIR-Bench keep their official scalar reducer instead of
+    using :class:`PairwiseOutcome`, but still expose this typed signal for swap consistency.
+    """
+
+
+class JudgeObservation(BaseModel):
+    """One (judge, repeat) pass over all of a sample's cases."""
+
+    judge_id: str
+    repeat_id: int = 0
+    status: ScoreStatus = ScoreStatus.SUCCESS
+    case_verdicts: List[CaseVerdict] = Field(default_factory=list)
+    reduced: Optional[ReducedVerdict] = None
+    error: Optional[str] = None
+
+    @property
+    def is_valid(self) -> bool:
+        return self.status is ScoreStatus.SUCCESS and self.reduced is not None and bool(self.reduced.value)
+
+    @property
+    def is_fallback(self) -> bool:
+        return self.status is ScoreStatus.FALLBACK and self.reduced is not None and bool(self.reduced.value)
+
+
+class JudgeReview(BaseModel):
+    """Everything the judge produced for one sample."""
+
+    status: ScoreStatus = ScoreStatus.SUCCESS
+    observations: List[JudgeObservation] = Field(default_factory=list)
+    attempts: List[JudgeAttempt] = Field(default_factory=list)
+    value: Dict[str, float] = Field(default_factory=dict)
+    """Aggregated per-metric values; empty when no observation was usable."""
+
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    """Display metadata from the primary judge's first valid observation only."""
+
+    observation_metadata: List[Dict[str, Any]] = Field(default_factory=list)
+    """Per-observation reducer metadata retained for audit, never for scoring."""
+
+    failure_counts: Dict[str, int] = Field(default_factory=dict)
+    """Attempt counts keyed by :class:`ScoreStatus` value."""
+
+    error: Optional[str] = None
+
+    outcome: Optional[PairwiseOutcome] = None
+    """Aggregated typed benchmark outcome, if the adapter declared one."""
+
+    disagreement: Dict[str, Any] = Field(default_factory=dict)
+    """Per-sample repeat, cross-judge, and position-consistency statistics."""
+
+    @property
+    def valid_observations(self) -> List[JudgeObservation]:
+        return [obs for obs in self.observations if obs.is_valid]
+
+    @property
+    def fallback_observations(self) -> List[JudgeObservation]:
+        """Rule-derived observations, retained for official fallbacks but never Judge quorum."""
+        return [obs for obs in self.observations if obs.is_fallback]
+
+    @property
+    def usable_observations(self) -> List[JudgeObservation]:
+        """All observations with a reducer output, including official rule fallbacks."""
+        return self.valid_observations + self.fallback_observations
+
+
+__all__: Sequence[str] = (
+    'CaseVerdict',
+    'JudgeAttempt',
+    'JudgeCase',
+    'JudgeContext',
+    'JudgeObservation',
+    'JudgeRequest',
+    'JudgeReview',
+    'Placement',
+    'PairwiseOutcome',
+    'PairwisePlacementOutcome',
+    'ReducedVerdict',
+)

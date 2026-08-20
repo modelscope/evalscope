@@ -61,11 +61,11 @@ task_cfg = TaskConfig(
         'max_tokens': 512,  # Maximum number of tokens to generate
     },
     eval_batch_size=5,
-    judge_model_args={
+    judge={'models': {
         'model_id': 'qwen2.5-72b-instruct',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
-    }
+    }},
 )
 run_task(task_cfg=task_cfg)
 ```
@@ -160,11 +160,11 @@ task_cfg = TaskConfig(
         'max_tokens': 512,  # Maximum number of tokens to generate
     },
     eval_batch_size=5,
-    judge_model_args={
+    judge={'models': {
         'model_id': 'qwen2.5-72b-instruct',
         'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
         'api_key': os.getenv('DASHSCOPE_API_KEY'),
-    }
+    }},
 )
 run_task(task_cfg=task_cfg)
 ```

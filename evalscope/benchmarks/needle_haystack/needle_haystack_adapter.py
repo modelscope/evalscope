@@ -1,14 +1,17 @@
 import os
 from itertools import product
+from pydantic import BaseModel, Field
 from tqdm import tqdm
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -16,6 +19,14 @@ if TYPE_CHECKING:
     from evalscope.report import Report
 
 logger = get_logger()
+
+
+class Rating(BaseModel):
+    reasoning: str = ''
+    verdict: float = Field(ge=0.0, le=10.0)
+
+
+SCORE_CONTRACT = OutputContract(schema_model=Rating)
 
 PROMPT_TEMPLATE = """Please read the following text and answer the question below.
 
@@ -128,7 +139,7 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
 )
 class NeedleHaystackAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -387,40 +398,35 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
 
         return score
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        """Use LLM as a judge to evaluate the predicted answer against the gold answer."""
-        from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE, parse_score
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        metric_name = self._metric_name(context.task_state)
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
+            prompt = ORM_USER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                gold=judge_context.reference,
+                pred=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT),
+                          ChatMessageUser(content=prompt)]
+            )
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={metric_name: case_verdicts[0].value.verdict / 10.0})
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='score', output_contract=SCORE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name=metric_name
         )
 
-        # Get metadata from task state
-        context_length = task_state.metadata.get('context_length', 0)
-        depth_percent = task_state.metadata.get('depth_percent', 0)
-        question = task_state.input_text
-
-        # Get grading response
-        prompt = ORM_USER_TEMPLATE.format(question=question, gold=reference, pred=filtered_prediction)
-        orm_response = self.llm_judge.judge(prompt, system_prompt=GENERAL_ORM_PROMPT)
-
-        # Parse grading score with regex, [[score]]
-        accuracy = parse_score(orm_response) if orm_response else 0.0
-
-        metric_name = f'Context#{context_length} Depth#{depth_percent}'
-        score.value = {metric_name: accuracy}
-        score.explanation = f'LLM judge: {orm_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': getattr(self, 'judge_strategy', 'default'),
-            'model': self.llm_judge.model_id if hasattr(self.llm_judge, 'model_id') else 'unknown'
-        }
-        score.main_score_name = metric_name
-
-        return score
+    @staticmethod
+    def _metric_name(task_state: TaskState) -> str:
+        metadata = task_state.metadata or {}
+        return f"Context#{metadata.get('context_length', 0)} Depth#{metadata.get('depth_percent', 0)}"
 
     def _on_generate_report_end(self, report: 'Report', output_dir: str, **kwargs):
         try:

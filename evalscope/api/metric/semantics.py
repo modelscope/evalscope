@@ -224,6 +224,9 @@ class MetricSemantics(BaseModel):
     metric_name: str
     """Display name of the metric. May differ from the final report metric name."""
 
+    display_name: Optional[str] = Field(default=None)
+    """Optional display override for a declared diagnostic metric label."""
+
     kind: MetricKind
     """Intrinsic classification. Report-level primary selection lives on ``Report``."""
 
@@ -275,6 +278,12 @@ class MetricSemantics(BaseModel):
             raise ValueError(
                 f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
                 f"kind='diagnostic' requires direction='none', got '{self.direction.value}'"
+            )
+
+        if self.display_name is not None and self.kind is not MetricKind.DIAGNOSTIC:
+            raise ValueError(
+                f"semantic_id='{self.semantic_id}', metric_name='{self.metric_name}': "
+                'display_name is only valid for diagnostic metrics'
             )
 
         # Percent display needs an explicit range and multiplier.

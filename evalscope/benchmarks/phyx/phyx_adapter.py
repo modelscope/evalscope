@@ -11,12 +11,14 @@ from evalscope.api.dataset import (
     resolve_snapshot_or_local_path,
 )
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from .utils import (
     OPTION_LABELS,
+    VERDICT_CONTRACT,
     build_mc_judge_prompt,
     build_mc_question,
     build_oe_judge_prompt,
@@ -25,7 +27,6 @@ from .utils import (
     extract_oe_answer,
     match_mc_answer,
     match_oe_answer,
-    parse_judge_verdict,
     parse_options,
 )
 
@@ -175,6 +176,27 @@ class PhyXAdapter(VisionLanguageAdapter):
         score.explanation = explanation
         return score
 
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        """Render the official judge prompt for this benchmark's answer format."""
+        raise NotImplementedError
+
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = self.build_judge_prompt(judge_context.filtered_prediction,
+                                             judge_context.reference) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            return ReducedVerdict(value={'acc': float(case_verdicts[0].value.verdict)})
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='equivalence', output_contract=VERDICT_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc'
+        )
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -208,7 +230,7 @@ with a figure and four answer options, and the model has to name the correct opt
 - Default scoring is the official string-level match: the chosen letter is extracted from the reply
   and compared with the ground truth, accepting replies that mark the correct option the way the
   prompt prints it (`D:`) or emphasises it (`**D**`).
-- Setting `judge_strategy='llm'` (with `judge_model_args`) reproduces the official LLM-judged mode.
+- Setting `judge.strategy='llm'` with `judge.models` reproduces the official LLM-judged mode.
   The judge is only consulted for replies whose option letter could not be extracted, matching
   upstream.
 - Figures are sent inline as base64 and the largest is ~5 MB; set `max_image_bytes` in `dataset_args`
@@ -240,25 +262,21 @@ class PhyXMCAdapter(PhyXAdapter):
         correct = match_mc_answer(filtered_prediction, original_prediction, reference)
         return self._build_score(original_prediction, filtered_prediction, correct, 'string match')
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        """Score with the official judge, which only arbitrates replies without a clear letter.
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if context.reference.strip().lower() == context.filtered_prediction.strip().lower():
+            return JudgeDefinition.skip(
+                self._build_score(context.original_prediction, context.filtered_prediction, True, 'string match'),
+                reason='exact_string_match',
+            )
+        if context.filtered_prediction.strip() in OPTION_LABELS:
+            return JudgeDefinition.skip(
+                self._build_score(context.original_prediction, context.filtered_prediction, False, 'string match'),
+                reason='invalid_option_label',
+            )
+        return super().judge_definition(context)
 
-        The pre-check is plain equality rather than the lenient ``match_mc_answer`` used in rule
-        mode: upstream keeps the ``D:`` / ``**D**`` fallbacks out of its judged path, and accepting
-        them here would credit a reply that committed to one letter while merely quoting the
-        correct option's text.
-        """
-        if reference.strip().lower() == filtered_prediction.strip().lower():
-            return self._build_score(original_prediction, filtered_prediction, True, 'string match')
-        if filtered_prediction.strip() in OPTION_LABELS:
-            # The reply committed to a different option; there is nothing for the judge to weigh.
-            return self._build_score(original_prediction, filtered_prediction, False, 'string match')
-
-        judge_response = self.llm_judge.judge(build_mc_judge_prompt(filtered_prediction, reference))
-        correct = parse_judge_verdict(judge_response)
-        return self._build_score(original_prediction, filtered_prediction, correct, f'LLM judge: {judge_response}')
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        return build_mc_judge_prompt(prediction, reference)
 
 
 @register_benchmark(
@@ -294,9 +312,9 @@ answer of a university-level physics problem from the figure and state it.
   statement, else the whole reply is compared. A reply truncated before its answer therefore scores
   0 for reasons unrelated to physics ability; give the model a generous `generation_config.max_tokens`.
 - Answers are free-form values with units, so an LLM judge is used by default (the official
-  recommendation): run with `judge_strategy='auto'` or `'llm'` and provide `judge_model_args`. The
+  recommendation): set `judge.strategy='auto'` or `'llm'` and provide `judge.models`. The
   judge is only consulted when the answer does not already match as a string.
-- `judge_strategy='rule'` falls back to the official string-level mode, which understates accuracy
+- `judge.strategy='rule'` falls back to the official string-level mode, which understates accuracy
   because equivalent spellings (`0.5 m` vs `50 cm`) do not match literally.
 - Figures are sent inline as base64 and the largest is ~5 MB; set `max_image_bytes` in `dataset_args`
   if the served model enforces a smaller per-image limit.
@@ -312,7 +330,7 @@ answer of a university-level physics problem from the figure and state it.
 class PhyXOEAdapter(PhyXAdapter):
     """PhyX in open-ended mode, scored by comparing the final answer with the ground truth."""
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def build_question(self, record: Dict[str, Any], options: Dict[str, str]) -> str:
         return build_oe_question(record['question_simply'], record['question'])
@@ -330,13 +348,13 @@ class PhyXOEAdapter(PhyXAdapter):
         correct = match_oe_answer(filtered_prediction, original_prediction, reference)
         return self._build_score(original_prediction, filtered_prediction, correct, 'string match')
 
-    def llm_match_score(
-        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
-    ) -> Score:
-        """Score with the official judge, which decides whether the answers are equivalent."""
-        if reference.strip().lower() == filtered_prediction.strip().lower():
-            return self._build_score(original_prediction, filtered_prediction, True, 'string match')
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if context.reference.strip().lower() == context.filtered_prediction.strip().lower():
+            return JudgeDefinition.skip(
+                self._build_score(context.original_prediction, context.filtered_prediction, True, 'string match'),
+                reason='exact_string_match',
+            )
+        return super().judge_definition(context)
 
-        judge_response = self.llm_judge.judge(build_oe_judge_prompt(filtered_prediction, reference))
-        correct = parse_judge_verdict(judge_response)
-        return self._build_score(original_prediction, filtered_prediction, correct, f'LLM judge: {judge_response}')
+    def build_judge_prompt(self, prediction: str, reference: str) -> str:
+        return build_oe_judge_prompt(prediction, reference)

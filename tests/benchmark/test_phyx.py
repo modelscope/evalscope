@@ -1,15 +1,16 @@
-"""Unit tests for the PhyX option parser, answer extraction and judge verdict reading.
+"""Unit tests for the PhyX option parser, answer extraction and judged scoring.
 
 PhyX ships its options as one quoted string and its answers as free-form physics values, so a
-regression in `parse_options`, `extract_*_answer` or `parse_judge_verdict` silently mis-scores
-replies instead of raising. The expected prompt/answer strings below are taken verbatim from the
-official `PhyX_MC.tsv` / `PhyX_OE.tsv` releases.
+regression in `parse_options` or `extract_*_answer` silently mis-scores replies instead of raising.
+The expected prompt/answer strings below are taken verbatim from the official `PhyX_MC.tsv` /
+`PhyX_OE.tsv` releases.
 """
 import pytest
-from typing import List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.phyx.utils import (
@@ -20,11 +21,10 @@ from evalscope.benchmarks.phyx.utils import (
     extract_oe_answer,
     match_mc_answer,
     match_oe_answer,
-    parse_judge_verdict,
     parse_options,
 )
 from evalscope.config import TaskConfig
-from evalscope.constants import JudgeStrategy
+from evalscope.constants import JudgeStrategy, ScoreStatus
 
 # Record index 0 of the released test set.
 DESCRIPTION = ('A patient with a dislocated shoulder is put into a traction apparatus as shown in figure. '
@@ -139,62 +139,68 @@ def test_mc_match_accepts_the_label_as_printed_or_emphasised() -> None:
     assert not match_mc_answer('B', 'The correct option is B.', 'D')
 
 
-def test_judge_verdict_reads_the_trailing_flag() -> None:
-    assert parse_judge_verdict('1')
-    assert parse_judge_verdict('Judegement: 1')
-    assert not parse_judge_verdict('0')
-    assert not parse_judge_verdict('Judegement: 0')
-
-
-def test_judge_verdict_ignores_digits_inside_discussed_values() -> None:
-    """A judge that reasons about '0.49 vs 0.5' must not have those digits read as its verdict."""
-    assert parse_judge_verdict('The prediction 0.49 approximates 0.5, so 1')
-    assert not parse_judge_verdict('The prediction 1.5 differs from 1.2, so 0')
-
-
-def test_failed_judge_request_scores_zero() -> None:
-    """`LLMJudge.judge` reports failures as an '[ERROR] ...' string containing digits."""
-    assert not parse_judge_verdict('[ERROR] Error occurred during qwen3-max@http://host:1 evaluation')
-    assert not parse_judge_verdict('')
-    assert not parse_judge_verdict('unable to compare')
-
-
 class _StubJudge:
     """Records whether the judge was consulted and with which prompt."""
 
     model_id = 'stub-judge'
+    judge_id = 'stub-judge'
 
-    def __init__(self, response: str = '1') -> None:
+    def __init__(self, response: Any = '{"verdict": true}') -> None:
         self.response = response
         self.prompts: List[str] = []
 
-    def judge(self, prompt: str) -> str:
-        self.prompts.append(prompt)
-        return self.response
+    def generate(self, messages: Any) -> ModelOutput:
+        self.prompts.append(messages[-1].content if messages else '')
+        if isinstance(self.response, Exception):
+            raise self.response
+        return ModelOutput.from_content(self.model_id, self.response)
 
 
-def _judged_score(name: str, prediction: str, target: str, response: str = '1') -> Tuple[float, _StubJudge]:
+def _judged_result(
+    name: str,
+    prediction: str,
+    target: str,
+    response: Any = '{"verdict": true}',
+) -> Tuple[Score, _StubJudge]:
     """Run one prediction through the benchmark's judged scoring path."""
-    adapter = get_benchmark(name, TaskConfig(model='mock', datasets=[name], judge_strategy=JudgeStrategy.LLM))
+    config = TaskConfig(
+        model='mock',
+        datasets=[name],
+        judge={'strategy': JudgeStrategy.LLM, 'models': {'model_id': 'stub-judge'}},
+    )
+    adapter = get_benchmark(name, config)
     judge = _StubJudge(response)
     adapter.llm_judge = judge
     state = TaskState(
         model='mock',
         sample=Sample(input='q', target=target),
         output=ModelOutput.from_content('mock', prediction),
+        completed=True,
     )
-    extracted = adapter.extract_answer(prediction, state)
-    score = adapter.llm_match_score(prediction, extracted, target, state)
+    return adapter.calculate_metrics(state).score, judge
+
+
+def _judged_score(
+    name: str,
+    prediction: str,
+    target: str,
+    response: str = '{"verdict": true}',
+) -> Tuple[float, _StubJudge]:
+    score, judge = _judged_result(name, prediction, target, response)
     return score.value['acc'], judge
 
 
 def test_mc_judge_is_not_consulted_when_the_reply_names_a_letter() -> None:
     """Upstream settles a committed letter by string comparison and never pays for a judge call."""
-    acc, judge = _judged_score('phyx_mc', 'C', 'C')
-    assert (acc, judge.prompts) == (1.0, [])
+    score, judge = _judged_result('phyx_mc', 'C', 'C')
+    assert (score.value['acc'], judge.prompts) == (1.0, [])
+    assert score.metadata['judge_skipped'] is True
+    assert score.metadata['judge_skip_reason'] == 'exact_string_match'
 
-    acc, judge = _judged_score('phyx_mc', 'B', 'C')
-    assert (acc, judge.prompts) == (0.0, [])
+    score, judge = _judged_result('phyx_mc', 'B', 'C')
+    assert (score.value['acc'], judge.prompts) == (0.0, [])
+    assert score.metadata['judge_skipped'] is True
+    assert score.metadata['judge_skip_reason'] == 'invalid_option_label'
 
 
 def test_mc_judge_arbitrates_only_replies_without_a_letter() -> None:
@@ -226,9 +232,22 @@ def test_oe_judge_settles_answers_that_do_not_match_literally() -> None:
     assert (acc, judge.prompts) == (1.0, [])  # settled by string equality, no judge call
 
 
-def test_oe_judge_error_does_not_award_credit() -> None:
-    acc, _ = _judged_score('phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response='[ERROR] request failed for model 1')
-    assert acc == 0.0
+def test_oe_judge_error_excludes_the_sample() -> None:
+    """A JUDGE_DEFAULT benchmark retains its official rule score when judging is unavailable."""
+    score, _ = _judged_result(
+        'phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response=ConnectionError('request failed')
+    )
+    assert score.value == {'acc': 0.0}
+    assert score.status is ScoreStatus.DEGRADED
+
+
+def test_oe_judge_no_longer_reads_a_bare_flag_out_of_prose() -> None:
+    """The old parser read the trailing '1' here as a match."""
+    score, _ = _judged_result(
+        'phyx_oe', 'Thus \\boxed{12 m/s}', '9.8 m/s', response='The values differ, so the judgement is 1'
+    )
+    assert score.value == {'acc': 0.0}
+    assert score.status is ScoreStatus.DEGRADED
 
 
 def test_partially_parsed_options_are_rejected() -> None:

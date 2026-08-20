@@ -1,7 +1,8 @@
 import copy
 import os
-from pydantic import BaseModel, Field, model_validator
-from typing import Any, Dict, List, Optional, Tuple, Union
+import uuid
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
@@ -24,7 +25,12 @@ class CacheManager:
     avoid redundant computations.
     """
 
-    def __init__(self, outputs: OutputsStructure, model_name: str, benchmark_name: str):
+    def __init__(
+        self,
+        outputs: OutputsStructure,
+        model_name: str,
+        benchmark_name: str,
+    ):
         """
         Initialize the cache manager.
 
@@ -37,6 +43,7 @@ class CacheManager:
         self.model_name = model_name
         self.benchmark_name = benchmark_name
         self._writers: Dict[str, JsonlWriter] = {}
+        self._review_reruns: Dict[str, str] = {}
 
     def _get_writer(self, cache_file: str) -> JsonlWriter:
         """Return a persistent writer for *cache_file*, opening on first use.
@@ -169,7 +176,7 @@ class CacheManager:
         # Process each cached review result
         for cache_item in cache_items:
             # Deserialize the cached review result
-            cached_review_result = ReviewResult.model_validate(cache_item)
+            cached_review_result = ReviewResult.from_cache_item(cache_item)
             cached_sample_scores.append(cached_review_result.to_sample_score())
 
         # Filter out task states that already have review scores
@@ -196,11 +203,32 @@ class CacheManager:
         return file_path
 
     def delete_review_cache(self, subset: str):
-        """Delete the review cache for a specific subset. If the cache exists, it will be removed."""
+        """Start a transactional review rerun without touching the previous review file."""
         file_path = self.get_review_cache_path(subset)
-        if os.path.exists(file_path):
-            logger.info(f'Deleting review cache file: {file_path}')
-            os.remove(file_path)
+        temporary = f'{file_path}.rerun-{uuid.uuid4().hex}'
+        self._review_reruns[file_path] = temporary
+        logger.debug(f'Rescoring reviews into temporary cache: {temporary}')
+
+    def commit_review_reruns(self) -> None:
+        """Atomically publish every fully written review rerun."""
+        for file_path, temporary in list(self._review_reruns.items()):
+            writer = self._writers.pop(temporary, None)
+            if writer is not None:
+                writer.close()
+            if not os.path.exists(temporary):
+                continue
+            os.replace(temporary, file_path)
+            del self._review_reruns[file_path]
+
+    def discard_review_reruns(self) -> None:
+        """Close and remove incomplete transactional review files after a failed rerun."""
+        for file_path, temporary in list(self._review_reruns.items()):
+            writer = self._writers.pop(temporary, None)
+            if writer is not None:
+                writer.close()
+            if os.path.exists(temporary):
+                os.unlink(temporary)
+            del self._review_reruns[file_path]
 
     def save_review_cache(
         self,
@@ -221,6 +249,7 @@ class CacheManager:
             The saved review result object
         """
         cache_file = self.get_review_cache_path(subset)
+        cache_file = self._review_reruns.get(cache_file, cache_file)
         # Convert score and state to serializable review result
         review_result = ReviewResult.from_score_state(sample_score, task_state, save_metadata)
         # Serialize to dictionary, convert non-JSON types (numpy, datetime), append.
@@ -367,6 +396,8 @@ class ReviewResult(BaseModel):
     including the computed score and relevant context.
     """
 
+    model_config = ConfigDict(extra='ignore')
+
     index: int
     """Index of the sample that was reviewed."""
 
@@ -404,6 +435,11 @@ class ReviewResult(BaseModel):
         # validation).
         data.pop('trajectory', None)
         return data
+
+    @classmethod
+    def from_cache_item(cls, data: Any) -> 'ReviewResult':
+        """Load a review result from an on-disk cache row."""
+        return cls.model_validate(data)
 
     @property
     def messages_markdown(self) -> str:

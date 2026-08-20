@@ -1,19 +1,30 @@
-import ast
-import re
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, parse_answers_zh, prompt
 
 logger = get_logger()
+
+
+class CmmuGrade(BaseModel):
+    """The judge's required reply: a proportion of correctly answered blanks, plus its reasoning."""
+
+    correct: float = Field(ge=0.0, le=1.0)
+    analysis: str = ''
+
+
+# The judge prompt requires exactly this JSON object as the whole reply.
+GRADE_CONTRACT = OutputContract(schema_model=CmmuGrade)
 
 SUBSET_LIST = ['biology', 'chemistry', 'geography', 'history', 'math', 'physics', 'politics']
 
@@ -78,7 +89,7 @@ CMMU is a novel Chinese multi-modal benchmark designed to evaluate domain-specif
 )
 class CMMUAdapter(VisionLanguageAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -130,50 +141,46 @@ class CMMUAdapter(VisionLanguageAdapter):
         else:
             return prediction.strip()
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
-        question = task_state.input_text
-        question_type = task_state.metadata['type']
-        if question_type in [MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE]:
-            score.value = {'acc': 1 if filtered_prediction == reference else 0}
-        else:
-            from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
-
-            prompt = EVALUATION_USER_TEMPLATE.format(
-                question=question, target=reference, predicted_answer=original_prediction
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        if context.task_state.metadata['type'] in (MULTI_CHOICE_TYPE, MULTIPLE_RESPONSE_TYPE):
+            return JudgeDefinition.skip(
+                Score(
+                    extracted_prediction=context.filtered_prediction,
+                    prediction=context.original_prediction,
+                    value={'acc': 1.0 if context.filtered_prediction == context.reference else 0.0},
+                    main_score_name='acc'
+                ),
+                reason='deterministic_choice_scoring',
             )
-            judge_response = self.llm_judge.judge(prompt, system_prompt=EVALUATION_SYSTEM_PROMPT)
-            try:
-                ans_parsed = ast.literal_eval(judge_response)
-                correctness = ans_parsed.get('correct', 0)
-                analysis = ans_parsed.get('analysis', '')
-            except Exception:
-                pattern = re.compile(r'"correct"\s*:\s*1')
-                match = re.search(pattern, judge_response)
-                correctness = 1 if match else 0
 
-            score.value = {
-                'acc': correctness,
-            }
-            score.explanation = f'LLM judge: {judge_response}'
-            score.metadata = {
-                'source': 'llm_judge',
-                'judge_strategy': self.judge_strategy,
-                'analysis': analysis,
-                'model': self.llm_judge.model_id
-            }
-        score.main_score_name = 'acc'
-        return score
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
+            prompt_text = EVALUATION_USER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                target=judge_context.reference,
+                predicted_answer=judge_context.original_prediction,
+            )
+            return JudgeRequest(
+                messages=[ChatMessageSystem(content=EVALUATION_SYSTEM_PROMPT),
+                          ChatMessageUser(content=prompt_text)]
+            )
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade = case_verdicts[0].value
+            return ReducedVerdict(value={'acc': grade.correct}, metadata={'analysis': grade.analysis})
+
+        def finalize(score, review, judge_context) -> Score:
+            for observation in review.valid_observations:
+                score.metadata.update(observation.reduced.metadata)
+            return score
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='acc',
+            finalize=finalize
+        )
 
     @staticmethod
     def create_content_and_answers_list(record: Dict[str, Any]) -> tuple[List[Content], List[str]]:

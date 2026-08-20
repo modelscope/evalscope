@@ -1,16 +1,21 @@
 import ast
-import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
-from evalscope.api.metric import Score
+from evalscope.api.judge import JudgeContext, JudgeDefinition
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class Grade(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['A', 'B', 'C']
+
 
 GRADER_TEMPLATE = """
 Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -90,7 +95,6 @@ A: CORRECT
 B: INCORRECT
 C: NOT_ATTEMPTED
 
-Just return the letters "A", "B", or "C", with no text around it.
 """.strip()  # noqa: E501
 
 
@@ -138,7 +142,7 @@ SimpleQA is a benchmark by OpenAI designed to evaluate language models' ability 
 )
 class SimpleQAAdapter(DefaultDataAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -159,38 +163,32 @@ class SimpleQAAdapter(DefaultDataAdapter):
 
         return Sample(input=question, target=answer, metadata=ast.literal_eval(metadata))
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+        prompt = GRADER_TEMPLATE.format(
+            question=context.task_state.input_text,
+            target=context.reference,
+            predicted_answer=context.filtered_prediction,
         )
-
-        question = task_state.input_text
-
-        # Request judge and obtain score
-        prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
-        judge_response = self.llm_judge.judge(prompt)
-        # parse grading response
-        match = re.search(r'(A|B|C)', judge_response)
-        res = match.group(0) if match else 'C'
-
-        # Set score based on the match result
-        score.value = {
-            'is_correct': 1 if res == 'A' else 0,
-            'is_incorrect': 1 if res == 'B' else 0,
-            'is_not_attempted': 1 if res == 'C' else 0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
-        score.main_score_name = 'is_correct'
-        return score
+        return JudgeDefinition.labels(
+            prompt=prompt,
+            schema_model=Grade,
+            case_id='grade',
+            scores={
+                'A': {
+                    'is_correct': 1.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 0.0
+                },
+                'B': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 1.0,
+                    'is_not_attempted': 0.0
+                },
+                'C': {
+                    'is_correct': 0.0,
+                    'is_incorrect': 0.0,
+                    'is_not_attempted': 1.0
+                },
+            },
+            main_score_name='is_correct',
+        )

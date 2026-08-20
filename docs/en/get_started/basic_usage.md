@@ -199,7 +199,6 @@ For certain subjective or open-ended tasks (such as `simple_qa`), you can specif
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='qwen2.5-7b-instruct',
@@ -208,11 +207,13 @@ task_cfg = TaskConfig(
     eval_type='openai_api',
     datasets=['chinese_simpleqa'],
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    judge={
+        'strategy': 'auto',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        },
     }
 )
 
@@ -305,7 +306,7 @@ evalscope eval \
 
 ### Continue Evaluation from Existing/Interrupted Results
 
-If a previous evaluation task was interrupted, or you want to continue evaluating based on existing results, you can use the `--use-cache` parameter to specify the previous output directory. This will skip completed samples and only evaluate the remaining ones. Additionally, you can use the `--rerun-review` parameter to force re-execution of the scoring step for all samples.
+If a previous evaluation task was interrupted, or you want to continue evaluating based on existing results, you can use the `--use-cache` parameter to specify the previous output directory. This will skip completed samples and only evaluate the remaining ones. Additionally, `--rerun-review` re-scores cached predictions and atomically replaces the review cache after a successful run.
 
 ```shell
 evalscope eval \

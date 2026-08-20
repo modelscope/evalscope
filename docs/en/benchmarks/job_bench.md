@@ -18,7 +18,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 ## Evaluation Notes
 
 - The default evaluation split is `main`.
-- Configure `judge_model_args` for rubric scoring.
+- Configure `judge.models` for rubric scoring.
 - `normalized_score` is the primary weighted score (raw total / max score); `pass_rate` is the unweighted
   proportion of fully passed rubrics; `judge_score` is the raw sum of passed rubric weights, reported as a diagnostic.
 - Docker runs use `python:3.11-slim-bookworm` by default. For formal evaluation, provide an image with the Office,
@@ -54,7 +54,7 @@ deliverables, and reconciling multi-source information. This adapter uses the Mo
 {
   "input": [
     {
-      "id": "203fd1aa",
+      "id": "9cdb8ee0",
       "content": "You are preparing the Statistical Analysis Plan for Phase III trial XR-2847 evaluating cardiovascular disease prevention. The sponsor requires validation of statistical assumptions against empirical data and regulatory alignment before protoc ... [TRUNCATED 2026 chars] ... erables.\n\nWrite every final deliverable file under `jobbench_output`. Do not put intermediate scratch files there.\nYour final message may summarize what you produced, but files requested by the task must be actual files in\n`jobbench_output`.\n"
     }
   ],

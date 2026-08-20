@@ -249,7 +249,7 @@ def test_match_score_marks_submission_ready_with_deliverable() -> None:
 
 def test_calculate_metrics_does_not_run_local_llm_judge_for_gdpval() -> None:
     adapter = make_adapter()
-    adapter._task_config.judge_strategy = JudgeStrategy.LLM
+    adapter._task_config.judge.strategy = JudgeStrategy.LLM
     sample = Sample(
         input='Task prompt',
         target='',

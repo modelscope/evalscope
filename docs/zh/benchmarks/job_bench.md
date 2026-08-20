@@ -3,20 +3,20 @@
 
 ## 概述
 
-JobBench 评估智能体系统在真实专业工作场景中的表现，这些任务需要阅读参考文件、生成交付成果，并整合多源信息。此适配器使用 ModelScope 数据集 `evalscope/job-bench`。
+JobBench 评估智能体系统在真实专业工作场景中的表现，这些任务要求阅读参考文件、生成交付物，并整合多源信息。本适配器使用 ModelScope 数据集 `evalscope/job-bench`。
 
 ## 任务描述
 
-- **任务类型**：智能体专业工作 / 交付成果生成
+- **任务类型**：智能体专业工作 / 交付物生成
 - **输入**：职场风格的任务提示，可选包含 `reference_files/` 目录下的参考文件
-- **输出**：最终交付成果文件写入 `jobbench_output/` 目录
+- **输出**：最终交付物文件写入 `jobbench_output/` 目录
 - **数据集**：ModelScope `evalscope/job-bench`
 - **评估指标**：加权 LLM 评分标准得分（`normalized_score`）
 
 ## 评估说明
 
-- 默认评估划分（split）为 `main`。
-- 配置 `judge_model_args` 用于评分标准打分。
+- 默认评估划分是 `main`。
+- 配置 `judge.models` 用于评分标准打分。
 - `normalized_score` 是主要的加权得分（原始总分 / 满分）；`pass_rate` 是完全通过评分项的未加权比例；`judge_score` 是通过评分项权重的原始总和，仅作为诊断指标报告。
 - Docker 运行默认使用 `python:3.11-slim-bookworm` 镜像。正式评估时，请提供包含任务所需 Office、PDF 和电子表格工具的镜像。
 
@@ -49,7 +49,7 @@ JobBench 评估智能体系统在真实专业工作场景中的表现，这些�
 {
   "input": [
     {
-      "id": "203fd1aa",
+      "id": "9cdb8ee0",
       "content": "You are preparing the Statistical Analysis Plan for Phase III trial XR-2847 evaluating cardiovascular disease prevention. The sponsor requires validation of statistical assumptions against empirical data and regulatory alignment before protoc ... [TRUNCATED 2026 chars] ... erables.\n\nWrite every final deliverable file under `jobbench_output`. Do not put intermediate scratch files there.\nYour final message may summarize what you produced, but files requested by the task must be actual files in\n`jobbench_output`.\n"
     }
   ],

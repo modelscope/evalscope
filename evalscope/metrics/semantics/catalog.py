@@ -179,10 +179,10 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'param_default_accept_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- diagnostics: distribution shares and raw counts carry no direction --------------
     'error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'mean_is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'mean_is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
+    'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
+    'mean_is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
+    'mean_is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
     'inference_error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'yes_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
     'maybe_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
@@ -415,6 +415,10 @@ METRIC_DEFINITIONS: Dict[str, MetricEntry] = {
     for name in names
 }
 METRIC_DEFINITIONS.update({
+    # Three-way answer grading exposes these distribution shares as diagnostics. They remain
+    # non-primary and directionless, but deserve report labels rather than internal identities.
+    'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
+    'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
     'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

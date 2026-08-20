@@ -216,7 +216,6 @@ evalscope eval \
 ```python
 import os
 from evalscope import TaskConfig, run_task
-from evalscope.constants import JudgeStrategy
 
 task_cfg = TaskConfig(
     model='qwen2.5-7b-instruct',
@@ -225,11 +224,13 @@ task_cfg = TaskConfig(
     eval_type='openai_api',
     datasets=['chinese_simpleqa'],
     limit=5,
-    judge_strategy=JudgeStrategy.AUTO,
-    judge_model_args={
-        'model_id': 'qwen2.5-72b-instruct',
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': os.getenv('DASHSCOPE_API_KEY'),
+    judge={
+        'strategy': 'auto',
+        'models': {
+            'model_id': 'qwen2.5-72b-instruct',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': os.getenv('DASHSCOPE_API_KEY'),
+        },
     }
 )
 
@@ -322,7 +323,7 @@ evalscope eval \
 
 ### 从已有/中断的评测结果继续评测
 
-如果之前的评测任务中断，或者您想基于已有的评测结果继续进行评测，可以使用 `--use-cache` 参数指定之前的输出目录。这将跳过已完成的样本，只评测剩余样本。此外，还可以通过 `--rerun-review` 参数强制对所有样本重新执行评分步骤。
+如果之前的评测任务中断，或者您想基于已有的评测结果继续进行评测，可以使用 `--use-cache` 参数指定之前的输出目录。这将跳过已完成的样本，只评测剩余样本。此外，`--rerun-review` 会基于缓存的 prediction 重新评分，并只在成功后原子替换 review 缓存。
 
 ```shell
 evalscope eval \

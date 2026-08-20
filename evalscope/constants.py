@@ -2,6 +2,7 @@
 # flake8: noqa
 import os
 from datetime import timedelta, timezone
+from enum import Enum
 
 os.environ['MODELSCOPE_LOG_LEVEL'] = '40'  # Set default log level to ERROR
 
@@ -114,9 +115,57 @@ class JudgeStrategy:
     LLM_RECALL = 'llm_recall'
 
 
+class ScoringPolicy(str, Enum):
+    """What a benchmark's own scoring paths can do, declared by its adapter.
+
+    Encodes two orthogonal facts in one value so that the illegal combination -- no usable rule
+    path yet ``auto`` resolving to rule -- cannot be expressed. Every benchmark always has a
+    judge path because ``DataAdapter`` inherits the generic grader from ``LLMJudgeMixin``, so
+    "supports a judge" needs no field.
+    """
+
+    RULE_DEFAULT = 'rule_default'
+    """Usable rule path; ``auto`` scores by rule."""
+
+    JUDGE_DEFAULT = 'judge_default'
+    """Usable rule path, but ``auto`` scores with the judge because it is more faithful."""
+
+    JUDGE_ONLY = 'judge_only'
+    """No usable rule path: rule scoring would raise or only ever emit zeros."""
+
+    @property
+    def rule_supported(self) -> bool:
+        return self is not ScoringPolicy.JUDGE_ONLY
+
+    @property
+    def judge_by_default(self) -> bool:
+        return self is not ScoringPolicy.RULE_DEFAULT
+
+
 class JudgeScoreType:
     NUMERIC = 'numeric'  # numeric score
     PATTERN = 'pattern'  # pattern matching score
+
+
+class ScoreStatus(str, Enum):
+    """Whether a score is usable, and why it is not.
+
+    A failed judge is not a zero: only ``SUCCESS`` and ``FALLBACK`` carry a score that may
+    enter aggregation. The remaining values mean the score is unavailable and the sample
+    must be excluded from the affected metric rather than counted as 0.
+    """
+
+    SUCCESS = 'success'
+    TRANSPORT_ERROR = 'transport_error'
+    PARSE_ERROR = 'parse_error'
+    INVALID_SESSION = 'invalid_session'
+    FALLBACK = 'fallback'
+    DEGRADED = 'degraded'
+    EXCLUDED = 'excluded'
+
+    @property
+    def is_usable(self) -> bool:
+        return self in (ScoreStatus.SUCCESS, ScoreStatus.FALLBACK, ScoreStatus.DEGRADED)
 
 
 class ModelTask:

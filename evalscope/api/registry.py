@@ -106,8 +106,6 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
     Args:
         name (str): The name of the benchmark.
         config (Optional['TaskConfig']): The task configuration.
-        dataset_args (Optional[dict]): The dataset-specific arguments.
-
     """
     # copy to avoid modifying the original metadata
     metadata = copy.deepcopy(BENCHMARK_REGISTRY.get(name))
@@ -117,7 +115,7 @@ def get_benchmark(name: str, config: Optional['TaskConfig'] = None) -> 'DataAdap
     # Update metadata with dataset-specific configuration
     if config is not None:
         metadata._update(config.dataset_args.get(name, {}))
-    # Return the data adapter initialized with the benchmark metadata
+    # Construction must be side-effect free: callers also use this helper for metadata and docs.
     data_adapter_cls = metadata.data_adapter
     return data_adapter_cls(benchmark_meta=metadata, task_config=config)
 

@@ -266,7 +266,7 @@ You can specify a judge model through the `judge_model` parameter to generate re
 
 ```python
 from evalscope.run import run_task
-from evalscope.constants import EvalType, JudgeStrategy
+from evalscope.constants import EvalType
 from os import environ as env
 
 task_cfg = TaskConfig(
@@ -282,17 +282,16 @@ task_cfg = TaskConfig(
         }
     },
     limit=5,
-    judge_model_args={
-        'model_id': 'qwen-plus',  # Does not need to be a multimodal model
-        'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-        'api_key': env.get('DASHSCOPE_API_KEY'),
-        'generation_config': {
-            'temperature': 0.0,
-            'max_tokens': 4096
+    judge={
+        'strategy': 'llm',
+        'models': {
+            'model_id': 'qwen-plus',  # Does not need to be a multimodal model
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {'temperature': 0.0, 'max_tokens': 4096},
         },
     },
     eval_batch_size=5,
-    judge_strategy=JudgeStrategy.LLM,
 )
 result = run_task(task_cfg=task_cfg)
 ```
@@ -307,9 +306,8 @@ evalscope eval \
   --datasets general_vqa \
   --dataset-args '{"general_vqa": {"local_path": "custom_eval/multimodal/vqa", "subset_list": ["example_openai"]}}' \
   --limit 5 \
-  --judge-model-args '{"model_id": "qwen-plus", "api_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key": "$DASHSCOPE_API_KEY", "generation_config": {"temperature": 0.0, "max_tokens": 4096}}' \
-  --judge-worker-num 5 \
-  --judge-strategy llm
+  --eval-batch-size 5 \
+  --judge '{"strategy": "llm", "models": {"model_id": "qwen-plus", "api_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "api_key": "$DASHSCOPE_API_KEY", "generation_config": {"temperature": 0.0, "max_tokens": 4096}}}'
 ```
 
 Evaluation will output accuracy metrics:

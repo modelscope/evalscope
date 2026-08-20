@@ -1,18 +1,26 @@
 # flake8: noqa: E501
-import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.io_utils import convert_image_base64_format
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+
+class Grade(BaseModel):
+    reasoning: str = ''
+    verdict: Literal['A', 'B', 'C']
+
+
+GRADE_CONTRACT = OutputContract(schema_model=Grade)
 
 GRADER_TEMPLATE = """
 Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -92,7 +100,6 @@ A: CORRECT
 B: INCORRECT
 C: NOT_ATTEMPTED
 
-Just return the letters "A", "B", or "C", with no text around it.
 """.strip()  # noqa: E501
 
 
@@ -137,7 +144,7 @@ SimpleVQA is the first comprehensive multimodal benchmark to evaluate the factua
 )
 class SimpleVQAAdapter(VisionLanguageAdapter):
 
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -165,38 +172,29 @@ class SimpleVQAAdapter(VisionLanguageAdapter):
             }
         )
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
+
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            prompt = GRADER_TEMPLATE.format(
+                question=judge_context.task_state.input_text,
+                target=judge_context.reference,
+                predicted_answer=judge_context.filtered_prediction,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
+
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            grade = case_verdicts[0].value.verdict
+            return ReducedVerdict(
+                value={
+                    'is_correct': 1.0 if grade == 'A' else 0.0,
+                    'is_incorrect': 1.0 if grade == 'B' else 0.0,
+                    'is_not_attempted': 1.0 if grade == 'C' else 0.0,
+                }
+            )
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='is_correct'
         )
-
-        question = task_state.input_text
-
-        # Request judge and obtain score
-        prompt = GRADER_TEMPLATE.format(question=question, target=reference, predicted_answer=filtered_prediction)
-        judge_response = self.llm_judge.judge(prompt)
-        # parse grading response
-        match = re.search(r'(A|B|C)', judge_response)
-        res = match.group(0) if match else 'C'
-
-        # Set score based on the match result
-        score.value = {
-            'is_correct': 1 if res == 'A' else 0,
-            'is_incorrect': 1 if res == 'B' else 0,
-            'is_not_attempted': 1 if res == 'C' else 0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id
-        }
-        score.main_score_name = 'is_correct'
-        return score

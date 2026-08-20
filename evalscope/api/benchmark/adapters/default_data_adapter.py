@@ -704,23 +704,38 @@ class DefaultDataAdapter(DataAdapter):
                 task_state=task_state
             )
 
-            # Step 2: Apply LLM judge if enabled and get final score
-            final_score = self.maybe_llm_match_score(
-                original_prediction=prediction,
-                filtered_prediction=filtered_prediction,
-                reference=task_state.target,
-                task_state=task_state,
-                rule_based_score=rule_based_score
-            )
+            if float(rule_based_score.main_value or 0.0) > 0.99:
+                final_score = rule_based_score
+            else:
+                # A valid judge may raise the rule score; an unavailable judge preserves it.
+                judge_score = self.score_with_judge_contracts(
+                    original_prediction=prediction,
+                    filtered_prediction=filtered_prediction,
+                    reference=task_state.target,
+                    task_state=task_state,
+                )
+                final_score = self._merge_scores(rule_based_score, judge_score)
         else:
             if self.use_llm_judge:
-                # Use LLM judge to compute the match score directly
-                final_score = self.llm_match_score(
+                # Judge-default benchmarks retain their usable rule score when the judge fails.
+                judge_score = self.score_with_judge_contracts(
                     original_prediction=prediction,
                     filtered_prediction=filtered_prediction,
                     reference=task_state.target,
                     task_state=task_state
                 )
+                if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
+                    final_score = self.fallback_to_rule_score(
+                        self.match_score(
+                            original_prediction=prediction,
+                            filtered_prediction=filtered_prediction,
+                            reference=task_state.target,
+                            task_state=task_state,
+                        ),
+                        judge_score,
+                    )
+                else:
+                    final_score = judge_score
             else:
                 # Use standard match score calculation without LLM judge
                 final_score = self.match_score(
@@ -735,6 +750,7 @@ class DefaultDataAdapter(DataAdapter):
             score=final_score,
             sample_id=task_state.sample_id,
             group_id=task_state.group_id,
+            generation_index=(task_state.sample_id % self.repeats) if self.repeats > 1 else 0,
             sample_metadata=task_state.metadata,
         )
 

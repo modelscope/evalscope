@@ -38,7 +38,7 @@ single capability, so difficulty stems from perception rather than reasoning or 
   (`[reason]` / `[judge] True|False`); the paper uses GPT-oss-120B, whose agreement with human
   judgment is 99.7% on a 300-sample audit
 - Empty or failed generations are scored 0 without invoking the judge
-- Requires `judge_model_args` configuration for the LLM judge
+- Requires an LLM judge configured through `judge.models`
 - The dataset embeds images as base64 data URIs (~1.6 GB download on first use)
 
 

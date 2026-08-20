@@ -22,6 +22,10 @@ export type {
   ChatMessage,
   AgentTraceEvent,
   AgentTrace,
+  // LLM judge diagnostics carried on a score
+  JudgeAttempt,
+  JudgeSummary,
+  PredictionScore,
   PredictionRow,
   PredictionsResponse,
   DeleteReportResponse,

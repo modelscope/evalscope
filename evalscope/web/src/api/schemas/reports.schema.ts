@@ -94,6 +94,21 @@ export const perfMetricsSchema = z.object({
   metric_semantics: z.record(z.string(), metricSemanticsSchema),
 })
 
+/** First-class judge execution summary. Mirrors `JudgeSummary`. */
+export const judgeSummarySchema = z.object({
+  status: z.string().optional(),
+  scored: z.number().optional(),
+  total: z.number().optional(),
+  coverage: z.number().optional(),
+  judge_models: z.array(z.string()).optional(),
+  valid_observations: z.number().optional(),
+  total_observations: z.number().optional(),
+  /** Attempt counts keyed by `ScoreStatus` value. */
+  failures: z.record(z.string(), z.number()).optional(),
+  disagreement: z.record(z.string(), z.unknown()).optional(),
+  error: z.string().optional(),
+})
+
 /** Runtime contract for one dataset report. */
 export const reportDataSchema = z.object({
   schema_version: z.literal(2),
@@ -107,6 +122,7 @@ export const reportDataSchema = z.object({
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
   primary_metric_identity: metricIdentitySchema.nullable(),
+  judge_summary: judgeSummarySchema.optional(),
 })
 
 /** Runtime contract for a report detail response. */
@@ -248,6 +264,45 @@ export const agentTraceSchema = z.object({
   events: z.array(agentTraceEventSchema),
 })
 
+/** One judge request/response round trip, including the ones that failed. Mirrors `JudgeAttempt`. */
+export const judgeAttemptSchema = z.object({
+  /** Mirrors `ScoreStatus`: success, transport_error, parse_error, invalid_session, fallback, excluded. */
+  status: z.string(),
+  case_id: z.string(),
+  judge_id: z.string(),
+  /** Which planned observation this attempt belongs to. */
+  repeat_id: z.number().optional(),
+  /** `original` or `swapped` for a pairwise benchmark that judges both orders. */
+  placement: z.string().optional(),
+  messages: z.array(z.unknown()).optional(),
+  model_output: z.unknown().optional(),
+  raw_response: z.string().optional(),
+  /** The parsed verdict; its shape is the benchmark's own `schema_model`. */
+  parsed_value: z.unknown().optional(),
+  error: z.string().optional(),
+  latency: z.number().optional(),
+})
+
+/**
+ * Mirrors `Score`. Left open with `loose` because `value` and `metadata` keys are
+ * benchmark-defined; only the fields the UI reads are typed.
+ */
+export const predictionScoreSchema = z.looseObject({
+  value: z.record(z.string(), z.unknown()).optional(),
+  /** Mirrors `ScoreStatus`; absent in reports produced before it existed. */
+  status: z.string().optional(),
+  judge_summary: judgeSummarySchema.optional(),
+  explanation: z.string().optional(),
+  main_score_name: z.string().optional(),
+  metadata: z
+    .looseObject({
+      judge_attempts: z.array(judgeAttemptSchema).optional(),
+      judge_skipped: z.boolean().optional(),
+      judge_skip_reason: z.string().optional(),
+    })
+    .optional(),
+})
+
 /** Mirrors `PredictionRow`. */
 export const predictionRowSchema = z.object({
   Index: z.string(),
@@ -256,8 +311,11 @@ export const predictionRowSchema = z.object({
   Generated: z.string(),
   Gold: z.string(),
   Pred: z.string(),
-  Score: z.record(z.string(), z.unknown()),
-  NScore: z.number(),
+  Score: predictionScoreSchema,
+  /** ``null`` when the sample has no usable score; it is excluded from the metric, not 0. */
+  NScore: z.number().nullable(),
+  /** Mirrors ``ScoreStatus``; absent in reports produced before it existed. */
+  Status: z.string().optional(),
   PerfMetrics: samplePerfMetricsSchema.nullable().optional(),
   Messages: z.array(chatMessageSchema).nullable().optional(),
   AgentTrace: agentTraceSchema.nullable().optional(),
@@ -294,6 +352,9 @@ export type ToolCall = z.infer<typeof toolCallSchema>
 export type ChatMessage = z.infer<typeof chatMessageSchema>
 export type AgentTraceEvent = z.infer<typeof agentTraceEventSchema>
 export type AgentTrace = z.infer<typeof agentTraceSchema>
+export type JudgeAttempt = z.infer<typeof judgeAttemptSchema>
+export type JudgeSummary = z.infer<typeof judgeSummarySchema>
+export type PredictionScore = z.infer<typeof predictionScoreSchema>
 export type PredictionRow = z.infer<typeof predictionRowSchema>
 export type PredictionsResponse = z.infer<typeof predictionsResponseSchema>
 export type DeleteReportResponse = z.infer<typeof deleteReportResponseSchema>

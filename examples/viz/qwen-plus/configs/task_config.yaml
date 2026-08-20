@@ -358,9 +358,9 @@ generation_config:
   stream: true
   temperature: 0.7
 ignore_errors: false
-judge_model_args: {}
-judge_strategy: auto
-judge_worker_num: null
+judge:
+  strategy: auto
+  models: []
 limit: 10
 model: qwen-plus
 model_args: {}

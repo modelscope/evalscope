@@ -8,6 +8,7 @@ and report generation.
 """
 
 import os
+import threading
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
@@ -15,9 +16,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.dataset import Dataset, Sample
 from evalscope.api.evaluator import CacheManager, Evaluator, TaskState
+from evalscope.api.judge import summarize_judge_runs
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_evaluator
-from evalscope.constants import HEARTBEAT_INTERVAL_SEC
+from evalscope.constants import HEARTBEAT_INTERVAL_SEC, ScoreStatus
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
 from evalscope.report import Report, gen_perf_table, gen_table
@@ -51,6 +53,9 @@ class _WorkItem:
 
     task_state: Optional[TaskState] = None
     """Cached task state. Set when only review is required."""
+
+    prediction_persisted: bool = False
+    """Whether a newly generated prediction was durably written before review began."""
 
     @property
     def needs_predict(self) -> bool:
@@ -143,6 +148,8 @@ class DefaultEvaluator(Evaluator):
 
         # Initialize PerfCollector for collecting per-request performance metrics
         self.perf_collector = PerfCollector()
+        self._prediction_cache_lock = threading.Lock()
+        self._sample_scores_by_subset: Dict[str, List[SampleScore]] = {}
 
     def eval(self) -> Report:
         """
@@ -200,6 +207,7 @@ class DefaultEvaluator(Evaluator):
 
             # Phase 3 – aggregate scores per subset (batch review happens here too)
             agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
+            self.cache_manager.commit_review_reruns()
 
             # Phase 4 – generate report
             if not agg_score_dict:
@@ -214,6 +222,9 @@ class DefaultEvaluator(Evaluator):
 
             logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
             return report
+        except Exception:
+            self.cache_manager.discard_review_reruns()
+            raise
         finally:
             self.finalize()
 
@@ -352,9 +363,13 @@ class DefaultEvaluator(Evaluator):
             ``(task_state, sample_score)`` where ``sample_score`` is ``None``
             for batch-scoring benchmarks (review deferred).
         """
-        task_state = (
-            self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
-        )
+        task_state = self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+        if item.needs_predict:
+            # A review can fail independently of inference. Persist prediction first so offline
+            # re-review never has to regenerate an already completed answer.
+            with self._prediction_cache_lock:
+                self.cache_manager.save_prediction_cache(item.subset, task_state, self.benchmark.save_metadata)
+            item.prediction_persisted = True
         sample_score = (None if self.benchmark.use_batch_scoring else self._review_task_state(task_state))
         return task_state, sample_score
 
@@ -376,7 +391,7 @@ class DefaultEvaluator(Evaluator):
             task_state: The completed task state (prediction output).
             sample_score: The review score, or ``None`` for batch-scoring.
         """
-        if item.needs_predict:
+        if item.needs_predict and not item.prediction_persisted:
             model_result = self.cache_manager.save_prediction_cache(
                 item.subset, task_state, self.benchmark.save_metadata
             )
@@ -455,6 +470,7 @@ class DefaultEvaluator(Evaluator):
                 continue
 
             logger.info(f'Aggregating scores for subset: {subset}')
+            self._sample_scores_by_subset[subset] = all_scores
             agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
 
         return agg_score_dict
@@ -513,6 +529,7 @@ class DefaultEvaluator(Evaluator):
         report = self.benchmark.generate_report(
             scores=agg_score_dict, model_name=self.model_name, output_dir=report_path
         )
+        report.judge_summary = summarize_judge_runs(self._sample_scores_by_subset.values())
 
         # Generate and display a summary table of results
         try:

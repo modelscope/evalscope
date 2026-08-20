@@ -47,7 +47,7 @@ DataAdapter adopts a Pipeline architecture, supporting custom behavior through h
    calculate_metrics()
    ├── filter_prediction()
    │   └── extract_answer() [Optional User Implementation]
-   ├── match_score() / llm_match_score()
+   ├── match_score() / score_with_judge_contracts()
    └── Returns SampleScore
 
 4. Result Aggregation Phase
@@ -60,6 +60,31 @@ DataAdapter adopts a Pipeline architecture, supporting custom behavior through h
    └── _on_generate_report_end() [Hook Method]
        └── Returns Report
 ```
+
+### Adding an LLM-Judged Benchmark
+
+Users enable judging with the typed `judge` configuration described in [Judge Parameters](../get_started/parameters.md#judge-parameters):
+
+```python
+TaskConfig(
+    model='MODEL_UNDER_TEST',
+    datasets=['your_benchmark'],
+    judge={
+        'strategy': 'llm',
+        'models': {'model_id': 'JUDGE_MODEL', 'api_url': 'OPENAI_COMPATIBLE_URL', 'api_key': 'API_KEY'},
+    },
+)
+```
+
+For an adapter author, judge I/O belongs to `evalscope.api.judge`; do not call `self.llm_judge.judge()` or parse a model reply in the adapter.
+
+1. Declare `scoring_policy`: use `JUDGE_ONLY` when rule scoring is not meaningful, `JUDGE_DEFAULT` when rules remain available but `auto` should judge, and `RULE_DEFAULT` when `auto` should keep rule scoring.
+2. Implement the single adapter entry point, `judge_definition(context)`. For an ordinary one-verdict task, return `JudgeDefinition.labels(...)` or `JudgeDefinition.numeric(...)` with a Pydantic verdict schema. These helpers append the JSON output instruction and keep the prompt, schema, and metric mapping together.
+3. For a rubric, multiple claims, or staged task, define a Pydantic verdict schema and `OutputContract`, then return `JudgeDefinition.workflow(cases=..., request=..., reduce=...)`. Pass `expand=...`, `fallback=...`, or `finalize=...` only when the workflow needs them. The callbacks can be nested in `judge_definition()` or private adapter helpers, but they must be owned by the returned definition rather than exposed as adapter hooks. Append `case.output_contract.instruction()` in a custom request unless the official fixed JSON instruction exactly matches that schema. Use `CaseVerdict.metadata` rather than encoding state into `case_id`.
+4. When a deterministic rule settles a sample without a model call, return `JudgeDefinition.skip(score, reason='...')`. `reason` is required and is persisted as `Score.metadata['judge_skip_reason']` with `Score.metadata['judge_skipped'] = True`; the web review panel labels this as rule-based scoring rather than an LLM verdict.
+5. Add a scripted-judge test covering a valid JSON verdict, malformed/prose output, and a transport error. Invalid judge replies are excluded from the metric; they are not converted to a zero score and are not automatically retried by the executor.
+
+The executor owns request dispatch, position swaps, repeats, multi-judge quorum, aggregation, and review diagnostics. The model transport owns its own retry policy through `generation_config`.
 
 ### Core Data Structures
 

@@ -5,7 +5,7 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -40,7 +40,7 @@ recognition, and visual tracking.
 - Primary metric: **Accuracy** via LLM-as-judge
 - Subsets organized by `type` field (4 categories)
 - LLM judge evaluates both choice and blank answer types uniformly
-- Requires `judge_model_args` configuration for LLM judge
+- Requires an LLM judge configured through `judge.models`
 """
 
 SUBSET_LIST = [
@@ -71,7 +71,7 @@ class BabyVisionAdapter(VisionLanguageAdapter):
 
     Handles both choice and blank answer types uniformly with LLM judge scoring.
     """
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

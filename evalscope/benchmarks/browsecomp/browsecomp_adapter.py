@@ -1,16 +1,30 @@
 import base64
 import hashlib
 import re
-from typing import Any, Dict
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Literal
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
+from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeRequest, OutputContract, ReducedVerdict
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoringPolicy, Tags
 
 BROWSECOMP_DATASET_ID = 'evalscope/browse_comp'
+
+
+# The grader template requires a "correct: yes" / "correct: no" line.
+class Grade(BaseModel):
+    extracted_final_answer: str = ''
+    reasoning: str = ''
+    correct: Literal['yes', 'no']
+    confidence: int = Field(default=100, ge=0, le=100)
+
+
+GRADE_CONTRACT = OutputContract(schema_model=Grade)
 
 QUERY_TEMPLATE = """
 {question}
@@ -67,14 +81,6 @@ def normalize_answer(answer: Any) -> str:
     return ' '.join(re.sub(r'[^\w\s]', ' ', answer.lower()).split())
 
 
-def parse_judge_response(response: Any) -> bool:
-    """Return True only when the judge explicitly reports correctness."""
-    if not response or not isinstance(response, str):
-        return False
-    match = re.search(r'correct:\s*["\']?(yes|no)["\']?', response, re.IGNORECASE)
-    return bool(match and match.group(1).lower() == 'yes')
-
-
 @register_benchmark(
     BenchmarkMeta(
         name='browsecomp',
@@ -119,7 +125,7 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 )
 class BrowseCompAdapter(AgentAdapter):
     """Adapter for the BrowseComp browsing-agent benchmark."""
-    llm_judge_default = True
+    scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -165,37 +171,29 @@ class BrowseCompAdapter(AgentAdapter):
         score.metadata = {'source': 'rule_exact_match'}
         return score
 
-    def llm_match_score(
-        self,
-        original_prediction: str,
-        filtered_prediction: str,
-        reference: str,
-        task_state: TaskState,
-    ) -> Score:
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
+    def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
-        metadata = task_state.metadata or {}
-        question = metadata.get('question') or task_state.input_text
-        prompt = GRADER_TEMPLATE.format(
-            question=question,
-            response=original_prediction,
-            correct_answer=reference,
-        )
-        judge_response = self.llm_judge.judge(prompt)
-        is_correct = parse_judge_response(judge_response)
+        def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
+            task_state = judge_context.task_state
+            prompt = GRADER_TEMPLATE.format(
+                question=(task_state.metadata or {}).get('question') or task_state.input_text,
+                response=judge_context.original_prediction,
+                correct_answer=judge_context.reference,
+            ) + case.output_contract.instruction()
+            return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
-        score.value = {
-            'is_correct': 1.0 if is_correct else 0.0,
-            'is_incorrect': 0.0 if is_correct else 1.0,
-        }
-        score.explanation = f'LLM judge: {judge_response}'
-        score.metadata = {
-            'source': 'llm_judge',
-            'judge_strategy': self.judge_strategy,
-            'model': self.llm_judge.model_id,
-        }
-        score.main_score_name = 'is_correct'
-        return score
+        def reduce(case_verdicts, judge_context) -> ReducedVerdict:
+            is_correct = case_verdicts[0].value.correct == 'yes'
+            return ReducedVerdict(
+                value={
+                    'is_correct': 1.0 if is_correct else 0.0,
+                    'is_incorrect': 0.0 if is_correct else 1.0
+                }
+            )
+
+        return JudgeDefinition.workflow(
+            cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
+            request=request,
+            reduce=reduce,
+            main_score_name='is_correct'
+        )

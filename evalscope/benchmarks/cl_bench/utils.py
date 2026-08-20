@@ -16,16 +16,3 @@ def build_rubrics_text(rubrics: Optional[Iterable[Any]]) -> str:
         if criteria:
             lines.append(f'{index}. {criteria}')
     return '\n'.join(lines) if lines else 'No specific rubrics provided.'
-
-
-def extract_json_block(result_text: str) -> Optional[str]:
-    # Remove code block wrapper if present
-    if result_text.startswith('```json'):
-        result_text = result_text[7:]
-    if result_text.startswith('```'):
-        result_text = result_text[3:]
-    if result_text.endswith('```'):
-        result_text = result_text[:-3]
-    result_text = result_text.strip()
-
-    return result_text

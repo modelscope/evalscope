@@ -28,8 +28,8 @@ range from text-only problems to diagram-based problems.
 
 ## Evaluation Notes
 
-- Requires an LLM judge: run with `judge_strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
-  and provide `judge_model_args`. `judge_strategy='rule'` is not supported.
+- Requires an LLM judge: set `judge.strategy='llm'` (or `'auto'`, which enables the judge for this benchmark)
+  and provide `judge.models`. `judge.strategy='rule'` is not supported.
 - Primary metric: `accuracy`, the per-problem awarded/attainable point ratio in `[0, 1]`, aggregated by mean per subset.
   For step-level problems the attainable maximum is the sum of the marking criteria; for problems with several
   official schemes (EuPhO, NBPhO) the highest-scoring scheme is used, matching the paper.
@@ -102,7 +102,7 @@ range from text-only problems to diagram-based problems.
 {
   "input": [
     {
-      "id": "9ec40cee",
+      "id": "41868500",
       "content": [
         {
           "text": "You are participating in a high school physics Olympiad exam.\nPlease read the following question carefully and provide a clear, step-by-step solution with full reasoning.\nInstructions:\n1. Use LaTeX to format all variables, equations, and calc ... [TRUNCATED 3334 chars] ... gamma} R^{\\delta}$ \nwhere $G$ is the gravitational constant, and $\\beta, \\gamma$ and $\\delta$ are constant exponents.\nQuestion (Answer only the question stated below):\nFind the values of exponents: (1) $\\beta$, (2) $\\gamma$, and (3) $\\delta$."
