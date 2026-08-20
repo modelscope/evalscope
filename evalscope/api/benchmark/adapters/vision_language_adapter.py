@@ -294,3 +294,75 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         else:
             image = image_value
         return ContentImage(image=image)
+
+    def _resolve_media_placeholders(
+        self,
+        messages: List[Dict[str, Any]],
+        image_map: Optional[Dict[int, Union[str, Dict[str, Any]]]] = None,
+        video_map: Optional[Dict[int, Union[str, Dict[str, Any]]]] = None,
+        audio_map: Optional[Dict[int, Union[str, Dict[str, Any]]]] = None,
+    ) -> List[Dict[str, Union[str, Dict, List[Content], Any]]]:
+        """Resolve media placeholders ``<image N>`` / ``<video N>`` / ``<audio N>``
+        in message text with the corresponding media content.
+
+        This is designed for records whose ``messages`` field follows the OpenAI
+        chat-completion format (a list of {"role": "...", "content": "..."} dicts).
+        It walks every message and replaces any placeholder found in a
+        plain-text ``content`` field into ``list[Content]`` object.
+
+        Messages that already carry structured content ("content": [...]) are
+        left untouched — only plain-string ``content`` are scanned for placeholders.
+
+        This function does not validate the resulting messages; the caller should
+        pass the output to :func:`chat_messages_from_openai` or a similar parser
+        to ensure the final messages conform to a specific schema.
+
+        Args:
+            messages (List[Dict[str, Any]]): A list of message dicts that may
+                contain plain-text content with media placeholders.
+            image_map (Optional[Dict[int, Union[str, Dict[str, Any]]]]):
+                Optional mapping of image id to path/URL/base64 values.
+            video_map (Optional[Dict[int, Union[str, Dict[str, Any]]]]):
+                Optional mapping of video id to path/URL/base64 values.
+            audio_map (Optional[Dict[int, Union[str, Dict[str, Any]]]]):
+                Optional mapping of audio id to path/URL/base64 values.
+
+        Returns:
+            List[Dict[str, Any]]: The updated messages list with placeholders
+                resolved.  When *messages* is empty, an empty list is returned.
+        """
+        if not messages:
+            return []
+
+        image_map = image_map or {}
+        video_map = video_map or {}
+        audio_map = audio_map or {}
+
+        updated_messages: List[Dict[str, Union[str, Dict, List[Content], Any]]] = []
+        for message in messages:
+            # skip type validation, waiting for a standard parser to check this
+            if not isinstance(message, dict):
+                updated_messages.append(message)
+                continue
+
+            # for now we resolve plain-text content only
+            # 1. {"role": "...", "content": "..."} triggers resolution (<image k> -> ContentImage)
+            # 2. {"role": "...", "content": [...]} bypasses resolution (already openai-structured)
+            content = message.get('content')
+            if not isinstance(content, str):
+                updated_messages.append(message)
+                continue
+
+            # non-user msgs will be filled as well, this behavior may be unexpected in some cases.
+            # we should document this behavior explicitly, as well as ways to bypass it
+            content_list = self._parse_text_with_media(
+                text=content,
+                image_map=image_map,
+                video_map=video_map,
+                audio_map=audio_map,
+            )
+            # preserve all original message keys, only overwrites the content field
+            updated_messages.append(dict(message) | {'content': content_list})
+
+        # return without validation of values/types
+        return updated_messages
