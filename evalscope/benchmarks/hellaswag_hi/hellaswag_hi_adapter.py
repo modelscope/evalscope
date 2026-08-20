@@ -23,8 +23,8 @@ logger = get_logger()
 HellaSwag-Hindi is a Hindi translation of the HellaSwag commonsense sentence-completion benchmark's
 full validation set. The context stem stays in English; the 4 candidate continuations are translated
 into Hindi, so the model must connect an English scenario to its most plausible Hindi-phrased ending.
-Sourced from `ai4bharat/hellaswag-hi`, the same dataset used by lighteval's `community_hellaswag_hin`
-tasks.
+Sourced from `ai4bharat/hellaswag-translated` (the canonical name; the older `ai4bharat/hellaswag-hi`
+ID redirects here), the same dataset used by lighteval's `community_hellaswag_hin` tasks.
 
 ## Task Description
 
@@ -33,13 +33,19 @@ tasks.
 - **Output**: Correct answer letter
 - **Coverage**: Full HellaSwag validation set (10,042 examples)
 
+## Key Features
+
+- Full HellaSwag validation set: 10,042 examples with gold labels
+- English context stem paired with Hindi-translated candidate endings (mixed-language setup)
+- Same dataset used by lighteval's `community_hellaswag_hin` task suite
+
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (validation split, the only labeled split
   available — HellaSwag's `test` split ships without gold labels)
-- Not mirrored on ModelScope; set `dataset_hub: huggingface` in `TaskConfig` to load it
+- Loads from ModelScope by default (mirrored as `ai4bharat/hellaswag-translated`), no token required
 """,
-        dataset_id='ai4bharat/hellaswag-hi',
+        dataset_id='ai4bharat/hellaswag-translated',
         metric_list=['acc'],
         subset_list=['hi'],
         few_shot_num=0,

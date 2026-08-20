@@ -58,6 +58,13 @@ the translated question/choices.
 - **Languages**: Assamese, Bengali, Bodo, Dogri, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili,
   Malayalam, Manipuri, Marathi, Nepali, Oriya, Punjabi, Sanskrit, Santhali, Sindhi, Tamil, Telugu, Urdu
 
+## Key Features
+
+- ~14,963 questions per language across 22 Indic languages per domain (~330k total per domain)
+- Machine-translated from English with LLM-judged translation quality scores
+- 22 scheduled languages of India, all in native script; no English split
+- Four domains available as separate benchmarks: Ayurveda, Finance, Krishi, Legal
+
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (test split, the only split available)

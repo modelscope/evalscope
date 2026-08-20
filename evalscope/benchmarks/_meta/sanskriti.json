@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "pretty_name": "Sanskriti",
+    "dataset_id": "evalscope/Sanskriti",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "association",
+      "country",
+      "gk",
+      "states"
+    ],
+    "description": "\n## Overview\n\nSanskriti is a multiple-choice trivia benchmark testing knowledge of Indian states' culture, history,\nand geography, sourced from state-specific attributes (art, cuisine, festivals, etc.) with\nWikipedia-backed answers. From the SANSKRITI paper (arXiv:2506.15355); this adapter loads the\ndataset mirrored to ModelScope as `evalscope/Sanskriti`.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Trivia Question Answering\n- **Input**: A question about a specific Indian state's culture/geography/history, with 4 answer choices\n- **Output**: Correct answer letter\n- **Subsets**: `association` (state-attribute association trivia), `country` (country-level trivia),\n  `gk` (general knowledge), `states` (state-identification trivia)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (the dataset's only split, named `train` upstream\n  despite being evaluation data)\n- Questions and choices are in English\n- The paper acknowledges some questions involve ambiguous cultural elements; a small number of rows\n  (~0.6%) whose `answer` doesn't match any of the 4 listed options are skipped at load time\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 21726,
+    "subset_stats": [
+      {
+        "name": "association",
+        "sample_count": 5453,
+        "prompt_length_mean": 343.41,
+        "prompt_length_min": 273,
+        "prompt_length_max": 523,
+        "prompt_length_std": 30.29,
+        "target_length_mean": 1
+      },
+      {
+        "name": "country",
+        "sample_count": 5563,
+        "prompt_length_mean": 284.48,
+        "prompt_length_min": 256,
+        "prompt_length_max": 417,
+        "prompt_length_std": 22.43,
+        "target_length_mean": 1
+      },
+      {
+        "name": "gk",
+        "sample_count": 5328,
+        "prompt_length_mean": 346.94,
+        "prompt_length_min": 263,
+        "prompt_length_max": 547,
+        "prompt_length_std": 33.52,
+        "target_length_mean": 1
+      },
+      {
+        "name": "states",
+        "sample_count": 5382,
+        "prompt_length_mean": 318.17,
+        "prompt_length_min": 260,
+        "prompt_length_max": 636,
+        "prompt_length_std": 25.39,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 322.93,
+      "min": 256,
+      "max": 636,
+      "std": 37.75
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-20T16:54:39.304470"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0629b222",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nWhich of the given regions is home to the Jarawa body painting?\n\nA) Surguja district\nB) South Andaman and Middle Andaman Islands\nC) Buddha Marg, Patna\nD) Telangana"
+        }
+      ],
+      "choices": [
+        "Surguja district",
+        "South Andaman and Middle Andaman Islands",
+        "Buddha Marg, Patna",
+        "Telangana"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "association",
+      "metadata": {
+        "state": "Andaman_and_Nicobar",
+        "attribute": "Art"
+      }
+    },
+    "subset": "association",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Sanskriti\n\n\n## Overview\n\nSanskriti is a multiple-choice trivia benchmark testing knowledge of Indian states' culture, history,\nand geography, sourced from state-specific attributes (art, cuisine, festivals, etc.) with\nWikipedia-backed answers. From the SANSKRITI paper (arXiv:2506.15355); this adapter loads the\ndataset mirrored to ModelScope as `evalscope/Sanskriti`.\n\n## Task Description\n\n- **Task Type**: Multiple-Choice Trivia Question Answering\n- **Input**: A question about a specific Indian state's culture/geography/history, with 4 answer choices\n- **Output**: Correct answer letter\n- **Subsets**: `association` (state-attribute association trivia), `country` (country-level trivia),\n  `gk` (general knowledge), `states` (state-identification trivia)\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (the dataset's only split, named `train` upstream\n  despite being evaluation data)\n- Questions and choices are in English\n- The paper acknowledges some questions involve ambiguous cultural elements; a small number of rows\n  (~0.6%) whose `answer` doesn't match any of the 4 listed options are skipped at load time\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `sanskriti` |\n| **Dataset ID** | [evalscope/Sanskriti](https://modelscope.cn/datasets/evalscope/Sanskriti/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 21,726 |\n| Prompt Length (Mean) | 322.93 chars |\n| Prompt Length (Min/Max) | 256 / 636 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `association` | 5,453 | 343.41 | 273 | 523 |\n| `country` | 5,563 | 284.48 | 256 | 417 |\n| `gk` | 5,328 | 346.94 | 263 | 547 |\n| `states` | 5,382 | 318.17 | 260 | 636 |\n\n## Sample Example\n\n**Subset**: `association`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0629b222\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich of the given regions is home to the Jarawa body painting?\\n\\nA) Surguja district\\nB) South Andaman and Middle Andaman Islands\\nC) Buddha Marg, Patna\\nD) Telangana\"\n    }\n  ],\n  \"choices\": [\n    \"Surguja district\",\n    \"South Andaman and Middle Andaman Islands\",\n    \"Buddha Marg, Patna\",\n    \"Telangana\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"association\",\n  \"metadata\": {\n    \"state\": \"Andaman_and_Nicobar\",\n    \"attribute\": \"Art\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sanskriti \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sanskriti'],\n    dataset_args={\n        'sanskriti': {\n            # subset_list: ['association', 'country', 'gk']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Sanskriti\n\n\n## 概述\n\nSanskriti 是一个多项选择题基准测试，用于评估对印度各邦文化、历史和地理知识的掌握情况。题目基于各邦特有的属性（如艺术、美食、节日等）构建，答案均参考维基百科。该适配器加载的是 SANSKRITI 论文（arXiv:2506.15355）中所用数据集在 ModelScope 上的镜像版本 `evalscope/Sanskriti`。\n\n## 任务描述\n\n- **任务类型**：多项选择题问答（Multiple-Choice Trivia Question Answering）\n- **输入**：一道关于特定印度邦文化/地理/历史的问题，附带 4 个选项\n- **输出**：正确答案对应的字母（A/B/C/D）\n- **子集**：`association`（邦与属性关联类题目）、`country`（国家层面常识题）、`gk`（通用知识题）、`states`（邦识别类题目）\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式（尽管上游数据集中该部分被命名为 `train`，但实际为评估数据）\n- 问题和选项均为英文\n- 论文指出部分题目涉及的文化元素存在模糊性；加载时会跳过少量（约 0.6%）答案字段与四个选项均不匹配的样本\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `sanskriti` |\n| **数据集ID** | [evalscope/Sanskriti](https://modelscope.cn/datasets/evalscope/Sanskriti/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 21,726 |\n| 提示词长度（平均） | 322.93 字符 |\n| 提示词长度（最小/最大） | 256 / 636 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `association` | 5,453 | 343.41 | 273 | 523 |\n| `country` | 5,563 | 284.48 | 256 | 417 |\n| `gk` | 5,328 | 346.94 | 263 | 547 |\n| `states` | 5,382 | 318.17 | 260 | 636 |\n\n## 样例示例\n\n**子集**: `association`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0629b222\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nWhich of the given regions is home to the Jarawa body painting?\\n\\nA) Surguja district\\nB) South Andaman and Middle Andaman Islands\\nC) Buddha Marg, Patna\\nD) Telangana\"\n    }\n  ],\n  \"choices\": [\n    \"Surguja district\",\n    \"South Andaman and Middle Andaman Islands\",\n    \"Buddha Marg, Patna\",\n    \"Telangana\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"association\",\n  \"metadata\": {\n    \"state\": \"Andaman_and_Nicobar\",\n    \"attribute\": \"Art\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sanskriti \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sanskriti'],\n    dataset_args={\n        'sanskriti': {\n            # subset_list: ['association', 'country', 'gk']  # 可选，用于指定评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "ac6563130a956de94eed56a8dd9c88fe",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-20T16:54:46.734583",
+  "translation_updated_at": "2026-08-20T17:14:57"
+}

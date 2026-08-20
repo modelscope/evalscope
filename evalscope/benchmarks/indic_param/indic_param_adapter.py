@@ -53,6 +53,13 @@ form for Sanskrit-English).
 - **Languages**: Bodo, Dogri, Gujarati (Surya script), Konkani, Maithili, Marathi, Nepali, Oriya,
   Rajasthani, Sanskrit, Sanskrit-English code-mixed, Santali
 
+## Key Features
+
+- 13,207 multiple-choice questions sourced from official UGC-NET language question papers
+- 12 low-resource Indic languages/scripts, including extremely low-resource ones like Bodo and Santali
+- Questions are presented in each language's native script (or code-mixed form for Sanskrit-English)
+- All languages ship in a single dataset config, differentiated by the `subject` field
+
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation (test split, the only split available)

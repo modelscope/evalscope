@@ -1,0 +1,195 @@
+{
+  "meta": {
+    "pretty_name": "IndicParam",
+    "dataset_id": "bharatgenai/IndicParam",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Bodo",
+      "Dogri",
+      "Gujarati_surya",
+      "Konkani",
+      "Maithili",
+      "Marathi",
+      "Nepali",
+      "Oriya",
+      "Rajasthani",
+      "Sanskrit",
+      "Sanskrit Mix",
+      "Santali"
+    ],
+    "description": "\n## Overview\n\nIndicParam is a graduate-level benchmark evaluating LLM understanding of low- and extremely\nlow-resource Indic languages. All 13,207 multiple-choice questions are sourced from official UGC-NET\nlanguage question papers and answer keys, presented in each language's native script (or code-mixed\nform for Sanskrit-English).\n\n## Task Description\n\n- **Task Type**: Graduate-Level Multiple-Choice Question Answering\n- **Input**: A UGC-NET exam question with 4 answer choices, in a low-resource Indic language\n- **Output**: Correct answer letter\n- **Languages**: Bodo, Dogri, Gujarati (Surya script), Konkani, Maithili, Marathi, Nepali, Oriya,\n  Rajasthani, Sanskrit, Sanskrit-English code-mixed, Santali\n\n## Key Features\n\n- 13,207 multiple-choice questions sourced from official UGC-NET language question papers\n- 12 low-resource Indic languages/scripts, including extremely low-resource ones like Bodo and Santali\n- Questions are presented in each language's native script (or code-mixed form for Sanskrit-English)\n- All languages ship in a single dataset config, differentiated by the `subject` field\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages\n- All languages ship in a single dataset config, differentiated by the `subject` field; this adapter\n  reformats by that field\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 13207,
+    "subset_stats": [
+      {
+        "name": "Bodo",
+        "sample_count": 1313,
+        "prompt_length_mean": 461.37,
+        "prompt_length_min": 256,
+        "prompt_length_max": 738,
+        "prompt_length_std": 117.3,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Dogri",
+        "sample_count": 1027,
+        "prompt_length_mean": 487.72,
+        "prompt_length_min": 245,
+        "prompt_length_max": 853,
+        "prompt_length_std": 121.01,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Gujarati_surya",
+        "sample_count": 1044,
+        "prompt_length_mean": 395.79,
+        "prompt_length_min": 255,
+        "prompt_length_max": 611,
+        "prompt_length_std": 70.82,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Konkani",
+        "sample_count": 1328,
+        "prompt_length_mean": 396.77,
+        "prompt_length_min": 245,
+        "prompt_length_max": 1413,
+        "prompt_length_std": 119.75,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Maithili",
+        "sample_count": 1286,
+        "prompt_length_mean": 284.67,
+        "prompt_length_min": 218,
+        "prompt_length_max": 451,
+        "prompt_length_std": 26.54,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Marathi",
+        "sample_count": 1245,
+        "prompt_length_mean": 382.66,
+        "prompt_length_min": 242,
+        "prompt_length_max": 957,
+        "prompt_length_std": 90.83,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Nepali",
+        "sample_count": 1038,
+        "prompt_length_mean": 406.12,
+        "prompt_length_min": 260,
+        "prompt_length_max": 857,
+        "prompt_length_std": 87.99,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Oriya",
+        "sample_count": 577,
+        "prompt_length_mean": 365.04,
+        "prompt_length_min": 239,
+        "prompt_length_max": 924,
+        "prompt_length_std": 100.83,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Rajasthani",
+        "sample_count": 1190,
+        "prompt_length_mean": 321.32,
+        "prompt_length_min": 237,
+        "prompt_length_max": 1136,
+        "prompt_length_std": 68.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Sanskrit",
+        "sample_count": 1315,
+        "prompt_length_mean": 304.51,
+        "prompt_length_min": 229,
+        "prompt_length_max": 833,
+        "prompt_length_std": 51.64,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Sanskrit Mix",
+        "sample_count": 971,
+        "prompt_length_mean": 352.41,
+        "prompt_length_min": 253,
+        "prompt_length_max": 693,
+        "prompt_length_std": 61.72,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Santali",
+        "sample_count": 873,
+        "prompt_length_mean": 366.16,
+        "prompt_length_min": 233,
+        "prompt_length_max": 809,
+        "prompt_length_std": 91.09,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 376.02,
+      "min": 218,
+      "max": 1413,
+      "std": 106.04
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-20T16:54:38.063161"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "0616580a",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nआथिखालाव सुबुं थुनलाइफोरखौ बुथुमनो थाखाय बबे आदबखौ रासिनै बाहायनाय जायो\n\nA) फट' दैखांनाय\nB) रेकरडिं खालामनाय\nC) सल बुंहोनाय\nD) सल खोनासंनाय"
+        }
+      ],
+      "choices": [
+        "फट' दैखांनाय",
+        "रेकरडिं खालामनाय",
+        "सल बुंहोनाय",
+        "सल खोनासंनाय"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Bodo",
+      "metadata": {
+        "subject": "Bodo",
+        "exam_name": "Question Papers of NET Dec. 2012 Bodo Paper III hindi"
+      }
+    },
+    "subset": "Bodo",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# IndicParam\n\n\n## Overview\n\nIndicParam is a graduate-level benchmark evaluating LLM understanding of low- and extremely\nlow-resource Indic languages. All 13,207 multiple-choice questions are sourced from official UGC-NET\nlanguage question papers and answer keys, presented in each language's native script (or code-mixed\nform for Sanskrit-English).\n\n## Task Description\n\n- **Task Type**: Graduate-Level Multiple-Choice Question Answering\n- **Input**: A UGC-NET exam question with 4 answer choices, in a low-resource Indic language\n- **Output**: Correct answer letter\n- **Languages**: Bodo, Dogri, Gujarati (Surya script), Konkani, Maithili, Marathi, Nepali, Oriya,\n  Rajasthani, Sanskrit, Sanskrit-English code-mixed, Santali\n\n## Key Features\n\n- 13,207 multiple-choice questions sourced from official UGC-NET language question papers\n- 12 low-resource Indic languages/scripts, including extremely low-resource ones like Bodo and Santali\n- Questions are presented in each language's native script (or code-mixed form for Sanskrit-English)\n- All languages ship in a single dataset config, differentiated by the `subject` field\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate specific languages\n- All languages ship in a single dataset config, differentiated by the `subject` field; this adapter\n  reformats by that field\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `indic_param` |\n| **Dataset ID** | [bharatgenai/IndicParam](https://modelscope.cn/datasets/bharatgenai/IndicParam/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 13,207 |\n| Prompt Length (Mean) | 376.02 chars |\n| Prompt Length (Min/Max) | 218 / 1413 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Bodo` | 1,313 | 461.37 | 256 | 738 |\n| `Dogri` | 1,027 | 487.72 | 245 | 853 |\n| `Gujarati_surya` | 1,044 | 395.79 | 255 | 611 |\n| `Konkani` | 1,328 | 396.77 | 245 | 1413 |\n| `Maithili` | 1,286 | 284.67 | 218 | 451 |\n| `Marathi` | 1,245 | 382.66 | 242 | 957 |\n| `Nepali` | 1,038 | 406.12 | 260 | 857 |\n| `Oriya` | 577 | 365.04 | 239 | 924 |\n| `Rajasthani` | 1,190 | 321.32 | 237 | 1136 |\n| `Sanskrit` | 1,315 | 304.51 | 229 | 833 |\n| `Sanskrit Mix` | 971 | 352.41 | 253 | 693 |\n| `Santali` | 873 | 366.16 | 233 | 809 |\n\n## Sample Example\n\n**Subset**: `Bodo`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0616580a\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nआथिखालाव सुबुं थुनलाइफोरखौ बुथुमनो थाखाय बबे आदबखौ रासिनै बाहायनाय जायो\\n\\nA) फट' दैखांनाय\\nB) रेकरडिं खालामनाय\\nC) सल बुंहोनाय\\nD) सल खोनासंनाय\"\n    }\n  ],\n  \"choices\": [\n    \"फट' दैखांनाय\",\n    \"रेकरडिं खालामनाय\",\n    \"सल बुंहोनाय\",\n    \"सल खोनासंनाय\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Bodo\",\n  \"metadata\": {\n    \"subject\": \"Bodo\",\n    \"exam_name\": \"Question Papers of NET Dec. 2012 Bodo Paper III hindi\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_param \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_param'],\n    dataset_args={\n        'indic_param': {\n            # subset_list: ['Bodo', 'Dogri', 'Gujarati_surya']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# IndicParam\n\n\n## 概述\n\nIndicParam 是一个面向研究生水平的基准测试，用于评估大语言模型（LLM）对低资源及极低资源印度语系语言的理解能力。全部 13,207 道选择题均来自官方 UGC-NET 语言科目试题及答案，以各语言的原生文字（或梵语-英语混合形式）呈现。\n\n## 任务描述\n\n- **任务类型**：研究生水平多项选择题问答\n- **输入**：一道用低资源印度语系语言编写的 UGC-NET 考试试题，包含 4 个选项\n- **输出**：正确答案的字母（A/B/C/D）\n- **语言**：博多语（Bodo）、多格里语（Dogri）、古吉拉特语（Surya 字体）、孔卡尼语（Konkani）、迈蒂利语（Maithili）、马拉地语（Marathi）、尼泊尔语（Nepali）、奥里亚语（Oriya）、拉贾斯坦语（Rajasthani）、梵语（Sanskrit）、梵语-英语混合语（Sanskrit-English code-mixed）、桑塔利语（Santali）\n\n## 主要特点\n\n- 包含 13,207 道来自官方 UGC-NET 语言科目试题的多项选择题\n- 覆盖 12 种低资源印度语系语言/文字，包括博多语和桑塔利语等极低资源语言\n- 所有问题均以对应语言的原生文字（或梵语-英语混合形式）呈现\n- 所有语言数据统一打包在一个数据集配置中，通过 `subject` 字段区分不同语言\n\n## 评估说明\n\n- 默认配置采用 **0-shot** 评估方式（仅提供 test 分割）\n- 可通过 `subset_list` 参数指定评估特定语言\n- 所有语言数据统一打包在一个数据集配置中，通过 `subject` 字段区分；本适配器会按该字段重新组织数据格式\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `indic_param` |\n| **数据集 ID** | [bharatgenai/IndicParam](https://modelscope.cn/datasets/bharatgenai/IndicParam/summary) |\n| **论文** | N/A |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 13,207 |\n| 提示词长度（平均） | 376.02 字符 |\n| 提示词长度（最小/最大） | 218 / 1413 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Bodo` | 1,313 | 461.37 | 256 | 738 |\n| `Dogri` | 1,027 | 487.72 | 245 | 853 |\n| `Gujarati_surya` | 1,044 | 395.79 | 255 | 611 |\n| `Konkani` | 1,328 | 396.77 | 245 | 1413 |\n| `Maithili` | 1,286 | 284.67 | 218 | 451 |\n| `Marathi` | 1,245 | 382.66 | 242 | 957 |\n| `Nepali` | 1,038 | 406.12 | 260 | 857 |\n| `Oriya` | 577 | 365.04 | 239 | 924 |\n| `Rajasthani` | 1,190 | 321.32 | 237 | 1136 |\n| `Sanskrit` | 1,315 | 304.51 | 229 | 833 |\n| `Sanskrit Mix` | 971 | 352.41 | 253 | 693 |\n| `Santali` | 873 | 366.16 | 233 | 809 |\n\n## 样例示例\n\n**子集**: `Bodo`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"0616580a\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nआथिखालाव सुबुं थुनलाइफोरखौ बुथुमनो थाखाय बबे आदबखौ रासिनै बाहायनाय जायो\\n\\nA) फट' दैखांनाय\\nB) रेकरडिं खालामनाय\\nC) सल बुंहोनाय\\nD) सल खोनासंनाय\"\n    }\n  ],\n  \"choices\": [\n    \"फट' दैखांनाय\",\n    \"रेकरडिं खालामनाय\",\n    \"सल बुंहोनाय\",\n    \"सल खोनासंनाय\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Bodo\",\n  \"metadata\": {\n    \"subject\": \"Bodo\",\n    \"exam_name\": \"Question Papers of NET Dec. 2012 Bodo Paper III hindi\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets indic_param \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['indic_param'],\n    dataset_args={\n        'indic_param': {\n            # subset_list: ['Bodo', 'Dogri', 'Gujarati_surya']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "23cecfe390dfbceadf88b3bdee6d2a80",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-20T16:54:45.485657",
+  "translation_updated_at": "2026-08-20T17:14:57"
+}

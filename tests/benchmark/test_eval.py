@@ -1010,13 +1010,13 @@ class TestNativeBenchmark(TestBenchmark):
     def test_sanskriti_mock(self):
         """Test Sanskriti Indian-culture trivia benchmark with mock."""
         self._run_dataset_test(
-            'sanskriti', dataset_args={'subset_list': ['gk']}, limit=2, use_mock=True, dataset_hub='huggingface'
+            'sanskriti', dataset_args={'subset_list': ['gk']}, limit=2, use_mock=True
         )
 
     def test_hellaswag_hi_mock(self):
         """Test HellaSwag-Hindi commonsense benchmark with mock."""
         self._run_dataset_test(
-            'hellaswag_hi', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True, dataset_hub='huggingface'
+            'hellaswag_hi', dataset_args={'subset_list': ['hi']}, limit=2, use_mock=True
         )
 
     def test_indic_param_mock(self):

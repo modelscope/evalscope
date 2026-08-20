@@ -1,0 +1,94 @@
+{
+  "meta": {
+    "pretty_name": "BhashaBench-V1 (Krishi)",
+    "dataset_id": "bharatgenai/BhashaBench-Krishi",
+    "paper_url": null,
+    "tags": [
+      "Knowledge",
+      "MCQ",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "English",
+      "Hindi"
+    ],
+    "description": "\n## Overview\n\nBhashaBench-Krishi is the predecessor of BhashaBench-Multi's krishi domain: a domain-specific\nmultiple-choice benchmark evaluating LLM knowledge of agriculture (Krishi), covering English and Hindi.\n\n## Task Description\n\n- **Task Type**: Domain-Specific Multiple-Choice Question Answering\n- **Input**: An agriculture (Krishi) question with 4 answer choices, in English or Hindi\n- **Output**: Correct answer letter\n- **Languages**: English, Hindi\n\n## Key Features\n\n- 5,600–17,000 questions per language, covering English and Hindi only\n- Predecessor of BhashaBench-Multi: same domains, narrower language coverage\n- Each domain is a separate repository, with English and Hindi as separate configs\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate a single language (e.g., `['Hindi']`)\n- Requires access to this gated dataset - on ModelScope (the default hub), accept the terms and\n  ensure you're logged in; alternatively, set `dataset_hub` to `huggingface` and use `HF_TOKEN`\n  after accepting the terms on huggingface.co\n- For broader language coverage of the same domain, see `bhasha_bench_multi_krishi`\n  (22 Indic languages, not gated)\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 15405,
+    "subset_stats": [
+      {
+        "name": "English",
+        "sample_count": 12648,
+        "prompt_length_mean": 429.18,
+        "prompt_length_min": 223,
+        "prompt_length_max": 1841,
+        "prompt_length_std": 185.58,
+        "target_length_mean": 1
+      },
+      {
+        "name": "Hindi",
+        "sample_count": 2757,
+        "prompt_length_mean": 318.93,
+        "prompt_length_min": 233,
+        "prompt_length_max": 678,
+        "prompt_length_std": 51.27,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 409.45,
+      "min": 223,
+      "max": 1841,
+      "std": 174.74
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-20T17:01:04.302413"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "afa2a6e0",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\n\nIt is state or condition of atmosphere at given place and given time.?\n\nA) Climate\nB) Weather\nC) Environment\nD) Atmosphere"
+        }
+      ],
+      "choices": [
+        "Climate",
+        "Weather",
+        "Environment",
+        "Atmosphere"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "language": "English",
+        "topic": ""
+      }
+    },
+    "subset": "English",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# BhashaBench-V1 (Krishi)\n\n\n## Overview\n\nBhashaBench-Krishi is the predecessor of BhashaBench-Multi's krishi domain: a domain-specific\nmultiple-choice benchmark evaluating LLM knowledge of agriculture (Krishi), covering English and Hindi.\n\n## Task Description\n\n- **Task Type**: Domain-Specific Multiple-Choice Question Answering\n- **Input**: An agriculture (Krishi) question with 4 answer choices, in English or Hindi\n- **Output**: Correct answer letter\n- **Languages**: English, Hindi\n\n## Key Features\n\n- 5,600–17,000 questions per language, covering English and Hindi only\n- Predecessor of BhashaBench-Multi: same domains, narrower language coverage\n- Each domain is a separate repository, with English and Hindi as separate configs\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation (test split, the only split available)\n- Use `subset_list` to evaluate a single language (e.g., `['Hindi']`)\n- Requires access to this gated dataset - on ModelScope (the default hub), accept the terms and\n  ensure you're logged in; alternatively, set `dataset_hub` to `huggingface` and use `HF_TOKEN`\n  after accepting the terms on huggingface.co\n- For broader language coverage of the same domain, see `bhasha_bench_multi_krishi`\n  (22 Indic languages, not gated)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bhashabenchv1_krishi` |\n| **Dataset ID** | [bharatgenai/BhashaBench-Krishi](https://modelscope.cn/datasets/bharatgenai/BhashaBench-Krishi/summary) |\n| **Paper** | N/A |\n| **Tags** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 15,405 |\n| Prompt Length (Mean) | 409.45 chars |\n| Prompt Length (Min/Max) | 223 / 1841 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `English` | 12,648 | 429.18 | 223 | 1841 |\n| `Hindi` | 2,757 | 318.93 | 233 | 678 |\n\n## Sample Example\n\n**Subset**: `English`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"afa2a6e0\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nIt is state or condition of atmosphere at given place and given time.?\\n\\nA) Climate\\nB) Weather\\nC) Environment\\nD) Atmosphere\"\n    }\n  ],\n  \"choices\": [\n    \"Climate\",\n    \"Weather\",\n    \"Environment\",\n    \"Atmosphere\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\",\n    \"topic\": \"\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bhashabenchv1_krishi \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bhashabenchv1_krishi'],\n    dataset_args={\n        'bhashabenchv1_krishi': {\n            # subset_list: ['English', 'Hindi']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BhashaBench-V1 (Krishi)\n\n\n## 概述\n\nBhashaBench-Krishi 是 BhashaBench-Multi 中 krishi（农业）领域的前身：这是一个领域特定的多项选择题基准测试，用于评估大语言模型在农业（Krishi）领域的知识，涵盖英语和印地语。\n\n## 任务描述\n\n- **任务类型**：领域特定的多项选择题问答\n- **输入**：一道农业（Krishi）相关的问题，包含 4 个选项，语言为英语或印地语\n- **输出**：正确答案对应的字母\n- **语言**：英语、印地语\n\n## 主要特点\n\n- 每种语言包含 5,600 至 17,000 道题目，仅涵盖英语和印地语\n- BhashaBench-Multi 的前身：领域相同，但语言覆盖范围更窄\n- 每个领域对应一个独立的代码仓库，英语和印地语作为独立的配置项\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估（仅提供 test 分割）\n- 使用 `subset_list` 可评估单一语言（例如 `['Hindi']`）\n- 需要访问此受限制的数据集：在 ModelScope（默认 Hub）上，请先接受条款并确保已登录；或者将 `dataset_hub` 设置为 `huggingface`，并在 huggingface.co 上接受条款后使用 `HF_TOKEN`\n- 如需同一领域更广泛的语言覆盖，请参见 `bhasha_bench_multi_krishi`（涵盖 22 种印度语言，且无需授权）\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `bhashabenchv1_krishi` |\n| **数据集ID** | [bharatgenai/BhashaBench-Krishi](https://modelscope.cn/datasets/bharatgenai/BhashaBench-Krishi/summary) |\n| **论文** | 无 |\n| **标签** | `Knowledge`, `MCQ`, `MultiLingual` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 15,405 |\n| 提示词长度（平均） | 409.45 字符 |\n| 提示词长度（最小/最大） | 223 / 1841 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `English` | 12,648 | 429.18 | 223 | 1841 |\n| `Hindi` | 2,757 | 318.93 | 233 | 678 |\n\n## 样例示例\n\n**子集**: `English`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"afa2a6e0\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D.\\n\\nIt is state or condition of atmosphere at given place and given time.?\\n\\nA) Climate\\nB) Weather\\nC) Environment\\nD) Atmosphere\"\n    }\n  ],\n  \"choices\": [\n    \"Climate\",\n    \"Weather\",\n    \"Environment\",\n    \"Atmosphere\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"language\": \"English\",\n    \"topic\": \"\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bhashabenchv1_krishi \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bhashabenchv1_krishi'],\n    dataset_args={\n        'bhashabenchv1_krishi': {\n            # subset_list: ['English', 'Hindi']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "7a05d64840d6da98d9f17af8009babd9",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-20T17:01:06.690743",
+  "translation_updated_at": "2026-08-20T17:14:57"
+}

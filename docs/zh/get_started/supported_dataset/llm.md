@@ -23,6 +23,14 @@
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
 | `bc5cdr` | [BC5CDR](../../benchmarks/bc5cdr.md) | `Knowledge`, `NER` |
+| `bhasha_bench_multi_ayur` | [BhashaBench-Multi (Ayurveda)](../../benchmarks/bhasha_bench_multi_ayur.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhasha_bench_multi_finance` | [BhashaBench-Multi (Finance)](../../benchmarks/bhasha_bench_multi_finance.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhasha_bench_multi_krishi` | [BhashaBench-Multi (Krishi)](../../benchmarks/bhasha_bench_multi_krishi.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhasha_bench_multi_legal` | [BhashaBench-Multi (Legal)](../../benchmarks/bhasha_bench_multi_legal.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhashabenchv1_ayur` | [BhashaBench-V1 (Ayurveda)](../../benchmarks/bhashabenchv1_ayur.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhashabenchv1_finance` | [BhashaBench-V1 (Finance)](../../benchmarks/bhashabenchv1_finance.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhashabenchv1_krishi` | [BhashaBench-V1 (Krishi)](../../benchmarks/bhashabenchv1_krishi.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `bhashabenchv1_legal` | [BhashaBench-V1 (Legal)](../../benchmarks/bhashabenchv1_legal.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `bigcodebench` | [BigCodeBench](../../benchmarks/bigcodebench.md) | `Coding` |
 | `bigcodebench_hard` | [BigCodeBench-Hard](../../benchmarks/bigcodebench_hard.md) | `Coding` |
 | `biomix_qa` | [BioMixQA](../../benchmarks/biomix_qa.md) | `Knowledge`, `MCQ`, `Medical` |
@@ -60,6 +68,7 @@
 | `harvey_ner` | [HarveyNER](../../benchmarks/harvey_ner.md) | `Knowledge`, `NER` |
 | `health_bench` | [HealthBench](../../benchmarks/health_bench.md) | `Knowledge`, `Medical`, `QA` |
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
+| `hellaswag_hi` | [HellaSwag-Hindi](../../benchmarks/hellaswag_hi.md) | `MCQ`, `Reasoning` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
 | `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
@@ -69,6 +78,7 @@
 | `ifeval` | [IFEval](../../benchmarks/ifeval.md) | `InstructionFollowing` |
 | `imo_answerbench` | [IMO-AnswerBench](../../benchmarks/imo_answerbench.md) | `Math`, `Reasoning` |
 | `indic_boolq` | [BoolQ-Indic](../../benchmarks/indic_boolq.md) | `MCQ`, `MultiLingual`, `ReadingComprehension` |
+| `indic_param` | [IndicParam](../../benchmarks/indic_param.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
@@ -114,6 +124,7 @@
 | `qasc` | [QASC](../../benchmarks/qasc.md) | `Knowledge`, `MCQ` |
 | `race` | [RACE](../../benchmarks/race.md) | `MCQ`, `Reasoning` |
 | `refcoco` | [RefCOCO](../../benchmarks/refcoco.md) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
+| `sanskriti` | [Sanskriti](../../benchmarks/sanskriti.md) | `Knowledge`, `MCQ` |
 | `scicode` | [SciCode](../../benchmarks/scicode.md) | `Coding` |
 | `sciq` | [SciQ](../../benchmarks/sciq.md) | `Knowledge`, `MCQ`, `ReadingComprehension` |
 | `seed_tts_eval` | [Seed-TTS-Eval](../../benchmarks/seed_tts_eval.md) | `Audio`, `TextToSpeech` |
@@ -157,6 +168,14 @@
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
 ../../benchmarks/bc5cdr.md
+../../benchmarks/bhasha_bench_multi_ayur.md
+../../benchmarks/bhasha_bench_multi_finance.md
+../../benchmarks/bhasha_bench_multi_krishi.md
+../../benchmarks/bhasha_bench_multi_legal.md
+../../benchmarks/bhashabenchv1_ayur.md
+../../benchmarks/bhashabenchv1_finance.md
+../../benchmarks/bhashabenchv1_krishi.md
+../../benchmarks/bhashabenchv1_legal.md
 ../../benchmarks/bigcodebench.md
 ../../benchmarks/bigcodebench_hard.md
 ../../benchmarks/biomix_qa.md
@@ -194,6 +213,7 @@
 ../../benchmarks/harvey_ner.md
 ../../benchmarks/health_bench.md
 ../../benchmarks/hellaswag.md
+../../benchmarks/hellaswag_hi.md
 ../../benchmarks/hle.md
 ../../benchmarks/hmmt25.md
 ../../benchmarks/hmmt26.md
@@ -203,6 +223,7 @@
 ../../benchmarks/ifeval.md
 ../../benchmarks/imo_answerbench.md
 ../../benchmarks/indic_boolq.md
+../../benchmarks/indic_param.md
 ../../benchmarks/iquiz.md
 ../../benchmarks/jnlpba.md
 ../../benchmarks/jnlpba_rare.md
@@ -248,6 +269,7 @@
 ../../benchmarks/qasc.md
 ../../benchmarks/race.md
 ../../benchmarks/refcoco.md
+../../benchmarks/sanskriti.md
 ../../benchmarks/scicode.md
 ../../benchmarks/sciq.md
 ../../benchmarks/seed_tts_eval.md
