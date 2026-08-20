@@ -73,7 +73,8 @@ export function formatMetricLabel(
   finalMetricName: string,
   semantics: MetricSemantics | null | undefined,
 ): string {
-  if (!semantics || semantics.kind === 'diagnostic') return finalMetricName
+  if (!semantics) return finalMetricName
+  if (semantics.kind === 'diagnostic') return semantics.display_name ?? finalMetricName
   return `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd()
 }
 
@@ -83,7 +84,8 @@ export function formatMetricIdentityLabel(
   semantics: MetricSemantics | null | undefined,
   legacyName?: string | null,
 ): string {
-  if (!semantics || semantics.kind === 'diagnostic') return legacyName || metricIdentityKey(identity)
+  if (!semantics) return legacyName || metricIdentityKey(identity)
+  if (semantics.kind === 'diagnostic') return semantics.display_name || legacyName || metricIdentityKey(identity)
   const base = formatMetricLabel(identity.name, semantics)
   const dimensionOrder: Record<string, number> = {
     target: 0,

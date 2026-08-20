@@ -22,6 +22,7 @@ export type ValueRange = z.infer<typeof valueRangeSchema>
 export const metricSemanticsSchema = z.object({
   semantic_id: z.string(),
   metric_name: z.string(),
+  display_name: z.string().nullable().optional(),
   kind: metricKindSchema,
   direction: metricDirectionSchema,
   raw_unit: z.string().nullable().optional(),

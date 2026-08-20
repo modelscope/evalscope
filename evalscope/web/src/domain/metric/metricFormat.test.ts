@@ -137,6 +137,18 @@ describe('metric labels', () => {
     expect(formatMetricLabel('unknown_metric', null)).toBe('unknown_metric')
   })
 
+  it('uses an explicit display name for a declared diagnostic metric', () => {
+    const incorrectRate = { ...diagnosticSemantics(), display_name: 'Incorrect rate' }
+
+    expect(formatMetricLabel('is_incorrect:mean', incorrectRate)).toBe('Incorrect rate')
+    expect(
+      formatMetricIdentityLabel(
+        { name: 'is_incorrect', aggregation: 'mean', dimensions: {} },
+        incorrectRate,
+      ),
+    ).toBe('Incorrect rate')
+  })
+
   it('disambiguates repeated labels within one report', () => {
     const labels = formatMetricLabels([
       { metricName: 'mean_acc', semantics: ratioSemantics() },

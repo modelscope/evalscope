@@ -158,8 +158,8 @@ def format_metric_label(
 ) -> str:
     """Render one identity through its display name, direction, and meaningful dimensions.
 
-    Diagnostic and unresolved metrics keep their final report name because their shared generic
-    baselines must not erase what was actually measured.
+    Diagnostic and unresolved metrics keep their final report name unless their declared
+    semantics provide an explicit diagnostic display name.
 
     Args:
         identity: V2 identity, or a v1 string during migration.
@@ -175,8 +175,10 @@ def format_metric_label(
     else:
         raw_name = identity.key
         dimensions = identity.dimensions
-    if semantics is None or semantics.kind is MetricKind.DIAGNOSTIC:
+    if semantics is None:
         return legacy_name or raw_name
+    if semantics.kind is MetricKind.DIAGNOSTIC:
+        return semantics.display_name or legacy_name or raw_name
     arrow = _DIRECTION_ARROWS.get(semantics.direction, '')
     label = f'{semantics.metric_name} {arrow}'.strip()
     if dimensions:
