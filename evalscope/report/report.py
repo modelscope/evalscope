@@ -14,32 +14,34 @@ from evalscope.utils.argument_utils import get_secret_value
 
 if TYPE_CHECKING:
     from evalscope.config import TaskConfig
+    from evalscope.evaluation_versioning import BenchmarkAnalysisContext
 
 logger = get_logger()
 
-ANALYSIS_PROMPT = """You are an expert AI model evaluator. Analyze the following JSON evaluation results and produce a concise, structured analysis report.
+ANALYSIS_PROMPT = """You are an expert AI model evaluator. Analyze the benchmark context and aggregated evaluation scores below and produce a concise, structured analysis report.
 
 The report must contain exactly four sections with second-level Markdown headers (##):
 
 ## Overall Performance
-Summarize the model's general performance across all evaluated benchmarks and metrics.
+Explain the benchmark's task goal and summarize the model's performance across its reported scores.
 
 ## Key Metrics Analysis
-Break down individual metrics. If multiple metrics are present, categorize them into *Low*, *Medium*, and *High* performance tiers and present the breakdown in a Markdown table.
+Break down scores by metric, category, and subset where available. If multiple metrics are present, categorize them into *Low*, *Medium*, and *High* performance tiers and present the breakdown in a Markdown table.
 
 ## Improvement Suggestions
 Provide specific, actionable recommendations to address identified weaknesses or low-scoring areas.
 
 ## Conclusion
-Offer a concise summary of the findings and an overall assessment.
+Offer a concise summary, including material limits of the reported evaluation scope.
 
 Requirements:
 - Output only the report content itself — no preamble, commentary, or closing remarks.
 - Write the report in {language}.
 - Keep the report focused and avoid unnecessary repetition.
+- Assess only the provided evaluation scores; do not infer performance metrics or undocumented benchmark details.
 
 ```json
-{report_str}
+{analysis_context}
 ```
 """
 
@@ -338,7 +340,8 @@ class Report(BaseModel):
         df_categories.drop(columns=[ReportKey.category_name], inplace=True)
         return df_categories
 
-    def generate_analysis(self, task_config: 'TaskConfig') -> str:
+    def generate_analysis(self, task_config: 'TaskConfig', analysis_context: 'BenchmarkAnalysisContext') -> str:
+        """Generate score analysis from compact benchmark context and report aggregates."""
         from evalscope.constants import DEFAULT_LANGUAGE
         from evalscope.metrics import LLMJudge
 
@@ -358,7 +361,8 @@ class Report(BaseModel):
                     eval_type=task_config.eval_type,
                 )
 
-            prompt = ANALYSIS_PROMPT.format(language=language, report_str=self.to_json_str())
+            context_json = json.dumps(analysis_context.model_dump(mode='json'), ensure_ascii=False, indent=2)
+            prompt = ANALYSIS_PROMPT.format(language=language, analysis_context=context_json)
             from evalscope.api.messages import ChatMessageUser
 
             response = judge_llm.generate([ChatMessageUser(content=prompt)]).completion

@@ -126,6 +126,13 @@ Don't try to learn the architecture from this file — read these and grep:
 6. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`.
 7. Add a smoke test.
 
+### Evaluation versioning
+
+`BenchmarkMeta.evaluation_version` is the published version of a benchmark's evaluation semantics. New benchmarks
+must declare their initial version explicitly. Raise the minor version when data, sample conversion, default prompt,
+choice/target mapping, default scoring/judge, or aggregation semantics change; raise the major version for a rename
+or task-definition replacement. Documentation, tests, and pure refactors do not change it.
+
 ## Adding a judge-scored benchmark
 
 An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply itself — that debt is fenced off by `tests/api/judge/test_gates.py`, which scans every file under `evalscope/benchmarks/` (helpers included, so moving a parser into `utils.py` does not evade it). Score through the JSON output contract in `evalscope/api/judge/` instead:

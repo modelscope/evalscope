@@ -266,8 +266,11 @@ class TaskConfig(BaseArgument):
     Reuses cached predictions and reviews matched by sample_id; set None to start fresh."""
 
     rerun_review: bool = False
-    """When use_cache is set, force re-running the review/scoring step
-    (deletes existing reviews cache) while still reusing prediction cache."""
+    """When use_cache is set, force re-running review/scoring while reusing predictions.
+
+    This is also the explicit override for a native cache identity mismatch;
+    the resulting review is recorded under the current evaluation version.
+    """
 
     work_dir: str = DEFAULT_WORK_DIR
     """Root directory for evaluation outputs (predictions/, reviews/, reports/, logs/).
@@ -681,12 +684,15 @@ class TaskConfig(BaseArgument):
         fields.add('mode')
         return self.agent_config.model_dump(include=fields)
 
-    def dump_yaml(self, output_dir: str) -> None:
-        """Dump the task configuration to a YAML file."""
+    def dump_yaml(self, output_dir: str, generated_metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Dump the task configuration and optional generated runtime metadata to YAML."""
         task_cfg_file = os.path.join(output_dir, f'task_config.yaml')
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
-            dict_to_yaml(self.to_dict(), task_cfg_file)
+            payload = self.to_dict()
+            if generated_metadata:
+                payload.update(generated_metadata)
+            dict_to_yaml(payload, task_cfg_file)
         except Exception as e:
             logger.warning(f'Failed to dump overall task config: {e}')
 
@@ -705,13 +711,31 @@ class TaskConfig(BaseArgument):
         return result
 
 
+def _strip_generated_evaluation_metadata(task_cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove output-only evaluation metadata before treating a snapshot as input."""
+    result = copy.deepcopy(task_cfg)
+    result.pop('resolved_benchmarks', None)
+    result.pop('evaluation_identity', None)
+    return result
+
+
+def load_task_config_snapshot(config_file: str) -> Optional[Dict[str, Any]]:
+    """Load a raw output task-config snapshot for cache identity validation."""
+    if not os.path.isfile(config_file):
+        return None
+    config = yaml_to_dict(config_file)
+    if not isinstance(config, dict):
+        raise ValueError(f'Invalid task config snapshot at {config_file}: expected a mapping.')
+    return config
+
+
 def parse_task_config(task_cfg) -> TaskConfig:
     """Parse task configuration from various formats into a TaskConfig object."""
     if isinstance(task_cfg, TaskConfig):
         logger.info('Args: Task config is provided with TaskConfig type.')
     elif isinstance(task_cfg, dict):
         logger.info('Args: Task config is provided with dictionary type.')
-        task_cfg = TaskConfig.from_dict(task_cfg)
+        task_cfg = TaskConfig.from_dict(_strip_generated_evaluation_metadata(task_cfg))
     elif isinstance(task_cfg, Namespace):
         logger.info('Args: Task config is provided with CommandLine type.')
         task_cfg = TaskConfig.from_args(task_cfg)
@@ -719,9 +743,9 @@ def parse_task_config(task_cfg) -> TaskConfig:
         extension = os.path.splitext(task_cfg)[-1]
         logger.info(f'Args: Task config is provided with {extension} file type.')
         if extension in ['.yaml', '.yml']:
-            task_cfg = TaskConfig.from_yaml(task_cfg)
+            task_cfg = TaskConfig.from_dict(_strip_generated_evaluation_metadata(yaml_to_dict(task_cfg)))
         elif extension == '.json':
-            task_cfg = TaskConfig.from_json(task_cfg)
+            task_cfg = TaskConfig.from_dict(_strip_generated_evaluation_metadata(json_to_dict(task_cfg)))
         else:
             raise ValueError('Args: Unsupported file extension.')
     else:

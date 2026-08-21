@@ -209,8 +209,10 @@ An invalid reply is unavailable and excluded from the metric rather than reporte
 Reports include `JudgeSummary` with coverage, failure counts, and disagreement for samples reviewed by an LLM.
 When an adapter resolves a sample through a deterministic judge short-circuit, its score metadata records
 `judge_skipped=true` and `judge_skip_reason`; the web review panel labels it as rule-based scoring instead of an
-LLM verdict. With `rerun_review=True`, predictions are reused and the review cache is atomically replaced after
-success.
+LLM verdict. Native evaluations require an exact cached evaluation identity match before reusing predictions and
+reviews. With `rerun_review=True`, predictions are reused and the review cache is atomically replaced after
+success; it is the explicit override for an identity mismatch, and the generated config records the prediction
+source under the current evaluation version.
 
 `judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
 removed `judge_worker_num` and `score_pattern` are rejected.

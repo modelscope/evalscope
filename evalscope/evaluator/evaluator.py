@@ -20,6 +20,7 @@ from evalscope.api.judge import summarize_judge_runs
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.registry import register_evaluator
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC, ScoreStatus
+from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_analysis_context, build_benchmark_identity
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
 from evalscope.report import Report, gen_perf_table, gen_table
@@ -542,7 +543,13 @@ class DefaultEvaluator(Evaluator):
         # Generate detailed analysis if requested in configuration
         if self.task_config.analysis_report:
             logger.info('Generating report analysis, please wait ...')
-            analysis = report.generate_analysis(self.task_config)
+            meta = self.benchmark.benchmark_meta
+            spec = ResolvedBenchmarkSpec.from_meta(meta, self.task_config)
+            identity = build_benchmark_identity(spec, meta.evaluation_version, self.task_config)
+            analysis = report.generate_analysis(
+                self.task_config,
+                build_analysis_context(meta, spec, identity, report),
+            )
             logger.info(f'Report analysis:\n{analysis}')
         else:
             logger.info('Skipping report analysis (`analysis_report=False`).')

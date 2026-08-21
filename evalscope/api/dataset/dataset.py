@@ -8,6 +8,13 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
+from evalscope.utils.io_utils import content_seed
+
+
+def _sample_choice_key(sample: 'Sample') -> str:
+    """Return a position-independent key for a sample's choice permutation."""
+    input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
+    return '\x00'.join([input_text, *sorted(sample.choices or [])])
 
 
 class Sample(BaseModel):
@@ -229,10 +236,10 @@ class MemoryDataset(Dataset):
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
         from evalscope.utils.multi_choices import answer_character
 
-        rand = random.Random(seed)
         for sample in self.samples:
             if not sample.choices:
                 continue
+            rand = random.Random(content_seed(str(seed), _sample_choice_key(sample)))
             # The original positions
             positions = list(range(len(sample.choices)))
 

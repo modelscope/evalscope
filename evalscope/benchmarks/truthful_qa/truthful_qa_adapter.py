@@ -61,6 +61,7 @@ TruthfulQA is a benchmark designed to measure whether language models generate t
 - Important benchmark for safety and alignment research
 """,
         dataset_id='evalscope/truthful_qa',
+        evaluation_version='v1.1',
         metric_list=['multi_choice_acc'],
         subset_list=['multiple_choice'],
         shuffle_choices=True,

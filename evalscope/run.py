@@ -4,10 +4,16 @@ Run evaluation for LLMs.
 """
 import os
 from argparse import Namespace
-from typing import List, Optional, Union
+from typing import Dict, List, Union
 
-from evalscope.config import TaskConfig, parse_task_config
-from evalscope.constants import DEFAULT_WORK_DIR, DataCollection, EvalBackend
+from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config
+from evalscope.constants import DEFAULT_WORK_DIR, EvalBackend
+from evalscope.evaluation_versioning import (
+    ResolvedBenchmarkSpec,
+    build_evaluation_identity,
+    build_generated_evaluation_metadata,
+    validate_cached_evaluation_identity,
+)
 from evalscope.utils.io_utils import OutputsStructure, current_time
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
@@ -141,6 +147,8 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
     model = LazyModel(task_config=task_config)
     # Initialize evaluators for each dataset
     evaluators: List[Evaluator] = []
+    resolved_benchmarks: Dict[str, ResolvedBenchmarkSpec] = {}
+    evaluation_versions: Dict[str, str] = {}
     for dataset_name in task_config.datasets:
         # Create evaluator for each dataset
         benchmark = get_benchmark(dataset_name, task_config)
@@ -155,12 +163,29 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         )
         evaluators.append(evaluator)
 
-        # Update task_config.dataset_args with benchmark metadata, except for DataCollection
-        if dataset_name != DataCollection.NAME:
-            task_config.dataset_args[dataset_name] = benchmark.to_dict()
+        meta = benchmark.benchmark_meta
+        resolved_benchmarks[dataset_name] = ResolvedBenchmarkSpec.from_meta(meta, task_config)
+        evaluation_versions[dataset_name] = meta.evaluation_version
+
+    evaluation_identity = build_evaluation_identity(resolved_benchmarks, evaluation_versions, task_config)
+    if task_config.use_cache:
+        snapshot_path = os.path.join(outputs.outputs_dir, OutputsStructure.CONFIGS_DIR, 'task_config.yaml')
+        cache_sources = validate_cached_evaluation_identity(
+            load_task_config_snapshot(snapshot_path),
+            evaluation_identity,
+            task_config.rerun_review,
+        )
+        for benchmark_name, source in cache_sources.items():
+            evaluation_identity.benchmarks[benchmark_name].cache_source = source
+            logger.warning(
+                f'Forcing prediction reuse for {benchmark_name} with rerun_review=True; '
+                f'previous identity is {source.fingerprint}.'
+            )
 
     # dump task_cfg to outputs.configs_dir after creating evaluators
-    task_config.dump_yaml(outputs.configs_dir)
+    task_config.dump_yaml(
+        outputs.configs_dir, build_generated_evaluation_metadata(resolved_benchmarks, evaluation_identity)
+    )
     logger.info(task_config)
 
     tracker_ctx = make_tracker(

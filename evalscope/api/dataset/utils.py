@@ -123,7 +123,11 @@ def read_files(files: Optional[Any]) -> Optional[Dict[str, str]]:
         return None
 
 
-def shuffle_choices_if_requested(dataset: Dataset, shuffle_choices: Optional[Union[bool, int]]) -> None:
+def shuffle_choices_if_requested(
+    dataset: Dataset,
+    shuffle_choices: Optional[Union[bool, int]],
+    seed: Optional[int] = None,
+) -> None:
     """
     Shuffle the choices in the dataset if requested.
 
@@ -132,11 +136,16 @@ def shuffle_choices_if_requested(dataset: Dataset, shuffle_choices: Optional[Uni
     If it is a boolean, it will shuffle the choices if the value is `True`,
     and do nothing if it is `False`.
     If it is an integer, it will shuffle the choices using the integer as the seed.
+
+    Args:
+        dataset: Dataset whose choices may be shuffled.
+        shuffle_choices: Whether to shuffle, or an explicit choice-shuffle seed.
+        seed: Run seed used when ``shuffle_choices`` is ``True``.
     """
     # Note that `isinstance(x, int)` returns True if x is True or False,
     # so we need to check for both explicitly
     if shuffle_choices is True:
-        dataset.shuffle_choices()
+        dataset.shuffle_choices(seed=seed)
     elif shuffle_choices is False:
         pass
     elif isinstance(shuffle_choices, int):
