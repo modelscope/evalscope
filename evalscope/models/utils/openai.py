@@ -553,9 +553,13 @@ def tool_call_from_openai(tool_call: ChatCompletionMessageToolCallParam) -> Tool
 
 
 def content_from_openai(
-    content: Union[ChatCompletionContentPartParam, ChatCompletionContentPartRefusalParam],
+    content: Union[ChatCompletionContentPartParam, ChatCompletionContentPartRefusalParam, Content],
     parse_reasoning: bool = False,
 ) -> List[Content]:
+    # already-parsed shortcut
+    if isinstance(content, Content):
+        return [content]
+
     # Some providers omit the type tag and use "object-with-a-single-field" encoding
     if 'type' not in content and len(content) == 1:
         content['type'] = list(content.keys())[0]  # type: ignore[arg-type]

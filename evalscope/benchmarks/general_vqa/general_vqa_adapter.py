@@ -1,11 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessage
 from evalscope.api.metric import Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
@@ -24,19 +23,20 @@ logger = get_logger()
 ## Overview
 
 General-VQA is a customizable visual question answering benchmark for evaluating multimodal models.
-It supports OpenAI-compatible message format with flexible image/video input (local paths, URLs, or base64).
+It supports OpenAI-compatible message format with flexible image/video/audio input (local paths, URLs, or base64).
 
 ## Task Description
 
 - **Task Type**: Visual Question Answering
-- **Input**: Images/videos + questions in OpenAI chat format
+- **Input**: Images/videos/audio + questions in OpenAI chat format
 - **Output**: Free-form text answer
 - **Flexibility**: Supports custom datasets via TSV/JSONL files
 
 ## Key Features
 
 - OpenAI-compatible message format
-- Supports multiple image/video input methods (path, URL, base64)
+- Supports multiple image/video/audio input methods (path, URL, base64)
+- **Media placeholders**: Use ``<image N>`` / ``<video N>`` / ``<audio N>`` in plain-text user messages with indexed media columns (``image_1``, ``video_1``, ``audio_1``, etc.) for a simpler data format
 - Flexible evaluation with BLEU and Rouge metrics
 - Custom dataset support via local file loading
 - Extensible for various VQA use cases
@@ -109,6 +109,14 @@ class GeneralVQAAdapter(VisionLanguageAdapter):
 
         # Convert messages to ChatMessage objects using the standard OpenAI parser
         if isinstance(messages_data, list):
+            media_indices = self._media_placeholder_indices(messages_data)
+            if any(media_indices.values()):
+                messages_data = self._resolve_media_placeholders(
+                    messages_data,
+                    image_map=self._extract_media(record, 'image', media_indices['image']),
+                    video_map=self._extract_media(record, 'video', media_indices['video']),
+                    audio_map=self._extract_media(record, 'audio', media_indices['audio']),
+                )
             message_list = chat_messages_from_openai(model='', messages=messages_data)
         else:
             logger.warning(f'Unexpected messages format: {type(messages_data)}')
