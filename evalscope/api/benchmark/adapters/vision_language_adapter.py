@@ -223,6 +223,9 @@ class VisionLanguageAdapter(DefaultDataAdapter):
             TypeError: The plural column is not a list, or a cell is neither a string nor a dict.
             ValueError: A cell cannot be normalized; the message names the offending index.
         """
+        if indices == set():
+            return {}
+
         max_media = {'audio': self.MAX_AUDIOS, 'image': self.MAX_IMAGES, 'video': self.MAX_VIDEOS}[media_type]
         raw_media: Dict[int, Any] = {}
         media_formats: Dict[int, Optional[str]] = {}

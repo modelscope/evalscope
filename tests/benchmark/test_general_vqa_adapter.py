@@ -72,11 +72,12 @@ class TestGeneralVQAAdapterRecordToSample:
         assert sample.input[0].content == 'Describe the scene.'
 
     def test_only_referenced_media_is_parsed(self, adapter: GeneralVQAAdapter):
-        """Unreferenced media columns do not fail placeholder resolution."""
+        """Unreferenced indexed and list media columns do not fail placeholder resolution."""
         sample = adapter.record_to_sample({
             'messages': [{'role': 'user', 'content': '<image 1> Describe the scene.'}],
             'image_1': 'https://example.com/scene.jpg',
             'audio_1': {},
+            'videos': 'not-a-list',
             'answer': 'A scene.',
         })
 
