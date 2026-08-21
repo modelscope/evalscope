@@ -230,15 +230,19 @@ class MemoryDataset(Dataset):
     def shuffle_choices(self, seed: Optional[int] = None) -> None:
         from evalscope.utils.multi_choices import answer_character
 
+        unseeded_random = random.Random() if seed is None else None
         for sample in self.samples:
             if not sample.choices:
                 continue
-            input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
-            # Derive each permutation from sample content rather than its reindexed
-            # position, so filtering one sample cannot remap any other sample's answer.
-            seed_material = '\x00'.join([str(seed), input_text, *sorted(sample.choices)])
-            choice_seed = int.from_bytes(hashlib.sha256(seed_material.encode('utf-8')).digest()[:8], 'big')
-            rand = random.Random(choice_seed)
+            if seed is None:
+                rand = unseeded_random
+            else:
+                input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
+                # Derive each permutation from sample content rather than its reindexed
+                # position, so filtering one sample cannot remap any other sample's answer.
+                seed_material = '\x00'.join([str(seed), input_text, *sorted(sample.choices)])
+                choice_seed = int.from_bytes(hashlib.sha256(seed_material.encode('utf-8')).digest()[:8], 'big')
+                rand = random.Random(choice_seed)
             # The original positions
             positions = list(range(len(sample.choices)))
 

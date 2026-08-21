@@ -1,6 +1,7 @@
 """Regression tests for deterministic choice shuffling."""
 
 from evalscope.api.dataset import MemoryDataset, Sample
+from evalscope.api.dataset import dataset as dataset_module
 from evalscope.api.dataset.utils import shuffle_choices_if_requested
 
 CHOICES = ['alpha', 'beta', 'gamma', 'delta']
@@ -27,6 +28,24 @@ def test_choice_shuffle_uses_the_run_seed() -> None:
     shuffle_choices_if_requested(with_7, True, seed=7)
 
     assert _answers_by_question(with_42) != _answers_by_question(with_7)
+
+
+def test_choice_shuffle_without_seed_uses_one_random_sequence(monkeypatch) -> None:
+    calls = []
+
+    class TrackingRandom:
+
+        def __init__(self, *args) -> None:
+            calls.append(args)
+
+        def shuffle(self, values) -> None:
+            values.reverse()
+
+    monkeypatch.setattr(dataset_module.random, 'Random', TrackingRandom)
+
+    _dataset(3).shuffle_choices()
+
+    assert calls == [()]
 
 
 def test_choice_shuffle_is_reproducible_and_filter_independent() -> None:
