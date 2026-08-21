@@ -196,7 +196,7 @@ Supports video content input using OpenAI-compatible `video_url` format. The `ur
 
 ### MMMU-style Data with Media Placeholders
 
-In this format, the `messages` field keeps the user message as a **plain-text string** containing placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` and filled in-place via separate indexed columns (`image_1`, `video_1`, `audio_1`, etc.). See the [Media Placeholder Mechanism][mp-feature] section below for full details on how placeholders are resolved, supported column names, and media types.
+In this format, the `messages` field keeps the user message as a **plain-text string** containing placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` and filled in-place via separate indexed columns (`image_1`, `video_1`, `audio_1`, etc.). For each media type, use either indexed columns or its plural list column, not both. See the [Media Placeholder Mechanism][mp-feature] section below for full details on how placeholders are resolved, supported column names, and media types.
 
 **JSONL Example** (`example_placeholder.jsonl`):
 ```json
@@ -209,7 +209,7 @@ In this format, the `messages` field keeps the user message as a **plain-text st
 
 **Mixed Media Example**:
 ```json
-{"messages": [{"role": "user", 
+{"messages": [{"role": "user",
                "content": "<image 1> Watch <video 1> and describe both."}],
  "answer": "A sunny beach and a wave video.",
  "image_1": "custom_eval/multimodal/images/beach.jpg",
@@ -432,17 +432,17 @@ Evaluation will output accuracy metrics:
 ## Media Placeholder Mechanism
 [mp-feature]: #media-placeholder-mechanism
 
-Both General-VQA and General-VMCQ share the same underlying mechanism for resolving media placeholders. This section documents how it works.
+General-VQA and General-VMCQ share media normalization utilities, but differ in when they validate media columns.
 
 ### How It Works
 
-Placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` in a plain-text string are automatically replaced with the corresponding media from the record's indexed columns. The resolution happens before prompting to MLLM during evaluation.
+Placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` in plain text are replaced with the corresponding media before prompting to an MLLM.
 
-- Placeholders are resolved by a strict **one-to-one mapping**: `<image 1>` takes the value of `image_1`, `<image 2>` takes `image_2`, and so on.
-- If a placeholder references an invalid media value (e.g., `None`), it is ignored with a warning. If that would leave the user message empty, its original text is retained. Not-referenced media columns are ignored.
+- **General-VQA** resolves only media referenced by plain-text user messages. Missing referenced media is dropped with a warning; if that would leave a user message empty, its original text is retained. Unreferenced media columns are ignored.
+- **General-VMCQ** validates every non-empty media column before building its prompt. Unused malformed media columns therefore cause the record to fail.
 - By default, indexed media columns are capped at 100: `image_k`/`video_k`/`audio_k` for k ∈ [1, 100], e.g., `<image 101>` and `image_101` will be ignored.
-- The `images`/`videos`/`audios` list columns are only consulted when the corresponding `image_k`/`video_k`/`audio_k` columns are absent. They are equivalent to writing `image_1`, `image_2`, ... in increasing order, but not capped at 100.
-- After resolution, the plain-text content is converted into the same structured OpenAI-message format, so the model receives identical input regardless of which format you choose.
+- For each media type, choose either indexed columns or its plural list column. Do not mix the two representations: General-VQA ignores the list when any referenced indexed column is non-empty, while General-VMCQ ignores it when any indexed column is non-empty. List columns are equivalent to `image_1`, `image_2`, ... and are not capped at 100.
+- General-VQA converts resolved placeholder content into structured OpenAI-message content. General-VMCQ inserts it into its multiple-choice prompt.
 
 ### Trigger Conditions
 
@@ -454,8 +454,8 @@ To bypass it, you can provide structured content for General-VQA messages, or re
 ```json
 // <image 1> tag will not be replaced, because it's structured into `{"type": "text"}` dict
 {"answer": "Dog",
- "messages": [{"role": "user", 
-               "content": [{"type": "text", 
+ "messages": [{"role": "user",
+               "content": [{"type": "text",
                             "text": "<image 1> What animal is this?"}]}]}
 ```
 
@@ -468,9 +468,9 @@ To bypass it, you can provide structured content for General-VQA messages, or re
 | `video_k_format` | Optional video format hint (`"mp4"`, `"mpeg"`, `"mov"`, `"avi"`), automatically guessed if not specified | [1, 100]  |
 | `audio_k`        | Audio path/URL/base64 for placeholder `<audio k>`                                                        | [1, 100]  |
 | `audio_k_format` | Optional audio format hint (`"wav"`, `"mp3"`), automatically guessed if not specified                    | [1, 100]  |
-| `images`         | List of images equivalent to consecutive `image_1`, `image_2`, ... Only used when `image_k` not present. | unbounded |
-| `videos`         | List of videos equivalent to consecutive `video_1`, `video_2`, ... Only used when `video_k` not present. | unbounded |
-| `audios`         | List of audios equivalent to consecutive `audio_1`, `audio_2`, ... Only used when `audio_k` not present. | unbounded |
+| `images`         | Image list equivalent to consecutive `image_1`, `image_2`, ... Do not mix with indexed image columns. | unbounded |
+| `videos`         | Video list equivalent to consecutive `video_1`, `video_2`, ... Do not mix with indexed video columns. | unbounded |
+| `audios`         | Audio list equivalent to consecutive `audio_1`, `audio_2`, ... Do not mix with indexed audio columns. | unbounded |
 
 ### Supported Media Values
 

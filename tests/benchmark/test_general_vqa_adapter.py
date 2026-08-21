@@ -83,6 +83,18 @@ class TestGeneralVQAAdapterRecordToSample:
 
         assert isinstance(sample.input[0].content[0], ContentImage)
 
+    def test_indexed_media_columns_take_precedence_over_list(self, adapter: GeneralVQAAdapter):
+        """Indexed media columns take precedence over the equivalent list column."""
+        sample = adapter.record_to_sample({
+            'messages': [{'role': 'user', 'content': '<image 1> then <image 2>'}],
+            'image_1': 'https://example.com/indexed.jpg',
+            'images': ['https://example.com/list-1.jpg', 'https://example.com/list-2.jpg'],
+            'answer': 'A scene.',
+        })
+
+        images = [content.image for content in sample.input[0].content if isinstance(content, ContentImage)]
+        assert images == ['https://example.com/indexed.jpg']
+
     def test_unresolved_only_placeholder_preserves_valid_content(self, adapter: GeneralVQAAdapter):
         """A missing media reference never emits an empty user message."""
         sample = adapter.record_to_sample({

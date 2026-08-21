@@ -196,7 +196,7 @@ messages	answer
 
 ### MMMU 格式媒体占位符数据
 
-在此格式中，`messages` 字段将用户消息保留为**纯文本字符串**，其中包含 `<image 1>`、`<video 1>` 或 `<audio 1>` 等占位符，并通过单独的索引列（`image_1`、`video_1`、`audio_1` 等）原地填充。有关占位符解析方式、支持的列名和媒体类型的完整详情，请参见[媒体占位符机制][mp-feature]章节。
+在此格式中，`messages` 字段将用户消息保留为**纯文本字符串**，其中包含 `<image 1>`、`<video 1>` 或 `<audio 1>` 等占位符，并通过单独的索引列（`image_1`、`video_1`、`audio_1` 等）原地填充。每种媒体类型应在索引列和复数列表列之间二选一，不要混用。有关占位符解析方式、支持的列名和媒体类型的完整详情，请参见[媒体占位符机制][mp-feature]章节。
 
 **JSONL 示例** (`example_placeholder.jsonl`):
 ```json
@@ -209,7 +209,7 @@ messages	answer
 
 **混合媒体示例**：
 ```json
-{"messages": [{"role": "user", 
+{"messages": [{"role": "user",
                "content": "<image 1> Watch <video 1> and describe both."}],
  "answer": "A sunny beach and a wave video.",
  "image_1": "custom_eval/multimodal/images/beach.jpg",
@@ -431,17 +431,17 @@ evalscope eval \
 ## 媒体占位符机制
 [mp-feature]: #媒体占位符机制
 
-General-VQA 和 General-VMCQ 共享相同的底层机制来解析媒体占位符。本节记录其工作原理。
+General-VQA 和 General-VMCQ 共享媒体规范化工具，但验证媒体列的时机不同。
 
 ### 工作原理
 
-占位符如 `<image 1>`、`<video 1>` 或 `<audio 1>` 在纯文本字符串中会被自动替换为记录中索引列的对应媒体。解析在评测时发送给多模态大模型之前完成。
+占位符如 `<image 1>`、`<video 1>` 或 `<audio 1>` 在纯文本中会被自动替换为对应媒体。解析在评测时发送给多模态大模型之前完成。
 
-- 占位符通过严格的**一对一映射**解析：`<image 1>` 取 `image_1` 的值，`<image 2>` 取 `image_2` 的值，依此类推。
-- 如果占位符引用了无效的媒体值（例如 `None`），它会被忽略并发出警告。如果这会使用户消息为空，则会保留原始文本。未被引用的媒体列会被忽略。
+- **General-VQA** 只解析纯文本用户消息中引用的媒体。缺失的已引用媒体会被忽略并发出警告；如果这会使用户消息为空，则保留原始文本。未引用的媒体列会被忽略。
+- **General-VMCQ** 在构造提示词前会校验每个非空媒体列。因此，即使未被使用，格式错误的媒体列也会导致该记录失败。
 - 默认情况下，索引媒体列上限为 100：`image_k`/`video_k`/`audio_k`，其中 k ∈ [1, 100]，例如 `<image 101>` 和 `image_101` 将被忽略。
-- `images`/`videos`/`audios` 列表列仅在对应的 `image_k`/`video_k`/`audio_k` 列不存在时才会被使用。它们等同于按递增顺序编写 `image_1`、`image_2`……，但不受 100 的数量限制。
-- 解析后，纯文本内容会被转换为相同的结构化 OpenAI 消息格式，因此无论您选择哪种格式，模型都会收到相同的输入。
+- 对每种媒体类型，请在索引列和复数列表列之间二选一，不要混用两种表示：General-VQA 在任一已引用的索引列非空时会忽略复数列表列；General-VMCQ 在任一索引列非空时会忽略复数列表列。列表列等同于按递增顺序编写 `image_1`、`image_2`……，且不受 100 的数量限制。
+- General-VQA 会将解析后的占位符内容转换为结构化 OpenAI 消息内容；General-VMCQ 则将其插入选择题提示词。
 
 ### 触发条件
 
@@ -453,8 +453,8 @@ General-VQA 和 General-VMCQ 共享相同的底层机制来解析媒体占位符
 ```json
 // <image 1> 标签不会被替换，因为它被结构化为 `{"type": "text"}` 字典
 {"answer": "Dog",
- "messages": [{"role": "user", 
-               "content": [{"type": "text", 
+ "messages": [{"role": "user",
+               "content": [{"type": "text",
                             "text": "<image 1> What animal is this?"}]}]}
 ```
 
@@ -467,9 +467,9 @@ General-VQA 和 General-VMCQ 共享相同的底层机制来解析媒体占位符
 | `video_k_format` | 可选的视频格式提示（`"mp4"`、`"mpeg"`、`"mov"`、`"avi"`），未指定时自动推断 | [1, 100] |
 | `audio_k`        | 占位符 `<audio k>` 的音频路径/URL/base64                                    | [1, 100] |
 | `audio_k_format` | 可选的音频格式提示（`"wav"`、`"mp3"`），未指定时自动推断                    | [1, 100] |
-| `images`         | 图片列表，相当于连续的 `image_1`、`image_2`……仅在 `image_k` 不存在时使用    | 无限制   |
-| `videos`         | 视频列表，相当于连续的 `video_1`、`video_2`……仅在 `video_k` 不存在时使用    | 无限制   |
-| `audios`         | 音频列表，相当于连续的 `audio_1`、`audio_2`……仅在 `audio_k` 不存在时使用    | 无限制   |
+| `images`         | 图片列表，相当于连续的 `image_1`、`image_2`……不要与索引图片列混用          | 无限制   |
+| `videos`         | 视频列表，相当于连续的 `video_1`、`video_2`……不要与索引视频列混用          | 无限制   |
+| `audios`         | 音频列表，相当于连续的 `audio_1`、`audio_2`……不要与索引音频列混用          | 无限制   |
 
 ### 支持的媒体值
 
