@@ -61,6 +61,36 @@ class TestGeneralVQAAdapterRecordToSample:
         assert sample.input == []
         assert sample.target == 'Nothing'
 
+    def test_plain_text_skips_unreferenced_media(self, adapter: GeneralVQAAdapter):
+        """Malformed media cells do not affect records without placeholders."""
+        sample = adapter.record_to_sample({
+            'messages': [{'role': 'user', 'content': 'Describe the scene.'}],
+            'image_1': {},
+            'answer': 'A scene.',
+        })
+
+        assert sample.input[0].content == 'Describe the scene.'
+
+    def test_only_referenced_media_is_parsed(self, adapter: GeneralVQAAdapter):
+        """Unreferenced media columns do not fail placeholder resolution."""
+        sample = adapter.record_to_sample({
+            'messages': [{'role': 'user', 'content': '<image 1> Describe the scene.'}],
+            'image_1': 'https://example.com/scene.jpg',
+            'audio_1': {},
+            'answer': 'A scene.',
+        })
+
+        assert isinstance(sample.input[0].content[0], ContentImage)
+
+    def test_unresolved_only_placeholder_preserves_valid_content(self, adapter: GeneralVQAAdapter):
+        """A missing media reference never emits an empty user message."""
+        sample = adapter.record_to_sample({
+            'messages': [{'role': 'user', 'content': '<image 1>'}],
+            'answer': 'Unknown',
+        })
+
+        assert sample.input[0].content == '<image 1>'
+
     def test_empty_answer(self, adapter: GeneralVQAAdapter):
         """Record with empty answer string."""
         record = {

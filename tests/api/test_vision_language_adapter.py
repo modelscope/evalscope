@@ -174,11 +174,8 @@ class TestResolveMediaPlaceholders:
         """Messages without any media placeholders pass through unchanged."""
         messages = [{'role': 'user', 'content': 'What is the capital of France?'}]
         result = adapter._resolve_media_placeholders(messages)
-        # Content is wrapped in ContentText even without placeholders
-        content_list = result[0]['content']
-        assert isinstance(content_list, list)
-        assert isinstance(content_list[0], ContentText)
-        assert content_list[0].text == 'What is the capital of France?'
+
+        assert result == messages
 
     def test_single_image_placeholder_with_indexed_column(
         self, adapter: DummyVisionLanguageAdapter, tmp_path: Path
@@ -351,8 +348,4 @@ class TestResolveMediaPlaceholders:
         messages = ['not-a-dict', {'role': 'user', 'content': 'hello'}]
         result = adapter._resolve_media_placeholders(messages)
         assert result[0] == 'not-a-dict'
-        # Content is wrapped in ContentText even without placeholders
-        content_list = result[1]['content']
-        assert isinstance(content_list, list)
-        assert isinstance(content_list[0], ContentText)
-        assert content_list[0].text == 'hello'
+        assert result[1]['content'] == 'hello'

@@ -439,7 +439,7 @@ Both General-VQA and General-VMCQ share the same underlying mechanism for resolv
 Placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` in a plain-text string are automatically replaced with the corresponding media from the record's indexed columns. The resolution happens before prompting to MLLM during evaluation.
 
 - Placeholders are resolved by a strict **one-to-one mapping**: `<image 1>` takes the value of `image_1`, `<image 2>` takes `image_2`, and so on.
-- If a placeholder references an invalid media value (e.g., `None`), it will be ignored. Not-referenced media columns are also ignored.
+- If a placeholder references an invalid media value (e.g., `None`), it is ignored with a warning. If that would leave the user message empty, its original text is retained. Not-referenced media columns are ignored.
 - By default, indexed media columns are capped at 100: `image_k`/`video_k`/`audio_k` for k ∈ [1, 100], e.g., `<image 101>` and `image_101` will be ignored.
 - The `images`/`videos`/`audios` list columns are only consulted when the corresponding `image_k`/`video_k`/`audio_k` columns are absent. They are equivalent to writing `image_1`, `image_2`, ... in increasing order, but not capped at 100.
 - After resolution, the plain-text content is converted into the same structured OpenAI-message format, so the model receives identical input regardless of which format you choose.

@@ -15,6 +15,7 @@ from .default_data_adapter import DefaultDataAdapter
 logger = get_logger()
 
 MediaType = Literal['audio', 'image', 'video']
+MEDIA_PLACEHOLDER_PATTERN = re.compile(r'<(image|video|audio)[_ ](\d+)>')
 
 # Media types whose payload carries an explicit format hint; images have no ContentImage.format field.
 SUPPORTED_MEDIA_FORMATS: Dict[str, Tuple[str, ...]] = {
@@ -93,10 +94,9 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         audio_map = audio_map or {}
         content_list: List[Content] = []
 
-        pattern = r'<(image|video|audio)[_ ](\d+)>'
         last_end = 0
 
-        for match in re.finditer(pattern, text):
+        for match in MEDIA_PLACEHOLDER_PATTERN.finditer(text):
             # Add text before the image placeholder
             if match.start() > last_end:
                 text_segment = text[last_end:match.start()]
@@ -196,7 +196,12 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         normalized_value['url'] = url
         return normalized_value
 
-    def _extract_media(self, record: Dict[str, Any], media_type: MediaType) -> Dict[int, Dict[str, Any]]:
+    def _extract_media(
+        self,
+        record: Dict[str, Any],
+        media_type: MediaType,
+        indices: Optional[Set[int]] = None,
+    ) -> Dict[int, Dict[str, Any]]:
         """Collect and normalize every media cell of *media_type* found in one record.
 
         Indexed columns (``image_1`` .. ``image_<MAX_IMAGES>``) take precedence over the plural list
@@ -207,6 +212,8 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         Args:
             record (dict): Raw record from the dataset.
             media_type (MediaType): Media family to collect.
+            indices (Optional[Set[int]]): Specific 1-based indices to collect.
+                When omitted, collect every available media value.
 
         Returns:
             Dict[int, Dict[str, Any]]: 1-based media index to payload, shaped by
@@ -220,7 +227,10 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         raw_media: Dict[int, Any] = {}
         media_formats: Dict[int, Optional[str]] = {}
 
-        for index in range(1, max_media + 1):
+        indexed_indices = range(1, max_media + 1) if indices is None else sorted(
+            index for index in indices if 1 <= index <= max_media
+        )
+        for index in indexed_indices:
             value = record.get(f'{media_type}_{index}')
             if value is None or value == '':
                 continue
@@ -234,7 +244,11 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 return {}
             if not isinstance(media_list, list):
                 raise TypeError(f'"{media_type}s" must be a list of media values, got {type(media_list).__name__}.')
-            raw_media = {i + 1: media for i, media in enumerate(media_list) if media is not None and media != ''}
+            raw_media = {
+                i + 1: media
+                for i, media in enumerate(media_list)
+                if (indices is None or i + 1 in indices) and media is not None and media != ''
+            }
 
         media_map: Dict[int, Dict[str, Any]] = {}
         for index, value in raw_media.items():
@@ -295,6 +309,20 @@ class VisionLanguageAdapter(DefaultDataAdapter):
             image = image_value
         return ContentImage(image=image)
 
+    @staticmethod
+    def _media_placeholder_indices(messages: List[Dict[str, Any]]) -> Dict[MediaType, Set[int]]:
+        """Return media indices referenced by plain-text user messages."""
+        indices: Dict[MediaType, Set[int]] = {'image': set(), 'video': set(), 'audio': set()}
+        for message in messages:
+            if not isinstance(message, dict) or message.get('role') != 'user':
+                continue
+            content = message.get('content')
+            if not isinstance(content, str):
+                continue
+            for media_type, index in MEDIA_PLACEHOLDER_PATTERN.findall(content):
+                indices[media_type].add(int(index))
+        return indices
+
     def _resolve_media_placeholders(
         self,
         messages: List[Dict[str, Any]],
@@ -307,11 +335,11 @@ class VisionLanguageAdapter(DefaultDataAdapter):
 
         This is designed for records whose ``messages`` field follows the OpenAI
         chat-completion format (a list of {"role": "...", "content": "..."} dicts).
-        It walks every message and replaces any placeholder found in a
-        plain-text ``content`` field into ``list[Content]`` object.
+        It replaces placeholders in plain-text user-message ``content`` fields
+        with ``list[Content]`` objects.
 
-        Messages that already carry structured content ("content": [...]) are
-        left untouched — only plain-string ``content`` are scanned for placeholders.
+        Messages that already carry structured content and non-user messages are
+        left untouched.
 
         This function does not validate the resulting messages; the caller should
         pass the output to :func:`chat_messages_from_openai` or a similar parser
@@ -353,14 +381,19 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 updated_messages.append(message)
                 continue
 
-            # non-user msgs will be filled as well, this behavior may be unexpected in some cases.
-            # we should document this behavior explicitly, as well as ways to bypass it
+            if not MEDIA_PLACEHOLDER_PATTERN.search(content):
+                updated_messages.append(message)
+                continue
+
             content_list = self._parse_text_with_media(
                 text=content,
                 image_map=image_map,
                 video_map=video_map,
                 audio_map=audio_map,
             )
+            if not content_list:
+                updated_messages.append(message)
+                continue
             # preserve all original message keys, only overwrites the content field
             updated_messages.append(dict(message) | {'content': content_list})
 

@@ -109,16 +109,14 @@ class GeneralVQAAdapter(VisionLanguageAdapter):
 
         # Convert messages to ChatMessage objects using the standard OpenAI parser
         if isinstance(messages_data, list):
-            # Resolve <image N> / <video N> / <audio N> placeholders in user messages
-            # using indexed media columns (image_1, video_1, audio_1, etc.) from the record.
-            # This must happen before chat_messages_from_openai() so that the resulting
-            # Content objects are valid for the OpenAI message schema.
-            messages_data = self._resolve_media_placeholders(
-                messages_data,
-                image_map=self._extract_media(record, 'image'),
-                video_map=self._extract_media(record, 'video'),
-                audio_map=self._extract_media(record, 'audio'),
-            )
+            media_indices = self._media_placeholder_indices(messages_data)
+            if any(media_indices.values()):
+                messages_data = self._resolve_media_placeholders(
+                    messages_data,
+                    image_map=self._extract_media(record, 'image', media_indices['image']),
+                    video_map=self._extract_media(record, 'video', media_indices['video']),
+                    audio_map=self._extract_media(record, 'audio', media_indices['audio']),
+                )
             message_list = chat_messages_from_openai(model='', messages=messages_data)
         else:
             logger.warning(f'Unexpected messages format: {type(messages_data)}')
