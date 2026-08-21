@@ -137,8 +137,16 @@ class BenchmarkMeta:
     ``'1.5gb'`` (parsed by ``parse_size``).
     Useful for avoiding 413 errors when sending multi-image payloads to APIs."""
 
+    evaluation_version: str = 'v1.0'
+    """Published evaluation semantics version used for cache compatibility."""
+
+    dataset_revision: Optional[str] = None
+    """Optional immutable revision of the remote dataset source."""
+
     def __post_init__(self):
         """Validate fields after initialization."""
+        from evalscope.evaluation_versioning import validate_evaluation_version
+        validate_evaluation_version(self.evaluation_version)
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
         self._normalize_metric_list()
@@ -262,13 +270,16 @@ class BenchmarkMeta:
 
     def to_dict(self) -> dict:
         """Convert to dictionary, maintaining backward compatibility."""
-        return self._serialize_models(asdict(self))
+        result = self._serialize_models(asdict(self))
+        result.pop('evaluation_version', None)
+        return result
 
     def to_string_dict(self) -> dict:
         """Convert to string dictionary, excluding data_adapter."""
         cur_dict = copy.deepcopy(self._serialize_models(asdict(self)))
         if 'data_adapter' in cur_dict:
             del cur_dict['data_adapter']
+        cur_dict.pop('evaluation_version', None)
 
         cur_dict['extra_params'] = self.get_extra_params()
         return cur_dict
@@ -287,6 +298,11 @@ class BenchmarkMeta:
     def _update(self, args: dict):
         """Update instance with provided arguments, maintaining backward compatibility."""
         args = copy.deepcopy(args)
+
+        if 'evaluation_version' in args:
+            raise ValueError(
+                'evaluation_version must be declared by BenchmarkMeta, not overridden through dataset_args.'
+            )
 
         if args.get('local_path'):
             self.dataset_id = args['local_path']

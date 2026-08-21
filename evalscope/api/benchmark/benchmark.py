@@ -39,9 +39,6 @@ class DataAdapter(LLMJudgeMixin, ABC):
         self.split_as_subset = False
         """Whether to use the split name as the dataset subsets"""
 
-        self.shuffle_choices = False
-        """Whether to shuffle the choices in the dataset"""
-
         self.use_batch_scoring = False
         """Whether to use batch scoring for metrics that support it, need to be enabled in the benchmark as well"""
 
@@ -70,6 +67,11 @@ class DataAdapter(LLMJudgeMixin, ABC):
     def to_dict(self) -> Dict[str, Any]:
         """Convert the benchmark metadata to a dictionary."""
         return self._benchmark_meta.to_string_dict()
+
+    @property
+    def benchmark_meta(self) -> 'BenchmarkMeta':
+        """Return the resolved benchmark metadata used by this adapter."""
+        return self._benchmark_meta
 
     @abstractmethod
     def load_dataset(self) -> DatasetDict:
@@ -153,6 +155,11 @@ class DataAdapter(LLMJudgeMixin, ABC):
         Set the dataset hub type for the benchmark.
         """
         self._task_config.dataset_hub = value
+
+    @property
+    def dataset_revision(self) -> Optional[str]:
+        """Return the resolved revision of the remote dataset source."""
+        return self._benchmark_meta.dataset_revision
 
     @property
     def eval_type(self) -> str:

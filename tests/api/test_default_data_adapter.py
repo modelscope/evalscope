@@ -16,10 +16,14 @@ class CapturingDataLoader(DataLoader):
 
     latest_limit: ClassVar[Optional[int]] = None
     latest_repeats: ClassVar[Optional[int]] = None
+    latest_version: ClassVar[Optional[str]] = None
+    latest_seed: ClassVar[Optional[int]] = None
 
     def load(self) -> MemoryDataset:
         self.__class__.latest_limit = self.limit
         self.__class__.latest_repeats = self.repeats
+        self.__class__.latest_version = self.version
+        self.__class__.latest_seed = self.seed
 
         samples: List[Sample] = [
             Sample(input='question-1', target='answer-1', subset_key='subset-a'),
@@ -54,7 +58,10 @@ class DummyLLMJudgeAdapter(DefaultDataAdapter):
 
 
 def make_adapter(
-    repeats: int = 3, limit: Optional[int] = None, system_prompt: Optional[str] = None
+    repeats: int = 3,
+    limit: Optional[int] = None,
+    system_prompt: Optional[str] = None,
+    dataset_revision: Optional[str] = None,
 ) -> DummyReformatAdapter:
     task_config = TaskConfig(datasets=['dummy'], repeats=repeats, limit=limit)
     benchmark_meta = BenchmarkMeta(
@@ -65,6 +72,7 @@ def make_adapter(
         eval_split='test',
         prompt_template='{question}',
         system_prompt=system_prompt,
+        dataset_revision=dataset_revision,
     )
     return DummyReformatAdapter(benchmark_meta=benchmark_meta, task_config=task_config)
 
@@ -83,6 +91,37 @@ def test_reformat_subset_repeats_are_applied_once_after_grouping() -> None:
     assert CapturingDataLoader.latest_repeats == 1
     assert len(dataset_dict['subset-a']) == 6
     assert [sample.group_id for sample in dataset_dict['subset-a']] == [0, 0, 0, 1, 1, 1]
+
+
+def test_load_subset_passes_the_resolved_dataset_revision() -> None:
+    adapter = make_adapter(dataset_revision='2026-08-21')
+
+    adapter.load_subset(subset='subset-a', data_loader=CapturingDataLoader)
+
+    assert CapturingDataLoader.latest_version == '2026-08-21'
+    assert CapturingDataLoader.latest_seed == 42
+
+
+def test_shuffle_choices_configuration_survives_adapter_initialization() -> None:
+    meta = BenchmarkMeta(
+        name='choice_shuffle',
+        dataset_id='dummy',
+        eval_split='test',
+        shuffle_choices=True,
+    )
+
+    adapter = DummyReformatAdapter(benchmark_meta=meta, task_config=TaskConfig(datasets=['choice_shuffle']))
+
+    assert adapter.shuffle_choices is True
+
+    user_configured_meta = BenchmarkMeta(name='user_choice_shuffle', dataset_id='dummy', eval_split='test')
+    user_configured_meta._update({'shuffle_choices': True})
+    user_configured_adapter = DummyReformatAdapter(
+        benchmark_meta=user_configured_meta,
+        task_config=TaskConfig(datasets=['user_choice_shuffle']),
+    )
+
+    assert user_configured_adapter.shuffle_choices is True
 
 
 def test_auto_judge_strategy_uses_adapter_class_default() -> None:

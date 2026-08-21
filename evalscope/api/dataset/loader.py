@@ -169,7 +169,7 @@ class RemoteDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset
 
@@ -269,7 +269,7 @@ class LocalDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset
 
@@ -312,6 +312,6 @@ class DictDataLoader(DataLoader):
         if self.auto_id:
             memory_dataset.reindex(group_size=self.repeats)
 
-        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices)
+        shuffle_choices_if_requested(memory_dataset, self.shuffle_choices, self.seed)
 
         return memory_dataset

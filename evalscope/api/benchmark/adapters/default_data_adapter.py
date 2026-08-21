@@ -256,7 +256,9 @@ class DefaultDataAdapter(DataAdapter):
             repeats=1 if self.reformat_subset else self.repeats,  # Number of repetitions for each sample
             shuffle=self.shuffle,  # Shuffle dataset if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
+            seed=self.seed,
             data_source=self.dataset_hub,  # Data source configuration
+            version=self.dataset_revision,  # Remote dataset revision when pinned
             force_redownload=self.force_redownload,  # Force redownload if enabled
             dataset_dir=self.dataset_dir,  # Dataset directory
         )
@@ -289,7 +291,9 @@ class DefaultDataAdapter(DataAdapter):
             if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
+            seed=self.seed,
             data_source=self.dataset_hub,  # Data source configuration
+            version=self.dataset_revision,  # Remote dataset revision when pinned
             force_redownload=self.force_redownload,  # Force redownload if enabled
             dataset_dir=self.dataset_dir,  # Dataset directory
         )
