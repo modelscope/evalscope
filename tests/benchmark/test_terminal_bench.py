@@ -1,8 +1,10 @@
+import json
 import math
 import pytest
 from types import SimpleNamespace
 from typing import Any
 
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import Score
 from evalscope.benchmarks.terminal_bench.terminal_bench_adapter import _phase_timeout_options, _TerminalBenchBase
 
@@ -113,3 +115,32 @@ def test_terminal_bench_absolute_timeout_disables_global_multiplier_for_that_pha
 def test_terminal_bench_rejects_conflicting_phase_timeout_options() -> None:
     with pytest.raises(ValueError, match='agent_timeout_sec'):
         _phase_timeout_options(10_800, 2.0, 'agent')
+
+
+def test_terminal_bench_trace_preserves_request_perf_metrics(tmp_path) -> None:
+    trial_dir = tmp_path / 'trial'
+    trajectory_dir = trial_dir / 'agent'
+    trajectory_dir.mkdir(parents=True)
+    (trajectory_dir / 'trajectory.json').write_text(
+        json.dumps({
+            'agent': {
+                'name': 'terminus-2',
+                'model_name': 'test-model',
+            },
+            'steps': [{
+                'source': 'agent',
+                'message': 'answer',
+                'step_id': 0,
+            }],
+        })
+    )
+    adapter = object.__new__(_TerminalBenchBase)
+    adapter.environment_type = 'docker'
+
+    _, messages = adapter._load_harbor_trace(
+        {'trial_uri': f'file://{trial_dir}'},
+        [PerformanceMetrics(latency=1.0, input_tokens=3, output_tokens=2)],
+    )
+
+    assert messages[0].perf_metrics.latency == 1.0
+    assert messages[0].perf_metrics.input_tokens == 3

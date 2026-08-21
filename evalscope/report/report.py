@@ -386,6 +386,9 @@ class Report(BaseModel):
         Returns:
             pd.DataFrame: The report as a pandas DataFrame.
         """
+        if not self.metrics:
+            return pd.DataFrame()
+
         table = defaultdict(list)
         for metric in self.metrics:
             metric_count = 0

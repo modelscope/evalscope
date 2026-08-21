@@ -64,6 +64,10 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
 | `environment_type` | `str` | `docker` | Environment type for running the benchmark. Choices: ['docker', 'daytona', 'e2b', 'modal'] |
 | `agent_name` | `str` | `terminus-2` | Agent type to be used in Harbor. Only terminus-2 uses the evalscope model for inference; other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys. Choices: ['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
 | `timeout_multiplier` | `float` | `1.0` | Timeout multiplier. If timeout errors occur, consider increasing this value. |
+| `agent_timeout_sec` | `float` | `None` | Final agent timeout in seconds. Cannot be combined with agent_timeout_multiplier. |
+| `verifier_timeout_sec` | `float` | `None` | Final verifier timeout in seconds. Cannot be combined with verifier_timeout_multiplier. |
+| `agent_timeout_multiplier` | `float` | `None` | Agent timeout multiplier. Overrides timeout_multiplier for the agent phase. |
+| `verifier_timeout_multiplier` | `float` | `None` | Verifier timeout multiplier. Overrides timeout_multiplier for the verifier phase. |
 | `max_turns` | `int` | `200` | Maximum number of turns for the agent to complete the task. |
 | `environment_kwargs` | `dict` | `{}` | Extra kwargs passed to Harbor EnvironmentConfig. Supported keys: override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env, etc. |
 

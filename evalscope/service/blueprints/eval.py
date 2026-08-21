@@ -127,15 +127,15 @@ def _build_task_config(data: dict) -> TaskConfig:
 def _all_results_empty(result) -> bool:
     """Return True when every dataset in the evaluation result produced no scores.
 
-    This happens when ``ignore_errors=True`` and every sample failed: each
-    dataset evaluator returns an empty dict instead of a :class:`Report`.
+    This happens when ``ignore_errors=True`` and every sample failed. Native
+    evaluation returns a mapping of benchmark names to :class:`Report` objects.
     """
     if not result:
         return True
     if isinstance(result, Report):
         return result.score is None
     if isinstance(result, dict):
-        return all(not v for v in result.values())
+        return all(_all_results_empty(v) for v in result.values())
     if isinstance(result, list):
         return all(_all_results_empty(r) for r in result)
     return False

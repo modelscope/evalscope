@@ -21,6 +21,13 @@ def test_text_model_rejects_unknown_generation_config_fields() -> None:
         Model(_TextAPI('test'), GenerateConfig(override_cpus=32))
 
 
+def test_text_model_rejects_unknown_per_call_generation_config_fields() -> None:
+    model = Model(_TextAPI('test'), GenerateConfig())
+
+    with pytest.raises(ValueError, match='override_cpus'):
+        model.generate('hello', config=GenerateConfig(override_cpus=32))
+
+
 def test_text_model_allows_provider_extra_body() -> None:
     model = Model(_TextAPI('test'), GenerateConfig(extra_body={'enable_thinking': True}))
 

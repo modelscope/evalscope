@@ -282,6 +282,7 @@ class Model:
 
         # merge passed config
         if config is not None:
+            self._validate_generation_config(config)
             config = self.config.merge(config)
         else:
             config = self.config.model_copy(deep=True)

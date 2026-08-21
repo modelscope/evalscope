@@ -221,10 +221,9 @@ class DefaultEvaluator(Evaluator):
                     f'No valid scores generated for {self.benchmark_name} '
                     '(all samples filtered or failed). Writing an incomplete no-score report.'
                 )
-                report = self.get_report(agg_score_dict, execution_summary)
             else:
                 logger.info('Generating report...')
-                report = self.get_report(agg_score_dict, execution_summary)
+            report = self.get_report(agg_score_dict, execution_summary)
 
             if execution_summary.incomplete:
                 logger.warning(
