@@ -1,6 +1,7 @@
 import json
 import os
 import pandas as pd
+import re
 from collections import defaultdict
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
@@ -13,8 +14,9 @@ from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_secret_value
 
 if TYPE_CHECKING:
+    from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
-    from evalscope.evaluation_versioning import BenchmarkAnalysisContext
+    from evalscope.evaluation_versioning import BenchmarkEvaluationIdentity, ResolvedBenchmarkSpec
 
 logger = get_logger()
 
@@ -44,6 +46,76 @@ Requirements:
 {analysis_context}
 ```
 """
+
+
+class BenchmarkAnalysisContext(BaseModel):
+    """Compact benchmark and score data supplied to report analysis."""
+
+    benchmark: Dict[str, Any]
+    resolved_benchmark: Dict[str, Any]
+    results: Dict[str, Any]
+
+
+def build_analysis_context(
+    meta: 'BenchmarkMeta',
+    spec: 'ResolvedBenchmarkSpec',
+    identity: 'BenchmarkEvaluationIdentity',
+    report: 'Report',
+) -> BenchmarkAnalysisContext:
+    """Build report-analysis input without documentation-only metadata or perf metrics."""
+    overview, task_description = _description_sections(meta.description or '')
+    return BenchmarkAnalysisContext(
+        benchmark={
+            'name': meta.name,
+            'pretty_name': meta.pretty_name,
+            'evaluation_version': identity.evaluation_version,
+            'overview': overview,
+            'task_description': task_description,
+        },
+        resolved_benchmark=spec.model_dump(mode='json'),
+        results=_score_summary(report),
+    )
+
+
+def _description_sections(description: str) -> tuple[str, str]:
+    sections: Dict[str, list[str]] = {'Overview': [], 'Task Description': []}
+    current: Optional[str] = None
+    for line in description.splitlines():
+        heading = re.fullmatch(r'##\s+(.+?)\s*', line)
+        if heading:
+            current = heading.group(1) if heading.group(1) in sections else None
+            continue
+        if current is not None:
+            sections[current].append(line)
+    return '\n'.join(sections['Overview']).strip(), '\n'.join(sections['Task Description']).strip()
+
+
+def _score_summary(report: 'Report') -> Dict[str, Any]:
+    """Return only score aggregates relevant to a benchmark analysis."""
+    return {
+        'primary_metric_identity': (
+            report.primary_metric_identity.model_dump(mode='json') if report.primary_metric_identity else None
+        ),
+        'metrics': [{
+            'name': metric.name,
+            'identity': metric.identity.model_dump(mode='json'),
+            'num': metric.num,
+            'score': metric.score,
+            'macro_score': metric.macro_score,
+            'categories': [{
+                'name': list(category.name),
+                'num': category.num,
+                'score': category.score,
+                'macro_score': category.macro_score,
+                'subsets': [{
+                    'name': subset.name,
+                    'num': subset.num,
+                    'score': subset.score,
+                    'is_aggregate': subset.is_aggregate,
+                } for subset in category.subsets],
+            } for category in metric.categories],
+        } for metric in report.metrics],
+    }
 
 
 def normalize_score(score: Union[float, dict, int], keep_num: int = 4) -> Union[float, dict]:

@@ -1,10 +1,7 @@
 """Regression tests for deterministic choice shuffling."""
 
-import hashlib
-
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.dataset.utils import shuffle_choices_if_requested
-from evalscope.utils.io_utils import content_seed
 
 CHOICES = ['alpha', 'beta', 'gamma', 'delta']
 
@@ -20,12 +17,6 @@ def _answers_by_question(dataset: MemoryDataset) -> dict[str, tuple[tuple[str, .
         str(sample.input): (tuple(sample.choices or []), str(sample.target))
         for sample in dataset
     }
-
-
-def test_content_seed_is_stable() -> None:
-    expected = int.from_bytes(hashlib.sha256(b'one\x00two').digest()[:8], 'big')
-
-    assert content_seed('one', 'two') == expected
 
 
 def test_choice_shuffle_uses_the_run_seed() -> None:

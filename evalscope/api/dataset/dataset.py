@@ -1,5 +1,6 @@
 import abc
 import copy
+import hashlib
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -8,13 +9,6 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
-from evalscope.utils.io_utils import content_seed
-
-
-def _sample_choice_key(sample: 'Sample') -> str:
-    """Return a position-independent key for a sample's choice permutation."""
-    input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
-    return '\x00'.join([input_text, *sorted(sample.choices or [])])
 
 
 class Sample(BaseModel):
@@ -239,7 +233,12 @@ class MemoryDataset(Dataset):
         for sample in self.samples:
             if not sample.choices:
                 continue
-            rand = random.Random(content_seed(str(seed), _sample_choice_key(sample)))
+            input_text = sample.input if isinstance(sample.input, str) else messages_to_markdown(sample.input)
+            # Derive each permutation from sample content rather than its reindexed
+            # position, so filtering one sample cannot remap any other sample's answer.
+            seed_material = '\x00'.join([str(seed), input_text, *sorted(sample.choices)])
+            choice_seed = int.from_bytes(hashlib.sha256(seed_material.encode('utf-8')).digest()[:8], 'big')
+            rand = random.Random(choice_seed)
             # The original positions
             positions = list(range(len(sample.choices)))
 

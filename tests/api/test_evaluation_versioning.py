@@ -9,14 +9,13 @@ from evalscope.evaluation_versioning import (
     BenchmarkEvaluationIdentity,
     EvaluationIdentity,
     ResolvedBenchmarkSpec,
-    build_analysis_context,
     build_benchmark_identity,
     build_evaluation_identity,
     cache_source_for_identity,
     legacy_identity_from_config,
     validate_cached_evaluation_identity,
 )
-from evalscope.report import Report
+from evalscope.report import Report, build_analysis_context
 from evalscope.run import run_task
 from evalscope.utils.io_utils import dict_to_yaml, yaml_to_dict
 

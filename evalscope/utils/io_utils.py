@@ -575,12 +575,6 @@ def gen_hash(name: str, bits: int = 32) -> str:
     return hashlib.md5(name.encode(encoding='UTF-8')).hexdigest()[:bits]
 
 
-def content_seed(*parts: str) -> int:
-    """Return a stable integer seed derived from content rather than list position."""
-    content = '\x00'.join(parts).encode('utf-8')
-    return int.from_bytes(hashlib.sha256(content).digest()[:8], 'big')
-
-
 # ---------------------------------------------------------------------------
 # List utilities
 # ---------------------------------------------------------------------------

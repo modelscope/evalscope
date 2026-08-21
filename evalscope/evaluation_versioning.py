@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
-    from evalscope.report import Report
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
 _VERSION_RE = re.compile(r'^v\d+\.\d+$')
@@ -107,14 +106,6 @@ class EvaluationIdentity(BaseModel):
 
     schema_version: int = EVALUATION_IDENTITY_SCHEMA_VERSION
     benchmarks: Dict[str, BenchmarkEvaluationIdentity] = Field(default_factory=dict)
-
-
-class BenchmarkAnalysisContext(BaseModel):
-    """Compact, structured context supplied to report analysis."""
-
-    benchmark: Dict[str, Any]
-    resolved_benchmark: ResolvedBenchmarkSpec
-    results: Dict[str, Any]
 
 
 def cache_source_for_identity(
@@ -275,27 +266,6 @@ def _identity_from_config(config: Optional[Dict[str, Any]]) -> Optional[Evaluati
         return None
 
 
-def build_analysis_context(
-    meta: 'BenchmarkMeta',
-    spec: ResolvedBenchmarkSpec,
-    identity: BenchmarkEvaluationIdentity,
-    report: 'Report',
-) -> BenchmarkAnalysisContext:
-    """Build analysis input without documentation-only metadata or perf metrics."""
-    overview, task_description = _description_sections(meta.description or '')
-    return BenchmarkAnalysisContext(
-        benchmark={
-            'name': meta.name,
-            'pretty_name': meta.pretty_name,
-            'evaluation_version': identity.evaluation_version,
-            'overview': overview,
-            'task_description': task_description,
-        },
-        resolved_benchmark=spec,
-        results=_score_summary(report),
-    )
-
-
 def _fingerprint_task_config(task_config: 'TaskConfig') -> Dict[str, Any]:
     return _fingerprint_task_mapping(task_config.to_dict())
 
@@ -336,44 +306,3 @@ def _is_secret_key(key: Any) -> bool:
     """Return whether a mapping key contains transport credentials."""
     normalized = str(key).lower().replace('_', '-')
     return normalized in _SECRET_KEYS or normalized.endswith('-api-key')
-
-
-def _description_sections(description: str) -> tuple[str, str]:
-    sections: Dict[str, list[str]] = {'Overview': [], 'Task Description': []}
-    current: Optional[str] = None
-    for line in description.splitlines():
-        heading = re.fullmatch(r'##\s+(.+?)\s*', line)
-        if heading:
-            current = heading.group(1) if heading.group(1) in sections else None
-            continue
-        if current is not None:
-            sections[current].append(line)
-    return '\n'.join(sections['Overview']).strip(), '\n'.join(sections['Task Description']).strip()
-
-
-def _score_summary(report: 'Report') -> Dict[str, Any]:
-    """Return only score aggregates relevant to a benchmark analysis."""
-    return {
-        'primary_metric_identity': (
-            report.primary_metric_identity.model_dump(mode='json') if report.primary_metric_identity else None
-        ),
-        'metrics': [{
-            'name': metric.name,
-            'identity': metric.identity.model_dump(mode='json'),
-            'num': metric.num,
-            'score': metric.score,
-            'macro_score': metric.macro_score,
-            'categories': [{
-                'name': list(category.name),
-                'num': category.num,
-                'score': category.score,
-                'macro_score': category.macro_score,
-                'subsets': [{
-                    'name': subset.name,
-                    'num': subset.num,
-                    'score': subset.score,
-                    'is_aggregate': subset.is_aggregate,
-                } for subset in category.subsets],
-            } for category in metric.categories],
-        } for metric in report.metrics],
-    }
