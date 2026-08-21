@@ -1,10 +1,9 @@
-from collections import defaultdict
-
 from evalscope.api.messages import ChatMessageAssistant
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.model import ModelOutput
 from evalscope.evaluator.evaluator import DefaultEvaluator
+from evalscope.evaluator.execution_tracker import ExecutionTracker
 from evalscope.evaluator.perf_collector import PerfCollector
 
 
@@ -13,11 +12,10 @@ def _sample_score(sample_id: int) -> SampleScore:
 
 
 def test_execution_summary_tracks_partial_failure_and_cached_scores() -> None:
-    evaluator = object.__new__(DefaultEvaluator)
-    evaluator._sample_scores_by_subset = {'test': [_sample_score(0), _sample_score(1)]}
-    evaluator._execution_errors_by_subset = defaultdict(int, {'test': 1})
+    tracker = ExecutionTracker()
+    tracker.record_error('test')
 
-    summary = evaluator._build_execution_summary({'test': [object(), object(), object()]})
+    summary = tracker.summarize({'test': [object(), object(), object()]}, {'test': [_sample_score(0), _sample_score(1)]})
 
     assert summary.model_dump() == {
         'requested': 3,
@@ -35,11 +33,9 @@ def test_execution_summary_tracks_partial_failure_and_cached_scores() -> None:
 
 
 def test_execution_summary_marks_all_success_complete() -> None:
-    evaluator = object.__new__(DefaultEvaluator)
-    evaluator._sample_scores_by_subset = {'test': [_sample_score(0)]}
-    evaluator._execution_errors_by_subset = defaultdict(int)
+    tracker = ExecutionTracker()
 
-    summary = evaluator._build_execution_summary({'test': [object()]})
+    summary = tracker.summarize({'test': [object()]}, {'test': [_sample_score(0)]})
 
     assert not summary.incomplete
     assert summary.errored == 0
