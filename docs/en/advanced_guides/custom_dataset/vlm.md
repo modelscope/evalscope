@@ -2,22 +2,29 @@
 
 This framework supports two custom multimodal evaluation methods:
 
-- **General-VQA Format**: Based on OpenAI message format, supports multi-image/audio input, system prompts, and base64 encoding, suitable for Q&A-based multimodal evaluation tasks.
-- **General-VMCQ Format**: Similar to MMMU format, question text can contain image, video, and audio placeholders such as `<image x>`, `<video x>`, and `<audio x>`, suitable for multiple-choice multimodal evaluation tasks.
+- **General-VQA Format**: Suitable for Q&A-based multimodal evaluation tasks. Supports two input styles: **OpenAI Messages Data**, **MMMU-style Data with Media Placeholders**.
+- **General-VMCQ Format**: Suitable for multiple-choice multimodal evaluation tasks. Uses the [media placeholders][mp-feature] to embed images, videos, and audio in questions and options, similar to MMMU format.
 
 ## General-VQA Format
 
-### 1. Data Preparation
+General-VQA supports **two input styles**:
 
-Prepare data files conforming to OpenAI message format, supporting **JSONL** or **TSV** formats:
+1. **OpenAI Messages Data** — full structured content with explicit media parts (images, audio, video) in the OpenAI message schema. Supports multi-turn conversations, system prompts, and fine-grained control over each content part.
+2. **MMMU-style Data with Media Placeholders** — a simpler approach where the user message is a plain-text string containing `<image N>`, `<video N>`, or `<audio N>` placeholders, and media files are supplied via separate indexed columns (see [Media Placeholder Mechanism][mp-feature]).
 
-**JSONL Format Example** (`example_openai.jsonl`):
+Both formats support **JSONL** or **TSV** files.
+
+### OpenAI Messages Data
+
+In this format, each record contains a `messages` array following the OpenAI chat completion schema. Media (images, audio, video) are embedded directly as structured content parts within user messages.
+
+**JSONL Example** (`example_openai.jsonl`):
 ```json
 {"messages": [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}], "answer": "Dog"}
 {"messages": [{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}], "answer": "Museum"}
 ```
 
-**TSV Format Example** (`example_openai.tsv`):
+**TSV Example** (`example_openai.tsv`):
 ```text
 messages	answer
 [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	Dog
@@ -187,6 +194,31 @@ Supports video content input using OpenAI-compatible `video_url` format. The `ur
 }
 ```
 
+### MMMU-style Data with Media Placeholders
+
+In this format, the `messages` field keeps the user message as a **plain-text string** containing placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` and filled in-place via separate indexed columns (`image_1`, `video_1`, `audio_1`, etc.). See the [Media Placeholder Mechanism][mp-feature] section below for full details on how placeholders are resolved, supported column names, and media types.
+
+**JSONL Example** (`example_placeholder.jsonl`):
+```json
+{"messages": [{"role": "user", "content": "What animal is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/dog.jpg", "answer": "Dog"}
+{"messages": [{"role": "user", "content": "What building is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/AMNH.jpg", "answer": "Museum"}
+{"messages": [{"role": "user", "content": "Which city's skyline is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/tokyo.jpg", "answer": "Tokyo"}
+{"messages": [{"role": "user", "content": "What is the brand of this car?<image 1>"}], "image_1": "custom_eval/multimodal/images/tesla.jpg", "answer": "Tesla"}
+{"messages": [{"role": "user", "content": "What is the person in the picture doing?<image 1>"}], "image_1": "custom_eval/multimodal/images/running.jpg", "answer": "Running"}
+```
+
+**Mixed Media Example**:
+```json
+{"messages": [{"role": "user", 
+               "content": "<image 1> Watch <video 1> and describe both."}],
+ "answer": "A sunny beach and a wave video.",
+ "image_1": "custom_eval/multimodal/images/beach.jpg",
+ "video_1": "custom_eval/multimodal/videos/wave.mp4"}
+```
+
+**Note**: Only user messages (`"role": "user"`) with plain-text `content` are scanned for placeholders. Messages that already have structured content (a list of content parts) or messages with other roles (system, assistant, tool) are left untouched.
+
+
 ### 2. Configure Evaluation Task
 
 Evaluate using Python API or CLI:
@@ -325,22 +357,7 @@ Evaluation will output accuracy metrics:
 
 ### 1. Data Preparation
 
-General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>`, video placeholders `<video x>`, and audio placeholders `<audio x>`; `options` is a Python list string, options can be text or media placeholders.
-
-Media support the following forms (all strings unless otherwise specified):
-- Image local or remote path/URL: `"custom_eval/multimodal/images/dog.jpg"` or `"https://.../dog.jpg"`
-- Image Base64 Data URL: `"data:image/jpeg;base64,/9j/4AAQSk..."`
-- Video local or remote path/URL: `"custom_eval/multimodal/videos/sample.mp4"` or `"https://.../sample.mp4"`
-- Video Base64 Data URL: `"data:video/mp4;base64,AAAAIGZ0eX..."`
-- Audio local or remote path/URL: `"custom_eval/multimodal/audio/sample.wav"` or `"https://.../sample.wav"`
-- Audio Base64 Data URL: `"data:audio/wav;base64,UklGRiQ..."`
-- Image/Video/Audio in undecoded dict: `{"path": "..."}` or `{"bytes": b"..."}`, or Hugging Face [Image feature][HFImage], [Video feature][HFVideo], [Audio feature][HFAudio]. Binaries can only be loaded from parquet files.
-
-[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
-[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
-[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
-
-Supports up to 100 images (`image_1` to `image_100`), 100 videos (`video_1` to `video_100`), and 100 audios (`audio_1` to `audio_100`); supplying `images`/`videos`/`audios` with a list of media is not bounded by the 100 limit. Missing media placeholders are ignored.
+General-VMCQ adopts a structure similar to MMMU: question text can contain image placeholders `<image x>`, video placeholders `<video x>`, and audio placeholders `<audio x>`; `options` is a Python list string, options can be text or media placeholders. Media files are supplied via media columns (`image_k`, `images`, `video_k`, `audio_k`, etc.) described in the [Media Placeholder Mechanism][mp-feature] section.
 
 **JSONL Example** (`example.jsonl`):
 ```json
@@ -360,14 +377,7 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `question`: Question text, can contain `<image x>`, `<video x>`, or `<audio x>` placeholders
 - `options`: List (JSON array), elements can be text (e.g., `"School"`) or media placeholders (e.g., `"<image 1>"`, `"<video 1>"`, `"<audio 1>"`), no need to add prefixes like `A.`, `B.`
 - `answer`: Correct answer letter (e.g., `"A"`, `"B"`)
-- `image_k`: Image string (local/remote path, base64 Data URL) or [Image Feature][HFImage], k ∈ [1, 100]
-- `images`: List of images equivalent to consecutive `image_1`, `image_2`. Only used when `image_k` not present.
-- `video_k`: Video string (local/remote path or base64 Data URL) or [Video Feature][HFVideo], k ∈ [1, 100]
-- `video_k_format`: Optional video format hint; supports `"mp4"`, `"mpeg"`, `"mov"`, and `"avi"`
-- `videos`: Video list equivalent to consecutive `video_1`, `video_2`. Only used when `video_k` not present.
-- `audio_k`: Audio string (local/remote path, URL, or base64 Data URL) or [Audio Feature][HFAudio], k ∈ [1, 100]
-- `audio_k_format`: Optional audio format hint; supports `"wav"` and `"mp3"`
-- `audios`: Audio list equivalent to consecutive `audio_1`, `audio_2`. Only used when `audio_k` not present.
+- Media columns (`image_k`, `images`, `video_k`, `videos`, `video_k_format`, `audio_k`, `audios`,  `audio_k_format`): See the [Media Placeholder Mechanism][mp-feature] section for full details.
 
 ### 2. Configure Evaluation Task
 
@@ -418,6 +428,64 @@ Evaluation will output accuracy metrics:
 | qwen-vl-plus | general_vmcq | Accuracy ↑ | example  |     3 |    100% | default |
 +--------------+--------------+----------+----------+-------+---------+---------+ 
 ```
+
+## Media Placeholder Mechanism
+[mp-feature]: #media-placeholder-mechanism
+
+Both General-VQA and General-VMCQ share the same underlying mechanism for resolving media placeholders. This section documents how it works.
+
+### How It Works
+
+Placeholders like `<image 1>`, `<video 1>`, or `<audio 1>` in a plain-text string are automatically replaced with the corresponding media from the record's indexed columns. The resolution happens before prompting to MLLM during evaluation.
+
+- Placeholders are resolved by a strict **one-to-one mapping**: `<image 1>` takes the value of `image_1`, `<image 2>` takes `image_2`, and so on.
+- If a placeholder references an invalid media value (e.g., `None`), it will be ignored. Not-referenced media columns are also ignored.
+- By default, indexed media columns are capped at 100: `image_k`/`video_k`/`audio_k` for k ∈ [1, 100], e.g., `<image 101>` and `image_101` will be ignored.
+- The `images`/`videos`/`audios` list columns are only consulted when the corresponding `image_k`/`video_k`/`audio_k` columns are absent. They are equivalent to writing `image_1`, `image_2`, ... in increasing order, but not capped at 100.
+- After resolution, the plain-text content is converted into the same structured OpenAI-message format, so the model receives identical input regardless of which format you choose.
+
+### Trigger Conditions
+
+- **General-VQA**: every message that satisfies both conditions: 1. its `"role"` is `"user"`, and 2. its `"content"` field is a plain string (type `str`).
+- **General-VMCQ**: `question` and `options` field, always triggered.
+
+To bypass it, you can provide structured content for General-VQA messages, or remove placeholders in General-VMCQ questions/options. A General-VQA example is provided below:
+
+```json
+// <image 1> tag will not be replaced, because it's structured into `{"type": "text"}` dict
+{"answer": "Dog",
+ "messages": [{"role": "user", 
+               "content": [{"type": "text", 
+                            "text": "<image 1> What animal is this?"}]}]}
+```
+
+### Media Column Names
+
+| Column           | Description                                                                                              | k range   |
+| ---------------- | -------------------------------------------------------------------------------------------------------- | --------- |
+| `image_k`        | Image path/URL/base64 for placeholder `<image k>`                                                        | [1, 100]  |
+| `video_k`        | Video path/URL/base64 for placeholder `<video k>`                                                        | [1, 100]  |
+| `video_k_format` | Optional video format hint (`"mp4"`, `"mpeg"`, `"mov"`, `"avi"`), automatically guessed if not specified | [1, 100]  |
+| `audio_k`        | Audio path/URL/base64 for placeholder `<audio k>`                                                        | [1, 100]  |
+| `audio_k_format` | Optional audio format hint (`"wav"`, `"mp3"`), automatically guessed if not specified                    | [1, 100]  |
+| `images`         | List of images equivalent to consecutive `image_1`, `image_2`, ... Only used when `image_k` not present. | unbounded |
+| `videos`         | List of videos equivalent to consecutive `video_1`, `video_2`, ... Only used when `video_k` not present. | unbounded |
+| `audios`         | List of audios equivalent to consecutive `audio_1`, `audio_2`, ... Only used when `audio_k` not present. | unbounded |
+
+### Supported Media Values
+
+Each media column accepts any of the following:
+
+- **Local path**: `"custom_eval/multimodal/audio/sample.wav"`
+- **HTTP/HTTPS URL**: `"https://.../sample.wav"`
+- **Base64 Data URL**: `"data:audio/wav;base64,UklGRiQ..."`
+- **Undecoded dict** (for parquet-loaded datasets): `{"path": "..."}` or `{"bytes": b"..."}`
+- **Hugging Face Dataset features** (for parquet-loaded datasets): [Image][HFImage], [Video][HFVideo], or [Audio][HFAudio] feature objects
+
+[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
+[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
+[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
+
 
 ---
 

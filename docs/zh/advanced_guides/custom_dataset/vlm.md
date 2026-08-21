@@ -2,22 +2,29 @@
 
 本框架支持两种自定义多模态评测方式：
 
-- **通用问答题格式（General-VQA）**：基于 OpenAI 消息格式，支持多图片/音频输入、系统提示和 base64 编码，适用于问答类多模态评测任务。
-- **通用选择题格式（General-VMCQ）**：类似 MMMU 格式，问题文本中可包含图片、视频和音频占位符，如 `<image x>`、`<video x>` 和 `<audio x>`，适用于选择题类多模态评测任务。
+- **通用问答题格式（General-VQA）**：适用于问答类多模态评测任务。支持两种输入风格：**OpenAI 消息数据** 和 **MMMU 风格媒体占位符数据**。
+- **通用选择题格式（General-VMCQ）**：适用于选择题类多模态评测任务。使用[媒体占位符机制][mp-feature]在问题和选项中嵌入图片、视频和音频，类似 MMMU 格式。
 
 ## 通用问答题格式（General-VQA）
 
-### 1. 数据准备
+General-VQA 支持**两种输入风格**：
 
-准备符合 OpenAI 消息格式的数据文件，支持 **JSONL** 或 **TSV** 格式：
+1. **OpenAI 消息数据** — 完整的结构化内容，在 OpenAI 消息模式中显式包含媒体部分（图片、音频、视频）。支持多轮对话、系统提示以及对每个内容部分的精细控制。
+2. **MMMU 风格媒体占位符数据** — 一种更简单的方式，用户消息为包含 `<image N>`、`<video N>` 或 `<audio N>` 占位符的纯文本字符串，媒体文件通过单独的索引列提供（参见[媒体占位符机制][mp-feature]）。
 
-**JSONL 格式示例** (`example_openai.jsonl`):
+两种格式均支持 **JSONL** 或 **TSV** 文件。
+
+### OpenAI 消息数据
+
+在此格式中，每条记录包含一个遵循 OpenAI 聊天补全模式的 `messages` 数组。媒体（图片、音频、视频）作为结构化内容部分直接嵌入到用户消息中。
+
+**JSONL 示例** (`example_openai.jsonl`):
 ```json
 {"messages": [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}], "answer": "Dog"}
 {"messages": [{"role": "user", "content": [{"type": "text", "text": "What building is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/AMNH.jpg"}}]}], "answer": "Museum"}
 ```
 
-**TSV 格式示例** (`example_openai.tsv`):
+**TSV 示例** (`example_openai.tsv`):
 ```text
 messages	answer
 [{"role": "user", "content": [{"type": "text", "text": "What animal is this?"}, {"type": "image_url", "image_url": {"url": "custom_eval/multimodal/images/dog.jpg"}}]}]	Dog
@@ -187,6 +194,30 @@ messages	answer
 }
 ```
 
+### MMMU 格式媒体占位符数据
+
+在此格式中，`messages` 字段将用户消息保留为**纯文本字符串**，其中包含 `<image 1>`、`<video 1>` 或 `<audio 1>` 等占位符，并通过单独的索引列（`image_1`、`video_1`、`audio_1` 等）原地填充。有关占位符解析方式、支持的列名和媒体类型的完整详情，请参见[媒体占位符机制][mp-feature]章节。
+
+**JSONL 示例** (`example_placeholder.jsonl`):
+```json
+{"messages": [{"role": "user", "content": "What animal is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/dog.jpg", "answer": "Dog"}
+{"messages": [{"role": "user", "content": "What building is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/AMNH.jpg", "answer": "Museum"}
+{"messages": [{"role": "user", "content": "Which city's skyline is this?<image 1>"}], "image_1": "custom_eval/multimodal/images/tokyo.jpg", "answer": "Tokyo"}
+{"messages": [{"role": "user", "content": "What is the brand of this car?<image 1>"}], "image_1": "custom_eval/multimodal/images/tesla.jpg", "answer": "Tesla"}
+{"messages": [{"role": "user", "content": "What is the person in the picture doing?<image 1>"}], "image_1": "custom_eval/multimodal/images/running.jpg", "answer": "Running"}
+```
+
+**混合媒体示例**：
+```json
+{"messages": [{"role": "user", 
+               "content": "<image 1> Watch <video 1> and describe both."}],
+ "answer": "A sunny beach and a wave video.",
+ "image_1": "custom_eval/multimodal/images/beach.jpg",
+ "video_1": "custom_eval/multimodal/videos/wave.mp4"}
+```
+
+**注意**：只有用户消息（`"role": "user"`）且 `content` 为纯文本字符串的消息才会被扫描占位符。已经具有结构化内容（内容部分列表）的消息或其他角色（system、assistant、tool）的消息保持不变。
+
 ### 2. 配置评测任务
 
 使用 Python API 或 CLI 进行评测：
@@ -325,22 +356,7 @@ evalscope eval \
 
 ### 1. 数据准备
 
-General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>`、视频占位符 `<video x>` 和音频占位符 `<audio x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。
-
-支持以下媒体形式（均为字符串，除非另有说明）：
-- 图片本地或远程路径/URL：`"custom_eval/multimodal/images/dog.jpg"` 或 `"https://.../dog.jpg"`
-- 图片 Base64 Data URL：`"data:image/jpeg;base64,/9j/4AAQSk..."`
-- 视频本地或远程路径/URL：`"custom_eval/multimodal/videos/sample.mp4"` 或 `"https://.../sample.mp4"`
-- 视频 Base64 Data URL：`"data:video/mp4;base64,AAAAIGZ0eX..."`
-- 音频本地或远程路径/URL：`"custom_eval/multimodal/audio/sample.wav"` 或 `"https://.../sample.wav"`
-- 音频 Base64 Data URL：`"data:audio/wav;base64,UklGRiQ..."`
-- 未解码的图片/视频/音频字典：`{"path": "..."}` 或 `{"bytes": b"..."}`，或 Hugging Face 的 [Image feature][HFImage]、[Video feature][HFVideo]、[Audio feature][HFAudio]。二进制内容仅支持从 Parquet 文件加载。
-
-[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
-[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
-[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
-
-支持最多 100 张图片（`image_1` 到 `image_100`）、100 个视频（`video_1` 到 `video_100`）和 100 个音频（`audio_1` 到 `audio_100`）；使用 `images`/`videos`/`audios` 传入媒体列表时不受 100 的数量限制。不存在的媒体占位符会被忽略。
+General-VMCQ 采用与 MMMU 相似的结构：问题文本中可包含图片占位符 `<image x>`、视频占位符 `<video x>` 和音频占位符 `<audio x>`；`options` 为 Python 列表字符串，选项可为文本或媒体占位符。媒体文件通过[媒体占位符机制][mp-feature]章节中描述的媒体列（`image_k`、`images`、`video_k`、`audio_k` 等）提供。
 
 **JSONL 示例**（`example.jsonl`）：
 ```json
@@ -360,14 +376,7 @@ Which image shows a dog?	["<image 1>", "<image 2>", "<image 3>", "<image 4>"]	A	
 - `question`: 问题文本，可包含 `<image x>`、`<video x>` 或 `<audio x>` 占位符
 - `options`: 列表（JSON 数组），元素可以是文本（如 `"School"`）或媒体占位符（如 `"<image 1>"`、`"<video 1>"`、`"<audio 1>"`），不需要添加 `A.`、`B.` 等前缀
 - `answer`: 正确答案字母（如 `"A"`、`"B"`）
-- `image_k`: 图片字符串（本地/远程路径、base64 Data URL）或 [Image Feature][HFImage]，k ∈ [1, 100]
-- `images`: 图片列表，相当于连续的 `image_1`、`image_2`。仅在不存在 `image_k` 时使用。
-- `video_k`: 视频字符串（本地/远程路径或 base64 Data URL）或 [Video Feature][HFVideo]，k ∈ [1, 100]
-- `video_k_format`: 可选的视频格式提示；支持 `"mp4"`、`"mpeg"`、`"mov"` 和 `"avi"`
-- `videos`: 视频列表，相当于连续的 `video_1`、`video_2`。仅在不存在 `video_k` 时使用。
-- `audio_k`: 音频字符串（本地/远程路径、URL 或 base64 Data URL）或 [Audio Feature][HFAudio]，k ∈ [1, 100]
-- `audio_k_format`: 可选的音频格式提示；支持 `"wav"` 和 `"mp3"`
-- `audios`: 音频列表，相当于连续的 `audio_1`、`audio_2`。仅在不存在 `audio_k` 时使用。
+- 媒体列（`image_k`、`images`、`video_k`、`videos`、`video_k_format`、`audio_k`、`audios`、`audio_k_format`）：详见[媒体占位符机制][mp-feature]章节。
 
 ### 2. 配置评测任务
 
@@ -418,6 +427,64 @@ evalscope eval \
 | qwen-vl-plus | general_vmcq | Accuracy ↑ | example  |     3 |    100% | default |
 +--------------+--------------+----------+----------+-------+---------+---------+ 
 ```
+
+## 媒体占位符机制
+[mp-feature]: #媒体占位符机制
+
+General-VQA 和 General-VMCQ 共享相同的底层机制来解析媒体占位符。本节记录其工作原理。
+
+### 工作原理
+
+占位符如 `<image 1>`、`<video 1>` 或 `<audio 1>` 在纯文本字符串中会被自动替换为记录中索引列的对应媒体。解析在评测时发送给多模态大模型之前完成。
+
+- 占位符通过严格的**一对一映射**解析：`<image 1>` 取 `image_1` 的值，`<image 2>` 取 `image_2` 的值，依此类推。
+- 如果占位符引用了无效的媒体值（例如 `None`），它将被忽略。未被引用的媒体列也会被忽略。
+- 默认情况下，索引媒体列上限为 100：`image_k`/`video_k`/`audio_k`，其中 k ∈ [1, 100]，例如 `<image 101>` 和 `image_101` 将被忽略。
+- `images`/`videos`/`audios` 列表列仅在对应的 `image_k`/`video_k`/`audio_k` 列不存在时才会被使用。它们等同于按递增顺序编写 `image_1`、`image_2`……，但不受 100 的数量限制。
+- 解析后，纯文本内容会被转换为相同的结构化 OpenAI 消息格式，因此无论您选择哪种格式，模型都会收到相同的输入。
+
+### 触发条件
+
+- **General-VQA**：满足以下两个条件的每条消息：1. 其 `"role"` 为 `"user"`，且 2. 其 `"content"` 字段为纯字符串（`str` 类型）。
+- **General-VMCQ**：`question` 和 `options` 字段，始终触发。
+
+要绕过此机制，可以为 General-VQA 消息提供结构化内容，或移除 General-VMCQ 问题/选项中的占位符。以下是一个 General-VQA 示例：
+
+```json
+// <image 1> 标签不会被替换，因为它被结构化为 `{"type": "text"}` 字典
+{"answer": "Dog",
+ "messages": [{"role": "user", 
+               "content": [{"type": "text", 
+                            "text": "<image 1> What animal is this?"}]}]}
+```
+
+### 媒体列名
+
+| 列名             | 描述                                                                        | k 范围   |
+| ---------------- | --------------------------------------------------------------------------- | -------- |
+| `image_k`        | 占位符 `<image k>` 的图片路径/URL/base64                                    | [1, 100] |
+| `video_k`        | 占位符 `<video k>` 的视频路径/URL/base64                                    | [1, 100] |
+| `video_k_format` | 可选的视频格式提示（`"mp4"`、`"mpeg"`、`"mov"`、`"avi"`），未指定时自动推断 | [1, 100] |
+| `audio_k`        | 占位符 `<audio k>` 的音频路径/URL/base64                                    | [1, 100] |
+| `audio_k_format` | 可选的音频格式提示（`"wav"`、`"mp3"`），未指定时自动推断                    | [1, 100] |
+| `images`         | 图片列表，相当于连续的 `image_1`、`image_2`……仅在 `image_k` 不存在时使用    | 无限制   |
+| `videos`         | 视频列表，相当于连续的 `video_1`、`video_2`……仅在 `video_k` 不存在时使用    | 无限制   |
+| `audios`         | 音频列表，相当于连续的 `audio_1`、`audio_2`……仅在 `audio_k` 不存在时使用    | 无限制   |
+
+### 支持的媒体值
+
+每个媒体列接受以下任意形式：
+
+- **本地路径**：`"custom_eval/multimodal/audio/sample.wav"`
+- **HTTP/HTTPS URL**：`"https://.../sample.wav"`
+- **Base64 Data URL**：`"data:audio/wav;base64,UklGRiQ..."`
+- **未解码字典**（用于 Parquet 加载的数据集）：`{"path": "..."}` 或 `{"bytes": b"..."}`
+- **Hugging Face 数据集特征**（用于 Parquet 加载的数据集）：[Image][HFImage]、[Video][HFVideo] 或 [Audio][HFAudio] 特征对象
+
+[HFImage]: https://huggingface.co/docs/datasets/about_dataset_features#image-feature
+[HFVideo]: https://huggingface.co/docs/datasets/package_reference/main_classes#datasets.Video
+[HFAudio]: https://huggingface.co/docs/datasets/en/about_dataset_features#audio-feature
+
 
 ---
 
