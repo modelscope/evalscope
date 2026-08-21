@@ -6,7 +6,6 @@ from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.dataset.utils import shuffle_choices_if_requested
 from evalscope.utils.io_utils import content_seed
 
-
 CHOICES = ['alpha', 'beta', 'gamma', 'delta']
 
 

@@ -5,9 +5,8 @@ import json
 import re
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional
-
 from pydantic import BaseModel, Field
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from evalscope.version import __version__
 
@@ -15,7 +14,6 @@ if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
     from evalscope.report import Report
-
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
 _VERSION_RE = re.compile(r'^v\d+\.\d+$')
@@ -54,6 +52,7 @@ class ResolvedBenchmarkSpec(BaseModel):
     filters: Optional[Dict[str, Any]] = None
     shuffle: bool = False
     shuffle_choices: bool = False
+    max_image_bytes: Optional[Union[int, str]] = None
     extra_params: Dict[str, Any] = Field(default_factory=dict)
     sandbox_config: Optional[Dict[str, Any]] = None
 
@@ -83,6 +82,7 @@ class ResolvedBenchmarkSpec(BaseModel):
             filters=dict(meta.filters) if meta.filters is not None else None,
             shuffle=meta.shuffle,
             shuffle_choices=meta.shuffle_choices,
+            max_image_bytes=meta.max_image_bytes,
             extra_params=meta.get_extra_params(),
             sandbox_config=meta.sandbox_config,
         )
@@ -204,7 +204,8 @@ def build_evaluation_identity(
     return EvaluationIdentity(
         framework=FrameworkProvenance(evalscope_version=__version__, git_commit=_git_commit()),
         benchmarks={
-            name: build_benchmark_identity(spec, versions[name], task_config) for name, spec in specs.items()
+            name: build_benchmark_identity(spec, versions[name], task_config)
+            for name, spec in specs.items()
         },
     )
 
@@ -216,7 +217,8 @@ def build_generated_evaluation_metadata(
     """Build output-only metadata stored alongside the user task configuration."""
     return {
         'resolved_benchmarks': {
-            name: spec.model_dump(mode='json') for name, spec in specs.items()
+            name: spec.model_dump(mode='json')
+            for name, spec in specs.items()
         },
         'evaluation_identity': identity.model_dump(mode='json'),
     }
@@ -249,9 +251,8 @@ def validate_cached_evaluation_identity(
     return sources
 
 
-def legacy_identity_from_config(
-    task_config: Dict[str, Any], benchmark_name: str
-) -> Optional[BenchmarkEvaluationIdentity]:
+def legacy_identity_from_config(task_config: Dict[str, Any],
+                                benchmark_name: str) -> Optional[BenchmarkEvaluationIdentity]:
     """Infer a v1.0 identity from an older full-meta task config snapshot."""
     raw_spec = task_config.get('dataset_args', {}).get(benchmark_name)
     if not isinstance(raw_spec, dict) or 'dataset_id' not in raw_spec:
@@ -314,8 +315,20 @@ def _fingerprint_task_config(task_config: 'TaskConfig') -> Dict[str, Any]:
 
 def _fingerprint_task_mapping(task_config: Dict[str, Any]) -> Dict[str, Any]:
     keys = (
-        'model', 'model_id', 'model_args', 'model_task', 'chat_template', 'generation_config', 'eval_type',
-        'api_url', 'limit', 'repeats', 'seed', 'judge', 'sandbox',
+        'model',
+        'model_id',
+        'model_args',
+        'model_task',
+        'chat_template',
+        'generation_config',
+        'eval_type',
+        'api_url',
+        'limit',
+        'repeats',
+        'seed',
+        'judge',
+        'sandbox',
+        'agent_config',
     )
     return {key: task_config.get(key) for key in keys}
 
@@ -326,11 +339,7 @@ def _canonical_json(value: Any) -> str:
 
 def _scrub_secrets(value: Any) -> Any:
     if isinstance(value, dict):
-        return {
-            key: _scrub_secrets(item)
-            for key, item in value.items()
-            if not _is_secret_key(key)
-        }
+        return {key: _scrub_secrets(item) for key, item in value.items() if not _is_secret_key(key)}
     if isinstance(value, list):
         return [_scrub_secrets(item) for item in value]
     return value
@@ -361,42 +370,32 @@ def _score_summary(report: 'Report') -> Dict[str, Any]:
         'primary_metric_identity': (
             report.primary_metric_identity.model_dump(mode='json') if report.primary_metric_identity else None
         ),
-        'metrics': [
-            {
-                'name': metric.name,
-                'identity': metric.identity.model_dump(mode='json'),
-                'num': metric.num,
-                'score': metric.score,
-                'macro_score': metric.macro_score,
-                'categories': [
-                    {
-                        'name': list(category.name),
-                        'num': category.num,
-                        'score': category.score,
-                        'macro_score': category.macro_score,
-                        'subsets': [
-                            {
-                                'name': subset.name,
-                                'num': subset.num,
-                                'score': subset.score,
-                                'is_aggregate': subset.is_aggregate,
-                            }
-                            for subset in category.subsets
-                        ],
-                    }
-                    for category in metric.categories
-                ],
-            }
-            for metric in report.metrics
-        ],
+        'metrics': [{
+            'name': metric.name,
+            'identity': metric.identity.model_dump(mode='json'),
+            'num': metric.num,
+            'score': metric.score,
+            'macro_score': metric.macro_score,
+            'categories': [{
+                'name': list(category.name),
+                'num': category.num,
+                'score': category.score,
+                'macro_score': category.macro_score,
+                'subsets': [{
+                    'name': subset.name,
+                    'num': subset.num,
+                    'score': subset.score,
+                    'is_aggregate': subset.is_aggregate,
+                } for subset in category.subsets],
+            } for category in metric.categories],
+        } for metric in report.metrics],
     }
 
 
 def _git_commit() -> Optional[str]:
     try:
         repo_root = Path(__file__).resolve().parent.parent
-        return subprocess.run(
-            ['git', 'rev-parse', 'HEAD'], cwd=repo_root, check=True, capture_output=True, text=True
-        ).stdout.strip()
+        return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repo_root, check=True, capture_output=True,
+                              text=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None

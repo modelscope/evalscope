@@ -1,8 +1,7 @@
 """Tests for native evaluation snapshots, identities, and analysis context."""
 
-from types import SimpleNamespace
-
 import pytest
+from types import SimpleNamespace
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config
@@ -20,7 +19,7 @@ from evalscope.evaluation_versioning import (
 )
 from evalscope.report import Report
 from evalscope.run import run_task
-from evalscope.utils.io_utils import dict_to_yaml
+from evalscope.utils.io_utils import dict_to_yaml, yaml_to_dict
 
 
 def _task_config(**kwargs) -> TaskConfig:
@@ -109,6 +108,10 @@ def test_identity_changes_only_for_evaluation_semantics() -> None:
     assert first.fingerprint != build_benchmark_identity(changed_prompt, 'v1.0', config).fingerprint
     changed_revision = spec.model_copy(update={'dataset_revision': '2026-08-21'})
     assert first.fingerprint != build_benchmark_identity(changed_revision, 'v1.0', config).fingerprint
+    changed_image_limit = spec.model_copy(update={'max_image_bytes': '500kb'})
+    assert first.fingerprint != build_benchmark_identity(changed_image_limit, 'v1.0', config).fingerprint
+    agent_config = _task_config(agent_config={'mode': 'native', 'max_steps': 3})
+    assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', agent_config).fingerprint
 
 
 def test_cache_identity_requires_match_unless_rerun_review_is_explicit() -> None:
@@ -187,6 +190,45 @@ def test_native_cache_identity_blocks_mismatched_run_before_snapshot_overwrite(t
         run_task(TaskConfig(**base, use_cache=str(tmp_path), generation_config={'temperature': 0.7}))
 
     assert snapshot_path.read_text() == snapshot
+
+
+def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
+    base = {
+        'model': 'mock-model',
+        'eval_type': 'mock_llm',
+        'datasets': ['general_mcq'],
+        'dataset_args': {'general_mcq': {'local_path': 'custom_eval/text/mcq', 'subset_list': ['example']}},
+        'limit': 1,
+        'no_timestamp': True,
+        'work_dir': str(tmp_path),
+    }
+    run_task(TaskConfig(**base))
+
+    snapshot_path = tmp_path / 'configs' / 'task_config.yaml'
+    previous_fingerprint = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq'][
+        'fingerprint']
+    prediction_path = tmp_path / 'predictions' / 'mock-model' / 'general_mcq_example.jsonl'
+    previous_prediction = prediction_path.read_text()
+
+    run_task(
+        TaskConfig(
+            **base,
+            use_cache=str(tmp_path),
+            rerun_review=True,
+            generation_config={'temperature': 0.7},
+        )
+    )
+
+    identity = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq']
+    assert identity['fingerprint'] != previous_fingerprint
+    assert identity['cache_source'] == {
+        'evaluation_version': 'v1.0',
+        'fingerprint': previous_fingerprint,
+        'inferred_legacy': False,
+        'prediction_reused': True,
+        'reuse_mode': 'rerun_review_override',
+    }
+    assert prediction_path.read_text() == previous_prediction
 
 
 def test_legacy_full_meta_snapshot_infers_v1_identity() -> None:
