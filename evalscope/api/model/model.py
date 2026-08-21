@@ -21,9 +21,6 @@ logger = get_logger()
 class ModelAPI(abc.ABC):
     """Model API provider."""
 
-    allows_generation_config_extras = False
-    """Whether provider-specific generation extras are consumed directly."""
-
     def __init__(
         self,
         model_name: str,
@@ -162,18 +159,6 @@ class Model:
         self.api = api
         self.config = config
         self.model_args = model_args
-        self._validate_generation_config(config)
-
-    def _validate_generation_config(self, config: GenerateConfig) -> None:
-        """Reject silently ignored generation fields before evaluation starts."""
-        if not config.model_extra or self.api.allows_generation_config_extras:
-            return
-        unknown = ', '.join(sorted(config.model_extra))
-        raise ValueError(
-            f'Unsupported generation_config field(s) for {self.api.__class__.__name__}: {unknown}. '
-            'Put provider request fields in generation_config.extra_body and benchmark runtime fields '
-            'in dataset_args.<benchmark>.extra_params.'
-        )
 
     @property
     def name(self) -> str:
@@ -282,12 +267,9 @@ class Model:
 
         # merge passed config
         if config is not None:
-            self._validate_generation_config(config)
             config = self.config.merge(config)
         else:
             config = self.config.model_copy(deep=True)
-
-        self._validate_generation_config(config)
 
         # provide max_tokens from the model api if required
         if config.max_tokens is None:

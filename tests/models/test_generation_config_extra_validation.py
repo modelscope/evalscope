@@ -1,5 +1,3 @@
-import pytest
-
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, Model, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
@@ -12,20 +10,17 @@ class _TextAPI(ModelAPI):
         return ModelOutput.from_content(model=self.model_name, content='ok')
 
 
-class _ImageAPI(_TextAPI):
-    allows_generation_config_extras = True
+def test_model_preserves_extra_generation_config_fields() -> None:
+    class _ExtraAPI(_TextAPI):
 
+        def generate(self, input: list[ChatMessage], tools: list[ToolInfo], tool_choice: ToolChoice,
+                     config: GenerateConfig) -> ModelOutput:
+            assert config.model_extra == {'base_extra': 'base', 'call_extra': 'call'}
+            return ModelOutput.from_content(model=self.model_name, content='ok')
 
-def test_text_model_rejects_unknown_generation_config_fields() -> None:
-    with pytest.raises(ValueError, match='override_cpus'):
-        Model(_TextAPI('test'), GenerateConfig(override_cpus=32))
+    model = Model(_ExtraAPI('test'), GenerateConfig(base_extra='base'))
 
-
-def test_text_model_rejects_unknown_per_call_generation_config_fields() -> None:
-    model = Model(_TextAPI('test'), GenerateConfig())
-
-    with pytest.raises(ValueError, match='override_cpus'):
-        model.generate('hello', config=GenerateConfig(override_cpus=32))
+    assert model.generate('hello', config=GenerateConfig(call_extra='call')).message.content == 'ok'
 
 
 def test_text_model_allows_provider_extra_body() -> None:
@@ -34,7 +29,7 @@ def test_text_model_allows_provider_extra_body() -> None:
     assert model.generate('hello').message.content == 'ok'
 
 
-def test_image_model_keeps_generation_config_extras() -> None:
-    model = Model(_ImageAPI('test'), GenerateConfig(custom_scheduler='fast'))
+def test_text_model_keeps_extra_generation_config_fields() -> None:
+    model = Model(_TextAPI('test'), GenerateConfig(custom_provider_option='fast'))
 
     assert model.generate('hello').message.content == 'ok'
