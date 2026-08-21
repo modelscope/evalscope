@@ -345,11 +345,11 @@ class VisionLanguageAdapter(DefaultDataAdapter):
                 updated_messages.append(message)
                 continue
 
-            # for now we resolve plain-text content only
-            # 1. {"role": "...", "content": "..."} triggers resolution (<image k> -> ContentImage)
-            # 2. {"role": "...", "content": [...]} bypasses resolution (already openai-structured)
+            # for now we resolve user plain-text content only
+            # 1. {"role": "user", "content": "..."} triggers resolution (<image k> -> ContentImage)
+            # 2. {"role": <other>} or {"content": [...]} bypasses resolution (already openai-structured)
             content = message.get('content')
-            if not isinstance(content, str):
+            if message.get('role') != 'user' or not isinstance(content, str):
                 updated_messages.append(message)
                 continue
 

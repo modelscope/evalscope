@@ -295,12 +295,24 @@ class TestResolveMediaPlaceholders:
 
         messages = [
             {'role': 'system', 'content': 'You are a helpful assistant.'},
-            {'role': 'user', 'content': '<image 1> Describe this scene.'}
+            {'role': 'user', 'content': '<image 1> Describe this scene.'},
+            {
+                'role': 'assistant',
+                'tool_calls': [
+                    {
+                        'id': 'call_1',
+                        'type': 'function',
+                        'function': {'name': 'image_captioning','arguments': '{"image_id": "1"}'},
+                    },
+                ],
+            },
+            {'role': 'tool', 'content': 'The image shows a green square.'},
+            {'role': 'assistant', 'content': 'The image shows a green square.'},
         ]
         image_map = adapter._extract_media({'image_1': str(image_path)}, 'image')
         result = adapter._resolve_media_placeholders(messages, image_map=image_map)
 
-        assert len(result) == 2
+        assert len(result) == 5
         # System message unchanged
         assert result[0]['content'] == 'You are a helpful assistant.'
         # User message has resolved media
@@ -308,6 +320,14 @@ class TestResolveMediaPlaceholders:
         assert isinstance(content_list, list)
         assert isinstance(content_list[0], ContentImage)
         assert content_list[0].image == str(image_path)
+
+        # other messages unchanged
+        assert result[2]['role'] == 'assistant'
+        assert result[2]['tool_calls'][0]['function']['name'] == 'image_captioning'
+        assert result[3]['role'] == 'tool'
+        assert result[3]['content'] == 'The image shows a green square.'
+        assert result[4]['role'] == 'assistant'
+        assert result[4]['content'] == 'The image shows a green square.'
 
     def test_extra_message_keys_preserved(self, adapter: DummyVisionLanguageAdapter, tmp_path: Path):
         """Extra keys on user messages (e.g. name) survive placeholder resolution."""
