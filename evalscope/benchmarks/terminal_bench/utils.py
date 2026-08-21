@@ -1,8 +1,10 @@
 import asyncio
 from harbor.llms.base import BaseLLM, LLMResponse, UsageInfo
 from pydantic import BaseModel, ConfigDict, PrivateAttr
+from typing import List
 
 from evalscope.api.messages.chat_message import dict_to_chat_message
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.model.model import Model
 from evalscope.models.utils.openai import openai_chat_choices
 
@@ -11,6 +13,7 @@ class HarborLLM(BaseModel, BaseLLM):
     """A mock LLM that simulates sandboxed code execution."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
     _model: Model = PrivateAttr()
+    _perf_metrics: List[PerformanceMetrics] = PrivateAttr(default_factory=list)
 
     def __init__(self, model: Model, **kwargs):
         super().__init__(**kwargs)
@@ -19,6 +22,10 @@ class HarborLLM(BaseModel, BaseLLM):
     @property
     def model(self):
         return self._model
+
+    @property
+    def perf_metrics(self) -> List[PerformanceMetrics]:
+        return list(self._perf_metrics)
 
     async def call(self, prompt, **kwargs):
         message_history = kwargs.get('message_history', [])
@@ -29,6 +36,8 @@ class HarborLLM(BaseModel, BaseLLM):
         completion = await loop.run_in_executor(
             None, lambda: self._model.generate(input=[dict_to_chat_message(msg) for msg in messages])
         )
+        if completion.perf_metrics is not None:
+            self._perf_metrics.append(completion.perf_metrics)
 
         # Process the completion to extract content and usage
         oa_choices = openai_chat_choices(completion.choices, include_reasoning=False)

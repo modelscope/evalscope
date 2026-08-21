@@ -234,6 +234,24 @@ class ReportKey:
     overall_score = 'OVERALL'
 
 
+class ExecutionSubset(BaseModel):
+    """Completion counts for one evaluated subset."""
+
+    requested: int = 0
+    succeeded: int = 0
+    errored: int = 0
+
+
+class ExecutionSummary(BaseModel):
+    """Run completeness kept separate from aggregation-specific metric counts."""
+
+    requested: int = 0
+    succeeded: int = 0
+    errored: int = 0
+    incomplete: bool = False
+    subsets: Dict[str, ExecutionSubset] = Field(default_factory=dict)
+
+
 class Report(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
@@ -250,6 +268,8 @@ class Report(BaseModel):
     primary_metric_identity: Optional[MetricIdentity] = None
     judge_summary: Optional[JudgeSummary] = None
     """Run-level Native Judge coverage and failure summary, when this report used a judge."""
+    execution_summary: Optional[ExecutionSummary] = None
+    """Run completion status. Absent in reports written before completeness tracking."""
 
     @model_validator(mode='before')
     @classmethod

@@ -32,6 +32,7 @@ logger = getLogger()
 
 
 class ImageEditAPI(ModelAPI):
+    allows_generation_config_extras = True
 
     def __init__(
         self,

@@ -66,6 +66,7 @@ class BatchReviewer:
         subset: str,
         task_states: List[TaskState],
         review_fn: Callable[[TaskState], Optional[SampleScore]],
+        on_error: Optional[Callable[[TaskState, Exception], None]] = None,
     ) -> List[SampleScore]:
         """
         Run the full batch review pipeline for one subset.
@@ -95,6 +96,7 @@ class BatchReviewer:
             desc=f'Reviewing[{subset}]',
             max_workers=self.task_config.eval_batch_size,
             log_interval=HEARTBEAT_INTERVAL_SEC,
+            on_error=on_error,
         )
 
         def on_result(ts: TaskState, score: SampleScore) -> None:
@@ -110,6 +112,7 @@ class BatchReviewer:
             task_states=task_states,
             reviewed_scores=pre_scores,
             on_result=on_result,
+            on_error=on_error,
         )
 
     # ------------------------------------------------------------------ #
@@ -121,6 +124,7 @@ class BatchReviewer:
         task_states: List[TaskState],
         reviewed_scores: List[Optional[SampleScore]],
         on_result: Callable[[TaskState, SampleScore], None],
+        on_error: Optional[Callable[[TaskState, Exception], None]],
     ) -> List[SampleScore]:
         """
         Pass 2 of the batch review pipeline.
@@ -156,10 +160,18 @@ class BatchReviewer:
                 batch_states = valid_states[start:end]
                 batch_scores = valid_scores[start:end]
 
-                updated_scores = self.benchmark.batch_calculate_metrics(
-                    task_states=batch_states,
-                    sample_scores=batch_scores,
-                )
+                try:
+                    updated_scores = self.benchmark.batch_calculate_metrics(
+                        task_states=batch_states,
+                        sample_scores=batch_scores,
+                    )
+                except Exception as exc:
+                    if on_error is None:
+                        raise
+                    for task_state in batch_states:
+                        on_error(task_state, exc)
+                    pbar.update(len(batch_states))
+                    continue
 
                 all_reviewed_scores.extend(updated_scores)
 

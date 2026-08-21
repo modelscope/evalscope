@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
+from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
 from ..utils import (
@@ -131,6 +132,8 @@ def _all_results_empty(result) -> bool:
     """
     if not result:
         return True
+    if isinstance(result, Report):
+        return result.score is None
     if isinstance(result, dict):
         return all(not v for v in result.values())
     if isinstance(result, list):

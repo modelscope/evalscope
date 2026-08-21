@@ -23,7 +23,14 @@ from evalscope.constants import HEARTBEAT_INTERVAL_SEC, ScoreStatus
 from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchmark_identity
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.perf_collector import PerfCollector
-from evalscope.report import Report, build_analysis_context, gen_perf_table, gen_table
+from evalscope.report import (
+    ExecutionSubset,
+    ExecutionSummary,
+    Report,
+    build_analysis_context,
+    gen_perf_table,
+    gen_table,
+)
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
 
@@ -151,6 +158,9 @@ class DefaultEvaluator(Evaluator):
         self.perf_collector = PerfCollector()
         self._prediction_cache_lock = threading.Lock()
         self._sample_scores_by_subset: Dict[str, List[SampleScore]] = {}
+        self._execution_errors_by_subset: Dict[str, int] = defaultdict(int)
+        self._perf_request_count = 0
+        self._perf_metric_count = 0
 
     def eval(self) -> Report:
         """
@@ -209,17 +219,24 @@ class DefaultEvaluator(Evaluator):
             # Phase 3 – aggregate scores per subset (batch review happens here too)
             agg_score_dict = self._aggregate_scores(dataset_dict, context, results_by_subset)
             self.cache_manager.commit_review_reruns()
+            execution_summary = self._build_execution_summary(dataset_dict)
 
             # Phase 4 – generate report
             if not agg_score_dict:
                 logger.warning(
                     f'No valid scores generated for {self.benchmark_name} '
-                    '(all samples filtered or empty subsets). Skipping report generation.'
+                    '(all samples filtered or failed). Writing an incomplete no-score report.'
                 )
-                report = {}
+                report = self._write_no_score_report(execution_summary)
             else:
                 logger.info('Generating report...')
-                report = self.get_report(agg_score_dict)
+                report = self.get_report(agg_score_dict, execution_summary)
+
+            if execution_summary.incomplete:
+                logger.warning(
+                    f'{self.benchmark_name}: score computed from {execution_summary.succeeded}/'
+                    f'{execution_summary.requested} successful samples; {execution_summary.errored} errored.'
+                )
 
             logger.info(f'Benchmark {self.benchmark_name} evaluation finished.')
             return report
@@ -331,6 +348,7 @@ class DefaultEvaluator(Evaluator):
             tb_str = traceback.format_exc()
             logger.error(f'Processing item in subset={item.subset!r} failed: {exc}\nTraceback:\n{tb_str}')
             if self.task_config.ignore_errors:
+                self._execution_errors_by_subset[item.subset] += 1
                 logger.warning('Error ignored, continuing with next sample.')
                 return
             raise exc
@@ -418,13 +436,16 @@ class DefaultEvaluator(Evaluator):
         its 0-based ``turn_index``.  Falls back to ``task_state.output`` for
         solvers that set the output directly without appending to messages.
         """
-        perfs = [(t, m.perf_metrics)
-                 for t, m in enumerate(task_state.messages)
-                 if m.role == 'assistant' and m.perf_metrics is not None]
+        assistant_messages = [(t, m) for t, m in enumerate(task_state.messages) if m.role == 'assistant']
+        self._perf_request_count += len(assistant_messages) or 1
+        perfs = [(turn_index, message.perf_metrics)
+                 for turn_index, message in assistant_messages
+                 if message.perf_metrics is not None]
         if not perfs and task_state.output.perf_metrics is not None:
             perfs = [(0, task_state.output.perf_metrics)]
         for turn_index, perf in perfs:
             self.perf_collector.record(perf, sample_index=task_state.sample_id, turn_index=turn_index)
+        self._perf_metric_count += len(perfs)
 
     def _aggregate_scores(
         self,
@@ -458,8 +479,18 @@ class DefaultEvaluator(Evaluator):
             if self.benchmark.use_batch_scoring:
                 pending = context.review_pending_by_subset.get(subset, [])
                 new_task_states = [ts for ts, _ in pool_results]
+
+                def on_batch_error(task_state: TaskState, exc: Exception) -> None:
+                    if not self.task_config.ignore_errors:
+                        raise exc
+                    self._execution_errors_by_subset[subset] += 1
+                    logger.warning(f'Batch review failed for sample {task_state.sample_id}: {exc}')
+
                 batch_scores = self.batch_reviewer.review_subset(
-                    subset, pending + new_task_states, review_fn=self._review_task_state
+                    subset,
+                    pending + new_task_states,
+                    review_fn=self._review_task_state,
+                    on_error=on_batch_error,
                 )
                 all_scores = cached_scores + batch_scores
             else:
@@ -504,7 +535,40 @@ class DefaultEvaluator(Evaluator):
         sample_score = self.benchmark.calculate_metrics(task_state=task_state)
         return sample_score
 
-    def get_report(self, agg_score_dict: Dict[str, List[AggScore]]) -> Report:
+    def _build_execution_summary(self, dataset_dict: Dict[str, Dataset]) -> ExecutionSummary:
+        """Build persisted completion counts after scoring and error handling finish."""
+        subsets = {}
+        for subset, dataset in dataset_dict.items():
+            succeeded = len(self._sample_scores_by_subset.get(subset, []))
+            errored = self._execution_errors_by_subset.get(subset, 0)
+            subsets[subset] = ExecutionSubset(requested=len(dataset), succeeded=succeeded, errored=errored)
+        requested = sum(summary.requested for summary in subsets.values())
+        succeeded = sum(summary.succeeded for summary in subsets.values())
+        errored = sum(summary.errored for summary in subsets.values())
+        return ExecutionSummary(
+            requested=requested,
+            succeeded=succeeded,
+            errored=errored,
+            incomplete=succeeded < requested,
+            subsets=subsets,
+        )
+
+    def _write_no_score_report(self, execution_summary: ExecutionSummary) -> Report:
+        """Persist a report that explicitly represents an entirely unsuccessful run."""
+        report = Report(
+            name=self.benchmark_name,
+            dataset_name=self.benchmark_name,
+            dataset_pretty_name=self.benchmark.pretty_name,
+            dataset_description=self.benchmark.description,
+            model_name=self.model_name,
+            execution_summary=execution_summary,
+        )
+        report_file = self.cache_manager.get_report_file()
+        report.to_json(report_file)
+        logger.info(f'Dump incomplete no-score report to: {report_file} \n')
+        return report
+
+    def get_report(self, agg_score_dict: Dict[str, List[AggScore]], execution_summary: ExecutionSummary) -> Report:
         """
         Generate a comprehensive evaluation report from aggregated scores.
 
@@ -531,6 +595,7 @@ class DefaultEvaluator(Evaluator):
             scores=agg_score_dict, model_name=self.model_name, output_dir=report_path
         )
         report.judge_summary = summarize_judge_runs(self._sample_scores_by_subset.values())
+        report.execution_summary = execution_summary
 
         # Generate and display a summary table of results
         try:
@@ -557,9 +622,12 @@ class DefaultEvaluator(Evaluator):
         # Inject perf metrics into the report when collect_perf is enabled
         if self.task_config.collect_perf:
             perf_metrics = self.perf_collector.get_perf_dict()
-            if perf_metrics:
-                from evalscope.metrics.semantics import attach_perf_semantics
-                report.perf_metrics = attach_perf_semantics(perf_metrics)
+            perf_metrics['coverage'] = {
+                'requests_with_metrics': self._perf_metric_count,
+                'total_requests': self._perf_request_count,
+            }
+            from evalscope.metrics.semantics import attach_perf_semantics
+            report.perf_metrics = attach_perf_semantics(perf_metrics)
 
         # Save the complete report to file
         report.to_json(report_file)

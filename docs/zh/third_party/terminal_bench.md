@@ -65,6 +65,16 @@ task_cfg = TaskConfig(
                 # 超时倍率，如果遇到超时错误可适当调大
                 'timeout_multiplier': 1.0,
 
+                # 复现实验的绝对超时。不要与同一阶段的倍率同时设置。
+                'agent_timeout_sec': 3 * 60 * 60,
+                'verifier_timeout_sec': 3 * 60 * 60,
+
+                # Qwen 3.6 公开协议的容器资源。
+                'environment_kwargs': {
+                    'override_cpus': 32,
+                    'override_memory_mb': 48 * 1024,
+                },
+
                 # 最大交互轮数，如果任务未完成可适当调大
                 'max_turns': 200,
             }
@@ -89,8 +99,14 @@ run_task(task_cfg)
 - `environment_type` (str)：运行基准测试的环境类型。默认为 `docker`。支持 `docker`、`daytona`、`e2b`、`modal`。
 - `agent_name` (str)：Harbor 中使用的代理类型。默认为 `terminus-2`。仅 `terminus-2` 使用 evalscope 配置的模型进行推理；其他代理（claude-code、codex、opencode 等）是独立 CLI 工具，使用各自的 API key。
 - `timeout_multiplier` (float)：超时倍率。默认为 1.0。
+- `agent_timeout_sec` / `verifier_timeout_sec` (float)：阶段最终超时秒数，不会再被 `timeout_multiplier` 二次放大。
+- `agent_timeout_multiplier` / `verifier_timeout_multiplier` (float)：覆盖全局倍率的阶段倍率；不得与同阶段绝对超时同时设置。
 - `max_turns` (int)：代理完成任务的最大交互轮数。默认为 200。
 - `environment_kwargs` (dict)：传递给 Harbor `EnvironmentConfig` 的额外参数，用于配置容器资源限制等。支持的 key 包括：`override_cpus`、`override_memory_mb`、`override_storage_mb`、`override_gpus`、`force_build`、`delete`、`env` 等。
+
+`override_storage_mb` 是否生效取决于 Docker storage driver 和宿主文件系统是否支持容器配额。容器构建和 verifier
+脚本可能需要从网络安装依赖；请通过 `environment_kwargs.env` 注入已批准的镜像或代理。EvalScope 不会根据 verifier
+输出推断基础设施故障：verifier 正常写出的 reward `0` 仍按模型失败计分。
 
 ## 结果示例
 

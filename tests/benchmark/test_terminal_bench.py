@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from evalscope.api.metric import Score
-from evalscope.benchmarks.terminal_bench.terminal_bench_adapter import _TerminalBenchBase
+from evalscope.benchmarks.terminal_bench.terminal_bench_adapter import _phase_timeout_options, _TerminalBenchBase
 
 TRIAL_URI = 'file:///tmp/terminal-bench-trial'
 
@@ -104,3 +104,12 @@ def test_terminal_bench_rejects_trial_exception_even_with_reward() -> None:
     assert TRIAL_URI in error
     assert 'RewardFileNotFoundError' in error
     assert 'reward.json is missing' in error
+
+
+def test_terminal_bench_absolute_timeout_disables_global_multiplier_for_that_phase() -> None:
+    assert _phase_timeout_options(10_800, None, 'agent') == (10_800.0, 1.0)
+
+
+def test_terminal_bench_rejects_conflicting_phase_timeout_options() -> None:
+    with pytest.raises(ValueError, match='agent_timeout_sec'):
+        _phase_timeout_options(10_800, 2.0, 'agent')
