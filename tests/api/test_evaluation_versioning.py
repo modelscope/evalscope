@@ -8,7 +8,6 @@ from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_c
 from evalscope.evaluation_versioning import (
     BenchmarkEvaluationIdentity,
     EvaluationIdentity,
-    FrameworkProvenance,
     ResolvedBenchmarkSpec,
     build_analysis_context,
     build_benchmark_identity,
@@ -73,7 +72,6 @@ def test_snapshot_dump_preserves_raw_dataset_args_and_reparses(tmp_path) -> None
             'resolved_benchmarks': {'demo': spec.model_dump(mode='json')},
             'evaluation_identity': {
                 'schema_version': 1,
-                'framework': {'evalscope_version': 'test'},
                 'benchmarks': {'demo': identity.model_dump(mode='json')},
             },
         },
@@ -292,7 +290,4 @@ def test_analysis_uses_compact_context_without_full_meta_or_perf(monkeypatch) ->
 
 
 def _identity(benchmarks: dict[str, BenchmarkEvaluationIdentity]) -> EvaluationIdentity:
-    return EvaluationIdentity(
-        framework=FrameworkProvenance(evalscope_version='test'),
-        benchmarks=benchmarks,
-    )
+    return EvaluationIdentity(benchmarks=benchmarks)

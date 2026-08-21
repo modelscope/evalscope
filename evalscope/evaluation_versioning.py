@@ -3,12 +3,8 @@
 import hashlib
 import json
 import re
-import subprocess
-from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
-
-from evalscope.version import __version__
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
@@ -106,18 +102,10 @@ class BenchmarkEvaluationIdentity(BaseModel):
     cache_source: Optional[CacheSource] = None
 
 
-class FrameworkProvenance(BaseModel):
-    """Best-effort framework provenance for auditing, excluded from fingerprints."""
-
-    evalscope_version: str
-    git_commit: Optional[str] = None
-
-
 class EvaluationIdentity(BaseModel):
     """All generated benchmark identities persisted in ``task_config.yaml``."""
 
     schema_version: int = EVALUATION_IDENTITY_SCHEMA_VERSION
-    framework: FrameworkProvenance
     benchmarks: Dict[str, BenchmarkEvaluationIdentity] = Field(default_factory=dict)
 
 
@@ -202,7 +190,6 @@ def build_evaluation_identity(
 ) -> EvaluationIdentity:
     """Build the generated identity block written to a native task config."""
     return EvaluationIdentity(
-        framework=FrameworkProvenance(evalscope_version=__version__, git_commit=_git_commit()),
         benchmarks={
             name: build_benchmark_identity(spec, versions[name], task_config)
             for name, spec in specs.items()
@@ -390,12 +377,3 @@ def _score_summary(report: 'Report') -> Dict[str, Any]:
             } for category in metric.categories],
         } for metric in report.metrics],
     }
-
-
-def _git_commit() -> Optional[str]:
-    try:
-        repo_root = Path(__file__).resolve().parent.parent
-        return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=repo_root, check=True, capture_output=True,
-                              text=True).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
