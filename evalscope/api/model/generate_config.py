@@ -205,4 +205,6 @@ class GenerateConfig(BaseModel):
             value = getattr(other, key, None)
             if value is not None:
                 setattr(config, key, value)
+        if other.model_extra:
+            config.model_extra.update(other.model_extra)
         return config

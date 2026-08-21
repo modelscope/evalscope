@@ -3,7 +3,7 @@
 
 ## 概述
 
-Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能体在 89 个真实世界的多步骤终端任务中的表现。这些任务涵盖编译、调试到系统管理等多个方面，并在隔离的容器环境中运行，配有严格的验证机制。
+Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能体在 89 个真实世界的多步骤终端任务上的表现。这些任务涵盖编译、调试到系统管理等多个领域，并在隔离的容器环境中运行，配有严格的验证机制。
 
 ## 任务描述
 
@@ -17,16 +17,17 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 - 包含 89 个真实世界的终端任务
 - 要求完成多步骤任务
 - 在隔离的容器环境中执行
-- 采用二值评分（0/1）并支持自动验证
-- 支持多种智能体类型（如 terminus-2、claude-code、codex 等）
+- 采用二元评分（0/1）并自动验证
+- 支持多种智能体类型（terminus-2、claude-code、codex 等）
 
 ## 评估说明
 
 - 需要 **Python>=3.12** 并安装 `pip install evalscope[terminal_bench]`
 - 支持的环境选项：docker、daytona、e2b、modal
 - 可配置智能体类型和超时设置
-- 最大交互轮数可配置（默认：200）
+- 最大交互轮次可配置（默认：200）
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)
+
 
 ## 属性
 
@@ -37,8 +38,9 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 | **论文** | N/A |
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
-| **默认示例数量** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
+
 
 ## 数据统计
 
@@ -60,9 +62,13 @@ Terminal-Bench v2 是一套命令行基准测试套件，用于评估 AI 智能�
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
 | `environment_type` | `str` | `docker` | 运行基准测试的环境类型。可选值：['docker', 'daytona', 'e2b', 'modal'] |
-| `agent_name` | `str` | `terminus-2` | 在 Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
-| `timeout_multiplier` | `float` | `1.0` | 超时倍数。若出现超时错误，可考虑增大该值。 |
-| `max_turns` | `int` | `200` | 智能体完成任务的最大交互轮数。 |
+| `agent_name` | `str` | `terminus-2` | Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。可选值：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |
+| `timeout_multiplier` | `float` | `1.0` | 超时倍率。若出现超时错误，可考虑增大此值。 |
+| `agent_timeout_sec` | `float` | `None` | 智能体阶段最终超时时间（秒）。不能与 agent_timeout_multiplier 同时使用。 |
+| `verifier_timeout_sec` | `float` | `None` | 验证器阶段最终超时时间（秒）。不能与 verifier_timeout_multiplier 同时使用。 |
+| `agent_timeout_multiplier` | `float` | `None` | 智能体阶段超时倍率。会覆盖 timeout_multiplier 在智能体阶段的设置。 |
+| `verifier_timeout_multiplier` | `float` | `None` | 验证器阶段超时倍率。会覆盖 timeout_multiplier 在验证器阶段的设置。 |
+| `max_turns` | `int` | `200` | 智能体完成任务的最大交互轮次。 |
 | `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外参数。支持的键包括：override_cpus、override_memory_mb、override_storage_mb、override_gpus、force_build、delete、env 等。 |
 
 ## 使用方法

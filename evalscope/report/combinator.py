@@ -56,7 +56,9 @@ def _is_report_json(data: Any) -> bool:
 
     metrics = data.get('metrics')
     perf_metrics = data.get('perf_metrics')
-    return (isinstance(metrics, list) and len(metrics) > 0) or isinstance(perf_metrics, dict)
+    execution_summary = data.get('execution_summary')
+    return ((isinstance(metrics, list) and len(metrics) > 0) or isinstance(perf_metrics, dict)
+            or isinstance(execution_summary, dict))
 
 
 def get_report_list(reports_path_list: List[str]) -> List[Report]:

@@ -65,6 +65,17 @@ task_cfg = TaskConfig(
                 # Timeout multiplier, can be increased if timeout errors occur
                 'timeout_multiplier': 1.0,
 
+                # Reproduce an absolute agent timeout. Do not combine an absolute
+                # phase timeout with that phase's multiplier.
+                'agent_timeout_sec': 3 * 60 * 60,
+                'verifier_timeout_sec': 3 * 60 * 60,
+
+                # Container resources for the published Qwen 3.6 protocol.
+                'environment_kwargs': {
+                    'override_cpus': 32,
+                    'override_memory_mb': 48 * 1024,
+                },
+
                 # Maximum interaction turns, can be increased if tasks are not completed
                 'max_turns': 200,
             }
@@ -89,8 +100,17 @@ The following parameters are supported in `extra_params` within `dataset_args`:
 - `environment_type` (str): The environment type for running the benchmark. Default is `docker`. Supports `docker`, `daytona`, `e2b`, `modal`.
 - `agent_name` (str): The agent type used in Harbor. Default is `terminus-2`. Only `terminus-2` uses the evalscope model for inference; other agents (claude-code, codex, opencode, etc.) are standalone CLI tools with their own API keys.
 - `timeout_multiplier` (float): Timeout multiplier. Default is 1.0.
+- `agent_timeout_sec` / `verifier_timeout_sec` (float): Final phase timeout in seconds. An absolute timeout is not
+  multiplied again by `timeout_multiplier`.
+- `agent_timeout_multiplier` / `verifier_timeout_multiplier` (float): Per-phase multiplier overriding the global
+  multiplier. Do not set a phase multiplier together with that phase's absolute timeout.
 - `max_turns` (int): Maximum interaction turns for the agent to complete tasks. Default is 200.
 - `environment_kwargs` (dict): Extra kwargs passed to Harbor `EnvironmentConfig` for container resource limits. Supported keys: `override_cpus`, `override_memory_mb`, `override_storage_mb`, `override_gpus`, `force_build`, `delete`, `env`, etc.
+
+`override_storage_mb` is only effective when the Docker storage driver and host filesystem support container quotas.
+Container builds and verifier scripts may download dependencies; configure any approved mirror or proxy with
+`environment_kwargs.env`. EvalScope does not infer infrastructure failure from verifier output: a verifier that writes
+a valid reward of `0` is still scored as a model failure.
 
 ## Result Example
 

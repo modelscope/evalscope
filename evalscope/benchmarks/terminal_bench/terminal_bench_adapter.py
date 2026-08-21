@@ -45,6 +45,26 @@ COMMON_EXTRA_PARAMS = {
         'description': 'Timeout multiplier. If timeout errors occur, consider increasing this value.',
         'value': 1.0,
     },
+    'agent_timeout_sec': {
+        'type': 'float',
+        'description': 'Final agent timeout in seconds. Cannot be combined with agent_timeout_multiplier.',
+        'value': None,
+    },
+    'verifier_timeout_sec': {
+        'type': 'float',
+        'description': 'Final verifier timeout in seconds. Cannot be combined with verifier_timeout_multiplier.',
+        'value': None,
+    },
+    'agent_timeout_multiplier': {
+        'type': 'float',
+        'description': 'Agent timeout multiplier. Overrides timeout_multiplier for the agent phase.',
+        'value': None,
+    },
+    'verifier_timeout_multiplier': {
+        'type': 'float',
+        'description': 'Verifier timeout multiplier. Overrides timeout_multiplier for the verifier phase.',
+        'value': None,
+    },
     'max_turns': {
         'type': 'int',
         'description': 'Maximum number of turns for the agent to complete the task.',
@@ -74,6 +94,19 @@ def _validate_environment_requirements(environment_type: str):
         )
 
 
+def _phase_timeout_options(timeout_sec: Optional[float], timeout_multiplier: Optional[float],
+                           phase: str) -> Tuple[Optional[float], Optional[float]]:
+    if timeout_sec is not None and timeout_multiplier is not None:
+        raise ValueError(f'{phase}_timeout_sec cannot be combined with {phase}_timeout_multiplier.')
+    if timeout_sec is not None:
+        if timeout_sec <= 0:
+            raise ValueError(f'{phase}_timeout_sec must be positive.')
+        return float(timeout_sec), 1.0
+    if timeout_multiplier is not None and timeout_multiplier <= 0:
+        raise ValueError(f'{phase}_timeout_multiplier must be positive.')
+    return None, timeout_multiplier
+
+
 class _TerminalBenchBase(AgentAdapter):
     """Shared logic for Terminal-Bench adapters."""
 
@@ -86,6 +119,13 @@ class _TerminalBenchBase(AgentAdapter):
         self.environment_type = self.extra_params.get('environment_type', 'docker')
         self.agent_name = self.extra_params.get('agent_name', 'terminus-2')
         self.timeout_multiplier = self.extra_params.get('timeout_multiplier', 1.0)
+        self.agent_timeout_sec, self.agent_timeout_multiplier = _phase_timeout_options(
+            self.extra_params.get('agent_timeout_sec'), self.extra_params.get('agent_timeout_multiplier'), 'agent'
+        )
+        self.verifier_timeout_sec, self.verifier_timeout_multiplier = _phase_timeout_options(
+            self.extra_params.get('verifier_timeout_sec'), self.extra_params.get('verifier_timeout_multiplier'),
+            'verifier'
+        )
         self.max_turns = self.extra_params.get('max_turns', 200)
         self.environment_kwargs = self.extra_params.get('environment_kwargs', {})
 
@@ -126,7 +166,7 @@ class _TerminalBenchBase(AgentAdapter):
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from harbor.models.trial.config import AgentConfig, EnvironmentConfig
         from harbor.models.trial.config import TaskConfig as TrialTaskConfig
-        from harbor.models.trial.config import TrialConfig
+        from harbor.models.trial.config import TrialConfig, VerifierConfig
         from harbor.trial.trial import Trial
 
         from .utils import HarborLLM
@@ -146,6 +186,7 @@ class _TerminalBenchBase(AgentAdapter):
         agent_config = AgentConfig(
             name=self.agent_name,
             model_name=model.name,
+            override_timeout_sec=self.agent_timeout_sec,
             kwargs=agent_kwargs,
         )
 
@@ -154,16 +195,21 @@ class _TerminalBenchBase(AgentAdapter):
             task=trial_task_config,
             trials_dir=Path(self.output_dir) / 'trials',
             agent=agent_config,
+            verifier=VerifierConfig(override_timeout_sec=self.verifier_timeout_sec),
             environment=environment_config,
             timeout_multiplier=self.timeout_multiplier,
+            agent_timeout_multiplier=self.agent_timeout_multiplier,
+            verifier_timeout_multiplier=self.verifier_timeout_multiplier,
         )
 
         try:
 
+            harbor_llm = HarborLLM(model=model) if self.agent_name == 'terminus-2' else None
+
             async def _run_trial():
                 trial = await Trial.create(trial_config)
-                if self.agent_name == 'terminus-2':
-                    trial.agent._llm = HarborLLM(model=model)
+                if harbor_llm is not None:
+                    trial.agent._llm = harbor_llm
                 return await trial.run()
 
             result = AsyncioLoopRunner.run(_run_trial())
@@ -183,10 +229,14 @@ class _TerminalBenchBase(AgentAdapter):
             model=model.name,
             content=result_dict.get('trial_uri', ''),
         )
-        trace, messages = self._load_harbor_trace(result_dict)
+        trace, messages = self._load_harbor_trace(result_dict, harbor_llm.perf_metrics if harbor_llm else None)
         return InferenceResult(output=output, trace=trace, messages=messages)
 
-    def _load_harbor_trace(self, result_dict: dict) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
+    def _load_harbor_trace(
+        self,
+        result_dict: dict,
+        perf_metrics: Optional[List[Any]] = None
+    ) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
         trial_uri = result_dict.get('trial_uri') or ''
         if trial_uri.startswith('file://'):
             trajectory_path = Path(trial_uri[7:]) / 'agent' / 'trajectory.json'
@@ -206,6 +256,7 @@ class _TerminalBenchBase(AgentAdapter):
             environment=self.environment_type,
         )
         messages: List[ChatMessage] = []
+        perf_index = 0
         prev_ts: Optional[float] = None
 
         for step in raw.get('steps', []):
@@ -243,8 +294,12 @@ class _TerminalBenchBase(AgentAdapter):
                         content=content,
                         model=model_name,
                         tool_calls=tool_calls or None,
+                        perf_metrics=(
+                            perf_metrics[perf_index] if perf_metrics and perf_index < len(perf_metrics) else None
+                        ),
                     )
                 )
+                perf_index += 1
                 token_usage = None
                 step_metrics = step.get('metrics')
                 if step_metrics:
@@ -438,6 +493,7 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
         eval_split='test',
         prompt_template='{question}',
         extra_params=COMMON_EXTRA_PARAMS,
+        evaluation_version='v1.1',
     )
 )
 class TerminalBenchV2Adapter(_TerminalBenchBase):
@@ -483,6 +539,7 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
         eval_split='test',
         prompt_template='{question}',
         extra_params=COMMON_EXTRA_PARAMS,
+        evaluation_version='v1.1',
     )
 )
 class TerminalBenchV2_1Adapter(_TerminalBenchBase):

@@ -17,7 +17,17 @@ if TYPE_CHECKING:
     from .generator import ReportGenerator
     from .ref import ReportRef
     from .renderer import gen_html_report_file
-    from .report import BenchmarkAnalysisContext, Category, Metric, Report, ReportKey, Subset, build_analysis_context
+    from .report import (
+        BenchmarkAnalysisContext,
+        Category,
+        ExecutionSubset,
+        ExecutionSummary,
+        Metric,
+        Report,
+        ReportKey,
+        Subset,
+        build_analysis_context,
+    )
 
 else:
     _import_structure = {
@@ -40,6 +50,8 @@ else:
         'report': [
             'Category',
             'BenchmarkAnalysisContext',
+            'ExecutionSubset',
+            'ExecutionSummary',
             'Report',
             'ReportKey',
             'Subset',

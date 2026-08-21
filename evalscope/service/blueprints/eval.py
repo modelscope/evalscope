@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
+from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
 from ..utils import (
@@ -126,13 +127,15 @@ def _build_task_config(data: dict) -> TaskConfig:
 def _all_results_empty(result) -> bool:
     """Return True when every dataset in the evaluation result produced no scores.
 
-    This happens when ``ignore_errors=True`` and every sample failed: each
-    dataset evaluator returns an empty dict instead of a :class:`Report`.
+    This happens when ``ignore_errors=True`` and every sample failed. Native
+    evaluation returns a mapping of benchmark names to :class:`Report` objects.
     """
     if not result:
         return True
+    if isinstance(result, Report):
+        return result.score is None
     if isinstance(result, dict):
-        return all(not v for v in result.values())
+        return all(_all_results_empty(v) for v in result.values())
     if isinstance(result, list):
         return all(_all_results_empty(r) for r in result)
     return False
