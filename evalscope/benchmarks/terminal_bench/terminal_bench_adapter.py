@@ -1,10 +1,12 @@
 import json
+import math
 import os
 import shutil
 import uuid
 from datetime import datetime
+from numbers import Real
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
@@ -332,12 +334,63 @@ class _TerminalBenchBase(AgentAdapter):
             )
         return trace, messages
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+    @staticmethod
+    def _extract_valid_reward(result: Any) -> float:
+        if not isinstance(result, dict):
+            raise RuntimeError('Terminal-Bench trial <unknown> returned an invalid result: expected an object.')
+
+        trial_uri = result.get('trial_uri') or '<unknown>'
+        exception_info = result.get('exception_info')
+        if exception_info:
+            if isinstance(exception_info, dict):
+                exc_type = exception_info.get('exception_type') or exception_info.get('type') or 'UnknownHarborError'
+                exc_msg = exception_info.get('message') or exception_info.get('exception_message')
+                exc_msg = exc_msg or 'no message provided'
+            else:
+                exc_type = type(exception_info).__name__
+                exc_msg = str(exception_info)
+            raise RuntimeError(f'Terminal-Bench trial {trial_uri} failed with {exc_type}: {exc_msg}')
+
+        verifier_result = result.get('verifier_result')
+        if verifier_result is None:
+            raise RuntimeError(
+                f'Terminal-Bench trial {trial_uri} returned an invalid result: verifier_result is missing or null.'
+            )
+        if not isinstance(verifier_result, dict):
+            raise RuntimeError(
+                f'Terminal-Bench trial {trial_uri} returned an invalid result: verifier_result must be an object.'
+            )
+
+        rewards = verifier_result.get('rewards')
+        if rewards is None:
+            raise RuntimeError(
+                f'Terminal-Bench trial {trial_uri} returned an invalid result: rewards is missing or null.'
+            )
+        if not isinstance(rewards, dict):
+            raise RuntimeError(
+                f'Terminal-Bench trial {trial_uri} returned an invalid result: rewards must be an object.'
+            )
+        if 'reward' not in rewards:
+            raise RuntimeError(f'Terminal-Bench trial {trial_uri} returned an invalid result: reward is missing.')
+
+        reward = rewards['reward']
+        if isinstance(reward, bool) or not isinstance(reward, Real):
+            raise RuntimeError(f'Terminal-Bench trial {trial_uri} returned an invalid reward: {reward!r}.')
+
+        reward = float(reward)
+        if not math.isfinite(reward) or not 0.0 <= reward <= 1.0:
+            raise RuntimeError(f'Terminal-Bench trial {trial_uri} returned an invalid reward: {reward!r}.')
+        return reward
+
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: Any,
+    ) -> Score:
         result = task_state.metadata.get('result', {})
-        try:
-            reward = result.get('verifier_result', {}).get('rewards', {}).get('reward', 0)
-        except Exception:
-            reward = 0
+        reward = self._extract_valid_reward(result)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
