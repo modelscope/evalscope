@@ -200,6 +200,26 @@ class Arguments(BaseArgument):
     in_flight_task_multiplier: int = 2
     """Max scheduled tasks = parallel * this multiplier."""
 
+    startup_ramp_seconds: Optional[float] = None
+    """Stagger multi-turn workers' initial spawn across this many seconds
+    via a Poisson schedule; worker 0 fires at phase start, worker n-1 at
+    exactly ``value`` seconds after. Disabled when None / 0. Applies
+    once at each phase start; takes no part in steady-state operation
+    (``--rate`` still governs turn-to-turn pacing). Auto-skipped on
+    warmup when ``warmup_count <= warmup_ramp_min_conversations`` and on
+    benchmark when ``parallel <= benchmark_ramp_min_parallel``.
+    Single-turn strategies ignore this.
+
+    """
+
+    warmup_ramp_min_conversations: int = 3
+    """Skip the warmup-phase startup ramp when ``warmup_count <=`` this
+    value. Set 0 to disable the guardrail."""
+
+    benchmark_ramp_min_parallel: int = 3
+    """Skip the benchmark-phase startup ramp when ``parallel <=`` this
+    value. Set 0 to disable the guardrail."""
+
     num_workers: int = 0
     """Number of worker processes for CPU-bound dataset/request generation.
 
@@ -475,6 +495,27 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v: int) -> int:
         return _at_least_one(v)
 
+    @field_validator('startup_ramp_seconds', mode='after')
+    @classmethod
+    def _validate_startup_ramp_seconds(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and v < 0:
+            raise ValueError(f'--startup-ramp-seconds must be >= 0, got {v}')
+        return v
+
+    @field_validator('warmup_ramp_min_conversations', mode='after')
+    @classmethod
+    def _validate_warmup_ramp_min_conversations(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f'--warmup-ramp-min-conversations must be >= 0, got {v}')
+        return v
+
+    @field_validator('benchmark_ramp_min_parallel', mode='after')
+    @classmethod
+    def _validate_benchmark_ramp_min_parallel(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f'--benchmark-ramp-min-parallel must be >= 0, got {v}')
+        return v
+
     @field_validator('num_workers', mode='after')
     @classmethod
     def _validate_num_workers(cls, v: int) -> int:
@@ -744,6 +785,37 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
              'completion (multi-turn finishes every remaining turn of any already-claimed trace, '
              'matching trie). Warmup ignores this. When both --number and --duration are set, '
              'whichever limit is reached first ends the run.')  # noqa: E501
+    parser.add_argument(
+        '--startup-ramp-seconds', type=float, default=None,
+        help=(
+            'Stagger the multi-turn workers\' initial spawn across this many seconds '
+            '(Poisson schedule, rescaled to the requested duration). Solves the '
+            'parallel-sized burst at phase start. Applies at the start of BOTH the '
+            'warmup and benchmark phases; once all workers have spawned the ramp takes '
+            'no further part. Auto-skipped on the warmup phase when warmup count <= 3 '
+            'and on the benchmark phase when --parallel <= 3. Independent of --rate '
+            '(which paces within-conversation turns). Single-turn strategies ignore '
+            'this flag. The ramp window consumes part of any --duration budget on the '
+            'benchmark phase. Default None = disabled (legacy all-at-once spawn).'
+        ),
+    )
+    parser.add_argument(
+        '--warmup-ramp-min-conversations', type=int, default=3,
+        help=(
+            'Skip the warmup-phase startup ramp when warmup_count is at or below this '
+            'value. Default 3 (warmup needs at least 4 conversations for the ramp to '
+            'fire). Set to 0 to disable the warmup-phase ramp guardrail entirely '
+            '(startup-ramp-seconds will always apply on warmup when > 0).'
+        ),
+    )
+    parser.add_argument(
+        '--benchmark-ramp-min-parallel', type=int, default=3,
+        help=(
+            'Skip the benchmark-phase startup ramp when --parallel is at or below '
+            'this value. Default 3 (need at least 4 workers for the ramp curve to be '
+            'visible). Set to 0 to disable the benchmark-phase ramp guardrail entirely.'
+        ),
+    )
 
 
 def _add_sla_arguments(parser: argparse.ArgumentParser) -> None:
