@@ -5,6 +5,7 @@ Both implement the BaseReranker interface aligned with MTEB 2.x CrossEncoderProt
 """
 from __future__ import annotations
 
+import json
 import os
 import requests
 import time
@@ -19,6 +20,37 @@ from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+# CrossEncoder's LogitScore module (generative rerankers, e.g. Qwen3-Reranker) needs this version.
+_MIN_LOGIT_SCORE_SENTENCE_TRANSFORMERS_VERSION = '5.4.0'
+
+
+def _check_logit_score_support(model_dir: str) -> None:
+    """Raise if `model_dir` needs the CrossEncoder LogitScore module and it is unavailable."""
+    modules_path = os.path.join(model_dir, 'modules.json')
+    if not os.path.isfile(modules_path):
+        return
+    with open(modules_path) as f:
+        declared_modules = json.load(f)
+    if not any(m.get('type', '').rsplit('.', 1)[-1] == 'LogitScore' for m in declared_modules):
+        return
+
+    import sentence_transformers
+    from packaging.version import InvalidVersion, Version, parse
+    try:
+        st_version = parse(sentence_transformers.__version__)
+        supported = st_version >= Version(_MIN_LOGIT_SCORE_SENTENCE_TRANSFORMERS_VERSION)
+    except InvalidVersion:
+        supported = False
+    if not supported:
+        raise ImportError(
+            f'{model_dir} is a generative (CausalLM-based) reranker whose modules.json requires the '
+            f'CrossEncoder LogitScore module, added in sentence-transformers=='
+            f'{_MIN_LOGIT_SCORE_SENTENCE_TRANSFORMERS_VERSION}. The installed '
+            f'sentence-transformers=={sentence_transformers.__version__} will silently fall back to a '
+            'randomly-initialized classification head and produce meaningless scores. Please upgrade: '
+            f'pip install "sentence-transformers>={_MIN_LOGIT_SCORE_SENTENCE_TRANSFORMERS_VERSION}"'
+        )
 
 
 class CrossEncoderReranker(BaseReranker):
@@ -58,6 +90,7 @@ class CrossEncoderReranker(BaseReranker):
 
         # Resolve model path (download if needed)
         self.model_name_or_path = resolve_model_path(model_name_or_path, hub=hub, revision=revision)
+        _check_logit_score_support(self.model_name_or_path)
         self.revision = revision
         self.max_seq_length = max_seq_length
         self.prompt = prompt or ''
