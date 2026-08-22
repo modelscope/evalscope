@@ -49,6 +49,39 @@ def macro_mean(items):
         return 0.0
 
 
+def wilson_ci(successes: int, n: int, z: float = 1.96) -> tuple:
+    """Return the (lower, upper) Wilson score interval for a proportion.
+
+    Unlike the normal approximation, the Wilson interval stays within [0, 1]
+    and behaves well for extreme pass rates, which is common on fixed-item
+    leaderboards.
+    """
+    if n <= 0:
+        return (0.0, 0.0)
+    p = successes / n
+    denom = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    margin = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return (max(0.0, center - margin), min(1.0, center + margin))
+
+
+def paired_mcnemar(a_only: int, b_only: int, two_sided: bool = True) -> float:
+    """Exact binomial p-value for the paired McNemar test.
+
+    ``a_only`` is the number of items solved by A but not B; ``b_only`` the
+    reverse. Under the null hypothesis the discordant items split 50/50, so
+    the test is a binomial test on the smaller discordant count.
+    """
+    n = a_only + b_only
+    if n == 0:
+        return 1.0
+    k = min(a_only, b_only)
+    tail = 0.0
+    for i in range(k + 1):
+        tail += math.comb(n, i) / (2 ** n)
+    return min(1.0, 2 * tail) if two_sided else tail
+
+
 def bleu_ngram_one_sample(predict: str, reference: str):
     """
     Calculate BLEU-1, BLEU-2, BLEU-3, and BLEU-4 scores
