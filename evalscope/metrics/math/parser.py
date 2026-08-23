@@ -422,14 +422,18 @@ def math_equal(
         and (prediction.endswith('\\end{pmatrix}') or prediction.endswith('\\end{bmatrix}'))
         and (reference.startswith('\\begin{pmatrix}') or reference.startswith('\\begin{bmatrix}'))
         and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))):
+        pred_tag = '\\begin{bmatrix}' if prediction.startswith('\\begin{bmatrix}') else '\\begin{pmatrix}'
+        ref_tag = '\\begin{bmatrix}' if reference.startswith('\\begin{bmatrix}') else '\\begin{pmatrix}'
+        pred_end = '\\end{bmatrix}' if prediction.endswith('\\end{bmatrix}') else '\\end{pmatrix}'
+        ref_end = '\\end{bmatrix}' if reference.endswith('\\end{bmatrix}') else '\\end{pmatrix}'
         pred_lines = [
             line.strip()
-            for line in prediction[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            for line in prediction[len(pred_tag):-len(pred_end)].split('\\\\')
             if line.strip()
         ]
         ref_lines = [
             line.strip()
-            for line in reference[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            for line in reference[len(ref_tag):-len(ref_end)].split('\\\\')
             if line.strip()
         ]
         matched = True
