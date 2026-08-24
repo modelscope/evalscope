@@ -1,9 +1,38 @@
+import json
 import pytest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from evalscope.api.dataset import DictDataLoader
 from evalscope.api.metric import MetricSelector, SampleScore, Score
+from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.omnidoc_bench.legacy.omnidoc_bench_adapter import OmniDocBenchAdapter
+from evalscope.config import TaskConfig
+
+
+def test_v16_loads_snapshot_once_and_reads_images_locally(tmp_path: Path) -> None:
+    image_names = ['page.png', 'long_' + '页面' * 36 + '.png']
+    records = [{'page_info': {'image_path': image_name}} for image_name in image_names]
+    (tmp_path / 'OmniDocBench.json').write_text(json.dumps(records), encoding='utf-8')
+    image_dir = tmp_path / 'images'
+    image_dir.mkdir()
+    for image_name in image_names:
+        (image_dir / image_name).write_bytes(b'image')
+
+    adapter = get_benchmark(
+        'omni_doc_bench_v1_6',
+        TaskConfig(datasets=['omni_doc_bench_v1_6']),
+    )
+    with mock.patch(
+        'evalscope.benchmarks.omnidoc_bench.v1_6.omnidoc_bench_v1_6_adapter.resolve_snapshot_or_local_path',
+        return_value=str(tmp_path),
+    ) as resolve_snapshot:
+        dataset = adapter.load_subset('default', DictDataLoader)
+
+    resolve_snapshot.assert_called_once_with(adapter)
+    assert [sample.metadata['image_name'] for sample in dataset] == image_names
+    assert all(sample.input[0].content[0].image.startswith('data:image/png;base64,') for sample in dataset)
 
 
 def test_legacy_omnidoc_aggregates_canonical_metrics() -> None:
