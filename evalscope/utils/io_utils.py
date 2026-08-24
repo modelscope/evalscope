@@ -14,7 +14,7 @@ import yaml
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-from typing import IO, Any, Dict, List, Optional, Tuple, Union
+from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
@@ -142,25 +142,43 @@ class OutputsStructure:
 # ---------------------------------------------------------------------------
 
 
-def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
+def undecode_media(dataset, media_type: List[Literal['image', 'audio', 'video']]):
     from datasets import Dataset
     from datasets.features import Audio, Image, Sequence, Video
 
-    dataset = Dataset.from_parquet(parquet_file)
+    if not isinstance(dataset, Dataset):
+        raise TypeError(f'Expected a datasets.Dataset object, got {type(dataset)} instead.')
+    # for type checking
+    dataset = cast(Dataset, dataset)
 
-    for col, feat in list(dataset.features.items()):
-        if isinstance(feat, Image):
-            dataset = dataset.cast_column(col, Image(decode=False))
-        elif isinstance(feat, Audio):
-            dataset = dataset.cast_column(col, Audio(decode=False))
-        elif isinstance(feat, Video):
-            dataset = dataset.cast_column(col, Video(decode=False))
-        elif isinstance(feat, Sequence) and isinstance(feat.feature, Image):
-            dataset = dataset.cast_column(col, Sequence(Image(decode=False)))
-        elif isinstance(feat, Sequence) and isinstance(feat.feature, Audio):
-            dataset = dataset.cast_column(col, Sequence(Audio(decode=False)))
-        elif isinstance(feat, Sequence) and isinstance(feat.feature, Video):
-            dataset = dataset.cast_column(col, Sequence(Video(decode=False)))
+    # we did not use cast_column here, because cast_column() does not support batch_size,
+    # the default batch_size=1000 may cause OOM for large datasets
+    # see https://github.com/huggingface/datasets/pull/7910
+    features = dataset.features
+    for col, feat in dataset.features.items():
+        if 'image' in media_type and isinstance(feat, Image):
+            features[col] = Image(decode=False)
+        elif 'audio' in media_type and isinstance(feat, Audio):
+            features[col] = Audio(decode=False)
+        elif 'video' in media_type and isinstance(feat, Video):
+            features[col] = Video(decode=False)
+        elif 'image' in media_type and isinstance(feat, Sequence) and isinstance(feat.feature, Image):
+            features[col] = Sequence(Image(decode=False))
+        elif 'audio' in media_type and isinstance(feat, Sequence) and isinstance(feat.feature, Audio):
+            features[col] = Sequence(Audio(decode=False))
+        elif 'video' in media_type and isinstance(feat, Sequence) and isinstance(feat.feature, Video):
+            features[col] = Sequence(Video(decode=False))
+
+    dataset = dataset.cast(features, batch_size=100)
+    return dataset
+
+
+def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
+    from datasets import Dataset
+
+    dataset = Dataset.from_parquet(parquet_file)
+    dataset = undecode_media(dataset, media_type=['image', 'audio', 'video'])
+
     return dataset.to_list()
 
 
