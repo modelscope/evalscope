@@ -74,6 +74,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.08.24] v1.11.0** Introduced published evaluation versions for reproducible benchmark results; improved report semantics and incomplete-run handling; strengthened multimodal media loading and task-config validation.
 - 🔥 **[2026.08.13]** Improved evaluation reports with unified metric semantics and more reliable Agent Trace step grouping and tool-call/result linking.
 - 🔥 **[2026.08.10]** Added **AutomationBench**, **JobBench**, **MiniWoB**, **OmniDocBench-v1.6**, **PerceptionBench**, **ScreenSpot-Pro**, **PLawBench**, **PMC-VQA**, **HiPhO**, **LogicVista**, and **CC-OCR-V2** benchmarks.
 - 🔥 **[2026.07.21]** Added **Claw-Eval**, **ResearchRubrics**, **Toolathlon** (agent), **TVBench** (video), **WideSearch**, and **PerspectiveGap** benchmarks.
