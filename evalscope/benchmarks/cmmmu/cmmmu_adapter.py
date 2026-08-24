@@ -7,7 +7,6 @@ from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -102,6 +101,7 @@ CMMU (Chinese Massive Multi-discipline Multimodal Understanding) includes manual
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='val',
+        evaluation_version='v1.1',
     )
 )
 class CMMMUAdapter(VisionLanguageAdapter):
@@ -205,15 +205,11 @@ class CMMMUAdapter(VisionLanguageAdapter):
             current_example = current_example_template.format(question)
             final_input_prompt = task_instructions[2] + '\n\n' + current_example
 
-        # Prepare image map
-        image_map: Dict[int, str] = {}
         for i in range(1, CMMMUAdapter.MAX_IMAGES + 1):
             final_input_prompt = final_input_prompt.replace(f'<img="{record[f"image_{i}_filename"]}">', f'<image {i}>')
-            image = record.get(f'image_{i}')
-            if image:
-                image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-                image_map[i] = image_base64
+
+        image_map = self._extract_media(record, 'image')
 
         # Parse and replace image placeholders
-        content_list = self._parse_text_with_images(final_input_prompt, image_map)
+        content_list = self._parse_text_with_media(final_input_prompt, image_map=image_map)
         return content_list
