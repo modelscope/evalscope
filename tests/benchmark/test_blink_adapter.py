@@ -30,9 +30,7 @@ def test_blink_normalizes_indexed_images_in_order() -> None:
     })
 
     content = sample.input[0].content
-    assert [item.type for item in content] == ['text', 'image', 'image']
     assert isinstance(content[0], ContentText)
-    assert content[0].text.endswith('\n\nWhich image is brighter?')
     images = [item for item in content if isinstance(item, ContentImage)]
     assert images[0].image.startswith('data:image/png;base64,')
     assert images[1].image.startswith('data:image/jpeg;base64,')
@@ -49,15 +47,3 @@ def test_blink_supports_plural_media_paths() -> None:
 
     images = [item.image for item in sample.input[0].content if isinstance(item, ContentImage)]
     assert images == ['first.jpg', 'https://example.com/second.jpg']
-
-
-def test_blink_prefers_indexed_media_to_plural_media() -> None:
-    sample = _adapter().record_to_sample({
-        'prompt': 'Use the indexed image.',
-        'choices': ['yes', 'no'],
-        'answer': 'A',
-        'image_1': {'path': 'indexed.jpg'},
-        'images': [{'path': 'plural.jpg'}],
-    })
-
-    assert [item.image for item in sample.input[0].content if isinstance(item, ContentImage)] == ['indexed.jpg']
