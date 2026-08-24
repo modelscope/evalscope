@@ -266,6 +266,8 @@ class Report(BaseModel):
     # compare=False equivalent: excluded from model equality via model_config
     perf_metrics: Optional[Dict[str, Any]] = Field(default=None)
     primary_metric_identity: Optional[MetricIdentity] = None
+    primary_metric_unavailable_reason: Optional[str] = None
+    """Why the declared primary metric was not emitted for this run, if applicable."""
     judge_summary: Optional[JudgeSummary] = None
     """Run-level Native Judge coverage and failure summary, when this report used a judge."""
     execution_summary: Optional[ExecutionSummary] = None
@@ -282,6 +284,8 @@ class Report(BaseModel):
         if self.schema_version != 2:
             raise ValueError(f'unsupported report schema_version={self.schema_version}')
         if self.primary_metric_identity is not None:
+            if self.primary_metric_unavailable_reason is not None:
+                raise ValueError('primary_metric_unavailable_reason requires no primary_metric_identity')
             matches = [metric for metric in self.metrics if metric.identity == self.primary_metric_identity]
             if len(matches) != 1:
                 raise ValueError('primary_metric_identity must match exactly one report metric')
@@ -323,10 +327,12 @@ class Report(BaseModel):
     def score(self) -> Optional[float]:
         """Compatibility score derived from the primary or first available metric.
 
-        ``None`` when the report carries no metric: a report that produced no usable score is
-        not a report that scored zero. Report v2 serializes the structured metric list and
-        primary identity instead of this convenience value.
+        ``None`` when an explicit primary metric was unavailable or the report carries no metric:
+        a report that could not compute its conclusion did not score zero. Report v2 serializes
+        the structured metric list and primary identity instead of this convenience value.
         """
+        if self.primary_metric_unavailable_reason is not None:
+            return None
         metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
         return metric.score if metric is not None else None
 
