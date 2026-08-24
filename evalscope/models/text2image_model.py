@@ -3,20 +3,23 @@ from __future__ import annotations
 import base64
 import binascii
 import importlib
+import os
 import time
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
-import requests
+from openai import OpenAI
+from openai.types import ImagesResponse
 
 from evalscope.api.messages import ChatMessage, ContentImage
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput
 from evalscope.api.tool import ToolChoice, ToolInfo
-from evalscope.utils.argument_utils import get_secret_value
+from evalscope.utils.argument_utils import get_secret_value, get_supported_params
+from evalscope.utils.function_utils import retry_call
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.io_utils import PIL_to_base64, bytes_to_base64
 from evalscope.utils.model_utils import get_device
-from evalscope.utils.uri_utils import data_uri_to_base64
+from evalscope.utils.uri_utils import data_uri_to_base64, file_as_data, is_http_url
 
 logger = getLogger()
 
@@ -89,23 +92,39 @@ class Text2ImageAPI(ModelAPI):
         self.model.to(self.device)
 
     def _init_service(self, api_key: Optional[str], model_args: Dict[str, Any]) -> None:
-        self.url = self._build_service_url(self.base_url)
-        self.api_key = api_key
-        self.timeout = float(model_args.pop('timeout', 120))
-        extra_body = model_args.pop('extra_body', {})
-        if extra_body is None:
-            extra_body = {}
-        if not isinstance(extra_body, dict):
-            raise ValueError('model_args.extra_body must be a dictionary.')
-        self._service_kwargs = {**model_args, **extra_body}
-        self.session = requests.Session()
+        self.base_url = self._normalize_service_base_url(self.base_url)
+        self.api_key = self._resolve_service_api_key(api_key)
+
+        client_params = get_supported_params(OpenAI) - {'api_key', 'base_url'}
+        ignored_model_args = sorted(set(model_args) - client_params)
+        if ignored_model_args:
+            logger.warning(
+                'Ignoring model_args unsupported by the OpenAI client in text2image service mode: '
+                f'{", ".join(ignored_model_args)}'
+            )
+        client_args = {key: value for key, value in model_args.items() if key in client_params}
+        if client_args.get('max_retries') not in {None, 0}:
+            logger.warning(
+                'Ignoring model_args.max_retries in text2image service mode; use generation_config.retries instead.'
+            )
+        client_args['max_retries'] = 0
+
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            **client_args,
+        )
+        self._service_request_params = get_supported_params(self.client.images.generate)
 
     @staticmethod
-    def _build_service_url(base_url: str) -> str:
-        endpoint = base_url.rstrip('/')
-        if endpoint.endswith('/images/generations'):
-            return endpoint
-        return f'{endpoint}/images/generations'
+    def _normalize_service_base_url(base_url: str) -> str:
+        return base_url.rstrip('/').removesuffix('/images/generations').removesuffix('/chat/completions')
+
+    @staticmethod
+    def _resolve_service_api_key(api_key: Optional[str]) -> str:
+        if api_key and api_key != 'EMPTY':
+            return api_key
+        return os.getenv('OPENAI_API_KEY') or os.getenv('EVALSCOPE_API_KEY') or api_key or 'EMPTY'
 
     def generate(
         self,
@@ -149,25 +168,14 @@ class Text2ImageAPI(ModelAPI):
 
     def _generate_service(self, input: List[ChatMessage], config: GenerateConfig) -> ModelOutput:
         start_time = time.monotonic()
-        payload = self._service_payload(input=input, config=config)
-        request_timeout = config.timeout if config.timeout is not None else self.timeout
-        response = self.session.post(
-            self.url,
-            headers=self._service_headers(config.extra_headers),
-            json=payload,
-            params=get_secret_value(config.extra_query),
-            timeout=request_timeout,
+        request = self._service_request(input=input, config=config)
+        response = retry_call(
+            self.client.images.generate,
+            retries=max(config.retries or 1, 1),
+            sleep_interval=config.retry_interval or 0,
+            **request,
         )
-        response.raise_for_status()
-
-        response_payload = response.json()
-        image_base64, metadata = self._parse_service_response(
-            response_payload=response_payload,
-            timeout=request_timeout,
-        )
-        request_id = response.headers.get('x-request-id')
-        if request_id:
-            metadata['request_id'] = request_id
+        image_base64, metadata = self._parse_service_response(response)
 
         return ModelOutput(
             model=self.model_name,
@@ -176,46 +184,43 @@ class Text2ImageAPI(ModelAPI):
             metadata=metadata,
         )
 
-    def _service_payload(self, input: List[ChatMessage], config: GenerateConfig) -> Dict[str, Any]:
+    def _service_request(self, input: List[ChatMessage], config: GenerateConfig) -> Dict[str, Any]:
         if not input or not input[0].text:
             raise ValueError('Text-to-image generation requires a non-empty prompt.')
 
-        payload: Dict[str, Any] = {
+        request: Dict[str, Any] = {
             'model': self.model_name,
             'prompt': input[0].text,
         }
         if config.n is not None:
-            payload['n'] = config.n
+            request['n'] = config.n
         if config.width is not None or config.height is not None:
             if config.width is None or config.height is None:
                 raise ValueError('Both width and height are required when setting the image size.')
-            payload['size'] = f'{config.width}x{config.height}'
+            request['size'] = f'{config.width}x{config.height}'
 
-        payload.update(self._service_kwargs)
-        payload.update(config.extra_body or {})
-        payload.update(config.model_extra or {})
-        return payload
+        request.update(config.model_extra or {})
+        extra_body = dict(get_secret_value(config.extra_body) or {})
+        for key in list(request):
+            if key not in self._service_request_params:
+                extra_body[key] = request.pop(key)
+        if extra_body:
+            request['extra_body'] = extra_body
+        if config.extra_query is not None:
+            request['extra_query'] = get_secret_value(config.extra_query)
+        if config.extra_headers is not None:
+            request['extra_headers'] = get_secret_value(config.extra_headers)
+        if config.timeout is not None:
+            request['timeout'] = config.timeout
+        return request
 
-    def _service_headers(self, extra_headers: Optional[Dict[str, Any]]) -> Dict[str, str]:
-        headers = {'Content-Type': 'application/json'}
-        if self.api_key:
-            headers['Authorization'] = f'Bearer {self.api_key}'
-        raw_extra_headers = get_secret_value(extra_headers)
-        if isinstance(raw_extra_headers, dict):
-            headers.update({str(key): str(value) for key, value in raw_extra_headers.items()})
-        return headers
-
-    def _parse_service_response(self, response_payload: Any, timeout: float) -> tuple[str, Dict[str, Any]]:
-        if not isinstance(response_payload, dict):
-            raise ValueError('Image generation service returned a non-object JSON response.')
-
-        data = response_payload.get('data')
-        if not isinstance(data, list) or not data or not isinstance(data[0], dict):
+    def _parse_service_response(self, response: ImagesResponse) -> tuple[str, Dict[str, Any]]:
+        if not response.data:
             raise ValueError('Image generation service response must contain a non-empty data list.')
 
-        image = data[0]
-        image_b64_json = image.get('b64_json')
-        image_url = image.get('url')
+        image = response.data[0]
+        image_b64_json = image.b64_json
+        image_url = image.url
         if isinstance(image_b64_json, str) and image_b64_json:
             image_base64 = data_uri_to_base64(image_b64_json)
             try:
@@ -223,13 +228,18 @@ class Text2ImageAPI(ModelAPI):
             except (binascii.Error, ValueError, TypeError) as ex:
                 raise ValueError('Image generation service returned invalid base64 image data.') from ex
         elif isinstance(image_url, str) and image_url:
-            image_response = self.session.get(image_url, timeout=timeout)
-            image_response.raise_for_status()
-            image_base64 = bytes_to_base64(image_response.content)
+            if not is_http_url(image_url):
+                raise ValueError('Image generation service returned a non-HTTP image URL.')
+            image_bytes, _ = file_as_data(image_url)
+            image_base64 = bytes_to_base64(image_bytes)
         else:
             raise ValueError('Image generation service response must include b64_json or url.')
 
+        response_payload = response.model_dump(exclude_none=True)
         metadata = {key: value for key, value in response_payload.items() if key != 'data'}
-        if image.get('revised_prompt') is not None:
-            metadata['revised_prompt'] = image['revised_prompt']
+        request_id = getattr(response, '_request_id', None)
+        if request_id:
+            metadata['request_id'] = request_id
+        if image.revised_prompt is not None:
+            metadata['revised_prompt'] = image.revised_prompt
         return image_base64, metadata
