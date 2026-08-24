@@ -76,7 +76,6 @@ class EvalType:
     CUSTOM = 'custom'
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
-    SERVICE = 'openai_api'  # model service (deprecated)
     TEXT2IMAGE = 'text2image'  # image generation service
     TEXT2SPEECH = 'text2speech'  # text-to-speech service
     IMAGE_EDITING = 'image_editing'  # image editing service
