@@ -3,13 +3,10 @@ from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character, prompt
-
-logger = get_logger()
 
 SUBSET_LIST = [
     'Accounting',
@@ -94,6 +91,7 @@ MMMU-PRO is an enhanced multimodal benchmark designed to rigorously assess the g
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
+        evaluation_version='v1.1',
         extra_params={
             'dataset_format': {
                 'type': 'str',
@@ -133,21 +131,16 @@ class MMMUPROAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
             image = record.get('image')
             if image:
-                content_list.append(ContentImage(image=self._image_bytes_to_base64(image['bytes'], 'png')))
+                normalized_image = self._normalize_media_value(image, media_type='image')
+                content_list.append(self._content_image_from_value(normalized_image))
         else:
-            # Prepare image map
-            image_map: Dict[int, str] = {}
-            for i in range(MMMUPROAdapter.MAX_IMAGES):
-                image = record.get(f'image_{i+1}')
-                if image:
-                    image_base64 = self._image_bytes_to_base64(image['bytes'], 'png')
-                    image_map[i + 1] = image_base64
+            image_map = self._extract_media(record, 'image')
 
             # Build prompt text
             input_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
 
             # Parse and replace image placeholders
-            content_list = self._parse_text_with_images(input_text, image_map)
+            content_list = self._parse_text_with_media(input_text, image_map=image_map)
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],

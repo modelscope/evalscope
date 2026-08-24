@@ -9,7 +9,6 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -79,9 +78,11 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
         metric_list=['acc'],
         eval_split='train',
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
+        evaluation_version='v1.1',
     )
 )
 class OlympiadBenchAdapter(VisionLanguageAdapter):
+    MAX_IMAGES: int = 9
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -115,13 +116,9 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
         )
         # Construct content list
         content_list: List[Content] = []
-        # Add images if available
-        for i in range(9):
-            image = record.get(f'image_{i+1}')
-            if image:
-                image_base64 = bytes_to_base64(image['bytes'], format='jpg', add_header=True)
-                content_list.append(ContentImage(image=image_base64))
-                prompt = prompt.replace(f'<image_{i+1}>', f'[image_{i+1}]')  # replace html tag
+        for index, image in self._extract_media(record, 'image').items():
+            content_list.append(self._content_image_from_value(image))
+            prompt = prompt.replace(f'<image_{index}>', f'[image_{index}]')
         # Add text content
         content_list.insert(0, ContentText(text=prompt))
 
