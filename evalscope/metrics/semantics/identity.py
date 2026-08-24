@@ -47,6 +47,30 @@ def _snake_case(value: str) -> str:
     return _NON_NAME.sub('_', value).strip('_')
 
 
+def _canonical_overlap_name(name: str, dimensions: Dict[str, Scalar]) -> Optional[str]:
+    """Return the canonical identity for an unambiguous BLEU or ROUGE spelling."""
+    bleu = _BLEU_N.fullmatch(name)
+    if bleu:
+        dimensions.setdefault('ngram', int(bleu.group('ngram')))
+        return 'bleu'
+
+    rouge = _ROUGE_VARIANT.fullmatch(name)
+    if rouge:
+        variant = rouge.group('variant')
+        if variant == 'L':
+            dimensions.setdefault('variant', 'l')
+        else:
+            dimensions.setdefault('ngram', int(variant))
+        dimensions.setdefault('statistic', {
+            'R': 'recall',
+            'P': 'precision',
+            'F': 'f1',
+        }[rouge.group('statistic')])
+        return 'rouge'
+
+    return None
+
+
 def canonicalize_producer_identity(
     metric_name: str,
     aggregation: Optional[str],
@@ -59,11 +83,13 @@ def canonicalize_producer_identity(
     spelling, so resolving them can only produce diagnostic semantics.
     """
     original_name = metric_name
-    snake_name = _snake_case(metric_name)
-    canonical_name = _SAFE_PRODUCER_ALIASES.get(snake_name, snake_name)
     raw_aggregation = aggregation or 'identity'
     canonical_aggregation = _AGGREGATION_ALIASES.get(raw_aggregation, _snake_case(raw_aggregation))
     identity_dimensions = dict(dimensions or {})
+    canonical_name = _canonical_overlap_name(metric_name, identity_dimensions)
+    if canonical_name is None:
+        snake_name = _snake_case(metric_name)
+        canonical_name = _SAFE_PRODUCER_ALIASES.get(snake_name, snake_name)
 
     try:
         MetricIdentity(name=canonical_name, aggregation='identity')
@@ -231,24 +257,9 @@ def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
     if explicit:
         return explicit
 
-    bleu = _BLEU_N.fullmatch(name)
-    if bleu:
-        dimensions.setdefault('ngram', int(bleu.group('ngram')))
-        return 'bleu'
-
-    rouge = _ROUGE_VARIANT.fullmatch(name)
-    if rouge:
-        variant = rouge.group('variant')
-        if variant == 'L':
-            dimensions.setdefault('variant', 'l')
-        else:
-            dimensions.setdefault('ngram', int(variant))
-        dimensions.setdefault('statistic', {
-            'R': 'recall',
-            'P': 'precision',
-            'F': 'f1',
-        }[rouge.group('statistic')])
-        return 'rouge'
+    overlap_name = _canonical_overlap_name(name, dimensions)
+    if overlap_name is not None:
+        return overlap_name
 
     threshold = _THRESHOLD_ACC.fullmatch(name)
     if threshold:

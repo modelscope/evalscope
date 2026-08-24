@@ -515,9 +515,22 @@ def test_agg_score_rejects_invalid_explicit_structure(fields) -> None:
         AggScore(score=1.0, metric_name='accuracy', **fields)
 
 
-def test_agg_score_only_normalizes_overlap_metric_syntax() -> None:
+def test_agg_score_structures_overlap_metric_syntax_for_primary_selection() -> None:
     bleu = AggScore(score=0.5, metric_name='bleu-4', aggregation='mean')
     rouge = AggScore(score=0.5, metric_name='Rouge-L-R', aggregation='mean')
 
-    assert bleu.identity == MetricIdentity(name='bleu_4', aggregation='mean')
-    assert rouge.identity == MetricIdentity(name='rouge_l_r', aggregation='mean')
+    assert bleu.identity == MetricIdentity(name='bleu', aggregation='mean', dimensions={'ngram': 4})
+    assert rouge.identity == MetricIdentity(
+        name='rouge', aggregation='mean', dimensions={'statistic': 'recall', 'variant': 'l'}
+    )
+
+    report = ReportGenerator.generate_report(
+        {'test': [bleu, rouge]},
+        'model',
+        _StubAdapter(
+            'general_qa',
+            MetricSelector(name='rouge', aggregation='mean', dimensions={'statistic': 'recall', 'variant': 'l'}),
+        ),
+    )
+
+    assert report.primary_metric_identity == rouge.identity
