@@ -2,12 +2,9 @@ from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
-from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
 
 SUBSET_LIST = [
     'Trajectory Reasoning',
@@ -59,6 +56,7 @@ ERQA (Embodied Reasoning QA) is a benchmark for evaluating spatial reasoning and
         metric_list=['acc'],
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
+        evaluation_version='v1.1',
     )
 )
 class ERQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
@@ -73,13 +71,8 @@ class ERQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
         content_list: List[Content] = [ContentText(text=question)]
 
-        # Handle images (list of image dicts with 'bytes' key)
-        images = record.get('images', [])
-        if images:
-            for img in images:
-                if isinstance(img, dict) and img.get('bytes'):
-                    image_base64 = self._image_bytes_to_base64(img['bytes'], default_format='jpeg')
-                    content_list.append(ContentImage(image=image_base64))
+        for image in self._extract_media(record, 'image').values():
+            content_list.append(self._content_image_from_value(image))
 
         return Sample(
             input=[ChatMessageUser(content=content_list)],

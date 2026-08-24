@@ -8,11 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
-
-logger = get_logger()
 
 SUBSET_LIST = [
     'Accounting',
@@ -100,6 +96,7 @@ MMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benc
         metric_list=['acc'],
         eval_split='validation',
         prompt_template=OPEN_PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class MMMUAdapter(VisionLanguageAdapter):
@@ -188,13 +185,7 @@ class MMMUAdapter(VisionLanguageAdapter):
         """
         question_type = record['question_type']
 
-        # Prepare image map
-        image_map: Dict[int, str] = {}
-        for i in range(MMMUAdapter.MAX_IMAGES):
-            image = record.get(f'image_{i+1}')
-            if image:
-                image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
-                image_map[i + 1] = image_base64
+        image_map = self._extract_media(record, 'image')
 
         if question_type == MULTI_CHOICE_TYPE:
             answers_list: List[str] = ast.literal_eval(record['options'])
@@ -203,11 +194,11 @@ class MMMUAdapter(VisionLanguageAdapter):
             full_text = prompt(question=record['question'], choices=answers_list, template=MULT_CHOICE_PROMPT)
 
             # Parse and replace image placeholders
-            content_list = self._parse_text_with_images(full_text, image_map)
+            content_list = self._parse_text_with_media(full_text, image_map=image_map)
 
         else:  # OPEN_TYPE
             answers_list: List[str] = []
             full_text = OPEN_PROMPT.format(question=record['question'])
-            content_list = self._parse_text_with_images(full_text, image_map)
+            content_list = self._parse_text_with_media(full_text, image_map=image_map)
 
         return content_list, answers_list
