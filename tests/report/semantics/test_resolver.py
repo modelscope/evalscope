@@ -66,8 +66,15 @@ def test_structured_selector_selects_one_identity_without_mutating_semantics() -
     assert all(item.kind is MetricKind.QUALITY for item in semantics.values())
 
 
-@pytest.mark.parametrize('selector', [MetricSelector(name='recall'), MetricSelector(name='accuracy')])
-def test_selector_zero_or_multiple_matches_fails(selector: MetricSelector) -> None:
+def test_selector_zero_matches_returns_no_primary() -> None:
+    identities = [MetricIdentity(name='accuracy', aggregation='mean')]
+    resolver = get_semantics_resolver()
+    semantics = {identity.key: resolver.resolve('benchmark', identity).semantics for identity in identities}
+
+    assert select_primary_identity(identities, semantics, MetricSelector(name='recall')) is None
+
+
+def test_selector_multiple_matches_fails() -> None:
     identities = [
         MetricIdentity(name='accuracy', aggregation='mean', dimensions={'scope': 'a'}),
         MetricIdentity(name='accuracy', aggregation='mean', dimensions={'scope': 'b'}),
@@ -75,8 +82,8 @@ def test_selector_zero_or_multiple_matches_fails(selector: MetricSelector) -> No
     resolver = get_semantics_resolver()
     semantics = {identity.key: resolver.resolve('benchmark', identity).semantics for identity in identities}
 
-    with pytest.raises(ValueError, match='matched'):
-        select_primary_identity(identities, semantics, selector)
+    with pytest.raises(ValueError, match='matched 2 identities'):
+        select_primary_identity(identities, semantics, MetricSelector(name='accuracy'))
 
 
 def test_only_one_quality_identity_can_be_implicit_primary() -> None:

@@ -141,11 +141,18 @@ def select_primary_identity(
 ) -> Optional[MetricIdentity]:
     """Select exactly one report-level primary identity.
 
-    An explicit selector must match exactly one emitted identity. Without a selector, implicit
-    primary selection is allowed only when exactly one non-diagnostic identity exists.
+    An explicit selector may match no emitted identity when the current sample selection cannot
+    compute that metric. Without a selector, implicit primary selection is allowed only when
+    exactly one non-diagnostic identity exists.
     """
     if selector is not None:
         matches = [identity for identity in identities if selector.matches(identity)]
+        if not matches:
+            logger.warning(
+                f'{AUDIT_MESSAGE_PREFIX} primary metric selector {selector.model_dump()} did not match an emitted '
+                'identity; the report has no primary score for this run'
+            )
+            return None
         if len(matches) != 1:
             raise ValueError(
                 f'primary metric selector {selector.model_dump()} matched {len(matches)} identities; expected exactly one'

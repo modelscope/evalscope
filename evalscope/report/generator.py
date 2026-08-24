@@ -123,7 +123,7 @@ class ReportGenerator:
             )
 
         identities = list({identity.key: identity for identity in df['identity']}.values())
-        semantics_by_identity, primary_identity = ReportGenerator._resolve_semantics(
+        semantics_by_identity, primary_identity, primary_metric_unavailable_reason = ReportGenerator._resolve_semantics(
             benchmark_name=dataset_name,
             identities=identities,
             selector=data_adapter.primary_metric,
@@ -156,6 +156,7 @@ class ReportGenerator:
             dataset_description=data_adapter.description,
             dataset_pretty_name=data_adapter.pretty_name,
             primary_metric_identity=primary_identity,
+            primary_metric_unavailable_reason=primary_metric_unavailable_reason,
         )
         return report
 
@@ -164,7 +165,7 @@ class ReportGenerator:
         benchmark_name: str,
         identities: List[MetricIdentity],
         selector: Optional[MetricSelector],
-    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[MetricIdentity]]:
+    ) -> Tuple[Dict[str, 'MetricSemantics'], Optional[MetricIdentity], Optional[str]]:
         """Resolve the semantics of every metric this report will contain.
 
         An undeclared metric degrades to a diagnostic, which shows the stored value without
@@ -177,7 +178,8 @@ class ReportGenerator:
             selector: Structured primary selector from benchmark metadata.
 
         Returns:
-            Identity key -> semantics mapping and the uniquely selected primary identity.
+            Identity key -> semantics mapping, the uniquely selected primary identity, and an
+            unavailable reason when an explicit primary metric was not emitted for this run.
         """
         resolver = get_semantics_resolver()
 
@@ -187,4 +189,10 @@ class ReportGenerator:
             resolved.log_audit_messages()
             semantics_by_identity[identity.key] = resolved.semantics
         primary = select_primary_identity(identities, semantics_by_identity, selector)
-        return semantics_by_identity, primary
+        unavailable_reason = None
+        if selector is not None and primary is None:
+            unavailable_reason = (
+                f'Primary metric selector {selector.model_dump()} did not match any metric emitted for this run. '
+                'The required observations may be absent from the selected samples.'
+            )
+        return semantics_by_identity, primary, unavailable_reason

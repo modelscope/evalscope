@@ -165,6 +165,9 @@ def hydrate_report_semantics(report: 'Report') -> 'Report':
         primary_identity = select_primary_identity(identities, semantics_by_identity, selector)
     except ValueError as error:
         logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy primary selector did not match the migrated identities: {error}')
+        primary_identity = None
+    if primary_identity is None and selector is not None:
+        logger.warning(f'{AUDIT_MESSAGE_PREFIX} legacy primary selector did not match the migrated identities')
         try:
             primary_identity = select_primary_identity(identities, semantics_by_identity, None)
         except ValueError as fallback_error:

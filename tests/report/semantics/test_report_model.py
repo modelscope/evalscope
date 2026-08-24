@@ -118,6 +118,21 @@ def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
     assert report.num == 10
 
 
+def test_missing_declared_primary_is_reported_without_substituting_a_score() -> None:
+    report = ReportGenerator.generate_report(
+        {'test': [AggScore(score=1.0, metric_name='error_acc', aggregation='identity', num=1)]},
+        'model',
+        _StubAdapter('process_bench', MetricSelector(name='simple_f1_score')),
+    )
+
+    assert report.primary_metric is None
+    assert report.primary_metric_identity is None
+    assert report.score is None
+    assert report.primary_metric_unavailable_reason is not None
+    assert 'simple_f1_score' in report.primary_metric_unavailable_reason
+    assert report.num == 1
+
+
 def test_v2_serialization_contains_no_v1_metric_fields() -> None:
     data = _report().to_dict()
     assert data['schema_version'] == 2

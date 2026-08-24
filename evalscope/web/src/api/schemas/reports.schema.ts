@@ -122,6 +122,7 @@ export const reportDataSchema = z.object({
   // than omitting it. Both shapes are part of the backend contract.
   perf_metrics: perfMetricsSchema.nullable().optional(),
   primary_metric_identity: metricIdentitySchema.nullable(),
+  primary_metric_unavailable_reason: z.string().nullable().optional(),
   judge_summary: judgeSummarySchema.optional(),
 })
 
