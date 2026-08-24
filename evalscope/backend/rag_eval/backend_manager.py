@@ -14,6 +14,28 @@ class Tools:
     CLIP_BENCHMARK = 'clip_benchmark'
 
 
+def require_sentence_transformers_logit_score(installed_version: str) -> None:
+    """Raise if `installed_version` predates the CrossEncoder LogitScore module (added in 5.4.0).
+
+    Generative (CausalLM-based) rerankers such as Qwen3-Reranker need it; older
+    sentence-transformers silently falls back to a randomly-initialized classification head
+    and produces meaningless scores.
+    """
+    from packaging.version import InvalidVersion, parse
+    try:
+        release = parse(installed_version).release
+    except InvalidVersion:
+        release = ()
+    if release < (5, 4, 0):
+        raise ImportError(
+            f'sentence-transformers >= 5.4.0 is required (got {installed_version}). '
+            'Generative (CausalLM-based) rerankers such as Qwen3-Reranker need the CrossEncoder '
+            'LogitScore module added in 5.4.0; older versions silently fall back to a '
+            'randomly-initialized classification head and produce meaningless scores. '
+            'Please upgrade: pip install "sentence-transformers>=5.4.0"'
+        )
+
+
 class RAGEvalBackendManager(BackendManager):
 
     def __init__(self, config: Union[str, dict], **kwargs):
@@ -39,6 +61,7 @@ class RAGEvalBackendManager(BackendManager):
             config: MTEBToolConfig instance or dict with MTEB configuration.
         """
         import mteb
+        import sentence_transformers
         from packaging.version import InvalidVersion, Version, parse
         try:
             mteb_version = parse(mteb.__version__)
@@ -52,6 +75,7 @@ class RAGEvalBackendManager(BackendManager):
                 f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
                 'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
             )
+        require_sentence_transformers_logit_score(sentence_transformers.__version__)
         from evalscope.backend.rag_eval.mteb import MTEBToolConfig, run_mteb_eval
 
         if isinstance(config, dict):
