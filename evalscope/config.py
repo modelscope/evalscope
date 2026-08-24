@@ -77,6 +77,20 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
     'precision': 'torch.float16',
 }
 
+DEFAULT_API_EVAL_BATCH_SIZE = 8
+
+REMOTE_API_EVAL_TYPES = frozenset({
+    EvalType.OPENAI_API,
+    EvalType.OPENAI_RESPONSES_API,
+    EvalType.ANTHROPIC_API,
+    EvalType.LITELLM,
+})
+
+DEPRECATED_EVAL_TYPE_ALIASES = {
+    'checkpoint': EvalType.CHECKPOINT,
+    'server': EvalType.OPENAI_API,
+}
+
 
 class SandboxTaskConfig(BaseArgument):
     """Unified sandbox configuration for both pooled (CodeExecutionSandboxMixin) and
@@ -240,7 +254,7 @@ class TaskConfig(BaseArgument):
     eval_type: Optional[str] = None
     """Evaluation backend type. One of: 'llm_ckpt' (local checkpoint), 'openai_api',
     'openai_responses_api', 'anthropic_api', 'litellm', 'mock_llm', 'text2image', 'text2speech',
-    'image_editing', 'custom'. Deprecated aliases: 'checkpoint' -> 'llm_ckpt',
+    'image_editing', 'custom'. Deprecated aliases normalized on input: 'checkpoint' -> 'llm_ckpt',
     'server' -> 'openai_api'."""
 
     eval_backend: str = EvalBackend.NATIVE
@@ -254,10 +268,12 @@ class TaskConfig(BaseArgument):
 
     eval_batch_size: int = 1
     """Batch size / concurrency for evaluation, applied across all stages:
-    - Inference: concurrent requests (service mode) or batch size (checkpoint mode).
+    - Inference: concurrent requests (openai_api mode) or batch size (llm_ckpt mode).
     - LLM-judge review (BatchReviewer Pass 1): number of concurrent threads.
     - batch_calculate_metrics (BatchReviewer Pass 2): number of samples per batch window.
     - Sandbox execution: worker pool size.
+
+    Defaults to ``DEFAULT_API_EVAL_BATCH_SIZE`` when left unset for a remote API ``eval_type``.
     """
 
     # Cache and working directory arguments
@@ -327,15 +343,15 @@ class TaskConfig(BaseArgument):
 
     use_sandbox: bool = False
     """[Deprecated] Use ``sandbox.enabled`` instead.  Kept as an alias for
-    backward compatibility; will be removed in a future release."""
+    backward compatibility; will be removed in v2.0.0."""
 
     sandbox_type: Optional[str] = 'docker'
     """[Deprecated] Use ``sandbox.engine`` instead.  Kept as an alias for
-    backward compatibility; will be removed in a future release."""
+    backward compatibility; will be removed in v2.0.0."""
 
     sandbox_manager_config: Optional[Dict] = Field(default_factory=dict)
     """[Deprecated] Use ``sandbox.manager_config`` instead.  Kept as an
-    alias for backward compatibility; will be removed in a future release."""
+    alias for backward compatibility; will be removed in v2.0.0."""
 
     # Agent configuration (native AgentLoop OR external-agent bridge,
     # discriminated by the ``mode`` field on the embedded config).
@@ -416,38 +432,57 @@ class TaskConfig(BaseArgument):
 
     @model_validator(mode='before')
     @classmethod
-    def _migrate_legacy_judge_config(cls, data: Any) -> Any:
-        """Convert the legacy single-judge input once, at the public boundary."""
+    def _migrate_deprecated_input(cls, data: Any) -> Any:
+        """Fold deprecated top-level input keys that are pure renames onto their canonical
+        field, once at the public boundary. Deprecations that need the coerced field value
+        (timeout/stream/n, sandbox legacy fields) run after validation."""
         if not isinstance(data, dict):
             return data
         values = dict(data)
+        cls._migrate_judge_keys(values)
+        cls._migrate_eval_type_alias(values)
+        return values
+
+    @staticmethod
+    def _migrate_judge_keys(values: Dict[str, Any]) -> None:
         if 'judge_worker_num' in values:
             raise ValueError('`judge_worker_num` has been removed; use `eval_batch_size`.')
         legacy_keys = {'judge_strategy', 'judge_model_args'} & set(values)
         if 'judge' in values and legacy_keys:
             raise ValueError('Use either `judge` or legacy judge_strategy/judge_model_args, not both.')
-        if legacy_keys:
-            legacy_args = values.pop('judge_model_args', None)
-            if isinstance(legacy_args, dict):
-                legacy_args = dict(legacy_args)
-            strategy = values.pop('judge_strategy', JudgeStrategy.AUTO)
-            if legacy_args and 'score_pattern' in legacy_args:
-                raise ValueError(
-                    '`judge_model_args.score_pattern` is not supported by the JSON judge contract; '
-                    'use `judge.contract.score_mapping`.'
-                )
-            deprecated_warning(
-                logger,
-                '`judge_strategy` and `judge_model_args` are deprecated; use the typed `judge` configuration.',
+        if not legacy_keys:
+            return
+        legacy_args = values.pop('judge_model_args', None)
+        if isinstance(legacy_args, dict):
+            legacy_args = dict(legacy_args)
+        strategy = values.pop('judge_strategy', JudgeStrategy.AUTO)
+        if legacy_args and 'score_pattern' in legacy_args:
+            raise ValueError(
+                '`judge_model_args.score_pattern` is not supported by the JSON judge contract; '
+                'use `judge.contract.score_mapping`.'
             )
-            semantic_keys = {'system_prompt', 'prompt_template', 'score_mapping', 'score_type'}
-            contract = {key: legacy_args.pop(key) for key in semantic_keys if legacy_args and key in legacy_args}
-            values['judge'] = {
-                'strategy': strategy,
-                'models': [legacy_args] if legacy_args else [],
-                'contract': contract,
-            }
-        return values
+        deprecated_warning(
+            logger,
+            '`judge_strategy` and `judge_model_args` are deprecated; use the typed `judge` configuration.',
+        )
+        semantic_keys = {'system_prompt', 'prompt_template', 'score_mapping', 'score_type'}
+        contract = {key: legacy_args.pop(key) for key in semantic_keys if legacy_args and key in legacy_args}
+        values['judge'] = {
+            'strategy': strategy,
+            'models': [legacy_args] if legacy_args else [],
+            'contract': contract,
+        }
+
+    @staticmethod
+    def _migrate_eval_type_alias(values: Dict[str, Any]) -> None:
+        canonical = DEPRECATED_EVAL_TYPE_ALIASES.get(values.get('eval_type'))
+        if canonical is None:
+            return
+        deprecated_warning(
+            logger, f"`eval_type={values['eval_type']!r}` is deprecated and will be removed in v2.0.0. "
+            f'Use {canonical!r} instead.'
+        )
+        values['eval_type'] = canonical
 
     @field_validator('sandbox', mode='before')
     @classmethod
@@ -459,12 +494,18 @@ class TaskConfig(BaseArgument):
     @model_validator(mode='after')
     def _post_init(self) -> 'TaskConfig':
         self._init_model_and_id()
+        self._init_default_eval_batch_size()
         self._init_default_generation_config()
         self._init_default_model_args()
         self._init_default_sandbox_config()
         self._parse_rag_eval_config()
 
         return self
+
+    def _init_default_eval_batch_size(self) -> None:
+        """Remote APIs serve requests concurrently, so raise the default there."""
+        if 'eval_batch_size' not in self.model_fields_set and self.eval_type in REMOTE_API_EVAL_TYPES:
+            self.eval_batch_size = DEFAULT_API_EVAL_BATCH_SIZE
 
     def _parse_rag_eval_config(self) -> None:
         """Parse eval_config into typed Pydantic models for RAGEval backend."""
@@ -523,7 +564,7 @@ class TaskConfig(BaseArgument):
         self.generation_config.batch_size = self.eval_batch_size
 
         # 4. Handle deprecations
-        self._handle_generation_config_deprecations()
+        self._apply_typed_config_deprecations()
 
     def _get_default_generation_config(self) -> Dict:
         if self.model_task == ModelTask.IMAGE_GENERATION:
@@ -551,7 +592,7 @@ class TaskConfig(BaseArgument):
             return SandboxTaskConfig.model_validate(value)
         raise ValueError(f'`sandbox` must be a dict, SandboxTaskConfig or None, got {type(value).__name__}.')
 
-    def _handle_generation_config_deprecations(self) -> None:
+    def _apply_typed_config_deprecations(self) -> None:
         assert isinstance(self.generation_config, GenerateConfig)
 
         if self.timeout is not None:
@@ -583,31 +624,20 @@ class TaskConfig(BaseArgument):
             self.model_args = DEFAULT_MODEL_ARGS_CHECKPOINT.copy()
 
     def _init_default_sandbox_config(self) -> None:
-        """Normalise sandbox configuration into ``self.sandbox``.
+        """Fold legacy sandbox fields onto ``self.sandbox`` and validate availability.
 
-        After this method every consumer (``CodeExecutionSandboxMixin``, data adapters,
-        ``EnclaveAgentEnvironment``) reads sandbox settings exclusively from
-        ``self.sandbox`` — the legacy ``use_sandbox`` / ``sandbox_type`` /
-        ``sandbox_manager_config`` fields are single-source-of-truth inputs
-        only and are **not** kept in sync afterwards.
-
-        Rules:
-          * If ``sandbox`` is provided, it wins; when legacy fields are also
-            set a deprecation warning is emitted.
-          * Otherwise ``sandbox`` is constructed from the legacy fields so
-            historical task configs keep working.
+        Runs after validation so ``use_sandbox`` / ``sandbox_type`` / ``sandbox_manager_config``
+        are already coerced to their declared types; consumers then read sandbox settings
+        exclusively from ``self.sandbox``.
         """
-        legacy_set = self._legacy_sandbox_fields_set()
-
         if self.sandbox is None:
-            # Build from legacy fields (possibly all defaults).
             self.sandbox = self._build_sandbox_from_legacy_fields()
-        elif legacy_set:
+        elif self._legacy_sandbox_fields_set():
             deprecated_warning(
                 logger, 'Both `sandbox` and legacy sandbox fields '
                 '(`use_sandbox` / `sandbox_type` / `sandbox_manager_config`) are set; '
                 'the nested `sandbox` object takes precedence. The legacy fields will be '
-                'removed in a future release.'
+                'removed in v2.0.0.'
             )
 
         if not self.sandbox.enabled:
@@ -661,12 +691,36 @@ class TaskConfig(BaseArgument):
             setattr(self, key, value)
 
     def _to_update_dict(self) -> dict:
-        result = self.model_dump(exclude={'model', 'generation_config', 'sandbox', 'agent_config'})
-        result['model'] = self.model
-        result['generation_config'] = self._dump_generation_config()
-        result['sandbox'] = self.sandbox
-        result['agent_config'] = self._dump_agent_config()
+        return self._serialize('update')
+
+    def _serialize(self, purpose: str) -> dict:
+        """Single serialization core shared by :meth:`to_dict` (``purpose='yaml'``) and
+        :meth:`_to_update_dict` (``purpose='update'``).
+
+        ``yaml`` renders JSON-native values for persistence; ``update`` keeps typed
+        objects so :meth:`update` can deep-merge then re-coerce. Every special field
+        that model_dump cannot round-trip is rendered here per purpose, so the two
+        paths cannot drift.
+        """
+        json_mode = purpose == 'yaml'
+        dump_mode = 'json' if json_mode else None
+        special = {'model', 'generation_config', 'sandbox', 'agent_config'}
+        result = self.model_dump(mode='json', exclude=special) if json_mode else self.model_dump(exclude=special)
+        result['model'] = self._dump_model(json_mode)
+        result['generation_config'] = self._dump_generation_config(mode=dump_mode)
+        result['sandbox'] = self._dump_sandbox(purpose)
+        result['agent_config'] = self._dump_agent_config(mode=dump_mode)
         return result
+
+    def _dump_model(self, json_mode: bool) -> Any:
+        if json_mode and isinstance(self.model, (Model, ModelAPI)):
+            return self.model.__class__.__name__
+        return self.model
+
+    def _dump_sandbox(self, purpose: str) -> Any:
+        if purpose == 'update':
+            return self.sandbox
+        return self.sandbox.model_dump(mode='json') if self.sandbox is not None else None
 
     def _dump_generation_config(self, mode: Optional[str] = None) -> Union[dict, GenerateConfig, None]:
         if not isinstance(self.generation_config, GenerateConfig):
@@ -677,12 +731,16 @@ class TaskConfig(BaseArgument):
             kwargs['mode'] = mode
         return self.generation_config.model_dump(**kwargs)
 
-    def _dump_agent_config(self) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
+    def _dump_agent_config(self,
+                           mode: Optional[str] = None) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
         if not isinstance(self.agent_config, (NativeAgentConfig, ExternalAgentConfig)):
             return self.agent_config
         fields = set(self.agent_config.model_fields_set)
         fields.add('mode')
-        return self.agent_config.model_dump(include=fields)
+        kwargs = {'include': fields}
+        if mode is not None:
+            kwargs['mode'] = mode
+        return self.agent_config.model_dump(**kwargs)
 
     def dump_yaml(self, output_dir: str, generated_metadata: Optional[Dict[str, Any]] = None) -> None:
         """Dump the task configuration and optional generated runtime metadata to YAML."""
@@ -697,18 +755,7 @@ class TaskConfig(BaseArgument):
             logger.warning(f'Failed to dump overall task config: {e}')
 
     def to_dict(self) -> dict:
-        result = self.model_dump(mode='json', exclude={'model', 'generation_config'})
-
-        # Serialize Model objects
-        if isinstance(self.model, (Model, ModelAPI)):
-            result['model'] = self.model.__class__.__name__
-        else:
-            result['model'] = self.model
-
-        # Serialize GenerateConfig
-        result['generation_config'] = self._dump_generation_config(mode='json')
-
-        return result
+        return self._serialize('yaml')
 
 
 def _strip_generated_evaluation_metadata(task_cfg: Dict[str, Any]) -> Dict[str, Any]:

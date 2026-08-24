@@ -1,8 +1,9 @@
 import json
 from argparse import Namespace
+from difflib import get_close_matches
 from inspect import signature
-from pydantic import BaseModel, ConfigDict, SecretStr
-from typing import Optional, Union
+from pydantic import BaseModel, ConfigDict, SecretStr, ValidationError
+from typing import List, Optional, Union
 
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
 
@@ -21,12 +22,38 @@ class BaseArgument(BaseModel):
         arbitrary_types_allowed=True,
         protected_namespaces=(),
         validate_default=True,
+        extra='forbid',
     )
 
     @classmethod
     def from_dict(cls, d: dict):
         """Instantiate the class from a dictionary."""
-        return cls.model_validate(d)
+        try:
+            return cls.model_validate(d)
+        except ValidationError as e:
+            hint = cls._suggest_unknown_keys(e)
+            if hint:
+                raise ValueError(f'{e}\n\n{hint}') from e
+            raise
+
+    @classmethod
+    def _suggest_unknown_keys(cls, error: ValidationError) -> str:
+        """Map rejected top-level keys to the closest known field name.
+
+        Nested keys are left to the raw pydantic error, which already reports their full path.
+        """
+        known = sorted(cls.model_fields)
+        lines: List[str] = []
+        for item in error.errors():
+            if item.get('type') != 'extra_forbidden' or len(item.get('loc') or ()) != 1:
+                continue
+            key = str(item['loc'][0])
+            matches = get_close_matches(key.replace('-', '_').lower(), known, n=1, cutoff=0.8)
+            if matches:
+                lines.append(f'  {key!r} -> {matches[0]!r}')
+        if not lines:
+            return ''
+        return 'Did you mean:\n' + '\n'.join(lines)
 
     @classmethod
     def from_json(cls, json_file: str):

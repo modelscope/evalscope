@@ -78,7 +78,12 @@ def add_argument(parser: argparse.ArgumentParser):
     parser.add_argument('--eval-backend', type=str, help='The evaluation backend to use.',
                         choices=[EvalBackend.NATIVE, EvalBackend.OPEN_COMPASS, EvalBackend.VLM_EVAL_KIT, EvalBackend.RAG_EVAL])  # noqa: E501
     parser.add_argument('--eval-config', type=str, required=False, help='The eval task config file path for evaluation backend.')  # noqa: E501
-    parser.add_argument('--eval-batch-size', type=int, default=1, help='The batch size for evaluation.')
+    parser.add_argument(
+        '--eval-batch-size',
+        type=int,
+        default=None,
+        help='The batch size for evaluation. Defaults to 1, or 8 for remote API eval types.'
+    )
     parser.add_argument('--limit', type=float, default=None, help='Max evaluation samples num for each subset.')
     parser.add_argument('--repeats', type=int, default=1, help='Number of times to repeat the dataset items for k-metrics.')  # noqa: E501
 

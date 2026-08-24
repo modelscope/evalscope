@@ -44,7 +44,7 @@ def litellm_api() -> type[ModelAPI]:
 
 
 @register_model_api(name='server')
-@deprecated(since='1.0.0', remove_in='1.1.0', alternative='openai_api')
+@deprecated(since='1.0.0', remove_in='2.0.0', alternative='openai_api')
 def server() -> type[ModelAPI]:
     from .openai_compatible import OpenAICompatibleAPI
 
@@ -61,7 +61,7 @@ def llm_ckpt() -> type[ModelAPI]:
 
 
 @register_model_api(name='checkpoint')
-@deprecated(since='1.0.0', remove_in='1.1.0', alternative='llm_ckpt')
+@deprecated(since='1.0.0', remove_in='2.0.0', alternative='llm_ckpt')
 def checkpoint() -> type[ModelAPI]:
     check_import('torch', package='torch', raise_error=True, feature_name='llm_ckpt')
 
