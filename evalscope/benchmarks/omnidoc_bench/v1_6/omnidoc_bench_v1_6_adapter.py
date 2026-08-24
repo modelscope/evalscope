@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Type
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, download_dataset_file
+from evalscope.api.dataset import DataLoader, Dataset, DictDataLoader, Sample, resolve_snapshot_or_local_path
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -88,18 +88,12 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
         self.add_overall_metric = False
+        self._snapshot_dir: Path | None = None
 
     def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        """Load the v1.6 annotation and delegate selection to the standard loader."""
-        annotation_path = Path(
-            download_dataset_file(
-                data_id_or_path=self.dataset_id,
-                file_path='OmniDocBench.json',
-                data_source=self.dataset_hub,
-                force_redownload=self.force_redownload,
-                cache_dir=self.dataset_dir,
-            )
-        )
+        """Load the v1.6 snapshot and delegate selection to the standard loader."""
+        self._snapshot_dir = Path(resolve_snapshot_or_local_path(self)).resolve()
+        annotation_path = self._snapshot_dir / 'OmniDocBench.json'
         records = json.loads(annotation_path.read_text(encoding='utf-8'))
         return DictDataLoader(
             dict_list=records,
@@ -113,16 +107,13 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         ).load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        if self._snapshot_dir is None:
+            raise RuntimeError('OmniDocBench v1.6 snapshot must be loaded before converting records.')
         image_name = record['page_info']['image_path']
-        image_path = Path(
-            download_dataset_file(
-                data_id_or_path=self.dataset_id,
-                file_path=f'images/{image_name}',
-                data_source=self.dataset_hub,
-                force_redownload=self.force_redownload,
-                cache_dir=self.dataset_dir,
-            )
-        )
+        image_dir = (self._snapshot_dir / 'images').resolve()
+        image_path = (image_dir / image_name).resolve()
+        if not image_path.is_relative_to(image_dir):
+            raise ValueError(f'Invalid OmniDocBench v1.6 image path: {image_name}')
         image_format = image_path.suffix.lower().lstrip('.') or 'png'
         image_uri = self._image_bytes_to_base64(image_path.read_bytes(), default_format=image_format)
         content: List[Content] = [
