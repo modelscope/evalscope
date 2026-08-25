@@ -12,7 +12,7 @@
 | `EVALSCOPE_LANGUAGE` | 全局默认语言，影响报告等输出语言（`en` 或 `zh`） | `en` |
 | `EVALSCOPE_HEARTBEAT_INTERVAL` | 评测进度心跳上报间隔（秒） | `60` |
 | `MODELSCOPE_CACHE` | ModelScope 模型与数据集缓存根目录 | `~/.cache/modelscope/hub` |
-| `DATASET_TF_BATCH_SIZE` | 数据集转换的批处理大小 | `1000` |
+| `DATASET_TF_BATCH_SIZE` | 数据集转换的批处理大小 | `100` |
 
 ## 模型参数
 

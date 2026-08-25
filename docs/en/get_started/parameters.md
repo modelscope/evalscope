@@ -12,7 +12,7 @@ The following environment variables can be set before launch to control global d
 | `EVALSCOPE_LANGUAGE` | Global default language, affects output language for reports, etc. (`en` or `zh`) | `en` |
 | `EVALSCOPE_HEARTBEAT_INTERVAL` | Heartbeat reporting interval (seconds) | `60` |
 | `MODELSCOPE_CACHE` | Root cache directory for ModelScope models and datasets | `~/.cache/modelscope/hub` |
-| `DATASET_TF_BATCH_SIZE` | Batch size for dataset transformation | `1000` |
+| `DATASET_TF_BATCH_SIZE` | Batch size for dataset transformation | `100` |
 
 ## Model Parameters
 

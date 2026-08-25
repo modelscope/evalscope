@@ -1,7 +1,9 @@
 import io
 import numpy as np
+import pyarrow as pa
 import pytest
-from datasets import Audio, Dataset, Features, Image, Sequence, Video, concatenate_datasets
+from datasets import Audio, Dataset, DatasetInfo, Features, Image, Sequence, Video, concatenate_datasets
+from datasets.table import InMemoryTable
 from PIL import Image as PILImage
 
 from evalscope.utils.io_utils import undecode_media
@@ -27,17 +29,19 @@ def gen_dataset(
     for col_name, (media_bytes, inner_feat, count) in media_factory.items():
         if count == 1:
             features[col_name] = inner_feat
-            row[col_name] = {'bytes': media_bytes}
+            row[col_name] = {'bytes': media_bytes, 'path': None}
         else:
             features[col_name] = Sequence(inner_feat)
-            row[col_name] = [{'bytes': media_bytes}] * count
+            row[col_name] = [{'bytes': media_bytes, 'path': None}] * count
 
     # inject non-media cols
     if extra_dict:
         features |= Dataset.from_list([extra_dict]).features
         row.update(extra_dict)
 
-    single_row = Dataset.from_list([row], features=Features(features))
+    dataset_features = Features(features)
+    table = pa.Table.from_pylist([row], schema=dataset_features.arrow_schema)
+    single_row = Dataset(InMemoryTable(table), info=DatasetInfo(features=dataset_features))
     return concatenate_datasets([single_row] * num_rows)
 
 
@@ -53,12 +57,12 @@ class TestArrowOffsetOverflow:
 
     @pytest.mark.parametrize(
         'dim, batch_size',
-        [(512, 100), (1024, 10)],
+        [(512, None), (1024, 10)],
     )
     def test_default_batch_overflows_but_small_batch_succeeds(
         self,
         dim: int,
-        batch_size: int,
+        batch_size: int | None,
     ):
         ds = gen_dataset(
             media_factory={'images': (_generate_jpeg_bytes(dim), Image(decode=True), self.IMAGES_PER_ROW)},
@@ -69,9 +73,12 @@ class TestArrowOffsetOverflow:
         with pytest.raises(ValueError, match='offset'):
             undecode_media(ds, media_type=['image'], batch_size=1000)
 
-        # we cap len exactly as batch_size to make test faster
-        # smaller batch size avoids the overflow
-        undecode_media(ds.select(range(batch_size)), media_type=['image'], batch_size=batch_size)
+        # A smaller batch size avoids the overflow. One full batch is sufficient to verify the boundary.
+        safe_batch_size = batch_size or 100
+        result = undecode_media(
+            ds.select(range(safe_batch_size)), media_type=['image'], batch_size=batch_size
+        )
+        assert result.features['images'].feature.decode is False
 
 
 class TestUndecodeMediaIntegration:
@@ -119,7 +126,7 @@ class TestUndecodeMediaIntegration:
                 id='plain_Audio',
             ),
             pytest.param(
-                {'audios': (b'dummy', Audio(decode=True), 1)},
+                {'audios': (b'dummy', Audio(decode=True), 2)},
                 {'text': 'playlist'},
                 id='Sequence_Audio',
             ),
@@ -129,7 +136,7 @@ class TestUndecodeMediaIntegration:
                 id='plain_Video',
             ),
             pytest.param(
-                {'videos': (b'dummy', Video(decode=True), 1)},
+                {'videos': (b'dummy', Video(decode=True), 2)},
                 {'text': 'clips'},
                 id='Sequence_Video',
             ),
