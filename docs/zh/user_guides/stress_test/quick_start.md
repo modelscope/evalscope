@@ -209,6 +209,15 @@ Percentile results:
 
 ## 可视化测试结果
 
+### Web Dashboard
+
+EvalScope Web Dashboard 会发现输出根目录下的压测结果。压测完成后启动服务，并打开**性能测试**页面：
+
+```bash
+pip install 'evalscope[service]' -U
+evalscope service --outputs outputs
+```
+
 ### 使用Wandb
 
 请先安装wandb，并获取对应的[API Key](https://wandb.ai/settings)：
@@ -279,4 +288,3 @@ clearml-init
 ```
 
 ![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
-
