@@ -11,10 +11,11 @@ import re
 import string
 import unicodedata
 import yaml
+from datasets import Dataset
 from datetime import datetime
 from io import BytesIO
 from PIL import Image
-from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
@@ -142,19 +143,17 @@ class OutputsStructure:
 # ---------------------------------------------------------------------------
 
 
-def undecode_media(dataset, media_type: List[Literal['image', 'audio', 'video']]):
-    from datasets import Dataset
+def undecode_media(dataset: 'Dataset', media_type: List[Literal['image', 'audio', 'video']]) -> 'Dataset':
     from datasets.features import Audio, Image, Sequence, Video
 
     if not isinstance(dataset, Dataset):
         raise TypeError(f'Expected a datasets.Dataset object, got {type(dataset)} instead.')
-    # for type checking
-    dataset = cast(Dataset, dataset)
 
     # we did not use cast_column here, because cast_column() does not support batch_size,
     # the default batch_size=1000 may cause OOM for large datasets
     # see https://github.com/huggingface/datasets/pull/7910
     features = dataset.features
+    noupdate = True
     for col, feat in dataset.features.items():
         if 'image' in media_type and isinstance(feat, Image):
             features[col] = Image(decode=False)
@@ -168,7 +167,14 @@ def undecode_media(dataset, media_type: List[Literal['image', 'audio', 'video']]
             features[col] = Sequence(Audio(decode=False))
         elif 'video' in media_type and isinstance(feat, Sequence) and isinstance(feat.feature, Video):
             features[col] = Sequence(Video(decode=False))
+        else:
+            continue
+        noupdate = False
 
+    if noupdate:
+        return dataset
+
+    # if there are updates, do casting
     dataset = dataset.cast(features, batch_size=100)
     return dataset
 
