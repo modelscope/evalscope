@@ -90,8 +90,8 @@ class SentenceTransformerEncoder(BaseEncoder):
         else:
             word_embedding_model = models.Transformer(
                 self.model_name_or_path,
-                config_args=_config_kwargs,
-                model_args=_model_kwargs,
+                config_kwargs=_config_kwargs,
+                model_kwargs=_model_kwargs,
             )
             pooling_model = models.Pooling(
                 word_embedding_model.get_word_embedding_dimension(),
