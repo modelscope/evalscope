@@ -9,7 +9,7 @@ authors = [
   {email = "contact@modelscope.cn"}
 ]
 keywords = ["python", "llm", "evaluation"]
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Operating System :: OS Independent",
@@ -80,7 +80,7 @@ torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
 deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 toolathlon       = {file = ["evalscope/benchmarks/toolathlon/requirements.txt"]}
-# bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
+bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 wide_search      = {file = ["evalscope/benchmarks/wide_search/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
