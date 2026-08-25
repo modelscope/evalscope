@@ -14,10 +14,15 @@ repos:
                 evalscope/backend/rag_eval/cmteb/tasks|
                 evalscope/metrics/vision/t2v_metrics
             )
-  - repo: https://github.com/PyCQA/isort.git
-    rev: 7.0.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.16.4
     hooks:
-      - id: isort
+      # Run the linter.
+      - id: ruff-check
+        args: [ --fix ]
+      # Run the formatter.
+      # - id: ruff-format
   - repo: https://github.com/google/yapf
     rev: v0.43.0
     hooks:

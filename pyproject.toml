@@ -9,7 +9,7 @@ authors = [
   {email = "contact@modelscope.cn"}
 ]
 keywords = ["python", "llm", "evaluation"]
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Operating System :: OS Independent",
@@ -80,7 +80,7 @@ torgo            = {file = ["evalscope/benchmarks/torgo/requirements.txt"]}
 terminal_bench   = {file = ["evalscope/benchmarks/terminal_bench/requirements.txt"]}
 deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 toolathlon       = {file = ["evalscope/benchmarks/toolathlon/requirements.txt"]}
-bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
+# bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 wide_search      = {file = ["evalscope/benchmarks/wide_search/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
@@ -98,3 +98,24 @@ python_files = ["*test*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-s -v"
+
+[tool.ruff]
+include = [
+  "pyproject.toml",
+  "evalscope/**/*.py",
+  "tests/**/*.py",
+  # "examples/**/*.py",
+  # "scripts/**/*.py",
+]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+  "I" # isort
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
