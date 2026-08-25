@@ -15,6 +15,7 @@ from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
+
 from .prompt_templates import (
     INITIAL_PROMPT,
     INITIAL_PROMPT_PROVIDE_BACKGROUND,

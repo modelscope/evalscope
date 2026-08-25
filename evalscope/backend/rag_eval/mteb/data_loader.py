@@ -7,8 +7,9 @@ ModelScope instead of HuggingFace. When ``hub`` is anything other than
 """
 import types
 from collections import defaultdict
-from datasets import DatasetDict
 from typing import List, Optional
+
+from datasets import DatasetDict
 
 from evalscope.utils.logger import get_logger
 

@@ -1,11 +1,12 @@
 """
 Visualization utilities for report chart generation.
 """
+from typing import List
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from typing import List
 
 from evalscope.constants import DEFAULT_BAR_WIDTH, PLOTLY_THEME, DataCollection
 from evalscope.report import Report, ReportKey, get_data_frame

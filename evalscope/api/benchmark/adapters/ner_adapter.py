@@ -13,6 +13,7 @@ from evalscope.utils.ner import (
     extract_spans_from_bio,
     xml_to_bio_tags,
 )
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()

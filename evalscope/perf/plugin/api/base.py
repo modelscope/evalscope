@@ -1,6 +1,7 @@
-import aiohttp
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import aiohttp
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData

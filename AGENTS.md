@@ -14,7 +14,7 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 ## Build, lint, test
 
 ```bash
-make lint                                                                       # required before commit (yapf + isort + flake8 + basic pre-commit hooks)
+make lint                                                                       # required before commit (yapf + Ruff + flake8 + basic pre-commit hooks)
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
 pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
@@ -65,7 +65,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 - **Line width 120**, 4-space indent, LF endings, trailing newline at EOF.
 - **Quotes** governed by `double-quote-string-fixer` hook — follow existing file style; do not mix.
 - **f-strings** for formatting (no `%` or `.format()` unless necessary).
-- **Imports**: isort with `first_party = evalscope`, groups `STDLIB / THIRDPARTY / LOCALFOLDER`, `multi_line_output=3`.
+- **Imports**: Ruff's `I` rules, with `evalscope` detected as first-party and standard import sections.
 - **Type hints required** on every function signature.
 - **English only** for comments and docstrings.
 - **Public APIs need docstrings**; internal helpers only when intent is non-obvious.

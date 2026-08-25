@@ -6,11 +6,12 @@
 # https://github.com/facebookresearch/dino
 # --------------------------------------------------------'
 import math
+from functools import partial
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from functools import partial
 
 try:
     from timm.layers import drop_path, to_2tuple, trunc_normal_

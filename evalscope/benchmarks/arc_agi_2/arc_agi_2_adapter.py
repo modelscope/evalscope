@@ -11,6 +11,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import build_task_prompt, parse_grid_from_response
 
 logger = get_logger()

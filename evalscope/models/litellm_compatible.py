@@ -9,8 +9,9 @@ See https://docs.litellm.ai/docs/providers for the full list.
 """
 
 import time
-from openai.types.chat import ChatCompletion
 from typing import Any, Dict, List, Optional, Tuple
+
+from openai.types.chat import ChatCompletion
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -18,6 +19,7 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import async_retry_call, retry_call
+
 from .utils.openai import (
     async_collect_stream_response,
     chat_choices_from_openai,

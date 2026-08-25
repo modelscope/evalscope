@@ -1,5 +1,6 @@
 """Judge configuration is typed before the Native judge subsystem sees it."""
 import argparse
+
 import pytest
 
 from evalscope.arguments import add_argument

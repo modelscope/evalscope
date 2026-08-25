@@ -1,5 +1,4 @@
 import csv
-import pytest
 import shutil
 import sys
 import tarfile
@@ -7,6 +6,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.browsergym_adapter import BrowserGymSession

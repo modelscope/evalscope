@@ -2,8 +2,9 @@ import argparse
 import json
 import os
 from contextlib import contextmanager
-from pydantic import Field, SecretStr, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
+
+from pydantic import Field, SecretStr, field_validator, model_validator
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
 from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs

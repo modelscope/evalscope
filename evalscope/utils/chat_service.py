@@ -2,9 +2,10 @@ import os
 import time
 from contextlib import contextmanager
 from functools import partial
-from pydantic import BaseModel, Field
 from threading import Thread
 from typing import Any, List, Literal, Optional, Union
+
+from pydantic import BaseModel, Field
 
 
 class Usage(BaseModel):

@@ -18,6 +18,7 @@ from evalscope.utils.io_utils import (
     tsv_to_list,
     undecode_media,
 )
+
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
 from .hub import DatasetHub
 from .utils import data_to_samples, shuffle_choices_if_requested

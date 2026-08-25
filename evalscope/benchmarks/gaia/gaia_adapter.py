@@ -34,6 +34,7 @@ from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
+
 from .scorer import question_scorer
 
 logger = get_logger()

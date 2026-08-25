@@ -1,6 +1,7 @@
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
 import pandas as pd
 from pandas import DataFrame
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection

@@ -12,6 +12,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import convert_normal_types
 from evalscope.utils.logger import get_logger
+
 from .prompts import CodeGenerationPromptConstants
 
 logger = get_logger()

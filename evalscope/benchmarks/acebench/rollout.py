@@ -27,6 +27,7 @@ from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
+
 from .parser import decode_execution_calls
 from .prompts import agent_prompt_set, build_agent_prompts, build_user_simulator_prompt
 from .scenarios import load_scenario_instances, snapshot_states

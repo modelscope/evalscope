@@ -11,9 +11,8 @@ import hashlib
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from evalscope.utils.resource_utils import BENCHMARK_META_DIR
+from evalscope.utils.resource_utils import BENCHMARK_META_DIR, load_benchmark_data, save_benchmark_data
 from evalscope.utils.resource_utils import _create_empty_benchmark_entry as _create_empty_entry
-from evalscope.utils.resource_utils import load_benchmark_data, save_benchmark_data
 
 # Path to docs directory
 DOCS_DIR = Path(__file__).parent.parent.parent.parent / 'docs'

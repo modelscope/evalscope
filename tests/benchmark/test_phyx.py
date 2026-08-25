@@ -5,8 +5,9 @@ regression in `parse_options` or `extract_*_answer` silently mis-scores replies 
 The expected prompt/answer strings below are taken verbatim from the official `PhyX_MC.tsv` /
 `PhyX_OE.tsv` releases.
 """
-import pytest
 from typing import Any, List, Optional, Tuple
+
+import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState

@@ -1,9 +1,10 @@
 import asyncio
 import csv
 import json
-import pytest
 from pathlib import Path
 from typing import Any, Dict, List
+
+import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample

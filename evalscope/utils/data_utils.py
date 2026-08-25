@@ -3,9 +3,10 @@ Data loading and processing utilities for reports and predictions.
 """
 import glob
 import os
+from typing import Any, Dict, List, Union
+
 import pandas as pd
 from pydantic import ValidationError
-from typing import Any, Dict, List, Union
 
 from evalscope.api.evaluator import CacheManager, ReviewResult
 from evalscope.constants import DataCollection

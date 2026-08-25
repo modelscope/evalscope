@@ -98,3 +98,17 @@ python_files = ["*test*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-s -v"
+
+[tool.ruff]
+include = [
+  "pyproject.toml",
+  "evalscope/**/*.py",
+  "tests/**/*.py",
+]
+extend-exclude = ["docs", "examples", "scripts"]
+force-exclude = true
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["I"]

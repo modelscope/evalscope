@@ -9,9 +9,10 @@ convention).
 
 import asyncio
 import json
-import pytest
 import urllib.request
 from typing import List
+
+import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.agent import EventType

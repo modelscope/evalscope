@@ -2,14 +2,16 @@ import copy
 import json
 import os
 import time
-from tabulate import tabulate
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.db_util import average_results
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
 from evalscope.utils.logger import get_logger
+
 from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion
 
 logger = get_logger()

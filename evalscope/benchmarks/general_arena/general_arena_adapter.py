@@ -2,8 +2,9 @@
 import glob
 import os
 from collections import defaultdict
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
@@ -223,6 +224,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
     def _build_pair_wise_data(self, dataset_dict):
         """Build pairwise data for the models."""
         from evalscope.api.evaluator import ReviewResult
+
         from .utils import process_review_item
 
         pairwise_data = defaultdict(list)

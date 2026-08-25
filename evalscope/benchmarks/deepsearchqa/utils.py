@@ -1,6 +1,7 @@
 import re
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Tuple
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.judge import OutputContract
 from evalscope.api.metric import AggScore, SampleScore

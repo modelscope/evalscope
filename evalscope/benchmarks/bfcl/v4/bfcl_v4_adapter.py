@@ -19,6 +19,7 @@ from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     ALL_SCORING_CATEGORIES,
     compute_aggregate_subsets,

@@ -18,8 +18,9 @@ covers reasoning translation.
 """
 
 import os
-import pytest
 import shutil
+
+import pytest
 
 from evalscope.agent.external import ExternalAgentConfig
 from evalscope.agent.external.adapter import run_external_agent

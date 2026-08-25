@@ -4,11 +4,12 @@
 Implements the MTEB 2.x evaluation flow with optional two-stage
 (Encoder + CrossEncoder) reranking and ModelScope data loading.
 """
-import mteb
 import os
 from pathlib import Path
-from tabulate import tabulate
 from typing import List
+
+import mteb
+from tabulate import tabulate
 
 from evalscope.backend.rag_eval.models import load_model
 from evalscope.backend.rag_eval.mteb.arguments import CustomTaskConfig, MTEBEvalConfig, MTEBModelConfig, MTEBToolConfig

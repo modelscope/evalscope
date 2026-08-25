@@ -1,9 +1,10 @@
-import numpy as np
 import os
-import torch
 from abc import ABC, abstractmethod
-from PIL import Image
 from typing import List
+
+import numpy as np
+import torch
+from PIL import Image
 
 from ..constants import CACHE_DIR
 

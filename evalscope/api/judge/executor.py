@@ -1,12 +1,14 @@
 """The single execution path for Native LLM judge contracts."""
 import time
 from collections import Counter, defaultdict
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Literal, Optional, Sequence
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric import JudgeSummary, Score
 from evalscope.constants import ScoreStatus
 from evalscope.utils.logger import get_logger
+
 from .aggregation import (
     aggregate_judge_values,
     aggregate_pairwise_outcomes,

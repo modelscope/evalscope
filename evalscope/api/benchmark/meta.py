@@ -1,8 +1,9 @@
 import copy
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
-from pydantic import BaseModel
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+
+from pydantic import BaseModel
 
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.constants import OutputType

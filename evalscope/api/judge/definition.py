@@ -1,10 +1,12 @@
 """Adapter-facing declarations for one Native LLM judge review."""
 from dataclasses import dataclass
-from pydantic import BaseModel
 from typing import Any, Callable, Dict, Optional, Sequence, Type
+
+from pydantic import BaseModel
 
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import Score
+
 from .contracts import OutputContract
 from .types import CaseVerdict, JudgeCase, JudgeContext, JudgeRequest, JudgeReview, Placement, ReducedVerdict
 

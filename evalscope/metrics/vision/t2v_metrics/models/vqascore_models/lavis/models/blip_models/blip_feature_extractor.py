@@ -5,9 +5,10 @@
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 
+import warnings
+
 import torch
 import torch.nn.functional as F
-import warnings
 from torch import nn
 
 from ...common.registry import registry

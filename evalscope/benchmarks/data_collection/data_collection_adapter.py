@@ -185,6 +185,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
 
     def generate_report(self, scores, model_name, output_dir, **kwargs) -> Report:
         import json
+
         from tabulate import tabulate
 
         df_dict = scores[self.default_subset]

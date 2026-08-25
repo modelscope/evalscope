@@ -12,6 +12,7 @@ from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_MET
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.media_utils import guess_video_format
+
 from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()

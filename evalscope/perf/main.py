@@ -12,6 +12,7 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
+
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark

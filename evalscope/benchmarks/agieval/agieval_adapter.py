@@ -16,6 +16,7 @@ from evalscope.utils.multi_choices import (
     prompt,
     valid_template,
 )
+
 from .utils import ALL_SUBSETS, is_chinese_qa, is_cloze, is_multi_choice, is_qa
 
 logger = get_logger()

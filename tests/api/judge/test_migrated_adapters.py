@@ -1,6 +1,7 @@
 """Smoke tests for migrated Native judge adapters."""
-import pytest
 from typing import Any, List
+
+import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState

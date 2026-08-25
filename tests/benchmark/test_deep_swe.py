@@ -1,11 +1,12 @@
 import json
 import os
-import pytest
 import sys
 import types
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.request import pathname2url
+
+import pytest
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState

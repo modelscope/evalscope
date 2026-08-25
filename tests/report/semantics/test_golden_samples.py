@@ -14,10 +14,11 @@ are a second pair of parallel implementations, and nothing else pins them to eac
 """
 
 import json
-import pytest
 from pathlib import Path
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Optional
+
+import pytest
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric.semantics import MetricDisplayKind, MetricIdentity, MetricSemantics
 from evalscope.metrics.semantics.formatting import MISSING_PLACEHOLDER, format_metric_label, format_metric_value

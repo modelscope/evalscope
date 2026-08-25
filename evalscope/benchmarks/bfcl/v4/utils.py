@@ -6,8 +6,9 @@ import uuid
 from collections import defaultdict
 from copy import deepcopy
 from pathlib import Path
-from tqdm import tqdm
 from typing import Any, Dict, List, Tuple
+
+from tqdm import tqdm
 
 from evalscope.api.messages.chat_message import (
     ChatMessage,
@@ -212,8 +213,9 @@ def run_prereq_inference(
     Optimized to run different (backend, scenario) groups in parallel while preserving in-group order.
     """
     import re
-    from bfcl_eval.utils import get_directory_structure_by_id
     from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    from bfcl_eval.utils import get_directory_structure_by_id
 
     if not prereq_entries:
         return

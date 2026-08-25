@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
 from evalscope.utils.io_utils import current_time
+
 from . import get_benchmarks_needing_translation, load_benchmark_data, needs_translation_update, save_benchmark_data
 
 # Set BUILD_DOC to avoid heavy dependencies

@@ -5,10 +5,11 @@ Both implement the BaseEncoder interface aligned with MTEB 2.x EncoderProtocol.
 """
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional, Union
+
 import torch
 from torch import Tensor
 from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.models.base import Array, BaseEncoder
 from evalscope.backend.rag_eval.models.utils import resolve_model_path

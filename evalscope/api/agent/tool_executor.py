@@ -9,6 +9,7 @@ import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from evalscope.api.tool import ToolCall, ToolCallError
+
 from .environment import AgentEnvironment
 from .types import ToolExecutionOutput
 

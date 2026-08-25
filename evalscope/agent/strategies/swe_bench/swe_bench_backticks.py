@@ -25,6 +25,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction, ToolInfo
+
 from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation, is_terminal_sandbox_error
 
 # Regex for ``` ```mswea_bash_command ... ``` ``` fenced blocks (mirrors

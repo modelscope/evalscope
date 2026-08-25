@@ -1,10 +1,11 @@
-import aiohttp
 import codecs
 import json
 import sys
 import time
 import traceback
 from typing import Any, Dict
+
+import aiohttp
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase

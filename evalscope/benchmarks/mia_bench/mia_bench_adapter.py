@@ -1,6 +1,7 @@
 # flake8: noqa: E501
-from pydantic import BaseModel, Field, create_model
 from typing import Any, Dict, List, Type
+
+from pydantic import BaseModel, Field, create_model
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample

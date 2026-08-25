@@ -1,6 +1,7 @@
 import uuid
-from pydantic import BaseModel, Field, JsonValue, computed_field, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
+
+from pydantic import BaseModel, Field, JsonValue, computed_field, model_validator
 
 from evalscope.api.messages import ChatMessageAssistant, Content
 from evalscope.api.messages.perf_metrics import PerformanceMetrics

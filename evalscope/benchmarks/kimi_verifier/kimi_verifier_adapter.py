@@ -26,6 +26,7 @@ from evalscope.api.model.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .param_spec import IMMUTABLE_PARAMS, thinking_extra_body
 
 logger = get_logger()

@@ -4,8 +4,9 @@ import hashlib
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pydantic import BaseModel, Field
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo

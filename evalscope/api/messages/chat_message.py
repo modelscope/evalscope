@@ -1,9 +1,11 @@
 import os
 import uuid
-from pydantic import BaseModel, Field, JsonValue, model_validator
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
+from pydantic import BaseModel, Field, JsonValue, model_validator
+
 from evalscope.api.tool import ToolCall, ToolCallError
+
 from .content import Content, ContentAudio, ContentImage, ContentReasoning, ContentText, ContentVideo
 from .perf_metrics import PerformanceMetrics
 from .utils import parse_content_with_reasoning

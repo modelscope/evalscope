@@ -1,9 +1,10 @@
 import collections.abc
 import math
-import torch
-import torch.nn.functional as F
 from collections import OrderedDict
 from itertools import repeat
+
+import torch
+import torch.nn.functional as F
 from torch import nn
 
 from ..common.dist_utils import download_cached_file

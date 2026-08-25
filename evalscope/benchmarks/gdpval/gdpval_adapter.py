@@ -17,6 +17,7 @@ from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_ima
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     SANDBOX_DELIVERABLE_DIR,
     SANDBOX_REFERENCE_DIR,

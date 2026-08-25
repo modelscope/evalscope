@@ -7,11 +7,13 @@
 
 import logging
 import os
+
 import torch
 from modelscope import snapshot_download
 from transformers import BertTokenizer
 
 from evalscope.metrics.vision.t2v_metrics.models.utils import is_local_files_only
+
 from ...common.dist_utils import download_cached_file
 from ...common.utils import is_url
 from ...models.base_model import BaseModel

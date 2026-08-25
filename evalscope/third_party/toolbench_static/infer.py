@@ -18,9 +18,10 @@
 
 import json
 import os
-import requests
 import time
 from dataclasses import dataclass, field
+
+import requests
 from rouge import Rouge
 from urllib3.exceptions import MaxRetryError, NewConnectionError
 

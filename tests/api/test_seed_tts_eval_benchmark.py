@@ -1,6 +1,7 @@
 import base64
-import pytest
 from typing import Any, Optional
+
+import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample

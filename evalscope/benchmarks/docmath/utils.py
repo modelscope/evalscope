@@ -1,6 +1,7 @@
 import math
-import numpy as np
 import re
+
+import numpy as np
 from sympy import Rational
 
 from evalscope.utils.logger import get_logger

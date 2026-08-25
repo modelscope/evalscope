@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import jieba
 from collections import defaultdict
-from rouge_chinese import Rouge
 from statistics import mean
+
+import jieba
+from rouge_chinese import Rouge
 from tqdm import tqdm
 
 from evalscope.constants import MetricsConstant

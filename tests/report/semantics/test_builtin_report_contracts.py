@@ -1,5 +1,6 @@
-import pytest
 from typing import Any, Dict, List
+
+import pytest
 
 import evalscope  # noqa: F401  # imported for benchmark registration side effects
 from evalscope import TaskConfig

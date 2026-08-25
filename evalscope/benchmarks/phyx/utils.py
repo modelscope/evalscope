@@ -4,8 +4,9 @@
 Reference: https://github.com/NastyMarcus/PhyX (``vlmeval/dataset/utils/phyx.py``).
 """
 import re
-from pydantic import BaseModel
 from typing import Dict, List, Optional
+
+from pydantic import BaseModel
 
 from evalscope.api.judge import OutputContract
 

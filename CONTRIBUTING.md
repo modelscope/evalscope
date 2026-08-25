@@ -307,7 +307,7 @@ evalscope service
 This project uses **pre-commit** with the following hooks:
 
 - **flake8** — Python style checker
-- **isort** — Import sorting
+- **Ruff** — Import sorting (`I` rules)
 - **yapf** — Code formatting
 - Trailing whitespace, YAML checks, line ending fixes
 

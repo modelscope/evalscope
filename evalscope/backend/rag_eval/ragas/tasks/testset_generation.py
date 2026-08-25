@@ -1,8 +1,9 @@
 import logging
 import os
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
 from tqdm import tqdm
-from typing import Any, Dict, List, Optional
 
 from evalscope.backend.rag_eval.ragas.arguments import RAGASTestsetConfig
 

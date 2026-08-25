@@ -1,11 +1,12 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.arguments import Arguments
@@ -13,6 +14,7 @@ from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 from evalscope.utils.logger import get_logger
+
 from .perf_constants import Metrics, PercentileMetrics
 
 logger = get_logger()

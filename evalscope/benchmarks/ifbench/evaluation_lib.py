@@ -19,6 +19,7 @@ import dataclasses
 from typing import Dict, Optional, Sequence, Union
 
 from evalscope.utils.function_utils import thread_safe
+
 from . import instructions_registry
 
 

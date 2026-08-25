@@ -4,8 +4,9 @@ import os
 import pickle
 import re
 import sqlite3
-from tabulate import tabulate
 from typing import Dict, List, Optional, Tuple
+
+from tabulate import tabulate
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, BenchmarkMetrics

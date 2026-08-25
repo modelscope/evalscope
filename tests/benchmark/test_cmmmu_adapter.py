@@ -1,9 +1,10 @@
 import base64
-import pytest
 from io import BytesIO
 from pathlib import Path
-from PIL import Image
 from typing import Any, Dict
+
+import pytest
+from PIL import Image
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.messages import ContentImage, ContentText

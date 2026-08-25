@@ -6,11 +6,12 @@ Both implement the BaseReranker interface aligned with MTEB 2.x CrossEncoderProt
 from __future__ import annotations
 
 import os
-import requests
 import time
+from typing import Any, Dict, List, Optional, Union
+
+import requests
 import torch
 from torch import Tensor
-from typing import Any, Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.models.base import Array, BaseReranker
 from evalscope.backend.rag_eval.models.utils import resolve_model_path

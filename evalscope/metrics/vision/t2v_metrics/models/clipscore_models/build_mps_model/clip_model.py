@@ -1,9 +1,10 @@
-import torch
 from dataclasses import dataclass
+from typing import Any, Optional, Tuple, Union
+
+import torch
 from torch import einsum, nn
 from transformers import CLIPConfig
 from transformers import CLIPModel as HFCLIPModel
-from typing import Any, Optional, Tuple, Union
 
 from .base_model import BaseModelConfig
 from .cross_modeling import Cross_model

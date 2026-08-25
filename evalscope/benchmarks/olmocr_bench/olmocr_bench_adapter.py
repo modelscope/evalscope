@@ -16,6 +16,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+
 from .unit_tests import load_single_test
 
 logger = get_logger()

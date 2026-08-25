@@ -1,7 +1,8 @@
 import os
 import re
-import requests
 from typing import List, Optional
+
+import requests
 
 from evalscope.api.metric import Metric
 from evalscope.api.registry import register_metric

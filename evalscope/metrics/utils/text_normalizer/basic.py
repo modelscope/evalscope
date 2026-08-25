@@ -1,6 +1,7 @@
 import re
-import regex
 import unicodedata
+
+import regex
 
 # non-ASCII letters that are not separated by "NFKD" normalization
 ADDITIONAL_DIACRITICS = {

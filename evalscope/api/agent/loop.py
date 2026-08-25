@@ -21,6 +21,7 @@ from typing import Any, List, Optional, Tuple
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
+
 from .constants import LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
 from .environment import AgentEnvironment
 from .strategy import AgentStrategy

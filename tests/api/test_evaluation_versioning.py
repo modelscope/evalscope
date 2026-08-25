@@ -1,7 +1,8 @@
 """Tests for native evaluation snapshots, identities, and analysis context."""
 
-import pytest
 from types import SimpleNamespace
+
+import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config

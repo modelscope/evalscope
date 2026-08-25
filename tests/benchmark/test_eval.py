@@ -6,8 +6,9 @@ load_dotenv('.env')
 env = dotenv_values('.env')
 
 import os
-import pytest
 import unittest
+
+import pytest
 
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.utils.logger import get_logger

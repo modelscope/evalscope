@@ -2,11 +2,12 @@
 # Copyright (c) ZhipuAI, Inc. and its affiliates.
 
 import json
-import numpy as np
 import os
 import random
-import torch
 from typing import List
+
+import numpy as np
+import torch
 
 from evalscope.third_party.longbench_write.tools.openai_api import OpenaiApi
 from evalscope.third_party.longbench_write.utils import count_words

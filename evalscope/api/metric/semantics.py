@@ -11,8 +11,9 @@ import json
 import math
 import re
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Dict, FrozenSet, Optional, Tuple, Union
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
 DIAGNOSTIC_FALLBACK_SEMANTIC_ID = 'diagnostic.unspecified'

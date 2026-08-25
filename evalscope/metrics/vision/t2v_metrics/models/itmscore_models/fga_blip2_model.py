@@ -1,8 +1,9 @@
 import os
+from typing import List, Union
+
 import torch
 from modelscope import snapshot_download
 from transformers import BertTokenizer
-from typing import List, Union
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel

@@ -9,10 +9,11 @@ ms_enclave managers to actually start.  Integration coverage lives in
 from __future__ import annotations
 
 import asyncio
-import pytest
 import threading
 from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.mixin.code_execution_sandbox_mixin import EnclaveCodeExecutionBackend

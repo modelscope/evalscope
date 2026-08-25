@@ -1,7 +1,8 @@
-import langdetect.detector_factory as detector_factory
-import pytest
 from concurrent.futures import ThreadPoolExecutor
 from typing import Set
+
+import langdetect.detector_factory as detector_factory
+import pytest
 
 from evalscope.benchmarks.ifeval import instructions
 

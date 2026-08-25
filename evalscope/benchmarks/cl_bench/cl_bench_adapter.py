@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field, field_validator
-
 # align with official CL-bench eval.py(https://github.com/Tencent-Hunyuan/CL-bench/blob/main/eval.py)
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel, Field, field_validator
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample

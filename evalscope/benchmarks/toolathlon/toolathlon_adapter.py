@@ -10,6 +10,7 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.argument_utils import get_secret_value
+
 from .client import (
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_SERVER_HOST,

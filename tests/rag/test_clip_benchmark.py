@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
-import pytest
 import subprocess
 import unittest
+
+import pytest
 
 pytestmark = pytest.mark.timeout(600)
 

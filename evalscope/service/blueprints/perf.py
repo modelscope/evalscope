@@ -1,5 +1,6 @@
 import json
 import os
+
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
@@ -8,6 +9,7 @@ from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.utils.logger import get_logger
+
 from .. import perf_archive
 from ..perf_archive import PerfArchiveError
 from ..utils import (

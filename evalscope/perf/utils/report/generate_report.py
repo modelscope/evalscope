@@ -19,6 +19,7 @@ from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
+
 from .summary import (
     build_basic_info,
     build_best_config,

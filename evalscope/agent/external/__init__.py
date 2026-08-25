@@ -8,6 +8,7 @@ LLM request/response stream into the shared :class:`AgentTrace` format
 """
 
 from evalscope.api.registry import RUNNER_REGISTRY, get_runner, list_runners, register_runner
+
 from . import runners as _runners  # noqa: F401  (side-effect: registers built-in runners)
 from .config import BridgeConfig, ExternalAgentConfig, ExternalAgentFramework
 from .runners.base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask

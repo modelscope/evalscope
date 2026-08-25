@@ -2,11 +2,12 @@
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
 
-import editdistance
 import itertools
 import math
-import numpy as np
 from typing import Dict, List, Union
+
+import editdistance
+import numpy as np
 
 
 def normalize_text(text: str) -> str:

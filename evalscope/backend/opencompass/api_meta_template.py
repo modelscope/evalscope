@@ -1,4 +1,4 @@
-# isort: skip_file
+# ruff: noqa: I001
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from typing import Any, Dict, List
 """

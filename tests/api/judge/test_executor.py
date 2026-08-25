@@ -1,8 +1,9 @@
 """JudgeExecutor tests use a scripted transport and never call a provider."""
-import pytest
-from pydantic import BaseModel
 from types import SimpleNamespace
 from typing import Any, List, Literal, Optional, Sequence
+
+import pytest
+from pydantic import BaseModel
 
 from evalscope.api.judge import (
     CaseVerdict,

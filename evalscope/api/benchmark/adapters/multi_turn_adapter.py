@@ -37,6 +37,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()

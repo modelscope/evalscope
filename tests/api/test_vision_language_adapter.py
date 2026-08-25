@@ -1,8 +1,9 @@
-import pytest
 from io import BytesIO
 from pathlib import Path
-from PIL import Image as PILImage
 from typing import Any, Dict
+
+import pytest
+from PIL import Image as PILImage
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample

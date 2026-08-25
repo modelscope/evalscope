@@ -10,9 +10,10 @@ generator consumes.
 """
 
 import json
-import pytest
 from pathlib import Path
 from typing import Dict, List, Optional
+
+import pytest
 
 from evalscope.api.metric import AggScore
 from evalscope.api.metric.semantics import MetricKind, MetricSelector

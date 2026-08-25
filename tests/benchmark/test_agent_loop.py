@@ -20,8 +20,9 @@ import os
 import shutil
 import subprocess
 import unittest
-from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
+
+from dotenv import dotenv_values, load_dotenv
 
 load_dotenv('.env')
 env = dotenv_values('.env')

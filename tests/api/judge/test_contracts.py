@@ -3,8 +3,9 @@
 Every rejection case here was observed in the wild before the refactor and used to produce a
 score instead of a parse failure.
 """
-from pydantic import BaseModel, Field
 from typing import Literal
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.judge import OutputContract
 

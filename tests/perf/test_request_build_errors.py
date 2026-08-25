@@ -8,8 +8,9 @@ error was retried every 10s until ``--total-timeout`` and then reported as a con
 
 import asyncio
 import json
-import pytest
 import time
+
+import pytest
 
 from evalscope.perf.arguments import Arguments
 

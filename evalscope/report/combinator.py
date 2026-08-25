@@ -3,9 +3,10 @@
 import glob
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import pandas as pd
 from tabulate import tabulate
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.api.metric.semantics import MetricSemantics

@@ -1,6 +1,7 @@
 """Tests for benchmark metadata validation."""
 
 import json
+
 import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta

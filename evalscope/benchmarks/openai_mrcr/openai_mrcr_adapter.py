@@ -10,6 +10,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .utils import OPENAI_MRCR_BINS, bin_index_for, get_chatml_tok_cnt, get_token_count, grade, str_to_chat_messages
 
 logger = get_logger()

@@ -3,17 +3,19 @@ import json
 import sys
 import tempfile
 import zipfile
-from dotenv import dotenv_values, load_dotenv
 from pathlib import Path
 from types import ModuleType
 from unittest.mock import Mock, patch
+
+from dotenv import dotenv_values, load_dotenv
 
 load_dotenv('.env')
 
 env = dotenv_values('.env')
 
-import numpy as np
 import unittest
+
+import numpy as np
 
 from evalscope.api.agent import NativeAgentConfig
 from evalscope.api.agent.mcp import MCPServerConfigStdio

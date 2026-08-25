@@ -34,9 +34,10 @@ path and is not a bug.
 """
 
 import json
-import numpy as np
 import os
 from typing import Any, Dict, Iterator
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, Turn

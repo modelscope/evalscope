@@ -2,8 +2,9 @@ import json
 from argparse import Namespace
 from difflib import get_close_matches
 from inspect import signature
-from pydantic import BaseModel, ConfigDict, SecretStr, ValidationError
 from typing import List, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, SecretStr, ValidationError
 
 from evalscope.utils.io_utils import json_to_dict, yaml_to_dict
 

@@ -41,6 +41,7 @@ class ImagePairMixin:
     @staticmethod
     def _load_pil_image(image: Any) -> Any:
         from io import BytesIO
+
         from PIL import Image
 
         from evalscope.utils.uri_utils import file_as_data

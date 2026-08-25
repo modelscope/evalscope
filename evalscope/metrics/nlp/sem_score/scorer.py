@@ -2,12 +2,13 @@
 Semantic scoring module that combines NLI, BERTScore, and phonetic similarity.
 """
 
+from typing import Any, List, Optional, Tuple
+
 import jellyfish
 import numpy as np
 import torch
 from bert_score import score as bert_score
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
-from typing import Any, List, Optional, Tuple
 
 BERT_SCORE_BOUNDS = [-0.1180, 1]
 PHONETIC_SCORE_BOUNDS = [0.5, 1]

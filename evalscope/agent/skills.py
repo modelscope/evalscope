@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 import shlex
-import yaml
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List
+
+import yaml
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from evalscope.api.agent import AgentEnvironment

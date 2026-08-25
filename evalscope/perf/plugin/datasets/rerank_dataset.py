@@ -4,9 +4,10 @@ This plugin provides datasets suitable for rerank model performance testing.
 """
 
 import json
-import numpy as np
 import os
 from typing import Dict, Iterator, List
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

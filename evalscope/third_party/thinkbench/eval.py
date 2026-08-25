@@ -1,14 +1,15 @@
 import json
 import os
-import pandas as pd
-import plotly.graph_objects as go
 import re
 from collections import defaultdict
 from functools import lru_cache
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
+import plotly.graph_objects as go
 from modelscope import AutoTokenizer
 from plotly.subplots import make_subplots
 from tqdm.contrib.concurrent import thread_map
-from typing import Any, Dict, List, Optional
 
 from evalscope.third_party.thinkbench.tools.llm import request_url
 from evalscope.third_party.thinkbench.tools.utils import extract_answer

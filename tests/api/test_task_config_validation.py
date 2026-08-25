@@ -1,9 +1,10 @@
 """Tests for unknown-key rejection and the eval_batch_size default resolution."""
 
 import argparse
+from typing import Optional
+
 import pytest
 from pydantic import ValidationError
-from typing import Optional
 
 from evalscope.arguments import add_argument
 from evalscope.config import (

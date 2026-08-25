@@ -2,8 +2,9 @@ import ast
 import json
 import os
 import random
-import regex as re
 from typing import Union
+
+import regex as re
 
 from evalscope.utils.logger import get_logger
 

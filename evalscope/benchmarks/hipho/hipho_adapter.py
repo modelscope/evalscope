@@ -1,8 +1,9 @@
 # flake8: noqa: E501
 import json
 import os
-from pydantic import BaseModel, Field, create_model
 from typing import Any, Dict, List, Optional, Tuple
+
+from pydantic import BaseModel, Field, create_model
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import (
@@ -18,6 +19,7 @@ from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     ANSWER_JUDGE_PROMPT,
     CHINESE_PROMPT,

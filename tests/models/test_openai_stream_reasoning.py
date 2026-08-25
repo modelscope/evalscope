@@ -1,4 +1,5 @@
 import asyncio
+
 import pytest
 from openai.types.chat import ChatCompletionChunk
 

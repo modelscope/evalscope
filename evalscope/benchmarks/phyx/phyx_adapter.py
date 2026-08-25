@@ -16,6 +16,7 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
+
 from .utils import (
     OPTION_LABELS,
     VERDICT_CONTRACT,

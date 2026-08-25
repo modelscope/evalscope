@@ -14,8 +14,9 @@ known property of the benchmark, not an implementation difference.
 
 import os
 import re
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional, Tuple
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import DatasetDict, Sample
@@ -34,6 +35,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     CHAT_TASK_TO_CATEGORY,
     HF_REPO_ID,

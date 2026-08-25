@@ -12,6 +12,7 @@ import os
 from typing import Any, Dict, Optional
 
 from evalscope.utils.logger import get_logger
+
 from .engine import SandboxEngine, get_enclave_types
 
 logger = get_logger()

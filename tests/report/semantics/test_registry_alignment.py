@@ -9,10 +9,11 @@ These are policy gates, not behaviour tests. They fail in CI so the gap is visib
 added, and they deliberately do not change runtime behaviour: an undeclared metric still degrades to
 ``diagnostic.unspecified`` rather than aborting a run.
 """
-import pytest
 import re
 from pathlib import Path
 from typing import Dict, List, Set
+
+import pytest
 
 import evalscope  # noqa: F401  # imported for its registration side effects
 from evalscope.api.benchmark.adapters.text2image_adapter import T2I_REPORT_METRIC_NAMES

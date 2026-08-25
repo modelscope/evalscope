@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .types import MCPServerConfig, MCPServerConfigHTTP, MCPServerConfigSSE, MCPServerConfigStdio
 
 logger = get_logger()

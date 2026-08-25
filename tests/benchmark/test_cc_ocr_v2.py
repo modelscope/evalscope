@@ -6,8 +6,9 @@ cross-checked against the official ``src/evaluate_*.py`` scripts.
 """
 import json
 import os
-import pytest
 import tempfile
+
+import pytest
 
 from evalscope.benchmarks.cc_ocr_v2.cc_ocr_v2_adapter import _index_images
 from evalscope.benchmarks.cc_ocr_v2.utils import (

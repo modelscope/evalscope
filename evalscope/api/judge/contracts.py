@@ -5,8 +5,9 @@ and the parser that reads the reply -- so the two cannot drift apart. A reply th
 satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
 import json
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, List, Literal, Optional, Sequence, Type, get_args, get_origin
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ParseResult(BaseModel):

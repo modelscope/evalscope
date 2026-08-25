@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from evalscope.benchmarks.humaneval import utils as humaneval_utils

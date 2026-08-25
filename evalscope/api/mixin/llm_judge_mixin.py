@@ -1,7 +1,8 @@
 import threading
 from functools import lru_cache
-from pydantic import BaseModel, Field, create_model
 from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Type
+
+from pydantic import BaseModel, Field, create_model
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score

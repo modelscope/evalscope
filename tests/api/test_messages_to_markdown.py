@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText, messages_to_markdown
 

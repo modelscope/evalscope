@@ -1,8 +1,9 @@
 """Tests for workload_trace dataset plugin."""
 
 import json
-import numpy as np
 import os
+
+import numpy as np
 import pytest
 
 from evalscope.perf.arguments import Arguments

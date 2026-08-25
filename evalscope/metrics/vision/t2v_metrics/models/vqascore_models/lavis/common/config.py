@@ -7,8 +7,9 @@
 
 import json
 import logging
-from omegaconf import OmegaConf
 from typing import Dict
+
+from omegaconf import OmegaConf
 
 from ..common.registry import registry
 

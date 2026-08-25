@@ -2,15 +2,16 @@ import argparse
 import html
 import json
 import math
-import numpy as np
 import os
-import pandas as pd
 import re
 import unicodedata
 from collections import Counter
 from difflib import SequenceMatcher
-from shapely.geometry import Polygon
 from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+from shapely.geometry import Polygon
 
 
 def safe_div(a: float, b: float) -> float:

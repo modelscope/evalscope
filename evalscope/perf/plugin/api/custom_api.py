@@ -1,6 +1,7 @@
-import aiohttp
 import json
 from typing import Any, AsyncGenerator, Dict, List, Tuple, Union
+
+import aiohttp
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _sample_int_or_range

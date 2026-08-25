@@ -4,15 +4,16 @@ import copy
 import functools
 import json
 import time
-import torch  # type: ignore
 from concurrent.futures import Future
 from dataclasses import dataclass
 from logging import getLogger
-from modelscope import AutoModelForCausalLM, AutoTokenizer
 from queue import Empty, Queue
 from threading import Thread
-from torch import Tensor  # type: ignore
 from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, cast
+
+import torch  # type: ignore
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+from torch import Tensor  # type: ignore
 from typing_extensions import override
 
 from evalscope.api.messages import (

@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
+
 from .utils import (
     GRADE_CONTRACT,
     aggregate_official_scores,

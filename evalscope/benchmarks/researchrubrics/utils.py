@@ -1,6 +1,7 @@
 import json
-from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel, Field, model_validator
 
 from evalscope.api.judge import OutputContract
 

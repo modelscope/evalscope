@@ -6,8 +6,9 @@
 * ``TestPerfDiagnostics`` -- counts, cache and failure details carry no direction.
 """
 
-import pytest
 from typing import Dict, FrozenSet
+
+import pytest
 
 from evalscope.api.metric.semantics import MetricDirection, MetricKind
 from evalscope.metrics.semantics import attach_perf_semantics, format_perf_value, resolve_perf_semantics

@@ -1,4 +1,5 @@
 import os
+
 import torch
 from modelscope import AutoTokenizer
 from PIL import Image

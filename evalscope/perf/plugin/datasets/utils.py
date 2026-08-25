@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Callable, Dict, List, Optional, Tuple
+
+import numpy as np
 
 from evalscope.utils.logger import get_logger
 

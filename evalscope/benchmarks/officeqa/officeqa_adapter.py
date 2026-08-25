@@ -15,6 +15,7 @@ from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import DEFAULT_TOLERANCE, extract_final_answer, score_answer
 
 logger = get_logger()

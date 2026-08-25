@@ -1,6 +1,10 @@
 import json
 import re
 import time
+from collections import deque
+from copy import copy
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+
 from anthropic import APIStatusError
 from anthropic.types import (
     ContentBlock,
@@ -22,9 +26,6 @@ from anthropic.types import (
     ToolUseBlock,
     ToolUseBlockParam,
 )
-from collections import deque
-from copy import copy
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 from evalscope.api.messages import (
     ChatMessage,
