@@ -75,7 +75,7 @@ class CrossEncoderReranker(BaseReranker):
             self.model_name_or_path,
             trust_remote_code=True,
             max_length=self.max_seq_length,
-            automodel_args=_model_kwargs,
+            model_kwargs=_model_kwargs,
         )
 
         # Ensure pad token is set

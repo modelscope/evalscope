@@ -269,7 +269,7 @@ judge={'strategy': 'llm_recall', 'models': {
 
 **Q: 压测结果如何可视化？**
 
-**A:** `perf` 子命令的结果不适用于 `evalscope service`。但支持通过 `wandb` 或 `swanlab` 进行可视化。请参考[压测结果可视化指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6)。
+**A:** 使用包含 `perf` 结果的输出根目录（默认：`outputs/`）启动 `evalscope service`，然后在 Web Dashboard 中打开**性能测试**页面。也可以将结果发送到 `wandb`、`swanlab` 或 `clearml`。请参考[压测结果可视化指南](../user_guides/stress_test/quick_start.md#可视化测试结果)。
 
 ## 引用我们
 

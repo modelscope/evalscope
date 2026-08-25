@@ -13,6 +13,7 @@
 <a href="https://badge.fury.io/py/evalscope"><img src="https://badge.fury.io/py/evalscope.svg" alt="PyPI version" height="18"></a>
 <a href="https://pypi.org/project/evalscope"><img alt="PyPI - Downloads" src="https://static.pepy.tech/badge/evalscope"></a>
 <a href="https://github.com/modelscope/evalscope/pulls"><img src="https://img.shields.io/badge/PR-welcome-55EB99.svg"></a>
+<a href="https://github.com/modelscope/evalscope"><img alt="GitHub stars" src="https://img.shields.io/github/stars/modelscope/evalscope?style=flat&logo=github"></a>
 <a href='https://evalscope.readthedocs.io/en/latest/?badge=latest'><img src='https://readthedocs.org/projects/evalscope/badge/?version=latest' alt='Documentation Status' /></a>
 <p>
 
@@ -39,7 +40,7 @@ evalscope eval --model your-model-name --api-url $OPENAI_API_BASE_URL --api-key 
 - **🚀 Multi-backend Integration**: Seamlessly integrates multiple evaluation backends including OpenCompass, VLMEvalKit, RAGEval to meet different evaluation needs.
 - **🤖 Agent Evaluation Mode**: Drives benchmarks (e.g. GSM8K, AIME, SWE-bench Agentic) inside a controlled multi-turn AgentLoop with pluggable strategies, tools and Docker sandbox; full per-sample Agent Trace is recorded and visualizable.
 - **⚡ Inference Performance Testing**: Provides powerful model service stress testing tools, supporting multiple performance metrics such as TTFT, TPOT.
-- **📊 Interactive Reports**: Provides WebUI visualization interface, supporting multi-dimensional model comparison, report overview and detailed inspection.
+- **📊 Interactive Reports**: Provides a Web Dashboard for multi-dimensional model comparison, report overview and detailed inspection.
 - **⚔️ Arena Mode**: Supports multi-model battles (Pairwise Battle), intuitively ranking and evaluating models.
 - **🔧 Highly Extensible**: Developers can easily add custom datasets, models and evaluation metrics.
 
@@ -252,15 +253,15 @@ run_task(task_cfg="config.yaml")
 ### Output Results
 After evaluation completion, you will see a report in the terminal in the following format:
 ```text
-+-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
-| Model Name            | Dataset Name   | Metric Name     | Category Name   | Subset Name   |   Num |   Score |
-+=======================+================+=================+=================+===============+=======+=========+
-| Qwen2.5-0.5B-Instruct | gsm8k          | AverageAccuracy | default         | main          |     5 |     0.4 |
-+-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
-| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Easy      |     5 |     0.8 |
-+-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
-| Qwen2.5-0.5B-Instruct | ai2_arc        | AverageAccuracy | default         | ARC-Challenge |     5 |     0.4 |
-+-----------------------+----------------+-----------------+-----------------+---------------+-------+---------+
+┌───────────────────────┬───────────┬────────────┬───────────────┬───────┬─────────┐
+│ Model                 │ Dataset   │ Metric     │ Subset        │   Num │ Score   │
+├───────────────────────┼───────────┼────────────┼───────────────┼───────┼─────────┤
+│ Qwen2.5-0.5B-Instruct │ gsm8k     │ Accuracy ↑ │ main          │     5 │ 40%     │
+├───────────────────────┼───────────┼────────────┼───────────────┼───────┼─────────┤
+│ Qwen2.5-0.5B-Instruct │ arc       │ Accuracy ↑ │ ARC-Easy      │     5 │ 80%     │
+├───────────────────────┼───────────┼────────────┼───────────────┼───────┼─────────┤
+│ Qwen2.5-0.5B-Instruct │ arc       │ Accuracy ↑ │ ARC-Challenge │     5 │ 40%     │
+└───────────────────────┴───────────┴────────────┴───────────────┴───────┴─────────┘
 ```
 
 **Launch the visualization dashboard**:
@@ -346,7 +347,7 @@ EvalScope supports launching evaluation tasks through third-party evaluation fra
 
 2.  **Core Functions**
     - **Multi-backend Evaluation**: Native backend, OpenCompass, MTEB, VLMEvalKit, RAGAS
-    - **Performance Monitoring**: Supports multiple model service APIs and data formats, tracking TTFT/TPOP and other metrics
+    - **Performance Monitoring**: Supports multiple model service APIs and data formats, tracking TTFT/TPOT and other metrics
     - **Tool Extensions**: Integrates Tool-Bench, Needle-in-a-Haystack, etc.
 
 3.  **Output Layer**
@@ -391,7 +392,3 @@ If you use EvalScope in your research, please cite our work:
     url={https://github.com/modelscope/evalscope}
 }
 ```
-
-## ⭐ Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=modelscope/evalscope&type=Date)](https://star-history.com/#modelscope/evalscope&Date)

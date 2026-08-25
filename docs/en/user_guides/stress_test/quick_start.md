@@ -209,6 +209,15 @@ In multi-turn mode, two additional tables are output: **Per-Trace Metrics** (tra
 
 ## Visualizing Test Results
 
+### Web Dashboard
+
+The EvalScope Web Dashboard discovers performance test results under its output root. Start the service after the test completes, then open the **Performance** page:
+
+```bash
+pip install 'evalscope[service]' -U
+evalscope service --outputs outputs
+```
+
 ### Using WandB
 
 First, install wandb and obtain the corresponding [API Key](https://wandb.ai/settings):
@@ -278,4 +287,3 @@ Add the following parameters before starting the test:
 ```
 
 ![clearml sample](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/clearml_vis.jpg)
-
