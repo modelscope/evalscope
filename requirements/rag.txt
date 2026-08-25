@@ -8,7 +8,7 @@ modelscope[datasets]>=1.10.0
 mteb>=2.7.0,<3.0.0
 openai>=1.0.0
 ragas>=0.4.0,<0.5.0
-sentence-transformers>=3.0.0
+sentence-transformers>=5.4.0
 torch>=2.0.0
 unstructured
 webdataset>0.2.0

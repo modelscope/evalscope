@@ -60,8 +60,8 @@ class SentenceTransformerEncoder(BaseEncoder):
             encode_kwargs: Default kwargs for encode() calls.
             **kwargs: Extra keyword arguments (ignored).
         """
-        from sentence_transformers import models
-        from sentence_transformers.SentenceTransformer import SentenceTransformer
+        from sentence_transformers.sentence_transformer.model import SentenceTransformer
+        from sentence_transformers.sentence_transformer.modules import Pooling, Transformer
 
         # Resolve model path (download if needed)
         self.model_name_or_path = resolve_model_path(model_name_or_path, hub=hub, revision=revision)
@@ -88,13 +88,13 @@ class SentenceTransformerEncoder(BaseEncoder):
                 model_kwargs=_model_kwargs,
             )
         else:
-            word_embedding_model = models.Transformer(
+            word_embedding_model = Transformer(
                 self.model_name_or_path,
-                config_args=_config_kwargs,
-                model_args=_model_kwargs,
+                config_kwargs=_config_kwargs,
+                model_kwargs=_model_kwargs,
             )
-            pooling_model = models.Pooling(
-                word_embedding_model.get_word_embedding_dimension(),
+            pooling_model = Pooling(
+                word_embedding_model.get_embedding_dimension(),
                 pooling_mode=pooling_mode,
             )
             self.model = SentenceTransformer(modules=[word_embedding_model, pooling_model])
