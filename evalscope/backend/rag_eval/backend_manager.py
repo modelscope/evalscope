@@ -21,12 +21,15 @@ def require_sentence_transformers_logit_score(installed_version: str) -> None:
     sentence-transformers silently falls back to a randomly-initialized classification head
     and produces meaningless scores.
     """
-    from packaging.version import InvalidVersion, parse
+    from packaging.version import InvalidVersion, Version, parse
+
+    # Compare against the earliest 5.4.0 pre-release: dev/rc builds of 5.4.0 already ship
+    # LogitScore, and a two-component '5.4' must not be read as older than 5.4.0.
     try:
-        release = parse(installed_version).release
+        supported = parse(installed_version) >= Version('5.4.0.dev0')
     except InvalidVersion:
-        release = ()
-    if release < (5, 4, 0):
+        supported = False
+    if not supported:
         raise ImportError(
             f'sentence-transformers >= 5.4.0 is required (got {installed_version}). '
             'Generative (CausalLM-based) rerankers such as Qwen3-Reranker need the CrossEncoder '
