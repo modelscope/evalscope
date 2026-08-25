@@ -17,7 +17,7 @@ from io import BytesIO
 from PIL import Image
 from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union
 
-from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
+from evalscope.constants import BEIJING_TZ, DATASET_TRANSFORM_BATCH_SIZE, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -143,7 +143,11 @@ class OutputsStructure:
 # ---------------------------------------------------------------------------
 
 
-def undecode_media(dataset: 'Dataset', media_type: List[Literal['image', 'audio', 'video']]) -> 'Dataset':
+def undecode_media(
+    dataset: 'Dataset',
+    media_type: List[Literal['image', 'audio', 'video']],
+    batch_size: Optional[int] = None
+) -> 'Dataset':
     from datasets.features import Audio, Image, Sequence, Video
 
     if not isinstance(dataset, Dataset):
@@ -175,7 +179,7 @@ def undecode_media(dataset: 'Dataset', media_type: List[Literal['image', 'audio'
         return dataset
 
     # if there are updates, do casting
-    dataset = dataset.cast(features, batch_size=100)
+    dataset = dataset.cast(features, batch_size=batch_size or DATASET_TRANSFORM_BATCH_SIZE)
     return dataset
 
 

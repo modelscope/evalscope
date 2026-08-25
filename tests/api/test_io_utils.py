@@ -67,14 +67,11 @@ class TestArrowOffsetOverflow:
 
         # expected overflow with default batch size (1k)
         with pytest.raises(ValueError, match='offset'):
-            ds.cast(Features(images=Sequence(Image(decode=True))))
+            undecode_media(ds, media_type=['image'], batch_size=1000)
 
         # we cap len exactly as batch_size to make test faster
         # smaller batch size avoids the overflow
-        ds.select(range(batch_size)).cast(
-            Features(images=Sequence(Image(decode=True))),
-            batch_size=batch_size,
-        )
+        undecode_media(ds.select(range(batch_size)), media_type=['image'], batch_size=batch_size)
 
 
 class TestUndecodeMediaIntegration:
@@ -169,7 +166,7 @@ class TestUndecodeMediaIntegration:
                 assert media_feat.decode is False
 
         for other_col in non_media_data:
-            assert other_col in result.features, f"Column {other_col} missing"
+            assert other_col in result.features, f'Column {other_col} missing'
             assert result.features[other_col] == ds.features[other_col]
 
         original_row = ds.to_list()[0]
