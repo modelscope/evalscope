@@ -7,8 +7,9 @@ cannot fail independently and were removed. What remains pins the things no vali
 which baselines must exist, the key/``semantic_id`` correspondence, the naming convention, and the
 concrete direction / scale / unit choices.
 """
-import pytest
 from typing import List
+
+import pytest
 
 from evalscope.api.metric.semantics import MetricDirection, MetricDisplayKind, MetricSemantics
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES

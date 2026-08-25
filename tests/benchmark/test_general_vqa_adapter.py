@@ -1,9 +1,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-import pytest
 from io import BytesIO
 from pathlib import Path
+
+import pytest
 from PIL import Image as PILImage
 
 from evalscope.api.benchmark import BenchmarkMeta

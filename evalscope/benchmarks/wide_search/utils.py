@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
-import pandas as pd
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
+
+import pandas as pd
 
 from evalscope.api.metric import AggScore, SampleScore
 

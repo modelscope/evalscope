@@ -1,7 +1,8 @@
 import asyncio
-import numpy as np
 import time
 from typing import TYPE_CHECKING, List, Optional
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy

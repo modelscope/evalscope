@@ -5,13 +5,14 @@ importing from mteb directly (since it is an optional dependency).
 """
 from __future__ import annotations
 
-import numpy as np
 import os
-import torch
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
+import torch
 from numpy.typing import NDArray
 from torch import Tensor
-from typing import Any, Dict, List, Optional, Union
 
 # Type alias matching MTEB's Array type
 Array = Union[Tensor, NDArray[np.float32]]

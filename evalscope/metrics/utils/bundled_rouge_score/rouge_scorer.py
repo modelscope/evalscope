@@ -31,9 +31,10 @@ In these examples settings.xml lists input files and formats.
 from __future__ import absolute_import, division, print_function
 
 import collections
+import re
+
 import nltk
 import numpy as np
-import re
 import six
 from absl import logging
 from rouge_score import scoring, tokenizers

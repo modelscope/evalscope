@@ -32,6 +32,7 @@ from evalscope.api.messages import (
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolFunction
 from evalscope.utils.logger import get_logger
+
 from .translate_anthropic import unpack_tool_call
 
 logger = get_logger()

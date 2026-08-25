@@ -11,8 +11,9 @@ changing how a historical report is read. They also pin the ordering constraint 
 non-trivial: the ``hallusion_bench`` rule runs *after* the generic ``scope/metric`` split, so a
 scoped name keeps its scope instead of folding it into the level.
 """
-import pytest
 from typing import Optional
+
+import pytest
 
 from evalscope.metrics.semantics.identity import is_known_dynamic_legacy_name, migrate_legacy_identity
 

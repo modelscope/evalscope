@@ -1,10 +1,11 @@
 import json
 import os
-import pandas as pd
 import re
 from collections import defaultdict
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+
+import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing_extensions import Self
 
 from evalscope.api.metric import JudgeSummary

@@ -1,5 +1,6 @@
-import torch
 from typing import List
+
+import torch
 
 from ...constants import CACHE_DIR, CONTEXT_LEN, DEFAULT_IMAGE_TOKEN, IGNORE_INDEX, SYSTEM_MSG
 from .clip_t5.model import CLIPT5ForConditionalGeneration, ModelArguments

@@ -1,4 +1,5 @@
 import os
+
 from modelscope import snapshot_download
 
 LOCAL_FILES_ONLY_ENV = 'EVALSCOPE_T2V_LOCAL_FILES_ONLY'

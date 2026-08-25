@@ -11,8 +11,9 @@ Primary selection is intentionally separate and happens once per report through
 
 from enum import Enum
 from functools import lru_cache
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric.semantics import (
     DIAGNOSTIC_FALLBACK_SEMANTIC_ID,

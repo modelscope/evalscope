@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from pydantic import Field, field_validator, model_validator
 from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import Field, field_validator, model_validator
 
 from evalscope.utils.argument_utils import BaseArgument
 

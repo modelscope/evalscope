@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
 from typing import List
+
+import pytest
 
 from evalscope.api.evaluator import ReviewResult
 from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText

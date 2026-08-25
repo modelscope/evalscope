@@ -8,15 +8,16 @@
 import io
 import json
 import logging
-import numpy as np
 import os
-import pandas as pd
 import pickle
 import re
 import shutil
 import urllib
 import urllib.error
 import urllib.request
+
+import numpy as np
+import pandas as pd
 import yaml
 
 try:
@@ -24,10 +25,11 @@ try:
     from iopath.common.file_io import file_lock, g_pathmgr
 except ImportError:
     pass
-from torch.utils.model_zoo import tqdm
-from torchvision.datasets.utils import check_integrity, download_file_from_google_drive, extract_archive
 from typing import Optional
 from urllib.parse import urlparse
+
+from torch.utils.model_zoo import tqdm
+from torchvision.datasets.utils import check_integrity, download_file_from_google_drive, extract_archive
 
 from .registry import registry
 

@@ -11,6 +11,7 @@ from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import build_full_code, normalize_languages
 
 logger = get_logger()

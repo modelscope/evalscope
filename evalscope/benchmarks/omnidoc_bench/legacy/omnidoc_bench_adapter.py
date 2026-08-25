@@ -1,7 +1,8 @@
 import ast
 import json
-import numpy as np
 from typing import Any, Dict, List
+
+import numpy as np
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample

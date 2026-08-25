@@ -1,8 +1,9 @@
 import asyncio
 import os
+from typing import List
+
 from ragas.llms import BaseRagasLLM
 from ragas.prompt import PromptMixin, PydanticPrompt
-from typing import List
 
 from evalscope.utils.logger import get_logger
 

@@ -104,18 +104,11 @@ include = [
   "pyproject.toml",
   "evalscope/**/*.py",
   "tests/**/*.py",
-  # "examples/**/*.py",
-  # "scripts/**/*.py",
 ]
+extend-exclude = ["docs", "examples", "scripts"]
+force-exclude = true
 line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
-select = [
-  "I" # isort
-]
-
-[tool.ruff.format]
-quote-style = "single"
-indent-style = "space"
-line-ending = "auto"
+select = ["I"]

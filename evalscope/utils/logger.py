@@ -1,4 +1,3 @@
-import colorlog
 import logging
 import os
 import sys
@@ -6,6 +5,8 @@ from datetime import datetime
 from logging import Logger
 from types import ModuleType
 from typing import List, Optional
+
+import colorlog
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
 

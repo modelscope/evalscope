@@ -7,9 +7,10 @@ propagation).
 """
 
 import asyncio
-import pytest
 import subprocess
 from pathlib import Path
+
+import pytest
 
 from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external.helpers import extract_patch

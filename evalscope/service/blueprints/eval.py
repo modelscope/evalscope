@@ -1,14 +1,16 @@
 import json
 import os
+from typing import Any, Dict, List
+
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
-from typing import Any, Dict, List
 
 from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
 from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.utils.logger import get_logger
+
 from ..utils import (
     DEFAULT_MULTIMODAL_BENCHMARKS,
     DEFAULT_TEXT_BENCHMARKS,

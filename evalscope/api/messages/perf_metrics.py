@@ -11,8 +11,9 @@ requests have been collected.  It carries nested statistics by metric category
 for reporting.
 """
 from dataclasses import dataclass
-from pydantic import BaseModel, computed_field
 from typing import Optional
+
+from pydantic import BaseModel, computed_field
 
 
 class PerformanceMetrics(BaseModel):

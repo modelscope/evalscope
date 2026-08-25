@@ -1,7 +1,8 @@
 import copy
 import os
-from pydantic import BaseModel
 from typing import Any, Dict, List
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path

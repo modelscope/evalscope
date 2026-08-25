@@ -1,9 +1,11 @@
 import json
 import multiprocessing
-import numpy as np
 from collections import defaultdict
 
+import numpy as np
+
 from evalscope.utils.logger import get_logger
+
 from .pass_k_utils import compute_metrics_from_results
 
 logger = get_logger()

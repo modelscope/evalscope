@@ -4,8 +4,9 @@ A counting answer is a bare number, so a mis-parse produces a plausible-looking 
 silently corrupts the score instead of raising. These cases pin the parser and the two metrics.
 """
 import io
-from PIL import Image
 from typing import Any, Dict, List
+
+from PIL import Image
 
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.count_qa.count_qa_adapter import SYSTEM_PROMPT, parse_count

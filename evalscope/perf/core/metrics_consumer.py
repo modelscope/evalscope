@@ -1,8 +1,9 @@
 import asyncio
 import json
 import sqlite3
-from tqdm import tqdm as tqdm_std
 from typing import TYPE_CHECKING, Tuple
+
+from tqdm import tqdm as tqdm_std
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.perf.arguments import Arguments

@@ -8,6 +8,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import extract_hmmt_answer
 
 PROMPT_TEMPLATE = r"""

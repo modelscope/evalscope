@@ -10,6 +10,7 @@ from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
 from evalscope.utils.argument_utils import get_secret_value
+
 from .utils import (
     DEFAULT_AUTOMATION_BENCH_PACKAGE,
     DEFAULT_AUTOMATION_BENCH_VERIFIERS,

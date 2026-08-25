@@ -7,8 +7,9 @@ transport or adapter code.
 import math
 import statistics
 from collections import Counter, defaultdict
-from pydantic import BaseModel
 from typing import Any, Dict, Iterable, List, Optional, Sequence
+
+from pydantic import BaseModel
 
 from .types import JudgeObservation, PairwiseOutcome, PairwisePlacementOutcome
 

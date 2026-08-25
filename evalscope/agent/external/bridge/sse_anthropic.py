@@ -24,6 +24,7 @@ import uuid
 from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
+
 from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
 from .translate_anthropic import anthropic_usage_payload, map_stop_reason_to_anthropic, unpack_tool_call
 

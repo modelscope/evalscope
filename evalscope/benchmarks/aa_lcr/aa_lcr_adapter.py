@@ -2,8 +2,9 @@
 # flake8: noqa: E501
 import zipfile
 from pathlib import Path
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample

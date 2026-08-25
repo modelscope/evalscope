@@ -30,9 +30,10 @@ Example (share_gpt_*_multi_turn):
 """
 
 import json
-import numpy as np
 import os
 from typing import Any, Dict, Iterator, List
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, Turn

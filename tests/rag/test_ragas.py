@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import os
+
 import pytest
 from dotenv import dotenv_values
 

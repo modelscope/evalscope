@@ -7,14 +7,15 @@ direct filesystem access.
 import json
 import mimetypes
 import os
-import plotly.express as px
-import plotly.graph_objects as go
 import shutil
 from datetime import datetime
+from typing import List, Optional, Tuple
+
+import plotly.express as px
+import plotly.graph_objects as go
 from flask import Blueprint, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
-from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
@@ -49,6 +50,7 @@ from evalscope.utils.data_utils import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
+
 from ..utils import OUTPUT_DIR, active_task_ids
 
 logger = get_logger()

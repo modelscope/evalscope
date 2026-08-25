@@ -1,9 +1,10 @@
+from abc import abstractmethod
+from typing import List, TypedDict, Union
+
 import torch
 import torch.nn as nn
-from abc import abstractmethod
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from typing import List, TypedDict, Union
 
 from .constants import CACHE_DIR
 

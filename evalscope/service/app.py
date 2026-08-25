@@ -3,9 +3,11 @@
 import multiprocessing
 import os
 from datetime import datetime
+
 from flask import Flask, jsonify, send_from_directory
 
 from evalscope.utils.logger import get_logger
+
 from .blueprints import bp_eval, bp_perf, bp_reports
 from .utils import OUTPUT_DIR as _DEFAULT_ROOT
 

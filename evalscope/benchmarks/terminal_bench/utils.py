@@ -1,7 +1,8 @@
 import asyncio
+from typing import List
+
 from harbor.llms.base import BaseLLM, LLMResponse, UsageInfo
 from pydantic import BaseModel, ConfigDict, PrivateAttr
-from typing import List
 
 from evalscope.api.messages.chat_message import dict_to_chat_message
 from evalscope.api.messages.perf_metrics import PerformanceMetrics

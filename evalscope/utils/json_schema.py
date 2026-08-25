@@ -4,7 +4,6 @@ from copy import deepcopy
 from dataclasses import is_dataclass
 from datetime import date, datetime, time
 from enum import EnumMeta
-from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import (
     Any,
     Dict,
@@ -21,6 +20,8 @@ from typing import (
     get_type_hints,
     is_typeddict,
 )
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 JSONType = Literal['string', 'integer', 'number', 'boolean', 'array', 'object', 'null']
 """Valid types within JSON schema."""

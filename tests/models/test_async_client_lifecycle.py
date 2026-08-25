@@ -1,6 +1,7 @@
 import asyncio
-import pytest
 from typing import Any, Callable, List
+
+import pytest
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, Model, ModelAPI, ModelOutput

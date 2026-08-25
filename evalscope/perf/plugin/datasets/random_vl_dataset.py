@@ -1,6 +1,7 @@
 import random
-from PIL import Image, ImageDraw
 from typing import Dict, Iterator, List, Optional
+
+from PIL import Image, ImageDraw
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin

@@ -11,6 +11,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import CATEGORY_IDS, CATEGORY_NAMES, DATA_FILE, build_qa_prompt, get_target_answer, locomo_f1_score
 
 

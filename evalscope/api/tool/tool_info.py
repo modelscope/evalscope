@@ -1,8 +1,9 @@
 import inspect
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
+
 from docstring_parser import Docstring, parse
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
 
 from evalscope.utils.json_schema import JSONSchema, JSONType, json_schema, python_type_to_json_type
 

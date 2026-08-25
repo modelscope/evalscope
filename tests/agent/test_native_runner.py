@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import pytest
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 from evalscope.agent.runner import run_native_agent
 from evalscope.agent.tools.bash import BASH_TOOL_INFO

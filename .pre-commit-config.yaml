@@ -15,14 +15,10 @@ repos:
                 evalscope/metrics/vision/t2v_metrics
             )
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
     rev: v0.16.4
     hooks:
-      # Run the linter.
       - id: ruff-check
-        args: [ --fix ]
-      # Run the formatter.
-      # - id: ruff-format
+        args: [--fix]
   - repo: https://github.com/google/yapf
     rev: v0.43.0
     hooks:

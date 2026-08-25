@@ -5,8 +5,9 @@ Dataset-provided histories (e.g. general_fc) carry tool call ids like
 constraint and repeat across turns. The conversion layer must rewrite them
 while preserving tool_use/tool_result pairing.
 """
-import pytest
 import re
+
+import pytest
 
 from evalscope.api.messages import ChatMessageAssistant, ChatMessageTool, ChatMessageUser
 from evalscope.api.tool import ToolCall, ToolFunction

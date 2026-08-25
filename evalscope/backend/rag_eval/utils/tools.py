@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+
 from modelscope import snapshot_download
 
 from evalscope.utils.logger import get_logger

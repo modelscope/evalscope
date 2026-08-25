@@ -15,6 +15,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from evalscope.utils.io_utils import current_time
+
 from . import (
     BENCHMARK_META_DIR,
     BENCHMARK_README_DIR_EN,
@@ -300,6 +301,7 @@ def update_benchmark_data(
         Updated benchmark data dict
     """
     from concurrent.futures import ThreadPoolExecutor, as_completed
+
     from tqdm import tqdm
 
     from evalscope.api.registry import BENCHMARK_REGISTRY

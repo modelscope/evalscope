@@ -1,6 +1,7 @@
 import json
-from tqdm import tqdm
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union, cast
+
+from tqdm import tqdm
 
 from .dataset import Dataset, FieldSpec, Sample
 

@@ -1,8 +1,9 @@
 import json
-import pytest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
+
+import pytest
 
 from evalscope.api.dataset import DictDataLoader
 from evalscope.api.metric import MetricSelector, SampleScore, Score

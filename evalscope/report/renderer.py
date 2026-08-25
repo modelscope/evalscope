@@ -1,7 +1,8 @@
 import os
-import pandas as pd
 import re
 from typing import Dict, List, Optional
+
+import pandas as pd
 
 from evalscope.api.metric.semantics import MetricKind
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL

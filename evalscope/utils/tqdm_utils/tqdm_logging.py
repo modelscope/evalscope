@@ -1,8 +1,9 @@
 import logging
 import time
+from typing import Optional
+
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
-from typing import Optional
 
 from .progress_tracker import ProgressTracker
 

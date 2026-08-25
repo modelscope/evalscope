@@ -1,7 +1,8 @@
 import json
+from typing import Any, Dict, Iterator, List, Optional
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

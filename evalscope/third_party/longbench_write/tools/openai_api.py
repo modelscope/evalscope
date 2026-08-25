@@ -1,13 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-import requests
 import threading
 import time
 from asyncio import Queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from tqdm import tqdm
 from typing import Dict, List, Optional, Union
+
+import requests
+from tqdm import tqdm
 
 from evalscope.utils.logger import get_logger
 

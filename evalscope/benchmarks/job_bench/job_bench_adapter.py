@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, Field
 
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.agent.tools.python_exec import PYTHON_EXEC_TOOL_INFO, run_python_exec
@@ -29,6 +30,7 @@ from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import HubType, ScoringPolicy, Tags
 from evalscope.utils.import_utils import is_build_doc
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     SANDBOX_OUTPUT_DIR,
     SANDBOX_REFERENCE_DIR,

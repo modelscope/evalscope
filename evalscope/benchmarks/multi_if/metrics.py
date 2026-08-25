@@ -14,6 +14,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.utils import get_logger
+
 from . import ifeval
 
 logger = get_logger()

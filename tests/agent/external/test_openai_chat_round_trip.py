@@ -7,9 +7,10 @@ of any specific OpenAI SDK version. Covers JSON mode, SSE streaming, the
 
 import asyncio
 import json
-import pytest
 import urllib.error
 import urllib.request
+
+import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.messages import ChatMessageAssistant, ContentReasoning, ContentText

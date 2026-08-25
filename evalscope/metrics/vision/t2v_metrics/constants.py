@@ -1,4 +1,5 @@
 import os
+
 from modelscope.utils.file_utils import get_model_cache_root
 
 CACHE_DIR = get_model_cache_root()

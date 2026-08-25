@@ -13,6 +13,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 

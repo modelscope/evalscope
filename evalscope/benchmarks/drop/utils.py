@@ -1,7 +1,8 @@
-import numpy as np
 import re
 import string
 from typing import List
+
+import numpy as np
 
 _ARTICLES = re.compile(r'\b(a|an|the)\b', re.UNICODE)
 

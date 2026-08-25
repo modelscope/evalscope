@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+from pydantic import BaseModel, Field
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
@@ -28,6 +29,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.import_utils import check_import
+
 from .utils import (
     EVAL_COLUMN_PROMPT,
     METRIC_NAMES,

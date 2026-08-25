@@ -2,6 +2,7 @@
 """Unit tests for the refactored LLM rich display tables."""
 import io
 import unittest
+
 from rich.console import Console
 
 from evalscope.metrics.semantics import format_perf_value

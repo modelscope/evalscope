@@ -1,7 +1,8 @@
+from typing import List
+
 import torch
 from modelscope import AutoProcessor
 from transformers import CLIPConfig
-from typing import List
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel

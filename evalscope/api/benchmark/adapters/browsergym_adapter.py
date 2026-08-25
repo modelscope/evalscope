@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import numpy as np
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from PIL import Image
 from typing import Any, Dict, Optional
+
+import numpy as np
+from PIL import Image
 
 from evalscope.agent.strategies.function_calling import FunctionCallingStrategy
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType, NativeAgentConfig, ToolExecutionOutput
@@ -22,6 +23,7 @@ from evalscope.api.tool import ToolCall
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .agent_adapter import AgentLoopAdapter
 
 # BrowserGym owns Playwright objects that must be created, used and closed on

@@ -3,7 +3,6 @@ import os
 import shutil
 import tarfile
 import uuid
-import yaml
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +10,8 @@ from functools import lru_cache
 from inspect import signature
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+import yaml
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.dataset import DatasetHub

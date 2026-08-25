@@ -36,11 +36,12 @@ Metric definitions (per trace):
 """
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Dict, List
+
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 from tabulate import tabulate
-from typing import TYPE_CHECKING, Dict, List
 
 from evalscope.metrics.semantics import format_perf_value
 

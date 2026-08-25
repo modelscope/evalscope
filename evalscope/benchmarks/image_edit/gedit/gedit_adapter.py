@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import os
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, ImageEditAdapter
 from evalscope.api.dataset import Sample

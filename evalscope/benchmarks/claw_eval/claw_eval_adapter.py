@@ -19,6 +19,7 @@ from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, JudgeStrat
 from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     DEFAULT_CLAW_EVAL_DATASET_ID,
     DEFAULT_CLAW_EVAL_PACKAGE,

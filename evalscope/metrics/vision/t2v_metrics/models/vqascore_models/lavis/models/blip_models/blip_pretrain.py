@@ -5,9 +5,10 @@
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 
+from copy import deepcopy
+
 import torch
 import torch.nn.functional as F
-from copy import deepcopy
 from torch import nn
 
 from ...common.registry import registry

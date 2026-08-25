@@ -8,9 +8,10 @@
 import datetime
 import logging
 import time
+from collections import defaultdict, deque
+
 import torch
 import torch.distributed as dist
-from collections import defaultdict, deque
 
 from . import dist_utils
 

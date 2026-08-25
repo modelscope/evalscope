@@ -1,12 +1,13 @@
 import math
 import multiprocessing
-import numpy as np
 import os
 import re
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from multiprocessing.context import BaseContext
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase

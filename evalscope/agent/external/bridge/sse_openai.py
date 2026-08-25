@@ -25,6 +25,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall
+
 from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
 from .translate_openai import _split_text_and_reasoning, map_stop_reason_to_openai, unpack_openai_tool_call
 

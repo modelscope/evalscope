@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-from pydantic import BaseModel, ConfigDict
 from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
@@ -16,6 +17,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolCall, ToolInfo
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .metadata import DATASET_ID, DEFAULT_MCP_SERVER_URL, DEFAULT_SYSTEM_PROMPT, DESCRIPTION, EXTRA_PARAMS
 from .utils import (
     MCPAtlasClient,

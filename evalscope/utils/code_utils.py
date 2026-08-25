@@ -8,8 +8,9 @@ This module provides:
 
 import re
 from enum import Enum
-from pydantic import BaseModel
 from typing import List, Literal, Optional, Tuple
+
+from pydantic import BaseModel
 
 from evalscope.utils.logger import get_logger
 

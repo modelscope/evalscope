@@ -1,7 +1,8 @@
-import numpy as np
 import random
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+
+import numpy as np
 
 from evalscope.utils.import_utils import check_import
 

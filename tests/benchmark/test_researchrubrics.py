@@ -1,10 +1,11 @@
 import asyncio
 import json
-import pytest
 from collections import deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from evalscope.agent.environments.local import TemporaryLocalAgentEnvironment
 from evalscope.api.agent import NativeAgentConfig

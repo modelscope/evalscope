@@ -24,6 +24,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
+
 from ._observation import SUBMIT_SENTINEL, check_sentinel, format_exec_observation, is_terminal_sandbox_error
 
 # The completion channel is the sentinel printed by bash, not a submit tool, so

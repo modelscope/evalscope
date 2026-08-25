@@ -4,6 +4,8 @@ import re
 import time
 from collections import defaultdict
 from copy import copy
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+
 from openai import APIStatusError, OpenAIError
 from openai.types.chat import (
     ChatCompletion,
@@ -31,7 +33,6 @@ from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.completion_usage import CompletionUsage
 from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import JsonValue
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from evalscope.api.messages import (
     ChatMessage,

@@ -1,10 +1,11 @@
-import aiohttp
 import asyncio
 import gc
-import pytest
 from types import SimpleNamespace
 from typing import Any, Iterator
 from unittest.mock import AsyncMock
+
+import aiohttp
+import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
 from evalscope.api.model import GenerateConfig

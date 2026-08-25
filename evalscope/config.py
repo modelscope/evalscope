@@ -4,8 +4,9 @@ import copy
 import json
 import os
 from argparse import Namespace
-from pydantic import ConfigDict, Field, SecretStr, field_validator, model_validator
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+
+from pydantic import ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig

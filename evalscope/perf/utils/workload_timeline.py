@@ -29,9 +29,10 @@ Per-point fields:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, List, Optional
+
 from pydantic import BaseModel, Field
 from tabulate import tabulate
-from typing import TYPE_CHECKING, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.utils.perf_constants import Metrics

@@ -13,9 +13,10 @@ per-sample breakdowns while aggregate statistics are always computed at the
 request granularity.
 """
 import math
-import pandas as pd
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 from evalscope.api.messages.perf_metrics import PerformanceMetrics, PerfSummary
 from evalscope.utils.function_utils import thread_safe

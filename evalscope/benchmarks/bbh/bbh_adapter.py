@@ -9,6 +9,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .cot_prompts import COT_PROMPTS
 
 logger = get_logger()

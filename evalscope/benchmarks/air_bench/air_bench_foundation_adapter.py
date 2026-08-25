@@ -17,6 +17,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     FOUNDATION_SUBSET_TO_CATEGORY,
     HF_REPO_ID,

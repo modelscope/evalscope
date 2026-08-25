@@ -1,7 +1,8 @@
 # flake8: noqa: E501
 import base64
-from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -12,6 +13,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import build_judge_prompt
 
 logger = get_logger()

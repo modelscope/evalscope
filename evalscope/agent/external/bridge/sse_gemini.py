@@ -29,6 +29,7 @@ import json
 from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
+
 from .translate_gemini import model_output_to_gemini_response
 
 

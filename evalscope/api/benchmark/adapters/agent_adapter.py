@@ -24,6 +24,7 @@ from evalscope.api.agent import AgentLoopResult, NativeAgentConfig
 from evalscope.api.evaluator import InferenceResult
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.registry import get_strategy, resolve_tool_infos, resolve_tools
+
 from .default_data_adapter import DefaultDataAdapter
 
 if TYPE_CHECKING:

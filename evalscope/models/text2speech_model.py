@@ -2,10 +2,11 @@ import base64
 import json
 import os
 import re
-import requests
 import time
 import uuid
 from typing import Any, Dict, Iterable, List, Optional
+
+import requests
 
 from evalscope.api.messages import ChatMessage, ContentAudio
 from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, ModelOutput

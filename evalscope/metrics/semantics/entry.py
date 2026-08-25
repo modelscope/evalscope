@@ -7,8 +7,9 @@ the dependency runs one way only (contract <- data), which is why nothing here n
 import.
 """
 
-from pydantic import BaseModel, ConfigDict
 from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, ConfigDict
 
 from evalscope.api.metric.semantics import MetricDirection, MetricSemantics, ValueRange
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES

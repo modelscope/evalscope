@@ -1,12 +1,13 @@
 import json
 import sys
+from typing import Any, Callable, Dict, List, Optional, Sequence
+
 import tau2.utils.llm_utils as tau_llm_utils
 from tau2.data_model.message import AssistantMessage, Message, ToolCall
 from tau2.data_model.tasks import Task
 from tau2.environment.tool import Tool
 from tau2.run import run_task
 from tau2.utils.llm_utils import to_litellm_messages
-from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import InferenceResult

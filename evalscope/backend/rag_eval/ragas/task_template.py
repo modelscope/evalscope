@@ -21,6 +21,7 @@ def import_metric(metric_name: str):
     # Try as ragas built-in first
     try:
         import re
+
         from ragas import metrics as ragas_metrics
 
         # Build candidate names: exact, snake_case, lowercase

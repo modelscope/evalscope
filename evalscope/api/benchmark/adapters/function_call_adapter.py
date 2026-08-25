@@ -22,6 +22,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.model.model import Model, ModelOutput
 from evalscope.api.tool import ToolCall
 from evalscope.utils.logger import get_logger
+
 from .agent_adapter import AgentAdapter
 
 logger = get_logger()

@@ -1,7 +1,8 @@
-import aiohttp
 import asyncio
 import time
 from typing import TYPE_CHECKING, Any
+
+import aiohttp
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body

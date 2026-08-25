@@ -1,7 +1,8 @@
 """Pydantic configs for MCP servers attached via ``NativeAgentConfig.mcp_servers``."""
 
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Annotated, Dict, List, Literal, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class _MCPServerConfigBase(BaseModel):

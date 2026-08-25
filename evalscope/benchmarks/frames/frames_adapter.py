@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
@@ -143,6 +144,7 @@ class FramesAdapter(DefaultDataAdapter):
         Calculate accuracy score by matching prediction with reference.
         """
         from evalscope.metrics import exact_match
+
         from .utils import normalize_answer
 
         score = Score(

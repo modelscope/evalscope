@@ -1,7 +1,8 @@
 import json
 import os
-import torch
 from itertools import product
+
+import torch
 
 from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkEvalConfig
 from evalscope.backend.rag_eval.clip_benchmark.dataset_builder import (

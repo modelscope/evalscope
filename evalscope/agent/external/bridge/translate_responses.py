@@ -37,6 +37,7 @@ from evalscope.api.messages import (
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils.logger import get_logger
+
 from .translate_openai import (
     _parse_tool_arguments,
     _safe_tool_params,

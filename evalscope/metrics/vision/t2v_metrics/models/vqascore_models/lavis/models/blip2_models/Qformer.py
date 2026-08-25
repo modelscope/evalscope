@@ -10,11 +10,13 @@
 
 import math
 import os
+import warnings
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple
+
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
-import warnings
-from dataclasses import dataclass
 from torch import Tensor, device, dtype, nn
 from torch.nn import CrossEntropyLoss
 from transformers.activations import ACT2FN
@@ -34,7 +36,6 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.models.bert.configuration_bert import BertConfig
 from transformers.pytorch_utils import apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer
 from transformers.utils import logging
-from typing import Any, Dict, Optional, Tuple
 
 logger = logging.get_logger(__name__)
 

@@ -16,6 +16,7 @@ from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.identity import canonicalize_producer_identity
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()

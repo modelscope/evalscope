@@ -14,10 +14,11 @@
 """Utility library of instructions."""
 
 import functools
-import nltk
 import os
 import random
 import re
+
+import nltk
 
 from evalscope.utils.resource_utils import check_nltk_data
 

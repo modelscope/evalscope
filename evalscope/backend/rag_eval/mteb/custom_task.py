@@ -6,11 +6,12 @@ instances from user-provided local data in JSONL format.
 """
 import json
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Union
+
 from datasets import DatasetDict
 from mteb import TaskMetadata
 from mteb.abstasks import AbsTaskRetrieval
-from pathlib import Path
-from typing import Any, Dict, List, Union
 
 from evalscope.utils.logger import get_logger
 

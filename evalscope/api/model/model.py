@@ -1,14 +1,16 @@
 import abc
 import asyncio
 from functools import partial
-from pydantic_core import to_jsonable_python
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Literal, Optional, Sequence, Union
+
+from pydantic_core import to_jsonable_python
 
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser
 from evalscope.api.registry import get_model_api
 from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.function_utils import thread_safe
+
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 

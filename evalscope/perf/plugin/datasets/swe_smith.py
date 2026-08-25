@@ -23,9 +23,10 @@ This plugin supports two data-source modes:
 
 import json
 import multiprocessing
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+
 import numpy as np
 from tqdm import tqdm
-from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _get_range_upper

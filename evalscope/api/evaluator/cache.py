@@ -1,8 +1,9 @@
 import copy
 import os
 import uuid
-from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Any, Dict, List, Optional, Tuple
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
@@ -11,6 +12,7 @@ from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.utils.io_utils import JsonlWriter, OutputsStructure, convert_normal_types, jsonl_to_list
 from evalscope.utils.logger import get_logger
+
 from .state import TaskState
 
 logger = get_logger()

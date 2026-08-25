@@ -1,8 +1,9 @@
 import json
 import math
-import pytest
 from types import SimpleNamespace
 from typing import Any
+
+import pytest
 
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.metric import Score

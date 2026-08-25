@@ -1,4 +1,5 @@
 import argparse
+
 import pytest
 
 from evalscope.cli.start_service import existing_directory

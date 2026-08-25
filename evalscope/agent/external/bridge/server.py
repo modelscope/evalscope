@@ -12,15 +12,17 @@ import json
 import threading
 import time
 import uuid
-from aiohttp import web
 from contextlib import asynccontextmanager
 from enum import Enum
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Optional
 from urllib.parse import urlsplit, urlunsplit
 
+from aiohttp import web
+
 from evalscope.api.model import GenerateConfig, Model
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, cancel_and_wait
 from evalscope.utils.logger import get_logger
+
 from ..runners.base import BridgeEndpoint
 from .sse_anthropic import stream_anthropic_response
 from .sse_gemini import stream_gemini_response

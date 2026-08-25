@@ -1,8 +1,9 @@
 import asyncio
-import pytest
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import AsyncGenerator
+
+import pytest
 
 from evalscope.utils import asyncio_runtime
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait

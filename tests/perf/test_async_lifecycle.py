@@ -1,8 +1,9 @@
 import asyncio
-import pytest
-from aiohttp import web
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, List, Tuple
+
+import pytest
+from aiohttp import web
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import run_benchmark

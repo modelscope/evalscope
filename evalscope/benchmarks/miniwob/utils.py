@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import csv
 import inspect
-import numpy as np
 import os
 import shutil
 import tarfile
@@ -13,6 +12,8 @@ import tempfile
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 from evalscope.api.tool import ToolInfo
 from evalscope.api.tool.tool_info import ToolParams

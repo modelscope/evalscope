@@ -9,6 +9,7 @@ from evalscope.utils.multi_choices import (
     prompt,
     valid_template,
 )
+
 from .default_data_adapter import DefaultDataAdapter
 
 

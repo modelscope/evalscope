@@ -1,8 +1,9 @@
 import os
 from itertools import product
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
+
 from pydantic import BaseModel, Field
 from tqdm import tqdm
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records, resolve_snapshot_or_local_path
@@ -377,6 +378,7 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
     ) -> Score:
         """Calculate evaluation scores by comparing prediction with reference."""
         from evalscope.metrics import exact_match
+
         from .utils import normalize_answer
 
         score = Score(

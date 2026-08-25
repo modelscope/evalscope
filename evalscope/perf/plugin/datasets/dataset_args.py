@@ -12,8 +12,9 @@ This module must NOT import any dataset plugin module (they import
 safe because it has no such dependency.
 """
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from evalscope.perf.multi_turn_args import MultiTurnArgs
 

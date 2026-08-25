@@ -7,6 +7,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.agent import AgentEnvironment
+
     from .base import ExternalAgentTask
 
 logger = get_logger()

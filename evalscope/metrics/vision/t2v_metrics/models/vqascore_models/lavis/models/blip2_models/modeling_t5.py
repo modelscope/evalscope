@@ -16,8 +16,10 @@
 import copy
 import math
 import os
-import torch
 import warnings
+from typing import Optional, Tuple, Union
+
+import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss
 from torch.utils.checkpoint import checkpoint
@@ -41,7 +43,6 @@ from transformers.utils import (
     replace_return_docstrings,
 )
 from transformers.utils.model_parallel_utils import assert_device_map, get_device_map
-from typing import Optional, Tuple, Union
 
 logger = logging.get_logger(__name__)
 
@@ -70,8 +71,9 @@ T5_PRETRAINED_MODEL_ARCHIVE_LIST = [
 def load_tf_weights_in_t5(model, config, tf_checkpoint_path):
     """Load tf checkpoints in a pytorch model."""
     try:
-        import numpy as np
         import re
+
+        import numpy as np
         import tensorflow as tf
     except ImportError:
         logger.error(

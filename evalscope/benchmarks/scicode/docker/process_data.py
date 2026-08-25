@@ -14,9 +14,10 @@
 # Modifications have been made by xantheocracy, 2024.
 # Original source: https://github.com/scicode-bench/SciCode/blob/main/src/scicode/parse/parse.py
 
+from typing import Any, TypeAlias
+
 import scipy  # type: ignore
 from h5py import Dataset, File, Group  # type: ignore
-from typing import Any, TypeAlias
 
 H5PY_FILE = '/workspace/test_data.h5'
 

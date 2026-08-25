@@ -3,8 +3,9 @@
 import hashlib
 import json
 import re
-from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta

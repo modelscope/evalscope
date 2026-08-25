@@ -1,20 +1,21 @@
 import base64
 import csv
-import filetype
 import hashlib
 import io
 import json
-import jsonlines as jsonl
-import numpy as np
 import os
 import re
 import string
 import unicodedata
-import yaml
 from datetime import datetime
 from io import BytesIO
-from PIL import Image
 from typing import IO, Any, Dict, List, Optional, Tuple, Union
+
+import filetype
+import jsonlines as jsonl
+import numpy as np
+import yaml
+from PIL import Image
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, DumpMode
 from evalscope.utils.logger import get_logger

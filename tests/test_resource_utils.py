@@ -1,9 +1,10 @@
-import pytest
 import sys
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Iterator
+
+import pytest
 
 from evalscope.utils import resource_utils
 

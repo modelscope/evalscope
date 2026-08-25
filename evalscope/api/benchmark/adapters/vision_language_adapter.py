@@ -10,6 +10,7 @@ from evalscope.utils.media_utils import (
     guess_audio_format,
     guess_video_format,
 )
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import importlib
 import time
-import torch
 from logging import getLogger
 from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, cast
+
+import torch
 
 from evalscope.api.messages import (
     ChatMessage,

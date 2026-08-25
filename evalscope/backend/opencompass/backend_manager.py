@@ -109,6 +109,7 @@ class OpenCompassBackendManager(BackendManager):
     @staticmethod
     def list_datasets(return_details: bool = False):
         from dataclasses import dataclass
+
         from opencompass.utils.run import get_config_from_arg
 
         @dataclass

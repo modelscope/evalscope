@@ -116,6 +116,7 @@ class EnclaveCodeExecutionBackend(CodeExecutionBackend):
     def execute(self, code: Union[str, List[str]], timeout: int, language: str) -> Dict[str, Any]:
         import asyncio
         import concurrent.futures as cf
+
         from ms_enclave.sandbox.model import ExecutionStatus
 
         async def _execute_async():

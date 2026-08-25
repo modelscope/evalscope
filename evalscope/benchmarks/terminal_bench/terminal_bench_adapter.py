@@ -164,9 +164,8 @@ class _TerminalBenchBase(AgentAdapter):
         return Sample(input='', metadata=record)
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
-        from harbor.models.trial.config import AgentConfig, EnvironmentConfig
+        from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TrialConfig, VerifierConfig
         from harbor.models.trial.config import TaskConfig as TrialTaskConfig
-        from harbor.models.trial.config import TrialConfig, VerifierConfig
         from harbor.trial.trial import Trial
 
         from .utils import HarborLLM

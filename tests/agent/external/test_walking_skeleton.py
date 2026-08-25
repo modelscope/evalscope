@@ -13,8 +13,9 @@ Also covers:
   event sequence is parseable by the official ``anthropic`` client.
 """
 
-import anthropic
 import asyncio
+
+import anthropic
 import pytest
 
 from evalscope.agent.external import ExternalAgentConfig

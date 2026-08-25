@@ -1,7 +1,8 @@
 """A sample may carry no value for a metric (an unparseable LLM judge is excluded rather
 than scored 0), so aggregators must never index every sample with ``scores[0]``' keys."""
-import pytest
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 from evalscope.api.metric import SampleScore, Score
 from evalscope.metrics.aggregators import Mean, MeanPassAtK, MeanPassHatK, MeanVoteAtK

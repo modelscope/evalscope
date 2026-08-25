@@ -1,7 +1,8 @@
+from typing import Dict, List, Optional
+
 import pandas as pd
 import pytest
 from pydantic import ValidationError
-from typing import Dict, List, Optional
 
 from evalscope.api.judge import summarize_judge_runs
 from evalscope.api.metric import AggScore, JudgeSummary, SampleScore, Score

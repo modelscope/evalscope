@@ -9,6 +9,7 @@ from evalscope.api.benchmark import BenchmarkMeta, BrowserGymAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import (
     BROWSER_ACTION_TOOL_INFO,
     MINIWOB_MAX_STEPS,

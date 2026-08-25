@@ -6,6 +6,7 @@ import zipfile
 
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR
 from evalscope.utils.function_utils import thread_safe
+
 from .spotting_eval import rrc_evaluation_funcs_1_1 as rrc_evaluation_funcs
 from .spotting_eval.script import default_evaluation_params, evaluate_method, validate_data
 

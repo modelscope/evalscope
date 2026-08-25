@@ -1,10 +1,11 @@
 import os
+from typing import List, Union
+
 import torch
 import torch.nn.functional as F
 from langchain_core.embeddings import Embeddings
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
-from typing import List, Union
 
 from evalscope.backend.rag_eval.utils.tools import PIL_to_base64, download_model
 from evalscope.constants import HubType

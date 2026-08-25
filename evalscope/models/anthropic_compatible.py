@@ -1,8 +1,9 @@
 import os
 import time
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from anthropic import Anthropic, APIStatusError, AsyncAnthropic, BadRequestError, PermissionDeniedError
 from anthropic.types import Message
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -11,6 +12,7 @@ from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.function_utils import async_retry_call, retry_call
+
 from .utils.anthropic import (
     anthropic_chat_messages,
     anthropic_chat_tool_choice,

@@ -3,8 +3,9 @@ import io
 import math
 import mimetypes
 import os
-from PIL import Image
 from typing import Any, Dict, List, Optional
+
+from PIL import Image
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
