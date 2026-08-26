@@ -72,6 +72,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
 | `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
+| `hmmt_nov25` | [HMMT-Nov-2025](../../benchmarks/hmmt_nov25.md) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` |
 | `humaneval_plus` | [HumanEvalPlus](../../benchmarks/humaneval_plus.md) | `Coding` |
 | `ifbench` | [IFBench](../../benchmarks/ifbench.md) | `InstructionFollowing` |
@@ -217,6 +218,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/hle.md
 ../../benchmarks/hmmt25.md
 ../../benchmarks/hmmt26.md
+../../benchmarks/hmmt_nov25.md
 ../../benchmarks/humaneval.md
 ../../benchmarks/humaneval_plus.md
 ../../benchmarks/ifbench.md
