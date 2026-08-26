@@ -10,22 +10,23 @@ HMMT November 2025 (MathArena) is a challenging evaluation benchmark derived fro
 - **Task Type**: Competition Mathematics Problem Solving
 - **Input**: HMMT-level mathematical problem
 - **Output**: Answer with step-by-step reasoning
-- **Difficulty**: Advanced high school competition level
+- **Domain**: Algebra, Combinatorics, Geometry, and Number Theory
 
 ## Key Features
 
-- 30 problems from HMMT November 2025 competition
-- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory
+- 30 problems from the HMMT November 2025 competition
+- Sourced from the MathArena `hmmt_nov_2025` dataset and mirrored on ModelScope
 - Highly challenging competition-level problems
 - Tests advanced mathematical reasoning
 - Represents elite high school mathematics difficulty
 
 ## Evaluation Notes
 
+- Default configuration loads `evalscope/hmmt_nov_2025` from ModelScope and evaluates the `train` split
 - Default configuration uses **0-shot** evaluation
 - Answers should be formatted within `\boxed{}` for proper extraction
-- Numeric accuracy metric
-- Problems span multiple mathematical domains
+- Numeric accuracy uses mathematical equivalence checking for integers, fractions, decimals, and symbolic expressions
+- No additional runtime dependencies are required
 
 
 ## Properties
@@ -57,7 +58,7 @@ HMMT November 2025 (MathArena) is a challenging evaluation benchmark derived fro
 {
   "input": [
     {
-      "id": "d091bca7",
+      "id": "e53f11c5",
       "content": "Problem:\nLet $ABCD$ be a rectangle. Let $X$ and $Y$ be points on segments $\\overlien{BC}$ and $\\overline{AD}$, respectively, such that $\\angle AXY = \\angle XYC = 90^\\circ$. Given that $AX : XY : YC = 1 : 2 : 1$ and $AB = 1$, compute $BC$.\n\nPlease reason step by step, and put your final answer within \\boxed{}.\n"
     }
   ],
@@ -66,7 +67,7 @@ HMMT November 2025 (MathArena) is a challenging evaluation benchmark derived fro
   "group_id": 0,
   "metadata": {
     "problem_idx": 1,
-    "problem_type": []
+    "problem_type": null
   }
 }
 ```

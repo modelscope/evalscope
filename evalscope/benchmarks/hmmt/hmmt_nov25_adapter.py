@@ -35,34 +35,36 @@ HMMT November 2025 (MathArena) is a challenging evaluation benchmark derived fro
 - **Task Type**: Competition Mathematics Problem Solving
 - **Input**: HMMT-level mathematical problem
 - **Output**: Answer with step-by-step reasoning
-- **Difficulty**: Advanced high school competition level
+- **Domain**: Algebra, Combinatorics, Geometry, and Number Theory
 
 ## Key Features
 
-- 30 problems from HMMT November 2025 competition
-- Four primary domains: Algebra, Combinatorics, Geometry, Number Theory
+- 30 problems from the HMMT November 2025 competition
+- Sourced from the MathArena `hmmt_nov_2025` dataset and mirrored on ModelScope
 - Highly challenging competition-level problems
 - Tests advanced mathematical reasoning
 - Represents elite high school mathematics difficulty
 
 ## Evaluation Notes
 
+- Default configuration loads `evalscope/hmmt_nov_2025` from ModelScope and evaluates the `train` split
 - Default configuration uses **0-shot** evaluation
 - Answers should be formatted within `\\boxed{}` for proper extraction
-- Numeric accuracy metric
-- Problems span multiple mathematical domains
+- Numeric accuracy uses mathematical equivalence checking for integers, fractions, decimals, and symbolic expressions
+- No additional runtime dependencies are required
 """,
         tags=[Tags.MATH, Tags.REASONING],
         subset_list=['default'],
         few_shot_num=0,
         train_split=None,
-        eval_split='train',  # HF dataset provides split 'train'
+        eval_split='train',  # Dataset only provides 'train' split
         metric_list=[{
             'acc': {
                 'numeric': True
             }
         }],
         prompt_template=PROMPT_TEMPLATE,
+        evaluation_version='v1.0',
     )
 )
 class HMMTNov25Adapter(DefaultDataAdapter):
