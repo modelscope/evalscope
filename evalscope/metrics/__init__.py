@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from .math.parser import extract_answer, math_equal, strip_answer_string
     from .nlp.metrics import ExactMatch
     from .utils.functions import bleu_ngram_one_sample, exact_match, macro_mean, mean, micro_mean, simple_f1_score
-    from .utils.rouge import compute_rouge_score, compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
+    from .utils.rouge import compute_rouge_score_one_sample, compute_rouge_score_one_sample_zh
     from .utils.text_normalizer import BasicTextNormalizer, ChineseTextNormalizer, EnglishTextNormalizer
 
 else:
@@ -34,7 +34,6 @@ else:
         ],
         'utils.rouge': [
             'compute_rouge_score_one_sample_zh',
-            'compute_rouge_score',
             'compute_rouge_score_one_sample',
         ],
         'judge.llm_judge': [
