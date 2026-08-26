@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "pretty_name": "VTCBench",
+    "dataset_id": "MLLM-CL/VTCBench",
+    "paper_url": null,
+    "tags": [
+      "MultiModal",
+      "QA",
+      "LongContext",
+      "Retrieval",
+      "Reasoning"
+    ],
+    "metrics": [
+      "Rouge"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Retrieval",
+      "Reasoning",
+      "Memory"
+    ],
+    "description": "\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress visual text.\n\n## Task Description\n\n- **Task Type**: Visual question answering with dual evaluation modes\n- **Input**: Either (VTC) image(s) + problem text, or (Text) text context + problem text\n- **Output**: Short free-form answer\n- **Domain**: General visual comprehension, text-rich image understanding\n\n## Key Features\n\n- Dual evaluation modes: image-based (VTC) and text-based (Text)\n- Mode VTC tests the model's visual understanding by feeding images directly\n- Mode Text tests the model's text-based reasoning using the image's textual context\n- The Gap highlights the model's ability to leverage visual information versus textual context for question answering\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Long context benchmark requires longer interval, set `retry_interval` higher to avoid timeout\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to switch modes, default is 'vtc'\n- Metrics:\n  - **containsAll**/**ROUGE-1-R** for Retrieval and Reasoning subsets\n  - **ROUGE-L-R**/**LLM-Judge** for Memory subset\n- If you encounter casting offset overflow issues, set `DATASET_TF_BATCH_SIZE=1`\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "eval_mode": {
+        "type": "str",
+        "description": "Evaluation mode: vtc (images+problem) or text (text+problem).",
+        "value": "vtc",
+        "choices": [
+          "vtc",
+          "text"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm",
+    "primary_metric": {
+      "name": "rouge",
+      "aggregation": "mean",
+      "dimensions": {
+        "statistic": "recall",
+        "variant": "l"
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 0,
+    "subset_stats": [],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-08-26T10:51:03.606235"
+  },
+  "sample_example": {},
+  "readme": {
+    "en": "# VTCBench\n\n\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress visual text.\n\n## Task Description\n\n- **Task Type**: Visual question answering with dual evaluation modes\n- **Input**: Either (VTC) image(s) + problem text, or (Text) text context + problem text\n- **Output**: Short free-form answer\n- **Domain**: General visual comprehension, text-rich image understanding\n\n## Key Features\n\n- Dual evaluation modes: image-based (VTC) and text-based (Text)\n- Mode VTC tests the model's visual understanding by feeding images directly\n- Mode Text tests the model's text-based reasoning using the image's textual context\n- The Gap highlights the model's ability to leverage visual information versus textual context for question answering\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Long context benchmark requires longer interval, set `retry_interval` higher to avoid timeout\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to switch modes, default is 'vtc'\n- Metrics:\n  - **containsAll**/**ROUGE-1-R** for Retrieval and Reasoning subsets\n  - **ROUGE-L-R**/**LLM-Judge** for Memory subset\n- If you encounter casting offset overflow issues, set `DATASET_TF_BATCH_SIZE=1`\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vtcbench` |\n| **Dataset ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **Metrics** | `Rouge` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | Evaluation mode: vtc (images+problem) or text (text+problem). Choices: ['vtc', 'text'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VTCBench\n\n\n## 概述\n\nVTCBench (Vision-Text Compression Benchmark) 评估 VLM 压缩视觉文本的能力。\n\n## 任务描述\n\n- **任务类型**：具有双重评估模式的视觉问答\n- **输入**：(VTC) 图像 + 问题文本，或 (Text) 文本上下文 + 问题文本\n- **输出**：简短的自由格式答案\n- **领域**：通用视觉理解、富含文本的图像理解\n\n## 主要特性\n\n- 双重评估模式：基于图像 (VTC) 和基于文本 (Text)\n- VTC 模式通过直接输入图像来测试模型的视觉理解能力\n- Text 模式利用图像的文本上下文来测试模型基于文本的推理能力\n- 该差距突显了模型在回答问题时利用视觉信息与文本上下文的能力对比\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 长上下文基准测试需要更长的间隔，请将 `retry_interval` 设置得更高以避免超时\n- 使用 `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` 切换模式，默认为 'vtc'\n- 指标：\n  - 检索和推理子集使用 **containsAll**/**ROUGE-1-R**\n  - 记忆子集使用 **ROUGE-L-R**/**LLM-Judge**\n- 如果遇到转换偏移溢出问题，请设置 `DATASET_TF_BATCH_SIZE=1`\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vtcbench` |\n| **数据集 ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **指标** | `Rouge` |\n| **默认 Shot 数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n*暂无统计数据。*\n\n## 样例示例\n\n*暂无样例示例。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | 评估模式：vtc（图像 + 问题）或 text（文本 + 问题）。选项：['vtc', 'text'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "cd271cc3496dadd80a725c577db9cd37",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-26T10:51:03.606657",
+  "translation_updated_at": "2026-08-26T10:51:13"
+}

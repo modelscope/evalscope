@@ -112,9 +112,9 @@ class VTCBenchAdapter(VisionLanguageAdapter):
 
         check_import(
             module_name=['bs4'],
-            extra='vtcbench',
+            extra='docs',
             raise_error=True,
-            feature_name='VTCBench'
+            feature_name='VTCBench',
         )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
