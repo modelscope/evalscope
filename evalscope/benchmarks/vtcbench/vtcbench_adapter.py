@@ -1,8 +1,6 @@
 import re
 from typing import Any, Dict, List
 
-from bs4 import BeautifulSoup
-
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
@@ -12,6 +10,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.metrics.utils.rouge import compute_rouge_score_one_sample_zh
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -111,8 +110,15 @@ class VTCBenchAdapter(VisionLanguageAdapter):
         super().__init__(**kwargs)
         self.eval_mode: str = self.extra_params.get('eval_mode', 'vtc')
 
+        check_import(
+            module_name=['bs4'],
+            extra='vtcbench',
+            raise_error=True,
+            feature_name='VTCBench'
+        )
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        # the context in image/text form
+        from bs4 import BeautifulSoup
 
         # the qa for the context
         problem: str = record['problem']
