@@ -373,6 +373,28 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('hle', dataset_args)
 
+    def test_hle_tools(self):
+        """Test HLE-with-tools dataset (mock-safe local AgentLoop)."""
+        dataset_args = {
+            'subset_list': ['Math', 'Other'],
+            'extra_params': {
+                'include_multi_modal': False
+            }
+        }
+        # Empty mcp_servers + local env: no docker and no network in CI.
+        self._run_dataset_test(
+            'hle_tools',
+            dataset_args,
+            agent_config={
+                'mode': 'native',
+                'strategy': 'function_calling',
+                'tools': ['python_exec'],
+                'environment': 'local',
+                'max_steps': 3,
+                'mcp_servers': [],
+            },
+        )
+
     def test_process_bench(self):
         """Test ProcessBench dataset."""
         dataset_args = {

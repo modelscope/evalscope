@@ -70,6 +70,7 @@
 | `hellaswag` | [HellaSwag](../../benchmarks/hellaswag.md) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hellaswag_hi` | [HellaSwag-Hindi](../../benchmarks/hellaswag_hi.md) | `MCQ`, `Reasoning` |
 | `hle` | [Humanity's-Last-Exam](../../benchmarks/hle.md) | `Knowledge`, `QA` |
+| `hle_tools` | [Humanity's-Last-Exam-with-Tools](../../benchmarks/hle_tools.md) | `Agent`, `Knowledge`, `MultiTurn`, `QA` |
 | `hmmt25` | [HMMT25](../../benchmarks/hmmt25.md) | `Math`, `Reasoning` |
 | `hmmt26` | [HMMT26](../../benchmarks/hmmt26.md) | `Math`, `Reasoning` |
 | `humaneval` | [HumanEval](../../benchmarks/humaneval.md) | `Coding` |
@@ -215,6 +216,7 @@
 ../../benchmarks/hellaswag.md
 ../../benchmarks/hellaswag_hi.md
 ../../benchmarks/hle.md
+../../benchmarks/hle_tools.md
 ../../benchmarks/hmmt25.md
 ../../benchmarks/hmmt26.md
 ../../benchmarks/humaneval.md
