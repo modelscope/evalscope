@@ -75,7 +75,7 @@ def test_text_mode_matches_official_context_order_and_html_cleanup() -> None:
     assert content[0].text == _remove_html_tags(record['_context'])
     assert content[-1].text == PROMPT_SUFFIXES['Memory'].format(question=record['problem'])
     assert 'data-speaker' not in content[0].text
-    assert 'Evan:' not in content[0].text
+    assert 'Evan:' in content[0].text
 
 
 def test_vtc_mode_places_images_inside_official_template() -> None:
