@@ -103,6 +103,10 @@ class Arguments(BaseArgument):
     - 0 < value < 1 (float): ratio of ``--number``, e.g. 0.1 = 10% warmup.
       Actual count = max(1, int(warmup_num * number)). Useful for sweep mode
       where each run has a different number of requests.
+
+    Warmup requests go through the same concurrency slots as the measured ones
+    and are only excluded from the reported metrics; the closed-loop dispatcher
+    never drains in between, so use at least ``--parallel`` there.
     """
 
     @property

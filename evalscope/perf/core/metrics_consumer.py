@@ -91,12 +91,16 @@ async def statistic_benchmark_metric(
                         continue
                     if _warmup_pbar:
                         _warmup_pbar.update(1)
+                        # Closed-loop hands the concurrency slots over to the
+                        # measured portion before the trailing warmup responses
+                        # arrive, so warmup and measured items interleave here.
+                        # Close on the completion count instead of on the first
+                        # measured item, otherwise the remaining warmup updates
+                        # would be dropped and the bar left unfinished.
+                        if _warmup_pbar.n >= warmup_count:
+                            _warmup_pbar.close()
+                            _warmup_pbar = None
                     continue
-
-                # First benchmark item — close the warmup bar so it disappears.
-                if _warmup_pbar:
-                    _warmup_pbar.close()
-                    _warmup_pbar = None
 
                 # Update accumulator and write to DB immediately.
                 accumulator.update(benchmark_data, api_plugin)
@@ -129,6 +133,12 @@ async def statistic_benchmark_metric(
                 if not benchmark_data.is_last_turn and benchmark_data.input_num_turns > 0:
                     continue
                 pbar.update(1)
+
+        # Safety net: close the warmup bar if some warmup responses never
+        # arrived (e.g. the run was cut short), so it does not linger.
+        if _warmup_pbar:
+            _warmup_pbar.close()
+            _warmup_pbar = None
 
         await asyncio.to_thread(con.commit)
 

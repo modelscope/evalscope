@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 import numpy as np
 
@@ -22,8 +22,12 @@ async def _send_request(
     queue: asyncio.Queue,
     client: 'AioHttpClient',
     track_gpu_memory: bool = False,
+    on_send: Optional[Callable[[], None]] = None,
 ) -> None:
     async with semaphore:
+        # Fired when the request actually goes out, not when its task was created.
+        if on_send is not None:
+            on_send()
         benchmark_data = await client.post(request)
     benchmark_data.is_warmup = is_warmup
     if track_gpu_memory:
@@ -37,6 +41,19 @@ class ClosedLoopStrategy(BenchmarkStrategy):
     Limits the number of in-flight requests to ``args.parallel`` using a
     semaphore.  New requests are only dispatched once a slot becomes available,
     providing back-pressure that prevents the server from being overwhelmed.
+
+    Warmup hand-off
+    ---------------
+    Warmup and measured requests share one dispatch loop and one semaphore, with
+    deliberately **no barrier** between them.  Re-introducing one would drain
+    server occupancy to zero, so the leading ``parallel`` measured requests would
+    again be released together and queue behind one another's prefill - the very
+    burst warmup exists to absorb.  Instead each warmup completion releases
+    exactly one measured request into a server still holding ``parallel - 1``
+    requests.
+
+    Absorbing the whole burst needs ``warmup_count >= parallel``; smaller values
+    cover fewer slots and ``run_benchmark`` warns about it.
     """
 
     def __init__(
@@ -51,20 +68,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         self._request_generator = request_generator
 
     async def run(self) -> None:
-        warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
+        requests = await self._collect_requests(self._request_generator)
+        await self._run_phase(requests, duration=self.args.duration)
 
-        if warmup_requests:
-            # Warmup ignores --duration; it must finish in full before the
-            # timed benchmark window begins.
-            await self._run_phase(warmup_requests, is_warmup=True, deadline=None)
-        await self._run_phase(
-            benchmark_requests,
-            is_warmup=False,
-            deadline=self._compute_deadline(self.args.duration),
-        )
-
-    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: Optional[float] = None) -> None:
-        """Dispatch one phase of requests and wait for all to complete.
+    async def _run_phase(self, requests: List[Tuple[dict, bool]], duration: Optional[float] = None) -> None:
+        """Dispatch ``(request, is_warmup)`` items in order and await completion.
 
         When ``args.rate`` is configured, request pacing uses absolute-time
         scheduling (see :class:`~evalscope.perf.core.strategies.OpenLoopStrategy`
@@ -72,9 +80,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         a phase ``start`` timestamp so that event-loop jitter can be absorbed
         instead of accumulating into a slow drift of the realised QPS.
 
-        ``deadline``: optional ``time.perf_counter()`` timestamp; when set, the
-        dispatch loop exits on reaching it but already in-flight requests are
-        awaited to completion (soft-exit, matches trie's semantics).
+        ``duration``: optional length of the timed window in seconds.  The
+        deadline is anchored on the moment the **first measured request is sent**,
+        so warmup does not consume the budget.  Once it elapses the dispatch loop
+        stops but already in-flight requests are awaited to completion (soft-exit,
+        matches trie's semantics).
         """
         semaphore = asyncio.Semaphore(self.args.parallel)
         max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
@@ -97,11 +107,25 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             # otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
 
+        deadline: Optional[float] = None
+
+        def _arm_deadline() -> None:
+            """Start the timed window on the first measured request that goes out.
+
+            The dispatch loop is bounded by ``max_in_flight``, not by the
+            semaphore, so it queues measured tasks while warmup still holds every
+            slot; arming on dispatch would start the clock at ~t0.
+            """
+            nonlocal deadline
+            if deadline is None and duration is not None:
+                deadline = self._compute_deadline(duration)
+
         dispatched = 0
         all_tasks: set[asyncio.Task] = set()
         try:
-            for i, request in enumerate(requests):
-                # Duration cap: stop dispatching new requests once the deadline is hit.
+            for i, (request, is_warmup) in enumerate(requests):
+                # Duration cap: stop dispatching once the deadline is hit.  It is
+                # ``None`` until a measured request has been sent, so warmup is exempt.
                 if deadline is not None and time.perf_counter() >= deadline:
                     logger.info(
                         f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
@@ -126,7 +150,15 @@ class ClosedLoopStrategy(BenchmarkStrategy):
                     await asyncio.gather(*done)
 
                 task = asyncio.create_task(
-                    _send_request(semaphore, request, is_warmup, self.queue, self.client, self.track_gpu_memory)
+                    _send_request(
+                        semaphore,
+                        request,
+                        is_warmup,
+                        self.queue,
+                        self.client,
+                        self.track_gpu_memory,
+                        on_send=None if is_warmup else _arm_deadline,
+                    )
                 )
                 in_flight.add(task)
                 all_tasks.add(task)
