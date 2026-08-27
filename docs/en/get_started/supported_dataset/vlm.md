@@ -70,6 +70,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
+| `vtcbench` | [VTCBench](../../benchmarks/vtcbench.md) | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |
 | `wenet_speech` | [WenetSpeech](../../benchmarks/wenet_speech.md) | `Audio`, `SpeechRecognition` |
 | `world_vqa` | [WorldVQA](../../benchmarks/world_vqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -144,6 +145,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/visulogic.md
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
+../../benchmarks/vtcbench.md
 ../../benchmarks/wenet_speech.md
 ../../benchmarks/world_vqa.md
 ../../benchmarks/zerobench.md

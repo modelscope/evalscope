@@ -378,10 +378,12 @@ _CANONICAL_NAMES_BY_BASELINE = {
     ),
     'quality.precision.ratio': ('boundary_precision', 'official_mean_precision', 'precision'),
     'quality.recall.ratio': ('official_mean_recall', 'recall'),
-    'quality.rouge.ratio': ('rouge', ),
+    'quality.rouge.ratio': ('rouge', 'rouge_l'),
     'quality.score.points_100': ('eq_bench_score', 'weighted_score_percent'),
     'quality.score.ratio': (
         'compliance_score',
+        'contains_all',
+        'contains_any',
         'mrcr_score',
         'normalized_score',
         'overall_ch',
