@@ -104,13 +104,9 @@ class Arguments(BaseArgument):
       Actual count = max(1, int(warmup_num * number)). Useful for sweep mode
       where each run has a different number of requests.
 
-    Warmup requests are dispatched through the same concurrency slots as the
-    measured ones and are only excluded from the reported metrics; the
-    closed-loop dispatcher never drains in-flight requests between the warmup
-    and the measured portion.  Values below ``--parallel`` leave part of the
-    start-up burst inside the measured window, so closed-loop runs should use
-    at least ``--parallel`` (twice that when the ``max`` column also matters).
-    ``run_benchmark`` warns when the value is too small.
+    Warmup requests go through the same concurrency slots as the measured ones
+    and are only excluded from the reported metrics; the closed-loop dispatcher
+    never drains in between, so use at least ``--parallel`` there.
     """
 
     @property

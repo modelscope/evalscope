@@ -126,14 +126,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
 
 
 def _log_warmup_handoff(args: Arguments) -> None:
-    """Warn when warmup cannot keep the start-up burst out of the measured window.
-
-    Closed-loop measurement is only representative once every concurrency slot
-    is already busy when the first measured request goes out, which is what the
-    warmup requests are for.  ``--warmup-num`` is honoured exactly as given, so
-    the only thing to do here is to tell the user what the current value costs
-    them and which value would fix it.
-    """
+    """Warn when warmup cannot keep the start-up burst out of the measured window."""
     parallel = args.parallel
     warmup_count = args.warmup_count
 

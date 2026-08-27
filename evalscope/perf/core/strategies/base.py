@@ -64,9 +64,8 @@ class BenchmarkStrategy(ABC):
     async def _collect_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> List[Tuple[dict, bool]]:
         """Consume all ``(request, is_warmup)`` items from gen, preserving order.
 
-        Unlike :meth:`_partition_requests` this keeps warmup and measured
-        requests in a single stream so a dispatcher can hand over from one to
-        the other without draining in-flight requests in between.
+        Unlike :meth:`_partition_requests` this keeps both kinds in one stream so
+        a dispatcher can hand over without draining in-flight requests.
         """
         return [item async for item in gen]
 

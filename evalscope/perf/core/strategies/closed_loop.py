@@ -25,8 +25,7 @@ async def _send_request(
     on_send: Optional[Callable[[], None]] = None,
 ) -> None:
     async with semaphore:
-        # Fired once the slot is actually held, i.e. when the request goes out
-        # rather than when its task was created.
+        # Fired when the request actually goes out, not when its task was created.
         if on_send is not None:
             on_send()
         benchmark_data = await client.post(request)
@@ -45,24 +44,16 @@ class ClosedLoopStrategy(BenchmarkStrategy):
 
     Warmup hand-off
     ---------------
-    Warmup and measured requests share a single dispatch loop and a single
-    semaphore, and there is deliberately **no barrier** between them.  Draining
-    the in-flight requests first would reset server occupancy to zero, so the
-    leading ``parallel`` measured requests would again be released at the same
-    instant and queue behind one another's prefill - precisely the burst that
-    warmup is meant to absorb.  With a continuous hand-off the warmup requests
-    absorb it instead: they complete one at a time, and each completion releases
-    exactly one measured request into a server that already holds
-    ``parallel - 1`` requests mid-flight.  The measured portion therefore starts
-    from a steady-state arrival pattern rather than from a synchronised burst,
-    which is what makes its TTFT distribution (and hence its percentiles)
-    representative of the configured concurrency.
+    Warmup and measured requests share one dispatch loop and one semaphore, with
+    deliberately **no barrier** between them.  Re-introducing one would drain
+    server occupancy to zero, so the leading ``parallel`` measured requests would
+    again be released together and queue behind one another's prefill - the very
+    burst warmup exists to absorb.  Instead each warmup completion releases
+    exactly one measured request into a server still holding ``parallel - 1``
+    requests.
 
-    Full absorption requires ``warmup_count >= parallel``.  Smaller values are
-    honoured as given and degrade gracefully - the slots they do not cover are
-    filled by measured requests released alongside the warmup ones, so only part
-    of the burst is absorbed.  ``run_benchmark`` warns in that case (and when
-    warmup is disabled entirely) rather than silently adjusting the count.
+    Absorbing the whole burst needs ``warmup_count >= parallel``; smaller values
+    cover fewer slots and ``run_benchmark`` warns about it.
     """
 
     def __init__(
@@ -121,11 +112,9 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         def _arm_deadline() -> None:
             """Start the timed window on the first measured request that goes out.
 
-            Task creation runs well ahead of sending: the dispatch loop is bounded
-            by ``max_in_flight``, not by the semaphore, so it queues measured
-            requests while warmup ones still hold every slot.  Anchoring on the
-            send is therefore what keeps warmup out of the budget; anchoring on
-            the dispatch would start the clock at ~t0.
+            The dispatch loop is bounded by ``max_in_flight``, not by the
+            semaphore, so it queues measured tasks while warmup still holds every
+            slot; arming on dispatch would start the clock at ~t0.
             """
             nonlocal deadline
             if deadline is None and duration is not None:
@@ -135,10 +124,8 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         all_tasks: set[asyncio.Task] = set()
         try:
             for i, (request, is_warmup) in enumerate(requests):
-                # Duration cap: stop dispatching new requests once the deadline is
-                # hit.  It stays ``None`` until a measured request has been sent,
-                # so warmup is exempt and at least one measured request always
-                # gets dispatched.
+                # Duration cap: stop dispatching once the deadline is hit.  It is
+                # ``None`` until a measured request has been sent, so warmup is exempt.
                 if deadline is not None and time.perf_counter() >= deadline:
                     logger.info(
                         f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
