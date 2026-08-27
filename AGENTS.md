@@ -156,7 +156,7 @@ An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply i
 - `repeats`: duplicates items for k-metrics. `generation_config.n` is deprecated and mapped.
 - Use `generation_config` for runtime params. `TaskConfig.timeout` / `stream` are deprecated — forwarded with a warning.
 - `dataset_args` merges into `BenchmarkMeta._update()` (supports `local_path`, `filters` OrderedDict prepended).
-- Models are memoized by `(name, config, base_url, api_key, args)`.
+- Models are memoized by `(name, eval_type, config, base_url, api_key, args)`.
 - Use `@thread_safe` for model creation, `run_in_threads_with_progress` for concurrent eval.
 - Outputs land in `outputs/<timestamp>/{logs,predictions,reviews,reports,configs}/` (see `OutputsStructure`). `use_cache` resumes runs; `rerun_review` recomputes scores only.
 - `evalscope app` CLI command is **deprecated** (see `evalscope/cli/start_app.py`) — use `evalscope service` for the Web dashboard.

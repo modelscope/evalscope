@@ -223,24 +223,30 @@ class ModelScopeAPI(ModelAPI):
             )
             choices.append(choice)
 
+        # Aggregate usage over all returned choices: with n > 1 the loop above
+        # leaves `response` bound to the last choice only, undercounting tokens.
+        input_tokens = sum(r.input_tokens for r in responses)
+        output_tokens = sum(r.output_tokens for r in responses)
+        total_time = max(r.time for r in responses)
+
         # return output
         output = ModelOutput(
             model=self.model_name,
             choices=choices,
             usage=ModelUsage(
-                input_tokens=response.input_tokens,
-                output_tokens=response.output_tokens,
-                total_tokens=response.total_tokens,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                total_tokens=input_tokens + output_tokens,
             ),
-            time=response.time,
+            time=total_time,
         )
         # Populate PerformanceMetrics from the already-available fields.
         # Local models do not produce TTFT (no streaming chunks), so ttft stays None.
         output.message.perf_metrics = PerformanceMetrics(
-            latency=response.time,
+            latency=total_time,
             ttft=None,
-            input_tokens=response.input_tokens,
-            output_tokens=response.output_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
         )
         return output
 

@@ -904,8 +904,10 @@ def collect_stream_response(
         # use the finish_reason from the last chunk that generated this choice
         finish_reason = None
         for chunk in reversed(collected_chunks):
-            if chunk.choices and chunk.choices[0].index == index:
-                finish_reason = chunk.choices[0].finish_reason
+            # a single chunk may pack several choices (n > 1); match by index
+            matched = next((c for c in chunk.choices if c.index == index), None)
+            if matched is not None:
+                finish_reason = matched.finish_reason
                 break
 
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
@@ -1035,8 +1037,10 @@ async def async_collect_stream_response(
         # use the finish_reason from the last chunk that generated this choice
         finish_reason = None
         for chunk in reversed(collected_chunks):
-            if chunk.choices and chunk.choices[0].index == index:
-                finish_reason = chunk.choices[0].finish_reason
+            # a single chunk may pack several choices (n > 1); match by index
+            matched = next((c for c in chunk.choices if c.index == index), None)
+            if matched is not None:
+                finish_reason = matched.finish_reason
                 break
 
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
