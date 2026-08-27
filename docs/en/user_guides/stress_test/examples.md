@@ -260,7 +260,7 @@ Send a batch of warmup requests before the formal benchmark to eliminate cold-st
 
 Warmup requests are sent with the same concurrency and rate as the benchmark but **excluded from performance metrics** (latency, throughput, percentiles, etc.).
 
-In closed-loop mode warmup has a second, equally important job: it absorbs the burst that occurs when the run starts. Without warmup the first `--parallel` requests are all released at the same instant against an idle server, so they queue behind one another's prefill and report a TTFT that never recurs later in the run. Warmup requests take that hit instead, and the dispatcher hands the concurrency slots over to the measured requests **without draining them first** — each warmup completion releases exactly one measured request into a server that is already busy. The measured portion therefore starts from a steady-state arrival pattern.
+In closed-loop mode warmup has a second, equally important job: it absorbs the burst that occurs when the run starts. Without warmup the first `--parallel` requests are all released at the same instant against an idle server, so they queue behind one another's prefill and report a TTFT that never recurs later in the run. Warmup requests take that hit instead, and the dispatcher hands the concurrency slots over to the measured requests **without draining them first** — each warmup completion releases exactly one measured request into a server that is already busy. The measured portion therefore starts from a steady-state arrival pattern. This is what makes the reported percentiles meaningful: without it the samples are a mixture of `--parallel` start-up requests and steady-state ones that the percentiles treat as a single distribution, so whenever `--parallel / --number` exceeds 1% the reported `p99` is decided by the start-up burst alone.
 
 That hand-over only works while every concurrency slot is held by a warmup request, so `--warmup-num` should be at least `--parallel` in closed-loop mode. The value you pass is used exactly as given — a smaller one is never raised automatically — and the run warns when it cannot cover every slot, naming the value that would. A count of `--parallel` puts the reported `p99` on the steady-state value. The leading measured requests still overlap with warmup requests that started together, so depending on how those completions line up a single outlier can occasionally survive into `max`. Use `2 × --parallel` when you report `p99.9` or `max`, or when the server also needs to absorb a genuinely cold start.
 
@@ -304,20 +304,6 @@ evalscope perf \
 - `--duration` is anchored on the moment the first measured request is sent, so warmup does not consume the timed budget.
 - In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics. The `--parallel` guidance above applies to closed-loop single-turn runs; open-loop paces dispatch by arrival rate and multi-turn counts conversations rather than requests.
 ```
-
-### Why the First Requests Report a Much Higher TTFT
-
-A closed-loop run at concurrency `N` measures the server in a steady state where the `N` in-flight requests are spread across different phases — a few prefilling, most decoding. At the very start, however, all `N` requests are released simultaneously and are therefore all in the prefill phase at once. TTFT is the metric most sensitive to this: the prefill queue depth is `N` at the start versus roughly `N × (prefill time / whole request time)` in steady state, which is normally well below one. The leading requests can consequently report a TTFT several times higher than the rest of the run.
-
-The practical consequence is that the collected samples are a **mixture** of `N` start-up samples and `number - N` steady-state samples, while the reported percentiles treat them as a single distribution. Whenever `N / number` exceeds 1%, `p99` is dominated by the start-up samples alone.
-
-Recommendations:
-
-- Enable warmup with `--warmup-num >= --parallel` so the start-up burst lands outside the measured window.
-- Keep `--number` much larger than `--parallel` (aim for at least 100× if you care about `p99`), so that any residual transient carries negligible weight.
-- Compare the `Steady (drop 20%)` column of the workload-throughput table with the `Overall` column: a large gap indicates that the run is still transient-dominated.
-
-One case neither warmup nor a larger `--number` fixes: if every request has an identical output length (for example `min_tokens == max_tokens` together with `ignore_eos`), the `N` requests keep the same cycle time, complete simultaneously, and are re-released simultaneously, so the burst repeats every cycle instead of decaying. It shows up as periodic TTFT spikes rather than a single cluster at the beginning; introducing output-length variance is the only remedy.
 
 ### Open-loop Mode
 
