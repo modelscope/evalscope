@@ -145,7 +145,9 @@ class OutputsStructure:
 
 
 def undecode_media(
-    dataset: 'Dataset', media_type: List[Literal['image', 'audio', 'video']], batch_size: Optional[int] = None
+    dataset: 'Dataset',
+    media_type: List[Literal['image', 'audio', 'video']],
+    batch_size: Optional[int] = None,
 ) -> 'Dataset':
     from datasets.features import Audio, Image, Sequence, Video
 

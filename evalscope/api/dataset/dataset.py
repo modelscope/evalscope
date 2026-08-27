@@ -310,7 +310,11 @@ class DatasetDict:
 
     @classmethod
     def from_dataset(
-        cls, dataset: Dataset, subset_list: List[str], limit: Optional[Union[int, float]] = None, repeats: int = 1
+        cls,
+        dataset: Dataset,
+        subset_list: List[str],
+        limit: Optional[Union[int, float]] = None,
+        repeats: int = 1,
     ) -> 'DatasetDict':
         """
         Create a DatasetDict from a single Dataset using subset key in the sample.

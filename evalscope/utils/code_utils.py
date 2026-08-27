@@ -487,7 +487,11 @@ def extract_code_from_freeform_completion(
 
 
 def extract_code_from_freeform_completion_v2(
-    completion: str, language: NullableLang = '', first_block_only=False, no_removal=False, **kwargs
+    completion: str,
+    language: NullableLang = '',
+    first_block_only=False,
+    no_removal=False,
+    **kwargs,
 ) -> Tuple[str, str]:
     """
     Arguments:

@@ -10,7 +10,11 @@ logger = get_logger()
 
 
 def evaluate_in_sandbox(
-    adapter: 'CodeExecutionSandboxMixin', code: str, evaluation_sample: str, timeout: int = 6, debug: bool = False
+    adapter: 'CodeExecutionSandboxMixin',
+    code: str,
+    evaluation_sample: str,
+    timeout: int = 6,
+    debug: bool = False,
 ) -> Tuple[bool, Dict]:
     """
     Evaluate code in sandbox environment for Live Code Bench.

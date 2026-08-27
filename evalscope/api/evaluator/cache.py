@@ -234,7 +234,11 @@ class CacheManager:
             del self._review_reruns[file_path]
 
     def save_review_cache(
-        self, subset: str, task_state: TaskState, sample_score: SampleScore, save_metadata: bool = True
+        self,
+        subset: str,
+        task_state: TaskState,
+        sample_score: SampleScore,
+        save_metadata: bool = True,
     ) -> 'ReviewResult':
         """
         Save a review result to the cache.

@@ -242,7 +242,9 @@ class _TerminalBenchBase(AgentAdapter):
         return InferenceResult(output=output, trace=trace, messages=messages)
 
     def _load_harbor_trace(
-        self, result_dict: dict, perf_metrics: Optional[List[Any]] = None
+        self,
+        result_dict: dict,
+        perf_metrics: Optional[List[Any]] = None,
     ) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
         trial_uri = result_dict.get('trial_uri') or ''
         if trial_uri.startswith('file://'):

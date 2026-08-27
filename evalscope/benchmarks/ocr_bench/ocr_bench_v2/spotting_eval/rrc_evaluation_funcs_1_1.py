@@ -95,7 +95,14 @@ def decode_utf8(raw):
 
 
 def validate_lines_in_file(
-    fileName, file_contents, CRLF=True, LTRB=True, withTranscription=False, withConfidence=False, imWidth=0, imHeight=0
+    fileName,
+    file_contents,
+    CRLF=True,
+    LTRB=True,
+    withTranscription=False,
+    withConfidence=False,
+    imWidth=0,
+    imHeight=0,
 ):
     """
     This function validates that all lines of the file calling the Line validation function for each line
@@ -246,7 +253,13 @@ def get_tl_line_values(line, LTRB=True, withTranscription=False, withConfidence=
 
 
 def get_tl_dict_values(
-    detection, withTranscription=False, withConfidence=False, imWidth=0, imHeight=0, validNumPoints=[], validate_cw=True
+    detection,
+    withTranscription=False,
+    withConfidence=False,
+    imWidth=0,
+    imHeight=0,
+    validNumPoints=[],
+    validate_cw=True,
 ):
     """
     Validate the format of the dictionary. If the dictionary is not valid an exception will be raised.

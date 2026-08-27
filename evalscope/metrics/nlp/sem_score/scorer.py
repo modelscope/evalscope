@@ -161,7 +161,11 @@ class SemScorer:
         return input_ids, token_type_ids, attention_mask
 
     def score_nli(
-        self, refs: List[str], hyps: List[str], direction: Optional[str] = None, formula: str = 'e'
+        self,
+        refs: List[str],
+        hyps: List[str],
+        direction: Optional[str] = None,
+        formula: str = 'e',
     ) -> List[float]:
         """
         Compute NLI scores for reference-hypothesis pairs.
