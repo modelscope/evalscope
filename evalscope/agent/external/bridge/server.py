@@ -275,7 +275,13 @@ class ModelProxyServer:
         async def _catchall(request: web.Request) -> web.Response:
             logger.warning(f'bridge: unhandled {request.method} {request.path} (query={dict(request.query)})')
             return web.json_response(
-                {'type': 'error', 'error': {'type': 'not_found', 'message': f'no handler for {request.path}'}},
+                {
+                    'type': 'error',
+                    'error': {
+                        'type': 'not_found',
+                        'message': f'no handler for {request.path}',
+                    },
+                },
                 status=404,
             )
 
@@ -419,7 +425,13 @@ class ModelProxyServer:
         except _BridgeAuthError as exc:
             logger.debug(f'bridge: auth failed — {exc}')
             return web.json_response(
-                {'type': 'error', 'error': {'type': 'authentication_error', 'message': str(exc)}},
+                {
+                    'type': 'error',
+                    'error': {
+                        'type': 'authentication_error',
+                        'message': str(exc),
+                    },
+                },
                 status=401,
             )
 
@@ -476,7 +488,12 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'error': {'type': 'api_error', 'message': repr(exc)}},
+                {
+                    'error': {
+                        'type': 'api_error',
+                        'message': repr(exc),
+                    },
+                },
                 status=502,
             )
 
@@ -522,9 +539,13 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
-            error_event = (
-                f'data: {json.dumps({"error": {"type": "api_error", "message": repr(exc)}})}\n\ndata: [DONE]\n\n'
-            ).encode('utf-8')
+            error_payload = {
+                'error': {
+                    'type': 'api_error',
+                    'message': repr(exc),
+                },
+            }
+            error_event = f'data: {json.dumps(error_payload)}\n\ndata: [DONE]\n\n'.encode('utf-8')
             try:
                 await response.write(error_event)
             except ConnectionResetError:
@@ -576,7 +597,12 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'error': {'type': 'api_error', 'message': repr(exc)}},
+                {
+                    'error': {
+                        'type': 'api_error',
+                        'message': repr(exc),
+                    },
+                },
                 status=502,
             )
 
@@ -705,7 +731,7 @@ class ModelProxyServer:
                         'code': 502,
                         'message': repr(exc),
                         'status': 'UNAVAILABLE',
-                    }
+                    },
                 },
                 status=502,
             )
@@ -776,7 +802,13 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'type': 'error', 'error': {'type': 'api_error', 'message': repr(exc)}},
+                {
+                    'type': 'error',
+                    'error': {
+                        'type': 'api_error',
+                        'message': repr(exc),
+                    },
+                },
                 status=502,
             )
 
@@ -823,11 +855,14 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
-            error_event = (
-                f'event: error\ndata: '
-                f'{json.dumps({"type": "error", "error": {"type": "api_error", "message": repr(exc)}})}'
-                f'\n\n'
-            ).encode('utf-8')
+            error_payload = {
+                'type': 'error',
+                'error': {
+                    'type': 'api_error',
+                    'message': repr(exc),
+                },
+            }
+            error_event = f'event: error\ndata: {json.dumps(error_payload)}\n\n'.encode('utf-8')
             try:
                 await response.write(error_event)
             except ConnectionResetError:
@@ -857,7 +892,7 @@ class ModelProxyServer:
                         'type': 'invalid_request_error',
                         'code': 'invalid_api_key',
                         'message': str(exc),
-                    }
+                    },
                 },
                 status=401,
             )

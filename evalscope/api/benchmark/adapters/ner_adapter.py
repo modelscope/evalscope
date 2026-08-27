@@ -202,11 +202,22 @@ class NERAdapter(DefaultDataAdapter):
                 metadata={'type': 'seqeval-micro-average'},
             ),
             AggScore(
-                metric_name='recall', score=avg_recall, num=num_samples, metadata={'type': 'seqeval-micro-average'}
+                metric_name='recall',
+                score=avg_recall,
+                num=num_samples,
+                metadata={'type': 'seqeval-micro-average'},
             ),
-            AggScore(metric_name='f1', score=avg_f1, num=num_samples, metadata={'type': 'seqeval-micro-average'}),
             AggScore(
-                metric_name='accuracy', score=avg_accuracy, num=num_samples, metadata={'type': 'seqeval-accuracy'}
+                metric_name='f1',
+                score=avg_f1,
+                num=num_samples,
+                metadata={'type': 'seqeval-micro-average'},
+            ),
+            AggScore(
+                metric_name='accuracy',
+                score=avg_accuracy,
+                num=num_samples,
+                metadata={'type': 'seqeval-accuracy'},
             ),
         ]
 
