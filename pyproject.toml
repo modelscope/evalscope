@@ -82,6 +82,7 @@ deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 toolathlon       = {file = ["evalscope/benchmarks/toolathlon/requirements.txt"]}
 bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 wide_search      = {file = ["evalscope/benchmarks/wide_search/requirements.txt"]}
+vtcbench         = {file = ["evalscope/benchmarks/vtcbench/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",
@@ -111,4 +112,16 @@ line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["I"]
+select = [
+  # "E",
+  # "W",
+  # "B",
+  # "F",
+  # "SIM",
+  "I",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
