@@ -125,14 +125,17 @@ def _build_embeddings(embedding_config) -> Any:
     else:
         # Local model — resolve via ModelScope first
         from evalscope.backend.rag_eval.models.utils import resolve_model_path
+
         local_path = resolve_model_path(embedding_config.model_name_or_path)
         try:
             from ragas.embeddings import embedding_factory
+
             return embedding_factory('huggingface', model=local_path)
         except (ImportError, AttributeError, TypeError):
             logger.warning('Failed to use embedding_factory for huggingface', exc_info=True)
             from langchain_huggingface import HuggingFaceEmbeddings
             from ragas.embeddings.base import LangchainEmbeddingsWrapper
+
             return LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name=local_path))
 
 

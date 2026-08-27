@@ -56,17 +56,12 @@ MATH-Vision (MATH-V) is a meticulously curated dataset of 3,040 high-quality mat
 - Multiple-choice uses CoT prompting with letter answers
 """,
         subset_list=SUBSET_LIST,
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         eval_split='test',
         prompt_template=OPEN_PROMPT,
     )
 )
 class MathVisionAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -83,7 +78,7 @@ class MathVisionAdapter(VisionLanguageAdapter):
             'solution': record['solution'],
             'level': record['level'],
             'question_type': question_type,
-            'subject': record['subject']
+            'subject': record['subject'],
         }
         if question_type == 'multi_choice':
             label_answer = record['answer']
@@ -92,14 +87,14 @@ class MathVisionAdapter(VisionLanguageAdapter):
                 choices=answers_list,
                 target=label_answer,
                 subset_key=f'level {record["level"]}',
-                metadata=metadata
+                metadata=metadata,
             )
         elif question_type == 'free_form':
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=record['answer'],
                 subset_key=f'level {record["level"]}',
-                metadata=metadata
+                metadata=metadata,
             )
         else:
             raise ValueError(f'Unexpected question_type: {question_type}')
@@ -107,17 +102,17 @@ class MathVisionAdapter(VisionLanguageAdapter):
     @staticmethod
     def create_content_and_answers_list(record: Dict[str, Any], question_type) -> tuple[List[Content], List[str]]:
         """
-            Create a list of content elements and a list of answers from a record.
+        Create a list of content elements and a list of answers from a record.
 
-            Args:
-                record (dict): The record containing question, images, and options.
-                question_type (str): The type of this question
+        Args:
+            record (dict): The record containing question, images, and options.
+            question_type (str): The type of this question
 
 
-            Returns:
-                tuple: A tuple containing:
-                    - content_list (list): A list of content elements (text and images).
-                    - answers_list (list): A list of possible answers (for multiple-choice questions).
+        Returns:
+            tuple: A tuple containing:
+                - content_list (list): A list of content elements (text and images).
+                - answers_list (list): A list of possible answers (for multiple-choice questions).
         """
         question: str = record['question']
         if question_type == 'multi_choice':

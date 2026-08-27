@@ -16,12 +16,15 @@ PROMPT_TEMPLATE = """
 
 """.lstrip()  # noqa: E501
 
-FEWSHOT_TEMPLATE = """
+FEWSHOT_TEMPLATE = (
+    """
 Here are some examples of how to solve similar problems:
 
 {fewshot}
 
-""".lstrip() + PROMPT_TEMPLATE
+""".lstrip()
+    + PROMPT_TEMPLATE
+)
 
 
 @register_benchmark(
@@ -62,17 +65,12 @@ MGSM (Multilingual Grade School Math) is a benchmark designed to evaluate multil
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )
 )
 class MGSMAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -86,13 +84,13 @@ class MGSMAdapter(DefaultDataAdapter):
             metadata={
                 'reasoning': record['answer'],
                 'equation_solution': record['equation_solution'],
-            }
+            },
         )
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         if sample.metadata:
             return (
-                f'{sample.input}\n\nReasoning:\n' + f"{sample.metadata['reasoning']}\n\n" + f'ANSWER: {sample.target}'
+                f'{sample.input}\n\nReasoning:\n' + f'{sample.metadata["reasoning"]}\n\n' + f'ANSWER: {sample.target}'
             )
         else:
             return ''

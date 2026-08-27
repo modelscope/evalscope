@@ -56,7 +56,6 @@ The entire content of your response should be of the following format: 'ANSWER: 
     )
 )
 class DrivelologyNarrativeSelectionAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_overall_metric = False

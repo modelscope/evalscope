@@ -12,16 +12,16 @@ class CodeGenerationPromptConstants:
 
     SYSTEM_MESSAGE_MAGIC = 'You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n'  # noqa: E501
 
-    SYSTEM_MESSAGE_WIZARD = 'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    SYSTEM_MESSAGE_WIZARD = (
+        'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    )
 
     SYSTEM_MESSAGE_PHIND = """You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program. Put your fixed program within code delimiters, for example:
 ```python
 # YOUR CODE HERE
 ```"""  # noqa: E501
 
-    SYSTEM_MESSAGE_CODEQWEN = (
-        '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user'  # noqa: E501
-    )
+    SYSTEM_MESSAGE_CODEQWEN = '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user'  # noqa: E501
 
     FORMATTING_MESSAGE_WITH_STARTER_CODE = 'You will use the following starter code to write the solution to the problem and enclose your code within delimiters.'  # noqa: E501
 
@@ -37,7 +37,9 @@ class TestOutputPromptConstants:
 
     SYSTEM_MESSAGE_INST_CLLAMA = 'You are a helpful programming assistant and an expert Python programmer. You are helping a user to write a test case to help to check the correctness of the function. The user has written a input for the testcase. You will calculate the output of the testcase and write out the complete assertion statement between [PYTHON] and [/PYTHON] tags.'  # noqa: E501
 
-    SYSTEM_MESSAGE_WIZARD = 'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    SYSTEM_MESSAGE_WIZARD = (
+        'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    )
 
     SYSTEM_MESSAGE_PHIND = """You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program. You must put the entire fixed program within code delimiters only for once., for example:
 ```python
@@ -56,7 +58,9 @@ class SelfRepairPromptConstants:
 
     SYSTEM_MESSAGE_MAGIC = 'You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.\n\n@@ Instruction\n'  # noqa: E501
 
-    SYSTEM_MESSAGE_WIZARD = 'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    SYSTEM_MESSAGE_WIZARD = (
+        'Below is an instruction that describes a task. Write a response that appropriately completes the request.'  # noqa: E501
+    )
 
     SYSTEM_MESSAGE_PHIND = """You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. You will NOT return anything except for the program. You must put the entire fixed program within code delimiters only for once., for example:
 ```python
@@ -158,9 +162,7 @@ def get_generic_question_template_test_completion(question_content, starter_code
     # parse function name from starter_code
     func_name = parse_function_name_from_starter_code(starter_code)
     prompt += 'Please complete the following test case:\n\n'
-    prompt += (
-        f'```\n{format_testcase_func_name_input(func_name, testcase_input)}\n```\n'  # noqa: E501
-    )
+    prompt += f'```\n{format_testcase_func_name_input(func_name, testcase_input)}\n```\n'  # noqa: E501
 
     return prompt
 
@@ -180,17 +182,17 @@ def get_generic_question_template_answer_self_repair(question: str, code, metada
             return ''
         if metadata['error_code'] == -1:
             # time limit exceeded
-            message = f"The above code is incorrect and got the following compilation error.\n{metadata['error']}"  # noqa: E501
+            message = f'The above code is incorrect and got the following compilation error.\n{metadata["error"]}'  # noqa: E501
         elif metadata['error_code'] == -2:
             # wrong answer
-            message = f"The above code is incorrect and got a wrong answer.\nInput: {metadata['inputs']}\nGenerated Output: {metadata['output']}\nExpected: {metadata['expected']}"  # noqa: E501
+            message = f'The above code is incorrect and got a wrong answer.\nInput: {metadata["inputs"]}\nGenerated Output: {metadata["output"]}\nExpected: {metadata["expected"]}'  # noqa: E501
         elif metadata['error_code'] == -3:
             # time limit exceeded
-            message = f"The above code is incorrect and got time limit exceeded.\n{metadata['error']}\nInput: {metadata['inputs']}\nExpected: {metadata['expected']}"  # noqa: E501
+            message = f'The above code is incorrect and got time limit exceeded.\n{metadata["error"]}\nInput: {metadata["inputs"]}\nExpected: {metadata["expected"]}'  # noqa: E501
             pass
         elif metadata['error_code'] == -4:
             # runtime error
-            message = f"The above code is incorrect and got a runtime error.\nInput: {metadata['inputs']}\nExpected: {metadata['expected']}\n{metadata['error']}"  # noqa: E501
+            message = f'The above code is incorrect and got a runtime error.\nInput: {metadata["inputs"]}\nExpected: {metadata["expected"]}\n{metadata["error"]}'  # noqa: E501
         else:
             raise NotImplementedError(
                 f"metadata['error_code'] = {metadata['error_code']} not implemented || {metadata=}"  # noqa: E501

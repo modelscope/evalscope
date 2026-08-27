@@ -62,29 +62,29 @@ MRCR (Memory-Recall with Contextual Retrieval) is OpenAI's benchmark for evaluat
             'max_context_size': {
                 'type': 'int | null',
                 'description': 'Maximum context tokens; samples exceeding are skipped. Defaults to None (no limit).',
-                'value': None
+                'value': None,
             },
             'min_context_size': {
                 'type': 'int | null',
                 'description': 'Minimum context tokens; samples below are skipped. Defaults to None (no limit).',
-                'value': None
+                'value': None,
             },
             'needle_count': {
                 'type': 'list[int] | null',
                 'description': 'Needle count filter (allowed: 2,4,8). Must be a list, e.g., [2], [4], or [2, 4, 8].  None keeps all.',
-                'value': None
+                'value': None,
             },
             'tik_enc': {
                 'type': 'str',
                 'description': 'tiktoken encoding name used for token counting.',
-                'value': 'o200k_base'
+                'value': 'o200k_base',
             },
             'prefix_filter': {
                 'type': 'str | null',
                 'description': 'Regex pattern to filter answers. Defaults to None (no filtering).',
-                'value': None
-            }
-        }
+                'value': None,
+            },
+        },
     )
 )
 class OpenAIMRCRAdapter(DefaultDataAdapter):
@@ -265,7 +265,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 aggregation='mean',
                 dimensions={'scope': 'overall'},
                 score=sum(overall) / len(overall),
-                num=len(overall)
+                num=len(overall),
             )
         ]
         for i, vals in bin_scores.items():
@@ -276,10 +276,7 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
                 AggScore(
                     metric_name='mrcr_score',
                     aggregation='mean',
-                    dimensions={
-                        'min_tokens': l,
-                        'max_tokens': r
-                    },
+                    dimensions={'min_tokens': l, 'max_tokens': r},
                     score=sum(vals) / len(vals),
                     num=len(vals),
                 )

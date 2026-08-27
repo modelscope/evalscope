@@ -71,7 +71,6 @@ PROMPT_TEMPLATE = '{question}'
     )
 )
 class ArcAgi2Adapter(DefaultDataAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         task_prompt = build_task_prompt(record)
         target_grid = record['question'][0]['output']

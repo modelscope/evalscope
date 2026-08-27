@@ -55,7 +55,6 @@ CCBench (Chinese Culture Bench) is an extension of MMBench specifically designed
     )
 )
 class CCBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -72,11 +71,7 @@ class CCBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
             input=[ChatMessageUser(content=content_list)],
             choices=answers_list,
             target=label_answer,
-            metadata={
-                'index': record.get('index'),
-                'category': record.get('category'),
-                'source': record.get('source')
-            }
+            metadata={'index': record.get('index'), 'category': record.get('category'), 'source': record.get('source')},
         )
 
 
@@ -121,7 +116,6 @@ MMBench is a systematically designed benchmark for evaluating vision-language mo
     )
 )
 class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -146,6 +140,6 @@ class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 'source': record.get('source'),
                 'L2-category': record.get('L2-category'),
                 'comment': record.get('comment'),
-                'split': record.get('split')
-            }
+                'split': record.get('split'),
+            },
         )

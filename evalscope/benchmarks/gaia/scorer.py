@@ -24,7 +24,7 @@ def normalize_number_str(number_str: str) -> float:
 
 
 def split_string(s: str, char_list: List[str] = [',', ';']) -> List[str]:
-    pattern = f"[{''.join(char_list)}]"
+    pattern = f'[{"".join(char_list)}]'
     return re.split(pattern, s)
 
 

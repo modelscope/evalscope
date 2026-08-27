@@ -118,11 +118,13 @@ def load_miniwob_records(
     for row in rows:
         task_id = row['task_name']
         episode_seeds = [int(seed) for seed in rng.randint(low=0, high=MINIWOB_SEED_MAX, size=repeats, dtype=np.int64)]
-        records.append({
-            **row,
-            'task_id': task_id,
-            '_episode_seeds': episode_seeds,
-        })
+        records.append(
+            {
+                **row,
+                'task_id': task_id,
+                '_episode_seeds': episode_seeds,
+            }
+        )
     return records, metadata_path
 
 

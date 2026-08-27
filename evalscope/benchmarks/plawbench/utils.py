@@ -465,7 +465,7 @@ def _iter_json_objects(text: str) -> List[str]:
         elif char == '}' and depth > 0:
             depth -= 1
             if depth == 0:
-                objects.append(text[start:index + 1])
+                objects.append(text[start : index + 1])
     if depth > 0 and start >= 0:
         objects.append(text[start:])
     return objects
@@ -588,8 +588,9 @@ def score_total_points(judge_json: Dict[str, Any], max_points: float) -> Tuple[f
     return acc, details
 
 
-def score_case_analysis(judge_json: Dict[str, Any],
-                        rubric_sections: List[Dict[str, Any]]) -> Tuple[Dict[str, float], Dict[str, Any]]:
+def score_case_analysis(
+    judge_json: Dict[str, Any], rubric_sections: List[Dict[str, Any]]
+) -> Tuple[Dict[str, float], Dict[str, Any]]:
     """Score the four ``case_analysis`` rubric sections.
 
     Section denominators come from the dataset rubric rather than the judge output, so a

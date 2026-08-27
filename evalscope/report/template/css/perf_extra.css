@@ -8,7 +8,7 @@
   padding: 0 0.75rem;
   overflow-x: auto;
   scrollbar-width: none;
-  background: rgba(255,255,255,0.015);
+  background: var(--surface-subtle);
 }
 .tab-nav::-webkit-scrollbar { display: none; }
 

@@ -37,10 +37,7 @@ def are_dicts_close(dict1: dict[Any, Any], dict2: dict[Any, Any], atol: float = 
                 return False
         elif isinstance(
             value1,
-            scipy.sparse.csr_matrix
-            | scipy.sparse.csc_matrix
-            | scipy.sparse.bsr_matrix
-            | scipy.sparse.coo_matrix,
+            scipy.sparse.csr_matrix | scipy.sparse.csc_matrix | scipy.sparse.bsr_matrix | scipy.sparse.coo_matrix,
         ):
             value1 = value1.toarray()
             value2 = value2.toarray()

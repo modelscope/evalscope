@@ -14,6 +14,7 @@ matches. The notable rules a reimplementation tends to get wrong:
   ``agent`` data; lists are compared for strict equality; dicts compare key counts plus a
   substring test on the stringified value.
 """
+
 import re
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
@@ -164,7 +165,8 @@ def string_checker(
 
     mismatch = (
         normalized_output != normalized_answer
-        if 'agent' in test_category else normalized_answer not in normalized_output
+        if 'agent' in test_category
+        else normalized_answer not in normalized_output
     )
     if mismatch:
         return _invalid(_value_error(param, func_name, possible_answer, model_output), 'value_error:string')
@@ -248,12 +250,7 @@ def simple_function_checker(
     func_name = func_description['name']
     if func_name not in model_output:
         return _invalid(
-            [{
-                'wrong_function': {
-                    'expected': func_name,
-                    'real': list(model_output.keys())[0]
-                }
-            }],
+            [{'wrong_function': {'expected': func_name, 'real': list(model_output.keys())[0]}}],
             'wrong_function_name',
         )
 
@@ -293,8 +290,14 @@ def simple_function_checker(
             continue
 
         result = _check_value(
-            param, value, possible_answer[param], func_name, test_category, expected_type_description,
-            expected_type_converted, nested_type_converted
+            param,
+            value,
+            possible_answer[param],
+            func_name,
+            test_category,
+            expected_type_description,
+            expected_type_converted,
+            nested_type_converted,
         )
         if result is not None and not result['valid']:
             return _invalid(result['error'], result['error_type'])
@@ -326,15 +329,15 @@ def _check_value(
     nested_type_converted: Any,
 ) -> Optional[CheckResult]:
     """Dispatch to the per-type value checker; ``None`` means no check applies."""
-    if expected_type_converted == dict:
+    if expected_type_converted == dict:  # noqa: E721
         return dict_checker(param, value, possible_answer, func_name)
-    if expected_type_converted == list and nested_type_converted == dict:
+    if expected_type_converted == list and nested_type_converted == dict:  # noqa: E721
         if expected_type_description == 'objectArray' and len(value) != len(possible_answer):
             return _invalid('Wrong number of parameters for dictionary.', 'value_error:dict_items')
         return list_dict_checker(param, value, possible_answer, func_name)
-    if expected_type_converted == str:
+    if expected_type_converted == str:  # noqa: E721
         return string_checker(param, value, possible_answer, func_name, test_category)
-    if expected_type_converted == list:
+    if expected_type_converted == list:  # noqa: E721
         return list_checker(param, value, possible_answer, func_name)
     return None
 
@@ -518,7 +521,8 @@ def milestone_accuracy(process_trace: List[str], milestones: Any) -> float:
 def _is_milestone_candidates(milestones: Any) -> bool:
     """Return whether the milestones hold several alternative call sequences."""
     return (
-        isinstance(milestones, list) and bool(milestones)
+        isinstance(milestones, list)
+        and bool(milestones)
         and all(isinstance(candidate, list) for candidate in milestones)
     )
 

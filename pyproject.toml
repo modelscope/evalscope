@@ -82,6 +82,7 @@ deep_swe         = {file = ["evalscope/benchmarks/deep_swe/requirements.txt"]}
 toolathlon       = {file = ["evalscope/benchmarks/toolathlon/requirements.txt"]}
 bfcl             = {file = ["evalscope/benchmarks/bfcl/requirements.txt"]}
 wide_search      = {file = ["evalscope/benchmarks/wide_search/requirements.txt"]}
+vtcbench         = {file = ["evalscope/benchmarks/vtcbench/requirements.txt"]}
 all = {file = [
   "requirements/opencompass.txt",
   "requirements/vlmeval.txt",
@@ -102,13 +103,33 @@ addopts = "-s -v"
 [tool.ruff]
 include = [
   "pyproject.toml",
+  "*.py",
   "evalscope/**/*.py",
+  "scripts/release/**/*.py",
   "tests/**/*.py",
 ]
-extend-exclude = ["docs", "examples", "scripts"]
+extend-exclude = [
+  "docs",
+  "examples",
+  "evalscope/utils/utils.py",
+  "evalscope/third_party",
+  "evalscope/backend/rag_eval/clip_benchmark/tasks",
+  "evalscope/backend/rag_eval/cmteb/tasks",
+  "evalscope/metrics/vision/t2v_metrics",
+]
 force-exclude = true
 line-length = 120
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["I"]
+select = ["E", "F", "W", "I"]
+ignore = ["E501", "E741", "F401", "F403", "F405", "F541", "F821"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["E", "F", "W"]
+
+[tool.ruff.format]
+exclude = ["tests/**/*.py"]
+indent-style = "space"
+line-ending = "lf"
+quote-style = "single"

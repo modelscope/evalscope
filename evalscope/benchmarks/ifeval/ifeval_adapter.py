@@ -65,7 +65,6 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
     )
 )
 class IFEvalAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         check_import(

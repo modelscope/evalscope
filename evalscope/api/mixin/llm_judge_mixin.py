@@ -55,8 +55,9 @@ class LLMJudgeMixin:
         if legacy is None or 'scoring_policy' in cls.__dict__:
             return
         deprecated_warning(
-            logger, f'{cls.__name__} declares `llm_judge_default`, which is deprecated and will be removed in '
-            'v2.0.0. Declare `scoring_policy` instead.'
+            logger,
+            f'{cls.__name__} declares `llm_judge_default`, which is deprecated and will be removed in '
+            'v2.0.0. Declare `scoring_policy` instead.',
         )
         cls.scoring_policy = ScoringPolicy.JUDGE_DEFAULT if legacy else ScoringPolicy.RULE_DEFAULT
 
@@ -141,10 +142,13 @@ class LLMJudgeMixin:
         """Return typed judge model specifications as model-construction dictionaries."""
         config = self._judge_config
         contract = config.contract.model_dump(exclude_none=True)
-        return [{
-            **spec.model_dump(exclude={'judge_id'}, exclude_none=True),
-            **contract,
-        } for spec in config.models]
+        return [
+            {
+                **spec.model_dump(exclude={'judge_id'}, exclude_none=True),
+                **contract,
+            }
+            for spec in config.models
+        ]
 
     def init_llm_judges(self) -> List[LLMJudge]:
         """Build every configured judge model.
@@ -278,12 +282,7 @@ class LLMJudgeMixin:
         return JudgeDefinition.labels(
             prompt=prompt,
             schema_model=_correctness_model(tuple(sorted(judge.score_mapping))),
-            scores={
-                label: {
-                    self.judge_metric_name: score
-                }
-                for label, score in judge.score_mapping.items()
-            },
+            scores={label: {self.judge_metric_name: score} for label, score in judge.score_mapping.items()},
             system_prompt=judge.system_prompt,
             main_score_name=self.judge_metric_name,
         )
@@ -304,9 +303,11 @@ class LLMJudgeMixin:
         """Retain rule evidence when a ``JUDGE_DEFAULT`` review is unavailable."""
         fallback = rule_based_score.model_copy(deep=True)
         fallback.status = ScoreStatus.DEGRADED
-        fallback.judge_summary = judge_score.judge_summary.model_copy(
-            update={'status': ScoreStatus.DEGRADED}
-        ) if judge_score.judge_summary is not None else None
+        fallback.judge_summary = (
+            judge_score.judge_summary.model_copy(update={'status': ScoreStatus.DEGRADED})
+            if judge_score.judge_summary is not None
+            else None
+        )
         fallback.metadata = {
             **(fallback.metadata or {}),
             **(judge_score.metadata or {}),
@@ -323,9 +324,11 @@ class LLMJudgeMixin:
         if not llm_score.status.is_usable or not llm_score.value:
             # The rule score stands, so the sample is still scored -- it just fell back.
             rule_based_score.status = ScoreStatus.FALLBACK
-            rule_based_score.judge_summary = llm_score.judge_summary.model_copy(
-                update={'status': ScoreStatus.FALLBACK}
-            ) if llm_score.judge_summary is not None else None
+            rule_based_score.judge_summary = (
+                llm_score.judge_summary.model_copy(update={'status': ScoreStatus.FALLBACK})
+                if llm_score.judge_summary is not None
+                else None
+            )
             rule_based_score.metadata = {
                 **(rule_based_score.metadata or {}),
                 'judge_unavailable': llm_score.status.value,

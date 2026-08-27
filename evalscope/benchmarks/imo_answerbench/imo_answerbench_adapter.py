@@ -60,16 +60,11 @@ IMO-AnswerBench is a benchmark of 400 challenging problems sourced from the Inte
         few_shot_num=0,
         train_split=None,
         eval_split='train',  # Dataset only provides 'train' split
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class IMOAnswerBenchAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):

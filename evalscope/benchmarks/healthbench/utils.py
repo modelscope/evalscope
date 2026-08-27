@@ -8,7 +8,6 @@ logger = get_logger()
 
 
 class RubricItem:
-
     def __init__(self, criterion: str, points: float, tags: list[str]):
         self.criterion = criterion
         self.points = points
@@ -76,13 +75,15 @@ def construct_readable_explanation(rubric_items: list[RubricItem], grading_respo
     for rubric_item, grading_response in zip(rubric_items, grading_response_list):
         explanation = grading_response.get('explanation', 'No explanation provided')
         criteria_met = grading_response['criteria_met']
-        readable_explanation = (f'[{criteria_met}] {rubric_item}\n\tExplanation: {explanation}')
+        readable_explanation = f'[{criteria_met}] {rubric_item}\n\tExplanation: {explanation}'
         readable_explanation_list.append(readable_explanation)
-        rubric_items_with_grades.append({
-            **rubric_item.to_dict(),
-            'criteria_met': criteria_met,
-            'explanation': explanation,
-        })
+        rubric_items_with_grades.append(
+            {
+                **rubric_item.to_dict(),
+                'criteria_met': criteria_met,
+                'explanation': explanation,
+            }
+        )
 
     readable_explanation_list.sort(key=lambda x: x.startswith('[False]'), reverse=True)
     readable_explanation_str = '\n\n'.join(readable_explanation_list)

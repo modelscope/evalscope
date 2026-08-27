@@ -53,7 +53,6 @@ General Text-to-Image is a customizable benchmark adapter for evaluating text-to
     )
 )
 class GeneralT2IAdapter(Text2ImageAdapter):
-
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)

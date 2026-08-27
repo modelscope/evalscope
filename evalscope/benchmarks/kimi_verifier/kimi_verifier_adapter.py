@@ -12,6 +12,7 @@ Sample; ``_on_inference`` makes one chat completion call with a per-sample
 ``extra_body`` and catches BadRequestError as the success signal when a
 reject was expected.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
@@ -86,7 +87,6 @@ Kimi-Vendor-Verifier is a pre-flight compliance check for Kimi K2 / K2-Thinking 
     )
 )
 class KimiVerifierAdapter(FunctionCallAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -256,7 +256,7 @@ class KimiVerifierAdapter(FunctionCallAdapter):
                 'passed': 0,
             }
         else:
-            passed = (was_rejected == expected_reject)
+            passed = was_rejected == expected_reject
             score.value = {
                 'inference_error': 0,
                 'expected_reject': int(expected_reject),
@@ -305,6 +305,6 @@ class KimiVerifierAdapter(FunctionCallAdapter):
                 metric_name='inference_error_rate',
                 score=inference_errors / total if total else 0.0,
                 num=total,
-                metadata={'inference_errors': inference_errors}
+                metadata={'inference_errors': inference_errors},
             ),
         ]

@@ -77,7 +77,6 @@ form for Sanskrit-English).
     )
 )
 class IndicParamAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

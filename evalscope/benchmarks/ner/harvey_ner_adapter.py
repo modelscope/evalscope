@@ -70,7 +70,7 @@ class HarveyNERAdapter(NERAdapter):
                 'building, intersections of roads or rivers.'
             ),
             'RIVER': 'A river or a section of a river.',
-            'ROAD': 'A road or a section of a road.'
+            'ROAD': 'A road or a section of a road.',
         }
 
         # Setup entity mappings based on the defined entity types

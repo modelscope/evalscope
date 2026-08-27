@@ -1,4 +1,5 @@
 """Prediction parsing and scoring helpers for the ScreenSpot-Pro benchmark."""
+
 import base64
 import io
 import re

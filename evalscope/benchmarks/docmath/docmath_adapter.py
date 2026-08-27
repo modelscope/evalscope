@@ -75,7 +75,6 @@ DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within 
     )
 )
 class DocMathAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):
@@ -99,10 +98,7 @@ class DocMathAdapter(DefaultDataAdapter):
         return Sample(
             input=[ChatMessageUser(content=message)],
             target=str(ground_truth),
-            metadata={
-                'question_id': record.get('question_id', ''),
-                'answer_type': type(ground_truth).__name__
-            }
+            metadata={'question_id': record.get('question_id', ''), 'answer_type': type(ground_truth).__name__},
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState):
@@ -142,14 +138,17 @@ class DocMathAdapter(DefaultDataAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
-            prompt = ORM_USER_TEMPLATE.format(
-                problem=judge_context.task_state.metadata.get('question', ''),
-                answer_1=judge_context.reference,
-                answer_2=judge_context.filtered_prediction,
-            ) + case.output_contract.instruction()
+
+            prompt = (
+                ORM_USER_TEMPLATE.format(
+                    problem=judge_context.task_state.metadata.get('question', ''),
+                    answer_1=judge_context.reference,
+                    answer_2=judge_context.filtered_prediction,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT),
-                          ChatMessageUser(content=prompt)]
+                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT), ChatMessageUser(content=prompt)]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -159,5 +158,5 @@ class DocMathAdapter(DefaultDataAdapter):
             cases=[JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )

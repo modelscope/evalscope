@@ -61,7 +61,7 @@ class DataLoader(ABC):
         trust_remote: bool = True,
         force_redownload: bool = False,
         dataset_dir: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         self.data_id_or_path = data_id_or_path
         self.split = split
@@ -204,7 +204,7 @@ class LocalDataLoader(DataLoader):
             else:
                 file_paths = [
                     os.path.join(path, f'{self.subset}_{self.split}{ext}'),
-                    os.path.join(path, f'{self.subset}{ext}')
+                    os.path.join(path, f'{self.subset}{ext}'),
                 ]
             # If the file exists, load it
             for file_path in file_paths:
@@ -223,8 +223,12 @@ class LocalDataLoader(DataLoader):
                 available_files = sorted([f for f in os.listdir(path) if os.path.splitext(f)[1] in supported_exts])
                 raise FileNotFoundError(
                     f'No dataset file found for subset="{self.subset}", split="{self.split}" in "{path}".\n'
-                    f'Expected one of:\n' + '\n'.join(f'  - {p}' for p in expected_with_split) + '\n'
-                    + 'Available files in "' + path + '":\n'
+                    f'Expected one of:\n'
+                    + '\n'.join(f'  - {p}' for p in expected_with_split)
+                    + '\n'
+                    + 'Available files in "'
+                    + path
+                    + '":\n'
                     + ('\n'.join(f'  - {f}' for f in available_files) if available_files else '  (none)')
                 )
             elif os.path.isfile(path):
@@ -232,8 +236,7 @@ class LocalDataLoader(DataLoader):
                 _, file_ext = os.path.splitext(path)
                 if file_ext not in supported_exts:
                     raise FileNotFoundError(
-                        f'Unsupported file format "{file_ext}" for "{path}". '
-                        f'Supported formats: {supported_exts}'
+                        f'Unsupported file format "{file_ext}" for "{path}". Supported formats: {supported_exts}'
                     )
             else:
                 raise FileNotFoundError(f'Dataset path does not exist: "{path}"')
@@ -248,7 +251,7 @@ class LocalDataLoader(DataLoader):
                 self.limit = int(len(dataset) * self.limit)
             elif isinstance(self.limit, int) and self.limit < 0:
                 raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            dataset = dataset[:self.limit]
+            dataset = dataset[: self.limit]
 
         # repeat k times
         if self.repeats > 1:
@@ -295,14 +298,16 @@ class DictDataLoader(DataLoader):
                 self.limit = int(len(dataset) * self.limit)
             elif isinstance(self.limit, int) and self.limit < 0:
                 raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            dataset = dataset[:self.limit]
+            dataset = dataset[: self.limit]
 
         # repeat k times
         if self.repeats > 1:
             dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
 
         # return the dataset
-        memory_dataset = MemoryDataset(samples=data_to_samples(data=dataset, data_to_sample=data_to_sample), )
+        memory_dataset = MemoryDataset(
+            samples=data_to_samples(data=dataset, data_to_sample=data_to_sample),
+        )
 
         # Apply filtering if a filter function is provided
         if self.filter_func is not None:

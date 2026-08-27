@@ -10,7 +10,7 @@ from evalscope.perf.plugin.registry import register_dataset
 @register_dataset('longalpaca')
 class LongAlpacaDatasetPlugin(DatasetPluginBase):
     """Read data from file which is list of requests.
-           Sample: https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/files
+    Sample: https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/files
     """
 
     args_schema = TextDatasetArgs

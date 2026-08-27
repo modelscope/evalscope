@@ -16,7 +16,6 @@ logger = get_logger()
 
 
 class AioHttpClient:
-
     def __init__(
         self,
         args: Arguments,
@@ -50,7 +49,7 @@ class AioHttpClient:
             connector=connector,
             trust_env=True,
             timeout=client_timeout,
-            trace_configs=[self._create_trace_config()] if args.debug else []
+            trace_configs=[self._create_trace_config()] if args.debug else [],
         )
 
     @staticmethod

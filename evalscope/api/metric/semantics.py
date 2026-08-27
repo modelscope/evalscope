@@ -25,24 +25,26 @@ DIAGNOSTIC_FALLBACK_PRECISION = 4
 Scalar = Union[str, int, float, bool]
 _CANONICAL_NAME_PATTERN = re.compile(r'^[a-z][a-z0-9_]*$')
 
-KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset({
-    # No aggregation: the value is reported as a single number.
-    'identity',
-    # Averages.
-    'mean',
-    'macro_mean',
-    'micro_mean',
-    'weighted_mean',
-    'clipped_mean',
-    # k-sample aggregations. The k itself is `dimensions.k`, never part of this name.
-    'pass_at_k',
-    'pass_hat_k',
-    'vote_at_k',
-    'max',
-    # Benchmark-owned aggregations, computed inside an adapter's `aggregate_scores`.
-    'official',
-    'rate',
-})
+KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset(
+    {
+        # No aggregation: the value is reported as a single number.
+        'identity',
+        # Averages.
+        'mean',
+        'macro_mean',
+        'micro_mean',
+        'weighted_mean',
+        'clipped_mean',
+        # k-sample aggregations. The k itself is `dimensions.k`, never part of this name.
+        'pass_at_k',
+        'pass_hat_k',
+        'vote_at_k',
+        'max',
+        # Benchmark-owned aggregations, computed inside an adapter's `aggregate_scores`.
+        'official',
+        'rate',
+    }
+)
 """Aggregation names that may appear in a :class:`MetricIdentity`.
 
 This is the vocabulary of the identity's aggregation axis, which is *not* the aggregator registry:
@@ -290,13 +292,13 @@ class MetricSemantics(BaseModel):
         # Percent display needs an explicit range and multiplier.
         if self.display_kind == MetricDisplayKind.PERCENT:
             missing = [
-                name for name, value in (('value_range', self.value_range),
-                                         ('display_multiplier', self.display_multiplier)) if value is None
+                name
+                for name, value in (('value_range', self.value_range), ('display_multiplier', self.display_multiplier))
+                if value is None
             ]
             if missing:
                 raise ValueError(
-                    f"semantic_id='{self.semantic_id}': display_kind='percent' requires "
-                    f"{' and '.join(missing)}"
+                    f"semantic_id='{self.semantic_id}': display_kind='percent' requires {' and '.join(missing)}"
                 )
 
         # Reject non-positive scaling and negative precision.

@@ -19,8 +19,9 @@ def collect_metric_names(scores: List[SampleScore]) -> List[str]:
     return list(metric_names)
 
 
-def collect_planned_attempts(scores: List[SampleScore],
-                             metric_name: str) -> Dict[Any, Dict[int, Optional[SampleScore]]]:
+def collect_planned_attempts(
+    scores: List[SampleScore], metric_name: str
+) -> Dict[Any, Dict[int, Optional[SampleScore]]]:
     """Keep every planned position so unavailable attempts cannot shift later trials forward."""
     grouped: Dict[Any, Dict[int, Optional[SampleScore]]] = defaultdict(dict)
     for score in scores:
@@ -51,7 +52,6 @@ def eligible_prefixes(
 
 @register_aggregation(name='mean')
 class Mean(Aggregator):
-
     name = 'mean'
 
     def agg_func(self, values: List[float]) -> float:
@@ -74,7 +74,6 @@ class Mean(Aggregator):
         metric_sample_ids = defaultdict(list)
 
         for score in scores:
-
             for metric_name, value in score.score.value.items():
                 metric_values[metric_name].append(value)
                 metric_sample_ids[metric_name].append(score.sample_id)
@@ -89,7 +88,7 @@ class Mean(Aggregator):
                         metric_name=metric_name,
                         aggregation=self.name,
                         num=len(values),
-                        ids=metric_sample_ids[metric_name]
+                        ids=metric_sample_ids[metric_name],
                     )
                 )
 
@@ -98,7 +97,6 @@ class Mean(Aggregator):
 
 @register_aggregation(name='clipped_mean')
 class ClippedMean(Mean):
-
     name = 'clipped_mean'
 
     def __init__(self, clip_min: float = 0.0, clip_max: float = 1.0):
@@ -112,7 +110,6 @@ class ClippedMean(Mean):
 
 @register_aggregation(name='mean_and_pass_at_k')
 class MeanPassAtK(Aggregator):
-
     def __init__(self):
         self.name = 'mean_and_pass_at_k'
 
@@ -139,11 +136,13 @@ class MeanPassAtK(Aggregator):
                 continue
             for n, eligible in prefixes.items():
                 group_order = [group_id for group_id, _ in eligible]
-                values_by_group = [[
-                    float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None
-                ] for _, attempts in eligible]
-                values = calculate_pass_at_k([len(items) for items in values_by_group],
-                                             [int(sum(items)) for items in values_by_group], n)
+                values_by_group = [
+                    [float(attempt.score.value[metric_name]) for attempt in attempts.values() if attempt is not None]
+                    for _, attempts in eligible
+                ]
+                values = calculate_pass_at_k(
+                    [len(items) for items in values_by_group], [int(sum(items)) for items in values_by_group], n
+                )
                 aggregated_scores.append(
                     AggScore(
                         score=mean(values.tolist()),
@@ -166,7 +165,6 @@ class MeanPassAtK(Aggregator):
 
 @register_aggregation(name='mean_and_vote_at_k')
 class MeanVoteAtK(Aggregator):
-
     def __init__(self):
         self.name = 'mean_and_vote_at_k'
 
@@ -206,8 +204,10 @@ class MeanVoteAtK(Aggregator):
             for n, eligible in prefixes.items():
                 vote_at_n_map: Dict[Any, float] = {}
                 for group_id, attempts in eligible:
-                    n_samples = [(attempts[index].score.extracted_prediction, attempts[index].score.value[metric_name])
-                                 for index in range(n)]
+                    n_samples = [
+                        (attempts[index].score.extracted_prediction, attempts[index].score.value[metric_name])
+                        for index in range(n)
+                    ]
 
                     # Count prediction frequencies
                     prediction_counts = defaultdict(int)
@@ -247,7 +247,6 @@ class MeanVoteAtK(Aggregator):
 
 @register_aggregation(name='mean_and_pass_hat_k')
 class MeanPassHatK(Aggregator):
-
     def __init__(self):
         self.name = 'mean_and_pass_hat_k'
 

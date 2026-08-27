@@ -1,4 +1,5 @@
 """Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
+
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence
 

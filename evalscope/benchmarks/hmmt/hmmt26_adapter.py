@@ -56,16 +56,11 @@ HMMT February 2026 is a challenging evaluation benchmark derived from the Harvar
         few_shot_num=0,
         train_split=None,
         eval_split='train',  # Dataset only provides 'train' split
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class HMMT26Adapter(DefaultDataAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         problem = str(record.get('problem', '')).strip()
         target = str(record.get('answer', '')).strip()

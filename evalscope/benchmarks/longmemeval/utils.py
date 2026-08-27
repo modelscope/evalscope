@@ -61,7 +61,7 @@ def get_anscheck_prompt(task: str, question: str, answer: str, response: str, ab
             'the response only contains a subset of the information required by the answer, answer no. In addition, '
             'do not penalize off-by-one errors for the number of days. If the question asks for the number of '
             'days/weeks/months, etc., and the model makes off-by-one errors (e.g., predicting 19 days when the answer '
-            'is 18), the model\'s response is still correct. \n\nQuestion: {}\n\nCorrect Answer: {}\n\nModel '
+            "is 18), the model's response is still correct. \n\nQuestion: {}\n\nCorrect Answer: {}\n\nModel "
             'Response: {}\n\nIs the model response correct?'
         )
         return template.format(question, answer, response)
@@ -81,7 +81,7 @@ def get_anscheck_prompt(task: str, question: str, answer: str, response: str, ab
             'I will give you a question, a rubric for desired personalized response, and a response from a model. '
             'Please answer yes if the response satisfies the desired response. Otherwise, answer no. The model does '
             'not need to reflect all the points in the rubric. The response is correct as long as it recalls and '
-            'utilizes the user\'s personal information correctly.\n\nQuestion: {}\n\nRubric: {}\n\nModel Response: '
+            "utilizes the user's personal information correctly.\n\nQuestion: {}\n\nRubric: {}\n\nModel Response: "
             '{}\n\nIs the model response correct?'
         )
         return template.format(question, answer, response)
@@ -128,8 +128,12 @@ def _select_chunks(
     retriever_type: str,
 ) -> List[Tuple[str, str, Any]]:
     if eval_mode in ['long_context', 'oracle_context']:
-        chunks = [(date, session_id, _filter_user_only(session, user_only)) for date, session_id, session in
-                  zip(entry['haystack_dates'], entry['haystack_session_ids'], entry['haystack_sessions'])]
+        chunks = [
+            (date, session_id, _filter_user_only(session, user_only))
+            for date, session_id, session in zip(
+                entry['haystack_dates'], entry['haystack_session_ids'], entry['haystack_sessions']
+            )
+        ]
         return chunks[-topk_context:]
 
     if eval_mode != 'retrieval_log':
@@ -216,10 +220,13 @@ def _format_history(chunks: List[Tuple[str, str, Any]], history_format: str) -> 
 
 def _format_nl(chunk: Any) -> str:
     if isinstance(chunk, list):
-        return ''.join([
-            f"\n\n{turn.get('role', '')}: {str(turn.get('content', '')).strip()}" for turn in chunk
-            if isinstance(turn, dict)
-        ])
+        return ''.join(
+            [
+                f'\n\n{turn.get("role", "")}: {str(turn.get("content", "")).strip()}'
+                for turn in chunk
+                if isinstance(turn, dict)
+            ]
+        )
     if isinstance(chunk, dict):
-        return f"{chunk.get('role', '')}: {str(chunk.get('content', '')).strip()}"
+        return f'{chunk.get("role", "")}: {str(chunk.get("content", "")).strip()}'
     return str(chunk)

@@ -21,7 +21,6 @@ class DatasetEntry(BaseModel):
 
 # Define an abstract base class for Samplers
 class Sampler(ABC):
-
     def __init__(self, schema: CollectionSchema):
         self.schema = schema
 

@@ -18,6 +18,7 @@ logger = get_logger()
 
 class EvalMode:
     """Evaluation modes for RefCOCO benchmark."""
+
     BBOX = 'bbox'  # Image Captioning with BBox visualization
     SEG = 'seg'  # Image Captioning with Segmentation visualization
     BBOX_REC = 'bbox_rec'  # Referring Expression Comprehension (REC)
@@ -68,8 +69,20 @@ RefCOCO is a dataset for training and evaluating models on Referring Expression 
         tags=[Tags.KNOWLEDGE, Tags.MULTI_MODAL, Tags.GROUNDING, Tags.IMAGE_CAPTIONING],
         dataset_id='lmms-lab/RefCOCO',
         metric_list=[
-            'IoU', 'ACC@0.1', 'ACC@0.3', 'ACC@0.5', 'ACC@0.7', 'ACC@0.9', 'Center_ACC', 'Bleu_1', 'Bleu_2', 'Bleu_3',
-            'Bleu_4', 'METEOR', 'ROUGE_L', 'CIDEr'
+            'IoU',
+            'ACC@0.1',
+            'ACC@0.3',
+            'ACC@0.5',
+            'ACC@0.7',
+            'ACC@0.9',
+            'Center_ACC',
+            'Bleu_1',
+            'Bleu_2',
+            'Bleu_3',
+            'Bleu_4',
+            'METEOR',
+            'ROUGE_L',
+            'CIDEr',
         ],
         primary_metric='iou',
         subset_list=['test', 'val', 'testA', 'testB'],
@@ -81,13 +94,12 @@ RefCOCO is a dataset for training and evaluating models on Referring Expression 
                 'seg: image caption task, visualize the original image with segmentation; '
                 'bbox_rec: grounding task, recognize bounding box coordinates.',
                 'value': EvalMode.BBOX,
-                'choices': [EvalMode.BBOX, EvalMode.SEG, EvalMode.BBOX_REC]
+                'choices': [EvalMode.BBOX, EvalMode.SEG, EvalMode.BBOX_REC],
             }
-        }
+        },
     )
 )
 class RefCOCOAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True
@@ -140,7 +152,7 @@ class RefCOCOAdapter(DefaultDataAdapter):
             'original_bbox': original_bbox,
             'bbox': bbox_norm,
             'eval_mode': self.eval_mode,
-            'image_size': image_size if self.eval_mode == EvalMode.BBOX_REC else None
+            'image_size': image_size if self.eval_mode == EvalMode.BBOX_REC else None,
         }
 
         if self.eval_mode == EvalMode.BBOX_REC:
@@ -148,8 +160,9 @@ class RefCOCOAdapter(DefaultDataAdapter):
         else:
             return self._create_caption_sample(record, image_base64, metadata)
 
-    def _create_bbox_rec_samples(self, record: Dict, image_base64: str, bbox_norm: List[float],
-                                 metadata: Dict) -> List[Sample]:
+    def _create_bbox_rec_samples(
+        self, record: Dict, image_base64: str, bbox_norm: List[float], metadata: Dict
+    ) -> List[Sample]:
         """Create samples for Bounding Box Recognition (REC) task."""
         answers = record.get('answer', [])
         target = str(bbox_norm)

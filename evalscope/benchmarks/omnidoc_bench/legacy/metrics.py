@@ -77,49 +77,60 @@ def get_page_split(samples, page_info):  # Page level metric
         for metric, score in sample['metric'].items():
             gt = sample['norm_gt'] if sample.get('norm_gt') else sample['gt']
             pred = sample['norm_pred'] if sample.get('norm_pred') else sample['pred']
-            result_list[metric].append({
-                'image_name': img_name,
-                'metric': metric,
-                'attribute': 'ALL',
-                'score': score,
-                'upper_len': max(len(gt), len(pred))
-            })
+            result_list[metric].append(
+                {
+                    'image_name': img_name,
+                    'metric': metric,
+                    'attribute': 'ALL',
+                    'score': score,
+                    'upper_len': max(len(gt), len(pred)),
+                }
+            )
             for k, v in page_info_s.items():
                 if isinstance(v, list):  # special issue
                     for special_issue in v:
                         if 'table' not in special_issue:  # Table-related special fields have duplicates
-                            result_list[metric].append({
-                                'image_name': img_name,
-                                'metric': metric,
-                                'attribute': special_issue,
-                                'score': score,
-                                'upper_len': max(len(gt), len(pred))
-                            })
+                            result_list[metric].append(
+                                {
+                                    'image_name': img_name,
+                                    'metric': metric,
+                                    'attribute': special_issue,
+                                    'score': score,
+                                    'upper_len': max(len(gt), len(pred)),
+                                }
+                            )
                 else:
-                    result_list[metric].append({
-                        'image_name': img_name,
-                        'metric': metric,
-                        'attribute': k + ': ' + str(v),
-                        'score': score,
-                        'upper_len': max(len(gt), len(pred))
-                    })
+                    result_list[metric].append(
+                        {
+                            'image_name': img_name,
+                            'metric': metric,
+                            'attribute': k + ': ' + str(v),
+                            'score': score,
+                            'upper_len': max(len(gt), len(pred)),
+                        }
+                    )
 
     # Page level logic, accumulation is only done within pages, and mean operation is performed between pages
     result = {}
     if result_list.get('Edit_dist'):
         df = pd.DataFrame(result_list['Edit_dist'])
-        up_total_avg = df.groupby(
-            ['image_name', 'attribute']
-        ).apply(lambda x: (x['score'] * x['upper_len']).sum() / x['upper_len'].sum(),
-                include_groups=False).groupby('attribute').mean(
-                )  # At page level, accumulate edits, denominator is sum of max(gt, pred) from each sample
+        up_total_avg = (
+            df.groupby(['image_name', 'attribute'])
+            .apply(lambda x: (x['score'] * x['upper_len']).sum() / x['upper_len'].sum(), include_groups=False)
+            .groupby('attribute')
+            .mean()
+        )  # At page level, accumulate edits, denominator is sum of max(gt, pred) from each sample
         result['Edit_dist'] = up_total_avg.to_dict()
     for metric in result_list.keys():
         if metric == 'Edit_dist':
             continue
         df = pd.DataFrame(result_list[metric])
-        page_avg = df.groupby(['image_name', 'attribute']).apply(lambda x: x['score'].mean(),
-                                                                 include_groups=False).groupby('attribute').mean()
+        page_avg = (
+            df.groupby(['image_name', 'attribute'])
+            .apply(lambda x: x['score'].mean(), include_groups=False)
+            .groupby('attribute')
+            .mean()
+        )
         result[metric] = page_avg.to_dict()
 
     result = sort_nested_dict(result)
@@ -135,8 +146,9 @@ def get_groups(samples, group_info):
         for group in group_info:
             select_flag = True
             for k, v in group.items():
-                for gt_attribute in sample['gt_attribute'
-                                           ]:  # gt_attribute is a list containing all merged gt attributes
+                for gt_attribute in sample[
+                    'gt_attribute'
+                ]:  # gt_attribute is a list containing all merged gt attributes
                     if not gt_attribute:  # if no GT attributes, don't include in calculation
                         select_flag = False
                     elif gt_attribute[k] != v:  # if any gt attribute doesn't meet criteria, don't select
@@ -147,7 +159,6 @@ def get_groups(samples, group_info):
 
 
 class Registry:
-
     def __init__(self):
         self._registry = {}
 
@@ -174,8 +185,7 @@ METRIC_REGISTRY = Registry()
 
 
 @METRIC_REGISTRY.register('TEDS')
-class call_TEDS():
-
+class call_TEDS:
     def __init__(self, samples):
         self.samples = samples
 
@@ -205,8 +215,9 @@ class call_TEDS():
             for group in group_info:
                 select_flag = True
                 for k, v in group.items():
-                    for gt_attribute in sample['gt_attribute'
-                                               ]:  # gt_attribute is a list containing all merged gt attributes
+                    for gt_attribute in sample[
+                        'gt_attribute'
+                    ]:  # gt_attribute is a list containing all merged gt attributes
                         if not gt_attribute:  # if no GT attributes, don't include in calculation
                             select_flag = False
                         elif gt_attribute[k] != v:  # if any gt attribute doesn't meet criteria, don't select
@@ -251,8 +262,7 @@ def tokenize(text) -> list[str]:
 
 
 @METRIC_REGISTRY.register('BLEU')
-class call_BLEU():
-
+class call_BLEU:
     def __init__(self, samples):
         self.samples = samples
 
@@ -273,6 +283,7 @@ class call_BLEU():
             else:
                 try:
                     from nltk.translate.bleu_score import corpus_bleu
+
                     bleu_score = corpus_bleu(references, predictions)
                 except ZeroDivisionError:
                     bleu_score = 0
@@ -283,8 +294,7 @@ class call_BLEU():
 
 
 @METRIC_REGISTRY.register('METEOR')
-class call_METEOR():
-
+class call_METEOR:
     def __init__(self, samples):
         self.samples = samples
 
@@ -304,6 +314,7 @@ class call_METEOR():
             else:
                 try:
                     from nltk.translate.meteor_score import meteor_score
+
                     total_score = 0
                     for ref, pred in zip(references, predictions):
                         score = meteor_score([ref], pred)
@@ -318,16 +329,15 @@ class call_METEOR():
 
 
 @METRIC_REGISTRY.register('Edit_dist')
-class call_Edit_dist():
-
+class call_Edit_dist:
     def __init__(self, samples):
         self.samples = samples
 
     def evaluate(self, group_info=[], save_name='default'):
         samples = self.samples
         for sample in samples:
-            img_name = sample['img_id'] if sample['img_id'].endswith('.jpg') else '_'.join(
-                sample['img_id'].split('_')[:-1]
+            img_name = (
+                sample['img_id'] if sample['img_id'].endswith('.jpg') else '_'.join(sample['img_id'].split('_')[:-1])
             )
             sample['image_name'] = img_name
             gt = sample['norm_gt'] if sample.get('norm_gt') else sample['gt']
@@ -358,8 +368,7 @@ class call_Edit_dist():
 
 
 @METRIC_REGISTRY.register('CDM')
-class call_CDM():
-
+class call_CDM:
     def __init__(self, samples):
         self.samples = samples
 
@@ -379,8 +388,7 @@ class call_CDM():
 
 
 class TEDS(object):
-    ''' Tree Edit Distance basead Similarity
-    '''
+    """Tree Edit Distance basead Similarity"""
 
     def __init__(self, structure_only=False, n_jobs=1, ignore_nodes=None):
         assert isinstance(n_jobs, int) and (n_jobs >= 1), 'n_jobs must be an integer greather than 1'
@@ -390,8 +398,7 @@ class TEDS(object):
         self.__tokens__ = []
 
     def tokenize(self, node):
-        ''' Tokenizes table cells
-        '''
+        """Tokenizes table cells"""
         self.__tokens__.append('<%s>' % node.tag)
         if node.text is not None:
             self.__tokens__ += list(node.text)
@@ -403,8 +410,7 @@ class TEDS(object):
             self.__tokens__ += list(node.tail)
 
     def load_html_tree(self, node, parent=None):
-        ''' Converts HTML tree to the format required by apted
-        '''
+        """Converts HTML tree to the format required by apted"""
         global __tokens__
         if node.tag == 'td':
             if self.structure_only:
@@ -427,9 +433,9 @@ class TEDS(object):
             return new_node
 
     def evaluate(self, pred, true):
-        ''' Computes TEDS score between the prediction and the ground truth of a
-            given sample
-        '''
+        """Computes TEDS score between the prediction and the ground truth of a
+        given sample
+        """
         if (not pred) or (not true):
             return 0.0
         parser = html.HTMLParser(remove_comments=True, encoding='utf-8')
@@ -452,12 +458,12 @@ class TEDS(object):
             return 0.0
 
     def batch_evaluate(self, pred_json, true_json):
-        ''' Computes TEDS score between the prediction and the ground truth of
-            a batch of samples
-            @params pred_json: {'FILENAME': 'HTML CODE', ...}
-            @params true_json: {'FILENAME': {'html': 'HTML CODE'}, ...}
-            @output: {'FILENAME': 'TEDS SCORE', ...}
-        '''
+        """Computes TEDS score between the prediction and the ground truth of
+        a batch of samples
+        @params pred_json: {'FILENAME': 'HTML CODE', ...}
+        @params true_json: {'FILENAME': {'html': 'HTML CODE'}, ...}
+        @output: {'FILENAME': 'TEDS SCORE', ...}
+        """
         samples = true_json.keys()
         # if self.n_jobs == 1:
         scores = [self.evaluate(pred_json.get(filename, ''), true_json[filename]['html']) for filename in tqdm(samples)]
@@ -469,30 +475,26 @@ class TEDS(object):
 
 
 class CustomConfig(Config):
-
     @staticmethod
     def maximum(*sequences):
-        """Get maximum possible value
-        """
+        """Get maximum possible value"""
         return max(map(len, sequences))
 
     def normalized_distance(self, *sequences):
-        """Get distance from 0 to 1
-        """
+        """Get distance from 0 to 1"""
         return float(Levenshtein.distance(*sequences)) / self.maximum(*sequences)
 
     def rename(self, node1, node2):
         """Compares attributes of trees"""
         if (node1.tag != node2.tag) or (node1.colspan != node2.colspan) or (node1.rowspan != node2.rowspan):
-            return 1.
+            return 1.0
         if node1.tag == 'td':
             if node1.content or node2.content:
                 return self.normalized_distance(node1.content, node2.content)
-        return 0.
+        return 0.0
 
 
 class TableTree(Tree):
-
     def __init__(self, tag, colspan=None, rowspan=None, content=None, *children):
         self.tag = tag
         self.colspan = colspan
@@ -503,8 +505,12 @@ class TableTree(Tree):
     def bracket(self):
         """Show tree using brackets notation"""
         if self.tag == 'td':
-            result = '"tag": %s, "colspan": %d, "rowspan": %d, "text": %s' % \
-                     (self.tag, self.colspan, self.rowspan, self.content)
+            result = '"tag": %s, "colspan": %d, "rowspan": %d, "text": %s' % (
+                self.tag,
+                self.colspan,
+                self.rowspan,
+                self.content,
+            )
         else:
             result = '"tag": %s' % self.tag
         for child in self.children:
@@ -512,8 +518,7 @@ class TableTree(Tree):
         return '{{{}}}'.format(result)
 
 
-class recogition_end2end_base_dataset():
-
+class recogition_end2end_base_dataset:
     def __init__(self, samples):
         img_id = 0
         for sample in samples:
@@ -527,7 +532,6 @@ class recogition_end2end_base_dataset():
 
 
 class recogition_end2end_table_dataset(recogition_end2end_base_dataset):
-
     def __init__(self, samples, table_format):
         self.pred_table_format = table_format
         self.samples = self.normalize_data(samples)

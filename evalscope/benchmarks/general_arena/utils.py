@@ -35,7 +35,8 @@ def process_review_item(review_result: ReviewResult) -> list:
         'Input': review_result.messages_markdown,
         'Question': review_result.messages_markdown,  # Use rendered messages as question
         'Generated': prediction
-        if prediction != extracted_prediction else extracted_prediction or '',  # Ensure no None value
+        if prediction != extracted_prediction
+        else extracted_prediction or '',  # Ensure no None value
         'Gold': target,
         'Pred': extracted_prediction,
         'Score': sample_score.score.model_dump(exclude_none=True),
@@ -157,7 +158,7 @@ def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gp
     # one tie => one A win + one B win
     # find tie + tie (both bad) index
     tie_idx = (df['winner'] == 'tie') | (df['winner'] == 'tie (bothbad)')
-    tie_idx[len(tie_idx) // 2:] = False
+    tie_idx[len(tie_idx) // 2 :] = False
     Y[tie_idx] = 1.0
 
     if len(np.unique(Y)) < 2:
@@ -170,6 +171,7 @@ def compute_mle_elo(df, scale=400, base=10, init_rating=1000, baseline_model='gp
         return elo_scores.sort_values(ascending=False)
 
     from sklearn.linear_model import LogisticRegression
+
     lr = LogisticRegression(
         fit_intercept=False, penalty=None, tol=1e-8
     )  # May need to set a small value when not use GPT4 as judge model
@@ -201,7 +203,7 @@ def predict_win_rate(elo_ratings, scale=400, base=10, init_rating=1000):
     wins = defaultdict(lambda: defaultdict(lambda: 0))
     for a in names:
         for b in names:
-            ea = 1 / (1 + base**((elo_ratings[b] - elo_ratings[a]) / scale))
+            ea = 1 / (1 + base ** ((elo_ratings[b] - elo_ratings[a]) / scale))
             wins[a][b] = ea
             wins[b][a] = 1 - ea
 

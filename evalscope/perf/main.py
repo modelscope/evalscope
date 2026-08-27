@@ -167,7 +167,7 @@ def run_perf_benchmark(args):
     # Initialize local server if needed
     if args.api.startswith('local'):
         #  start local server
-        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args),), daemon=True)
         server.start()
 
     total_count = sum(args.number) if isinstance(args.number, list) else args.number

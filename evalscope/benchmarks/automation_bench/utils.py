@@ -136,7 +136,6 @@ def _create_automation_bench_env(
     """Construct the official environment without Verifiers' process-level hooks."""
 
     class EvalScopeAutomationBenchEnv(environment_cls):
-
         def __post_init__(self) -> None:
             self._stop_conditions = discover_decorated(self, 'stop')
             self._cleanup_handlers = discover_decorated(self, 'cleanup')

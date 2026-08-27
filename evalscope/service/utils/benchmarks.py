@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Benchmark catalogue and description helpers for the EvalScope service."""
+
 import re
 from typing import Any, Dict, List, Optional
 

@@ -68,17 +68,19 @@ class Text2SpeechAPI(ModelAPI):
         return ModelOutput(
             model=self.model_name,
             choices=[
-                ChatCompletionChoice.from_content([
-                    ContentAudio(
-                        audio=bytes_to_base64(
-                            audio_bytes,
+                ChatCompletionChoice.from_content(
+                    [
+                        ContentAudio(
+                            audio=bytes_to_base64(
+                                audio_bytes,
+                                format=self.audio_format,
+                                add_header=True,
+                                content_type='audio',
+                            ),
                             format=self.audio_format,
-                            add_header=True,
-                            content_type='audio',
-                        ),
-                        format=self.audio_format,
-                    )
-                ])
+                        )
+                    ]
+                )
             ],
             time=time.monotonic() - start_time,
             metadata=metadata,
@@ -101,10 +103,7 @@ class Text2SpeechAPI(ModelAPI):
         self._provider_kwargs = model_args
 
         if not self.api_key and not (self.app_id and self.access_key):
-            raise ValueError(
-                'api_key is required for Volcengine text2speech. '
-                'Set --api-key or VOLCENGINE_TTS_API_KEY.'
-            )
+            raise ValueError('api_key is required for Volcengine text2speech. Set --api-key or VOLCENGINE_TTS_API_KEY.')
         if not self.speaker and 'speaker' not in self.req_params:
             raise ValueError('model_args.speaker is required for Volcengine text2speech.')
         if self.audio_format not in self.VOLCENGINE_FORMATS:
@@ -122,8 +121,7 @@ class Text2SpeechAPI(ModelAPI):
             raise ValueError('api_key is required for OpenAI text2speech. Set --api-key or OPENAI_API_KEY.')
         if self.audio_format not in self.OPENAI_FORMATS:
             raise ValueError(
-                'text2speech output format must be one of '
-                f'{", ".join(sorted(self.OPENAI_FORMATS))} for OpenAI.'
+                f'text2speech output format must be one of {", ".join(sorted(self.OPENAI_FORMATS))} for OpenAI.'
             )
         if self.speed is not None:
             try:

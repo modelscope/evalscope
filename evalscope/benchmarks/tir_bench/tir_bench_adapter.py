@@ -116,8 +116,7 @@ class TIRBenchAdapter(VisionLanguageAdapter):
                 logger.info('Extraction complete.')
             else:
                 logger.warning(
-                    f'data.zip not found at {zip_path}. '
-                    'Image loading may fail if images are not already extracted.'
+                    f'data.zip not found at {zip_path}. Image loading may fail if images are not already extracted.'
                 )
 
         return self.load_from_remote()
@@ -190,6 +189,7 @@ class TIRBenchAdapter(VisionLanguageAdapter):
             return prediction
 
         from .utils import extract_answer_with_classify
+
         return extract_answer_with_classify(prediction, task_state.target)
 
     # ------------------------------------------------------------------

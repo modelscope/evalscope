@@ -39,7 +39,7 @@ def default_evaluation_params():
         'LTRB': False,  # LTRB:2points(left,top,right,bottom) or 4 points(x1,y1,x2,y2,x3,y3,x4,y4)
         'CRLF': False,  # Lines are delimited by Windows CRLF format
         'CONFIDENCES': False,  # Detections must include confidence value. AP will be calculated,
-        'SPECIAL_CHARACTERS': "!?.:,*\"()·[]/'",
+        'SPECIAL_CHARACTERS': '!?.:,*"()·[]/\'',
         'ONLY_REMOVE_FIRST_LAST_CHARACTER': True,
     }
 
@@ -125,7 +125,7 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
             int(rect.xmax),
             int(rect.ymin),
             int(rect.xmin),
-            int(rect.ymin)
+            int(rect.ymin),
         ]
         return points
 
@@ -167,7 +167,7 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
         return AP
 
     def transcription_match(
-        transGt, transDet, specialCharacters="!?.:,*\"()·[]/'", onlyRemoveFirstLastCharacterGT=True
+        transGt, transDet, specialCharacters='!?.:,*"()·[]/\'', onlyRemoveFirstLastCharacterGT=True
     ):
         if onlyRemoveFirstLastCharacterGT:
             # special characters in GT are allowed only at initial or final position
@@ -179,11 +179,11 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
                     return True
 
             if specialCharacters.find(transGt[-1]) > -1:
-                if transGt[0:len(transGt) - 1] == transDet:
+                if transGt[0 : len(transGt) - 1] == transDet:
                     return True
 
             if specialCharacters.find(transGt[0]) > -1 and specialCharacters.find(transGt[-1]) > -1:
-                if transGt[1:len(transGt) - 1] == transDet:
+                if transGt[1 : len(transGt) - 1] == transDet:
                     return True
             return False
         else:
@@ -195,10 +195,10 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
                 transDet = transDet[1:]
 
             while len(transGt) > 0 and specialCharacters.find(transGt[-1]) > -1:
-                transGt = transGt[0:len(transGt) - 1]
+                transGt = transGt[0 : len(transGt) - 1]
 
             while len(transDet) > 0 and specialCharacters.find(transDet[-1]) > -1:
-                transDet = transDet[0:len(transDet) - 1]
+                transDet = transDet[0 : len(transDet) - 1]
 
             return transGt == transDet
 
@@ -207,13 +207,13 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
         Function used in Word Spotting that finds if the Ground Truth transcription meets the rules to enter into the dictionary. If not, the transcription will be cared as don't care
         """
         # special case 's at final
-        if transcription[len(transcription) - 2:] == "'s" or transcription[len(transcription) - 2:] == "'S":
-            transcription = transcription[0:len(transcription) - 2]
+        if transcription[len(transcription) - 2 :] == "'s" or transcription[len(transcription) - 2 :] == "'S":
+            transcription = transcription[0 : len(transcription) - 2]
 
         # hypens at init or final of the word
         transcription = transcription.strip('-')
 
-        specialCharacters = "'!?.:,*\"()·[]/"
+        specialCharacters = '\'!?.:,*"()·[]/'
         for character in specialCharacters:
             transcription = transcription.replace(character, ' ')
 
@@ -239,12 +239,14 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
             if notAllowed.find(char) != -1:
                 return False
 
-            valid = ((charCode >= range1[0] and charCode <= range1[1])
-                     or (charCode >= range2[0] and charCode <= range2[1])
-                     or (charCode >= range3[0] and charCode <= range3[1])
-                     or (charCode >= range4[0] and charCode <= range4[1])
-                     or (charCode >= range5[0] and charCode <= range5[1])
-                     or (charCode >= range6[0] and charCode <= range6[1]))
+            valid = (
+                (charCode >= range1[0] and charCode <= range1[1])
+                or (charCode >= range2[0] and charCode <= range2[1])
+                or (charCode >= range3[0] and charCode <= range3[1])
+                or (charCode >= range4[0] and charCode <= range4[1])
+                or (charCode >= range5[0] and charCode <= range5[1])
+                or (charCode >= range6[0] and charCode <= range6[1])
+            )
             if valid == False:
                 return False
 
@@ -255,13 +257,13 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
         Function applied to the Ground Truth transcriptions used in Word Spotting. It removes special characters or terminations
         """
         # special case 's at final
-        if transcription[len(transcription) - 2:] == "'s" or transcription[len(transcription) - 2:] == "'S":
-            transcription = transcription[0:len(transcription) - 2]
+        if transcription[len(transcription) - 2 :] == "'s" or transcription[len(transcription) - 2 :] == "'S":
+            transcription = transcription[0 : len(transcription) - 2]
 
         # hypens at init or final of the word
         transcription = transcription.strip('-')
 
-        specialCharacters = "'!?.:,*\"()·[]/"
+        specialCharacters = '\'!?.:,*"()·[]/'
         for character in specialCharacters:
             transcription = transcription.replace(character, ' ')
 
@@ -338,15 +340,19 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
             if dontCare:
                 gtDontCarePolsNum.append(len(gtPols) - 1)
 
-        evaluationLog += 'GT polygons: ' + str(
-            len(gtPols)
-        ) + (' (' + str(len(gtDontCarePolsNum)) + " don't care)\n" if len(gtDontCarePolsNum) > 0 else '\n')
+        evaluationLog += (
+            'GT polygons: '
+            + str(len(gtPols))
+            + (' (' + str(len(gtDontCarePolsNum)) + " don't care)\n" if len(gtDontCarePolsNum) > 0 else '\n')
+        )
 
         if resFile in subm:
             detFile = rrc_evaluation_funcs.decode_utf8(subm[resFile])
 
-            pointsList, confidencesList, transcriptionsList = rrc_evaluation_funcs.get_tl_line_values_from_file_contents(
-                detFile, evaluationParams['CRLF'], evaluationParams['LTRB'], True, evaluationParams['CONFIDENCES']
+            pointsList, confidencesList, transcriptionsList = (
+                rrc_evaluation_funcs.get_tl_line_values_from_file_contents(
+                    detFile, evaluationParams['CRLF'], evaluationParams['LTRB'], True, evaluationParams['CONFIDENCES']
+                )
             )
 
             for n in range(len(pointsList)):
@@ -372,9 +378,11 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
                             detDontCarePolsNum.append(len(detPols) - 1)
                             break
 
-            evaluationLog += 'DET polygons: ' + str(
-                len(detPols)
-            ) + (' (' + str(len(detDontCarePolsNum)) + " don't care)\n" if len(detDontCarePolsNum) > 0 else '\n')
+            evaluationLog += (
+                'DET polygons: '
+                + str(len(detPols))
+                + (' (' + str(len(detDontCarePolsNum)) + " don't care)\n" if len(detDontCarePolsNum) > 0 else '\n')
+            )
 
             if len(gtPols) > 0 and len(detPols) > 0:
                 # Calculate IoU and precision matrixs
@@ -390,8 +398,12 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
 
                 for gtNum in range(len(gtPols)):
                     for detNum in range(len(detPols)):
-                        if gtRectMat[gtNum] == 0 and detRectMat[
-                            detNum] == 0 and gtNum not in gtDontCarePolsNum and detNum not in detDontCarePolsNum:
+                        if (
+                            gtRectMat[gtNum] == 0
+                            and detRectMat[detNum] == 0
+                            and gtNum not in gtDontCarePolsNum
+                            and detNum not in detDontCarePolsNum
+                        ):
                             if iouMat[gtNum, detNum] > evaluationParams['IOU_CONSTRAINT']:
                                 gtRectMat[gtNum] = 1
                                 detRectMat[detNum] = 1
@@ -399,18 +411,28 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
                                 if evaluationParams['WORD_SPOTTING']:
                                     correct = gtTrans[gtNum].upper() == detTrans[detNum].upper()
                                 else:
-                                    correct = transcription_match(
-                                        gtTrans[gtNum].upper(), detTrans[detNum].upper(),
-                                        evaluationParams['SPECIAL_CHARACTERS'],
-                                        evaluationParams['ONLY_REMOVE_FIRST_LAST_CHARACTER']
-                                    ) == True
+                                    correct = (
+                                        transcription_match(
+                                            gtTrans[gtNum].upper(),
+                                            detTrans[detNum].upper(),
+                                            evaluationParams['SPECIAL_CHARACTERS'],
+                                            evaluationParams['ONLY_REMOVE_FIRST_LAST_CHARACTER'],
+                                        )
+                                        == True
+                                    )
                                 detCorrect += 1 if correct else 0
                                 if correct:
                                     detMatchedNums.append(detNum)
                                 pairs.append({'gt': gtNum, 'det': detNum, 'correct': correct})
-                                evaluationLog += 'Match GT #' + str(gtNum) + ' with Det #' + str(
-                                    detNum
-                                ) + ' trans. correct: ' + str(correct) + '\n'
+                                evaluationLog += (
+                                    'Match GT #'
+                                    + str(gtNum)
+                                    + ' with Det #'
+                                    + str(detNum)
+                                    + ' trans. correct: '
+                                    + str(correct)
+                                    + '\n'
+                                )
 
             if evaluationParams['CONFIDENCES']:
                 for detNum in range(len(detPols)):
@@ -466,8 +488,10 @@ def evaluate_method(gtFilePath, submFilePath, evaluationParams):
 
     methodRecall = 0 if numGlobalCareGt == 0 else float(matchedSum) / numGlobalCareGt
     methodPrecision = 0 if numGlobalCareDet == 0 else float(matchedSum) / numGlobalCareDet
-    methodHmean = 0 if methodRecall + methodPrecision == 0 else 2 * methodRecall * methodPrecision / (
-        methodRecall + methodPrecision
+    methodHmean = (
+        0
+        if methodRecall + methodPrecision == 0
+        else 2 * methodRecall * methodPrecision / (methodRecall + methodPrecision)
     )
 
     methodMetrics = {'precision': methodPrecision, 'recall': methodRecall, 'hmean': methodHmean, 'AP': AP}

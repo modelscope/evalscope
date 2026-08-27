@@ -67,7 +67,6 @@ multiple-choice benchmark evaluating LLM knowledge of {domain_desc}, covering En
     )
 )
 class BhashaBenchV1AyurAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = [record[key] for key in OPTION_KEYS]
         target_letter = record['correct_answer'].strip().upper()
@@ -100,8 +99,7 @@ class BhashaBenchV1AyurAdapter(MultiChoiceAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchV1FinanceAdapter(BhashaBenchV1AyurAdapter):
-    ...
+class BhashaBenchV1FinanceAdapter(BhashaBenchV1AyurAdapter): ...
 
 
 @register_benchmark(
@@ -121,8 +119,7 @@ class BhashaBenchV1FinanceAdapter(BhashaBenchV1AyurAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchV1KrishiAdapter(BhashaBenchV1AyurAdapter):
-    ...
+class BhashaBenchV1KrishiAdapter(BhashaBenchV1AyurAdapter): ...
 
 
 @register_benchmark(
@@ -142,5 +139,4 @@ class BhashaBenchV1KrishiAdapter(BhashaBenchV1AyurAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchV1LegalAdapter(BhashaBenchV1AyurAdapter):
-    ...
+class BhashaBenchV1LegalAdapter(BhashaBenchV1AyurAdapter): ...

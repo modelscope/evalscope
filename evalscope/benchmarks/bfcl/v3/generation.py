@@ -54,17 +54,20 @@ def generate_turn(model: Model, row: dict[str, Any]):
 
         if str(turn_idx) in row['missing_functions']:
             assert len(messages) == 0, 'Holdout turn should not have user message.'
-            new_turn = [{
-                'role': 'user',
-                'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING.format(
-                    functions=row['missing_functions'][str(turn_idx)]
-                ),
-            }]
+            new_turn = [
+                {
+                    'role': 'user',
+                    'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_PROMPTING.format(
+                        functions=row['missing_functions'][str(turn_idx)]
+                    ),
+                }
+            ]
             current_messages += new_turn
 
         while True:
             # Create a sample for the current messages
             from evalscope.api.messages.chat_message import dict_to_chat_message
+
             chat_messages = [dict_to_chat_message(msg) for msg in current_messages]
 
             # Get model response using generate method
@@ -107,10 +110,12 @@ def generate_turn(model: Model, row: dict[str, Any]):
                 tool_results = []
                 for tool_output, tool_call in zip(tool_outputs, tool_calls):
                     tool_results.append({'role': 'tool', 'name': tool_call, 'content': tool_output})
-                current_messages.append({
-                    'role': 'user',
-                    'content': repr(tool_results),
-                })
+                current_messages.append(
+                    {
+                        'role': 'user',
+                        'content': repr(tool_results),
+                    }
+                )
             else:
                 break
 
@@ -147,14 +152,18 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
             for new_tool in new_tools:
                 cur_tool = new_tool[0]
                 cur_tool['parameters']['type'] = 'object'
-                tools.append({
-                    'type': 'function',
-                    'function': cur_tool,
-                })
-            new_turn = [{
-                'role': 'user',
-                'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
-            }]
+                tools.append(
+                    {
+                        'type': 'function',
+                        'function': cur_tool,
+                    }
+                )
+            new_turn = [
+                {
+                    'role': 'user',
+                    'content': DEFAULT_USER_PROMPT_FOR_ADDITIONAL_FUNCTION_FC,
+                }
+            ]
             current_messages += new_turn
 
         while True:
@@ -204,11 +213,13 @@ def generate_turn_with_tools(model: Model, row: dict[str, Any]):
                 )
 
                 for tc, tool_output in zip(message.tool_calls, tool_outputs, strict=False):
-                    current_messages.append({
-                        'role': 'tool',
-                        'tool_call_id': tc.id,
-                        'content': json.dumps({'response': tool_output}),
-                    })
+                    current_messages.append(
+                        {
+                            'role': 'tool',
+                            'tool_call_id': tc.id,
+                            'content': json.dumps({'response': tool_output}),
+                        }
+                    )
             else:
                 break
 

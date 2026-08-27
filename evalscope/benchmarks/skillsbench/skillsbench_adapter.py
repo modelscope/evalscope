@@ -186,7 +186,7 @@ class SkillsBenchAdapter(AgentAdapter):
         if isinstance(limit, int):
             dirs = dirs[:limit]
         elif isinstance(limit, float) and 0 < limit < 1:
-            dirs = dirs[:max(1, int(len(dirs) * limit))]
+            dirs = dirs[: max(1, int(len(dirs) * limit))]
         return dirs
 
     def _task_to_sample(self, task_dir: Path, index: int) -> Sample:
@@ -324,8 +324,7 @@ class SkillsBenchAdapter(AgentAdapter):
             )
             return InferenceResult(
                 output=output,
-                messages=[ChatMessageUser(content=sample_instruction(sample)),
-                          ChatMessageAssistant(content=text)],
+                messages=[ChatMessageUser(content=sample_instruction(sample)), ChatMessageAssistant(content=text)],
             )
         finally:
             await env.close()
@@ -430,7 +429,9 @@ class SkillsBenchAdapter(AgentAdapter):
         if not self._current_output_dir:
             return
         artifact_dir = (
-            Path(self._current_output_dir) / 'artifacts' / 'skillsbench'
+            Path(self._current_output_dir)
+            / 'artifacts'
+            / 'skillsbench'
             / safe_path_part(str(sample.metadata.get('task_id') or sample.id))
             / safe_path_part(str(sample.metadata.get('skill_mode') or self.skill_mode))
         )

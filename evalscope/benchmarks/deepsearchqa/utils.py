@@ -189,12 +189,14 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
         'empty_model_response': empty_model,
         'judge_parse_failure': judge_failure,
     }.items():
-        agg_scores.append(AggScore(
-            score=count / total,
-            metric_name=metric_name,
-            aggregation='rate',
-            num=total,
-        ))
+        agg_scores.append(
+            AggScore(
+                score=count / total,
+                metric_name=metric_name,
+                aggregation='rate',
+                num=total,
+            )
+        )
 
     return agg_scores
 

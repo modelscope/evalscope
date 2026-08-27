@@ -55,7 +55,6 @@ GenAI-Bench is a comprehensive text-to-image benchmark featuring 1600 prompts de
     )
 )
 class GenAIBenchAdapter(Text2ImageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -78,5 +77,5 @@ class GenAIBenchAdapter(Text2ImageAdapter):
                 'category': 'advanced' if advanced else 'basic',
                 'tags': record.get('tags', []),
                 'image_path': record.get('image_path', ''),  # Optional field for existing image path
-            }
+            },
         )

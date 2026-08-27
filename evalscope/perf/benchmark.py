@@ -34,10 +34,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     total_count = args.total_count
 
     if warmup_count > 0:
-        logger.info(
-            f'Warmup enabled: {warmup_count} warmup requests '
-            f'(total: {total_count}, benchmark: {args.number})'
-        )
+        logger.info(f'Warmup enabled: {warmup_count} warmup requests (total: {total_count}, benchmark: {args.number})')
 
     async def _generate_from_prompt():
         """Generate requests by repeating a single prompt."""
@@ -74,7 +71,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
                 desc='Generating[requests]',
                 total=total_count,
                 initial=0,
-                logger=logger
+                logger=logger,
             ) as pbar:
                 for messages in pbar:
                     dataset_messages.append(messages)
@@ -125,6 +122,30 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         yield request, is_warmup
 
 
+def _log_warmup_handoff(args: Arguments) -> None:
+    """Warn when warmup cannot keep the start-up burst out of the measured window."""
+    parallel = args.parallel
+    warmup_count = args.warmup_count
+
+    if parallel <= 1 or warmup_count >= parallel:
+        return
+
+    if warmup_count == 0:
+        reason = f'Warmup is disabled, so the first {parallel} requests are released at once'
+    else:
+        uncovered = parallel - warmup_count
+        reason = (
+            f'Warmup covers only {warmup_count} of the {parallel} concurrency slots, so '
+            f'{uncovered} measured requests are released at once alongside it'
+        )
+
+    logger.warning(
+        f'{reason} against an idle server. Their TTFT carries the start-up burst and can dominate '
+        f'the reported percentiles. Pass --warmup-num {parallel} to keep that burst out of the '
+        f'measured window, or {2 * parallel} if you also read the max column.'
+    )
+
+
 @exception_handler
 async def run_benchmark(
     args: Arguments,
@@ -145,6 +166,9 @@ async def run_benchmark(
     api_plugin = api_plugin_class(args)
 
     await connect_test(args, api_plugin)
+
+    if not args.open_loop:
+        _log_warmup_handoff(args)
 
     if args.open_loop:
         queue: asyncio.Queue = asyncio.Queue()

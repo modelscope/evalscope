@@ -17,7 +17,6 @@ class SLACriterionBase(ABC):
 
 @dataclass
 class SLALessThan(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return actual < self.target
 
@@ -30,7 +29,6 @@ class SLALessThan(SLACriterionBase):
 
 @dataclass
 class SLALessThanOrEqualTo(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return actual <= self.target
 
@@ -43,7 +41,6 @@ class SLALessThanOrEqualTo(SLACriterionBase):
 
 @dataclass
 class SLAGreaterThan(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return actual > self.target
 
@@ -56,7 +53,6 @@ class SLAGreaterThan(SLACriterionBase):
 
 @dataclass
 class SLAGreaterThanOrEqualTo(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return actual >= self.target
 
@@ -69,7 +65,6 @@ class SLAGreaterThanOrEqualTo(SLACriterionBase):
 
 @dataclass
 class SLAMax(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return True
 
@@ -82,7 +77,6 @@ class SLAMax(SLACriterionBase):
 
 @dataclass
 class SLAMin(SLACriterionBase):
-
     def validate(self, actual: float) -> bool:
         return True
 
@@ -129,7 +123,7 @@ def create_criterion(value_str: str) -> SLACriterionBase:
     for op_key in sorted(SLA_CRITERIA.keys(), key=len, reverse=True):
         if value_str.startswith(op_key):
             try:
-                val = float(value_str[len(op_key):])
+                val = float(value_str[len(op_key) :])
                 return SLA_CRITERIA[op_key](val)
             except ValueError:
                 raise ValueError(f'Invalid target value in SLA param: {value_str}')

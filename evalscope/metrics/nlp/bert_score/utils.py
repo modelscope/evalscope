@@ -26,12 +26,14 @@ SCIBERT_URL_DICT = {
 }
 
 lang2model = defaultdict(lambda: 'bert-base-multilingual-cased')
-lang2model.update({
-    'en': 'roberta-large',
-    'zh': 'bert-base-chinese',
-    'tr': 'dbmdz/bert-base-turkish-cased',
-    'en-sci': 'allenai/scibert_scivocab_uncased',
-})
+lang2model.update(
+    {
+        'en': 'roberta-large',
+        'zh': 'bert-base-chinese',
+        'tr': 'dbmdz/bert-base-turkish-cased',
+        'en-sci': 'allenai/scibert_scivocab_uncased',
+    }
+)
 
 model2layers = {
     'bert-base-uncased': 9,  # 0.6925188074454226
@@ -182,7 +184,7 @@ model2layers = {
 
 
 def sent_encode(tokenizer, sent):
-    'Encoding as sentence based on the tokenizer'
+    "Encoding as sentence based on the tokenizer"
     sent = sent.strip()
     if sent == '':
         return tokenizer.build_inputs_with_special_tokens([])
@@ -257,40 +259,40 @@ def get_model(model_type, num_layers, all_layers=None):
     # drop unused layers
     if not all_layers:
         if hasattr(model, 'n_layers'):  # xlm
-            assert (
-                0 <= num_layers <= model.n_layers
-            ), f'Invalid num_layers: num_layers should be between 0 and {model.n_layers} for {model_type}'
+            assert 0 <= num_layers <= model.n_layers, (
+                f'Invalid num_layers: num_layers should be between 0 and {model.n_layers} for {model_type}'
+            )
             model.n_layers = num_layers
         elif hasattr(model, 'layer'):  # xlnet
-            assert (
-                0 <= num_layers <= len(model.layer)
-            ), f'Invalid num_layers: num_layers should be between 0 and {len(model.layer)} for {model_type}'
+            assert 0 <= num_layers <= len(model.layer), (
+                f'Invalid num_layers: num_layers should be between 0 and {len(model.layer)} for {model_type}'
+            )
             model.layer = torch.nn.ModuleList([layer for layer in model.layer[:num_layers]])
         elif hasattr(model, 'encoder'):  # albert
             if hasattr(model.encoder, 'albert_layer_groups'):
-                assert (
-                    0 <= num_layers <= model.encoder.config.num_hidden_layers
-                ), f'Invalid num_layers: num_layers should be between 0 and {model.encoder.config.num_hidden_layers} for {model_type}'
+                assert 0 <= num_layers <= model.encoder.config.num_hidden_layers, (
+                    f'Invalid num_layers: num_layers should be between 0 and {model.encoder.config.num_hidden_layers} for {model_type}'
+                )
                 model.encoder.config.num_hidden_layers = num_layers
             elif hasattr(model.encoder, 'block'):  # t5
-                assert (
-                    0 <= num_layers <= len(model.encoder.block)
-                ), f'Invalid num_layers: num_layers should be between 0 and {len(model.encoder.block)} for {model_type}'
+                assert 0 <= num_layers <= len(model.encoder.block), (
+                    f'Invalid num_layers: num_layers should be between 0 and {len(model.encoder.block)} for {model_type}'
+                )
                 model.encoder.block = torch.nn.ModuleList([layer for layer in model.encoder.block[:num_layers]])
             else:  # bert, roberta
-                assert (
-                    0 <= num_layers <= len(model.encoder.layer)
-                ), f'Invalid num_layers: num_layers should be between 0 and {len(model.encoder.layer)} for {model_type}'
+                assert 0 <= num_layers <= len(model.encoder.layer), (
+                    f'Invalid num_layers: num_layers should be between 0 and {len(model.encoder.layer)} for {model_type}'
+                )
                 model.encoder.layer = torch.nn.ModuleList([layer for layer in model.encoder.layer[:num_layers]])
         elif hasattr(model, 'transformer'):  # bert, roberta
-            assert (
-                0 <= num_layers <= len(model.transformer.layer)
-            ), f'Invalid num_layers: num_layers should be between 0 and {len(model.transformer.layer)} for {model_type}'
+            assert 0 <= num_layers <= len(model.transformer.layer), (
+                f'Invalid num_layers: num_layers should be between 0 and {len(model.transformer.layer)} for {model_type}'
+            )
             model.transformer.layer = torch.nn.ModuleList([layer for layer in model.transformer.layer[:num_layers]])
         elif hasattr(model, 'layers'):  # bart
-            assert (
-                0 <= num_layers <= len(model.layers)
-            ), f'Invalid num_layers: num_layers should be between 0 and {len(model.layers)} for {model_type}'
+            assert 0 <= num_layers <= len(model.layers), (
+                f'Invalid num_layers: num_layers should be between 0 and {len(model.layers)} for {model_type}'
+            )
             model.layers = torch.nn.ModuleList([layer for layer in model.layers[:num_layers]])
         else:
             raise ValueError('Not supported')
@@ -326,8 +328,8 @@ def padding(arr, pad_token, dtype=torch.long):
     padded = torch.ones(len(arr), max_len, dtype=dtype) * pad_token
     mask = torch.zeros(len(arr), max_len, dtype=torch.long)
     for i, a in enumerate(arr):
-        padded[i, :lens[i]] = torch.tensor(a, dtype=dtype)
-        mask[i, :lens[i]] = 1
+        padded[i, : lens[i]] = torch.tensor(a, dtype=dtype)
+        mask[i, : lens[i]] = 1
     return padded, lens, mask
 
 
@@ -436,8 +438,8 @@ def get_bert_embedding(
         for i in range(0, len(all_sens), batch_size):
             batch_embedding = bert_encode(
                 model,
-                padded_sens[i:i + batch_size],
-                attention_mask=mask[i:i + batch_size],
+                padded_sens[i : i + batch_size],
+                attention_mask=mask[i : i + batch_size],
                 all_layers=all_layers,
             )
             embeddings.append(batch_embedding)
@@ -483,12 +485,8 @@ def greedy_cos_idf(
 
     if all_layers:
         B, _, L, D = hyp_embedding.size()
-        hyp_embedding = (
-            hyp_embedding.transpose(1, 2).transpose(0, 1).contiguous().view(L * B, hyp_embedding.size(1), D)
-        )
-        ref_embedding = (
-            ref_embedding.transpose(1, 2).transpose(0, 1).contiguous().view(L * B, ref_embedding.size(1), D)
-        )
+        hyp_embedding = hyp_embedding.transpose(1, 2).transpose(0, 1).contiguous().view(L * B, hyp_embedding.size(1), D)
+        ref_embedding = ref_embedding.transpose(1, 2).transpose(0, 1).contiguous().view(L * B, ref_embedding.size(1), D)
     batch_size = ref_embedding.size(0)
     sim = torch.bmm(hyp_embedding, ref_embedding.transpose(1, 2))
     masks = torch.bmm(hyp_masks.unsqueeze(2).float(), ref_masks.unsqueeze(1).float())
@@ -508,8 +506,8 @@ def greedy_cos_idf(
     precision_scale = hyp_idf.to(word_precision.device)
     recall_scale = ref_idf.to(word_recall.device)
     if all_layers:
-        precision_scale = (precision_scale.unsqueeze(0).expand(L, B, -1).contiguous().view_as(word_precision))
-        recall_scale = (recall_scale.unsqueeze(0).expand(L, B, -1).contiguous().view_as(word_recall))
+        precision_scale = precision_scale.unsqueeze(0).expand(L, B, -1).contiguous().view_as(word_precision)
+        recall_scale = recall_scale.unsqueeze(0).expand(L, B, -1).contiguous().view_as(word_recall)
     P = (word_precision * precision_scale).sum(dim=1)
     R = (word_recall * recall_scale).sum(dim=1)
     F = 2 * P * R / (P + R)
@@ -581,7 +579,7 @@ def bert_cos_score_idf(
         iter_range = tqdm(iter_range)
     stats_dict = dict()
     for batch_start in iter_range:
-        sen_batch = sentences[batch_start:batch_start + batch_size]
+        sen_batch = sentences[batch_start : batch_start + batch_size]
         embs, masks, padded_idf = get_bert_embedding(
             sen_batch, model, tokenizer, idf_dict, device=device, all_layers=all_layers
         )
@@ -620,8 +618,8 @@ def bert_cos_score_idf(
 
     with torch.no_grad():
         for batch_start in iter_range:
-            batch_refs = refs[batch_start:batch_start + batch_size]
-            batch_hyps = hyps[batch_start:batch_start + batch_size]
+            batch_refs = refs[batch_start : batch_start + batch_size]
+            batch_hyps = hyps[batch_start : batch_start + batch_size]
             ref_stats = pad_batch_stats(batch_refs, stats_dict, device)
             hyp_stats = pad_batch_stats(batch_hyps, stats_dict, device)
 
@@ -664,7 +662,9 @@ def cache_scibert(model_type, cache_folder='~/.cache/torch/transformers'):
     if not os.path.exists(filename):
         cmd = f'mkdir -p {cache_folder}; cd {cache_folder};'
         cmd += f'wget {SCIBERT_URL_DICT[model_type]}; tar -xvf {underscore_model_type}.tar;'
-        cmd += f'rm -f {underscore_model_type}.tar ; cd {underscore_model_type}; tar -zxvf weights.tar.gz; mv weights/* .;'
+        cmd += (
+            f'rm -f {underscore_model_type}.tar ; cd {underscore_model_type}; tar -zxvf weights.tar.gz; mv weights/* .;'
+        )
         cmd += f'rm -f weights.tar.gz; rmdir weights; mv bert_config.json config.json;'
         print(cmd)
         print(f'downloading {model_type} model')

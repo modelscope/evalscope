@@ -65,11 +65,10 @@ logger = get_logger()
         primary_metric='accuracy',
         few_shot_num=0,
         eval_split='data',
-        prompt_template='{question}'
+        prompt_template='{question}',
     )
 )
 class HaluEvalAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_overall_metric = False
@@ -97,9 +96,11 @@ class HaluEvalAdapter(DefaultDataAdapter):
         content_list: List[Content] = [ContentText(text=input_text)]
         answer = str(hallucination).upper()  # 'YES' or 'NO'
         return Sample(
-            input=[ChatMessageUser(content=content_list)], target=answer, metadata={
+            input=[ChatMessageUser(content=content_list)],
+            target=answer,
+            metadata={
                 'answer': hallucination,
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
@@ -148,7 +149,7 @@ class HaluEvalAdapter(DefaultDataAdapter):
                 'precision': precision,
                 'recall': recall,
                 'f1_score': f1_score,
-                'yes_ratio': yes_ratio
+                'yes_ratio': yes_ratio,
             }
 
         overall_metrics = compute_metrics(sample_scores)

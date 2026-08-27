@@ -70,7 +70,6 @@ LongBench v2 is a challenging benchmark for evaluating long-context understandin
     )
 )
 class LongBenchV2Adapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True  # Split samples by 'length' field into short/medium/long subsets

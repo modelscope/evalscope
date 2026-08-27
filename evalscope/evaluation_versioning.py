@@ -182,10 +182,7 @@ def build_evaluation_identity(
 ) -> EvaluationIdentity:
     """Build the generated identity block written to a native task config."""
     return EvaluationIdentity(
-        benchmarks={
-            name: build_benchmark_identity(spec, versions[name], task_config)
-            for name, spec in specs.items()
-        },
+        benchmarks={name: build_benchmark_identity(spec, versions[name], task_config) for name, spec in specs.items()},
     )
 
 
@@ -195,10 +192,7 @@ def build_generated_evaluation_metadata(
 ) -> Dict[str, Any]:
     """Build output-only metadata stored alongside the user task configuration."""
     return {
-        'resolved_benchmarks': {
-            name: spec.model_dump(mode='json')
-            for name, spec in specs.items()
-        },
+        'resolved_benchmarks': {name: spec.model_dump(mode='json') for name, spec in specs.items()},
         'evaluation_identity': identity.model_dump(mode='json'),
     }
 
@@ -230,19 +224,22 @@ def validate_cached_evaluation_identity(
     return sources
 
 
-def legacy_identity_from_config(task_config: Dict[str, Any],
-                                benchmark_name: str) -> Optional[BenchmarkEvaluationIdentity]:
+def legacy_identity_from_config(
+    task_config: Dict[str, Any], benchmark_name: str
+) -> Optional[BenchmarkEvaluationIdentity]:
     """Infer a v1.0 identity from an older full-meta task config snapshot."""
     raw_spec = task_config.get('dataset_args', {}).get(benchmark_name)
     if not isinstance(raw_spec, dict) or 'dataset_id' not in raw_spec:
         return None
     try:
-        spec = ResolvedBenchmarkSpec.model_validate({
-            **raw_spec,
-            'name': raw_spec.get('name', benchmark_name),
-            'dataset_hub': task_config.get('dataset_hub'),
-            'dataset_revision': raw_spec.get('dataset_revision'),
-        })
+        spec = ResolvedBenchmarkSpec.model_validate(
+            {
+                **raw_spec,
+                'name': raw_spec.get('name', benchmark_name),
+                'dataset_hub': task_config.get('dataset_hub'),
+                'dataset_revision': raw_spec.get('dataset_revision'),
+            }
+        )
     except Exception:
         return None
     payload = {

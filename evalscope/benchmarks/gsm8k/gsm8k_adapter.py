@@ -12,15 +12,17 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-PROMPT_TEMPLATE = """{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.""".lstrip(
-)  # noqa: E501
+PROMPT_TEMPLATE = """{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.""".lstrip()  # noqa: E501
 
-FEWSHOT_TEMPLATE = """
+FEWSHOT_TEMPLATE = (
+    """
 Here are some examples of how to solve similar problems:
 
 {fewshot}
 
-""".lstrip() + PROMPT_TEMPLATE
+""".lstrip()
+    + PROMPT_TEMPLATE
+)
 
 # GSM8K Description with standard format
 GSM8K_DESCRIPTION = """
@@ -64,17 +66,12 @@ GSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically di
         few_shot_num=4,
         train_split='train',
         eval_split='test',
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )
 )
 class GSM8KAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -90,7 +87,8 @@ class GSM8KAdapter(DefaultDataAdapter):
     def sample_to_fewshot(self, sample: Sample) -> str:
         if sample.metadata:
             return (
-                f'{sample.input}\n\nReasoning:\n' + f"{sample.metadata['reasoning']}\n\n"
+                f'{sample.input}\n\nReasoning:\n'
+                + f'{sample.metadata["reasoning"]}\n\n'
                 + f'ANSWER: \\boxed{{{sample.target}}}'
             )
         else:

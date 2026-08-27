@@ -86,8 +86,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
         pass
 
     @abstractmethod
-    def batch_calculate_metrics(self, task_states: List[TaskState],
-                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+    def batch_calculate_metrics(
+        self, task_states: List[TaskState], sample_scores: List[SampleScore]
+    ) -> List[SampleScore]:
         """Batch calculate metrics for a list of task states. Need to update sample_scores in place."""
         pass
 

@@ -603,8 +603,8 @@ make docs
 ```
 
 ## 6. 提交PR
-完成这些方法的实现和文档生成后，您的基准评测就准备就绪了！可以提交[PR](https://github.com/modelscope/evalscope/pulls)了。在提交之前请运行如下命令，将自动格式化代码：
+完成实现和文档生成后，请在提交 [PR](https://github.com/modelscope/evalscope/pulls) 前运行仓库的全部检查。该命令会先应用 Ruff 的安全修复和格式化，再验证其余 hooks：
 ```bash
 make lint
 ```
-确保没有格式问题后，我们将尽快合并你的贡献，让更多用户来使用你贡献的基准评测。如果你不知道如何提交PR，可以查看我们的[指南](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md)，快来试一试吧🚀
+检查通过后即可提交评审。完整开发流程请参考[贡献指南](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md)，快来试一试吧🚀

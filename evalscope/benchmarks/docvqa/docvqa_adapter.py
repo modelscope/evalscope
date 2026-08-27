@@ -58,7 +58,6 @@ DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate 
     )
 )
 class DocVQAAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -79,7 +78,7 @@ class DocVQAAdapter(VisionLanguageAdapter):
                 'docId': record.get('docId'),
                 'ucsf_document_id': record.get('ucsf_document_id'),
                 'ucsf_document_page_no': record.get('ucsf_document_page_no'),
-            }
+            },
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:

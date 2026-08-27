@@ -49,7 +49,6 @@ IQuiz is a Chinese benchmark for evaluating AI models on intelligence quotient (
     )
 )
 class IQuizAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

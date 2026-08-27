@@ -48,7 +48,6 @@ The NCBI disease corpus is a manually annotated resource of PubMed abstracts des
     )
 )
 class NCBIAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)

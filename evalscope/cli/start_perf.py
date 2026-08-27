@@ -6,8 +6,7 @@ from evalscope.cli.base import CLICommand
 
 
 def subparser_func(args):
-    """ Function which will be called for a specific sub parser.
-    """
+    """Function which will be called for a specific sub parser."""
     return PerfBenchCMD(args)
 
 
@@ -19,8 +18,7 @@ class PerfBenchCMD(CLICommand):
 
     @staticmethod
     def define_args(parsers: ArgumentParser):
-        """ define args for create pipeline template command.
-        """
+        """define args for create pipeline template command."""
         from evalscope.perf.arguments import add_argument
 
         parser = parsers.add_parser(PerfBenchCMD.name)

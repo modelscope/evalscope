@@ -127,10 +127,7 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
     Metrics.AVERAGE_CACHED_PERCENT: MetricEntry(
         baseline='diagnostic.parse_status.ratio',
         metric_name=Metrics.AVERAGE_CACHED_PERCENT,
-        value_range={
-            'min': 0.0,
-            'max': 100.0
-        },
+        value_range={'min': 0.0, 'max': 100.0},
         display_multiplier=1.0,
     ),
     Metrics.AVERAGE_DECODED_TOKENS_PER_ITER: MetricEntry(
@@ -203,12 +200,8 @@ def _materialize_aliases(aliases: Mapping[str, PerfAlias]) -> None:
 
 # In-report perf and the run-list API use stable paths instead of the public perf constant labels.
 PERF_API_ALIASES: Dict[str, PerfAlias] = {
-    'latency': (Metrics.AVERAGE_LATENCY, {
-        'metric_name': 'Latency'
-    }),
-    'best_latency': (Metrics.AVERAGE_LATENCY, {
-        'metric_name': 'Best Latency'
-    }),
+    'latency': (Metrics.AVERAGE_LATENCY, {'metric_name': 'Latency'}),
+    'best_latency': (Metrics.AVERAGE_LATENCY, {'metric_name': 'Best Latency'}),
     # These payloads store seconds, whereas the public perf constants already store milliseconds.
     'ttft': (
         Metrics.AVERAGE_LATENCY,
@@ -228,28 +221,13 @@ PERF_API_ALIASES: Dict[str, PerfAlias] = {
             'display_precision': 1,
         },
     ),
-    'throughput.avg_output_tps': (Metrics.OUTPUT_TOKEN_THROUGHPUT, {
-        'metric_name': 'Output Throughput'
-    }),
-    'throughput.avg_req_ps': (Metrics.REQUEST_THROUGHPUT, {
-        'metric_name': 'Request Throughput'
-    }),
-    'best_rps': (Metrics.REQUEST_THROUGHPUT, {
-        'metric_name': 'Best RPS',
-        'display_unit': ''
-    }),
-    'usage.input_tokens': (Metrics.TOTAL_REQUESTS, {
-        'metric_name': 'Input Tokens'
-    }),
-    'usage.output_tokens': (Metrics.TOTAL_REQUESTS, {
-        'metric_name': 'Output Tokens'
-    }),
-    'usage.total_tokens': (Metrics.TOTAL_REQUESTS, {
-        'metric_name': 'Total Tokens'
-    }),
-    'n_samples': (Metrics.TOTAL_REQUESTS, {
-        'metric_name': 'Samples'
-    }),
+    'throughput.avg_output_tps': (Metrics.OUTPUT_TOKEN_THROUGHPUT, {'metric_name': 'Output Throughput'}),
+    'throughput.avg_req_ps': (Metrics.REQUEST_THROUGHPUT, {'metric_name': 'Request Throughput'}),
+    'best_rps': (Metrics.REQUEST_THROUGHPUT, {'metric_name': 'Best RPS', 'display_unit': ''}),
+    'usage.input_tokens': (Metrics.TOTAL_REQUESTS, {'metric_name': 'Input Tokens'}),
+    'usage.output_tokens': (Metrics.TOTAL_REQUESTS, {'metric_name': 'Output Tokens'}),
+    'usage.total_tokens': (Metrics.TOTAL_REQUESTS, {'metric_name': 'Total Tokens'}),
+    'n_samples': (Metrics.TOTAL_REQUESTS, {'metric_name': 'Samples'}),
 }
 _materialize_aliases(PERF_API_ALIASES)
 

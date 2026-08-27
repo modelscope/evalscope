@@ -78,7 +78,7 @@ SUBJECT_MAPPING = {
     'traditional_chinese_medicine': ['china specific', 'China specific'],
     'virology': ['biology', 'STEM'],
     'world_history': ['history', 'Humanities'],
-    'world_religions': ['global', 'Humanities']
+    'world_religions': ['global', 'Humanities'],
 }
 
 
@@ -129,7 +129,6 @@ C-MMLU (Chinese Massive Multitask Language Understanding) is a comprehensive Chi
     )
 )
 class CMMLUAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

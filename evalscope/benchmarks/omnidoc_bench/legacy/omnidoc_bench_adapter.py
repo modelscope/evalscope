@@ -89,31 +89,11 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
 """,  # noqa: E501
         dataset_id='evalscope/OmniDocBench_tsv',
         metric_list=[
-            {
-                'text_block': {
-                    'metric': ['Edit_dist', 'BLEU', 'METEOR']
-                }
-            },
-            {
-                'display_formula': {
-                    'metric': ['Edit_dist']
-                }
-            },
-            {
-                'table': {
-                    'metric': ['TEDS', 'Edit_dist']
-                }
-            },
-            {
-                'reading_order': {
-                    'metric': ['Edit_dist']
-                }
-            },
-            {
-                'normalized_score': {
-                    'metric': []
-                }
-            },
+            {'text_block': {'metric': ['Edit_dist', 'BLEU', 'METEOR']}},
+            {'display_formula': {'metric': ['Edit_dist']}},
+            {'table': {'metric': ['TEDS', 'Edit_dist']}},
+            {'reading_order': {'metric': ['Edit_dist']}},
+            {'normalized_score': {'metric': []}},
         ],
         primary_metric=MetricSelector(name='normalized_score', aggregation='macro_mean'),
         eval_split='train',
@@ -123,13 +103,12 @@ This adapter preserves EvalScope's original 981-page OmniDocBench TSV integratio
                 'type': 'str',
                 'description': 'Scoring match method used for evaluation.',
                 'value': 'quick_match',
-                'choices': ['quick_match', 'simple_match', 'no_split']
+                'choices': ['quick_match', 'simple_match', 'no_split'],
             }
-        }
+        },
     )
 )
 class OmniDocBenchAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.match_method = self.extra_params.get('match_method', 'quick_match')
@@ -138,7 +117,7 @@ class OmniDocBenchAdapter(VisionLanguageAdapter):
             module_name=['apted', 'distance', 'Levenshtein', 'lxml', 'bs4', 'jieba'],
             extra='omnidoc_bench',
             raise_error=True,
-            feature_name='OmniDocBench'
+            feature_name='OmniDocBench',
         )
 
     def record_to_sample(self, record) -> Sample:

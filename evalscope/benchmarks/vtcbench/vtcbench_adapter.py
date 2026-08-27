@@ -10,6 +10,7 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.import_utils import check_import
 
 SUBSET_LIST = [
     'Retrieval',
@@ -77,8 +78,31 @@ _THINK_PATTERN = re.compile(r'<think>.*?</think>', flags=re.DOTALL)
 
 
 def _remove_html_tags(text: str) -> str:
-    """Match the official static evaluator's HTML and whitespace normalization."""
-    return _WHITESPACE_PATTERN.sub(' ', _HTML_TAG_PATTERN.sub(' ', text))
+    check_import(
+        module_name=['bs4'],
+        extra='vtcbench',
+        raise_error=True,
+        feature_name='VTCBench',
+    )
+
+    from bs4 import BeautifulSoup
+
+    if '</span>' not in text:
+        duplicated_spaces = re.compile(r'\s+')
+        return duplicated_spaces.sub(' ', text).strip()
+
+    soup = BeautifulSoup(text, 'html.parser')
+    lines = []
+    for span in soup.select('span'):
+        speaker = span.get('data-speaker')
+        text = span.get_text(' ', strip=True)
+        if speaker:
+            lines.append(f'{speaker}: {text}')
+        else:
+            lines.append(text)
+    _context = '\n'.join(lines)
+
+    return _context
 
 
 def _normalize_response(response: str) -> str:

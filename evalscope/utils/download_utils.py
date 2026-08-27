@@ -67,13 +67,16 @@ def _download_once(
         with requests.get(url, stream=True, timeout=timeout, headers=headers) as response:
             response.raise_for_status()
             total_size = int(response.headers.get('content-length', 0))
-            with tempfile.NamedTemporaryFile(dir=os.path.dirname(save_path), delete=False) as f, tqdm(
-                desc=os.path.basename(save_path),
-                total=total_size,
-                unit='iB',
-                unit_scale=True,
-                unit_divisor=1024,
-            ) as bar:
+            with (
+                tempfile.NamedTemporaryFile(dir=os.path.dirname(save_path), delete=False) as f,
+                tqdm(
+                    desc=os.path.basename(save_path),
+                    total=total_size,
+                    unit='iB',
+                    unit_scale=True,
+                    unit_divisor=1024,
+                ) as bar,
+            ):
                 tmp_path = f.name
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:

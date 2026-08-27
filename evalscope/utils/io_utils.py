@@ -147,7 +147,7 @@ class OutputsStructure:
 def undecode_media(
     dataset: 'Dataset',
     media_type: List[Literal['image', 'audio', 'video']],
-    batch_size: Optional[int] = None
+    batch_size: Optional[int] = None,
 ) -> 'Dataset':
     from datasets.features import Audio, Image, Sequence, Video
 
@@ -578,7 +578,7 @@ def safe_filename(s: str, max_length: int = 255) -> str:
         name, ext = os.path.splitext(s)
         ext_len = len(ext)
         if ext_len > 0:
-            s = name[:max_length - ext_len] + ext
+            s = name[: max_length - ext_len] + ext
         else:
             s = s[:max_length]
 
@@ -862,8 +862,7 @@ def compress_image_to_limit(
     try:
         img = Image.open(BytesIO(image_bytes))
     except Exception as exc:
-        logger.warning(f'Failed to open image bytes with PIL, sending original image; '
-                       f'may exceed API limit: {exc}')
+        logger.warning(f'Failed to open image bytes with PIL, sending original image; may exceed API limit: {exc}')
         return image_bytes, 'png'
 
     if img.mode not in ('RGB', 'L'):
@@ -893,8 +892,7 @@ def compress_image_to_limit(
         out = _encode_jpeg(img, quality)
 
     if len(out) > max_bytes:
-        logger.warning(f'Image remains above limit after compression: '
-                       f'size={len(out)} bytes (limit={max_bytes}).')
+        logger.warning(f'Image remains above limit after compression: size={len(out)} bytes (limit={max_bytes}).')
     else:
         logger.info(
             f'Compressed image from {len(image_bytes)} to {len(out)} bytes; '

@@ -45,11 +45,31 @@ def _build_perf_table(result, api_type: str = None) -> str:
         if not analysis.rows:
             return ''
         if is_emb:
-            headers = ['并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均输入TPS', 'P99输入TPS', '平均输入Token数', '成功率']
+            headers = [
+                '并发数',
+                '请求速率',
+                '每秒请求数',
+                '平均延迟(s)',
+                'P99延迟(s)',
+                '平均输入TPS',
+                'P99输入TPS',
+                '平均输入Token数',
+                '成功率',
+            ]
         else:
             headers = [
-                '并发数', '请求速率', '请求数', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
-                'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
+                '并发数',
+                '请求速率',
+                '请求数',
+                '每秒请求数',
+                '平均延迟(s)',
+                'P99延迟(s)',
+                '平均首字延迟(s)',
+                'P99首字延迟(s)',
+                '平均每Token延迟(s)',
+                'P99每Token延迟(s)',
+                '生成速度(toks/s)',
+                '成功率',
             ]
         return tabulate([list(r.values()) for r in analysis.rows], headers=headers, tablefmt='pipe')
     except Exception as e:
@@ -103,12 +123,9 @@ def run_performance_test():
         result = run_in_subprocess(run_perf_wrapper, perf_args, task_id=task_id)
         table_str = _build_perf_table(result, api_type=perf_args.api)
         logger.info(f'[{task_id}] Task completed successfully')
-        return jsonify({
-            'status': 'completed',
-            'task_id': task_id,
-            'result': serialize_result(result),
-            'table': table_str
-        })
+        return jsonify(
+            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str}
+        )
     except TaskStoppedError:
         logger.info(f'[{task_id}] Task stopped by user.')
         return jsonify({'status': 'stopped', 'task_id': task_id})

@@ -102,7 +102,7 @@ def validate_lines_in_file(
     withTranscription=False,
     withConfidence=False,
     imWidth=0,
-    imHeight=0
+    imHeight=0,
 ):
     """
     This function validates that all lines of the file calling the Line validation function for each line
@@ -118,8 +118,11 @@ def validate_lines_in_file(
             try:
                 validate_tl_line(line, LTRB, withTranscription, withConfidence, imWidth, imHeight)
             except Exception as e:
-                raise Exception(('Line in sample not valid. Sample: %s Line: %s Error: %s' %
-                                 (fileName, line, str(e))).encode('utf-8', 'replace'))
+                raise Exception(
+                    ('Line in sample not valid. Sample: %s Line: %s Error: %s' % (fileName, line, str(e))).encode(
+                        'utf-8', 'replace'
+                    )
+                )
 
 
 def validate_tl_line(line, LTRB=True, withTranscription=True, withConfidence=True, imWidth=0, imHeight=0):
@@ -158,7 +161,7 @@ def get_tl_line_values(line, LTRB=True, withTranscription=False, withConfidence=
             if m == None:
                 m = re.match(
                     r'^\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-9]+)\s*,\s*([0-1].?[0-9]*)\s*,(.*)$',
-                    line
+                    line,
                 )
                 raise Exception('Format incorrect. Should be: xmin,ymin,xmax,ymax,confidence,transcription')
         elif withConfidence:
@@ -197,28 +200,28 @@ def get_tl_line_values(line, LTRB=True, withTranscription=False, withConfidence=
         if withTranscription and withConfidence:
             m = re.match(
                 r'^\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*([0-1].?[0-9]*)\s*,(.*)$',
-                line
+                line,
             )
             if m == None:
                 raise Exception('Format incorrect. Should be: x1,y1,x2,y2,x3,y3,x4,y4,confidence,transcription')
         elif withConfidence:
             m = re.match(
                 r'^\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*([0-1].?[0-9]*)\s*$',
-                line
+                line,
             )
             if m == None:
                 raise Exception('Format incorrect. Should be: x1,y1,x2,y2,x3,y3,x4,y4,confidence')
         elif withTranscription:
             m = re.match(
                 r'^\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,(.*)$',
-                line
+                line,
             )
             if m == None:
                 raise Exception('Format incorrect. Should be: x1,y1,x2,y2,x3,y3,x4,y4,transcription')
         else:
             m = re.match(
                 r'^\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*,\s*(-?[0-9]+)\s*$',
-                line
+                line,
             )
             if m == None:
                 raise Exception('Format incorrect. Should be: x1,y1,x2,y2,x3,y3,x4,y4')
@@ -242,7 +245,7 @@ def get_tl_line_values(line, LTRB=True, withTranscription=False, withConfidence=
     if withTranscription:
         posTranscription = numPoints + (2 if withConfidence else 1)
         transcription = m.group(posTranscription)
-        m2 = re.match(r"^\s*\"(.*)\"\s*$", transcription)
+        m2 = re.match(r'^\s*\"(.*)\"\s*$', transcription)
         if m2 != None:  # Transcription with double quotes, we extract the value and replace escaped characters
             transcription = m2.group(1).replace('\\\\', '\\').replace('\\"', '"')
 
@@ -256,7 +259,7 @@ def get_tl_dict_values(
     imWidth=0,
     imHeight=0,
     validNumPoints=[],
-    validate_cw=True
+    validate_cw=True,
 ):
     """
     Validate the format of the dictionary. If the dictionary is not valid an exception will be raised.
@@ -297,8 +300,10 @@ def get_tl_dict_values(
         if len(detection['points'][i]) != 2:
             raise Exception('Incorrect format. Point #' + str(i + 1) + ' has to be an array with 2 objects(x,y) )')
 
-        if isinstance(detection['points'][i][0],
-                      (int, float)) == False or isinstance(detection['points'][i][1], (int, float)) == False:
+        if (
+            isinstance(detection['points'][i][0], (int, float)) == False
+            or isinstance(detection['points'][i][1], (int, float)) == False
+        ):
             raise Exception('Incorrect format. Point #' + str(i + 1) + ' childs have to be Integers)')
 
         if imWidth > 0 and imHeight > 0:
@@ -334,11 +339,15 @@ def get_tl_dict_values(
 
         transcription = detection['transcription']
 
-        if 'illegibility' in detection:  # Ensures that if illegibility atribute is present and is True the transcription is set to ### (don't care)
+        if (
+            'illegibility' in detection
+        ):  # Ensures that if illegibility atribute is present and is True the transcription is set to ### (don't care)
             if detection['illegibility'] == True:
                 transcription = '###'
 
-        if 'dontCare' in detection:  # Ensures that if dontCare atribute is present and is True the transcription is set to ### (don't care)
+        if (
+            'dontCare' in detection
+        ):  # Ensures that if dontCare atribute is present and is True the transcription is set to ### (don't care)
             if detection['dontCare'] == True:
                 transcription = '###'
 
@@ -360,8 +369,10 @@ def validate_clockwise_points(points):
     """
     edge = []
     for i in range(len(points) // 2):
-        edge.append((int(points[(i + 1) * 2 % len(points)]) - int(points[i * 2])) *
-                    (int(points[((i + 1) * 2 + 1) % len(points)]) + int(points[i * 2 + 1])))
+        edge.append(
+            (int(points[(i + 1) * 2 % len(points)]) - int(points[i * 2]))
+            * (int(points[((i + 1) * 2 + 1) % len(points)]) + int(points[i * 2 + 1]))
+        )
     if sum(edge) > 0:
         raise Exception(
             "Points are not clockwise. The coordinates of bounding points have to be given in clockwise order. Regarding the correct interpretation of 'clockwise' remember that the image coordinate system used is the standard one, with the image origin at the upper left, the X axis extending to the right and Y axis extending downwards."
@@ -376,7 +387,7 @@ def get_tl_line_values_from_file_contents(
     withConfidence=False,
     imWidth=0,
     imHeight=0,
-    sort_by_confidences=True
+    sort_by_confidences=True,
 ):
     """
     Returns all points, confindences and transcriptions of a file in lists. Valid line formats:
@@ -417,7 +428,7 @@ def get_tl_dict_values_from_array(
     imHeight=0,
     sort_by_confidences=True,
     validNumPoints=[],
-    validate_cw=True
+    validate_cw=True,
 ):
     """
     Returns all points, confindences and transcriptions of a file in lists. Valid dict formats:

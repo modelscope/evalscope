@@ -12,7 +12,6 @@ logger = get_logger()
 
 
 class DummyTokenizer:
-
     def tokenize(self, text: str):
         return text.split()
 
@@ -25,9 +24,9 @@ def _mean(values: List[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
-def compute_rouge_score_one_sample_zh(predict: List[str],
-                                      reference: List[str],
-                                      strict: bool = False) -> Dict[str, float]:
+def compute_rouge_score_one_sample_zh(
+    predict: List[str], reference: List[str], strict: bool = False
+) -> Dict[str, float]:
     if isinstance(predict, str) or isinstance(reference, str):
         raise ValueError(f'Expected list of strings, but got {type(predict)} and {type(reference)}')
 

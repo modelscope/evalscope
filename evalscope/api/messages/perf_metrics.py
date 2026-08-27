@@ -10,6 +10,7 @@ requests have been collected.  It carries nested statistics by metric category
 (latency, throughput, usage, ttft, tpot) and exposes convenience properties
 for reporting.
 """
+
 from dataclasses import dataclass
 from typing import Optional
 

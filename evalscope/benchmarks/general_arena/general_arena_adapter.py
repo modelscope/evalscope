@@ -33,6 +33,7 @@ logger = get_logger()
 
 class BattleVerdict(BaseModel):
     """One game's verdict on the official five-point preference scale."""
+
     reasoning: str = ''
     verdict: Literal['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
 
@@ -41,8 +42,7 @@ BATTLE_CONTRACT = OutputContract(schema_model=BattleVerdict)
 
 GRADER_SYSTEM_PROMPT = "Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better)."  # noqa: E501
 
-GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>".strip(
-)  # noqa: E501
+GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>".strip()  # noqa: E501
 
 
 @register_benchmark(
@@ -90,24 +90,20 @@ GeneralArena is a custom benchmark designed to evaluate the performance of large
             'models': {
                 'type': 'list[dict]',
                 'description': 'List of model entries with name and report_path for arena comparison.',
-                'value': [{
-                    'name': 'qwen-plus',
-                    'report_path': 'outputs/20250627_172550/reports/qwen-plus'
-                }, {
-                    'name': 'qwen2.5-7b',
-                    'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'
-                }]
+                'value': [
+                    {'name': 'qwen-plus', 'report_path': 'outputs/20250627_172550/reports/qwen-plus'},
+                    {'name': 'qwen2.5-7b', 'report_path': 'outputs/20250627_172817/reports/qwen2.5-7b-instruct'},
+                ],
             },
             'baseline': {
                 'type': 'str',
                 'description': 'Baseline model name used for ELO and winrate comparisons.',
-                'value': 'qwen2.5-7b'
-            }
-        }
+                'value': 'qwen2.5-7b',
+            },
+        },
     )
 )
 class GeneralArenaAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -153,7 +149,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                 'answer_1': record['answer_1'],
                 'model_1': record['model_1'],
                 'model_2': record['model_2'],
-            }
+            },
         )
 
     def _check_names(self):
@@ -246,13 +242,15 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                     for model_choice, baseline_choice in zip(
                         process_review_item(model_review), process_review_item(baseline_review)
                     ):
-                        pairs.append({
-                            'question': model_choice['Question'],
-                            'answer_1': model_choice['Generated'],
-                            'answer_2': baseline_choice['Generated'],
-                            'model_1': name,
-                            'model_2': self.baseline
-                        })
+                        pairs.append(
+                            {
+                                'question': model_choice['Question'],
+                                'answer_1': model_choice['Generated'],
+                                'answer_2': baseline_choice['Generated'],
+                                'model_1': name,
+                                'model_2': self.baseline,
+                            }
+                        )
                 pairwise_data[f'{dataset_name}&{subset_name}@{name}&{self.baseline}'] = pairs
 
         return pairwise_data
@@ -274,7 +272,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             return JudgeRequest(
                 messages=[
                     ChatMessageSystem(content=self.system_prompt),
-                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                    ChatMessageUser(content=prompt + case.output_contract.instruction()),
                 ]
             )
 
@@ -299,13 +297,21 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                         {
                             'model_a': model_1,
                             'model_b': model_2,
-                            'judgment': _battle_label(review.outcome.placements['original'], candidate_is_a=True)
+                            'judgment': _battle_label(review.outcome.placements['original'], candidate_is_a=True),
                         },
-                        *([{
-                            'model_a': model_2,
-                            'model_b': model_1,
-                            'judgment': _battle_label(review.outcome.placements['swapped'], candidate_is_a=False)
-                        }] if 'swapped' in review.outcome.placements else []),
+                        *(
+                            [
+                                {
+                                    'model_a': model_2,
+                                    'model_b': model_1,
+                                    'judgment': _battle_label(
+                                        review.outcome.placements['swapped'], candidate_is_a=False
+                                    ),
+                                }
+                            ]
+                            if 'swapped' in review.outcome.placements
+                            else []
+                        ),
                     ],
                 }
             return score
@@ -315,7 +321,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
             request=request,
             reduce=reduce,
             main_score_name='score',
-            finalize=finalize
+            finalize=finalize,
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -429,11 +435,13 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                 lower_diff = (pivot_df.loc[model, 'win_rate_lower'] - pivot_df.loc[model, 'win_rate']) * 100
                 upper_diff = (pivot_df.loc[model, 'win_rate_upper'] - pivot_df.loc[model, 'win_rate']) * 100
 
-                leaderboard_data.append({
-                    'Model': model,
-                    'WinRate (%)': f'{score_pct:.1f}',
-                    'CI (%)': f'({lower_diff:+.1f} / {upper_diff:+.1f})'
-                })
+                leaderboard_data.append(
+                    {
+                        'Model': model,
+                        'WinRate (%)': f'{score_pct:.1f}',
+                        'CI (%)': f'({lower_diff:+.1f} / {upper_diff:+.1f})',
+                    }
+                )
 
             # Sort by score descending
             leaderboard_data.sort(key=lambda x: float(x['WinRate (%)'].replace('%', '')), reverse=True)
@@ -468,13 +476,15 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         for _, row in winrate_df.iterrows():
             dataset_name, subset_name, model_1, model_2 = parse_dataset_key(row[ReportKey.subset_name])
             if dataset_name is not None:
-                parsed_data.append({
-                    'dataset_name': dataset_name,
-                    'subset_name': subset_name,
-                    ReportKey.model_name: model_1,
-                    ReportKey.metric_name: row[ReportKey.metric_name],
-                    ReportKey.score: row[ReportKey.score]
-                })
+                parsed_data.append(
+                    {
+                        'dataset_name': dataset_name,
+                        'subset_name': subset_name,
+                        ReportKey.model_name: model_1,
+                        ReportKey.metric_name: row[ReportKey.metric_name],
+                        ReportKey.score: row[ReportKey.score],
+                    }
+                )
 
         if not parsed_data:
             logger.warning('No valid dataset keys found for parsing.')
@@ -483,16 +493,18 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         parsed_df = pd.DataFrame(parsed_data)
 
         # 1. Overall ranking (aggregate across all datasets and subsets)
-        overall_df = parsed_df.groupby([ReportKey.model_name,
-                                        ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+        overall_df = (
+            parsed_df.groupby([ReportKey.model_name, ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+        )
         leaderboard_outputs.append(format_leaderboard(overall_df, '=== OVERALL LEADERBOARD ==='))
 
         # 2. Dataset-level rankings
         datasets = parsed_df['dataset_name'].unique()
         for dataset in sorted(datasets):
             dataset_df = parsed_df[parsed_df['dataset_name'] == dataset]
-            dataset_agg = dataset_df.groupby([ReportKey.model_name,
-                                              ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+            dataset_agg = (
+                dataset_df.groupby([ReportKey.model_name, ReportKey.metric_name])[ReportKey.score].mean().reset_index()
+            )
             leaderboard_outputs.append(format_leaderboard(dataset_agg, f'=== DATASET LEADERBOARD: {dataset} ==='))
 
         # 3. Subset-level rankings
@@ -500,8 +512,9 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         for _, subset_row in subsets.iterrows():
             dataset_name = subset_row['dataset_name']
             subset_name = subset_row['subset_name']
-            subset_df = parsed_df[(parsed_df['dataset_name'] == dataset_name)
-                                  & (parsed_df['subset_name'] == subset_name)]
+            subset_df = parsed_df[
+                (parsed_df['dataset_name'] == dataset_name) & (parsed_df['subset_name'] == subset_name)
+            ]
             leaderboard_outputs.append(
                 format_leaderboard(subset_df, f'=== SUBSET LEADERBOARD: {dataset_name} - {subset_name} ===')
             )
@@ -529,9 +542,12 @@ def _placement_outcome(label: str, candidate_is_a: bool) -> PairwisePlacementOut
 def _reduce_placements(placements: Dict[str, PairwisePlacementOutcome]) -> tuple[str, str]:
     results = [placement.result for placement in placements.values()]
     result = results[0] if len(set(results)) == 1 else 'tie'
-    strength = 'strong' if result != 'tie' and any(
-        placement.result == result and placement.strength == 'strong' for placement in placements.values()
-    ) else 'weak'
+    strength = (
+        'strong'
+        if result != 'tie'
+        and any(placement.result == result and placement.strength == 'strong' for placement in placements.values())
+        else 'weak'
+    )
     return result, strength
 
 

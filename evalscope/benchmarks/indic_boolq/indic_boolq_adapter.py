@@ -66,7 +66,6 @@ languages plus English, for evaluating multilingual passage understanding.
     )
 )
 class IndicBoolQAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -80,7 +79,7 @@ class IndicBoolQAdapter(MultiChoiceAdapter):
         # scaffold stays in English, matching the source dataset's own convention (its `question`
         # field never carries a trailing "?" or a language-local equivalent of "Question:").
         return Sample(
-            input=f"{record['passage']}\n\nQuestion: {record['question']}?",
+            input=f'{record["passage"]}\n\nQuestion: {record["question"]}?',
             choices=['Yes', 'No'],
             target=target_letter,
             subset_key=language,

@@ -6,6 +6,7 @@ Provides a factory function `load_model` and direct access to model classes:
 - CrossEncoderReranker: Local sentence-transformers cross-encoder
 - APIReranker: OpenAI-compatible rerank API
 """
+
 from evalscope.backend.rag_eval.models.encoder import APIEncoder, SentenceTransformerEncoder
 from evalscope.backend.rag_eval.models.reranker import APIReranker, CrossEncoderReranker
 
@@ -30,6 +31,7 @@ def load_model(config):
     """
     if isinstance(config, dict):
         from evalscope.backend.rag_eval.mteb.arguments import MTEBModelConfig
+
         config = MTEBModelConfig(**config)
 
     # Extract common kwargs from config

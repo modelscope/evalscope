@@ -122,12 +122,14 @@ def _process_worker(func, result_queue, *args, **kwargs):
             result = func(*args, **kwargs)
             result_queue.put({'status': 'success', 'result': result})
         except BaseException as e:
-            result_queue.put({
-                'status': 'error',
-                'error': str(e),
-                'traceback': traceback.format_exc(),
-                'stderr': stderr_buf.getvalue(),
-            })
+            result_queue.put(
+                {
+                    'status': 'error',
+                    'error': str(e),
+                    'traceback': traceback.format_exc(),
+                    'stderr': stderr_buf.getvalue(),
+                }
+            )
 
 
 def run_in_subprocess(func, *args, task_id=None, **kwargs):
@@ -196,7 +198,7 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
                 raise TaskStoppedError(task_id)
             stderr_info = res.get('stderr', '')
             stderr_section = f'\n[stderr]\n{stderr_info}' if stderr_info.strip() else ''
-            raise RuntimeError(f"Subprocess error: {res['error']}\n{res.get('traceback', '')}{stderr_section}")
+            raise RuntimeError(f'Subprocess error: {res["error"]}\n{res.get("traceback", "")}{stderr_section}')
         return res['result']
 
     # If the task was explicitly stopped by the user, treat it as a graceful

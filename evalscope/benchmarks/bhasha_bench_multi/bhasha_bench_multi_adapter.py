@@ -92,7 +92,6 @@ the translated question/choices.
     )
 )
 class BhashaBenchMultiAyurAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True
@@ -128,8 +127,7 @@ class BhashaBenchMultiAyurAdapter(MultiChoiceAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchMultiFinanceAdapter(BhashaBenchMultiAyurAdapter):
-    ...
+class BhashaBenchMultiFinanceAdapter(BhashaBenchMultiAyurAdapter): ...
 
 
 @register_benchmark(
@@ -148,8 +146,7 @@ class BhashaBenchMultiFinanceAdapter(BhashaBenchMultiAyurAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchMultiKrishiAdapter(BhashaBenchMultiAyurAdapter):
-    ...
+class BhashaBenchMultiKrishiAdapter(BhashaBenchMultiAyurAdapter): ...
 
 
 @register_benchmark(
@@ -168,5 +165,4 @@ class BhashaBenchMultiKrishiAdapter(BhashaBenchMultiAyurAdapter):
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
     )
 )
-class BhashaBenchMultiLegalAdapter(BhashaBenchMultiAyurAdapter):
-    ...
+class BhashaBenchMultiLegalAdapter(BhashaBenchMultiAyurAdapter): ...

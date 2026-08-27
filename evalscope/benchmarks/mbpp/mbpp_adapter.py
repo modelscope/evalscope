@@ -95,13 +95,7 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
         prompt_template=PROMPT,
         few_shot_prompt_template=FEWSHOT_PROMPT,
         review_timeout=20,
-        sandbox_config={
-            'image': 'python:3.11-slim',
-            'tools_config': {
-                'shell_executor': {},
-                'python_executor': {}
-            }
-        },
+        sandbox_config={'image': 'python:3.11-slim', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
     )
 )
 class MBPPAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -122,7 +116,7 @@ class MBPPAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
                 'test_list': record['test_list'],
                 'task_id': record['task_id'],
                 'test_setup_code': record['test_setup_code'],
-            }
+            },
         )
 
     def sample_to_fewshot(self, sample: Sample) -> str:
@@ -142,7 +136,7 @@ class MBPPAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         code = self.postprocess_completion(prediction)
         code = '\n'.join([task_state.metadata['test_setup_code'], code])
         if 'if __name__ ==' in code:
-            code = code[:code.index('if __name__ ==')]
+            code = code[: code.index('if __name__ ==')]
         return code
 
     @classmethod
@@ -150,7 +144,7 @@ class MBPPAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         from evalscope.utils.code_utils import extract_code_from_freeform_completion
 
         if '[DONE]' in completion:
-            completion = completion[:completion.index('[DONE]')]
+            completion = completion[: completion.index('[DONE]')]
 
         code, _ = extract_code_from_freeform_completion(completion, 'python', first_block_only=True)
 

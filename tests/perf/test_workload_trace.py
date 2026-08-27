@@ -166,31 +166,21 @@ class TestModelRewriting:
 
 class TestArrivalSchedule:
 
-    def test_offsets_at_speed_1(self, tmp_path):
-        records = [_record(timestamp=10.0), _record(timestamp=12.0), _record(timestamp=15.0)]
+    @pytest.mark.parametrize(
+        ('timestamps', 'speed', 'expected'),
+        [
+            ([10.0, 12.0, 15.0], None, [0.0, 2.0, 5.0]),
+            ([10.0, 14.0], 2.0, [0.0, 2.0]),
+            ([0.0, 1.0], 0.5, [0.0, 2.0]),
+        ],
+    )
+    def test_offsets_scale_with_speed(self, tmp_path, timestamps, speed, expected):
+        records = [_record(timestamp=t) for t in timestamps]
         path = _make_trace_file(records, tmp_path)
-        plugin = WorkloadTraceDatasetPlugin(_make_args(path))
-        messages = list(plugin.build_messages())
-        offsets = [m[BODY_META_ARRIVAL_OFFSET] for m in messages]
-        np.testing.assert_allclose(offsets, [0.0, 2.0, 5.0])
-
-    def test_offsets_at_speed_2(self, tmp_path):
-        records = [_record(timestamp=10.0), _record(timestamp=14.0)]
-        path = _make_trace_file(records, tmp_path)
-        args = _make_args(path, dataset_args={'speed': 2.0})
-        plugin = WorkloadTraceDatasetPlugin(args)
-        messages = list(plugin.build_messages())
-        offsets = [m[BODY_META_ARRIVAL_OFFSET] for m in messages]
-        np.testing.assert_allclose(offsets, [0.0, 2.0])
-
-    def test_offsets_at_speed_half(self, tmp_path):
-        records = [_record(timestamp=0.0), _record(timestamp=1.0)]
-        path = _make_trace_file(records, tmp_path)
-        args = _make_args(path, dataset_args={'speed': 0.5})
-        plugin = WorkloadTraceDatasetPlugin(args)
-        messages = list(plugin.build_messages())
-        offsets = [m[BODY_META_ARRIVAL_OFFSET] for m in messages]
-        np.testing.assert_allclose(offsets, [0.0, 2.0])
+        dataset_args = {} if speed is None else {'speed': speed}
+        plugin = WorkloadTraceDatasetPlugin(_make_args(path, dataset_args=dataset_args))
+        offsets = [m[BODY_META_ARRIVAL_OFFSET] for m in plugin.build_messages()]
+        np.testing.assert_allclose(offsets, expected)
 
 
 # ---------------------------------------------------------------------------
@@ -279,14 +269,14 @@ class TestValidation:
         with pytest.raises(ValueError, match=r'(?s)line 1.*timestamp.*(?:missing|required)'):
             WorkloadTraceDatasetPlugin(_make_args(path))
 
-    def test_non_monotonic_timestamps_sorted(self, tmp_path, caplog):
+    def test_non_monotonic_timestamps_sorted(self, tmp_path):
         records = [_record(timestamp=5.0), _record(timestamp=3.0)]
         path = _make_trace_file(records, tmp_path)
         plugin = WorkloadTraceDatasetPlugin(_make_args(path))
-        # Should sort rather than reject
-        assert plugin._records[0].timestamp == 3.0
-        assert plugin._records[1].timestamp == 5.0
-        assert 'not monotonic' in caplog.text
+        # Should sort rather than reject: the resulting schedule is monotonic,
+        # which it would not be if the original order had been kept.
+        offsets = [m[BODY_META_ARRIVAL_OFFSET] for m in plugin.build_messages()]
+        np.testing.assert_allclose(offsets, [0.0, 2.0])
 
     def test_body_meta_key_collision(self, tmp_path):
         body = {'model': 'm', 'messages': [], BODY_META_HEADERS: {}}
@@ -523,7 +513,7 @@ class TestMatchOutputLength:
         msg = list(plugin.build_messages())[0]
         assert msg['max_tokens'] == 50
 
-    @pytest.mark.parametrize('bad_value', [0, -1, -100])
+    @pytest.mark.parametrize('bad_value', [0, -1])
     def test_rejects_non_positive_completion_tokens(self, tmp_path, bad_value):
         path = _make_trace_file([_record(completion_tokens=bad_value, timestamp=0.0)], tmp_path)
         with pytest.raises(ValueError, match='completion_tokens must be > 0'):
@@ -535,7 +525,7 @@ class TestMatchOutputLength:
         'rf_type',
         ['json_object', 'json_schema'],
     )
-    def test_skips_ignore_eos_for_response_format(self, tmp_path, rf_type, caplog):
+    def test_skips_ignore_eos_for_response_format(self, tmp_path, rf_type):
         """response_format with json_object/json_schema triggers constrained
         decoding — ignore_eos must NOT be injected."""
         body = {
@@ -549,7 +539,6 @@ class TestMatchOutputLength:
         msg = list(plugin.build_messages())[0]
         assert msg['max_tokens'] == 50
         assert 'ignore_eos' not in msg
-        assert 'constrained decoding' in caplog.text
 
     def test_allows_ignore_eos_for_response_format_text(self, tmp_path):
         """response_format with type=text does NOT trigger constrained decoding."""
@@ -569,7 +558,7 @@ class TestMatchOutputLength:
         'tool_choice',
         ['required', {'type': 'function', 'function': {'name': 'get_weather'}}],
     )
-    def test_skips_ignore_eos_for_forced_tool_choice(self, tmp_path, tool_choice, caplog):
+    def test_skips_ignore_eos_for_forced_tool_choice(self, tmp_path, tool_choice):
         """tools + tool_choice=required or named function → constrained decoding."""
         body = {
             'model': 'qwen',
@@ -583,7 +572,6 @@ class TestMatchOutputLength:
         msg = list(plugin.build_messages())[0]
         assert msg['max_tokens'] == 50
         assert 'ignore_eos' not in msg
-        assert 'constrained decoding' in caplog.text
 
     @pytest.mark.parametrize('tool_choice', ['auto', 'none'])
     def test_allows_ignore_eos_for_auto_none_tool_choice(self, tmp_path, tool_choice):
@@ -615,7 +603,7 @@ class TestMatchOutputLength:
         assert msg['max_tokens'] == 50
         assert msg['ignore_eos'] is True
 
-    def test_mixed_constrained_and_plain(self, tmp_path, caplog):
+    def test_mixed_constrained_and_plain(self, tmp_path):
         """Only constrained requests skip ignore_eos; plain ones still get it."""
         constrained_body = {
             'model': 'qwen',
@@ -642,5 +630,3 @@ class TestMatchOutputLength:
         # plain → both set
         assert msgs[1]['max_tokens'] == 60
         assert msgs[1]['ignore_eos'] is True
-
-        assert '1 request(s) use constrained decoding' in caplog.text

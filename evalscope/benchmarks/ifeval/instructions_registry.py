@@ -114,21 +114,24 @@ INSTRUCTION_CONFLICTS = {
     },
     # TODO(tianjianlu): Re-enable rephrasing with preprocessing the message.
     # _FORMAT + "rephrase": instructions.RephraseChecker,
-    _FORMAT + 'json_format': set(INSTRUCTION_DICT.keys()
-                                 ).difference({_KEYWORD + 'forbidden_words', _KEYWORD + 'existence'}),
+    _FORMAT + 'json_format': set(INSTRUCTION_DICT.keys()).difference(
+        {_KEYWORD + 'forbidden_words', _KEYWORD + 'existence'}
+    ),
     _FORMAT + 'title': {_FORMAT + 'title'},
     # TODO(tianjianlu): Re-enable with specific prompts.
     # _MULTITURN + "constrained_start": instructions.ConstrainedStartChecker,
-    _COMBINATION + 'two_responses': set(INSTRUCTION_DICT.keys()).difference({
-        _KEYWORD + 'forbidden_words',
-        _KEYWORD + 'existence',
-        _LANGUAGE + 'response_language',
-        _FORMAT + 'title',
-        _PUNCTUATION + 'no_comma',
-    }),
-    _COMBINATION + 'repeat_prompt': set(INSTRUCTION_DICT.keys()).difference({
-        _KEYWORD + 'existence', _FORMAT + 'title', _PUNCTUATION + 'no_comma'
-    }),
+    _COMBINATION + 'two_responses': set(INSTRUCTION_DICT.keys()).difference(
+        {
+            _KEYWORD + 'forbidden_words',
+            _KEYWORD + 'existence',
+            _LANGUAGE + 'response_language',
+            _FORMAT + 'title',
+            _PUNCTUATION + 'no_comma',
+        }
+    ),
+    _COMBINATION + 'repeat_prompt': set(INSTRUCTION_DICT.keys()).difference(
+        {_KEYWORD + 'existence', _FORMAT + 'title', _PUNCTUATION + 'no_comma'}
+    ),
     _STARTEND + 'end_checker': {_STARTEND + 'end_checker'},
     _CHANGE_CASES + 'capital_word_frequency': {
         _CHANGE_CASES + 'capital_word_frequency',

@@ -57,10 +57,9 @@ Answer the following multiple choice question. The entire content of your respon
     )
 )
 class LogiQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
-            input=f"{record['context']}\n{record['question']}",
+            input=f'{record["context"]}\n{record["question"]}',
             choices=record['choices'],
             target=record['answer'],
             metadata={},

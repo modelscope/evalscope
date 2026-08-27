@@ -18,7 +18,7 @@ logger = get_logger()
 
 
 def parse_sla_params(
-    sla_params_str: Optional[Union[str, Dict[str, Any], List[Any]]]
+    sla_params_str: Optional[Union[str, Dict[str, Any], List[Any]]],
 ) -> List[Dict[str, SLACriterionBase]]:
     if sla_params_str is None:
         return []
@@ -47,7 +47,7 @@ def get_metric_values(results: Dict[str, Any]) -> Dict[str, float]:
     raw_perc = results.get('percentiles', {})
 
     # Coerce to typed objects
-    summary = (raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics))
+    summary = raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
     if isinstance(raw_perc, PercentileResult):
         percentiles = raw_perc
     elif isinstance(raw_perc, dict) and raw_perc:
@@ -79,7 +79,7 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
     prefix = f'[{selector}] ' if selector else ''
 
     # Coerce to typed object
-    summary = (raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics))
+    summary = raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
 
     # 1. Check Success Rate (Must be 100%)
     success_rate = summary.success_rate
@@ -107,7 +107,7 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
             passed = criterion.validate(val)
             status = 'PASSED' if passed else 'FAILED'
             logger.info(
-                f"{prefix}SLA Rule {i+1} Check: {metric} = {val:.4f} | Expect {criterion.format_cond('')} | {status}"
+                f'{prefix}SLA Rule {i + 1} Check: {metric} = {val:.4f} | Expect {criterion.format_cond("")} | {status}'
             )
             if not passed:
                 group_passed = False
@@ -119,7 +119,6 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
 
 
 class SLAAutoTuner:
-
     def __init__(self, args: Arguments, runner: Callable[[Arguments, Optional[str]], Dict[str, Any]]):
         self.args = args
         self.runner = runner
@@ -206,7 +205,7 @@ class SLAAutoTuner:
 
         run_results = []
         for i in range(self.args.sla_num_runs):
-            logger.info(f'Running {self.sla_variable}={val}, iteration {i+1}/{self.args.sla_num_runs}...')
+            logger.info(f'Running {self.sla_variable}={val}, iteration {i + 1}/{self.args.sla_num_runs}...')
             run_args = copy.deepcopy(self.args)
 
             if self.sla_variable == 'parallel':
@@ -303,12 +302,14 @@ class SLAAutoTuner:
                 else:
                     right = mid
 
-        self.sla_results_table.append({
-            'Criteria': f'{opt_metric} -> {opt_mode}',
-            'Variable': self.sla_variable,
-            'Max Satisfied': best_sla_val,
-            'Note': f'Best {opt_metric}: {best_metric_val:.4f}'
-        })
+        self.sla_results_table.append(
+            {
+                'Criteria': f'{opt_metric} -> {opt_mode}',
+                'Variable': self.sla_variable,
+                'Max Satisfied': best_sla_val,
+                'Note': f'Best {opt_metric}: {best_metric_val:.4f}',
+            }
+        )
 
     def _tune_constraint(
         self,
@@ -372,12 +373,14 @@ class SLAAutoTuner:
 
             if not found_valid:
                 logger.warning(f'Even {self.sla_variable}={self.lower_bound} failed SLA for {criteria_desc}.')
-                self.sla_results_table.append({
-                    'Criteria': criteria_desc,
-                    'Variable': self.sla_variable,
-                    'Max Satisfied': 'None',
-                    'Note': f'Failed at lower bound ({self.lower_bound})'
-                })
+                self.sla_results_table.append(
+                    {
+                        'Criteria': criteria_desc,
+                        'Variable': self.sla_variable,
+                        'Max Satisfied': 'None',
+                        'Note': f'Failed at lower bound ({self.lower_bound})',
+                    }
+                )
                 return
 
         # Binary search
@@ -400,12 +403,9 @@ class SLAAutoTuner:
                 right = mid - 1
 
         logger.info(f'SLA Auto-tune finished. Criteria: {criteria_desc}. Max {self.sla_variable}: {best_val}')
-        self.sla_results_table.append({
-            'Criteria': criteria_desc,
-            'Variable': self.sla_variable,
-            'Max Satisfied': best_val,
-            'Note': 'Satisfied'
-        })
+        self.sla_results_table.append(
+            {'Criteria': criteria_desc, 'Variable': self.sla_variable, 'Max Satisfied': best_val, 'Note': 'Satisfied'}
+        )
 
     def _save_summary(self) -> Dict[str, Any]:
         formatted = {f'{self.sla_variable}_{val}': res for val, res in self.results_cache.items()}

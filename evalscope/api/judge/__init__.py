@@ -7,6 +7,7 @@ aggregation. Adapters never call a judge model and never parse a judge response.
 The judge must be a model that can follow a structured-output instruction reliably; a weak judge
 shows up as a high parse-failure rate in ``JudgeSummary.failures``.
 """
+
 from .contracts import OutputContract, ParseResult
 from .definition import JudgeDefinition
 from .executor import JudgeExecutor, JudgeExecutorConfig

@@ -52,7 +52,6 @@ ARC (AI2 Reasoning Challenge) is a benchmark designed to evaluate science questi
     )
 )
 class ARCAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

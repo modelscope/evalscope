@@ -137,11 +137,7 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 """,
         dataset_id='evalscope/aime24',
         subset_list=['default'],
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -149,7 +145,6 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
     )
 )
 class AIME24Adapter(DefaultDataAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -190,10 +185,13 @@ class AIME24Adapter(DefaultDataAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
-            prompt = JUDGE_PROMPT.format(
-                expression1=judge_context.original_prediction,
-                expression2=judge_context.reference,
-            ) + case.output_contract.instruction()
+            prompt = (
+                JUDGE_PROMPT.format(
+                    expression1=judge_context.original_prediction,
+                    expression2=judge_context.reference,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -203,7 +201,7 @@ class AIME24Adapter(DefaultDataAdapter):
             cases=[JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )
 
 
@@ -240,19 +238,14 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 """,
         dataset_id='evalscope/aime25',
         subset_list=['default'],
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
     )
 )
-class AIME25Adapter(AIME24Adapter):
-    ...
+class AIME25Adapter(AIME24Adapter): ...
 
 
 @register_benchmark(
@@ -288,16 +281,11 @@ AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark ba
 """,
         dataset_id='evalscope/aime26',
         subset_list=['default'],
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,
         train_split=None,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
     )
 )
-class AIME26Adapter(AIME24Adapter):
-    ...
+class AIME26Adapter(AIME24Adapter): ...

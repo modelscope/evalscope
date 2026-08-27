@@ -77,7 +77,6 @@ The entire content of your response should be of the following format: 'ANSWER: 
     )
 )
 class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.categories = ['inversion', 'wordplay', 'switchbait', 'paradox', 'misdirection']
@@ -163,7 +162,7 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
                 'tp': 1 if in_pred and in_target else 0,
                 'fp': 1 if in_pred and not in_target else 0,
                 'fn': 1 if not in_pred and in_target else 0,
-                'support': 1 if in_target else 0
+                'support': 1 if in_target else 0,
             }
 
         # Set simple numerical values in score.value as expected by the API
@@ -190,7 +189,7 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
                 AggScore(metric_name='f1_weighted', score=0.0, num=0, metadata={}),
                 AggScore(metric_name='f1_micro', score=0.0, num=0, metadata={}),
                 AggScore(metric_name='f1_macro', score=0.0, num=0, metadata={}),
-                AggScore(metric_name='exact_match', score=0.0, num=0, metadata={})
+                AggScore(metric_name='exact_match', score=0.0, num=0, metadata={}),
             ]
 
         # Initialize category statistics
@@ -237,9 +236,11 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
 
         micro_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0.0
         micro_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0.0
-        f1_micro = 2 * micro_precision * micro_recall / (micro_precision + micro_recall) if (
-            micro_precision + micro_recall
-        ) > 0 else 0.0
+        f1_micro = (
+            2 * micro_precision * micro_recall / (micro_precision + micro_recall)
+            if (micro_precision + micro_recall) > 0
+            else 0.0
+        )
 
         # Calculate macro-average F1 (simple average of category F1 scores)
         f1_macro = f1_sum / len(self.categories) if self.categories else 0.0
@@ -261,12 +262,9 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
                 metric_name='f1_weighted',
                 score=f1_weighted,
                 num=num_samples,
-                metadata={'category_f1': {
-                    cat: f1
-                    for cat, f1 in category_f1.items()
-                }}
+                metadata={'category_f1': {cat: f1 for cat, f1 in category_f1.items()}},
             ),
             AggScore(metric_name='f1_micro', score=f1_micro, num=num_samples, metadata={}),
             AggScore(metric_name='f1_macro', score=f1_macro, num=num_samples, metadata={}),
-            AggScore(metric_name='exact_match', score=exact_match, num=num_samples, metadata={})
+            AggScore(metric_name='exact_match', score=exact_match, num=num_samples, metadata={}),
         ]

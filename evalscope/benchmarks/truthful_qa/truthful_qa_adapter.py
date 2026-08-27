@@ -72,9 +72,9 @@ TruthfulQA is a benchmark designed to measure whether language models generate t
             'multiple_correct': {
                 'type': 'bool',
                 'description': 'Use multiple-answer format (MC2) if True; otherwise single-answer (MC1).',
-                'value': False
+                'value': False,
             }
-        }
+        },
     )
 )
 class TruthfulQaAdapter(MultiChoiceAdapter):
@@ -95,7 +95,6 @@ class TruthfulQaAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         if not self.multiple_correct:
-
             # MC1 sample
             mc1_choices = record['mc1_targets']['choices']
             mc1_labels = record['mc1_targets']['labels']

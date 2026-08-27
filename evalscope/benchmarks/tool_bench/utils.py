@@ -17,7 +17,7 @@ def evaluate_action_em(cand_list: list, ref_list: list):
         return 0
     em = 0
     for cand, ref in zip(cand_list, ref_list):
-        em += (1 if cand == ref else 0)
+        em += 1 if cand == ref else 0
     return em / len(cand_list)
 
 
@@ -90,13 +90,13 @@ def parse_action(text):
     action_input = '{}'
     if 'Action Input:' in text:
         input_idx = text.rindex('Action Input:')
-        action_input = text[input_idx + len('Action Input:'):].strip()
+        action_input = text[input_idx + len('Action Input:') :].strip()
     else:
         action_input = '{}'
 
     if 'Action:' in text:
         action_idx = text.rindex('Action:')
-        action = text[action_idx + len('Action:'):].strip()
+        action = text[action_idx + len('Action:') :].strip()
         if 'Action Input:' in action:
             input_idx = action.index('Action Input:')
             action = action[:input_idx].strip()

@@ -7,7 +7,6 @@ from evalscope.constants import EvalBackend, EvalType, ModelTask
 
 
 class ParseStrArgsAction(argparse.Action):
-
     def __call__(self, parser, namespace, values, option_string=None):
         assert isinstance(values, str), 'args should be a string.'
 

@@ -8,6 +8,7 @@ intentionally stateless so the adapter can dispatch them by ``check_type``.
 Ports of validators from
 https://github.com/MiniMax-AI/MiniMax-Provider-Verifier/tree/main/validator
 """
+
 from __future__ import annotations
 
 import json
@@ -119,7 +120,8 @@ def validate_tool_call_with_array_command(tool_call: Any, tools: List[Dict[str, 
         # Extra: command-array soundness check
         for param_name, param_schema in (schema.get('properties') or {}).items():
             if (
-                param_name == 'command' and param_schema.get('type') == 'array'
+                param_name == 'command'
+                and param_schema.get('type') == 'array'
                 and (param_schema.get('items') or {}).get('type') == 'string'
             ):
                 if not is_valid_array_command(args.get(param_name)):
@@ -163,7 +165,7 @@ def has_no_repeated_ngram(text: str, n: int = _NGRAM_N, repeat_count: int = _NGR
 
     if not text or len(text) < n:
         return True
-    sliding_counts = Counter(text[i:i + n] for i in range(len(text) - n + 1))
+    sliding_counts = Counter(text[i : i + n] for i in range(len(text) - n + 1))
     for ngram, count in sliding_counts.items():
         if count < repeat_count:
             continue
@@ -186,7 +188,7 @@ def extract_expected_param_order(tools: List[Dict[str, Any]]) -> Optional[List[s
     """Pull the declared property order from the first tool's ``parameters.properties``."""
     if not tools or not isinstance(tools, list):
         return None
-    params = (tools[0].get('function', {}).get('parameters') or {})
+    params = tools[0].get('function', {}).get('parameters') or {}
     if 'properties' in params:
         return list((params.get('properties') or {}).keys())
     schema_keywords = {
@@ -220,5 +222,5 @@ def check_param_order_preserved(text: str, expected: List[str]) -> Dict[str, Any
     actual = [name for _, name in positions]
     if len(actual) < 2:
         return {'checked': False, 'valid': None, 'expected': expected, 'actual': actual}
-    valid = actual == expected[:len(actual)]
+    valid = actual == expected[: len(actual)]
     return {'checked': True, 'valid': valid, 'expected': expected, 'actual': actual}

@@ -44,11 +44,12 @@ def resolve_engine(value: Union[str, SandboxEngine, None]) -> SandboxEngine:
     key = str(value).strip().lower()
     if key in _ALIASES:
         return _ALIASES[key]
-    raise ValueError(f'Unknown sandbox engine: {value!r}. '
-                     f'Supported: {sorted(set(_ALIASES))}')
+    raise ValueError(f'Unknown sandbox engine: {value!r}. Supported: {sorted(set(_ALIASES))}')
 
 
-def get_enclave_types(engine: SandboxEngine, ) -> Tuple[Any, Type[Any], Optional[Type[Any]], Optional[Type[Any]]]:
+def get_enclave_types(
+    engine: SandboxEngine,
+) -> Tuple[Any, Type[Any], Optional[Type[Any]], Optional[Type[Any]]]:
     """Return ``(SandboxType, SandboxConfigCls, ManagerCls, ManagerConfigCls)``.
 
     - ``ManagerCls`` is ``None`` when the default ``SandboxManagerFactory``
@@ -57,11 +58,13 @@ def get_enclave_types(engine: SandboxEngine, ) -> Tuple[Any, Type[Any], Optional
     """
     if engine is SandboxEngine.DOCKER:
         from ms_enclave.sandbox.model import DockerSandboxConfig, SandboxType
+
         return SandboxType.DOCKER, DockerSandboxConfig, None, None
 
     if engine is SandboxEngine.VOLCENGINE:
         from ms_enclave.sandbox.manager import VolcengineSandboxManager
         from ms_enclave.sandbox.model import SandboxType, VolcengineSandboxConfig, VolcengineSandboxManagerConfig
+
         return (
             SandboxType.VOLCENGINE,
             VolcengineSandboxConfig,

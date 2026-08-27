@@ -13,7 +13,7 @@ def parse_content_with_reasoning(content: str) -> tuple[str, Optional[ContentRea
     - The second element is a ContentReasoning object (or None if no <think> tag is found).
     """
     # Match <think> tag with optional attributes anywhere in the string
-    pattern = (r'<think(?:\s+signature="([^"]*)")?(?:\s+redacted="(true)")?\s*>(.*?)</think>')
+    pattern = r'<think(?:\s+signature="([^"]*)")?(?:\s+redacted="(true)")?\s*>(.*?)</think>'
     match = re.search(pattern, content, re.DOTALL)
 
     if match:

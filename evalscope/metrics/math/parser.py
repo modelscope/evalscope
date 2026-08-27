@@ -1,6 +1,7 @@
 """
 The logic in this file largely borrows from Qwen2.5-Math codebase at https://github.com/QwenLM/Qwen2.5-Math:
 """
+
 # flake8: noqa
 import re
 import regex
@@ -96,7 +97,7 @@ def strip_answer_string(string):
     # replace tfrac and dfrac with frac
     string = string.replace('tfrac', 'frac')
     string = string.replace('dfrac', 'frac')
-    string = (string.replace('\\neq', '\\ne').replace('\\leq', '\\le').replace('\\geq', '\\ge'))
+    string = string.replace('\\neq', '\\ne').replace('\\leq', '\\le').replace('\\geq', '\\ge')
 
     # remove \left and \right
     string = string.replace('\\left', '')
@@ -154,9 +155,15 @@ def strip_answer_string(string):
     # cdot
     # string = string.replace("\\cdot", "")
     if (
-        string.startswith('{') and string.endswith('}') and string.isalnum()
-        or string.startswith('(') and string.endswith(')') and string.isalnum()
-        or string.startswith('[') and string.endswith(']') and string.isalnum()
+        string.startswith('{')
+        and string.endswith('}')
+        and string.isalnum()
+        or string.startswith('(')
+        and string.endswith(')')
+        and string.isalnum()
+        or string.startswith('[')
+        and string.endswith(']')
+        and string.isalnum()
     ):
         string = string[1:-1]
 
@@ -357,7 +364,7 @@ def math_equal(
         return False
     if str(prediction.strip().lower()) == str(reference.strip().lower()):
         return True
-    if (reference in ['A', 'B', 'C', 'D', 'E'] and choice_answer_clean(prediction) == reference):
+    if reference in ['A', 'B', 'C', 'D', 'E'] and choice_answer_clean(prediction) == reference:
         return True
 
     try:  # 1. numerical equal
@@ -396,8 +403,9 @@ def math_equal(
 
     ## deal with [], (), {}
     pred_str, ref_str = prediction, reference
-    if (prediction.startswith('[') and prediction.endswith(']') and not reference.startswith('(')
-        ) or (prediction.startswith('(') and prediction.endswith(')') and not reference.startswith('[')):
+    if (prediction.startswith('[') and prediction.endswith(']') and not reference.startswith('(')) or (
+        prediction.startswith('(') and prediction.endswith(')') and not reference.startswith('[')
+    ):
         pred_str = pred_str.strip('[]()')
         ref_str = ref_str.strip('[]()')
     for s in ['{', '}', '(', ')']:
@@ -414,22 +422,24 @@ def math_equal(
         pred_parts = prediction[1:-1].split(',')
         ref_parts = reference[1:-1].split(',')
         if len(pred_parts) == len(ref_parts):
-            if all([
-                math_equal(pred_parts[i], ref_parts[i], include_percentage, is_close) for i in range(len(pred_parts))
-            ]):
+            if all(
+                [math_equal(pred_parts[i], ref_parts[i], include_percentage, is_close) for i in range(len(pred_parts))]
+            ):
                 return True
-    if ((prediction.startswith('\\begin{pmatrix}') or prediction.startswith('\\begin{bmatrix}'))
+    if (
+        (prediction.startswith('\\begin{pmatrix}') or prediction.startswith('\\begin{bmatrix}'))
         and (prediction.endswith('\\end{pmatrix}') or prediction.endswith('\\end{bmatrix}'))
         and (reference.startswith('\\begin{pmatrix}') or reference.startswith('\\begin{bmatrix}'))
-        and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))):
+        and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))
+    ):
         pred_lines = [
             line.strip()
-            for line in prediction[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            for line in prediction[len('\\begin{pmatrix}') : -len('\\end{pmatrix}')].split('\\\\')
             if line.strip()
         ]
         ref_lines = [
             line.strip()
-            for line in reference[len('\\begin{pmatrix}'):-len('\\end{pmatrix}')].split('\\\\')
+            for line in reference[len('\\begin{pmatrix}') : -len('\\end{pmatrix}')].split('\\\\')
             if line.strip()
         ]
         matched = True
@@ -438,14 +448,17 @@ def math_equal(
                 pred_parts = pred_line.split('&')
                 ref_parts = ref_line.split('&')
                 if len(pred_parts) == len(ref_parts):
-                    if not all([
-                        math_equal(
-                            pred_parts[i],
-                            ref_parts[i],
-                            include_percentage,
-                            is_close,
-                        ) for i in range(len(pred_parts))
-                    ]):
+                    if not all(
+                        [
+                            math_equal(
+                                pred_parts[i],
+                                ref_parts[i],
+                                include_percentage,
+                                is_close,
+                            )
+                            for i in range(len(pred_parts))
+                        ]
+                    ):
                         matched = False
                         break
                 else:
@@ -464,10 +477,10 @@ def math_equal(
         ref = f'{ref[0].strip()} - ({ref[1].strip()})'
         if symbolic_equal(pred, ref) or symbolic_equal(f'-({pred})', ref):
             return True
-    elif (prediction.count('=') == 1 and len(prediction.split('=')[0].strip()) <= 2 and '=' not in reference):
+    elif prediction.count('=') == 1 and len(prediction.split('=')[0].strip()) <= 2 and '=' not in reference:
         if math_equal(prediction.split('=')[1], reference, include_percentage, is_close):
             return True
-    elif (reference.count('=') == 1 and len(reference.split('=')[0].strip()) <= 2 and '=' not in prediction):
+    elif reference.count('=') == 1 and len(reference.split('=')[0].strip()) <= 2 and '=' not in prediction:
         if math_equal(prediction, reference.split('=')[1], include_percentage, is_close):
             return True
 

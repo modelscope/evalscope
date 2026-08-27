@@ -68,7 +68,7 @@ class MITRestaurantAdapter(NERAdapter):
             'LOCATION': 'location',
             'PRICE': 'price',
             'RATING': 'rating',
-            'RESTAURANT_NAME': 'restaurant_name'
+            'RESTAURANT_NAME': 'restaurant_name',
         }
 
         # Add descriptions for each entity type

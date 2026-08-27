@@ -26,12 +26,10 @@ def beijing_converter(timestamp: float) -> struct_time:
 if USE_OSS:
 
     class BeijingColoredFormatter(colorlog.ColoredFormatter):
-
         def converter(self, timestamp):
             return beijing_converter(timestamp)
 
     class BeijingPlainFormatter(logging.Formatter):
-
         def converter(self, timestamp):
             return beijing_converter(timestamp)
 

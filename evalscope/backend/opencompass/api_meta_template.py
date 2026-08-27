@@ -1,6 +1,7 @@
 # ruff: noqa: I001
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from typing import Any, Dict, List
+
 """
 The API meta template for OpenCompass.
 
@@ -10,7 +11,6 @@ Search for `meta template` in the documentation.
 
 
 class MetaTemplateType:
-
     default_api_meta_template_oc = 'default-api-meta-template-oc'
 
     @classmethod
@@ -44,12 +44,11 @@ def get_template(name: str) -> Dict[str, Any]:
 register_template(
     name=MetaTemplateType.default_api_meta_template_oc,
     template=dict(
-        round=[dict(role='HUMAN', api_role='HUMAN'),
-               dict(role='BOT', api_role='BOT', generate=True)],
+        round=[dict(role='HUMAN', api_role='HUMAN'), dict(role='BOT', api_role='BOT', generate=True)],
         reserved_roles=[
             dict(role='SYSTEM', api_role='SYSTEM'),
         ],
-    )
+    ),
 )
 
 if __name__ == '__main__':

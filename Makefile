@@ -150,7 +150,6 @@ lint:
 .PHONY: dev
 dev:
 	pip install -e '.[dev,perf,docs]'
-	pip install pre-commit
 
 .PHONY: install
 install:

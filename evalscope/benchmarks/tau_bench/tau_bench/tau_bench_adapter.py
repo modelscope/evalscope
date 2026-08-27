@@ -60,30 +60,25 @@ logger = get_logger()
             'user_model': {
                 'type': 'str',
                 'description': 'Model used to simulate the user in the environment.',
-                'value': 'qwen-plus'
+                'value': 'qwen-plus',
             },
-            'api_key': {
-                'type': 'str',
-                'description': 'API key for the user model backend.',
-                'value': 'EMPTY'
-            },
+            'api_key': {'type': 'str', 'description': 'API key for the user model backend.', 'value': 'EMPTY'},
             'api_base': {
                 'type': 'str',
                 'description': 'Base URL for the user model API requests.',
-                'value': 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+                'value': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             },
             'generation_config': {
                 'type': 'dict',
                 'description': 'Default generation config for user model simulation.',
                 'value': {
                     'temperature': 0.0,
-                }
-            }
-        }
+                },
+            },
+        },
     )
 )
 class TauBenchAdapter(AgentAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -91,7 +86,7 @@ class TauBenchAdapter(AgentAdapter):
             'tau_bench',
             package='git+https://github.com/sierra-research/tau-bench',
             raise_error=True,
-            feature_name=self.pretty_name
+            feature_name=self.pretty_name,
         )
 
         # setup user model args
@@ -114,7 +109,7 @@ class TauBenchAdapter(AgentAdapter):
                 eval_type=EvalType.OPENAI_API,
                 base_url=adapter_instance.api_base,
                 api_key=adapter_instance.api_key,
-                config=GenerateConfig(**adapter_instance.generation_config)
+                config=GenerateConfig(**adapter_instance.generation_config),
             )
 
             res = user_server.generate(input=[dict_to_chat_message(msg) for msg in messages])
@@ -145,10 +140,12 @@ class TauBenchAdapter(AgentAdapter):
             )
             tasks = []
             for i in range(len(env.tasks)):
-                tasks.append({
-                    'task_index': i,
-                    'env_name': env_name,
-                })
+                tasks.append(
+                    {
+                        'task_index': i,
+                        'env_name': env_name,
+                    }
+                )
             dataset = build_dataset_from_records(
                 records=tasks,
                 sample_fields=self.record_to_sample,
@@ -172,11 +169,12 @@ class TauBenchAdapter(AgentAdapter):
             input=[ChatMessageUser(content='')],
             target='',  # Will use the record for evaluation
             subset_key=record['env_name'],
-            metadata=record  # Store the full record for evaluation
+            metadata=record,  # Store the full record for evaluation
         )
 
     def _on_inference(self, model: Model, sample: Sample):
         from .generation import predict
+
         return predict(model, sample)
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state) -> Score:
@@ -198,7 +196,7 @@ class TauBenchAdapter(AgentAdapter):
             score.metadata = {
                 'task_result': task_result,
                 'env_name': task_state.metadata.get('env_name', 'unknown'),
-                'task_index': task_state.metadata.get('task_index', -1)
+                'task_index': task_state.metadata.get('task_index', -1),
             }
             score.main_score_name = 'acc'
 

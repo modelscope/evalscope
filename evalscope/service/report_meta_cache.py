@@ -11,6 +11,7 @@ parsing them (expensive) only for references that are new or have changed since
 the last request. Entries are keyed by ``(root, ref)`` so switching the outputs
 root never makes one root's entries evict or shadow another's.
 """
+
 import glob
 import hashlib
 import os
@@ -68,8 +69,9 @@ def report_ref_fingerprint(root: str, ref: ReportRef) -> Fingerprint:
     return tuple(entries)
 
 
-def build_report_meta_cached(root: str, ref: ReportRef, fingerprint: Fingerprint,
-                             compute: MetaBuilder) -> Optional[dict]:
+def build_report_meta_cached(
+    root: str, ref: ReportRef, fingerprint: Fingerprint, compute: MetaBuilder
+) -> Optional[dict]:
     """Return the cached metadata for ``ref`` or compute and store it.
 
     ``fingerprint`` is supplied by the caller (which already needs it for the

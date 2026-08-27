@@ -64,18 +64,13 @@ MathVerse is an all-around visual math benchmark designed for equitable and in-d
 - Results reported per problem version for detailed analysis
 """,
         subset_list=SUBSET_LIST,
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         default_subset='testmini',
         eval_split='testmini',
         prompt_template=OPEN_PROMPT,
     )
 )
 class MathVerseAdapter(VisionLanguageAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):

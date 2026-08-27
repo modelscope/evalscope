@@ -30,6 +30,7 @@ class Metric(ABC):
 
 class SingletonMetric(Metric):
     """Singleton base class for metrics."""
+
     _instance = None
 
     @thread_safe
@@ -58,9 +59,11 @@ class T2IMetric(SingletonMetric):
         """Resolve device and cache_dir defaults for T2I metrics."""
         if device is None:
             from evalscope.utils.model_utils import get_device
+
             device = get_device()
         if cache_dir is None:
             from evalscope.metrics.vision.t2v_metrics.constants import CACHE_DIR
+
             cache_dir = CACHE_DIR
         return device, cache_dir
 

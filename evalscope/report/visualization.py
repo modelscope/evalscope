@@ -1,6 +1,7 @@
 """
 Visualization utilities for report chart generation.
 """
+
 from typing import List
 
 import numpy as np
@@ -47,6 +48,7 @@ def plot_single_report_sunburst(report_list: List[Report]):
         categories = sorted([i for i in df.columns if i.startswith(ReportKey.category_prefix)])
         path = [ReportKey.dataset_name] + categories + [ReportKey.subset_name]
     from evalscope.utils.data_utils import get_quality_metric_df
+
     df = get_quality_metric_df(report_list, df)
     logger.debug(f'df: \n{df}')
     df[categories] = df[categories].fillna('default')  # NOTE: fillna for empty categories
@@ -62,9 +64,10 @@ def plot_single_report_sunburst(report_list: List[Report]):
         custom_data=[ReportKey.metric_name, ReportKey.display_score, ReportKey.raw_score],
         color_continuous_scale='RdYlGn',  # see https://plotly.com/python/builtin-colorscales/
         color_continuous_midpoint=np.average(df[ReportKey.score], weights=df[ReportKey.num])
-        if df[ReportKey.num].sum() > 0 else df[ReportKey.score].mean(),
+        if df[ReportKey.num].sum() > 0
+        else df[ReportKey.score].mean(),
         template=PLOTLY_THEME,
-        maxdepth=4
+        maxdepth=4,
     )
     plot.update_traces(
         insidetextorientation='radial',
@@ -84,7 +87,7 @@ def plot_single_dataset_scores(df: pd.DataFrame):
         color=df[ReportKey.subset_name],
         text=ReportKey.display_score,
         custom_data=[ReportKey.raw_score],
-        barmode='group'
+        barmode='group',
     )
 
     width = 0.2 if len(df[ReportKey.subset_name]) <= 3 else None
@@ -115,8 +118,7 @@ def plot_multi_report_radar(df: pd.DataFrame):
                 fill='toself',
                 customdata=common_group[[ReportKey.metric_name, ReportKey.display_score]],
                 hovertemplate=(
-                    '%{theta}<br>%{customdata[0]}: %{customdata[1]}<br>Quality: %{r:.3f}'
-                    '<extra>%{fullData.name}</extra>'
+                    '%{theta}<br>%{customdata[0]}: %{customdata[1]}<br>Quality: %{r:.3f}<extra>%{fullData.name}</extra>'
                 ),
             )
         )
@@ -124,6 +126,6 @@ def plot_multi_report_radar(df: pd.DataFrame):
     fig.update_layout(
         template=PLOTLY_THEME,
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
-        margin=dict(t=20, l=20, r=20, b=20)
+        margin=dict(t=20, l=20, r=20, b=20),
     )
     return fig

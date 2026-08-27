@@ -62,7 +62,6 @@ ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Model
     )
 )
 class ZeroBenchAdapter(VisionLanguageAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -82,7 +81,7 @@ class ZeroBenchAdapter(VisionLanguageAdapter):
         metadata = {
             'question_id': record['question_id'],
             'question_images': record['question_images'],
-            'image_attribution': record['image_attribution']
+            'image_attribution': record['image_attribution'],
         }
 
         return Sample(

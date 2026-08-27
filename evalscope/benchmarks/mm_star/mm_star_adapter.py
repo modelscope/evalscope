@@ -22,8 +22,12 @@ where [LETTER] is one of A,B,C,D. Think step by step before answering.
 """.strip()
 
 SUBSET_LIST = [
-    'coarse perception', 'fine-grained perception', 'instance reasoning', 'logical reasoning', 'math',
-    'science & technology'
+    'coarse perception',
+    'fine-grained perception',
+    'instance reasoning',
+    'logical reasoning',
+    'math',
+    'science & technology',
 ]
 
 
@@ -68,7 +72,6 @@ MMStar is an elite vision-indispensable multimodal benchmark designed to ensure 
     )
 )
 class MMStarAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -93,6 +96,6 @@ class MMStarAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
                 'l2_category': record.get('l2_category'),
                 'source': record.get('meta_info', {}).get('source'),
                 'split': record.get('meta_info', {}).get('split'),
-                'image_path': record.get('meta_info', {}).get('image_path')
-            }
+                'image_path': record.get('meta_info', {}).get('image_path'),
+            },
         )

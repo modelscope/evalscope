@@ -61,11 +61,14 @@ def _canonical_overlap_name(name: str, dimensions: Dict[str, Scalar]) -> Optiona
             dimensions.setdefault('variant', 'l')
         else:
             dimensions.setdefault('ngram', int(variant))
-        dimensions.setdefault('statistic', {
-            'R': 'recall',
-            'P': 'precision',
-            'F': 'f1',
-        }[rouge.group('statistic')])
+        dimensions.setdefault(
+            'statistic',
+            {
+                'R': 'recall',
+                'P': 'precision',
+                'F': 'f1',
+            }[rouge.group('statistic')],
+        )
         return 'rouge'
 
     return None

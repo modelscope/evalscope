@@ -46,7 +46,7 @@ def get_dockerhub_image_uri(instance_id: str, repo: str, dockerhub_username: str
 def _run_git(args: List[str], cwd: Path) -> None:
     result = subprocess.run(['git', *args], cwd=str(cwd), capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"git {' '.join(args)} (cwd={cwd}) failed: {result.stderr.strip()}")
+        raise RuntimeError(f'git {" ".join(args)} (cwd={cwd}) failed: {result.stderr.strip()}')
 
 
 def ensure_pro_repo(user_path: str = '') -> str:

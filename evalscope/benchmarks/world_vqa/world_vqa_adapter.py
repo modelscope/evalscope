@@ -66,7 +66,6 @@ WorldVQA is a benchmark designed to evaluate the atomic visual world knowledge o
     )
 )
 class WorldVQAAdapter(VisionLanguageAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):

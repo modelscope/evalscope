@@ -27,8 +27,11 @@ IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.bmp')
 TASK_STRUCTURE: Dict[str, List[str]] = {
     'recognition': ['multi_lingual_recognition', 'natural_scene_recognition'],
     'parsing': [
-        'complex_table_parsing', 'formula_parsing', 'general_documents_parsing', 'info_board_parsing',
-        'molecular_parsing'
+        'complex_table_parsing',
+        'formula_parsing',
+        'general_documents_parsing',
+        'info_board_parsing',
+        'molecular_parsing',
     ],
     'grounding': ['object_grounding', 'text_grounding'],
     'extraction': ['business_transactions', 'public_services', 'regulated_records'],
@@ -36,9 +39,7 @@ TASK_STRUCTURE: Dict[str, List[str]] = {
 }
 
 SUBSET_TO_TRACK: Dict[str, str] = {
-    sub_task: track
-    for track, sub_tasks in TASK_STRUCTURE.items()
-    for sub_task in sub_tasks
+    sub_task: track for track, sub_tasks in TASK_STRUCTURE.items() for sub_task in sub_tasks
 }
 
 SUBSET_LIST: List[str] = list(SUBSET_TO_TRACK)
@@ -158,7 +159,7 @@ class CCOCRV2Adapter(VisionLanguageAdapter):
             for question_name in sorted(os.listdir(scenario_dir)):
                 if not question_name.endswith('.txt'):
                     continue
-                sample_id = question_name[:-len('.txt')]
+                sample_id = question_name[: -len('.txt')]
                 answer_path = os.path.join(task_dir, 'answer', scenario, question_name)
                 image_paths = image_index.get(sample_id, [])
                 if not os.path.isfile(answer_path) or not image_paths:
@@ -166,14 +167,16 @@ class CCOCRV2Adapter(VisionLanguageAdapter):
                     # rather than letting them reach the model and score zero.
                     logger.warning(f'Skipping incomplete CC-OCR V2 sample {sub_task}/{scenario}/{sample_id}.')
                     continue
-                records.append({
-                    'id': sample_id,
-                    'sub_task': sub_task,
-                    'scenario': scenario,
-                    'question': _read_text(os.path.join(scenario_dir, question_name)),
-                    'answer': _read_text(answer_path),
-                    'image_paths': image_paths,
-                })
+                records.append(
+                    {
+                        'id': sample_id,
+                        'sub_task': sub_task,
+                        'scenario': scenario,
+                        'question': _read_text(os.path.join(scenario_dir, question_name)),
+                        'answer': _read_text(answer_path),
+                        'image_paths': image_paths,
+                    }
+                )
         return records
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

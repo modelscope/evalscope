@@ -71,7 +71,7 @@ class SemScorer:
         nli_weight: float = 0.4012,
         bert_weight: float = 0.2785,
         phonetic_weight: float = 0.3201,
-        **metric_conf
+        **metric_conf,
     ):
         """
         Initialize the Semantic Scorer.
@@ -151,7 +151,7 @@ class SemScorer:
             hypothesis,
             max_length=self._tokenizer.model_max_length,
             return_token_type_ids=True,
-            truncation=True
+            truncation=True,
         )
 
         input_ids = torch.tensor(tokenized_input['input_ids']).long().unsqueeze(0).to(self.device)
@@ -160,11 +160,13 @@ class SemScorer:
 
         return input_ids, token_type_ids, attention_mask
 
-    def score_nli(self,
-                  refs: List[str],
-                  hyps: List[str],
-                  direction: Optional[str] = None,
-                  formula: str = 'e') -> List[float]:
+    def score_nli(
+        self,
+        refs: List[str],
+        hyps: List[str],
+        direction: Optional[str] = None,
+        formula: str = 'e',
+    ) -> List[float]:
         """
         Compute NLI scores for reference-hypothesis pairs.
 

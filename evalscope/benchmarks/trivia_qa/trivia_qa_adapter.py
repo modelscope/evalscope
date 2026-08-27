@@ -62,16 +62,11 @@ TriviaQA is a large-scale reading comprehension dataset containing over 650K que
         few_shot_num=0,
         train_split=None,
         eval_split='validation',
-        metric_list=[{
-            'acc': {
-                'allow_inclusion': True
-            }
-        }],
+        metric_list=[{'acc': {'allow_inclusion': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class TriviaQaAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -80,10 +75,7 @@ class TriviaQaAdapter(DefaultDataAdapter):
         answers = record['answer']['aliases'] + record['answer']['normalized_aliases']
         content = record['entity_pages']['wiki_context']
         return Sample(
-            input=question, target=answers, metadata={
-                'question_id': record['question_id'],
-                'content': content
-            }
+            input=question, target=answers, metadata={'question_id': record['question_id'], 'content': content}
         )
 
     def format_prompt_template(self, sample):

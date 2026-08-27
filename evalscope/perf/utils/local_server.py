@@ -20,6 +20,7 @@ async def lifespan(app: FastAPI):
     yield
     try:
         import torch
+
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
     except ImportError:
@@ -70,7 +71,7 @@ def start_app(args: Arguments):
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
         os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
         os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'
-        # yapf: disable
+        # fmt: off
         proc = subprocess.Popen([
             'python', '-m', 'vllm.entrypoints.openai.api_server',
             '--model', args.model,
@@ -84,7 +85,7 @@ def start_app(args: Arguments):
             '--disable-log-requests',
             '--disable-log-stats',
         ])
-        # yapf: enable
+        # fmt: on
         import atexit
 
         def on_exit():

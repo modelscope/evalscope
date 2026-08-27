@@ -82,19 +82,19 @@ BFCL-v4 (Berkeley Function-Calling Leaderboard V4) is a comprehensive benchmark 
             'underscore_to_dot': {
                 'type': 'bool',
                 'description': 'Convert underscores to dots in function names for evaluation.',
-                'value': True
+                'value': True,
             },
             'is_fc_model': {
                 'type': 'bool',
                 'description': 'Indicates the evaluated model natively supports function calling.',
-                'value': True
+                'value': True,
             },
             'SERPAPI_API_KEY': {
                 'type': 'str | null',
                 'description': 'SerpAPI key enabling web-search capability in BFCL V4. Null disables web search.',
-                'value': None
-            }
-        }
+                'value': None,
+            },
+        },
     )
 )
 class BFCLV4Adapter(AgentAdapter):
@@ -123,6 +123,7 @@ class BFCLV4Adapter(AgentAdapter):
     def load(self):
         """Load and process the BFCL dataset."""
         from bfcl_eval.utils import parse_test_category_argument
+
         datasets = {}
         all_test_categories = parse_test_category_argument(self.subset_list)
 
@@ -169,7 +170,7 @@ class BFCLV4Adapter(AgentAdapter):
         return Sample(
             input=[ChatMessageUser(content=json.dumps(record['question']))],
             target=json.dumps(record['ground_truth']),  # Will use the record for evaluation
-            metadata=record  # Store the full record for evaluation
+            metadata=record,  # Store the full record for evaluation
         )
 
     @thread_safe
@@ -240,10 +241,12 @@ class BFCLV4Adapter(AgentAdapter):
 
             return ModelOutput.from_content(
                 model=model.name,
-                content=json.dumps({
-                    'error': str(e),
-                    'error_message': traceback.format_exc(),
-                }),
+                content=json.dumps(
+                    {
+                        'error': str(e),
+                        'error_message': traceback.format_exc(),
+                    }
+                ),
             )
 
     @staticmethod

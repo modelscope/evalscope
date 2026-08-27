@@ -150,7 +150,7 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 #    locked to the configured value across runs / seeds.
                 target_total_s = n / rate
                 if delay_ts[-1] > 0:
-                    delay_ts *= (target_total_s / delay_ts[-1])
+                    delay_ts *= target_total_s / delay_ts[-1]
 
                 # 4) Anchor the schedule to absolute monotonic timestamps and
                 #    drive dispatch.  We pre-compute ``target_times`` (a numpy

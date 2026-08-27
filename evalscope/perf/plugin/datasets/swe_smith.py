@@ -383,8 +383,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             candidates.append(messages)
 
         logger.info(
-            f'Pre-filter: {len(candidates)} candidates '
-            f'({skipped_short} too short, {skipped_parse} parse error)'
+            f'Pre-filter: {len(candidates)} candidates ({skipped_short} too short, {skipped_parse} parse error)'
         )
 
         np.random.shuffle(candidates)
@@ -399,13 +398,15 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         for messages in candidates:
             sampled = self.get_sampled_multi_turn_params()
             num_turns = int(np.random.randint(min_turns, max_turns + 1))
-            work_items.append((
-                messages,
-                self.tokenizer,
-                sampled.get('first_turn_length', 65000),
-                sampled.get('subsequent_turn_length', 500),
-                num_turns,
-            ))
+            work_items.append(
+                (
+                    messages,
+                    self.tokenizer,
+                    sampled.get('first_turn_length', 65000),
+                    sampled.get('subsequent_turn_length', 500),
+                    num_turns,
+                )
+            )
 
         num_workers = resolve_dataset_generation_workers(
             args=self.query_parameters,
@@ -425,7 +426,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
         # possibly pre-warmed HF tokenizer (Rust Rayon threads). fork would inherit
         # these threads' lock states and deadlock on Pool cleanup.
         mp_ctx = multiprocessing.get_context('spawn')
-        pool_ctx = (mp_ctx.Pool(num_workers) if num_workers > 1 else None)
+        pool_ctx = mp_ctx.Pool(num_workers) if num_workers > 1 else None
 
         ctx = pool_ctx if pool_ctx is not None else _NullContext()
         with ctx as pool:
@@ -442,8 +443,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
                             pool.terminate()
                         break
 
-        logger.info(f'Built {len(conversations)} conversations '
-                    f'({skipped_build} skipped during build)')
+        logger.info(f'Built {len(conversations)} conversations ({skipped_build} skipped during build)')
 
         if conversations:
             all_turns = [len(conv) for conv in conversations]
@@ -451,15 +451,15 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             all_last_pt = [conv[-1]['prompt_tokens'] for conv in conversations]
             logger.info(
                 f'  Turns per conversation : min={min(all_turns)}, '
-                f'max={max(all_turns)}, avg={sum(all_turns)/len(all_turns):.1f}'
+                f'max={max(all_turns)}, avg={sum(all_turns) / len(all_turns):.1f}'
             )
             logger.info(
                 f'  First turn prompt tokens: min={min(all_first_pt)}, '
-                f'max={max(all_first_pt)}, avg={sum(all_first_pt)/len(all_first_pt):.0f}'
+                f'max={max(all_first_pt)}, avg={sum(all_first_pt) / len(all_first_pt):.0f}'
             )
             logger.info(
                 f'  Last  turn prompt tokens: min={min(all_last_pt)}, '
-                f'max={max(all_last_pt)}, avg={sum(all_last_pt)/len(all_last_pt):.0f}'
+                f'max={max(all_last_pt)}, avg={sum(all_last_pt) / len(all_last_pt):.0f}'
             )
 
         for conversation in conversations:
