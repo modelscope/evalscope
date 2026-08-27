@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ import tarfile
 import time
 from dataclasses import dataclass, field
 from hashlib import md5
+from numbers import Real
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
@@ -27,6 +29,10 @@ DEFAULT_TIMEOUT_SECONDS = 240 * 60
 DEFAULT_POLL_INTERVAL_SECONDS = 5
 WS_HEARTBEAT_INTERVAL_SECONDS = 30
 WS_HEARTBEAT_TIMEOUT_SECONDS = 120
+WS_CLIENT_API_KEY_ENV = 'TOOLATHLON_LLM_API_KEY'
+
+_COMPLETED_JOB_STATES = {'completed', 'finished', 'success', 'succeeded'}
+_FAILED_JOB_STATES = {'failed', 'error', 'cancelled', 'canceled'}
 
 
 @dataclass
@@ -78,9 +84,15 @@ class ToolathlonServiceClient:
         job_id = job['job_id']
         client_id = job.get('client_id')
         if not client_id:
-            raise RuntimeError('Toolathlon private mode did not return client_id.')
+            error = RuntimeError('Toolathlon private mode did not return client_id.')
+            self._cancel_job_safely(job_id, 'Missing WebSocket client ID')
+            raise error
 
-        ws_process = self._start_ws_client(job_id)
+        try:
+            ws_process = self._start_ws_client(job_id)
+        except (Exception, KeyboardInterrupt, SystemExit):
+            self._cancel_job_safely(job_id, 'WebSocket relay failed to start')
+            raise
         try:
             self._poll_until_finished(job_id, ws_process)
         finally:
@@ -156,41 +168,70 @@ class ToolathlonServiceClient:
             self.config.ws_server_url,
             '--llm-base-url',
             self.config.base_url,
-            '--llm-api-key',
-            self.config.api_key or '',
             '--job-id',
             job_id,
         ]
+        env = os.environ.copy()
+        if self.config.api_key is not None:
+            env[WS_CLIENT_API_KEY_ENV] = self.config.api_key
+        else:
+            env.pop(WS_CLIENT_API_KEY_ENV, None)
         with open(log_file, 'w', encoding='utf-8') as log:
-            return subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+            return subprocess.Popen(
+                command,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                env=env,
+                start_new_session=True,
+            )
 
     def _poll_until_finished(self, job_id: str, ws_process: subprocess.Popen) -> None:
         import httpx
 
         start_time = time.monotonic()
         downloaded_tasks = set()
-        with httpx.Client(timeout=30.0, trust_env=self.config.trust_env_in_httpx) as client:
-            while True:
-                exit_code = ws_process.poll()
-                if exit_code is not None:
-                    self._cancel_job(job_id, 'WebSocket relay exited')
-                    raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
-                if time.monotonic() - start_time > self.config.timeout_seconds:
-                    self._cancel_job(job_id, 'Timeout')
-                    raise TimeoutError(f'Toolathlon job exceeded {self.config.timeout_seconds} seconds.')
+        cancel_reason: Optional[str] = 'Polling aborted'
+        try:
+            with httpx.Client(timeout=30.0, trust_env=self.config.trust_env_in_httpx) as client:
+                while True:
+                    exit_code = ws_process.poll()
+                    if exit_code is not None:
+                        if exit_code == 0:
+                            status = self._get_job_status(client, job_id)
+                            state = _job_state(status)
+                            if state in _COMPLETED_JOB_STATES:
+                                cancel_reason = None
+                                self._download_completed_tasks(client, job_id, downloaded_tasks)
+                                self._download_static_files(client, job_id)
+                                return
+                            if state in _FAILED_JOB_STATES:
+                                cancel_reason = None
+                                self._download_static_files(client, job_id)
+                                raise RuntimeError(f'Toolathlon job failed: {status}')
+                        cancel_reason = 'WebSocket relay exited'
+                        raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
+                    if time.monotonic() - start_time > self.config.timeout_seconds:
+                        cancel_reason = 'Timeout'
+                        raise TimeoutError(f'Toolathlon job exceeded {self.config.timeout_seconds} seconds.')
 
-                downloaded_tasks.update(self._download_completed_tasks(client, job_id, downloaded_tasks))
-                status = self._get_job_status(client, job_id)
-                state = str(status.get('status') or status.get('state') or '').lower()
-                if state in {'completed', 'finished', 'success', 'succeeded'}:
-                    self._download_completed_tasks(client, job_id, downloaded_tasks)
-                    self._download_static_files(client, job_id)
-                    return
-                if state in {'failed', 'error', 'cancelled', 'canceled'}:
-                    self._download_static_files(client, job_id)
-                    raise RuntimeError(f'Toolathlon job failed: {status}')
+                    downloaded_tasks.update(self._download_completed_tasks(client, job_id, downloaded_tasks))
+                    status = self._get_job_status(client, job_id)
+                    state = _job_state(status)
+                    if state in _COMPLETED_JOB_STATES:
+                        cancel_reason = None
+                        self._download_completed_tasks(client, job_id, downloaded_tasks)
+                        self._download_static_files(client, job_id)
+                        return
+                    if state in _FAILED_JOB_STATES:
+                        cancel_reason = None
+                        self._download_static_files(client, job_id)
+                        raise RuntimeError(f'Toolathlon job failed: {status}')
 
-                time.sleep(self.config.poll_interval)
+                    time.sleep(self.config.poll_interval)
+        except (Exception, KeyboardInterrupt, SystemExit):
+            if cancel_reason is not None:
+                self._cancel_job_safely(job_id, cancel_reason)
+            raise
 
     def _get_job_status(self, client: Any, job_id: str) -> Dict[str, Any]:
         for endpoint in ('poll_job_status', 'status'):
@@ -198,7 +239,10 @@ class ToolathlonServiceClient:
             if response.status_code == 404:
                 continue
             response.raise_for_status()
-            return response.json()
+            status = response.json()
+            if not isinstance(status, dict):
+                raise RuntimeError(f'Toolathlon job status must be an object, got {type(status).__name__}.')
+            return status
         raise RuntimeError('Toolathlon service does not expose a supported job status endpoint.')
 
     def _download_completed_tasks(self, client: Any, job_id: str, downloaded_tasks: set) -> set:
@@ -207,6 +251,8 @@ class ToolathlonServiceClient:
             return set()
         response.raise_for_status()
         data = response.json()
+        if not isinstance(data, dict):
+            raise RuntimeError(f'Toolathlon completed-task response must be an object, got {type(data).__name__}.')
         task_names = data.get('completed_tasks') or data.get('tasks') or []
         new_tasks = {name for name in task_names if name not in downloaded_tasks}
         for task_name in new_tasks:
@@ -248,8 +294,16 @@ class ToolathlonServiceClient:
             import httpx
 
             with httpx.Client(timeout=10.0, trust_env=self.config.trust_env_in_httpx) as client:
-                client.post(f'{self.config.server_url}/cancel_job', params={'job_id': job_id})
+                response = client.post(f'{self.config.server_url}/cancel_job', params={'job_id': job_id})
+                response.raise_for_status()
         except Exception as exc:
+            logger.warning(f'Failed to cancel Toolathlon job after {reason}: {exc}')
+
+    def _cancel_job_safely(self, job_id: str, reason: str) -> None:
+        """Cancel a remote job without replacing the exception that triggered cleanup."""
+        try:
+            self._cancel_job(job_id, reason)
+        except (Exception, KeyboardInterrupt, SystemExit) as exc:
             logger.warning(f'Failed to cancel Toolathlon job after {reason}: {exc}')
 
     def _stop_process(self, process: subprocess.Popen) -> None:
@@ -260,6 +314,10 @@ class ToolathlonServiceClient:
             process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             process.kill()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning(f'Toolathlon relay process {process.pid} did not exit after SIGKILL.')
 
     def _read_json_if_exists(self, path: Path) -> Dict[str, Any]:
         if not path.exists():
@@ -278,25 +336,56 @@ class ToolathlonServiceClient:
 
 def _extract_accuracy(stats: Dict[str, Any], task_results: List[Dict[str, Any]]) -> float:
     for key in ('acc', 'accuracy', 'pass_rate', 'success_rate', 'score'):
-        value = stats.get(key)
-        if isinstance(value, (int, float, bool)):
-            return float(value)
+        if key in stats:
+            return _validate_accuracy_value(stats[key], f'eval_stats.{key}')
 
-    total = stats.get('total') or stats.get('num_tasks')
-    passed = stats.get('passed') or stats.get('num_passed') or stats.get('success')
-    if isinstance(total, int) and total > 0 and isinstance(passed, int):
-        return passed / total
+    total_key, total = _first_present(stats, ('total', 'num_tasks'))
+    passed_key, passed = _first_present(stats, ('passed', 'num_passed', 'success'))
+    if total_key is not None or passed_key is not None:
+        if total_key is None or passed_key is None:
+            raise _invalid_accuracy_error('eval_stats must provide both passed and total counts')
+        if isinstance(total, bool) or not isinstance(total, int) or total <= 0:
+            raise _invalid_accuracy_error(f'eval_stats.{total_key} must be a positive integer')
+        if isinstance(passed, bool) or not isinstance(passed, int) or passed < 0 or passed > total:
+            raise _invalid_accuracy_error(f'eval_stats.{passed_key} must be an integer between 0 and {total}')
+        return int(passed) / total
 
-    pass_values = []
-    for row in task_results:
-        value = row.get('pass')
+    pass_values: List[float] = []
+    for index, row in enumerate(task_results):
+        if not isinstance(row, dict) or 'pass' not in row:
+            raise _invalid_accuracy_error(f'task_results[{index}] must contain a pass value')
+        value = row['pass']
         if isinstance(value, bool):
             pass_values.append(float(value))
-        elif isinstance(value, (int, float)):
-            pass_values.append(float(value))
+        else:
+            pass_values.append(_validate_accuracy_value(value, f'task_results[{index}].pass'))
     if pass_values:
         return sum(pass_values) / len(pass_values)
-    return 0.0
+    raise _invalid_accuracy_error('no recognized score, count pair, or task pass values were found')
+
+
+def _job_state(status: Dict[str, Any]) -> str:
+    return str(status.get('status') or status.get('state') or '').lower()
+
+
+def _first_present(values: Dict[str, Any], keys: tuple[str, ...]) -> tuple[Optional[str], Any]:
+    for key in keys:
+        if key in values:
+            return key, values[key]
+    return None, None
+
+
+def _validate_accuracy_value(value: Any, source: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise _invalid_accuracy_error(f'{source} must be a numeric value between 0 and 1')
+    accuracy = float(value)
+    if not math.isfinite(accuracy) or not 0.0 <= accuracy <= 1.0:
+        raise _invalid_accuracy_error(f'{source} must be a finite value between 0 and 1')
+    return accuracy
+
+
+def _invalid_accuracy_error(reason: str) -> RuntimeError:
+    return RuntimeError(f'Toolathlon score unavailable: {reason}.')
 
 
 def _format_submit_error(response: Any) -> str:
