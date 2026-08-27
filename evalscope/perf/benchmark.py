@@ -152,7 +152,7 @@ def _log_warmup_handoff(args: Arguments) -> None:
     logger.warning(
         f'{reason} against an idle server. Their TTFT carries the start-up burst and can dominate '
         f'the reported percentiles. Pass --warmup-num {parallel} to keep that burst out of the '
-        f'measured window, or {2 * parallel} if you also report max / p99.9.'
+        f'measured window, or {2 * parallel} if you also read the max column.'
     )
 
 

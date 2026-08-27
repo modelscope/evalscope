@@ -109,9 +109,8 @@ class Arguments(BaseArgument):
     closed-loop dispatcher never drains in-flight requests between the warmup
     and the measured portion.  Values below ``--parallel`` leave part of the
     start-up burst inside the measured window, so closed-loop runs should use
-    at least ``--parallel`` (twice that when reporting ``max`` / ``p99.9``).
-    The value is used exactly as given; ``run_benchmark`` warns when it is too
-    small rather than raising it.
+    at least ``--parallel`` (twice that when the ``max`` column also matters).
+    ``run_benchmark`` warns when the value is too small.
     """
 
     @property
