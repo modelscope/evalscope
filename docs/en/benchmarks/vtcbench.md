@@ -3,31 +3,36 @@
 
 ## Overview
 
-VTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress visual text.
+VTCBench (Vision-Text Compression Benchmark) evaluates long-context understanding when text is represented as
+rendered images, and compares it with a pure-text baseline.
 
 ## Task Description
 
-- **Task Type**: Visual question answering with dual evaluation modes
-- **Input**: Either (VTC) image(s) + problem text, or (Text) text context + problem text
+- **Task Type**: Long-context question answering with image-based and text-based evaluation modes
+- **Input**: Rendered context images plus a question (VTC mode), or the source text plus a question (Text mode)
 - **Output**: Short free-form answer
-- **Domain**: General visual comprehension, text-rich image understanding
+- **Domain**: Retrieval, associative reasoning, and long-term dialogue memory
 
 ## Key Features
 
-- Dual evaluation modes: image-based (VTC) and text-based (Text)
-- Mode VTC tests the model's visual understanding by feeding images directly
-- Mode Text tests the model's text-based reasoning using the image's textual context
-- The Gap highlights the model's ability to leverage visual information versus textual context for question answering
+- Provides matched VTC and Text modes for measuring the effect of vision-text compression
+- Includes Retrieval, Reasoning, and Memory subsets derived from RULER, NoLiMa, and LoCoMo
+- Uses pre-rendered multi-image documents to preserve the benchmark's visual layouts
+- Supports contexts spanning multiple document images
 
 ## Evaluation Notes
 
-- Default configuration uses **0-shot** evaluation
-- Long context benchmark requires longer interval, set `retry_interval` higher to avoid timeout
-- Use `--dataset-args '{"vtcbench": {"extra_params":{"eval_mode":"text"}}}'` to switch modes, default is 'vtc'
-- Metrics:
-  - **containsAll**/**ROUGE-1-R** for Retrieval and Reasoning subsets
-  - **ROUGE-L-R**/**LLM-Judge** for Memory subset
-- If you encounter casting offset overflow issues, set `DATASET_TF_BATCH_SIZE=1`
+- Default configuration uses **0-shot** evaluation in VTC mode
+- Use `--dataset-args '{"vtcbench": {"extra_params":{"eval_mode":"text"}}}'` to enable the Text baseline
+- Retrieval and Reasoning use the official fractional `contains_all` score
+- Memory uses the official maximum ROUGE-L F1 across reference answers
+- The unified `score` metric dispatches to the official metric for each subset; its report `macro_score` is the
+  unweighted mean across the three tasks
+- Text mode strips HTML tags and normalizes whitespace in the same way as the official static evaluator
+- Content inside `<think>...</think>` is excluded before scoring, matching the official evaluator
+- Long-context requests may require a larger model timeout
+- If dataset casting reports an offset overflow, set `DATASET_TF_BATCH_SIZE=1`
+- [Paper](https://arxiv.org/abs/2512.15649) | [Code](https://github.com/Moenupa/VTCBench)
 
 
 ## Properties
@@ -36,20 +41,84 @@ VTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress
 |----------|-------|
 | **Benchmark Name** | `vtcbench` |
 | **Dataset ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |
-| **Paper** | N/A |
+| **Paper** | [Paper](https://arxiv.org/abs/2512.15649) |
 | **Tags** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |
-| **Metrics** | `Rouge` |
+| **Metrics** | `score`, `contains_all`, `rouge_l` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
 
 
 ## Data Statistics
 
-*Statistics not available.*
+| Metric | Value |
+|--------|-------|
+| Total Samples | 2,200 |
+| Prompt Length (Mean) | 236.71 chars |
+| Prompt Length (Min/Max) | 89 / 384 chars |
+
+**Per-Subset Statistics:**
+
+| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+|--------|---------|-------------|------------|------------|
+| `Retrieval` | 800 | 110.38 | 89 | 141 |
+| `Reasoning` | 800 | 368.69 | 363 | 384 |
+| `Memory` | 600 | 229.15 | 186 | 283 |
+
+**Image Statistics:**
+
+| Metric | Value |
+|--------|-------|
+| Total Images | 26,554 |
+| Images per Sample | min: 1, max: 62, mean: 12.07 |
+| Resolution Range | 896x896 - 896x896 |
+| Formats | jpeg |
+
 
 ## Sample Example
 
-*Sample example not available.*
+**Subset**: `Retrieval`
+
+```json
+{
+  "input": [
+    {
+      "id": "c51f44e8",
+      "content": [
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~367.1KB]"
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~366.1KB]"
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~385.2KB]"
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~377.7KB]"
+        },
+        {
+          "image": "[BASE64_IMAGE: jpeg, ~333.5KB]"
+        },
+        {
+          "text": "\n\nQuestion:What are all the special magic numbers for foolish-rawhide mentioned in the provided text?"
+        }
+      ]
+    }
+  ],
+  "target": "4075987, 5943250",
+  "id": 0,
+  "group_id": 0,
+  "metadata": {
+    "problem": "What are all the special magic numbers for foolish-rawhide mentioned in the provided text?",
+    "answers": [
+      "4075987",
+      "5943250"
+    ],
+    "subset": "Retrieval",
+    "eval_mode": "vtc"
+  }
+}
+```
 
 ## Prompt Template
 
@@ -87,6 +156,7 @@ task_cfg = TaskConfig(
     datasets=['vtcbench'],
     dataset_args={
         'vtcbench': {
+            # subset_list: ['Retrieval', 'Reasoning', 'Memory']  # optional, evaluate specific subsets
             # extra_params: {}  # uses default extra parameters
         }
     },

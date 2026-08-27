@@ -630,3 +630,8 @@ class TestVLMBenchmark(TestBenchmark):
     def test_vtcbench_mock(self):
         """Test VTCBench with mock LLM."""
         self._run_dataset_test('vtcbench', limit=1, use_mock=True)
+
+    def test_vtcbench_text_mock(self):
+        """Test the VTCBench pure-text baseline with mock LLM."""
+        dataset_args = {'extra_params': {'eval_mode': 'text'}}
+        self._run_dataset_test('vtcbench', dataset_args=dataset_args, limit=1, use_mock=True)

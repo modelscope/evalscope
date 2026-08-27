@@ -2,7 +2,7 @@
   "meta": {
     "pretty_name": "VTCBench",
     "dataset_id": "MLLM-CL/VTCBench",
-    "paper_url": null,
+    "paper_url": "https://arxiv.org/abs/2512.15649",
     "tags": [
       "MultiModal",
       "QA",
@@ -11,7 +11,9 @@
       "Reasoning"
     ],
     "metrics": [
-      "Rouge"
+      "score",
+      "contains_all",
+      "rouge_l"
     ],
     "few_shot_num": 0,
     "eval_split": "test",
@@ -21,7 +23,7 @@
       "Reasoning",
       "Memory"
     ],
-    "description": "\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress visual text.\n\n## Task Description\n\n- **Task Type**: Visual question answering with dual evaluation modes\n- **Input**: Either (VTC) image(s) + problem text, or (Text) text context + problem text\n- **Output**: Short free-form answer\n- **Domain**: General visual comprehension, text-rich image understanding\n\n## Key Features\n\n- Dual evaluation modes: image-based (VTC) and text-based (Text)\n- Mode VTC tests the model's visual understanding by feeding images directly\n- Mode Text tests the model's text-based reasoning using the image's textual context\n- The Gap highlights the model's ability to leverage visual information versus textual context for question answering\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Long context benchmark requires longer interval, set `retry_interval` higher to avoid timeout\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to switch modes, default is 'vtc'\n- Metrics:\n  - **containsAll**/**ROUGE-1-R** for Retrieval and Reasoning subsets\n  - **ROUGE-L-R**/**LLM-Judge** for Memory subset\n- If you encounter casting offset overflow issues, set `DATASET_TF_BATCH_SIZE=1`\n",
+    "description": "\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates long-context understanding when text is represented as\nrendered images, and compares it with a pure-text baseline.\n\n## Task Description\n\n- **Task Type**: Long-context question answering with image-based and text-based evaluation modes\n- **Input**: Rendered context images plus a question (VTC mode), or the source text plus a question (Text mode)\n- **Output**: Short free-form answer\n- **Domain**: Retrieval, associative reasoning, and long-term dialogue memory\n\n## Key Features\n\n- Provides matched VTC and Text modes for measuring the effect of vision-text compression\n- Includes Retrieval, Reasoning, and Memory subsets derived from RULER, NoLiMa, and LoCoMo\n- Uses pre-rendered multi-image documents to preserve the benchmark's visual layouts\n- Supports contexts spanning multiple document images\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation in VTC mode\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to enable the Text baseline\n- Retrieval and Reasoning use the official fractional `contains_all` score\n- Memory uses the official maximum ROUGE-L F1 across reference answers\n- The unified `score` metric dispatches to the official metric for each subset; its report `macro_score` is the\n  unweighted mean across the three tasks\n- Text mode strips HTML tags and normalizes whitespace in the same way as the official static evaluator\n- Content inside `<think>...</think>` is excluded before scoring, matching the official evaluator\n- Long-context requests may require a larger model timeout\n- If dataset casting reports an offset overflow, set `DATASET_TF_BATCH_SIZE=1`\n- [Paper](https://arxiv.org/abs/2512.15649) | [Code](https://github.com/Moenupa/VTCBench)\n",
     "prompt_template": "",
     "system_prompt": "",
     "few_shot_prompt_template": "",
@@ -40,33 +42,192 @@
     "sandbox_config": {},
     "category": "vlm",
     "primary_metric": {
-      "name": "rouge",
-      "aggregation": "mean",
-      "dimensions": {
-        "statistic": "recall",
-        "variant": "l"
-      }
+      "name": "normalized_score",
+      "aggregation": null,
+      "dimensions": {}
     }
   },
   "statistics": {
-    "total_samples": 0,
-    "subset_stats": [],
+    "total_samples": 2200,
+    "subset_stats": [
+      {
+        "name": "Retrieval",
+        "sample_count": 800,
+        "prompt_length_mean": 110.38,
+        "prompt_length_min": 89,
+        "prompt_length_max": 141,
+        "prompt_length_std": 14.68,
+        "target_length_mean": 15.96,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 8757,
+            "count_per_sample": {
+              "min": 1,
+              "max": 62,
+              "mean": 10.95
+            },
+            "resolutions": [
+              "896x896"
+            ],
+            "resolution_range": {
+              "min": "896x896",
+              "max": "896x896"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Reasoning",
+        "sample_count": 800,
+        "prompt_length_mean": 368.69,
+        "prompt_length_min": 363,
+        "prompt_length_max": 384,
+        "prompt_length_std": 5.23,
+        "target_length_mean": 5.3,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 8279,
+            "count_per_sample": {
+              "min": 1,
+              "max": 58,
+              "mean": 10.35
+            },
+            "resolutions": [
+              "896x896"
+            ],
+            "resolution_range": {
+              "min": "896x896",
+              "max": "896x896"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Memory",
+        "sample_count": 600,
+        "prompt_length_mean": 229.15,
+        "prompt_length_min": 186,
+        "prompt_length_max": 283,
+        "prompt_length_std": 17.11,
+        "target_length_mean": 30.74,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 9518,
+            "count_per_sample": {
+              "min": 1,
+              "max": 42,
+              "mean": 15.86
+            },
+            "resolutions": [
+              "896x896"
+            ],
+            "resolution_range": {
+              "min": "896x896",
+              "max": "896x896"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
     "prompt_length": {
-      "mean": 0,
-      "min": 0,
-      "max": 0,
-      "std": null
+      "mean": 236.71,
+      "min": 89,
+      "max": 384,
+      "std": 111.02
     },
-    "target_length_mean": null,
-    "computed_at": "2026-08-26T10:51:03.606235"
+    "target_length_mean": 16.11,
+    "computed_at": "2026-08-26T17:40:06.113192",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 26554,
+        "count_per_sample": {
+          "min": 1,
+          "max": 62,
+          "mean": 12.07
+        },
+        "resolutions": [
+          "896x896"
+        ],
+        "resolution_range": {
+          "min": "896x896",
+          "max": "896x896"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
   },
-  "sample_example": {},
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "c51f44e8",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~367.1KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~366.1KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~385.2KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~377.7KB]"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~333.5KB]"
+            },
+            {
+              "text": "\n\nQuestion:What are all the special magic numbers for foolish-rawhide mentioned in the provided text?"
+            }
+          ]
+        }
+      ],
+      "target": "4075987, 5943250",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "problem": "What are all the special magic numbers for foolish-rawhide mentioned in the provided text?",
+        "answers": [
+          "4075987",
+          "5943250"
+        ],
+        "subset": "Retrieval",
+        "eval_mode": "vtc"
+      }
+    },
+    "subset": "Retrieval",
+    "truncated": false
+  },
   "readme": {
-    "en": "# VTCBench\n\n\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates VLMs' ability to compress visual text.\n\n## Task Description\n\n- **Task Type**: Visual question answering with dual evaluation modes\n- **Input**: Either (VTC) image(s) + problem text, or (Text) text context + problem text\n- **Output**: Short free-form answer\n- **Domain**: General visual comprehension, text-rich image understanding\n\n## Key Features\n\n- Dual evaluation modes: image-based (VTC) and text-based (Text)\n- Mode VTC tests the model's visual understanding by feeding images directly\n- Mode Text tests the model's text-based reasoning using the image's textual context\n- The Gap highlights the model's ability to leverage visual information versus textual context for question answering\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Long context benchmark requires longer interval, set `retry_interval` higher to avoid timeout\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to switch modes, default is 'vtc'\n- Metrics:\n  - **containsAll**/**ROUGE-1-R** for Retrieval and Reasoning subsets\n  - **ROUGE-L-R**/**LLM-Judge** for Memory subset\n- If you encounter casting offset overflow issues, set `DATASET_TF_BATCH_SIZE=1`\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vtcbench` |\n| **Dataset ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **Paper** | N/A |\n| **Tags** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **Metrics** | `Rouge` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | Evaluation mode: vtc (images+problem) or text (text+problem). Choices: ['vtc', 'text'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "# VTCBench\n\n\n## 概述\n\nVTCBench (Vision-Text Compression Benchmark) 评估 VLM 压缩视觉文本的能力。\n\n## 任务描述\n\n- **任务类型**：具有双重评估模式的视觉问答\n- **输入**：(VTC) 图像 + 问题文本，或 (Text) 文本上下文 + 问题文本\n- **输出**：简短的自由格式答案\n- **领域**：通用视觉理解、富含文本的图像理解\n\n## 主要特性\n\n- 双重评估模式：基于图像 (VTC) 和基于文本 (Text)\n- VTC 模式通过直接输入图像来测试模型的视觉理解能力\n- Text 模式利用图像的文本上下文来测试模型基于文本的推理能力\n- 该差距突显了模型在回答问题时利用视觉信息与文本上下文的能力对比\n\n## 评估说明\n\n- 默认配置使用 **0-shot** 评估\n- 长上下文基准测试需要更长的间隔，请将 `retry_interval` 设置得更高以避免超时\n- 使用 `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` 切换模式，默认为 'vtc'\n- 指标：\n  - 检索和推理子集使用 **containsAll**/**ROUGE-1-R**\n  - 记忆子集使用 **ROUGE-L-R**/**LLM-Judge**\n- 如果遇到转换偏移溢出问题，请设置 `DATASET_TF_BATCH_SIZE=1`\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vtcbench` |\n| **数据集 ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **论文** | N/A |\n| **标签** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **指标** | `Rouge` |\n| **默认 Shot 数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n*暂无统计数据。*\n\n## 样例示例\n\n*暂无样例示例。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | 评估模式：vtc（图像 + 问题）或 text（文本 + 问题）。选项：['vtc', 'text'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
-    "content_hash": "cd271cc3496dadd80a725c577db9cd37",
+    "en": "# VTCBench\n\n\n## Overview\n\nVTCBench (Vision-Text Compression Benchmark) evaluates long-context understanding when text is represented as\nrendered images, and compares it with a pure-text baseline.\n\n## Task Description\n\n- **Task Type**: Long-context question answering with image-based and text-based evaluation modes\n- **Input**: Rendered context images plus a question (VTC mode), or the source text plus a question (Text mode)\n- **Output**: Short free-form answer\n- **Domain**: Retrieval, associative reasoning, and long-term dialogue memory\n\n## Key Features\n\n- Provides matched VTC and Text modes for measuring the effect of vision-text compression\n- Includes Retrieval, Reasoning, and Memory subsets derived from RULER, NoLiMa, and LoCoMo\n- Uses pre-rendered multi-image documents to preserve the benchmark's visual layouts\n- Supports contexts spanning multiple document images\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation in VTC mode\n- Use `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` to enable the Text baseline\n- Retrieval and Reasoning use the official fractional `contains_all` score\n- Memory uses the official maximum ROUGE-L F1 across reference answers\n- The unified `score` metric dispatches to the official metric for each subset; its report `macro_score` is the\n  unweighted mean across the three tasks\n- Text mode strips HTML tags and normalizes whitespace in the same way as the official static evaluator\n- Content inside `<think>...</think>` is excluded before scoring, matching the official evaluator\n- Long-context requests may require a larger model timeout\n- If dataset casting reports an offset overflow, set `DATASET_TF_BATCH_SIZE=1`\n- [Paper](https://arxiv.org/abs/2512.15649) | [Code](https://github.com/Moenupa/VTCBench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vtcbench` |\n| **Dataset ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2512.15649) |\n| **Tags** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **Metrics** | `score`, `contains_all`, `rouge_l` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,200 |\n| Prompt Length (Mean) | 236.71 chars |\n| Prompt Length (Min/Max) | 89 / 384 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Retrieval` | 800 | 110.38 | 89 | 141 |\n| `Reasoning` | 800 | 368.69 | 363 | 384 |\n| `Memory` | 600 | 229.15 | 186 | 283 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 26,554 |\n| Images per Sample | min: 1, max: 62, mean: 12.07 |\n| Resolution Range | 896x896 - 896x896 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `Retrieval`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c51f44e8\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~367.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~366.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~385.2KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~377.7KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~333.5KB]\"\n        },\n        {\n          \"text\": \"\\n\\nQuestion:What are all the special magic numbers for foolish-rawhide mentioned in the provided text?\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"4075987, 5943250\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem\": \"What are all the special magic numbers for foolish-rawhide mentioned in the provided text?\",\n    \"answers\": [\n      \"4075987\",\n      \"5943250\"\n    ],\n    \"subset\": \"Retrieval\",\n    \"eval_mode\": \"vtc\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | Evaluation mode: vtc (images+problem) or text (text+problem). Choices: ['vtc', 'text'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # subset_list: ['Retrieval', 'Reasoning', 'Memory']  # optional, evaluate specific subsets\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VTCBench\n\n\n## 概述\n\nVTCBench（Vision-Text Compression Benchmark）评估将文本表示为渲染图像时的长上下文理解能力，并与纯文本基线进行比较。\n\n## 任务描述\n\n- **任务类型**：包含图像模式与文本模式的长上下文问答\n- **输入**：渲染后的上下文图像及问题（VTC 模式），或原始文本及问题（Text 模式）\n- **输出**：简短的自由格式答案\n- **领域**：检索、关联推理和长期对话记忆\n\n## 主要特性\n\n- 提供配对的 VTC 和 Text 模式，用于衡量视觉文本压缩的影响\n- 包含源自 RULER、NoLiMa 和 LoCoMo 的 Retrieval、Reasoning 和 Memory 子集\n- 使用预渲染的多图文档，以保留基准测试的视觉布局\n- 支持跨多张文档图像的上下文\n\n## 评估说明\n\n- 默认配置在 VTC 模式下使用 **0-shot** 评估\n- 使用 `--dataset-args '{\"vtcbench\": {\"extra_params\":{\"eval_mode\":\"text\"}}}'` 启用 Text 基线\n- Retrieval 和 Reasoning 使用官方的分数型 `contains_all` 指标\n- Memory 使用各参考答案中最高的官方 ROUGE-L F1 分数\n- 统一的 `score` 指标会根据子集选择相应的官方指标；报告中的 `macro_score` 是三个任务的无权平均值\n- Text 模式按照官方静态评测器的方式移除 HTML 标签并规范化空白字符\n- 评分前会排除 `<think>...</think>` 中的内容，与官方评测器保持一致\n- 长上下文请求可能需要设置更大的模型超时时间\n- 如果数据集转换出现 offset overflow，请设置 `DATASET_TF_BATCH_SIZE=1`\n- [论文](https://arxiv.org/abs/2512.15649) | [代码](https://github.com/Moenupa/VTCBench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vtcbench` |\n| **数据集 ID** | [MLLM-CL/VTCBench](https://modelscope.cn/datasets/MLLM-CL/VTCBench/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2512.15649) |\n| **标签** | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |\n| **指标** | `score`, `contains_all`, `rouge_l` |\n| **默认 Shot 数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 样本总数 | 2,200 |\n| Prompt 平均长度 | 236.71 字符 |\n| Prompt 最短/最长长度 | 89 / 384 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | Prompt 平均长度 | Prompt 最短长度 | Prompt 最长长度 |\n|--------|---------|-------------|------------|------------|\n| `Retrieval` | 800 | 110.38 | 89 | 141 |\n| `Reasoning` | 800 | 368.69 | 363 | 384 |\n| `Memory` | 600 | 229.15 | 186 | 283 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 26,554 |\n| 每个样本的图像数 | 最少：1，最多：62，平均：12.07 |\n| 分辨率范围 | 896x896 - 896x896 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**：`Retrieval`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"c51f44e8\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~367.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~366.1KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~385.2KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~377.7KB]\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~333.5KB]\"\n        },\n        {\n          \"text\": \"\\n\\nQuestion:What are all the special magic numbers for foolish-rawhide mentioned in the provided text?\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"4075987, 5943250\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"problem\": \"What are all the special magic numbers for foolish-rawhide mentioned in the provided text?\",\n    \"answers\": [\n      \"4075987\",\n      \"5943250\"\n    ],\n    \"subset\": \"Retrieval\",\n    \"eval_mode\": \"vtc\"\n  }\n}\n```\n\n## Prompt 模板\n\n*未定义 Prompt 模板。*\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `eval_mode` | `str` | `vtc` | 评估模式：vtc（图像 + 问题）或 text（文本 + 问题）。选项：['vtc', 'text'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vtcbench \\\n    --limit 10  # 正式评估时请移除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vtcbench'],\n    dataset_args={\n        'vtcbench': {\n            # subset_list: ['Retrieval', 'Reasoning', 'Memory']  # 可选：评估指定子集\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请移除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "c8149fef3a1910ba22379180459f2e8d",
     "needs_translation": false
   },
-  "updated_at": "2026-08-26T10:51:03.606657",
-  "translation_updated_at": "2026-08-26T10:51:13"
+  "updated_at": "2026-08-26T17:40:28.264364",
+  "translation_updated_at": "2026-08-26T17:57:02"
 }
