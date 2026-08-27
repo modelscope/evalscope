@@ -78,14 +78,14 @@ _THINK_PATTERN = re.compile(r'<think>.*?</think>', flags=re.DOTALL)
 
 
 def _remove_html_tags(text: str) -> str:
-    from bs4 import BeautifulSoup
-
     check_import(
         module_name=['bs4'],
         extra='vtcbench',
         raise_error=True,
         feature_name='VTCBench',
     )
+
+    from bs4 import BeautifulSoup
 
     if '</span>' not in text:
         duplicated_spaces = re.compile(r'\s+')
