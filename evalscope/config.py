@@ -10,6 +10,7 @@ from pydantic import ConfigDict, Field, SecretStr, field_validator, model_valida
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.dataset.dataset import validate_dataset_limit
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -385,8 +386,7 @@ class TaskConfig(BaseArgument):
     def _validate_limit(cls, v: Any) -> Any:
         if v is not None:
             v = parse_int_or_float(v)
-            if v < 0:
-                raise ValueError(f'`limit` must be >= 0 or None, got {v}.')
+            v = validate_dataset_limit(v)
             if v == 0:
                 return None
         return v

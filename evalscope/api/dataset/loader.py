@@ -1,4 +1,5 @@
 import copy
+import json
 import os
 import random
 import shutil
@@ -19,7 +20,7 @@ from evalscope.utils.io_utils import (
     undecode_media,
 )
 
-from .dataset import Dataset, FieldSpec, MemoryDataset, Sample
+from .dataset import Dataset, FieldSpec, MemoryDataset, Sample, resolve_dataset_limit, validate_dataset_limit
 from .hub import DatasetHub
 from .utils import data_to_samples, shuffle_choices_if_requested
 
@@ -36,6 +37,35 @@ def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
         random.Random(seed).shuffle(data)
     else:
         random.shuffle(data)
+
+
+def _dataset_cache_hash(
+    data_id_or_path: str,
+    split: str,
+    subset: str,
+    version: Optional[str],
+    data_source: Optional[str],
+    kwargs: Dict,
+) -> str:
+    """Build a stable hash from every input that determines a remote dataset."""
+    effective_data_source = _resolve_effective_data_source(data_id_or_path, data_source)
+    payload = {
+        'data_id_or_path': data_id_or_path,
+        'split': split,
+        'subset': subset,
+        'version': version,
+        'data_source': effective_data_source,
+        'kwargs': kwargs,
+    }
+    serialized = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str)
+    return gen_hash(serialized)
+
+
+def _resolve_effective_data_source(data_id_or_path: str, data_source: Optional[str]) -> str:
+    """Resolve the source using the same local-path precedence as DatasetHub."""
+    if data_source == HubType.LOCAL or os.path.exists(data_id_or_path):
+        return HubType.LOCAL
+    return data_source or HubType.MODELSCOPE
 
 
 class DataLoader(ABC):
@@ -69,7 +99,7 @@ class DataLoader(ABC):
         self.filter_func = filter_func
         self.subset = subset
         self.version = version
-        self.limit = limit
+        self.limit = validate_dataset_limit(limit)
         self.data_source = data_source
         self.shuffle = shuffle
         self.shuffle_choices = shuffle_choices
@@ -99,10 +129,18 @@ class RemoteDataLoader(DataLoader):
         from datasets.features import Audio, Image
 
         path = self.data_id_or_path
+        effective_data_source = _resolve_effective_data_source(path, self.data_source)
         # resolve data_to_sample function
         data_to_sample = record_to_sample_fn(self.sample_fields)
         # generate a unique cache dir for this dataset
-        dataset_hash = gen_hash(f'{path}{self.split}{self.subset}{self.version}{self.kwargs}')
+        dataset_hash = _dataset_cache_hash(
+            path,
+            self.split,
+            self.subset,
+            self.version,
+            self.data_source,
+            self.kwargs,
+        )
         if self.dataset_dir:
             datasets_cache_dir = os.path.join(self.dataset_dir, 'datasets')
         else:
@@ -117,22 +155,22 @@ class RemoteDataLoader(DataLoader):
             dataset = datasets.load_from_disk(dataset_cache_dir)
         else:
             logger.info(
-                f'Loading dataset {path} from {self.data_source} > subset: {self.subset} > split: {self.split} ...'
+                f'Loading dataset {path} from {effective_data_source} > subset: {self.subset} > split: {self.split} ...'
             )
             dataset = DatasetHub(
                 data_id_or_path=path,
-                data_source=self.data_source,
+                data_source=effective_data_source,
                 revision=self.version,
                 trust_remote=self.trust_remote,
                 force_redownload=self.force_redownload,
             ).load(split=self.split, subset=self.subset, **self.kwargs)
 
             # Only save to disk if not loading from local path
-            if self.data_source != HubType.LOCAL:
+            if effective_data_source != HubType.LOCAL:
                 dataset.save_to_disk(dataset_cache_dir)
 
-        # Disable auto-decoding for Image/Audio to keep raw bytes format (compat with datasets >= 3.0)
-        dataset = undecode_media(dataset, media_type=['image', 'audio'])
+        # Disable auto-decoding for media columns to keep their raw bytes representation.
+        dataset = undecode_media(dataset, media_type=['image', 'audio', 'video'])
 
         # shuffle if requested
         if self.shuffle:
@@ -140,12 +178,9 @@ class RemoteDataLoader(DataLoader):
 
         # limit if requested
         if self.limit:
-            if isinstance(self.limit, float):
-                self.limit = int(len(dataset) * self.limit)
-            elif isinstance(self.limit, int) and self.limit < 0:
-                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            if len(dataset) > self.limit:
-                dataset = dataset.select(range(self.limit))
+            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
+            if resolved_limit is not None and len(dataset) > resolved_limit:
+                dataset = dataset.select(range(resolved_limit))
 
         # convert to list
         dataset_list = list(dataset)
@@ -247,11 +282,8 @@ class LocalDataLoader(DataLoader):
 
         # limit if requested
         if self.limit:
-            if isinstance(self.limit, float):
-                self.limit = int(len(dataset) * self.limit)
-            elif isinstance(self.limit, int) and self.limit < 0:
-                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            dataset = dataset[: self.limit]
+            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
+            dataset = dataset[:resolved_limit]
 
         # repeat k times
         if self.repeats > 1:
@@ -294,11 +326,8 @@ class DictDataLoader(DataLoader):
 
         # limit if requested
         if self.limit:
-            if isinstance(self.limit, float):
-                self.limit = int(len(dataset) * self.limit)
-            elif isinstance(self.limit, int) and self.limit < 0:
-                raise ValueError('Limit must be a non-negative integer or a float between 0 and 1.')
-            dataset = dataset[: self.limit]
+            resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
+            dataset = dataset[:resolved_limit]
 
         # repeat k times
         if self.repeats > 1:

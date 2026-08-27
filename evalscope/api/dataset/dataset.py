@@ -1,6 +1,7 @@
 import abc
 import copy
 import hashlib
+import math
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -10,6 +11,31 @@ from pydantic import BaseModel, Field
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
 from evalscope.api.tool import ToolInfo
+
+_LIMIT_ERROR = 'Limit must be a non-negative integer or a finite float between 0 and 1.'
+
+
+def validate_dataset_limit(limit: Optional[Union[int, float]]) -> Optional[Union[int, float]]:
+    """Validate a dataset sample count or fraction without changing its value."""
+    if limit is None:
+        return None
+    if isinstance(limit, int):
+        if limit < 0:
+            raise ValueError(_LIMIT_ERROR)
+        return limit
+    if isinstance(limit, float):
+        if not math.isfinite(limit) or not 0.0 <= limit <= 1.0:
+            raise ValueError(_LIMIT_ERROR)
+        return limit
+    raise ValueError(_LIMIT_ERROR)
+
+
+def resolve_dataset_limit(limit: Optional[Union[int, float]], dataset_size: int) -> Optional[int]:
+    """Resolve a validated fraction against a dataset size, or return an integer count."""
+    validated_limit = validate_dataset_limit(limit)
+    if isinstance(validated_limit, float):
+        return int(dataset_size * validated_limit)
+    return validated_limit
 
 
 class Sample(BaseModel):
@@ -328,6 +354,7 @@ class DatasetDict:
         Returns:
             DatasetDict: A new DatasetDict containing the provided dataset.
         """
+        limit = validate_dataset_limit(limit)
         data_dict = defaultdict(list)
         dataset_dict = defaultdict(list)
         # init subset keys to prevent order issues
@@ -346,7 +373,7 @@ class DatasetDict:
             # Apply limit if specified; resolve float limits per subset without
             # mutating `limit`, so each subset takes its own fraction
             if limit is not None:
-                subset_limit = int(len(samples) * limit) if isinstance(limit, float) else limit
+                subset_limit = resolve_dataset_limit(limit, len(samples))
                 samples = samples[:subset_limit]
             # Repeat k times; always deepcopy to avoid mutating the original dataset
             # (repeats=0 yields empty list; repeats=1 yields one isolated copy per sample)
