@@ -70,6 +70,22 @@ class TestStreamedResponseHandler(unittest.TestCase):
         self.assertEqual(handler.add_chunk(b'data: {"choices":'), [])
         self.assertEqual(handler.add_chunk(b' []}'), ['data: {"choices": []}'])
 
+    def test_preserves_unicode_line_separators_in_json_payload(self) -> None:
+        for separator in ('\x85', '\u2028', '\u2029'):
+            expected = {'choices': [{'text': f'before{separator}after'}]}
+            payload = json.dumps(expected, ensure_ascii=False)
+            event = f'data: {payload}\n\n'.encode()
+
+            for split_at in range(len(event) + 1):
+                with self.subTest(separator=repr(separator), split_at=split_at):
+                    handler = StreamedResponseHandler()
+                    messages = handler.add_chunk(event[:split_at])
+                    messages.extend(handler.add_chunk(event[split_at:]))
+
+                    self.assertEqual(messages, [f'data: {payload}'])
+                    self.assertEqual(json.loads(messages[0].removeprefix('data:').strip()), expected)
+                    self.assertEqual(_extract_sse_data(messages[0]), payload)
+
 
 class TestPerfStreaming(PerfTestBase):
     """Streaming (SSE) performance benchmarks."""
