@@ -61,7 +61,7 @@ class Registry(Dict[str, T]):
         """Return a hint string with the closest registered names by edit distance."""
         candidates = difflib.get_close_matches(name, self.keys(), n=n, cutoff=0.4)
         if candidates:
-            return f"Did you mean: {', '.join(repr(c) for c in candidates)}?"
+            return f'Did you mean: {", ".join(repr(c) for c in candidates)}?'
         # Fallback: show up to 10 entries if nothing is close enough
         keys = sorted(self.keys())
         if len(keys) > 10:

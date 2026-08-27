@@ -305,7 +305,7 @@ class ModelOutput(BaseModel):
                                 function=ToolFunction(
                                     name=tool_name,
                                     arguments=tool_arguments,
-                                )
+                                ),
                             )
                         ],
                     ),

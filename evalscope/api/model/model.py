@@ -29,7 +29,7 @@ class ModelAPI(abc.ABC):
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         config: GenerateConfig = GenerateConfig(),
-        **kwargs
+        **kwargs,
     ) -> None:
         """Create a model API provider.
 
@@ -367,7 +367,11 @@ def get_model(
         memoize = False
     if memoize:
         model_cache_key = (
-            model + str(role) + config.model_dump_json(exclude_none=True) + str(base_url) + str(api_key)
+            model
+            + str(role)
+            + config.model_dump_json(exclude_none=True)
+            + str(base_url)
+            + str(api_key)
             + str(to_jsonable_python(model_args, fallback=lambda _: None))
         )
         cached = ModelCache.get(model_cache_key)

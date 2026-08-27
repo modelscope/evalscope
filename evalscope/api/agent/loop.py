@@ -232,8 +232,7 @@ class AgentLoop:
         """
         self._dbg(
             ctx,
-            f'executing {len(parsed.tool_calls)} tool call(s): '
-            f'{[c.function.name for c in parsed.tool_calls]}',
+            f'executing {len(parsed.tool_calls)} tool call(s): {[c.function.name for c in parsed.tool_calls]}',
         )
         attachment_messages = []
         for call in parsed.tool_calls:
@@ -252,7 +251,7 @@ class AgentLoop:
             observation_text = rich_output.text if rich_output is not None else observation
             self._dbg(
                 ctx,
-                f'tool={call.function.name} duration={duration*1000:.0f}ms '
+                f'tool={call.function.name} duration={duration * 1000:.0f}ms '
                 f'error={error.type if error else None} '
                 f'obs_len={len(observation_text)}',
             )
@@ -422,13 +421,11 @@ class AgentLoop:
         )
         self._dbg(
             ctx,
-            f'is_done after tool {call.function.name}; '
-            f'final_answer_len={len(str(parsed.final_answer or ""))}',
+            f'is_done after tool {call.function.name}; final_answer_len={len(str(parsed.final_answer or ""))}',
         )
 
     def _emit_max_steps_exceeded(self, ctx: AgentContext) -> None:
-        logger.info(f'AgentLoop reached max_steps={self.max_steps} '
-                    f'for sample {ctx.sample_id}; terminating.')
+        logger.info(f'AgentLoop reached max_steps={self.max_steps} for sample {ctx.sample_id}; terminating.')
         if logger.isEnabledFor(logging.DEBUG):
             self._dbg(ctx, f'max_steps_exceeded total_messages={len(ctx.messages)}')
         self.trace.add_event(
@@ -442,8 +439,7 @@ class AgentLoop:
 
     def _emit_context_overflow(self, ctx: AgentContext) -> None:
         logger.warning(
-            f'AgentLoop sample={ctx.sample_id} step={ctx.step}: '
-            'model context window exceeded; terminating gracefully.'
+            f'AgentLoop sample={ctx.sample_id} step={ctx.step}: model context window exceeded; terminating gracefully.'
         )
         if logger.isEnabledFor(logging.DEBUG):
             self._dbg(ctx, f'context_overflow total_messages={len(ctx.messages)}')

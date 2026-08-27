@@ -106,6 +106,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
 )
 class WideSearchAdapter(AgentLoopAdapter):
     """Official single-agent WideSearch benchmark adapter."""
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     strategy_name = 'function_calling'
@@ -171,6 +172,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             return TemporaryLocalAgentEnvironment(sample_id=sample_id, prefix='evalscope-wide-search-')
         check_import('ms_enclave', extra='sandbox', raise_error=True, feature_name='WideSearch Docker environment')
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
+
         sandbox_config = merge_sandbox_config_dicts(
             {
                 'image': self.docker_image_default,
@@ -189,9 +191,7 @@ class WideSearchAdapter(AgentLoopAdapter):
         return [ChatMessageSystem(content=SYSTEM_PROMPTS.get(language, SYSTEM_PROMPTS['en']))] + messages
 
     def build_max_steps_finalization_message(self, sample: Sample) -> str:
-        return (
-            '[Max Step] The tool has been used too many times. Please stop invoking the tool immediately and answer the user\'s question.'
-        )
+        return "[Max Step] The tool has been used too many times. Please stop invoking the tool immediately and answer the user's question."
 
     def should_finalize_after_max_steps(self, result: AgentLoopResult) -> bool:
         return True
@@ -202,7 +202,7 @@ class WideSearchAdapter(AgentLoopAdapter):
             request=self._build_request,
             reduce=self._reduce_verdicts,
             main_score_name='success_rate',
-            expand=self._expand_cases
+            expand=self._expand_cases,
         )
 
     def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
@@ -225,8 +225,7 @@ class WideSearchAdapter(AgentLoopAdapter):
         else:
             prompt = PRIMARY_KEY_PREPROCESS_PROMPT.format(
                 response=case.metadata.get(
-                    'response',
-                    session.response_df.columns.tolist() if session.response_df is not None else []
+                    'response', session.response_df.columns.tolist() if session.response_df is not None else []
                 ),
                 reference=case.metadata.get('reference', session.required_columns),
             )
@@ -282,8 +281,9 @@ class WideSearchAdapter(AgentLoopAdapter):
                     'response': response_value,
                     'target': target_value,
                 }
-                for index, (response_value, target_value
-                            ) in enumerate(zip(inner_df[f'{column}_response'], inner_df[f'{column}_query']))
+                for index, (response_value, target_value) in enumerate(
+                    zip(inner_df[f'{column}_response'], inner_df[f'{column}_query'])
+                )
             }
             cases.append(
                 JudgeCase(
@@ -358,6 +358,5 @@ def _column_score_model(size: int) -> type[BaseModel]:
 
     return create_model(
         f'WideSearchColumnScore{size}',
-        **{f'idx_{index}': (float, Field(ge=0.0, le=1.0))
-           for index in range(size)},
+        **{f'idx_{index}': (float, Field(ge=0.0, le=1.0)) for index in range(size)},
     )

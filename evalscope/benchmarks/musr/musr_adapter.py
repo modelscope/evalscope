@@ -51,7 +51,6 @@ MuSR (Multistep Soft Reasoning) is a benchmark for evaluating complex reasoning 
     )
 )
 class MuSRAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -63,7 +62,7 @@ class MuSRAdapter(MultiChoiceAdapter):
         target_letter = choice_letters[record['answer_index']]
 
         return Sample(
-            input=f"{record['narrative']}\n\n{record['question']}",
+            input=f'{record["narrative"]}\n\n{record["question"]}',
             choices=choices,
             target=target_letter,
         )

@@ -39,26 +39,14 @@ if TYPE_CHECKING:
 def get_index_locale(category: str, lang: str) -> Dict[str, str]:
     """Get localized strings for index page."""
     locale = {
-        'title': {
-            'zh': f'{category}评测集',
-            'en': f'{category} Benchmarks'
-        },
+        'title': {'zh': f'{category}评测集', 'en': f'{category} Benchmarks'},
         'intro': {
             'zh': f'以下是支持的{category}评测集列表，点击数据集名称可查看详细信息。',
-            'en': f'Below is the list of supported {category} benchmarks. Click on a benchmark name for details.'
+            'en': f'Below is the list of supported {category} benchmarks. Click on a benchmark name for details.',
         },
-        'name': {
-            'zh': '数据集名称',
-            'en': 'Benchmark Name'
-        },
-        'pretty_name': {
-            'zh': '标准名称',
-            'en': 'Pretty Name'
-        },
-        'tags': {
-            'zh': '任务类别',
-            'en': 'Task Categories'
-        },
+        'name': {'zh': '数据集名称', 'en': 'Benchmark Name'},
+        'pretty_name': {'zh': '标准名称', 'en': 'Pretty Name'},
+        'tags': {'zh': '任务类别', 'en': 'Task Categories'},
     }
     return {k: v[lang] for k, v in locale.items()}
 
@@ -116,13 +104,15 @@ def generate_index_table(
         lines.append(f'| `{name}` | [{pretty_name}]({readme_link}) | {tags} |')
 
     # Add hidden toctree to include all benchmark documents in the directory tree
-    lines.extend([
-        '',
-        ':::{toctree}',
-        ':hidden:',
-        ':maxdepth: 1',
-        '',
-    ])
+    lines.extend(
+        [
+            '',
+            ':::{toctree}',
+            ':hidden:',
+            ':maxdepth: 1',
+            '',
+        ]
+    )
 
     # Add all benchmark files to toctree
     for benchmark in benchmarks:
@@ -336,6 +326,7 @@ def update_benchmark_data(
             return (name, result, None)
         except Exception as e:
             import traceback
+
             error_msg = f'{e}\n{traceback.format_exc()}'
             return (name, None, error_msg)
 
@@ -452,6 +443,7 @@ def _update_single_benchmark(
     except Exception as e:
         print(f'Error updating {name}: {e}')
         import traceback
+
         traceback.print_exc()
         raise
 

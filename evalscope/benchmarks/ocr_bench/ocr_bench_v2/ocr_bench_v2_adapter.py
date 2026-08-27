@@ -16,13 +16,36 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 SUBSET_LIST = [
-    'APP agent en', 'ASCII art classification en', 'key information extraction cn', 'key information extraction en',
-    'key information mapping en', 'VQA with position en', 'chart parsing en', 'cognition VQA cn', 'cognition VQA en',
-    'diagram QA en', 'document classification en', 'document parsing cn', 'document parsing en',
-    'formula recognition cn', 'formula recognition en', 'handwritten answer extraction cn', 'math QA en',
-    'full-page OCR cn', 'full-page OCR en', 'reasoning VQA en', 'reasoning VQA cn', 'fine-grained text recognition en',
-    'science QA en', 'table parsing cn', 'table parsing en', 'text counting en', 'text grounding en',
-    'text recognition en', 'text spotting en', 'text translation cn'
+    'APP agent en',
+    'ASCII art classification en',
+    'key information extraction cn',
+    'key information extraction en',
+    'key information mapping en',
+    'VQA with position en',
+    'chart parsing en',
+    'cognition VQA cn',
+    'cognition VQA en',
+    'diagram QA en',
+    'document classification en',
+    'document parsing cn',
+    'document parsing en',
+    'formula recognition cn',
+    'formula recognition en',
+    'handwritten answer extraction cn',
+    'math QA en',
+    'full-page OCR cn',
+    'full-page OCR en',
+    'reasoning VQA en',
+    'reasoning VQA cn',
+    'fine-grained text recognition en',
+    'science QA en',
+    'table parsing cn',
+    'table parsing en',
+    'text counting en',
+    'text grounding en',
+    'text recognition en',
+    'text spotting en',
+    'text translation cn',
 ]
 
 
@@ -66,7 +89,6 @@ OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comp
     )
 )
 class OCRBenchV2Adapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -75,7 +97,7 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
             module_name=['apted', 'distance', 'Levenshtein', 'lxml', 'Polygon', 'zss', 'jieba', 'nltk', 'editdistance'],
             extra='ocr_bench',
             raise_error=True,
-            feature_name='OCRBench-v2 benchmark'
+            feature_name='OCRBench-v2 benchmark',
         )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -100,7 +122,7 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
                 'bbox': record.get('bbox'),
                 'bbox_list': record.get('bbox_list'),
                 'content': record.get('content'),
-            }
+            },
         )
 
     def match_score(
@@ -142,12 +164,18 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
                 'text_spotting_en': ['text spotting en'],
                 'relationship_extraction_en': ['key information extraction en', 'key information mapping en'],
                 'element_parsing_en': [
-                    'document parsing en', 'chart parsing en', 'table parsing en', 'formula recognition en'
+                    'document parsing en',
+                    'chart parsing en',
+                    'table parsing en',
+                    'formula recognition en',
                 ],
                 'mathematical_calculation_en': ['math QA en', 'text counting en'],
                 'visual_text_understanding_en': ['document classification en', 'cognition VQA en', 'diagram QA en'],
                 'knowledge_reasoning_en': [
-                    'reasoning VQA en', 'science QA en', 'APP agent en', 'ASCII art classification en'
+                    'reasoning VQA en',
+                    'science QA en',
+                    'APP agent en',
+                    'ASCII art classification en',
                 ],
             }
             cn_categories = {

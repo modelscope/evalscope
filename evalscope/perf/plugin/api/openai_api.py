@@ -102,8 +102,7 @@ class OpenaiPlugin(DefaultApiPlugin):
             List[int]: Flat list of token IDs ready to be sent as `prompt`.
         """
         if self.tokenizer is None:
-            raise ValueError('A tokenizer is required for --tokenize-prompt. '
-                             'Please specify --tokenizer-path.')
+            raise ValueError('A tokenizer is required for --tokenize-prompt. Please specify --tokenizer-path.')
         # Already token IDs (random dataset fast path)
         if isinstance(messages, list) and messages and isinstance(messages[0], int):
             return messages
@@ -302,9 +301,8 @@ class OpenaiPlugin(DefaultApiPlugin):
                             image = base64_to_PIL(image_base64)
                             # Use math.ceil for more accurate token count when image dimensions
                             # aren't perfectly divisible by patch size
-                            n_patches = (
-                                math.ceil(image.height / self.param.image_patch_size)
-                                * math.ceil(image.width / self.param.image_patch_size)
+                            n_patches = math.ceil(image.height / self.param.image_patch_size) * math.ceil(
+                                image.width / self.param.image_patch_size
                             )
                             input_tokens += n_patches
                         except Exception as e:

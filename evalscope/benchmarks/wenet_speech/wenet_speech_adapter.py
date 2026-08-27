@@ -54,7 +54,6 @@ WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hou
     )
 )
 class WenetSpeechAdapter(AudioLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True
@@ -66,7 +65,9 @@ class WenetSpeechAdapter(AudioLanguageAdapter):
         content_list.append(ContentAudio(audio=audio_base64, format='wav'))
 
         return Sample(
-            input=[ChatMessageUser(content=content_list)], target=record['text'], metadata={
+            input=[ChatMessageUser(content=content_list)],
+            target=record['text'],
+            metadata={
                 'text': record['text'],
-            }
+            },
         )

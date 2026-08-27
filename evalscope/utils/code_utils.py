@@ -14,9 +14,37 @@ from pydantic import BaseModel
 
 from evalscope.utils.logger import get_logger
 
-Language = Literal['python', 'cpp', 'nodejs', 'go', 'go_test', 'java', 'php', 'csharp', 'bash', 'typescript', 'sql',
-                   'rust', 'cuda', 'lua', 'r', 'perl', 'd_ut', 'ruby', 'scala', 'julia', 'pytest', 'junit',
-                   'kotlin_script', 'jest', 'verilog', 'python_gpu', 'lean', 'swift', 'racket']
+Language = Literal[
+    'python',
+    'cpp',
+    'nodejs',
+    'go',
+    'go_test',
+    'java',
+    'php',
+    'csharp',
+    'bash',
+    'typescript',
+    'sql',
+    'rust',
+    'cuda',
+    'lua',
+    'r',
+    'perl',
+    'd_ut',
+    'ruby',
+    'scala',
+    'julia',
+    'pytest',
+    'junit',
+    'kotlin_script',
+    'jest',
+    'verilog',
+    'python_gpu',
+    'lean',
+    'swift',
+    'racket',
+]
 # Language identifiers supported by extraction/postprocessing utilities.
 
 NullableLang = Language | Literal['']
@@ -88,8 +116,8 @@ IMPORT_HELPER = {
         'using System.Security.Cryptography;',
         'using System.Collections.Generic;',
     ],
-    'go': ["import (\"fmt\")"],
-    'd': ['import std.array;', 'import std.algorithm;']
+    'go': ['import ("fmt")'],
+    'd': ['import std.array;', 'import std.algorithm;'],
 }
 
 END_TOKENS = {
@@ -127,14 +155,14 @@ fenced_code_block_pattern = re.compile(
     r'```([^\n]*)\n'
     r'(.*?)'  # Non-greedy capture of the content
     r'\n\s*```',  # Ending with three backticks
-    re.DOTALL | re.MULTILINE
+    re.DOTALL | re.MULTILINE,
 )
 
 incomplete_fenced_code_block_pattern = re.compile(
     # Starting with three backticks and optional language identifier
     r'```([^\n]*)\n'
     r'(.*)',  # Greedy capture of the content
-    re.DOTALL | re.MULTILINE
+    re.DOTALL | re.MULTILINE,
 )
 
 language_to_aliases = {
@@ -236,9 +264,11 @@ def extract_heuristic_code(completion: str, language: NullableLang = '') -> List
     def extract_py(text):
         code = '\n'.join([line for line in text.split('\n') if line.strip() != '']) + '\n'
 
-        pattern_py = '(?:^(?:import|from|#)[^\n]+\n)*' \
-            '^(?:def|class) [^\n]+\n' \
-            r'(?:\s+[^\n]+\n)+'  # class or function body
+        pattern_py = (
+            '(?:^(?:import|from|#)[^\n]+\n)*'
+            '^(?:def|class) [^\n]+\n'
+            r'(?:\s+[^\n]+\n)+'
+        )  # class or function body
         matches = re.findall(pattern_py, code, re.M)
         return matches
 
@@ -345,8 +375,8 @@ def remove_entripoints(code, language: NullableLang = ''):
     - strip sections starting at `# Example usage`
     """
     if language == 'python':
-        if 'if __name__ == \"__main__\":' in code:
-            next_line = code.index('if __name__ == \"__main__\":')
+        if 'if __name__ == "__main__":' in code:
+            next_line = code.index('if __name__ == "__main__":')
             code = code[:next_line].strip()
     elif language == 'cpp':
         if 'int main()' in code:
@@ -365,8 +395,7 @@ def remove_entripoints(code, language: NullableLang = ''):
 def extract_code_from_freeform_completion(
     completion: str, language: NullableLang = '', first_block_only=False, **kwargs
 ) -> Tuple[str, str]:
-    """ Returns: (code, extracted_type)
-    """
+    """Returns: (code, extracted_type)"""
     extracted_type = ExtractedType.Empty  # initialize to empty case
 
     # step1. match the complete fenced block
@@ -377,7 +406,7 @@ def extract_code_from_freeform_completion(
         first_un_block_idx = next((i for i, block in enumerate(code_blocks) if block.language == ''), -1)
         first_block_idx = first_un_block_idx if first_sp_block_idx == -1 else first_sp_block_idx
         if first_block_idx != -1:
-            code_blocks = code_blocks[:first_block_idx + 1]
+            code_blocks = code_blocks[: first_block_idx + 1]
 
         logger.debug(f'select first code block for fewshot task: {code_blocks}')
 
@@ -415,7 +444,6 @@ def extract_code_from_freeform_completion(
         completion = '\n\n'.join([b.code for b in code_blocks]).replace('\r', '')
 
     if language == 'python':
-
         if kwargs.get('remove_asserts') is True:
             # remove assert statements
             lines = []
@@ -426,8 +454,8 @@ def extract_code_from_freeform_completion(
                     lines.append(line)
             completion = '\n'.join(lines)
 
-        if 'if __name__ == \"__main__\":' in completion:
-            next_line = completion.index('if __name__ == \"__main__\":')
+        if 'if __name__ == "__main__":' in completion:
+            next_line = completion.index('if __name__ == "__main__":')
             completion = completion[:next_line].strip()
     elif language == 'cpp':
         if 'int main()' in completion:
@@ -459,11 +487,7 @@ def extract_code_from_freeform_completion(
 
 
 def extract_code_from_freeform_completion_v2(
-    completion: str,
-    language: NullableLang = '',
-    first_block_only=False,
-    no_removal=False,
-    **kwargs
+    completion: str, language: NullableLang = '', first_block_only=False, no_removal=False, **kwargs
 ) -> Tuple[str, str]:
     """
     Arguments:
@@ -493,7 +517,7 @@ def extract_code_from_freeform_completion_v2(
         first_un_block_idx = next((i for i, block in enumerate(code_blocks) if block.language == ''), -1)
         first_block_idx = first_un_block_idx if first_sp_block_idx == -1 else first_sp_block_idx
         if first_block_idx != -1:
-            code_blocks = code_blocks[:first_block_idx + 1]
+            code_blocks = code_blocks[: first_block_idx + 1]
 
         logger.debug(f'select first code block for fewshot task: {code_blocks}')
 
@@ -571,7 +595,7 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
             pattern = r'(public|private|protected)\s+(static\s+)(.*?)\((.*?)\)\s*{'
             body = find_inner_function_body(pattern, completion)
             if body is not None:
-                completion = completion[body[0]:body[1]]
+                completion = completion[body[0] : body[1]]
         else:
             # Add class Solution before signature
             if 'public class Main {\n' in completion:
@@ -599,7 +623,7 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
         pattern = r'func\s+main\(.*?\)\s*{'
         body = find_inner_function_body(pattern, completion)
         if body is not None:
-            completion = completion[:body[0]] + completion[body[1]:]
+            completion = completion[: body[0]] + completion[body[1] :]
     elif language == 'scala':
         # Extract the part wrapped in object X { ... }, generally it's a function
         pat = r'object\s+\w+(\s+extends\s+\w+)?\s*\n*\{(.*)\}'
@@ -621,13 +645,13 @@ def postprocess_completion_v2(completion: str, language: str, no_removal: bool, 
             pattern = r'(public|private|protected|internal)\s+(static\s+)(.*?)\((.*?)\)\s*{'
             body = find_inner_function_body(pattern, completion)
             if body is not None:
-                completion = completion[body[0]:body[1]]
+                completion = completion[body[0] : body[1]]
     elif language == 'kotlin':
         # Delete the main function from completion, if exists.
         pattern = r'fun\s+main\(.*?\)\s*{'
         body = find_inner_function_body(pattern, completion)
         if body is not None:
-            completion = completion[:body[0]] + completion[body[1]:]
+            completion = completion[: body[0]] + completion[body[1] :]
     return completion
 
 
@@ -678,12 +702,12 @@ def trim_till_first_function(code, language):
             escape = char == '\\' and not escape
             end_index += 1
 
-        return code[:end_index + 1]
+        return code[: end_index + 1]
     else:
         # For Python, use indentation levels
-        lines = code[match.end():].splitlines()
+        lines = code[match.end() :].splitlines()
         first_line_indent = len(lines[0]) - len(lines[0].lstrip())
-        function_code = code[:match.end()]
+        function_code = code[: match.end()]
         for line in lines[1:]:
             indent = len(line) - len(line.lstrip())
             if line.strip() and indent <= first_line_indent:

@@ -57,7 +57,6 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
     )
 )
 class Ai2dAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

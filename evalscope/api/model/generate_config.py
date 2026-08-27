@@ -39,6 +39,7 @@ class AnthropicCacheControl(BaseModel):
 
 class GenerateConfig(BaseModel):
     """Model generation options."""
+
     model_config = {'extra': 'allow'}
 
     timeout: Optional[float] = Field(default=None)

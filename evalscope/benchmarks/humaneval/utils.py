@@ -11,7 +11,6 @@ from typing import Dict, Optional
 
 def unsafe_execute(problem: Dict, completion: str, timeout: float, result):
     with create_tempdir():
-
         # These system calls are needed when cleaning up tempdir.
         import os
         import shutil
@@ -25,7 +24,7 @@ def unsafe_execute(problem: Dict, completion: str, timeout: float, result):
 
         # Construct the check program and run it.
         check_program = (
-            problem['prompt'] + completion + '\n' + problem['test'] + '\n' + f"check({problem['entry_point']})"
+            problem['prompt'] + completion + '\n' + problem['test'] + '\n' + f'check({problem["entry_point"]})'
         )
 
         try:

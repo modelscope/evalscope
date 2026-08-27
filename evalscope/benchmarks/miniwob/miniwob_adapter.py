@@ -84,10 +84,12 @@ class MiniWobAdapter(BrowserGymAdapter):
         for sample in dataset:
             repeat = sample.id % self.repeats
             episode_seeds = sample.metadata.pop('_episode_seeds')
-            sample.metadata.update({
-                'seed': episode_seeds[repeat],
-                'repeat': repeat,
-            })
+            sample.metadata.update(
+                {
+                    'seed': episode_seeds[repeat],
+                    'repeat': repeat,
+                }
+            )
         return DatasetDict({'default': dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

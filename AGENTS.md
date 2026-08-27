@@ -14,7 +14,7 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 ## Build, lint, test
 
 ```bash
-make lint                                                                       # required before commit (yapf + Ruff + flake8 + basic pre-commit hooks)
+make lint                                                                       # required before commit (Ruff lint/import/format + basic pre-commit hooks)
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
 pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
@@ -63,9 +63,10 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 ## Code style (enforced)
 
 - **Line width 120**, 4-space indent, LF endings, trailing newline at EOF.
-- **Quotes** governed by `double-quote-string-fixer` hook — follow existing file style; do not mix.
-- **f-strings** for formatting (no `%` or `.format()` unless necessary).
+- **Quotes**: single quotes, enforced by the Ruff formatter.
+- **Linting**: Ruff's `E`, `F`, and `W` rules for maintained source files.
 - **Imports**: Ruff's `I` rules, with `evalscope` detected as first-party and standard import sections.
+- **f-strings** for formatting (no `%` or `.format()` unless necessary).
 - **Type hints required** on every function signature.
 - **English only** for comments and docstrings.
 - **Public APIs need docstrings**; internal helpers only when intent is non-obvious.
@@ -80,7 +81,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 | Handler function | `handle_` prefix |
 | Benchmark adapter file | `<name>_adapter.py` |
 
-**flake8 ignore list** (`setup.cfg`): `F401, F403, F405, F821, W503, E251, W504, F824, F541, E501, E226, E121-E129, E131, E741`. Do not expand — new ignores must be justified in the PR.
+**Ruff ignore list** (`pyproject.toml`): `E501, E741, F401, F403, F405, F541, F821`. Do not expand — new ignores must be justified in the PR.
 
 ## Design rules
 

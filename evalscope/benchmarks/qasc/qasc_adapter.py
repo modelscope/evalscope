@@ -48,7 +48,6 @@ QASC (Question Answering via Sentence Composition) is a question-answering datas
     )
 )
 class QASCAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

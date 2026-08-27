@@ -129,7 +129,7 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
             content.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
         return Sample(
             input=[ChatMessageUser(content=content)],
-            target=f"{record['pdf']}#page={record['page']}",
+            target=f'{record["pdf"]}#page={record["page"]}',
             subset_key=record['subset'],
             metadata={
                 'pdf': record['pdf'],
@@ -205,9 +205,6 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
                 aggregation='unit_test_pass_rate',
                 num=len(sample_scores),
                 ids=ids,
-                metadata={
-                    'tests_passed': tests_passed,
-                    'tests_total': tests_total
-                },
+                metadata={'tests_passed': tests_passed, 'tests_total': tests_total},
             )
         ]

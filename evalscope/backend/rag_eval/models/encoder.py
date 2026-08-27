@@ -3,6 +3,7 @@
 Provides SentenceTransformerEncoder (local) and APIEncoder (OpenAI-compatible API).
 Both implement the BaseEncoder interface aligned with MTEB 2.x EncoderProtocol.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
@@ -21,6 +22,7 @@ logger = get_logger()
 
 try:
     from mteb.types import PromptType
+
     _PROMPT_TYPE_QUERY = PromptType.query
 except ImportError:
     _PROMPT_TYPE_QUERY = 'query'
@@ -226,7 +228,7 @@ class APIEncoder(BaseEncoder):
         for text in texts:
             if len(text) > self._max_chars:
                 truncated_count += 1
-                text = text[:self._max_chars]
+                text = text[: self._max_chars]
             truncated.append(text)
         if truncated_count:
             logger.warning(
@@ -278,7 +280,7 @@ class APIEncoder(BaseEncoder):
 
         embeddings: List[List[float]] = []
         for i in tqdm(range(0, len(texts), self.batch_size)):
-            batch_texts = texts[i:i + self.batch_size]
+            batch_texts = texts[i : i + self.batch_size]
             if prompt is not None:
                 batch_texts = [prompt + text for text in batch_texts]
             batch_texts = self._truncate_texts(batch_texts)

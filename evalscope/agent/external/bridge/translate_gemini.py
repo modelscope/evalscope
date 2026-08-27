@@ -72,10 +72,12 @@ def gemini_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
                     pending_tool_calls[fn_name] = []
                 pending_tool_calls[fn_name].append(tc.id)
 
-            messages.append(ChatMessageAssistant(
-                content=text or '',
-                tool_calls=tool_calls or None,
-            ))
+            messages.append(
+                ChatMessageAssistant(
+                    content=text or '',
+                    tool_calls=tool_calls or None,
+                )
+            )
 
     return messages
 
@@ -138,11 +140,13 @@ def _extract_user_parts(
                 call_id = f'call_{func_name}_{uuid.uuid4().hex[:8]}'
 
             response_content = json.dumps(response) if isinstance(response, dict) else str(response)
-            tool_messages.append(ChatMessageTool(
-                content=response_content,
-                tool_call_id=call_id,
-                function=func_name,
-            ))
+            tool_messages.append(
+                ChatMessageTool(
+                    content=response_content,
+                    tool_call_id=call_id,
+                    function=func_name,
+                )
+            )
 
     user_text = '\n'.join(p for p in text_parts if p)
     return user_text, tool_messages
@@ -227,10 +231,12 @@ def gemini_tool_choice(tool_config: Any) -> Optional[ToolChoice]:
 
 def _safe_tool_params(schema: Dict[str, Any]) -> ToolParams:
     try:
-        return ToolParams.model_validate({
-            'properties': schema.get('properties', {}) or {},
-            'required': schema.get('required', []) or [],
-        })
+        return ToolParams.model_validate(
+            {
+                'properties': schema.get('properties', {}) or {},
+                'required': schema.get('required', []) or [],
+            }
+        )
     except Exception:
         return ToolParams()
 
@@ -265,15 +271,14 @@ def model_output_to_gemini_response(
     usage = output.usage
 
     response: Dict[str, Any] = {
-        'candidates': [{
-            'content': {
-                'parts': parts,
-                'role': 'model'
-            },
-            'finishReason': map_stop_reason_to_gemini(stop_reason),
-            'index': 0,
-            'safetyRatings': [],
-        }],
+        'candidates': [
+            {
+                'content': {'parts': parts, 'role': 'model'},
+                'finishReason': map_stop_reason_to_gemini(stop_reason),
+                'index': 0,
+                'safetyRatings': [],
+            }
+        ],
         'usageMetadata': {
             'promptTokenCount': usage.input_tokens if usage else 0,
             'candidatesTokenCount': usage.output_tokens if usage else 0,

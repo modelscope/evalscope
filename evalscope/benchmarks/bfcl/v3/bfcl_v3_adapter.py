@@ -33,7 +33,7 @@ SUBJECT_MAPPING = {
     'multi_turn_base': 'MULTI_TURN',
     'multi_turn_miss_func': 'MULTI_TURN',
     'multi_turn_miss_param': 'MULTI_TURN',
-    'multi_turn_long_context': 'MULTI_TURN'
+    'multi_turn_long_context': 'MULTI_TURN',
 }
 
 BFCL_V3_TO_V4_SUBJECT_MAPPING = {
@@ -85,14 +85,14 @@ BFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and e
             'underscore_to_dot': {
                 'type': 'bool',
                 'description': 'Convert underscores to dots in function names for evaluation.',
-                'value': True
+                'value': True,
             },
             'is_fc_model': {
                 'type': 'bool',
                 'description': 'Indicates the evaluated model natively supports function calling.',
-                'value': True
-            }
-        }
+                'value': True,
+            },
+        },
     )
 )
 class BFCLV3Adapter(AgentAdapter):
@@ -144,11 +144,12 @@ class BFCLV3Adapter(AgentAdapter):
             input=[ChatMessageUser(content=json.dumps(record['turns']))],
             target=json.dumps(record['ground_truth']),  # Will use the record for evaluation
             subset_key=record['subset'],
-            metadata=record  # Store the full record for evaluation
+            metadata=record,  # Store the full record for evaluation
         )
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from .generation import predict
+
         return predict(model, sample)
 
     def match_score(
@@ -284,7 +285,7 @@ class BFCLV3Adapter(AgentAdapter):
                 'raw_score_result': score_result,
                 'test_category': test_category,
                 'underscore_to_dot': self.underscore_to_dot,
-                'is_fc_model': self.is_fc_model
+                'is_fc_model': self.is_fc_model,
             }
             score.main_score_name = 'acc'
 

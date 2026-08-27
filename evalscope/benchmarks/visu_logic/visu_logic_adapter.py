@@ -18,8 +18,12 @@ Answer the following multiple choice question. The last line of your response sh
 """
 
 SUBSET_LIST = [
-    'Quantitative Reasoning', 'Other', 'Positional Reasoning', 'Stylistic Reasoning', 'Spatial Reasoning',
-    'Attribute Reasoning'
+    'Quantitative Reasoning',
+    'Other',
+    'Positional Reasoning',
+    'Stylistic Reasoning',
+    'Spatial Reasoning',
+    'Attribute Reasoning',
 ]
 
 
@@ -66,7 +70,6 @@ VisuLogic is a benchmark for evaluating visual reasoning capabilities of Multimo
     )
 )
 class VisuLogicAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

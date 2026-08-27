@@ -33,7 +33,6 @@ logger = getLogger()
 
 
 class Text2ImageAPI(ModelAPI):
-
     def __init__(
         self,
         model_name: str,

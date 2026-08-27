@@ -57,7 +57,6 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
     )
 )
 class PopeAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True
@@ -80,7 +79,7 @@ class PopeAdapter(VisionLanguageAdapter):
                 'answer': answer,
                 'category': record.get('category'),
                 'question_id': record.get('question_id'),
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
@@ -129,7 +128,7 @@ class PopeAdapter(VisionLanguageAdapter):
                 'precision': precision,
                 'recall': recall,
                 'f1_score': f1_score,
-                'yes_ratio': yes_ratio
+                'yes_ratio': yes_ratio,
             }
 
         overall_metrics = compute_metrics(sample_scores)

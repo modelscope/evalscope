@@ -86,8 +86,7 @@ class BenchmarkInfoCMD(CLICommand):
             'benchmark',
             nargs='*',
             default=None,
-            help=
-            'Name(s) of the benchmark(s) (e.g., gsm8k, mmlu). Multiple benchmarks can be separated by spaces. Use --all for all benchmarks.',
+            help='Name(s) of the benchmark(s) (e.g., gsm8k, mmlu). Multiple benchmarks can be separated by spaces. Use --all for all benchmarks.',
         )
 
         parser.add_argument(
@@ -160,6 +159,7 @@ class BenchmarkInfoCMD(CLICommand):
         import os
 
         from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+
         os.environ['BUILD_DOC'] = '1'
 
         # Handle --list flag
@@ -212,7 +212,7 @@ class BenchmarkInfoCMD(CLICommand):
     def _format_metric_list(metric_list):
         """Format metric_list (mixed strings and dicts) into readable strings."""
         formatted = []
-        for item in (metric_list or []):
+        for item in metric_list or []:
             if isinstance(item, str):
                 formatted.append(item)
             elif isinstance(item, dict):
@@ -304,6 +304,7 @@ class BenchmarkInfoCMD(CLICommand):
     def _generate_docs(self):
         """Generate documentation from persisted benchmark data."""
         from evalscope.utils.doc_utils.generate_dataset_md import generate_docs
+
         generate_docs()
 
     def _display_info(self, adapter):
@@ -449,5 +450,6 @@ class BenchmarkInfoCMD(CLICommand):
 
         # Fall back to generating from adapter
         from evalscope.utils.readme_generator import generate_benchmark_readme
+
         readme = generate_benchmark_readme(adapter, compute_if_missing=False)
         print(readme)

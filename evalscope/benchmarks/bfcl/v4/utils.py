@@ -260,7 +260,9 @@ def run_prereq_inference(
         for entry in group_entries:
             try:
                 memory_snapshot_folder = (
-                    model_result_dir / get_directory_structure_by_id(entry['id']) / 'memory_snapshot'
+                    model_result_dir
+                    / get_directory_structure_by_id(entry['id'])
+                    / 'memory_snapshot'
                     / 'prereq_checkpoints'
                 )
                 existing_filenames = {f.name for f in memory_snapshot_folder.rglob('*.json')}
@@ -376,8 +378,9 @@ def synthesize_agent_messages(
     turns: List[Any] = model_result if isinstance(model_result, list) else []
     # Inference_log mixes per-turn dicts and bare state-log lists; keep only
     # the per-turn dicts so they align positionally with ``turns``.
-    turn_logs: List[Dict[str, Any]] = ([t for t in inference_log
-                                        if isinstance(t, dict)] if isinstance(inference_log, list) else [])
+    turn_logs: List[Dict[str, Any]] = (
+        [t for t in inference_log if isinstance(t, dict)] if isinstance(inference_log, list) else []
+    )
     n_turns = max(len(questions), len(turns))
 
     for i in range(n_turns):
@@ -436,7 +439,7 @@ def compute_entry_result(
     index = prompt_entry['id']
     ground_truth = prompt_entry.get('ground_truth', {})
 
-    model_name = (DUMMY_MODEL_UNDERSCORE_TO_DOT if underscore_to_dot else DUMMY_MODEL_NO_UNDERSCORE_TO_DOT)
+    model_name = DUMMY_MODEL_UNDERSCORE_TO_DOT if underscore_to_dot else DUMMY_MODEL_NO_UNDERSCORE_TO_DOT
 
     if is_relevance_or_irrelevance(test_category):
         return _evaluate_single_relevance_entry(

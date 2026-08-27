@@ -55,8 +55,7 @@ class ToolExecutor:
         if handler is None:
             err = ToolCallError(
                 type='unknown',
-                message=f"Tool '{call.function.name}' is not registered. "
-                f'Available: {sorted(self._handlers.keys())}',
+                message=f"Tool '{call.function.name}' is not registered. Available: {sorted(self._handlers.keys())}",
             )
             return err.message, err, time.time() - started
 

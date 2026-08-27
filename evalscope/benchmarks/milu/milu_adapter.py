@@ -75,7 +75,6 @@ translated general-knowledge questions with culturally specific Indian content.
     )
 )
 class MILUAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = [record[key] for key in OPTION_KEYS]
 

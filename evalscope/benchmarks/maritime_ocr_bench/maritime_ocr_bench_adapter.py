@@ -33,7 +33,7 @@ TASK_TYPE_MAP = {
     'vqa': 'VQA',
     'parsing': 'parsing',
     'json1': 'json1',
-    'json2': 'json2'
+    'json2': 'json2',
 }
 
 
@@ -71,7 +71,6 @@ Each task type uses a specialized scoring method:
     )
 )
 class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -259,7 +258,7 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
                 'task_type': normalized_type,
                 'prompt': prompt,
                 'images': images,
-            }
+            },
         )
 
     def match_score(

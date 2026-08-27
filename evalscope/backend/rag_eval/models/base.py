@@ -3,6 +3,7 @@
 These protocols align with MTEB 2.x (EncoderProtocol, CrossEncoderProtocol) without
 importing from mteb directly (since it is an optional dependency).
 """
+
 from __future__ import annotations
 
 import os

@@ -82,14 +82,17 @@ def _build_ragas_embeddings(embedding_config) -> Any:
     else:
         # Local model — resolve via ModelScope first
         from evalscope.backend.rag_eval.models.utils import resolve_model_path
+
         local_path = resolve_model_path(embedding_config.model_name_or_path)
         try:
             from ragas.embeddings import embedding_factory
+
             return embedding_factory('huggingface', model=local_path)
         except (ImportError, AttributeError, TypeError):
             logger.warning('Failed to use embedding_factory for huggingface', exc_info=True)
             from langchain_huggingface import HuggingFaceEmbeddings
             from ragas.embeddings.base import LangchainEmbeddingsWrapper
+
             return LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name=local_path))
 
 
@@ -209,15 +212,18 @@ Answer:
                 if attempt < max_retries - 1:
                     logger.warning(f'Failed to generate answer for row {i} (attempt {attempt + 1}): {e}')
                     import time
+
                     time.sleep(2**attempt)
                 else:
                     logger.warning(f'Failed to generate answer for row {i} after {max_retries} attempts: {e}')
 
-        items.append({
-            'user_input': question,
-            'retrieved_contexts': contexts_raw,
-            'response': answer,
-            'reference': row.get('reference', ''),
-        })
+        items.append(
+            {
+                'user_input': question,
+                'retrieved_contexts': contexts_raw,
+                'response': answer,
+                'reference': row.get('reference', ''),
+            }
+        )
 
     return pd.DataFrame.from_dict(items)

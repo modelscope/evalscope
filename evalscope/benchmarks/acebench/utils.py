@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Shared helpers for the ACEBench adapter: category bookkeeping and record decoding."""
+
 import json
 import re
 from copy import deepcopy
@@ -82,7 +83,7 @@ def category_of_record(record: Dict[str, Any]) -> str:
     sub_category = str(record.get('sub_category') or '')
     if sub_category:
         # The hub dataset stores the source file name, e.g. ``data_normal_atom_bool``.
-        return sub_category[len('data_'):] if sub_category.startswith('data_') else sub_category
+        return sub_category[len('data_') :] if sub_category.startswith('data_') else sub_category
     return _TRAILING_INDEX_RE.sub('', str(record.get('id') or ''))
 
 
@@ -125,7 +126,7 @@ def extract_bracket_blocks(text: Any) -> List[str]:
         elif char == ']' and depth > 0:
             depth -= 1
             if depth == 0 and start != -1:
-                blocks.append(text[start:index + 1])
+                blocks.append(text[start : index + 1])
                 start = -1
     return blocks
 

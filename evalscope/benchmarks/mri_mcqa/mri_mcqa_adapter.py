@@ -48,7 +48,6 @@ MRI-MCQA is a specialized benchmark composed of multiple-choice questions relate
     )
 )
 class MRIMCQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

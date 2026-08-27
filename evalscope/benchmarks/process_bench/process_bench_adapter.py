@@ -72,11 +72,10 @@ ProcessBench is a benchmark for evaluating AI models on mathematical reasoning p
         primary_metric='simple_f1_score',
         aggregation='f1',
         eval_split='test',
-        prompt_template=CRITIQUE_TEMPLATE
+        prompt_template=CRITIQUE_TEMPLATE,
     )
 )
 class ProcessBenchAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True  # Use split as subset
@@ -104,8 +103,8 @@ class ProcessBenchAdapter(DefaultDataAdapter):
             metadata={
                 'steps': steps,
                 'tagged_response': tagged_response,
-                'final_answer_correct': record['final_answer_correct']
-            }
+                'final_answer_correct': record['final_answer_correct'],
+            },
         )
 
     def format_prompt_template(self, sample):
@@ -182,11 +181,12 @@ class ProcessBenchAdapter(DefaultDataAdapter):
         # Calculate simple F1 score
         if correct_scores and error_scores:
             from evalscope.metrics import simple_f1_score
+
             agg_list.append(
                 AggScore(
                     metric_name='simple_f1_score',
                     score=simple_f1_score((correct_scores, error_scores)),
-                    num=len(correct_scores) + len(error_scores)
+                    num=len(correct_scores) + len(error_scores),
                 )
             )
 

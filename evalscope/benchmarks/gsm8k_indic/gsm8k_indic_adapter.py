@@ -11,8 +11,7 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-PROMPT_TEMPLATE = """{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.""".lstrip(
-)  # noqa: E501
+PROMPT_TEMPLATE = """{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.""".lstrip()  # noqa: E501
 
 # 10 Indic languages, each in native script and a "roman" (Latin transliteration) variant, plus English
 # (which has no roman variant since it is already in Latin script).
@@ -65,16 +64,11 @@ available in native script and a romanized (Latin transliteration) variant, plus
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class GSM8KIndicAdapter(DefaultDataAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         DELIM = '####'
         question = record['question']

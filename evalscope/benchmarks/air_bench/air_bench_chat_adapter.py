@@ -52,13 +52,14 @@ logger = get_logger()
 
 class PairRating(BaseModel):
     """Both assistants' 1-10 ratings from one judge pass."""
+
     assistant1: float = Field(ge=1.0, le=10.0)
     assistant2: float = Field(ge=1.0, le=10.0)
 
 
 PAIR_CONTRACT = OutputContract(schema_model=PairRating)
 
-JUDGE_SYSTEM_PROMPT = ('You are a helpful and precise assistant for checking the quality of the answer.')
+JUDGE_SYSTEM_PROMPT = 'You are a helpful and precise assistant for checking the quality of the answer.'
 
 JUDGE_TEMPLATE = """[Detailed Audio Description]
 {meta_info}
@@ -134,6 +135,7 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 )
 class AIRBenchChatAdapter(AudioLanguageAdapter):
     """Adapter for AIR-Bench Chat open-ended audio QA tasks."""
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     # Per-sample folder layout for audio files. Distinct from Foundation since
@@ -165,16 +167,13 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
         unknown = [t for t in requested_tasks if t not in CHAT_TASK_TO_CATEGORY]
         if unknown:
             raise ValueError(
-                f'Unknown AIR-Bench Chat task(s): {unknown}. '
-                f'Valid choices: {sorted(CHAT_TASK_TO_CATEGORY)}.'
+                f'Unknown AIR-Bench Chat task(s): {unknown}. Valid choices: {sorted(CHAT_TASK_TO_CATEGORY)}.'
             )
 
         # Pull the directories that match the requested tasks.
-        relevant_folders = sorted({
-            folder
-            for (task, _ds), folder in self.TASK_DATASET_TO_FOLDER.items()
-            if task in requested_tasks
-        })
+        relevant_folders = sorted(
+            {folder for (task, _ds), folder in self.TASK_DATASET_TO_FOLDER.items() if task in requested_tasks}
+        )
 
         track_root = download_air_bench(
             track='Chat',
@@ -206,17 +205,19 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
                 f'were missing on disk (likely partial download).'
             )
 
-        dataset_dict = DatasetDict({
-            k: prepare_samples(
-                v,
-                limit=self.limit,
-                repeats=self.repeats,
-                shuffle=self.shuffle,
-                seed=self.seed,
-                name=f'air_bench_chat/{k}',
-            )
-            for k, v in per_subset_samples.items()
-        })
+        dataset_dict = DatasetDict(
+            {
+                k: prepare_samples(
+                    v,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    shuffle=self.shuffle,
+                    seed=self.seed,
+                    name=f'air_bench_chat/{k}',
+                )
+                for k, v in per_subset_samples.items()
+            }
+        )
         return dataset_dict, None
 
     # ------------------------------------------------------------------
@@ -224,13 +225,10 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
     # ------------------------------------------------------------------
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         if self._track_root is None:
-            raise RuntimeError(
-                '`_track_root` is not initialised; AIR-Bench samples must be '
-                'constructed via `load()`.'
-            )
+            raise RuntimeError('`_track_root` is not initialised; AIR-Bench samples must be constructed via `load()`.')
         sample = self._record_to_sample_with_root(record, self._track_root)
         if sample is None:
-            raise FileNotFoundError(f"Audio file missing for AIR-Bench Chat record uniq_id={record.get('uniq_id')}.")
+            raise FileNotFoundError(f'Audio file missing for AIR-Bench Chat record uniq_id={record.get("uniq_id")}.')
         return sample
 
     def _record_to_sample_with_root(self, record: Dict[str, Any], track_root: str) -> Optional[Sample]:
@@ -306,7 +304,7 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             return JudgeRequest(
                 messages=[
                     ChatMessageSystem(content=JUDGE_SYSTEM_PROMPT),
-                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                    ChatMessageUser(content=prompt + case.output_contract.instruction()),
                 ]
             )
 
@@ -315,8 +313,10 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             position_results = {}
             if placements:
                 original, swapped = placements['original'], placements['swapped']
-                pred_scores, ref_scores = [original.assistant2,
-                                           swapped.assistant1], [original.assistant1, swapped.assistant2]
+                pred_scores, ref_scores = (
+                    [original.assistant2, swapped.assistant1],
+                    [original.assistant1, swapped.assistant2],
+                )
                 position_results = {
                     'original': _compare_scores(original.assistant2, original.assistant1),
                     'swapped': _compare_scores(swapped.assistant1, swapped.assistant2),
@@ -326,14 +326,11 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
                 pred_scores, ref_scores = [verdict.assistant2], [verdict.assistant1]
             mean_pred, mean_ref = sum(pred_scores) / len(pred_scores), sum(ref_scores) / len(ref_scores)
             return ReducedVerdict(
-                value={
-                    'judge_score': mean_pred,
-                    'win_rate': 1.0 if mean_pred > mean_ref else 0.0
-                },
+                value={'judge_score': mean_pred, 'win_rate': 1.0 if mean_pred > mean_ref else 0.0},
                 metadata={
                     'reference_score': mean_ref,
                     'pred_scores_per_pass': pred_scores,
-                    'reference_scores_per_pass': ref_scores
+                    'reference_scores_per_pass': ref_scores,
                 },
                 position_results=position_results,
             )
@@ -342,7 +339,7 @@ class AIRBenchChatAdapter(AudioLanguageAdapter):
             cases=[JudgeCase(case_id='pair', output_contract=PAIR_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='judge_score'
+            main_score_name='judge_score',
         )
 
 

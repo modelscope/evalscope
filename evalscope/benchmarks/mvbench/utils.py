@@ -50,7 +50,8 @@ def find_archive_member(archive_path: str, subset: str, video_name: str) -> str:
     normalized_subset = subset.replace('_', '').lower()
     with zipfile.ZipFile(archive_path) as zip_file:
         matches = [
-            name for name in zip_file.namelist()
+            name
+            for name in zip_file.namelist()
             if not name.endswith('/') and (name.endswith(f'/{video_name}') or name.endswith(video_name))
         ]
     if not matches:

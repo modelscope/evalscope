@@ -12,12 +12,10 @@ from evalscope.constants import HubType
 
 
 class VisionModel:
-
     @staticmethod
     def load(**kw):
         api_base = kw.get('api_base', None)
         if api_base:
-
             return VLMAPI(
                 model_name=kw.get('model_name', ''),
                 openai_api_base=api_base,
@@ -29,7 +27,6 @@ class VisionModel:
 
 
 class VLMAPI:
-
     def __init__(self, model_name, openai_api_base, openai_api_key, prompt=None):
         from langchain_core.prompts import ChatPromptTemplate
         from langchain_openai import ChatOpenAI
@@ -41,18 +38,20 @@ class VLMAPI:
             openai_api_key=openai_api_key,
         )
         self.default_prompt = "Please describe this image in general. Directly provide the description, do not include prefix like 'This image depicts'"  # noqa: E501
-        self.prompt = ChatPromptTemplate.from_messages([
-            ('system', prompt if prompt else self.default_prompt),
-            (
-                'user',
-                [{
-                    'type': 'image_url',
-                    'image_url': {
-                        'url': 'data:image/jpeg;base64,{image_data}'
-                    },
-                }],
-            ),
-        ])
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ('system', prompt if prompt else self.default_prompt),
+                (
+                    'user',
+                    [
+                        {
+                            'type': 'image_url',
+                            'image_url': {'url': 'data:image/jpeg;base64,{image_data}'},
+                        }
+                    ],
+                ),
+            ]
+        )
         self.chain = self.prompt | self.model
         self.transform = PIL_to_base64
 
@@ -65,7 +64,6 @@ class VLMAPI:
 
 
 class CLIPModel(Embeddings):
-
     def __init__(
         self,
         model_name: str,
@@ -128,19 +126,24 @@ class CLIPModel(Embeddings):
     def embed_image(self, uris: List[str]):
         # read image and transform
         images = [Image.open(image_path) for image_path in uris]
-        transformed_images = [self.transform(
-            image,
-            return_tensors='pt',
-        ) for image in images]
+        transformed_images = [
+            self.transform(
+                image,
+                return_tensors='pt',
+            )
+            for image in images
+        ]
         image_features = self.encode_image(transformed_images)
         return image_features.cpu().numpy().tolist()
 
 
 if __name__ == '__main__':
     model = CLIPModel('AI-ModelScope/chinese-clip-vit-large-patch14-336px')
-    model.embed_image([
-        'custom_eval/multimodal/images/AMNH.jpg',
-        'custom_eval/multimodal/images/AMNH.jpg',
-    ])
+    model.embed_image(
+        [
+            'custom_eval/multimodal/images/AMNH.jpg',
+            'custom_eval/multimodal/images/AMNH.jpg',
+        ]
+    )
     model.encode_text(['我喜欢吃饭' * 1000])
     print('done')

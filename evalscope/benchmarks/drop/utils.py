@@ -72,7 +72,7 @@ def _compute_f1(predicted_bag, gold_bag):
         recall = 1.0
     else:
         recall = intersection / float(len(gold_bag))
-    f1 = ((2 * precision * recall) / (precision + recall) if not (precision == 0.0 and recall == 0.0) else 0.0)
+    f1 = (2 * precision * recall) / (precision + recall) if not (precision == 0.0 and recall == 0.0) else 0.0
     return f1
 
 
@@ -107,10 +107,10 @@ def _align_bags(predicted, gold):
 def parse_answer(answer):
     # NOTE: Everything is returned as a tuple for uniformity and hashability.
     if answer['number'] != '':
-        return (str(answer['number']), )
+        return (str(answer['number']),)
     if answer['spans'] != []:
         return tuple(answer['spans'])
-    return (' '.join([answer['date']['day'], answer['date']['month'], answer['date']['year']]).strip(), )
+    return (' '.join([answer['date']['day'], answer['date']['month'], answer['date']['year']]).strip(),)
 
 
 def _get_gold_answers(input_d: dict) -> List[str]:

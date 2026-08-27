@@ -85,11 +85,7 @@ class ToolBenchAdapter(DefaultDataAdapter):
         return Sample(
             input=processed_messages,
             target='',  # Store the full record as target for evaluation
-            metadata={
-                'target': record['target'],
-                'tools': record['tools'],
-                'messages': record['messages']
-            }
+            metadata={'target': record['target'], 'tools': record['tools'], 'messages': record['messages']},
         )
 
     def match_score(

@@ -275,13 +275,7 @@ class ModelProxyServer:
         async def _catchall(request: web.Request) -> web.Response:
             logger.warning(f'bridge: unhandled {request.method} {request.path} (query={dict(request.query)})')
             return web.json_response(
-                {
-                    'type': 'error',
-                    'error': {
-                        'type': 'not_found',
-                        'message': f'no handler for {request.path}'
-                    }
-                },
+                {'type': 'error', 'error': {'type': 'not_found', 'message': f'no handler for {request.path}'}},
                 status=404,
             )
 
@@ -425,13 +419,7 @@ class ModelProxyServer:
         except _BridgeAuthError as exc:
             logger.debug(f'bridge: auth failed — {exc}')
             return web.json_response(
-                {
-                    'type': 'error',
-                    'error': {
-                        'type': 'authentication_error',
-                        'message': str(exc)
-                    }
-                },
+                {'type': 'error', 'error': {'type': 'authentication_error', 'message': str(exc)}},
                 status=401,
             )
 
@@ -488,10 +476,7 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'error': {
-                    'type': 'api_error',
-                    'message': repr(exc)
-                }},
+                {'error': {'type': 'api_error', 'message': repr(exc)}},
                 status=502,
             )
 
@@ -538,8 +523,7 @@ class ModelProxyServer:
             failure_handled = True
             _log_upstream_failure(session, exc, mode='stream')
             error_event = (
-                f'data: {json.dumps({"error": {"type": "api_error", "message": repr(exc)}})}\n\n'
-                f'data: [DONE]\n\n'
+                f'data: {json.dumps({"error": {"type": "api_error", "message": repr(exc)}})}\n\ndata: [DONE]\n\n'
             ).encode('utf-8')
             try:
                 await response.write(error_event)
@@ -592,10 +576,7 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'error': {
-                    'type': 'api_error',
-                    'message': repr(exc)
-                }},
+                {'error': {'type': 'api_error', 'message': repr(exc)}},
                 status=502,
             )
 
@@ -719,11 +700,13 @@ class ModelProxyServer:
         except Exception as exc:
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {'error': {
-                    'code': 502,
-                    'message': repr(exc),
-                    'status': 'UNAVAILABLE',
-                }},
+                {
+                    'error': {
+                        'code': 502,
+                        'message': repr(exc),
+                        'status': 'UNAVAILABLE',
+                    }
+                },
                 status=502,
             )
 
@@ -793,13 +776,7 @@ class ModelProxyServer:
         except Exception as exc:  # pragma: no cover - upstream-dependent
             _log_upstream_failure(session, exc, mode='json')
             return web.json_response(
-                {
-                    'type': 'error',
-                    'error': {
-                        'type': 'api_error',
-                        'message': repr(exc)
-                    }
-                },
+                {'type': 'error', 'error': {'type': 'api_error', 'message': repr(exc)}},
                 status=502,
             )
 
@@ -875,11 +852,13 @@ class ModelProxyServer:
         except _BridgeAuthError as exc:
             logger.debug(f'bridge: auth failed — {exc}')
             return web.json_response(
-                {'error': {
-                    'type': 'invalid_request_error',
-                    'code': 'invalid_api_key',
-                    'message': str(exc),
-                }},
+                {
+                    'error': {
+                        'type': 'invalid_request_error',
+                        'code': 'invalid_api_key',
+                        'message': str(exc),
+                    }
+                },
                 status=401,
             )
 
@@ -902,7 +881,7 @@ class ModelProxyServer:
         token = _extract_bearer_token(request)
         if not token or not token.startswith(_TRIAL_TOKEN_PREFIX):
             raise _BridgeAuthError(f'missing or malformed bridge token (expected {_TRIAL_TOKEN_PREFIX}<id>)')
-        trial_id = token[len(_TRIAL_TOKEN_PREFIX):]
+        trial_id = token[len(_TRIAL_TOKEN_PREFIX) :]
         async with self._sessions_lock:
             session = self._sessions.get(trial_id)
         if session is None:
@@ -917,19 +896,21 @@ class _BridgeAuthError(Exception):
 #: Exception class names treated as "upstream business error" (rate
 #: limit, auth, model-side failure). Matched by class name so we don't
 #: take a hard dependency on the ``anthropic`` package at import time.
-_UPSTREAM_BUSINESS_ERRORS = frozenset({
-    'APIError',
-    'APIStatusError',
-    'APIConnectionError',
-    'APITimeoutError',
-    'RateLimitError',
-    'AuthenticationError',
-    'PermissionDeniedError',
-    'NotFoundError',
-    'BadRequestError',
-    'UnprocessableEntityError',
-    'InternalServerError',
-})
+_UPSTREAM_BUSINESS_ERRORS = frozenset(
+    {
+        'APIError',
+        'APIStatusError',
+        'APIConnectionError',
+        'APITimeoutError',
+        'RateLimitError',
+        'AuthenticationError',
+        'PermissionDeniedError',
+        'NotFoundError',
+        'BadRequestError',
+        'UnprocessableEntityError',
+        'InternalServerError',
+    }
+)
 
 
 def _log_upstream_failure(session: 'TrialSession', exc: BaseException, *, mode: str) -> None:

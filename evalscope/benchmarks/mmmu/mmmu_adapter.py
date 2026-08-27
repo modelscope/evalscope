@@ -123,6 +123,7 @@ class MMMUAdapter(VisionLanguageAdapter):
         'question_type': 'open',
     }
     """  # noqa: E501
+
     MAX_IMAGES: int = 7
 
     def __init__(self, *args, **kwargs):

@@ -172,12 +172,10 @@ def eval_instance(
             test_log_path=test_output_path,
             include_tests_status=True,
         )
-        logger.info(f'report: {report}\n'
-                    f"Result for {instance_id}: resolved: {report[instance_id]['resolved']}")
+        logger.info(f'report: {report}\nResult for {instance_id}: resolved: {report[instance_id]["resolved"]}')
         eval_completed = True
     except Exception as e:
-        error_msg = (f'Error in evaluating model for {instance_id}: {e}\n'
-                     f'{traceback.format_exc()}')
+        error_msg = f'Error in evaluating model for {instance_id}: {e}\n{traceback.format_exc()}'
         logger.error(error_msg)
         report['error'] = error_msg
     finally:

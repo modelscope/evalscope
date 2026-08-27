@@ -200,10 +200,7 @@ class AceBenchAdapter(AgentAdapter):
                 ChatMessageSystem(content=system_prompt),
                 ChatMessageUser(content=user_prompt),
             ],
-            target=json.dumps({
-                'ground_truth': ground_truth,
-                'mile_stone': milestones
-            }, ensure_ascii=False),
+            target=json.dumps({'ground_truth': ground_truth, 'mile_stone': milestones}, ensure_ascii=False),
             subset_key=test_category,
             metadata={
                 'id': record_id,
@@ -392,9 +389,7 @@ class AceBenchAdapter(AgentAdapter):
                 continue
 
             subset_dict: Dict[str, Subset] = {
-                subset.name: subset
-                for category in metric.categories
-                for subset in category.subsets
+                subset.name: subset for category in metric.categories for subset in category.subsets
             }
 
             group_subsets = {}

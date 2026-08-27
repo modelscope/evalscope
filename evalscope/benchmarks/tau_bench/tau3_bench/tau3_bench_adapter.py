@@ -69,24 +69,20 @@ logger = get_logger()
             'user_model': {
                 'type': 'str',
                 'description': 'Model used to simulate the user in the environment.',
-                'value': 'qwen-plus'
+                'value': 'qwen-plus',
             },
-            'api_key': {
-                'type': 'str',
-                'description': 'API key for the user model backend.',
-                'value': 'EMPTY'
-            },
+            'api_key': {'type': 'str', 'description': 'API key for the user model backend.', 'value': 'EMPTY'},
             'api_base': {
                 'type': 'str',
                 'description': 'Base URL for the user model API requests.',
-                'value': 'https://dashscope.aliyuncs.com/compatible-mode/v1'
+                'value': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             },
             'generation_config': {
                 'type': 'dict',
                 'description': 'Default generation config for user model simulation.',
                 'value': {
                     'temperature': 0.0,
-                }
+                },
             },
             'retrieval_config': {
                 'type': 'str',
@@ -96,18 +92,17 @@ logger = get_logger()
                     'openai_embeddings, qwen_embeddings, *_reranker, *_grep, '
                     'terminal_use, alltools. Ignored for non-knowledge domains.'
                 ),
-                'value': 'bm25'
+                'value': 'bm25',
             },
             'retrieval_config_kwargs': {
                 'type': 'dict',
                 'description': 'Optional kwargs forwarded to the retrieval pipeline.',
-                'value': {}
-            }
-        }
+                'value': {},
+            },
+        },
     )
 )
 class Tau3BenchAdapter(AgentAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -123,7 +118,7 @@ class Tau3BenchAdapter(AgentAdapter):
             'tau2',
             package="'tau2[knowledge] @ git+https://github.com/sierra-research/tau2-bench@v1.0.0'",
             raise_error=True,
-            feature_name=self.pretty_name
+            feature_name=self.pretty_name,
         )
 
         # setup user model args
@@ -196,11 +191,12 @@ class Tau3BenchAdapter(AgentAdapter):
             input=[ChatMessageUser(content=purpose)],
             target='',  # Will use the record for evaluation
             subset_key=record['_domain'],
-            metadata=record  # Store the full record for evaluation
+            metadata=record,  # Store the full record for evaluation
         )
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
         from .generation import predict
+
         return predict(model, sample, adapter_instance=self)
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state) -> Score:

@@ -61,7 +61,6 @@ K2-Vendor-Verifier checks whether a third-party deployment of Kimi-K2 faithfully
     )
 )
 class K2VerifierAdapter(FunctionCallAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -166,8 +165,8 @@ class K2VerifierAdapter(FunctionCallAdapter):
         # pred ∈ {0,1}, so finish_reason_tool_call_count == attempted tool calls,
         # and successful_tool_call_count == those that also passed schema.
         schema_accuracy = (
-            successful_tool_call_count / finish_reason_tool_call_count
-        ) if finish_reason_tool_call_count else 0.0
+            (successful_tool_call_count / finish_reason_tool_call_count) if finish_reason_tool_call_count else 0.0
+        )
         precision = tp / (tp + fp) if (tp + fp) else 0.0
         recall = tp / (tp + fn) if (tp + fn) else 0.0
         trigger_similarity = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0

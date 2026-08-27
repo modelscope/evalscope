@@ -6,7 +6,6 @@ from evalscope.utils.io_utils import yaml_to_dict
 
 
 class BackendManager:
-
     def __init__(self, config: Union[str, dict, TaskConfig], **kwargs):
         """
         BackendManager is the base class for the evaluation backend manager.

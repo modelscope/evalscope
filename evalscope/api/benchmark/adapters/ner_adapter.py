@@ -60,9 +60,9 @@ class NERAdapter(DefaultDataAdapter):
         self.entity_list = [f'<{ent.lower()}>' for ent in self.entity_type_map.values()]
 
         # Create description of entities for prompt
-        self.entities_description = ', '.join([
-            f'{self.entity_type_map[tag]} ({self.entity_descriptions[tag]})' for tag in self.entity_type_map
-        ])
+        self.entities_description = ', '.join(
+            [f'{self.entity_type_map[tag]} ({self.entity_descriptions[tag]})' for tag in self.entity_type_map]
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """
@@ -99,7 +99,7 @@ class NERAdapter(DefaultDataAdapter):
             fewshot=fewshot,
             entities=self.entities_description,
             entity_list=', '.join(self.entity_list),
-            text=sample.input
+            text=sample.input,
         )
 
     def sample_to_fewshot(self, sample: Sample) -> str:
@@ -199,7 +199,7 @@ class NERAdapter(DefaultDataAdapter):
                 metric_name='precision',
                 score=avg_precision,
                 num=num_samples,
-                metadata={'type': 'seqeval-micro-average'}
+                metadata={'type': 'seqeval-micro-average'},
             ),
             AggScore(
                 metric_name='recall', score=avg_recall, num=num_samples, metadata={'type': 'seqeval-micro-average'}
@@ -207,7 +207,7 @@ class NERAdapter(DefaultDataAdapter):
             AggScore(metric_name='f1', score=avg_f1, num=num_samples, metadata={'type': 'seqeval-micro-average'}),
             AggScore(
                 metric_name='accuracy', score=avg_accuracy, num=num_samples, metadata={'type': 'seqeval-accuracy'}
-            )
+            ),
         ]
 
         return agg_scores

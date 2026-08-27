@@ -118,7 +118,7 @@ def json_schema(t: Type[Any]) -> JSONSchema:
             return JSONSchema(type='array', items=JSONSchema())
         elif t is dict:
             return JSONSchema(type='object', additionalProperties=JSONSchema())
-        elif (is_dataclass(t) or is_typeddict(t) or (isinstance(t, type) and issubclass(t, BaseModel))):
+        elif is_dataclass(t) or is_typeddict(t) or (isinstance(t, type) and issubclass(t, BaseModel)):
             return cls_json_schema(t)
         elif isinstance(t, EnumMeta):
             return JSONSchema(enum=[item.value for item in t])
@@ -126,7 +126,7 @@ def json_schema(t: Type[Any]) -> JSONSchema:
             return JSONSchema(type='null')
         else:
             return JSONSchema()
-    elif (origin is list or origin is List or origin is tuple or origin is Tuple or origin is set or origin is Set):
+    elif origin is list or origin is List or origin is tuple or origin is Tuple or origin is set or origin is Set:
         return JSONSchema(type='array', items=json_schema(args[0]) if args else JSONSchema())
     elif origin is dict or origin is Dict:
         return JSONSchema(

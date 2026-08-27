@@ -10,11 +10,7 @@ logger = get_logger()
 
 
 def evaluate_in_sandbox(
-    adapter: 'CodeExecutionSandboxMixin',
-    code: str,
-    evaluation_sample: str,
-    timeout: int = 6,
-    debug: bool = False
+    adapter: 'CodeExecutionSandboxMixin', code: str, evaluation_sample: str, timeout: int = 6, debug: bool = False
 ) -> Tuple[bool, Dict]:
     """
     Evaluate code in sandbox environment for Live Code Bench.
@@ -55,8 +51,13 @@ def evaluate_in_sandbox(
 
 
 def _evaluate_call_based_in_sandbox(
-    adapter: 'CodeExecutionSandboxMixin', code: str, inputs: list, outputs: list, fn_name: str, timeout: int,
-    debug: bool
+    adapter: 'CodeExecutionSandboxMixin',
+    code: str,
+    inputs: list,
+    outputs: list,
+    fn_name: str,
+    timeout: int,
+    debug: bool,
 ) -> Tuple[bool, Dict]:
     """Evaluate call-based problems in sandbox."""
     try:
@@ -158,7 +159,7 @@ except Exception as e:
                     # Extract failure details from output
                     for line in output.split('\n'):
                         if line.startswith('TEST_FAILED:'):
-                            failed_cases.append(f"Test {i}: {line.replace('TEST_FAILED: ', '')}")
+                            failed_cases.append(f'Test {i}: {line.replace("TEST_FAILED: ", "")}')
                             break
                     all_passed = False
                     break

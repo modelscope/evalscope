@@ -147,20 +147,24 @@ def openai_tools_to_tool_infos(tools: Sequence[Dict[str, Any]]) -> List[ToolInfo
             continue
         schema = fn.get('parameters') or {}
         params = _safe_tool_params(schema) if isinstance(schema, dict) else ToolParams()
-        out.append(ToolInfo(
-            name=name,
-            description=fn.get('description', '') or '',
-            parameters=params,
-        ))
+        out.append(
+            ToolInfo(
+                name=name,
+                description=fn.get('description', '') or '',
+                parameters=params,
+            )
+        )
     return out
 
 
 def _safe_tool_params(schema: Dict[str, Any]) -> ToolParams:
     try:
-        return ToolParams.model_validate({
-            'properties': schema.get('properties', {}) or {},
-            'required': schema.get('required', []) or [],
-        })
+        return ToolParams.model_validate(
+            {
+                'properties': schema.get('properties', {}) or {},
+                'required': schema.get('required', []) or [],
+            }
+        )
     except Exception:
         return ToolParams()
 
@@ -215,11 +219,13 @@ def model_output_to_openai_response(
         'object': 'chat.completion',
         'created': int(time.time()),
         'model': request_model or output.model or '',
-        'choices': [{
-            'index': 0,
-            'message': msg_payload,
-            'finish_reason': finish_reason,
-        }],
+        'choices': [
+            {
+                'index': 0,
+                'message': msg_payload,
+                'finish_reason': finish_reason,
+            }
+        ],
         'usage': {
             'prompt_tokens': usage.input_tokens if usage else 0,
             'completion_tokens': usage.output_tokens if usage else 0,

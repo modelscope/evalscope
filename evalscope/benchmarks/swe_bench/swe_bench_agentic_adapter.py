@@ -290,6 +290,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
                 return id_to_docker_image_map.get(instance_id, '')
         else:
             from functools import partial
+
             docker_image_from_id = partial(
                 get_remote_docker_image_from_id,
                 dockerhub_username=self.dockerhub_username,
@@ -327,7 +328,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         image = sample.metadata.get('docker_image')
         if not image:
             raise RuntimeError(
-                f"docker_image missing for instance {sample.metadata.get('instance_id')!r}; "
+                f'docker_image missing for instance {sample.metadata.get("instance_id")!r}; '
                 'did _post_process_samples run?'
             )
 
@@ -355,8 +356,9 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
-        problem_statement = sample.metadata.get('problem_statement'
-                                                ) or (sample.input if isinstance(sample.input, str) else '')
+        problem_statement = sample.metadata.get('problem_statement') or (
+            sample.input if isinstance(sample.input, str) else ''
+        )
         rendered = INSTANCE_TEMPLATE.format(problem_statement=problem_statement)
         return [ChatMessageUser(content=rendered)]
 
@@ -377,6 +379,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         SWE-bench evaluation pipeline.
         """
         from evalscope.agent.external.helpers import extract_patch
+
         return await extract_patch(env, cwd=self.working_dir)
 
     # ------------------------------------------------------------------
@@ -413,6 +416,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         if prediction:
             return prediction
         from swebench.inference.make_datasets.utils import extract_diff
+
         return extract_diff(prediction or '')
 
     # ------------------------------------------------------------------
@@ -466,7 +470,8 @@ a single `bash` tool. Models without function-calling support can select
 expects one ` ```mswea_bash_command ``` ` block per turn.
 """
 
-_SWE_BENCH_VERIFIED_AGENTIC_DESCRIPTION = """
+_SWE_BENCH_VERIFIED_AGENTIC_DESCRIPTION = (
+    """
 ## Overview
 
 SWE-bench Verified Agentic is the agentic-mode evaluation of SWE-bench Verified, a human-validated subset of 500 samples from SWE-bench. Unlike the oracle single-turn variant, the model must autonomously explore the repository, run shell commands, edit source files, and submit a patch through a multi-turn agent loop driven inside a per-instance Docker container.
@@ -493,9 +498,12 @@ SWE-bench Verified Agentic is the agentic-mode evaluation of SWE-bench Verified,
 - Timeout of 1800 seconds (30 min) per instance for final patch validation
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
 - Supports both local image building and remote image pulling
-""" + _AGENTIC_MODE_SECTION
+"""
+    + _AGENTIC_MODE_SECTION
+)
 
-_SWE_BENCH_VERIFIED_MINI_AGENTIC_DESCRIPTION = """
+_SWE_BENCH_VERIFIED_MINI_AGENTIC_DESCRIPTION = (
+    """
 ## Overview
 
 SWE-bench Verified Mini Agentic is the agentic-mode evaluation of SWE-bench Verified Mini, a compact 50-sample subset that maintains the same distribution of performance, test pass rates, and difficulty as the full Verified set while requiring only 5GB of storage instead of 130GB. The model must autonomously explore, edit, and submit a patch through a multi-turn agent loop.
@@ -521,9 +529,12 @@ SWE-bench Verified Mini Agentic is the agentic-mode evaluation of SWE-bench Veri
 - Docker images are built/pulled automatically
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup
 - Good for rapid prototyping of agent strategies and initial model assessment
-""" + _AGENTIC_MODE_SECTION
+"""
+    + _AGENTIC_MODE_SECTION
+)
 
-_SWE_BENCH_LITE_AGENTIC_DESCRIPTION = """
+_SWE_BENCH_LITE_AGENTIC_DESCRIPTION = (
+    """
 ## Overview
 
 SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focused subset of SWE-bench containing 300 Issue-Pull Request pairs from 11 popular Python repositories. The model autonomously drives a multi-turn agent loop inside a per-instance Docker container to resolve real-world GitHub issues.
@@ -549,9 +560,12 @@ SWE-bench Lite Agentic is the agentic-mode evaluation of SWE-bench Lite, a focus
 - Docker images are built/pulled automatically for each repository
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
 - Popular benchmark variant for initial agentic model comparison
-""" + _AGENTIC_MODE_SECTION
+"""
+    + _AGENTIC_MODE_SECTION
+)
 
-_SWE_BENCH_MULTILINGUAL_AGENTIC_DESCRIPTION = """
+_SWE_BENCH_MULTILINGUAL_AGENTIC_DESCRIPTION = (
+    """
 ## Overview
 
 SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multilingual, a 300-task SWE-bench-style benchmark spanning 42 repositories and 9 programming languages. The model autonomously explores, edits, and submits a patch through a multi-turn agent loop inside a per-instance Docker container.
@@ -578,7 +592,9 @@ SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multi
 - Timeout of 1800 seconds (30 min) per instance for final patch validation
 - See the [usage documentation](https://evalscope.readthedocs.io/en/latest/third_party/swe_bench.html) for detailed setup instructions
 - Supports both local image building and remote image pulling
-""" + _AGENTIC_MODE_SECTION
+"""
+    + _AGENTIC_MODE_SECTION
+)
 
 
 @register_benchmark(
@@ -594,8 +610,7 @@ SWE-bench Multilingual Agentic is the agentic-mode evaluation of SWE-bench Multi
         extra_params=_AGENTIC_EXTRA_PARAMS,
     )
 )
-class SWEBenchVerifiedAgenticAdapter(_SWEBenchAgenticAdapterBase):
-    ...
+class SWEBenchVerifiedAgenticAdapter(_SWEBenchAgenticAdapterBase): ...
 
 
 @register_benchmark(
@@ -611,8 +626,7 @@ class SWEBenchVerifiedAgenticAdapter(_SWEBenchAgenticAdapterBase):
         extra_params=_AGENTIC_EXTRA_PARAMS,
     )
 )
-class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase):
-    ...
+class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase): ...
 
 
 @register_benchmark(
@@ -628,8 +642,7 @@ class SWEBenchVerifiedMiniAgenticAdapter(_SWEBenchAgenticAdapterBase):
         extra_params=_AGENTIC_EXTRA_PARAMS,
     )
 )
-class SWEBenchLiteAgenticAdapter(_SWEBenchAgenticAdapterBase):
-    ...
+class SWEBenchLiteAgenticAdapter(_SWEBenchAgenticAdapterBase): ...
 
 
 @register_benchmark(

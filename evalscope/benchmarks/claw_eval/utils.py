@@ -333,9 +333,7 @@ def load_claw_eval_trace(trace_path: Optional[str]) -> Tuple[Optional[AgentTrace
                 msg_id = uuid.uuid4().hex[:8]
                 text, tool_calls = _parse_assistant_content(content)
                 messages.append(
-                    ChatMessageAssistant(
-                        id=msg_id, content=text, tool_calls=tool_calls or None, model=row.get('model')
-                    )
+                    ChatMessageAssistant(id=msg_id, content=text, tool_calls=tool_calls or None, model=row.get('model'))
                 )
                 trace.add(
                     AgentTraceEvent(

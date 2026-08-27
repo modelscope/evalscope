@@ -8,22 +8,23 @@ from evalscope.perf.utils.benchmark_util import BenchmarkData
 from evalscope.perf.utils.body_meta import BODY_META_HEADERS, BODY_META_PREFIX, BODY_META_REQUEST_ID
 
 # Hop-by-hop headers that must not be forwarded from trace data.
-_HOP_BY_HOP_HEADERS = frozenset({
-    'host',
-    'connection',
-    'content-length',
-    'transfer-encoding',
-    'keep-alive',
-    'proxy-authenticate',
-    'proxy-authorization',
-    'te',
-    'trailers',
-    'upgrade',
-})
+_HOP_BY_HOP_HEADERS = frozenset(
+    {
+        'host',
+        'connection',
+        'content-length',
+        'transfer-encoding',
+        'keep-alive',
+        'proxy-authenticate',
+        'proxy-authorization',
+        'te',
+        'trailers',
+        'upgrade',
+    }
+)
 
 
 class ApiPluginBase:
-
     def __init__(self, param: Arguments) -> None:
         self.param = param
         self.model_path = param.tokenizer_path

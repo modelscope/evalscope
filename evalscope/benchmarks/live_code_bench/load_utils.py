@@ -16,7 +16,7 @@ def transform(item):
     # starter_code
     if item['starter_code']:
         format_prompt = f'### Format: {CodeGenerationPromptConstants.FORMATTING_MESSAGE_WITH_STARTER_CODE}\n'  # noqa: E501
-        format_prompt += f"```python\n{item['starter_code']}\n```\n\n"
+        format_prompt += f'```python\n{item["starter_code"]}\n```\n\n'
     else:
         format_prompt = f'### Format: {CodeGenerationPromptConstants.FORMATTING_WITHOUT_STARTER_CODE}\n'  # noqa: E501
         format_prompt += '```python\n# YOUR CODE HERE\n```\n\n'
@@ -37,11 +37,13 @@ def transform(item):
 
     # load metadata
     metadata = json.loads(item['metadata'])
-    evaluation_sample = json.dumps({
-        'inputs': [t['input'] for t in public_test_cases + private_test_cases],
-        'outputs': [t['output'] for t in public_test_cases + private_test_cases],
-        'fn_name': metadata.get('func_name', None),
-    })
+    evaluation_sample = json.dumps(
+        {
+            'inputs': [t['input'] for t in public_test_cases + private_test_cases],
+            'outputs': [t['output'] for t in public_test_cases + private_test_cases],
+            'fn_name': metadata.get('func_name', None),
+        }
+    )
     item['evaluation_sample'] = evaluation_sample
 
     return item

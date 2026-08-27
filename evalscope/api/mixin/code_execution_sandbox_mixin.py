@@ -143,20 +143,14 @@ class EnclaveCodeExecutionBackend(CodeExecutionBackend):
             return {
                 'status': ExecutionStatus.TIMEOUT,
                 'error': 'Code execution timed out.',
-                'metadata': {
-                    'code': code,
-                    'language': language
-                },
+                'metadata': {'code': code, 'language': language},
             }
         except Exception as exc:
             logger.exception(f'Code execution in sandbox failed: {exc!r}')
             return {
                 'status': ExecutionStatus.ERROR,
                 'error': str(exc),
-                'metadata': {
-                    'code': code,
-                    'language': language
-                },
+                'metadata': {'code': code, 'language': language},
             }
 
     def stop(self) -> None:

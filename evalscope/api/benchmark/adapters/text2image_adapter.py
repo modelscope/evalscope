@@ -89,17 +89,19 @@ class Text2ImageAdapter(DefaultDataAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert a record dictionary to a Sample object."""
         metadata = dict(record)
-        metadata.update({
-            'prompt': record['prompt'],
-            'category': record.get('category', ''),
-            'tags': record.get('tags', []),
-            FileConstants.ID: record.get(FileConstants.ID, ''),
-            FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH, ''),
-        })
+        metadata.update(
+            {
+                'prompt': record['prompt'],
+                'category': record.get('category', ''),
+                'tags': record.get('tags', []),
+                FileConstants.ID: record.get(FileConstants.ID, ''),
+                FileConstants.IMAGE_PATH: record.get(FileConstants.IMAGE_PATH, ''),
+            }
+        )
         return Sample(
             input=[ChatMessageUser(content=record['prompt'])],
             target=self._record_reference_image(record),
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _on_inference(self, model: Model, sample: Sample) -> ModelOutput:
@@ -273,7 +275,8 @@ class Text2ImageAdapter(DefaultDataAdapter):
                 score=sum(value for value, _ in values) / len(values),
                 num=len(values),
                 ids=[sample_id for _, sample_id in values],
-            ) for (metric_name, dimensions), values in grouped.items()
+            )
+            for (metric_name, dimensions), values in grouped.items()
         ]
 
     @staticmethod
@@ -298,8 +301,7 @@ class Text2ImageAdapter(DefaultDataAdapter):
         if not Text2ImageAdapter._is_empty_image_value(reference):
             return reference
         raise ValueError(
-            f'Metric {metric_name} requires a reference image. Provide one of: '
-            f'{", ".join(IMAGE_PAIR_REFERENCE_KEYS)}.'
+            f'Metric {metric_name} requires a reference image. Provide one of: {", ".join(IMAGE_PAIR_REFERENCE_KEYS)}.'
         )
 
     @staticmethod

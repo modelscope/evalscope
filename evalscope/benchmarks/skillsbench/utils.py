@@ -61,7 +61,7 @@ def read_task_md(path: Path) -> tuple[Dict[str, Any], str]:
     if end < 0:
         return {}, text.strip()
     frontmatter_text = text[3:end]
-    body = text[text.find('\n', end + 1) + 1:].strip()
+    body = text[text.find('\n', end + 1) + 1 :].strip()
     return _parse_simple_yaml(frontmatter_text), body
 
 
@@ -81,7 +81,7 @@ def optional_float(value: Any) -> Optional[float]:
 
 
 def network_enabled(frontmatter: Dict[str, Any]) -> bool:
-    mode = (((frontmatter.get('environment') or {}) if isinstance(frontmatter, dict) else {}).get('network_mode'))
+    mode = ((frontmatter.get('environment') or {}) if isinstance(frontmatter, dict) else {}).get('network_mode')
     if isinstance(mode, str) and mode.lower() in {'none', 'no-network', 'disabled', 'off'}:
         return False
     return True

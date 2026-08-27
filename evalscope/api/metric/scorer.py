@@ -193,7 +193,6 @@ class AggScore(BaseModel):
 
 
 class Aggregator:
-
     name = 'default'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:

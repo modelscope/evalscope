@@ -29,6 +29,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
 # flake8: noqa
 import re
 import sympy
@@ -48,7 +49,7 @@ def _sympy_parse(expr: str):
     py_expr = expr.replace('^', '**')
     return sympy_parser.parse_expr(
         py_expr,
-        transformations=(sympy_parser.standard_transformations + (sympy_parser.implicit_multiplication_application, )),
+        transformations=(sympy_parser.standard_transformations + (sympy_parser.implicit_multiplication_application,)),
     )
 
 
@@ -243,7 +244,9 @@ def split_tuple(expr: str):
     if len(expr) == 0:
         return []
     if (
-        len(expr) > 2 and expr[0] in TUPLE_CHARS and expr[-1] in TUPLE_CHARS
+        len(expr) > 2
+        and expr[0] in TUPLE_CHARS
+        and expr[-1] in TUPLE_CHARS
         and all([ch not in expr[1:-1] for ch in TUPLE_CHARS])
     ):
         elems = [elem.strip() for elem in expr[1:-1].split(',')]

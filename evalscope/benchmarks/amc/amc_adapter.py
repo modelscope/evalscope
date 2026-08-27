@@ -44,16 +44,11 @@ AMC (American Mathematics Competitions) is a benchmark based on problems from th
 """,
         dataset_id='evalscope/amc_22-24',
         subset_list=['amc22', 'amc23', 'amc24'],
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
     )
 )
 class AMCAdapter(DefaultDataAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -64,11 +59,7 @@ class AMCAdapter(DefaultDataAdapter):
         return Sample(
             input=record['problem'],
             target=record['answer'],
-            metadata={
-                'year': record['year'],
-                'url': record['url'],
-                'solution': record.get('solution', '')
-            },
+            metadata={'year': record['year'], 'url': record['url'], 'solution': record.get('solution', '')},
         )
 
     def extract_answer(self, prediction: str, task_state):

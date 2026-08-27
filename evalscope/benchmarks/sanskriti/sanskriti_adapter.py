@@ -65,7 +65,6 @@ dataset mirrored to ModelScope as `evalscope/Sanskriti`.
     )
 )
 class SanskritiAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

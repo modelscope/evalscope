@@ -14,6 +14,7 @@ with read_base():
 for _dataset in datasets:
     if _dataset['path'] == 'openai_humaneval':
         from opencompass.datasets.humaneval import humaneval_gpt_postprocess
+
         _dataset['eval_cfg']['pred_postprocessor']['type'] = humaneval_gpt_postprocess
 
 # 2. Get models, only for placeholder, you should fill in the real model information from command line

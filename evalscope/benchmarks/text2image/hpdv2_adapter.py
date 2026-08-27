@@ -55,7 +55,6 @@ HPD-v2 (Human Preference Dataset v2) is a text-to-image benchmark that evaluates
     )
 )
 class HPDv2Adapter(Text2ImageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -76,5 +75,5 @@ class HPDv2Adapter(Text2ImageAdapter):
                 'category': record.get('tags', {}).get('category', ''),
                 'tags': record.get('tags', {}),
                 'image_path': record.get('image_path', ''),  # Optional field for existing image path
-            }
+            },
         )

@@ -42,7 +42,6 @@ logger = getLogger()
 
 
 class ModelScopeAPI(ModelAPI):
-
     def __init__(
         self,
         model_name: str,
@@ -91,7 +90,7 @@ class ModelScopeAPI(ModelAPI):
             'torch.float32': torch.float32,
             'float64': torch.float64,
             'torch.float64': torch.float64,
-            'auto': 'auto'
+            'auto': 'auto',
         }
 
         if isinstance(torch_dtype, str) and torch_dtype != 'auto':
@@ -106,7 +105,7 @@ class ModelScopeAPI(ModelAPI):
             token=self.api_key,
             torch_dtype=self.torch_dtype,
             trust_remote_code=True,
-            **model_args
+            **model_args,
         )
 
         # tokenizer
@@ -308,21 +307,15 @@ class ModelGenerateOutput:
 
 
 class Tokenizer(Protocol):
-
-    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], Tensor]:
-        ...
+    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], Tensor]: ...
 
 
 class Generator(Protocol):
-
-    def __call__(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
-        ...
+    def __call__(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor: ...
 
 
 class Decoder(Protocol):
-
-    def __call__(self, sequences: Tensor) -> list[str]:
-        ...
+    def __call__(self, sequences: Tensor) -> list[str]: ...
 
 
 @dataclass
@@ -426,7 +419,7 @@ def process_batches() -> None:
                 logprobs = torch.nn.functional.log_softmax(stacked_logits, dim=-1)
 
             # decode
-            generated_tokens = generate_ids[:, input_ids.size(dim=1):]
+            generated_tokens = generate_ids[:, input_ids.size(dim=1) :]
             if logprobs is not None:
                 assert logprobs.shape[1] == generated_tokens.shape[1]
             outputs = decoder(sequences=generated_tokens)
@@ -500,11 +493,13 @@ def extract_logprobs(
             # TODO: you get byte artifacts converting single ids to tokens like this...
             # but `tokenizer.decode` strips spaces. There must be a better way to do this.
             token_str = tokenizer.convert_ids_to_tokens(tok.item())
-            top_logprobs.append(TopLogprob(
-                token=token_str,
-                logprob=val,
-                bytes=list(map(ord, token_str)),
-            ))
+            top_logprobs.append(
+                TopLogprob(
+                    token=token_str,
+                    logprob=val,
+                    bytes=list(map(ord, token_str)),
+                )
+            )
         final_logprobs.append(
             Logprob(
                 token=top_logprobs[0].token,

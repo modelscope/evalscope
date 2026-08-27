@@ -158,12 +158,9 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
             logger.error(f'[{task_id}] {label} produced empty results: {error_msg}')
             return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
         logger.info(f'[{task_id}] {label} completed successfully')
-        return jsonify({
-            'status': 'completed',
-            'task_id': task_id,
-            'result': serialize_result(result),
-            'table': table_str
-        })
+        return jsonify(
+            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str}
+        )
     except TaskStoppedError:
         logger.info(f'[{task_id}] {label} stopped by user.')
         return jsonify({'status': 'stopped', 'task_id': task_id})

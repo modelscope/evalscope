@@ -152,8 +152,9 @@ class CacheManager:
         self._get_writer(cache_file).write(model_result_dict)
         return model_result
 
-    def filter_review_cache(self, subset: str,
-                            task_states: List[TaskState]) -> Tuple[List[SampleScore], List[TaskState]]:
+    def filter_review_cache(
+        self, subset: str, task_states: List[TaskState]
+    ) -> Tuple[List[SampleScore], List[TaskState]]:
         """
         Load cached review results and filter corresponding task states.
 
@@ -233,11 +234,7 @@ class CacheManager:
             del self._review_reruns[file_path]
 
     def save_review_cache(
-        self,
-        subset: str,
-        task_state: TaskState,
-        sample_score: SampleScore,
-        save_metadata: bool = True
+        self, subset: str, task_state: TaskState, sample_score: SampleScore, save_metadata: bool = True
     ) -> 'ReviewResult':
         """
         Save a review result to the cache.
@@ -428,10 +425,12 @@ class ReviewResult(BaseModel):
             return data
         legacy_input = data.pop('input', None)
         if legacy_input and not data.get('messages'):
-            data['messages'] = [{
-                'role': 'user',
-                'content': legacy_input,
-            }]
+            data['messages'] = [
+                {
+                    'role': 'user',
+                    'content': legacy_input,
+                }
+            ]
         # Drop obsolete TrajectoryStep list (the new ``agent_trace`` has a
         # different shape; legacy values are not useful and would fail
         # validation).

@@ -1,38 +1,10 @@
 repos:
-  - repo: https://github.com/pycqa/flake8.git
-    rev: 7.3.0
-    hooks:
-      - id: flake8
-        exclude: |
-            (?x)^(
-                examples/|
-                docs/|
-                tests/|
-                evalscope/utils/utils.py|
-                evalscope/third_party/|
-                evalscope/backend/rag_eval/clip_benchmark/tasks|
-                evalscope/backend/rag_eval/cmteb/tasks|
-                evalscope/metrics/vision/t2v_metrics
-            )
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.4
     hooks:
       - id: ruff-check
         args: [--fix]
-  - repo: https://github.com/google/yapf
-    rev: v0.43.0
-    hooks:
-      - id: yapf
-        exclude: |
-            (?x)^(
-                examples/|
-                docs/|
-                tests/|
-                evalscope/utils/utils.py|
-                evalscope/third_party/|
-                evalscope/backend/rag_eval/clip_benchmark/tasks|
-                evalscope/backend/rag_eval/cmteb/tasks
-            )
+      - id: ruff-format
   - repo: https://github.com/pre-commit/pre-commit-hooks.git
     rev: v6.0.0
     hooks:
@@ -44,8 +16,6 @@ repos:
         exclude: evalscope/third_party/|docs/|examples|.*\.json
       - id: requirements-txt-fixer
         exclude: evalscope/third_party/|docs/|examples
-      - id: double-quote-string-fixer
-        exclude: evalscope/third_party/|docs/|examples|.*\.json|cl_bench_adapter.py
       - id: check-merge-conflict
         exclude: evalscope/third_party/|docs/|examples
       - id: mixed-line-ending

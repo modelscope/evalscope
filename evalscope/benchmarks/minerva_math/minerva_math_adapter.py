@@ -44,17 +44,12 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 """,
         dataset_id='knoveleng/Minerva-Math',
         subset_list=['default'],
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         eval_split='train',
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
     )
 )
 class MinervaMathAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):

@@ -5,8 +5,7 @@ from evalscope.cli.base import CLICommand
 
 
 def subparser_func(args):
-    """ Function which will be called for a specific sub parser.
-    """
+    """Function which will be called for a specific sub parser."""
     return EvalCMD(args)
 
 
@@ -18,8 +17,7 @@ class EvalCMD(CLICommand):
 
     @staticmethod
     def define_args(parsers: ArgumentParser):
-        """ define args for create pipeline template command.
-        """
+        """define args for create pipeline template command."""
         from evalscope.arguments import add_argument
 
         parser = parsers.add_parser(EvalCMD.name)

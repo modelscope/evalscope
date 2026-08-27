@@ -49,7 +49,6 @@ MathQA is a large-scale dataset for mathematical word problem solving, gathered 
     )
 )
 class MathQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

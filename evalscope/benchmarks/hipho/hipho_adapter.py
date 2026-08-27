@@ -37,6 +37,7 @@ logger = get_logger()
 
 class AnswerVerdict(BaseModel):
     """The judge's [Correct]/[Incorrect] answer-level verdict, as JSON."""
+
     correct: bool
 
 
@@ -239,11 +240,12 @@ class HiPhOAdapter(VisionLanguageAdapter):
             request=self._build_request,
             reduce=self._reduce_verdicts,
             main_score_name='acc',
-            finalize=self._finalize_score
+            finalize=self._finalize_score,
         )
 
-    def _rule_score(self, original_prediction: str, filtered_prediction: str, reference: str,
-                    task_state: TaskState) -> Tuple[Optional[Score], Optional[str]]:
+    def _rule_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Tuple[Optional[Score], Optional[str]]:
         # Both flows short-circuit before touching the judge when there is nothing to grade.
         metadata = task_state.metadata or {}
         if metadata.get('marking'):
@@ -305,7 +307,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
 
         gold_answers = [strip_boxed(a) for a in metadata['answers']]
         pred_boxed = extract_boxed_answers(prediction)
-        aligned = pred_boxed[-len(gold_answers):] if pred_boxed else []
+        aligned = pred_boxed[-len(gold_answers) :] if pred_boxed else []
         cases: List[JudgeCase] = []
         for idx, gold in enumerate(gold_answers):
             pred = aligned[idx] if idx < len(aligned) else ''
@@ -377,10 +379,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
                 best_detail = f'scheme {scheme_idx}: {awarded:g}/{attainable:g} [' + ', '.join(lines) + ']'
         return ReducedVerdict(
             value={'acc': best_ratio},
-            metadata={
-                'grading': 'step_level',
-                'detail': best_detail
-            },
+            metadata={'grading': 'step_level', 'detail': best_detail},
         )
 
     def _reduce_answer(self, case_verdicts, metadata: Dict[str, Any], prediction: str) -> ReducedVerdict:
@@ -388,7 +387,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
 
         gold_answers = [strip_boxed(a) for a in metadata['answers']]
         pred_boxed = extract_boxed_answers(prediction)
-        aligned = pred_boxed[-len(gold_answers):] if pred_boxed else []
+        aligned = pred_boxed[-len(gold_answers) :] if pred_boxed else []
         verdicts_by_case = {verdict.case_id: verdict for verdict in case_verdicts}
         correct = 0
         lines: List[str] = []
@@ -403,10 +402,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
             lines.append(f'{"✓" if hit else "✗"}({pred or "∅"}|{gold})')
         return ReducedVerdict(
             value={'acc': correct / len(gold_answers) if gold_answers else 0.0},
-            metadata={
-                'grading': 'answer_level',
-                'detail': ' '.join(lines)
-            },
+            metadata={'grading': 'answer_level', 'detail': ' '.join(lines)},
         )
 
     def _finalize_score(self, score: Score, review, context) -> Score:

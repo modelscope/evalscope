@@ -275,8 +275,8 @@ def append_tool_calls(
             *(messages[-1].tool_calls or []),
             ToolCall(
                 id=call_id,
-                function=ToolFunction(name=function.get('name', ''), arguments=function.get('arguments') or {})
-            )
+                function=ToolFunction(name=function.get('name', ''), arguments=function.get('arguments') or {}),
+            ),
         ]
         trace.add(
             AgentTraceEvent(

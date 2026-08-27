@@ -10,6 +10,7 @@ Deviation from upstream: the official ``resolve_ast_by_type`` calls ``eval()`` o
 ``ast.literal_eval`` and fall back to their source text, so no model output is ever executed.
 No ACEBench sample carries such an argument, so scores are unaffected.
 """
+
 import ast
 from typing import Any, Dict, List
 

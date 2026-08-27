@@ -306,16 +306,21 @@ evalscope service
 
 This project uses **pre-commit** with the following hooks:
 
-- **flake8** — Python style checker
-- **Ruff** — Import sorting (`I` rules)
-- **yapf** — Code formatting
-- Trailing whitespace, YAML checks, line ending fixes
+- **Ruff check** — Python linting (`E`, `F`, and `W`) and import sorting (`I`)
+- **Ruff format** — Python code formatting with 120-character lines and single quotes
+- Trailing whitespace, YAML checks, and line ending fixes
+
+Ruff's lint hook runs before its formatter so that any automatic fixes are formatted consistently.
 
 ```bash
-# Run all checks
+# Run all checks and apply safe fixes
 make lint
 # or
 pre-commit run --all-files
+
+# Check without modifying files
+ruff check .
+ruff format --check .
 ```
 
 ### Testing

@@ -33,7 +33,6 @@ logger = getLogger()
 
 
 class ImageEditAPI(ModelAPI):
-
     def __init__(
         self,
         model_name: str,
@@ -107,8 +106,9 @@ class ImageEditAPI(ModelAPI):
 
         # assume the first text as prompt
         content = input[0].content
-        assert isinstance(content[0], ContentText) and isinstance(content[1], ContentImage), \
+        assert isinstance(content[0], ContentText) and isinstance(content[1], ContentImage), (
             'Invalid content types, expected (ContentText, ContentImage)'
+        )
 
         prompt = content[0].text
         input_image_base64 = content[1].image

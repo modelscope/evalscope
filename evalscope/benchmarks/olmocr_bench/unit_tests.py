@@ -108,7 +108,7 @@ class RepeatDetector:
             pos = len(text) - size  # Start position for previous n-gram
 
             while pos >= 0:
-                if text[pos:pos + size] == target:
+                if text[pos : pos + size] == target:
                     count += 1
                     pos -= size  # Move back by the size of the n-gram
                 else:
@@ -197,11 +197,11 @@ class TextPresenceTest(BasePDFTest):
             md_content = md_content.lower()
 
         if self.first_n and self.last_n:
-            md_content = md_content[:self.first_n] + md_content[-self.last_n:]
+            md_content = md_content[: self.first_n] + md_content[-self.last_n :]
         elif self.first_n:
-            md_content = md_content[:self.first_n]
+            md_content = md_content[: self.first_n]
         elif self.last_n:
-            md_content = md_content[-self.last_n:]
+            md_content = md_content[-self.last_n :]
 
         # Threshold for fuzzy matching derived from max_diffs
         threshold = 1.0 - (self.max_diffs / (len(reference_query) if len(reference_query) > 0 else 1))
@@ -210,14 +210,18 @@ class TextPresenceTest(BasePDFTest):
         if self.type == 'present':
             if best_ratio >= threshold:
                 return True, ''
-            msg = f"Expected '{reference_query[:40]}...' with threshold {threshold} " \
-                  f'but best match ratio was {best_ratio:.3f}'
+            msg = (
+                f"Expected '{reference_query[:40]}...' with threshold {threshold} "
+                f'but best match ratio was {best_ratio:.3f}'
+            )
             return False, msg
         # ABSENT
         if best_ratio < threshold:
             return True, ''
-        msg = f"Expected absence of '{reference_query[:40]}...' with threshold {threshold} " \
-              f'but best match ratio was {best_ratio:.3f}'
+        msg = (
+            f"Expected absence of '{reference_query[:40]}...' with threshold {threshold} "
+            f'but best match ratio was {best_ratio:.3f}'
+        )
         return False, msg
 
 
@@ -263,8 +267,7 @@ class TextOrderTest(BasePDFTest):
                 if before_match.start < after_match.start:
                     return True, ''
         return False, (
-            f"Could not find a location where '{self.before[:40]}...' appears before "
-            f"'{self.after[:40]}...'."
+            f"Could not find a location where '{self.before[:40]}...' appears before '{self.after[:40]}...'."
         )
 
 
@@ -396,8 +399,10 @@ class TableTest(BasePDFTest):
         # If we've gone through all tables and all matching cells and none satisfied all relationships
         if not failed_reasons:
             return False, f"No cell matching '{self.cell}' found in any table with threshold {threshold}"
-        return False, f"Found cells matching '{self.cell}' but relationships were not satisfied: " \
-                      f"{'; '.join(failed_reasons)}"
+        return (
+            False,
+            f"Found cells matching '{self.cell}' but relationships were not satisfied: {'; '.join(failed_reasons)}",
+        )
 
 
 @dataclass

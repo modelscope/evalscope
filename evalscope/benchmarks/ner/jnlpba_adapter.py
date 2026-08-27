@@ -48,7 +48,6 @@ The JNLPBA dataset is a widely-used resource for bio-entity recognition, consist
     )
 )
 class JNLPBAAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)
@@ -59,7 +58,7 @@ class JNLPBAAdapter(NERAdapter):
             'DNA': 'dna',
             'RNA': 'rna',
             'CELL_LINE': 'cell_line',
-            'CELL_TYPE': 'cell_type'
+            'CELL_TYPE': 'cell_type',
         }
 
         # Add descriptions for each entity type
@@ -68,7 +67,7 @@ class JNLPBAAdapter(NERAdapter):
             'DNA': 'Names of DNA molecules, domains, or regions',
             'RNA': 'Names of RNA molecules',
             'CELL_LINE': 'Names of specific, cultured cell lines',
-            'CELL_TYPE': 'Names of naturally occurring cell types'
+            'CELL_TYPE': 'Names of naturally occurring cell types',
         }
 
         # Setup entity mappings based on the defined entity types

@@ -51,10 +51,7 @@ General-QA is a customizable question answering benchmark for evaluating languag
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],
         primary_metric=MetricSelector(
-            name='rouge', aggregation='mean', dimensions={
-                'variant': 'l',
-                'statistic': 'recall'
-            }
+            name='rouge', aggregation='mean', dimensions={'variant': 'l', 'statistic': 'recall'}
         ),
         few_shot_num=0,
         train_split=None,
@@ -63,7 +60,6 @@ General-QA is a customizable question answering benchmark for evaluating languag
     )
 )
 class GeneralQAAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

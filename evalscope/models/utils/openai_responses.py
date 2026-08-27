@@ -42,13 +42,16 @@ def openai_response_message(message: ChatMessage) -> List[Dict[str, Any]]:
     if message.role == 'system':
         return [{'role': 'system', 'content': message.text}]
     if message.role == 'user':
-        return [{
-            'role': 'user',
-            'content': (
-                message.content if isinstance(message.content, str) else
-                [openai_response_input_part(content) for content in message.content]
-            ),
-        }]
+        return [
+            {
+                'role': 'user',
+                'content': (
+                    message.content
+                    if isinstance(message.content, str)
+                    else [openai_response_input_part(content) for content in message.content]
+                ),
+            }
+        ]
     if message.role == 'assistant':
         return openai_response_assistant_message(message)
     if message.role == 'tool':

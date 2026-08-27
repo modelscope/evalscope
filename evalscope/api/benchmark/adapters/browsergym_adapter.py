@@ -227,15 +227,17 @@ class BrowserGymAdapter(AgentLoopAdapter):
         """Initialize direct BrowserGym episode state and artifacts."""
         artifact_dir = self._artifact_dir(sample, output_dir)
         artifact_dir.mkdir(parents=True, exist_ok=True)
-        sample.metadata.update({
-            'artifact_dir': str(artifact_dir.resolve()),
-            'reward': 0.0,
-            'done': False,
-            'success': False,
-            'runtime_error': None,
-            'model_error': None,
-            'browser_step': 0,
-        })
+        sample.metadata.update(
+            {
+                'artifact_dir': str(artifact_dir.resolve()),
+                'reward': 0.0,
+                'done': False,
+                'success': False,
+                'runtime_error': None,
+                'model_error': None,
+                'browser_step': 0,
+            }
+        )
         return super().run_inference(model, sample, output_dir, **kwargs)
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
@@ -352,17 +354,21 @@ class BrowserGymAdapter(AgentLoopAdapter):
             observation['error'] = action_error
         step = int(sample.metadata.get('browser_step', 0)) + int(action_performed)
         success = bool(result.done and result.reward > 0)
-        sample.metadata.update({
-            'reward': result.reward,
-            'done': result.done,
-            'success': success,
-            'browser_step': step,
-        })
-        observation.update({
-            'reward': result.reward,
-            'done': result.done,
-            'step': step,
-        })
+        sample.metadata.update(
+            {
+                'reward': result.reward,
+                'done': result.done,
+                'success': success,
+                'browser_step': step,
+            }
+        )
+        observation.update(
+            {
+                'reward': result.reward,
+                'done': result.done,
+                'step': step,
+            }
+        )
         return observation
 
     def _tool_output_from_observation(self, sample: Sample, observation: Dict[str, Any]) -> ToolExecutionOutput:
@@ -390,12 +396,12 @@ class BrowserGymAdapter(AgentLoopAdapter):
     @staticmethod
     def _format_observation(observation: Dict[str, Any]) -> str:
         fields = [
-            f"Goal: {observation.get('goal', '')}",
-            f"URL: {observation.get('url', '')}",
-            f"Step: {observation.get('step', 0)}",
-            f"Reward: {observation.get('reward', 0.0)}",
-            f"Done: {bool(observation.get('done'))}",
-            f"Last action error: {bool(observation.get('last_action_error'))}",
+            f'Goal: {observation.get("goal", "")}',
+            f'URL: {observation.get("url", "")}',
+            f'Step: {observation.get("step", 0)}',
+            f'Reward: {observation.get("reward", 0.0)}',
+            f'Done: {bool(observation.get("done"))}',
+            f'Last action error: {bool(observation.get("last_action_error"))}',
         ]
         screenshot = observation.get('screenshot')
         if screenshot is not None:
@@ -417,7 +423,7 @@ class BrowserGymAdapter(AgentLoopAdapter):
         array = np.asarray(pixels, dtype=np.uint8)
         if array.ndim != 3 or array.shape[2] not in {3, 4}:
             raise ValueError(f'Unexpected BrowserGym screenshot shape: {array.shape}.')
-        path = Path(sample.metadata['artifact_dir']) / f"step-{int(observation.get('step', 0)):03d}.png"
+        path = Path(sample.metadata['artifact_dir']) / f'step-{int(observation.get("step", 0)):03d}.png'
         Image.fromarray(array).save(path, format='PNG')
         return path
 
@@ -439,12 +445,14 @@ class BrowserGymAdapter(AgentLoopAdapter):
 
     def _browsergym_failure(self, model: Model, sample: Sample, error: str, *, source: str) -> InferenceResult:
         error_key = 'runtime_error' if source == 'browsergym' else 'model_error'
-        sample.metadata.update({
-            error_key: error,
-            'reward': 0.0,
-            'done': False,
-            'success': False,
-        })
+        sample.metadata.update(
+            {
+                error_key: error,
+                'reward': 0.0,
+                'done': False,
+                'success': False,
+            }
+        )
         output = ModelOutput.from_content(model=model.name, content='0')
         output.error = error
         output.metadata = {

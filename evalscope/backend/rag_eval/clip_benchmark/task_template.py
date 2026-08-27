@@ -66,13 +66,11 @@ def evaluate(args: ClipBenchmarkEvalConfig):
 
         # Evaluate based on the task
         if task == 'zeroshot_classification':
-            zeroshot_templates = (dataset.templates if hasattr(dataset, 'templates') else None)
+            zeroshot_templates = dataset.templates if hasattr(dataset, 'templates') else None
             if verbose:
                 logger.info(f'Zero-shot templates: {zeroshot_templates}')
             classnames = dataset.classes if hasattr(dataset, 'classes') else None
-            assert (
-                zeroshot_templates is not None and classnames is not None
-            ), 'Dataset does not support classification'
+            assert zeroshot_templates is not None and classnames is not None, 'Dataset does not support classification'
             metrics = zeroshot_classification.evaluate(
                 model,
                 dataloader,

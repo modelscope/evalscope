@@ -58,7 +58,6 @@ General-FunctionCalling is a customizable benchmark for evaluating function call
     )
 )
 class GeneralFCAdapter(FunctionCallAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -84,7 +83,7 @@ class GeneralFCAdapter(FunctionCallAdapter):
             metadata={
                 'should_call_tool': should_call_tool,
                 'tools': tools,
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state: TaskState) -> Score:

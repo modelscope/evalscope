@@ -11,8 +11,7 @@ logger = get_logger()
 
 @register_dataset('custom')
 class CustomDatasetPlugin(DatasetPluginBase):
-    """Read dataset and return prompt.
-    """
+    """Read dataset and return prompt."""
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)

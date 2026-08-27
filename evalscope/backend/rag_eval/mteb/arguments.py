@@ -8,6 +8,7 @@ from evalscope.utils.argument_utils import BaseArgument
 
 class CustomTaskConfig(BaseArgument):
     """Configuration for a custom MTEB task."""
+
     name: str = 'CustomRetrieval'
     data_path: str
     eval_splits: List[str] = Field(default_factory=lambda: ['test'])

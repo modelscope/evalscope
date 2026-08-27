@@ -7,9 +7,7 @@ from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
 
 
 class _AsyncCloseable(Protocol):
-
-    async def close(self) -> None:
-        ...
+    async def close(self) -> None: ...
 
 
 _AsyncClientT = TypeVar('_AsyncClientT', bound=_AsyncCloseable)

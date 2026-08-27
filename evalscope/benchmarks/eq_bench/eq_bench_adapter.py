@@ -75,7 +75,6 @@ EQ-Bench is a benchmark for evaluating language models on emotional intelligence
     )
 )
 class EQBenchAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -138,7 +137,7 @@ class EQBenchAdapter(DefaultDataAdapter):
             metadata={
                 'reference_answer': ref_answer_dict,
                 'reference_answer_fullscale': ref_fullscale_dict,
-            }
+            },
         )
 
     def match_score(
@@ -234,6 +233,7 @@ class EQBenchAdapter(DefaultDataAdapter):
         except Exception as e:
             logger.error(f'Error calculating EQ-Bench score: {e}')
             import traceback
+
             logger.debug(traceback.format_exc())
             score.value = {'eq_bench_score': 0.0}
             score.main_score_name = 'eq_bench_score'

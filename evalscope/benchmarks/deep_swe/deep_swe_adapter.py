@@ -139,12 +139,14 @@ class DeepSWEAdapter(AgentAdapter):
             agent_timeout_multiplier=1.0,
             verifier_timeout_multiplier=1.0,
             environment_build_timeout_multiplier=1.0,
-            agents=[AgentConfig(
-                name='mini-swe-agent',
-                model_name=model.name,
-                kwargs=self.pier_agent_kwargs,
-                env={},
-            )],
+            agents=[
+                AgentConfig(
+                    name='mini-swe-agent',
+                    model_name=model.name,
+                    kwargs=self.pier_agent_kwargs,
+                    env={},
+                )
+            ],
             environment=EnvironmentConfig(type='docker'),
             verifier=VerifierConfig(env={}),
             tasks=[TaskConfig(path=Path(sample.metadata['task_path']))],
@@ -167,7 +169,7 @@ class DeepSWEAdapter(AgentAdapter):
             raise RuntimeError('Pier DeepSWE job did not return any trial results.')
 
         trial_result = trial_results[0]
-        rewards = ((trial_result.get('verifier_result') or {}).get('rewards') or {})
+        rewards = (trial_result.get('verifier_result') or {}).get('rewards') or {}
         if rewards.get('reward') is not None:
             return
 

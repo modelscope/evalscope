@@ -78,16 +78,16 @@ def bbox_rec_score_result(results_list, doc):
     iou = intersection_area / union_area if union_area > 0 else 0.0
 
     score_json['IoU'] = iou
-    score_json['ACC@0.1'] = (iou >= 0.1)
-    score_json['ACC@0.3'] = (iou >= 0.3)
-    score_json['ACC@0.5'] = (iou >= 0.5)
-    score_json['ACC@0.7'] = (iou >= 0.7)
-    score_json['ACC@0.9'] = (iou >= 0.9)
+    score_json['ACC@0.1'] = iou >= 0.1
+    score_json['ACC@0.3'] = iou >= 0.3
+    score_json['ACC@0.5'] = iou >= 0.5
+    score_json['ACC@0.7'] = iou >= 0.7
+    score_json['ACC@0.9'] = iou >= 0.9
 
     center_x = (box2[0] + box2[2]) / 2
     center_y = (box2[1] + box2[3]) / 2
 
-    score_json['Center_ACC'] = (box1[0] <= center_x <= box1[2] and box1[1] <= center_y <= box1[3])
+    score_json['Center_ACC'] = box1[0] <= center_x <= box1[2] and box1[1] <= center_y <= box1[3]
 
     return score_json
 
