@@ -310,23 +310,16 @@ This project uses **pre-commit** with the following hooks:
 - **Ruff format** — Python code formatting with 120-character lines and single quotes
 - Trailing whitespace, YAML checks, and line ending fixes
 
-Ruff's lint hook runs before its formatter so that any automatic fixes are formatted consistently. Both Ruff and pre-commit are installed by `make dev` with the versions pinned in `requirements/dev.txt`.
+Ruff's lint hook runs before its formatter so that any automatic fixes are formatted consistently. Pre-commit is installed by `make dev` with the version pinned in `requirements/dev.txt`.
 
 ```bash
-# Apply safe lint fixes, sort imports, and format maintained Python files
-make format
-
-# Run the complete repository checks
+# Apply safe fixes, format maintained Python files, and run all repository checks
 make lint
 # or
 pre-commit run --all-files
-
-# Check Ruff without modifying files
-ruff check .
-ruff format --check .
 ```
 
-If pre-commit modifies files, review and stage those changes, then run the commit again. The configured Ruff scope and exclusions are defined in `pyproject.toml`.
+If pre-commit modifies files, review and stage those changes, then run `make lint` again. The configured Ruff scope and exclusions are defined in `pyproject.toml`.
 
 ### Testing
 
@@ -352,9 +345,8 @@ pytest tests/benchmark/test_xxx.py
    git commit -m "feat: add MyBenchmark adapter"
    ```
 
-3. **Format and run quality checks before pushing:**
+3. **Run quality checks before pushing:**
    ```bash
-   make format
    make lint
    pytest tests/
    ```

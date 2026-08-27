@@ -143,11 +143,6 @@ package-check:
 # Development
 # ============================================================================
 
-.PHONY: format
-format:
-	ruff check --fix .
-	ruff format .
-
 .PHONY: lint
 lint:
 	pre-commit run --all-files

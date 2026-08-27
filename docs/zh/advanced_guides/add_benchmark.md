@@ -603,9 +603,8 @@ make docs
 ```
 
 ## 6. 提交PR
-完成实现和文档生成后，请先格式化维护范围内的 Python 文件并运行仓库的全部检查，然后再提交 [PR](https://github.com/modelscope/evalscope/pulls)：
+完成实现和文档生成后，请在提交 [PR](https://github.com/modelscope/evalscope/pulls) 前运行仓库的全部检查。该命令会先应用 Ruff 的安全修复和格式化，再验证其余 hooks：
 ```bash
-make format
 make lint
 ```
 检查通过后即可提交评审。完整开发流程请参考[贡献指南](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md)，快来试一试吧🚀

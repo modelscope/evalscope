@@ -14,8 +14,7 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 ## Build, lint, test
 
 ```bash
-make format                                                                     # apply Ruff lint fixes, import sorting, and formatting
-make lint                                                                       # required before commit (Ruff + basic pre-commit hooks)
+make lint                                                                       # apply Ruff fixes/formatting and run all pre-commit checks
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
 pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
@@ -166,7 +165,6 @@ An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply i
 
 ```bash
 make dev      # once
-make format   # apply safe Ruff fixes and formatting
-make lint     # before every commit
+make lint     # apply fixes and run all checks before every commit
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings
 ```

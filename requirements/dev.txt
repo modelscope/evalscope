@@ -3,4 +3,3 @@ pre-commit==4.6.0
 pytest
 pytest-cov
 python-dotenv
-ruff==0.16.4
