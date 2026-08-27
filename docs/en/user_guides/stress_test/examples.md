@@ -301,8 +301,8 @@ evalscope perf \
 
 - Warmup requests use the same dataset and request parameters as the benchmark.
 - A separate progress bar is displayed during warmup (`Warmup[...]`) alongside the benchmark bar (`Processing[...]`). In closed-loop mode the two overlap briefly, because the trailing warmup responses arrive after the first measured requests have already been dispatched.
-- `--duration` is anchored on the first measured request, so warmup never consumes the timed budget.
-- In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics. Multi-turn and open-loop runs are not subject to the `--parallel` floor described above.
+- `--duration` is anchored on the moment the first measured request is sent, so warmup does not consume the timed budget.
+- In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics. The `--parallel` guidance above applies to closed-loop single-turn runs; open-loop paces dispatch by arrival rate and multi-turn counts conversations rather than requests.
 ```
 
 ### Why the First Requests Report a Much Higher TTFT

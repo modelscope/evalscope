@@ -10,8 +10,9 @@ timings, so they need no real endpoint.
 import asyncio
 import os
 import sqlite3
+import time
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, Dict, List, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import pytest
 
@@ -193,18 +194,73 @@ def test_partial_warmup_degrades_gracefully() -> None:
 # --- duration anchoring ---------------------------------------------------
 
 
-def test_duration_anchored_on_first_measured_dispatch() -> None:
+def test_duration_exempts_warmup_and_caps_measured() -> None:
     """Warmup is exempt from --duration; the budget starts at measurement."""
-    parallel = 2
-    args = _make_args(number=4, parallel=parallel, duration=0.0)
-    client = _run(args, _stream(warmup=parallel, measured=4))
+    parallel, measured = 2, 20
+    args = _make_args(number=measured, parallel=parallel, duration=0.0)
+    client = _run(args, _stream(warmup=parallel, measured=measured))
 
     dispatched_ids = {e['request']['id'] for e in client.events}
     # All warmup requests ran even though the budget is exhausted instantly.
     assert {0, 1}.issubset(dispatched_ids)
-    # The deadline is anchored on the first measured dispatch, so that one goes
-    # out and the rest are skipped.
-    assert len(dispatched_ids) == parallel + 1
+    # The window is armed by the first measured send, so at least one measured
+    # request always goes out, and the cap then stops the rest.
+    measured_ids = {i for i in dispatched_ids if i >= parallel}
+    assert 1 <= len(measured_ids) < measured
+
+
+def test_duration_budget_excludes_warmup_service_time() -> None:
+    """The window is armed on the first measured *send*, not on task creation.
+
+    Task creation is bounded by ``max_in_flight``, not by the semaphore, so
+    measured tasks exist long before a slot frees up.  Arming on creation would
+    start the clock at ~t0 and silently bill the warmup service time to
+    ``--duration``.
+    """
+    parallel, service_s = 2, 0.05
+
+    class _TimedClient:
+
+        def __init__(self) -> None:
+            self.first_warmup_done_at: Optional[float] = None
+
+        async def post(self, request: Dict[str, Any]) -> SimpleNamespace:
+            await asyncio.sleep(service_s)
+            if request['id'] < parallel and self.first_warmup_done_at is None:
+                self.first_warmup_done_at = time.perf_counter()
+            return SimpleNamespace(is_warmup=False)
+
+    class _AnchorSpy(ClosedLoopStrategy):
+        """Records the moment the timed window is armed."""
+
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            self.anchored_at: Optional[float] = None
+
+        def _compute_deadline(self, duration: Optional[float]) -> Optional[float]:
+            self.anchored_at = time.perf_counter()
+            return super()._compute_deadline(duration)
+
+    args = _make_args(number=6, parallel=parallel, duration=10.0, warmup_num=parallel)
+    client = _TimedClient()
+    requests = _stream(warmup=parallel, measured=6)
+
+    async def generator() -> AsyncIterator[Tuple[dict, bool]]:
+        for item in requests:
+            yield item
+
+    async def main() -> _AnchorSpy:
+        strategy = _AnchorSpy(args, None, client, asyncio.Queue(), generator())
+        await strategy.run()
+        return strategy
+
+    strategy = asyncio.run(main())
+
+    assert strategy.anchored_at is not None
+    assert client.first_warmup_done_at is not None
+    # Arming happens no earlier than the first freed slot, so none of the warmup
+    # service time is charged to the measured window.
+    assert strategy.anchored_at >= client.first_warmup_done_at
 
 
 def test_duration_none_dispatches_everything() -> None:

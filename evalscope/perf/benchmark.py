@@ -134,7 +134,7 @@ def _log_warmup_handoff(args: Arguments) -> None:
     the only thing to do here is to tell the user what the current value costs
     them and which value would fix it.
     """
-    parallel = args.parallel if isinstance(args.parallel, int) else args.parallel[0]
+    parallel = args.parallel
     warmup_count = args.warmup_count
 
     if parallel <= 1 or warmup_count >= parallel:
