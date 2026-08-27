@@ -480,6 +480,11 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v: int) -> int:
         return _at_least_one(v)
 
+    @field_validator('log_every_n_query', mode='after')
+    @classmethod
+    def _validate_log_every_n_query(cls, v: int) -> int:
+        return _at_least_one(v)
+
     @field_validator('num_workers', mode='after')
     @classmethod
     def _validate_num_workers(cls, v: int) -> int:
@@ -633,6 +638,12 @@ class Arguments(BaseArgument):
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
+        if self.multi_turn and self.open_loop:
+            raise ValueError(
+                '--multi-turn is not supported in open-loop mode: turn N cannot be dispatched before the '
+                'response of turn N-1 has been appended to the conversation context, which contradicts '
+                'open-loop scheduling (dispatch independent of in-flight requests).'
+            )
         if self.open_loop:
             self._validate_open_loop_sweep_params()
             return
@@ -664,6 +675,8 @@ class Arguments(BaseArgument):
                 f'The length of number and parallel should be the same, '
                 f'but got number: {self.number} and parallel: {self.parallel}'
             )
+        if any(p <= 0 for p in self.parallel):
+            raise ValueError(f'--parallel values must be > 0, but got: {self.parallel}')
 
     @contextmanager
     def output_context(self, path: str):

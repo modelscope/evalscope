@@ -1,5 +1,6 @@
 import base64
 import json
+import math
 import os
 import pickle
 import re
@@ -159,9 +160,11 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
             if percentile >= 100:
                 value = data[-1] if data else float('nan')
             else:
-                idx = int(n_success_queries * percentile / 100)
-                value = data[idx] if data[idx] is not None else float('nan')
-            results[percentile] = round(value, 2)
+                # Nearest-rank method: the p-th percentile is the value at rank
+                # ceil(p/100 * n) (1-based), i.e. index ceil(p/100 * n) - 1.
+                idx = max(0, math.ceil(n_success_queries * percentile / 100) - 1)
+                value = data[idx]
+            results[percentile] = round(value, 2) if value is not None else float('nan')
         except IndexError:
             results[percentile] = float('nan')
     return results
