@@ -1,8 +1,17 @@
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from openai import APIStatusError, AsyncOpenAI, BadRequestError, OpenAI, PermissionDeniedError, UnprocessableEntityError
+from openai import (
+    APIStatusError,
+    AsyncOpenAI,
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+    OpenAI,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+)
 from openai._types import NOT_GIVEN
 from openai.types.chat import ChatCompletion
 
@@ -28,6 +37,18 @@ from .utils.openai import (
 )
 
 logger = get_logger()
+
+# Client errors (context length exceeded, invalid parameters, bad credentials, ...) are not
+# recoverable by retrying. generate()/generate_async() degrade them gracefully via
+# handle_bad_request(), so retry_call must let them through immediately instead of burning
+# retries * retry_interval on every failing sample.
+NON_RETRYABLE_OPENAI_ERRORS: Tuple[Type[Exception], ...] = (
+    BadRequestError,
+    AuthenticationError,
+    PermissionDeniedError,
+    NotFoundError,
+    UnprocessableEntityError,
+)
 
 
 class OpenAICompatibleAPI(ModelAPI):
@@ -136,6 +157,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
@@ -158,7 +180,7 @@ class OpenAICompatibleAPI(ModelAPI):
             )
             return output
 
-        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_OPENAI_ERRORS as ex:
             return self.handle_bad_request(ex)
         except ValueError as ex:
             logger.error(f'Model [{self.model_name}] returned an invalid response: {ex}')
@@ -214,6 +236,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
@@ -235,7 +258,7 @@ class OpenAICompatibleAPI(ModelAPI):
             )
             return output
 
-        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_OPENAI_ERRORS as ex:
             return self.handle_bad_request(ex)
         except ValueError as ex:
             logger.error(f'Model [{self.model_name}] returned an invalid response: {ex}')

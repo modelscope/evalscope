@@ -7,6 +7,152 @@ import pytest
 
 from evalscope.utils import asyncio_runtime
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner, AsyncioLoopThread, cancel_and_wait
+from evalscope.utils.function_utils import async_retry_call, retry_call
+
+
+class _CountingError(Exception):
+    """Test exception whose raises are counted via the shared `calls` list."""
+
+    def __init__(self, calls: list) -> None:
+        super().__init__('boom')
+        calls.append(1)
+
+
+def test_retry_call_clamps_zero_retries_to_one_attempt() -> None:
+    calls: list = []
+
+    def _ok() -> str:
+        calls.append(1)
+        return 'ok'
+
+    assert retry_call(_ok, retries=0) == 'ok'
+    assert len(calls) == 1
+
+
+def test_retry_call_clamps_negative_retries_to_one_attempt() -> None:
+    calls: list = []
+
+    def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        retry_call(_fail, retries=-2, sleep_interval=0)
+    assert len(calls) == 1
+
+
+def test_retry_call_treats_none_retries_as_default_attempts() -> None:
+    calls: list = []
+
+    def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        retry_call(_fail, retries=None, sleep_interval=0)
+    assert len(calls) == 3
+
+
+def test_retry_call_returns_value_on_success() -> None:
+    calls: list = []
+
+    def _ok() -> str:
+        calls.append(1)
+        return 'ok'
+
+    assert retry_call(_ok, retries=3) == 'ok'
+    assert len(calls) == 1
+
+
+def test_retry_call_exhausts_attempts_and_reraises_last_error() -> None:
+    calls: list = []
+
+    def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        retry_call(_fail, retries=3, sleep_interval=0)
+    assert len(calls) == 3
+
+
+def test_async_retry_call_clamps_zero_retries_to_one_attempt() -> None:
+    calls: list = []
+
+    async def _ok() -> str:
+        calls.append(1)
+        return 'ok'
+
+    assert asyncio.run(async_retry_call(_ok, retries=0)) == 'ok'
+    assert len(calls) == 1
+
+
+def test_async_retry_call_treats_none_retries_as_default_attempts() -> None:
+    calls: list = []
+
+    async def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        asyncio.run(async_retry_call(_fail, retries=None, sleep_interval=0))
+    assert len(calls) == 3
+
+
+def test_async_retry_call_exhausts_attempts_and_reraises_last_error() -> None:
+    calls: list = []
+
+    async def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        asyncio.run(async_retry_call(_fail, retries=2, sleep_interval=0))
+    assert len(calls) == 2
+
+
+def test_retry_call_reraises_no_retry_exceptions_immediately() -> None:
+    calls: list = []
+
+    def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        retry_call(_fail, retries=5, sleep_interval=0, no_retry_exceptions=(_CountingError, ))
+    assert len(calls) == 1
+
+
+def test_retry_call_no_retry_exceptions_match_subclasses() -> None:
+
+    class _ChildError(_CountingError):
+        pass
+
+    calls: list = []
+
+    def _fail() -> str:
+        raise _ChildError(calls)
+
+    with pytest.raises(_ChildError):
+        retry_call(_fail, retries=5, sleep_interval=0, no_retry_exceptions=(_CountingError, ))
+    assert len(calls) == 1
+
+
+def test_retry_call_still_retries_unrelated_exceptions_with_no_retry_set() -> None:
+    calls: list = []
+
+    def _fail() -> str:
+        calls.append(1)
+        raise ValueError('transient')
+
+    with pytest.raises(ValueError):
+        retry_call(_fail, retries=3, sleep_interval=0, no_retry_exceptions=(_CountingError, ))
+    assert len(calls) == 3
+
+
+def test_async_retry_call_reraises_no_retry_exceptions_immediately() -> None:
+    calls: list = []
+
+    async def _fail() -> str:
+        raise _CountingError(calls)
+
+    with pytest.raises(_CountingError):
+        asyncio.run(async_retry_call(_fail, retries=5, sleep_interval=0, no_retry_exceptions=(_CountingError, )))
+    assert len(calls) == 1
 
 
 async def _current_loop() -> asyncio.AbstractEventLoop:

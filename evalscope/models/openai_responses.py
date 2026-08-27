@@ -2,7 +2,7 @@ import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from openai import APIStatusError, BadRequestError, PermissionDeniedError, UnprocessableEntityError
+from openai import APIStatusError
 from openai._types import NOT_GIVEN
 
 from evalscope.api.messages import ChatMessage
@@ -13,7 +13,7 @@ from evalscope.utils import get_logger
 from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.function_utils import async_retry_call, retry_call
 
-from .openai_compatible import OpenAICompatibleAPI
+from .openai_compatible import NON_RETRYABLE_OPENAI_ERRORS, OpenAICompatibleAPI
 from .utils.openai import openai_handle_bad_request
 from .utils.openai_responses import (
     async_collect_response_stream,
@@ -84,6 +84,7 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
                 self.client.responses.create,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
                 **request,
             )
             if not self._is_response_object(response):
@@ -92,7 +93,7 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
             total_time = time.monotonic() - t_start
             return self._build_output(response, tools, total_time, ttft)
 
-        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_OPENAI_ERRORS as ex:
             return self.handle_bad_request(ex)
         except ValueError as ex:
             logger.error(f'Model [{self.model_name}] returned an invalid response: {ex}')
@@ -115,6 +116,7 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
                 self.async_client.responses.create,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
                 **request,
             )
             if not self._is_response_object(response):
@@ -123,7 +125,7 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
             total_time = time.monotonic() - t_start
             return self._build_output(response, tools, total_time, ttft)
 
-        except (BadRequestError, UnprocessableEntityError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_OPENAI_ERRORS as ex:
             return self.handle_bad_request(ex)
         except ValueError as ex:
             logger.error(f'Model [{self.model_name}] returned an invalid response: {ex}')

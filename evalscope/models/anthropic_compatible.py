@@ -1,8 +1,17 @@
 import os
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from anthropic import Anthropic, APIStatusError, AsyncAnthropic, BadRequestError, PermissionDeniedError
+from anthropic import (
+    Anthropic,
+    APIStatusError,
+    AsyncAnthropic,
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+)
 from anthropic.types import Message
 
 from evalscope.api.messages import ChatMessage
@@ -27,6 +36,18 @@ from .utils.anthropic import (
 from .utils.async_client import LoopBoundAsyncClientPool
 
 logger = get_logger()
+
+# Client errors (prompt too long, invalid parameters, bad credentials, ...) are not
+# recoverable by retrying. generate()/generate_async() degrade them gracefully via
+# handle_bad_request(), so retry_call must let them through immediately instead of burning
+# retries * retry_interval on every failing sample.
+NON_RETRYABLE_ANTHROPIC_ERRORS: Tuple[Type[Exception], ...] = (
+    BadRequestError,
+    AuthenticationError,
+    PermissionDeniedError,
+    NotFoundError,
+    UnprocessableEntityError,
+)
 
 
 class AnthropicCompatibleAPI(ModelAPI):
@@ -155,17 +176,22 @@ class AnthropicCompatibleAPI(ModelAPI):
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            # Generate completion
-            message = retry_call(
-                self.client.messages.create,
+            # A streaming request is not complete when create() returns: the
+            # stream may still fail while its events are being consumed. Retry
+            # the whole request so a partial response is discarded and replaced
+            # by one complete response (mirrors OpenAICompatibleAPI).
+            def _create_and_collect() -> Tuple[Message, Optional[float]]:
+                message = self.client.messages.create(**request)
+                if isinstance(message, Message):
+                    return message, None
+                return collect_stream_response(message, request_start=t_start)
+
+            message, ttft = retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                **request,
+                no_retry_exceptions=NON_RETRYABLE_ANTHROPIC_ERRORS,
             )
-
-            # Handle streaming response
-            if not isinstance(message, Message):
-                message, ttft = collect_stream_response(message, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 
@@ -185,7 +211,7 @@ class AnthropicCompatibleAPI(ModelAPI):
             )
             return output
 
-        except (BadRequestError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_ANTHROPIC_ERRORS as ex:
             return self.handle_bad_request(ex)
 
     async def generate_async(
@@ -239,17 +265,21 @@ class AnthropicCompatibleAPI(ModelAPI):
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            # Async generation with retry
-            message = await async_retry_call(
-                self.async_client.messages.create,
+            # Keep stream consumption inside the retry boundary. If an async
+            # stream is interrupted, start a fresh request rather than
+            # returning or persisting its partial response.
+            async def _create_and_collect() -> Tuple[Message, Optional[float]]:
+                message = await self.async_client.messages.create(**request)
+                if isinstance(message, Message):
+                    return message, None
+                return await async_collect_stream_response(message, request_start=t_start)
+
+            message, ttft = await async_retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                **request,
+                no_retry_exceptions=NON_RETRYABLE_ANTHROPIC_ERRORS,
             )
-
-            # Handle streaming response
-            if not isinstance(message, Message):
-                message, ttft = await async_collect_stream_response(message, request_start=t_start)
 
             total_time = time.monotonic() - t_start
 
@@ -268,7 +298,7 @@ class AnthropicCompatibleAPI(ModelAPI):
             )
             return output
 
-        except (BadRequestError, PermissionDeniedError) as ex:
+        except NON_RETRYABLE_ANTHROPIC_ERRORS as ex:
             return self.handle_bad_request(ex)
 
     def resolve_tools(self, tools: List[ToolInfo], tool_choice: ToolChoice,

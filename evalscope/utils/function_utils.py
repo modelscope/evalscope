@@ -3,7 +3,7 @@ import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor, wait
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 from evalscope.utils import asyncio_runtime
 from evalscope.utils.logger import get_logger
@@ -68,31 +68,65 @@ def run_once(func: Callable[..., T]) -> Callable[..., T]:
     return wrapper
 
 
-def retry_call(func, *args, retries=3, sleep_interval=0, **kwargs):
-    """Function that retries a function call up to `retries` times if an exception occurs."""
-    for attempt in range(retries):
+def retry_call(
+    func: Callable[..., T],
+    *args,
+    retries: Optional[int] = 3,
+    sleep_interval: float = 0,
+    no_retry_exceptions: Tuple[Type[Exception], ...] = (),
+    **kwargs,
+) -> T:
+    """Function that retries a function call up to `retries` times if an exception occurs.
+
+    `retries` is the total number of attempts: `None` falls back to the default and values
+    below 1 are clamped to 1, so the wrapped call is always made at least once.
+
+    Exceptions matching `no_retry_exceptions` are re-raised immediately instead of being
+    retried (e.g. non-retryable 4xx client errors handled by the caller itself).
+    """
+    total_attempts = 3 if retries is None else max(1, retries)
+    for attempt in range(total_attempts):
         try:
             return func(*args, **kwargs)
+        except no_retry_exceptions:
+            # Non-retryable errors must reach the caller's own handler without delay.
+            raise
         except Exception as e:
-            if attempt < retries - 1:
+            if attempt < total_attempts - 1:
                 if sleep_interval > 0:
-                    logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
+                    logger.warning(f'Attempt {attempt + 1} / {total_attempts} failed: {e}. Retrying...')
                     time.sleep(sleep_interval)
             else:
                 raise
 
 
 async def async_retry_call(
-    func: Callable[..., Awaitable[T]], *args, retries: int = 3, sleep_interval: float = 0, **kwargs
+    func: Callable[..., Awaitable[T]],
+    *args,
+    retries: Optional[int] = 3,
+    sleep_interval: float = 0,
+    no_retry_exceptions: Tuple[Type[Exception], ...] = (),
+    **kwargs,
 ) -> T:
-    """Async version of retry_call. Retries an async function call up to `retries` times if an exception occurs."""
-    for attempt in range(retries):
+    """Async version of retry_call. Retries an async function call up to `retries` times if an exception occurs.
+
+    `retries` is the total number of attempts: `None` falls back to the default and values
+    below 1 are clamped to 1, so the wrapped call is always made at least once.
+
+    Exceptions matching `no_retry_exceptions` are re-raised immediately instead of being
+    retried (e.g. non-retryable 4xx client errors handled by the caller itself).
+    """
+    total_attempts = 3 if retries is None else max(1, retries)
+    for attempt in range(total_attempts):
         try:
             return await func(*args, **kwargs)
+        except no_retry_exceptions:
+            # Non-retryable errors must reach the caller's own handler without delay.
+            raise
         except Exception as e:
-            if attempt < retries - 1:
+            if attempt < total_attempts - 1:
                 if sleep_interval > 0:
-                    logger.warning(f'Attempt {attempt + 1} / {retries} failed: {e}. Retrying...')
+                    logger.warning(f'Attempt {attempt + 1} / {total_attempts} failed: {e}. Retrying...')
                     await asyncio.sleep(sleep_interval)
             else:
                 raise
