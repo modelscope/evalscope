@@ -31,14 +31,6 @@ function applyPlotlyTheme() {
         update[key + '.title.font.color'] = text;
         update[key + '.gridcolor'] = grid;
         update[key + '.zerolinecolor'] = zero;
-      } else if (/^polar\d*$/.test(key)) {
-        update[key + '.bgcolor'] = paper;
-        ['angularaxis', 'radialaxis'].forEach(function (axis) {
-          update[key + '.' + axis + '.color'] = text;
-          update[key + '.' + axis + '.tickfont.color'] = text;
-          update[key + '.' + axis + '.gridcolor'] = grid;
-          update[key + '.' + axis + '.linecolor'] = zero;
-        });
       }
     });
 
@@ -50,13 +42,7 @@ function applyPlotlyTheme() {
   });
 }
 
-function applyTheme(theme) {
-  if (theme !== 'light' && theme !== 'dark') return;
-  document.documentElement.setAttribute('data-theme', theme);
-  applyPlotlyTheme();
-}
-
-applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+applyPlotlyTheme();
 
 /* ── Language switcher ─────────────────────────────────────────── */
 
