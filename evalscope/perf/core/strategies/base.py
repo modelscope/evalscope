@@ -61,6 +61,16 @@ class BenchmarkStrategy(ABC):
         return None if duration is None else time.perf_counter() + duration
 
     @staticmethod
+    async def _collect_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> List[Tuple[dict, bool]]:
+        """Consume all ``(request, is_warmup)`` items from gen, preserving order.
+
+        Unlike :meth:`_partition_requests` this keeps warmup and measured
+        requests in a single stream so a dispatcher can hand over from one to
+        the other without draining in-flight requests in between.
+        """
+        return [item async for item in gen]
+
+    @staticmethod
     async def _partition_requests(gen: AsyncIterator[Tuple[dict, bool]], ) -> Tuple[List[dict], List[dict]]:
         """Consume all ``(request, is_warmup)`` items from gen.
 

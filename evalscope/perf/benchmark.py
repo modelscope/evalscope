@@ -125,6 +125,37 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         yield request, is_warmup
 
 
+def _log_warmup_handoff(args: Arguments) -> None:
+    """Warn when warmup cannot keep the start-up burst out of the measured window.
+
+    Closed-loop measurement is only representative once every concurrency slot
+    is already busy when the first measured request goes out, which is what the
+    warmup requests are for.  ``--warmup-num`` is honoured exactly as given, so
+    the only thing to do here is to tell the user what the current value costs
+    them and which value would fix it.
+    """
+    parallel = args.parallel if isinstance(args.parallel, int) else args.parallel[0]
+    warmup_count = args.warmup_count
+
+    if parallel <= 1 or warmup_count >= parallel:
+        return
+
+    if warmup_count == 0:
+        reason = f'Warmup is disabled, so the first {parallel} requests are released at once'
+    else:
+        uncovered = parallel - warmup_count
+        reason = (
+            f'Warmup covers only {warmup_count} of the {parallel} concurrency slots, so '
+            f'{uncovered} measured requests are released at once alongside it'
+        )
+
+    logger.warning(
+        f'{reason} against an idle server. Their TTFT carries the start-up burst and can dominate '
+        f'the reported percentiles. Pass --warmup-num {parallel} to keep that burst out of the '
+        f'measured window, or {2 * parallel} if you also report max / p99.9.'
+    )
+
+
 @exception_handler
 async def run_benchmark(
     args: Arguments,
@@ -145,6 +176,9 @@ async def run_benchmark(
     api_plugin = api_plugin_class(args)
 
     await connect_test(args, api_plugin)
+
+    if not args.open_loop:
+        _log_warmup_handoff(args)
 
     if args.open_loop:
         queue: asyncio.Queue = asyncio.Queue()

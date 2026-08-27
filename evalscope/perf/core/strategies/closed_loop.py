@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import numpy as np
 
@@ -37,6 +37,27 @@ class ClosedLoopStrategy(BenchmarkStrategy):
     Limits the number of in-flight requests to ``args.parallel`` using a
     semaphore.  New requests are only dispatched once a slot becomes available,
     providing back-pressure that prevents the server from being overwhelmed.
+
+    Warmup hand-off
+    ---------------
+    Warmup and measured requests share a single dispatch loop and a single
+    semaphore, and there is deliberately **no barrier** between them.  Draining
+    the in-flight requests first would reset server occupancy to zero, so the
+    leading ``parallel`` measured requests would again be released at the same
+    instant and queue behind one another's prefill - precisely the burst that
+    warmup is meant to absorb.  With a continuous hand-off the warmup requests
+    absorb it instead: they complete one at a time, and each completion releases
+    exactly one measured request into a server that already holds
+    ``parallel - 1`` requests mid-flight.  The measured portion therefore starts
+    from a steady-state arrival pattern rather than from a synchronised burst,
+    which is what makes its TTFT distribution (and hence its percentiles)
+    representative of the configured concurrency.
+
+    This requires ``warmup_count >= parallel``, which
+    :attr:`~evalscope.perf.arguments.Arguments.warmup_count` enforces for
+    closed-loop single-turn runs.  When warmup is disabled the initial burst
+    necessarily lands inside the measured window; ``run_benchmark`` warns about
+    that rather than silently enabling warmup.
     """
 
     def __init__(
@@ -51,20 +72,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         self._request_generator = request_generator
 
     async def run(self) -> None:
-        warmup_requests, benchmark_requests = await self._partition_requests(self._request_generator)
+        requests = await self._collect_requests(self._request_generator)
+        await self._run_phase(requests, duration=self.args.duration)
 
-        if warmup_requests:
-            # Warmup ignores --duration; it must finish in full before the
-            # timed benchmark window begins.
-            await self._run_phase(warmup_requests, is_warmup=True, deadline=None)
-        await self._run_phase(
-            benchmark_requests,
-            is_warmup=False,
-            deadline=self._compute_deadline(self.args.duration),
-        )
-
-    async def _run_phase(self, requests: List[dict], is_warmup: bool, deadline: Optional[float] = None) -> None:
-        """Dispatch one phase of requests and wait for all to complete.
+    async def _run_phase(self, requests: List[Tuple[dict, bool]], duration: Optional[float] = None) -> None:
+        """Dispatch ``(request, is_warmup)`` items in order and await completion.
 
         When ``args.rate`` is configured, request pacing uses absolute-time
         scheduling (see :class:`~evalscope.perf.core.strategies.OpenLoopStrategy`
@@ -72,9 +84,11 @@ class ClosedLoopStrategy(BenchmarkStrategy):
         a phase ``start`` timestamp so that event-loop jitter can be absorbed
         instead of accumulating into a slow drift of the realised QPS.
 
-        ``deadline``: optional ``time.perf_counter()`` timestamp; when set, the
-        dispatch loop exits on reaching it but already in-flight requests are
-        awaited to completion (soft-exit, matches trie's semantics).
+        ``duration``: optional length of the timed window in seconds.  The
+        deadline is anchored on the **first measured dispatch**, so warmup never
+        consumes the budget.  Once it elapses the dispatch loop stops but
+        already in-flight requests are awaited to completion (soft-exit,
+        matches trie's semantics).
         """
         semaphore = asyncio.Semaphore(self.args.parallel)
         max_in_flight = self.args.parallel * self.args.in_flight_task_multiplier
@@ -97,17 +111,25 @@ class ClosedLoopStrategy(BenchmarkStrategy):
             # otherwise the anchor will skew.
             target_times = delay_ts + time.perf_counter()
 
+        deadline: Optional[float] = None
+        measurement_started = False
         dispatched = 0
         all_tasks: set[asyncio.Task] = set()
         try:
-            for i, request in enumerate(requests):
-                # Duration cap: stop dispatching new requests once the deadline is hit.
-                if deadline is not None and time.perf_counter() >= deadline:
-                    logger.info(
-                        f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
-                        'stopping further dispatches.'
-                    )
-                    break
+            for i, (request, is_warmup) in enumerate(requests):
+                if not is_warmup:
+                    # Anchor the timed window on the first measured dispatch;
+                    # warmup requests are exempt from the duration cap.
+                    if not measurement_started:
+                        measurement_started = True
+                        deadline = self._compute_deadline(duration)
+                    # Duration cap: stop dispatching new requests once the deadline is hit.
+                    elif deadline is not None and time.perf_counter() >= deadline:
+                        logger.info(
+                            f'Duration deadline reached after dispatching {dispatched}/{n} requests; '
+                            'stopping further dispatches.'
+                        )
+                        break
 
                 # Sleep until the absolute target dispatch time (drift-corrected).
                 # Cap the sleep at the remaining time-to-deadline so we don't sleep
