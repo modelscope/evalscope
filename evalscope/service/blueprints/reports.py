@@ -28,6 +28,14 @@ from evalscope.report.visualization import (
     plot_single_report_scores,
     plot_single_report_sunburst,
 )
+from evalscope.service.api_models import (
+    AnalysisResponse,
+    DataFrameResponse,
+    DeleteReportResponse,
+    ListReportsResponse,
+    LoadReportResponse,
+    PredictionsResponse,
+)
 from evalscope.service.report_meta_cache import (
     Fingerprint,
     build_report_meta_cached,
@@ -52,6 +60,7 @@ from evalscope.utils.data_utils import (
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
 
+from ..responses import json_response
 from ..utils import OUTPUT_DIR, active_task_ids
 
 logger = get_logger()
@@ -324,7 +333,8 @@ def _list_response(
     # Project internal keys into fresh dicts: meta objects are shared with the
     # cache, so mutating them here would corrupt later requests.
     response_reports = [{k: v for k, v in it.items() if k != '_datasets'} for it in page_items]
-    resp = jsonify(
+    resp = json_response(
+        ListReportsResponse,
         {
             'reports': response_reports,
             'total': total,
@@ -334,7 +344,7 @@ def _list_response(
                 'available_models': available_models,
                 'available_datasets': available_datasets,
             },
-        }
+        },
     )
     resp.set_etag(list_etag(fingerprints, query_parts))
     resp.headers['Cache-Control'] = 'no-cache'
@@ -454,7 +464,14 @@ def delete_report(run_id: str, model_id: str) -> ResponseReturnValue:
         else:
             _refresh_html_report(reports_dir)
         logger.info(f'Deleted eval report {ref.key} under {run_dir}')
-        return jsonify({'success': True, 'run_id': ref.run_id, 'model_id': ref.model_id}), 200
+        return json_response(
+            DeleteReportResponse,
+            {
+                'success': True,
+                'run_id': ref.run_id,
+                'model_id': ref.model_id,
+            },
+        )
     except Exception:
         logger.error(f'Failed to delete report {ref.key}', exc_info=True)
         return jsonify({'error': 'Failed to delete report'}), 500
@@ -474,13 +491,14 @@ def load_report(run_id: str, model_id: str) -> ResponseReturnValue:
 
     try:
         report_list, datasets, task_cfg = load_report_bundle(_root_path(), ref)
-        return jsonify(
+        return json_response(
+            LoadReportResponse,
             {
                 'report_list': [_report_to_service_dict(r) for r in report_list],
                 'datasets': datasets,
                 'task_config': task_cfg,
-            }
-        ), 200
+            },
+        )
     except FileNotFoundError as e:
         logger.warning(f'Report {ref.key} not found: {e}')
         return jsonify({'error': f'Report not found: {ref.key}'}), 404
@@ -522,12 +540,13 @@ def get_dataframe(run_id: str, model_id: str) -> ResponseReturnValue:
         else:
             df = acc_df
 
-        return jsonify(
+        return json_response(
+            DataFrameResponse,
             {
                 'columns': list(df.columns),
                 'data': _df_to_records(df),
-            }
-        ), 200
+            },
+        )
     except Exception:
         logger.error('Failed to get report table', exc_info=True)
         return jsonify({'error': 'Failed to get report table'}), 500
@@ -555,11 +574,12 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
     try:
         work_dir = os.path.join(_root_path(), ref.run_id)
         df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-        return jsonify(
+        return json_response(
+            PredictionsResponse,
             {
                 'predictions': _df_to_records(df),
-            }
-        ), 200
+            },
+        )
     except Exception:
         logger.error('Failed to get predictions', exc_info=True)
         return jsonify({'error': 'Failed to get predictions'}), 500
@@ -585,7 +605,7 @@ def get_analysis(run_id: str, model_id: str) -> ResponseReturnValue:
     try:
         report_list, _, _ = load_report_bundle(_root_path(), ref)
         analysis = get_report_analysis(report_list, dataset_name)
-        return jsonify({'analysis': analysis}), 200
+        return json_response(AnalysisResponse, {'analysis': analysis})
     except Exception:
         logger.error('Failed to get analysis', exc_info=True)
         return jsonify({'error': 'Failed to get analysis'}), 500

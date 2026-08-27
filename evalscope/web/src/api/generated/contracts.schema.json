@@ -1,0 +1,2585 @@
+{
+  "$defs": {
+    "AgentTrace": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/AgentTraceEvent"
+          },
+          "type": "array"
+        },
+        "max_steps": {
+          "type": "integer"
+        },
+        "strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "max_steps",
+        "events"
+      ],
+      "type": "object"
+    },
+    "AgentTraceEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "latency_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "message_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payload": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "step": {
+          "type": "integer"
+        },
+        "timestamp": {
+          "type": "number"
+        },
+        "token_usage": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "$ref": "#/$defs/EventType"
+        }
+      },
+      "required": [
+        "step",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "type": "object"
+    },
+    "AnalysisResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "analysis"
+      ],
+      "type": "object"
+    },
+    "BenchmarkDescription": {
+      "additionalProperties": false,
+      "properties": {
+        "en": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BenchmarkDescriptionLocale"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "zh": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BenchmarkDescriptionLocale"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "BenchmarkDescriptionLocale": {
+      "additionalProperties": false,
+      "properties": {
+        "full": {
+          "type": "string"
+        },
+        "sections": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "full",
+        "sections"
+      ],
+      "type": "object"
+    },
+    "BenchmarkEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "enum": [
+            "llm",
+            "vlm",
+            "agent",
+            "aigc"
+          ],
+          "type": "string"
+        },
+        "dataset_id": {
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/$defs/BenchmarkDescription"
+        },
+        "few_shot_num": {
+          "type": "integer"
+        },
+        "meta": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "metrics": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": "string"
+        },
+        "paper_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pretty_name": {
+          "type": "string"
+        },
+        "subset_list": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "total_samples": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "pretty_name",
+        "tags",
+        "category",
+        "subset_list",
+        "total_samples",
+        "few_shot_num",
+        "dataset_id",
+        "metrics",
+        "meta",
+        "description"
+      ],
+      "type": "object"
+    },
+    "BenchmarksResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "agent": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/BenchmarkEntry"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "aigc": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/BenchmarkEntry"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "multimodal": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/BenchmarkEntry"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/BenchmarkEntry"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "ChatMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/ContentBlock"
+              },
+              "type": "array"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolMessageError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "perf_metrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SamplePerfMetrics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "role": {
+          "enum": [
+            "system",
+            "user",
+            "assistant",
+            "tool"
+          ],
+          "type": "string"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "enum": [
+                "input",
+                "generate"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_call_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PredictionToolCall"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ConfigResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "outputs_root": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "outputs_root"
+      ],
+      "type": "object"
+    },
+    "ContentBlock": {
+      "additionalProperties": true,
+      "properties": {
+        "audio": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "data": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "image": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reasoning": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "type": {
+          "enum": [
+            "text",
+            "reasoning",
+            "image",
+            "audio",
+            "video",
+            "data"
+          ],
+          "type": "string"
+        },
+        "video": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "type": "object"
+    },
+    "DataFrameResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "data": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "columns",
+        "data"
+      ],
+      "type": "object"
+    },
+    "DeletePerfRunResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success",
+        "path"
+      ],
+      "type": "object"
+    },
+    "DeleteReportResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "model_id": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "success": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "success",
+        "run_id",
+        "model_id"
+      ],
+      "type": "object"
+    },
+    "EvalInvokeResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "result": {
+          "default": null
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "completed",
+            "error",
+            "stopped"
+          ],
+          "type": "string"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "task_id"
+      ],
+      "type": "object"
+    },
+    "EventType": {
+      "description": "Canonical event kinds emitted by the AgentLoop or external-agent bridge.",
+      "enum": [
+        "model_generate",
+        "tool_call",
+        "tool_result",
+        "env_exec",
+        "env_reset",
+        "error",
+        "submit",
+        "nudge",
+        "run_start",
+        "run_end"
+      ],
+      "type": "string"
+    },
+    "ExecutionSubset": {
+      "description": "Completion counts for one evaluated subset.",
+      "properties": {
+        "errored": {
+          "default": 0,
+          "type": "integer"
+        },
+        "requested": {
+          "default": 0,
+          "type": "integer"
+        },
+        "succeeded": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ExecutionSummary": {
+      "description": "Run completeness kept separate from aggregation-specific metric counts.",
+      "properties": {
+        "errored": {
+          "default": 0,
+          "type": "integer"
+        },
+        "incomplete": {
+          "default": false,
+          "type": "boolean"
+        },
+        "requested": {
+          "default": 0,
+          "type": "integer"
+        },
+        "subsets": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ExecutionSubset"
+          },
+          "type": "object"
+        },
+        "succeeded": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "JudgeAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "type": "string"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "judge_id": {
+          "type": "string"
+        },
+        "latency": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "messages": {
+          "items": {},
+          "type": "array"
+        },
+        "model_output": {
+          "default": null
+        },
+        "parsed_value": {
+          "default": null
+        },
+        "placement": {
+          "default": "original",
+          "enum": [
+            "original",
+            "swapped"
+          ],
+          "type": "string"
+        },
+        "raw_response": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "repeat_id": {
+          "default": 0,
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/ScoreStatus"
+        }
+      },
+      "required": [
+        "status",
+        "case_id",
+        "judge_id"
+      ],
+      "type": "object"
+    },
+    "JudgeSummary": {
+      "description": "First-class summary of a judge session, for reports and offline inspection.",
+      "properties": {
+        "coverage": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "disagreement": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "failures": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "judge_models": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scored": {
+          "default": 0,
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/ScoreStatus",
+          "default": "success"
+        },
+        "total": {
+          "default": 1,
+          "type": "integer"
+        },
+        "total_observations": {
+          "default": 0,
+          "type": "integer"
+        },
+        "valid_observations": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ListPerfRunsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "metric_semantics": {
+          "additionalProperties": {
+            "$ref": "#/$defs/MetricSemantics"
+          },
+          "type": "object"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/PerfRunSummary"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "runs",
+        "total"
+      ],
+      "type": "object"
+    },
+    "ListReportsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/ReportFilters"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "page_size": {
+          "type": "integer"
+        },
+        "reports": {
+          "items": {
+            "$ref": "#/$defs/ReportSummary"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reports",
+        "total",
+        "page",
+        "page_size",
+        "filters"
+      ],
+      "type": "object"
+    },
+    "LoadReportResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "datasets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "report_list": {
+          "items": {
+            "$ref": "#/$defs/ReportData"
+          },
+          "type": "array"
+        },
+        "task_config": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "required": [
+        "report_list",
+        "datasets",
+        "task_config"
+      ],
+      "type": "object"
+    },
+    "LogResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "head_line": {
+          "type": "integer"
+        },
+        "tail_line": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        },
+        "total_lines": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text",
+        "head_line",
+        "tail_line",
+        "total_lines"
+      ],
+      "type": "object"
+    },
+    "MetricDirection": {
+      "description": "Optimization direction of a metric.",
+      "enum": [
+        "higher_is_better",
+        "lower_is_better",
+        "none"
+      ],
+      "type": "string"
+    },
+    "MetricDisplayKind": {
+      "description": "How a metric value is rendered.",
+      "enum": [
+        "number",
+        "percent"
+      ],
+      "type": "string"
+    },
+    "MetricIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "type": "string"
+        },
+        "dimensions": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "aggregation",
+        "dimensions"
+      ],
+      "type": "object"
+    },
+    "MetricKind": {
+      "description": "Whether a metric grades quality or only describes a run.",
+      "enum": [
+        "quality",
+        "diagnostic"
+      ],
+      "type": "string"
+    },
+    "MetricSemantics": {
+      "additionalProperties": false,
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/MetricDirection"
+        },
+        "display_kind": {
+          "$ref": "#/$defs/MetricDisplayKind"
+        },
+        "display_multiplier": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "display_precision": {
+          "type": "integer"
+        },
+        "display_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "$ref": "#/$defs/MetricKind"
+        },
+        "metric_name": {
+          "type": "string"
+        },
+        "raw_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "semantic_id": {
+          "type": "string"
+        },
+        "value_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "semantic_id",
+        "metric_name",
+        "kind",
+        "direction",
+        "display_kind",
+        "display_precision"
+      ],
+      "type": "object"
+    },
+    "PercentileStats": {
+      "additionalProperties": false,
+      "properties": {
+        "25%": {
+          "type": "number"
+        },
+        "50%": {
+          "type": "number"
+        },
+        "75%": {
+          "type": "number"
+        },
+        "90%": {
+          "type": "number"
+        },
+        "99%": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "mean": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        },
+        "std": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "mean",
+        "std",
+        "min",
+        "25%",
+        "50%",
+        "75%",
+        "90%",
+        "99%",
+        "max"
+      ],
+      "type": "object"
+    },
+    "PerfCoverage": {
+      "additionalProperties": false,
+      "properties": {
+        "requests_with_metrics": {
+          "type": "integer"
+        },
+        "total_requests": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "requests_with_metrics",
+        "total_requests"
+      ],
+      "type": "object"
+    },
+    "PerfDetailResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "api_type": {
+          "type": "string"
+        },
+        "basic_info": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "best_config": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "dataset": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "has_html": {
+          "type": "boolean"
+        },
+        "is_embedding": {
+          "type": "boolean"
+        },
+        "model": {
+          "type": "string"
+        },
+        "num_runs": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "recommendations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "summary_columns": {
+          "items": {
+            "$ref": "#/$defs/PerfSummaryColumn"
+          },
+          "type": "array"
+        },
+        "summary_rows": {
+          "items": {
+            "$ref": "#/$defs/PerfSummaryRow"
+          },
+          "type": "array"
+        },
+        "total_requests": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "model",
+        "api_type",
+        "dataset",
+        "generated_at",
+        "basic_info",
+        "summary_columns",
+        "summary_rows",
+        "total_requests",
+        "best_config",
+        "recommendations",
+        "num_runs",
+        "is_embedding",
+        "has_html"
+      ],
+      "type": "object"
+    },
+    "PerfMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerfCoverage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "metric_semantics": {
+          "additionalProperties": {
+            "$ref": "#/$defs/MetricSemantics"
+          },
+          "type": "object"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerfMetricsSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "PerfMetricsSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "latency": {
+          "$ref": "#/$defs/PercentileStats"
+        },
+        "n_samples": {
+          "type": "integer"
+        },
+        "throughput": {
+          "$ref": "#/$defs/ThroughputSummary"
+        },
+        "tpot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PercentileStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ttft": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PercentileStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageSummary"
+        }
+      },
+      "required": [
+        "n_samples",
+        "latency",
+        "throughput",
+        "usage"
+      ],
+      "type": "object"
+    },
+    "PerfRequestsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "has_db": {
+          "type": "boolean"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "page_size": {
+          "type": "integer"
+        },
+        "rows": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "columns",
+        "rows",
+        "total",
+        "page",
+        "page_size",
+        "has_db"
+      ],
+      "type": "object"
+    },
+    "PerfRunItem": {
+      "additionalProperties": false,
+      "properties": {
+        "dir_name": {
+          "type": "string"
+        },
+        "has_requests": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "num_requests": {
+          "type": "integer"
+        },
+        "number": {
+          "type": "integer"
+        },
+        "parallel": {
+          "type": "integer"
+        },
+        "percentile_columns": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "percentile_rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "succeed_requests": {
+          "type": "integer"
+        },
+        "success_rate": {
+          "type": "number"
+        },
+        "total_requests": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dir_name",
+        "name",
+        "parallel",
+        "number",
+        "rate",
+        "total_requests",
+        "succeed_requests",
+        "success_rate",
+        "num_requests",
+        "has_requests",
+        "percentile_columns",
+        "percentile_rows"
+      ],
+      "type": "object"
+    },
+    "PerfRunSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "api_host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_type": {
+          "type": "string"
+        },
+        "avg_input_tokens": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "avg_output_tokens": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "best_latency": {
+          "type": "number"
+        },
+        "best_rps": {
+          "type": "number"
+        },
+        "concurrency": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dataset": {
+          "type": "string"
+        },
+        "has_html": {
+          "type": "boolean"
+        },
+        "is_embedding": {
+          "type": "boolean"
+        },
+        "model": {
+          "type": "string"
+        },
+        "num_runs": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "success_rate": {
+          "type": "number"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "total_requests": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "model",
+        "api_type",
+        "dataset",
+        "num_runs",
+        "total_requests",
+        "success_rate",
+        "best_rps",
+        "best_latency",
+        "is_embedding",
+        "has_html",
+        "timestamp"
+      ],
+      "type": "object"
+    },
+    "PerfRunsListResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/PerfRunItem"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "runs",
+        "total"
+      ],
+      "type": "object"
+    },
+    "PerfSummaryColumn": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "semantics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricSemantics"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "key",
+        "label",
+        "semantics"
+      ],
+      "type": "object"
+    },
+    "PerfSummaryRow": {
+      "additionalProperties": false,
+      "properties": {
+        "sample_counts": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "values",
+        "sample_counts"
+      ],
+      "type": "object"
+    },
+    "PredictionMetadata": {
+      "additionalProperties": true,
+      "properties": {
+        "judge_attempts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/JudgeAttempt"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "judge_skip_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "judge_skipped": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
+    },
+    "PredictionRow": {
+      "additionalProperties": false,
+      "properties": {
+        "AgentTrace": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AgentTrace"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "Generated": {
+          "type": "string"
+        },
+        "Gold": {
+          "type": "string"
+        },
+        "Index": {
+          "type": "string"
+        },
+        "Input": {
+          "type": "string"
+        },
+        "Messages": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ChatMessage"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "Metadata": {},
+        "NScore": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "PerfMetrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SamplePerfMetrics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "Pred": {
+          "type": "string"
+        },
+        "Score": {
+          "$ref": "#/$defs/PredictionScore"
+        },
+        "Status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "Index",
+        "Input",
+        "Metadata",
+        "Generated",
+        "Gold",
+        "Pred",
+        "Score",
+        "NScore"
+      ],
+      "type": "object"
+    },
+    "PredictionScore": {
+      "additionalProperties": true,
+      "description": "Score fields rendered by the Web UI; metadata remains benchmark-defined.",
+      "properties": {
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "judge_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JudgeSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "main_score_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "metadata": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PredictionMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/ScoreStatus",
+          "default": "success"
+        },
+        "value": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "PredictionToolCall": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "function": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "function",
+        "arguments"
+      ],
+      "type": "object"
+    },
+    "PredictionsResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "predictions": {
+          "items": {
+            "$ref": "#/$defs/PredictionRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "predictions"
+      ],
+      "type": "object"
+    },
+    "PrimaryMetricRef": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_name": {
+          "type": "string"
+        },
+        "dataset_pretty_name": {
+          "default": "",
+          "type": "string"
+        },
+        "identity": {
+          "$ref": "#/$defs/MetricIdentity"
+        },
+        "score": {
+          "type": "number"
+        },
+        "semantics": {
+          "$ref": "#/$defs/MetricSemantics"
+        }
+      },
+      "required": [
+        "dataset_name",
+        "identity",
+        "score",
+        "semantics"
+      ],
+      "type": "object"
+    },
+    "ProgressResponse": {
+      "additionalProperties": true,
+      "description": "Progress tracker payload with stable fields and tracker-specific metadata.",
+      "properties": {
+        "current_step": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "percent": {
+          "type": "number"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "percent"
+      ],
+      "type": "object"
+    },
+    "ReportCategory": {
+      "additionalProperties": false,
+      "properties": {
+        "macro_score": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "name": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "num": {
+          "type": "integer"
+        },
+        "score": {
+          "type": "number"
+        },
+        "subsets": {
+          "items": {
+            "$ref": "#/$defs/ReportSubset"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "num",
+        "score",
+        "subsets"
+      ],
+      "type": "object"
+    },
+    "ReportData": {
+      "additionalProperties": false,
+      "description": "Canonical report payload emitted by ``Report.to_dict``.",
+      "properties": {
+        "analysis": {
+          "type": "string"
+        },
+        "dataset_description": {
+          "default": "",
+          "type": "string"
+        },
+        "dataset_name": {
+          "type": "string"
+        },
+        "dataset_pretty_name": {
+          "default": "",
+          "type": "string"
+        },
+        "execution_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExecutionSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "judge_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JudgeSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/ReportMetric"
+          },
+          "type": "array"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "num": {
+          "default": 0,
+          "type": "integer"
+        },
+        "perf_metrics": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerfMetrics"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "primary_metric_identity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "primary_metric_unavailable_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "schema_version": {
+          "const": 2,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "name",
+        "dataset_name",
+        "model_name",
+        "metrics",
+        "analysis"
+      ],
+      "type": "object"
+    },
+    "ReportFilters": {
+      "additionalProperties": false,
+      "properties": {
+        "available_datasets": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "available_models": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "available_models",
+        "available_datasets"
+      ],
+      "type": "object"
+    },
+    "ReportMetric": {
+      "additionalProperties": false,
+      "properties": {
+        "categories": {
+          "items": {
+            "$ref": "#/$defs/ReportCategory"
+          },
+          "type": "array"
+        },
+        "identity": {
+          "$ref": "#/$defs/MetricIdentity"
+        },
+        "legacy_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "macro_score": {
+          "default": 0.0,
+          "type": "number"
+        },
+        "num": {
+          "type": "integer"
+        },
+        "score": {
+          "type": "number"
+        },
+        "semantics": {
+          "$ref": "#/$defs/MetricSemantics"
+        }
+      },
+      "required": [
+        "identity",
+        "num",
+        "score",
+        "categories",
+        "semantics"
+      ],
+      "type": "object"
+    },
+    "ReportSubset": {
+      "additionalProperties": false,
+      "properties": {
+        "is_aggregate": {
+          "default": false,
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "num": {
+          "type": "integer"
+        },
+        "score": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "score",
+        "num"
+      ],
+      "type": "object"
+    },
+    "ReportSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_name": {
+          "type": "string"
+        },
+        "dataset_pretty_name": {
+          "default": "",
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "num_samples": {
+          "type": "integer"
+        },
+        "primary_metrics": {
+          "items": {
+            "$ref": "#/$defs/PrimaryMetricRef"
+          },
+          "type": "array"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "model_id",
+        "model_name",
+        "dataset_name",
+        "num_samples",
+        "timestamp",
+        "primary_metrics"
+      ],
+      "type": "object"
+    },
+    "SamplePerfMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "type": "integer"
+        },
+        "latency": {
+          "type": "number"
+        },
+        "output_tokens": {
+          "type": "integer"
+        },
+        "tpot": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ttft": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "latency",
+        "input_tokens",
+        "output_tokens"
+      ],
+      "type": "object"
+    },
+    "ScoreStatus": {
+      "description": "Whether a score is usable, and why it is not.\n\nA failed judge is not a zero: only ``SUCCESS`` and ``FALLBACK`` carry a score that may\nenter aggregation. The remaining values mean the score is unavailable and the sample\nmust be excluded from the affected metric rather than counted as 0.",
+      "enum": [
+        "success",
+        "transport_error",
+        "parse_error",
+        "invalid_session",
+        "fallback",
+        "degraded",
+        "excluded"
+      ],
+      "type": "string"
+    },
+    "TaskStatusResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "task_id"
+      ],
+      "type": "object"
+    },
+    "ThroughputSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "avg_output_tps": {
+          "type": "number"
+        },
+        "avg_req_ps": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "avg_output_tps",
+        "avg_req_ps"
+      ],
+      "type": "object"
+    },
+    "ToolMessageError": {
+      "additionalProperties": false,
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "type": "object"
+    },
+    "UsageSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "input_tokens": {
+          "$ref": "#/$defs/PercentileStats"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/PercentileStats"
+        },
+        "total_input_tokens": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_output_tokens": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_tokens": {
+          "$ref": "#/$defs/PercentileStats"
+        },
+        "total_tokens_count": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "input_tokens",
+        "output_tokens",
+        "total_tokens"
+      ],
+      "type": "object"
+    },
+    "ValueRange": {
+      "additionalProperties": false,
+      "properties": {
+        "max": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ],
+      "type": "object"
+    }
+  },
+  "description": "Schema-only root that keeps every public Web API type reachable for code generation.",
+  "properties": {
+    "analysis_response": {
+      "$ref": "#/$defs/AnalysisResponse"
+    },
+    "benchmark_entry": {
+      "$ref": "#/$defs/BenchmarkEntry"
+    },
+    "benchmarks_response": {
+      "$ref": "#/$defs/BenchmarksResponse"
+    },
+    "chat_message": {
+      "$ref": "#/$defs/ChatMessage"
+    },
+    "config_response": {
+      "$ref": "#/$defs/ConfigResponse"
+    },
+    "content_block": {
+      "$ref": "#/$defs/ContentBlock"
+    },
+    "data_frame_response": {
+      "$ref": "#/$defs/DataFrameResponse"
+    },
+    "delete_perf_run_response": {
+      "$ref": "#/$defs/DeletePerfRunResponse"
+    },
+    "delete_report_response": {
+      "$ref": "#/$defs/DeleteReportResponse"
+    },
+    "eval_invoke_response": {
+      "$ref": "#/$defs/EvalInvokeResponse"
+    },
+    "execution_summary": {
+      "$ref": "#/$defs/ExecutionSummary"
+    },
+    "judge_attempt": {
+      "$ref": "#/$defs/JudgeAttempt"
+    },
+    "judge_summary": {
+      "$ref": "#/$defs/JudgeSummary"
+    },
+    "list_perf_runs_response": {
+      "$ref": "#/$defs/ListPerfRunsResponse"
+    },
+    "list_reports_response": {
+      "$ref": "#/$defs/ListReportsResponse"
+    },
+    "load_report_response": {
+      "$ref": "#/$defs/LoadReportResponse"
+    },
+    "log_response": {
+      "$ref": "#/$defs/LogResponse"
+    },
+    "metric_display_kind": {
+      "$ref": "#/$defs/MetricDisplayKind"
+    },
+    "metric_identity": {
+      "$ref": "#/$defs/MetricIdentity"
+    },
+    "metric_semantics": {
+      "$ref": "#/$defs/MetricSemantics"
+    },
+    "percentile_stats": {
+      "$ref": "#/$defs/PercentileStats"
+    },
+    "perf_detail_response": {
+      "$ref": "#/$defs/PerfDetailResponse"
+    },
+    "perf_metrics": {
+      "$ref": "#/$defs/PerfMetrics"
+    },
+    "perf_requests_response": {
+      "$ref": "#/$defs/PerfRequestsResponse"
+    },
+    "perf_run_item": {
+      "$ref": "#/$defs/PerfRunItem"
+    },
+    "perf_run_summary": {
+      "$ref": "#/$defs/PerfRunSummary"
+    },
+    "perf_runs_list_response": {
+      "$ref": "#/$defs/PerfRunsListResponse"
+    },
+    "prediction_row": {
+      "$ref": "#/$defs/PredictionRow"
+    },
+    "prediction_score": {
+      "$ref": "#/$defs/PredictionScore"
+    },
+    "predictions_response": {
+      "$ref": "#/$defs/PredictionsResponse"
+    },
+    "progress_response": {
+      "$ref": "#/$defs/ProgressResponse"
+    },
+    "report_data": {
+      "$ref": "#/$defs/ReportData"
+    },
+    "report_metric": {
+      "$ref": "#/$defs/ReportMetric"
+    },
+    "report_summary": {
+      "$ref": "#/$defs/ReportSummary"
+    },
+    "task_status_response": {
+      "$ref": "#/$defs/TaskStatusResponse"
+    },
+    "tool_call": {
+      "$ref": "#/$defs/PredictionToolCall"
+    },
+    "value_range": {
+      "$ref": "#/$defs/ValueRange"
+    }
+  },
+  "required": [
+    "config_response",
+    "data_frame_response",
+    "log_response",
+    "task_status_response",
+    "progress_response",
+    "eval_invoke_response",
+    "benchmark_entry",
+    "benchmarks_response",
+    "report_data",
+    "report_summary",
+    "list_reports_response",
+    "load_report_response",
+    "percentile_stats",
+    "perf_metrics",
+    "content_block",
+    "tool_call",
+    "chat_message",
+    "judge_attempt",
+    "judge_summary",
+    "prediction_score",
+    "prediction_row",
+    "predictions_response",
+    "delete_report_response",
+    "analysis_response",
+    "perf_run_summary",
+    "list_perf_runs_response",
+    "perf_detail_response",
+    "perf_run_item",
+    "perf_runs_list_response",
+    "perf_requests_response",
+    "delete_perf_run_response",
+    "metric_identity",
+    "metric_display_kind",
+    "metric_semantics",
+    "value_range",
+    "report_metric",
+    "execution_summary"
+  ],
+  "title": "WebApiContracts",
+  "type": "object"
+}

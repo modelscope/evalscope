@@ -8,10 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { LoadReportResponse, ReportData } from '@/api/types'
+import type { ConfigResponse, LoadReportResponse, ReportData } from '@/api/types'
 import * as reportsApi from '@/api/reports'
 import { apiValidated } from '@/api/client'
-import { configResponseSchema } from '@/api/schemas'
 
 /**
  * Report-scoped application state, split into three independent contexts.
@@ -110,7 +109,7 @@ function ScanProvider({ children }: { children: ReactNode }) {
   // initial default (checked at resolve time via the ref).
   useEffect(() => {
     let cancelled = false
-    apiValidated('/api/v1/config', configResponseSchema)
+    apiValidated<ConfigResponse>('/api/v1/config')
       .then((cfg) => {
         if (!cancelled && cfg.outputs_root && rootRef.current === INITIAL_ROOT) {
           setRootPathState(cfg.outputs_root)

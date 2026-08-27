@@ -207,7 +207,7 @@ export default function DetailsTab({
       {/* Score Distribution Chart removed - info already visible in Subset Scores table */}
 
       {/* Performance Metrics */}
-      {perfMetrics && (
+      {perfMetrics?.summary && (
         <Card title={t('reportDetail.perfMetrics')}>
           <PerfMetricsPanel perfMetrics={perfMetrics} />
         </Card>

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { NudgeRow, TraceEventPill } from './AgentTraceView'
 import { LocaleProvider } from '@/contexts/LocaleContext'
-import type { AgentTraceEvent, ChatMessage } from '@/api/schemas/reports.schema'
+import type { AgentTraceEvent, ChatMessage } from '@/api/types'
 
 function render(ui: React.ReactElement) {
   return rtlRender(<LocaleProvider>{ui}</LocaleProvider>)

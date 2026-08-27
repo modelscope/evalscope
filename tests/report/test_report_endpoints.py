@@ -31,7 +31,15 @@ class TestReportEndpoints(unittest.TestCase):
 
     def test_load_report_returns_bundle(self):
         report = mock.Mock()
-        report.to_dict.return_value = {'schema_version': 2, 'name': 'gsm8k'}
+        report.to_dict.return_value = {
+            'schema_version': 2,
+            'name': 'gsm8k',
+            'dataset_name': 'gsm8k',
+            'model_name': 'm',
+            'metrics': [],
+            'analysis': 'N/A',
+            'judge_summary': None,
+        }
         with mock.patch(
             'evalscope.service.blueprints.reports.load_report_bundle',
             return_value=([report], ['gsm8k'], {
@@ -44,6 +52,7 @@ class TestReportEndpoints(unittest.TestCase):
             )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.get_json()['datasets'], ['gsm8k'])
+        self.assertIsNone(res.get_json()['report_list'][0]['judge_summary'])
 
     def test_load_report_missing_run_returns_404(self):
         # No config yaml under the (absent) run directory: load_report_bundle raises FileNotFoundError.
@@ -76,7 +85,16 @@ class TestReportEndpoints(unittest.TestCase):
 
     def test_predictions_returns_rows(self):
         import pandas as pd
-        frame = pd.DataFrame([{'Index': '0', 'NScore': 1.0}])
+        frame = pd.DataFrame([{
+            'Index': '0',
+            'Input': 'question',
+            'Metadata': {},
+            'Generated': 'answer',
+            'Gold': 'answer',
+            'Pred': 'answer',
+            'Score': {},
+            'NScore': 1.0,
+        }])
         with mock.patch(
             'evalscope.service.blueprints.reports.get_model_prediction',
             return_value=frame,

@@ -123,9 +123,9 @@ interface TokenTableProps {
     input_tokens: PercentileStats
     output_tokens: PercentileStats
     total_tokens: PercentileStats
-    total_input_tokens?: number
-    total_output_tokens?: number
-    total_tokens_count?: number
+    total_input_tokens?: number | null
+    total_output_tokens?: number | null
+    total_tokens_count?: number | null
   }
   labels: { input: string; output: string; total: string; totalCount: string }
   semantics: Record<string, MetricSemantics>
@@ -139,7 +139,7 @@ function TokenTable({ usage, labels, semantics }: TokenTableProps) {
   ]
 
   // whether any total counts are available (new-format reports only)
-  const hasCount = rows.some((r) => r.count !== undefined)
+  const hasCount = rows.some((r) => r.count != null)
 
   const headers = ['', 'Mean', '±Std', 'P50', 'P99', 'Min', 'Max', ...(hasCount ? [labels.totalCount] : [])]
 
@@ -192,7 +192,7 @@ function TokenTable({ usage, labels, semantics }: TokenTableProps) {
             </td>
             {hasCount && (
               <td className={cn(cellBase, 'text-[var(--text)] font-semibold')}>
-                {row.count !== undefined ? formatPerfValue(row.count, semantics[row.key]) : '—'}
+                {row.count != null ? formatPerfValue(row.count, semantics[row.key]) : '—'}
               </td>
             )}
           </tr>
@@ -212,8 +212,10 @@ function Sep() {
 
 export default function PerfMetricsPanel({ perfMetrics }: PerfMetricsPanelProps) {
   const { t } = useLocale()
+  if (!perfMetrics.summary) return null
+
   const { n_samples, latency, throughput, usage, ttft, tpot } = perfMetrics.summary
-  const semantics = perfMetrics.metric_semantics
+  const semantics = perfMetrics.metric_semantics ?? {}
 
   const kpis = [
     {

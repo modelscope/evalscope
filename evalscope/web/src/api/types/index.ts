@@ -6,8 +6,8 @@
 // single `types.ts` into per-domain files (`reports`, `perf`, `eval`,
 // `common`) keeps concerns isolated while this barrel preserves the stable
 // external import path `@/api/types` — existing consumers need no changes.
-// Schema-backed types are derived via `z.infer` from
-// `src/api/schemas/*` inside the domain files.
+// Response types are generated from backend Pydantic contracts and re-exported
+// through domain barrels to preserve stable frontend import paths.
 
 export type * from './common'
 export type * from './reports'

@@ -9,7 +9,9 @@ from flask import Flask, jsonify, send_from_directory
 
 from evalscope.utils.logger import get_logger
 
+from .api_models import ConfigResponse
 from .blueprints import bp_eval, bp_perf, bp_reports
+from .responses import json_response
 from .utils import OUTPUT_DIR as _DEFAULT_ROOT
 
 logger = get_logger()
@@ -61,10 +63,11 @@ def create_app(outputs: str = None):
     def get_config():
         """Return runtime configuration for the frontend."""
         outputs_root = app.config.get('OUTPUTS_ROOT')
-        return jsonify(
+        return json_response(
+            ConfigResponse,
             {
                 'outputs_root': outputs_root or _DEFAULT_ROOT,
-            }
+            },
         )
 
     # --- SPA static-file serving ------------------------------------------

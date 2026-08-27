@@ -111,9 +111,15 @@ web-install:
 web-build:
 	cd evalscope/web && npm install && npm run build
 
+.PHONY: web-contracts-check
+web-contracts-check:
+	cd evalscope/web && npm run contracts:check
+
 .PHONY: web-release-build
 web-release-build:
-	cd evalscope/web && npm ci && npm run build
+	cd evalscope/web && npm ci
+	$(MAKE) web-contracts-check
+	cd evalscope/web && npm run build
 
 .PHONY: web-dev
 web-dev:

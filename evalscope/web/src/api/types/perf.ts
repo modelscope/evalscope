@@ -2,8 +2,7 @@
 // "performance" API domain types                                      //
 // ------------------------------------------------------------------ //
 //
-// All endpoint response types are derived from runtime zod schemas; this file
-// preserves the domain import boundary without duplicating contracts.
+// Public performance API types are generated from backend Pydantic response models.
 export type {
   PerfRunSummary,
   ListPerfRunsResponse,
@@ -12,4 +11,4 @@ export type {
   PerfRunsListResponse,
   PerfRequestsResponse,
   DeletePerfRunResponse,
-} from '@/api/schemas/perf.schema'
+} from '@/api/generated/contracts'
