@@ -1,4 +1,6 @@
 import io
+import json
+from pathlib import Path
 
 import numpy as np
 import pyarrow as pa
@@ -7,7 +9,7 @@ from datasets import Audio, Dataset, DatasetInfo, Features, Image, Sequence, Vid
 from datasets.table import InMemoryTable
 from PIL import Image as PILImage
 
-from evalscope.utils.io_utils import undecode_media
+from evalscope.utils.io_utils import jsonl_to_list, undecode_media
 
 
 def _generate_jpeg_bytes(dim: int, quality: int = 80) -> bytes:
@@ -181,3 +183,33 @@ class TestUndecodeMediaIntegration:
         result_row = result.to_list()[0]
         for other_col in non_media_data:
             assert result_row[other_col] == original_row[other_col]
+
+
+class TestJsonlToList:
+    @staticmethod
+    def _write(path: Path, content: str) -> str:
+        path.write_text(content, encoding='utf-8')
+        return str(path)
+
+    def test_tolerant_read_skips_torn_tail(self, tmp_path: Path) -> None:
+        file_path = self._write(tmp_path / 'torn.jsonl', '{"a": 1}\n{"a": 2}\n{"a": 3')
+
+        records = jsonl_to_list(file_path, skip_invalid=True)
+
+        assert records == [{'a': 1}, {'a': 2}]
+
+    def test_tolerant_read_skips_null_empty_and_non_dict_json(self, tmp_path: Path) -> None:
+        file_path = self._write(
+            tmp_path / 'invalid-types.jsonl',
+            '{"a": 1}\n\nnull\n[]\n"text"\n42\n{"a": 2}\n',
+        )
+
+        records = jsonl_to_list(file_path, skip_invalid=True)
+
+        assert records == [{'a': 1}, {'a': 2}]
+
+    def test_default_read_remains_strict_for_malformed_json(self, tmp_path: Path) -> None:
+        file_path = self._write(tmp_path / 'strict.jsonl', '{"a": 1}\n{"a": 2')
+
+        with pytest.raises(json.JSONDecodeError):
+            jsonl_to_list(file_path)

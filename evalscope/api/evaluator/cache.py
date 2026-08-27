@@ -3,7 +3,7 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
@@ -94,14 +94,22 @@ class CacheManager:
 
         cached_task_states = []
         cached_sample_ids = set()
-        cache_items = jsonl_to_list(cache_file)
+        cache_items = jsonl_to_list(cache_file, skip_invalid=True)
 
         # Process each cached item
         for cache_item in cache_items:
             # Deserialize the cached model result
-            cached_model_result = ModelResult.model_validate(cache_item)
+            try:
+                cached_model_result = ModelResult.model_validate(cache_item)
+            except ValidationError as e:
+                logger.warning(f'Skipping invalid prediction cache row in {cache_file}: {e}')
+                continue
             # Convert to task state for further processing
-            cached_state = cached_model_result.to_task_state(dataset=dataset)
+            try:
+                cached_state = cached_model_result.to_task_state(dataset=dataset)
+            except ValidationError as e:
+                logger.warning(f'Skipping invalid prediction cache row in {cache_file}: {e}')
+                continue
 
             if cached_state is None:
                 continue
@@ -173,14 +181,33 @@ class CacheManager:
             # No review cache exists, return empty scores and all task states
             return [], task_states
 
-        cached_sample_scores: List[SampleScore] = []
-        cache_items = jsonl_to_list(cache_file)
+        cached_by_sample_id = {}
+        valid_sample_ids = {state.sample_id for state in task_states}
+        orphan_rows = 0
+        duplicate_rows = 0
+        cache_items = jsonl_to_list(cache_file, skip_invalid=True)
 
         # Process each cached review result
         for cache_item in cache_items:
             # Deserialize the cached review result
-            cached_review_result = ReviewResult.from_cache_item(cache_item)
-            cached_sample_scores.append(cached_review_result.to_sample_score())
+            try:
+                cached_review_result = ReviewResult.from_cache_item(cache_item)
+            except ValidationError as e:
+                logger.warning(f'Skipping invalid review cache row in {cache_file}: {e}')
+                continue
+            sample_score = cached_review_result.to_sample_score()
+            if sample_score.sample_id not in valid_sample_ids:
+                orphan_rows += 1
+                continue
+            if sample_score.sample_id in cached_by_sample_id:
+                duplicate_rows += 1
+            cached_by_sample_id[sample_score.sample_id] = sample_score
+
+        cached_sample_scores: List[SampleScore] = list(cached_by_sample_id.values())
+        if orphan_rows or duplicate_rows:
+            logger.warning(
+                f'Dropped {orphan_rows} orphan and {duplicate_rows} duplicate rows from review cache: {cache_file}'
+            )
 
         # Filter out task states that already have review scores
         cached_sample_ids = {review.sample_id for review in cached_sample_scores}
