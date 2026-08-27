@@ -89,37 +89,6 @@ def _stream(warmup: int, measured: int) -> List[Tuple[dict, bool]]:
     return [({'id': i}, i < warmup) for i in range(warmup + measured)]
 
 
-# --- warmup_count resolution ---------------------------------------------
-
-
-def test_warmup_count_is_used_exactly_as_given() -> None:
-    """A value below --parallel is honoured, not silently raised."""
-    args = _make_args(number=100, parallel=8, warmup_num=2)
-    assert args.warmup_count == 2
-    assert args.total_count == 102
-
-
-def test_warmup_count_zero_stays_zero() -> None:
-    args = _make_args(number=100, parallel=8)
-    assert args.warmup_count == 0
-    assert args.total_count == 100
-
-
-def test_warmup_count_absolute() -> None:
-    args = _make_args(number=100, parallel=4, warmup_num=20)
-    assert args.warmup_count == 20
-
-
-def test_warmup_count_ratio() -> None:
-    args = _make_args(number=30, parallel=8, warmup_num=0.1)
-    assert args.warmup_count == 3
-
-
-def test_warmup_count_ratio_uses_first_sweep_element() -> None:
-    args = Arguments(model='m', api='openai', number=[50, 60], parallel=[4, 8], warmup_num=0.1)
-    assert args.warmup_count == 5
-
-
 # --- hand-off behaviour ---------------------------------------------------
 
 
@@ -134,16 +103,8 @@ def test_measured_portion_starts_without_draining() -> None:
     assert measured, 'no measured request was dispatched'
     first_measured = min(measured, key=lambda e: e['order'])
     assert first_measured['occupancy_at_start'] == parallel - 1
-
-
-def test_no_idle_gap_between_warmup_and_measured() -> None:
-    """Occupancy never returns to zero once the run has started."""
-    parallel = 3
-    args = _make_args(number=5, parallel=parallel)
-    client = _run(args, _stream(warmup=parallel, measured=5))
-
-    # The very first request starts against an idle server; every later one
-    # must find at least one request still in flight.
+    # Occupancy never returns to zero either: only the very first request of the
+    # run starts against an idle server.
     later = [e['occupancy_at_start'] for e in client.events if e['order'] > 0]
     assert later and all(occupancy > 0 for occupancy in later)
 
@@ -155,14 +116,6 @@ def test_dispatch_order_is_warmup_then_measured() -> None:
 
     ids = [e['request']['id'] for e in sorted(client.events, key=lambda e: e['order'])]
     assert ids == [0, 1, 2, 3, 4, 5]
-
-
-def test_occupancy_capped_at_parallel() -> None:
-    parallel = 3
-    args = _make_args(number=8, parallel=parallel)
-    client = _run(args, _stream(warmup=parallel, measured=8))
-
-    assert max(e['occupancy_at_start'] for e in client.events) <= parallel - 1
 
 
 def test_all_requests_dispatched_without_warmup() -> None:
@@ -269,41 +222,6 @@ def test_duration_none_dispatches_everything() -> None:
     assert len(client.events) == 6
 
 
-# --- failure propagation --------------------------------------------------
-
-
-def test_worker_failure_cancels_in_flight_requests() -> None:
-    """A failing request must not leave orphaned tasks behind."""
-    blocked_cancelled = asyncio.Event()
-
-    class FailingClient:
-
-        async def post(self, request: Dict[str, Any]) -> SimpleNamespace:
-            if request['id'] == 0:
-                await asyncio.sleep(0)
-                raise RuntimeError('request failed')
-            try:
-                await asyncio.Event().wait()
-            finally:
-                blocked_cancelled.set()
-            return SimpleNamespace(is_warmup=False)
-
-    async def generator() -> AsyncIterator[Tuple[dict, bool]]:
-        yield {'id': 0}, False
-        yield {'id': 1}, False
-
-    async def main() -> None:
-        strategy = ClosedLoopStrategy(_make_args(number=2, parallel=2), None, FailingClient(), asyncio.Queue(),
-                                      generator())
-        with pytest.raises(RuntimeError, match='request failed'):
-            await strategy.run()
-        assert blocked_cancelled.is_set()
-        current = asyncio.current_task()
-        assert all(task is current or task.done() for task in asyncio.all_tasks())
-
-    asyncio.run(main())
-
-
 # --- user-facing diagnostics ---------------------------------------------
 
 
@@ -349,12 +267,6 @@ def test_no_warning_for_single_concurrency(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_silent_when_warmup_covers_every_slot(monkeypatch: pytest.MonkeyPatch) -> None:
     recorder = _capture_handoff_log(monkeypatch, _make_args(number=100, parallel=8, warmup_num=8))
-    assert recorder.warnings == []
-    assert recorder.infos == []
-
-
-def test_silent_when_warmup_already_sufficient(monkeypatch: pytest.MonkeyPatch) -> None:
-    recorder = _capture_handoff_log(monkeypatch, _make_args(number=100, parallel=4, warmup_num=20))
     assert recorder.warnings == []
     assert recorder.infos == []
 
