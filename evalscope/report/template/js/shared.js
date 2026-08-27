@@ -1,3 +1,63 @@
+/* ── Theme synchronisation ────────────────────────────────────── */
+
+function applyPlotlyTheme() {
+  if (!window.Plotly) return;
+
+  var styles = getComputedStyle(document.documentElement);
+  var paper = styles.getPropertyValue('--plotly-paper').trim();
+  var text = styles.getPropertyValue('--plotly-text').trim();
+  var grid = styles.getPropertyValue('--plotly-grid').trim();
+  var zero = styles.getPropertyValue('--plotly-zero').trim();
+  var hoverBg = styles.getPropertyValue('--plotly-hover-bg').trim();
+  var hoverBorder = styles.getPropertyValue('--plotly-hover-border').trim();
+
+  document.querySelectorAll('.plotly-graph-div').forEach(function (plot) {
+    var update = {
+      paper_bgcolor: paper,
+      plot_bgcolor: paper,
+      'font.color': text,
+      'legend.bgcolor': paper,
+      'legend.font.color': text,
+      'hoverlabel.bgcolor': hoverBg,
+      'hoverlabel.bordercolor': hoverBorder,
+      'hoverlabel.font.color': text
+    };
+    var layout = plot._fullLayout || {};
+
+    Object.keys(layout).forEach(function (key) {
+      if (/^[xy]axis\d*$/.test(key)) {
+        update[key + '.color'] = text;
+        update[key + '.tickfont.color'] = text;
+        update[key + '.title.font.color'] = text;
+        update[key + '.gridcolor'] = grid;
+        update[key + '.zerolinecolor'] = zero;
+      } else if (/^polar\d*$/.test(key)) {
+        update[key + '.bgcolor'] = paper;
+        ['angularaxis', 'radialaxis'].forEach(function (axis) {
+          update[key + '.' + axis + '.color'] = text;
+          update[key + '.' + axis + '.tickfont.color'] = text;
+          update[key + '.' + axis + '.gridcolor'] = grid;
+          update[key + '.' + axis + '.linecolor'] = zero;
+        });
+      }
+    });
+
+    try {
+      window.Plotly.relayout(plot, update);
+    } catch (e) {
+      /* Keep the report usable if one chart cannot be restyled. */
+    }
+  });
+}
+
+function applyTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') return;
+  document.documentElement.setAttribute('data-theme', theme);
+  applyPlotlyTheme();
+}
+
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+
 /* ── Language switcher ─────────────────────────────────────────── */
 
 /**

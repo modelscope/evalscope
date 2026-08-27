@@ -2,7 +2,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ── Design tokens ───────────────────────────────────────────── */
-:root {
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
   --bg:             #0c0c1a;
   --bg-card:        #12122b;
   --bg-card2:       #16163a;
@@ -23,6 +25,23 @@
   --green:          #0F9C7E;
   --green-dim:      rgba(15, 156, 126, 0.12);
   --yellow:         #fbbf24;
+  --surface-subtle: rgba(255,255,255,0.015);
+  --surface-muted:  rgba(255,255,255,0.025);
+  --surface-raised: rgba(255,255,255,0.03);
+  --surface-hover:  rgba(255,255,255,0.06);
+  --header-bg:      linear-gradient(140deg, #0e0e28 0%, #13163a 55%, #0b1024 100%);
+  --title-start:    #e2e8f0;
+  --brand-wordmark: #D8D8E3;
+  --inner-active-text: #fff;
+  --control-active-text: #0d1117;
+  --scrollbar-thumb: rgba(129,109,248,0.2);
+  --scrollbar-thumb-hover: rgba(129,109,248,0.38);
+  --plotly-paper:   rgba(0,0,0,0);
+  --plotly-text:    #e2e8f0;
+  --plotly-grid:    rgba(99,179,237,0.08);
+  --plotly-zero:    rgba(99,179,237,0.12);
+  --plotly-hover-bg: #16163a;
+  --plotly-hover-border: rgba(129,109,248,0.28);
   --radius-xs:      4px;
   --radius-sm:      8px;
   --radius:         12px;
@@ -32,6 +51,50 @@
   --shadow:         0 4px 20px rgba(0,0,0,0.55);
   --shadow-lg:      0 8px 40px rgba(0,0,0,0.6);
   --transition:     0.18s ease;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg:             #faf9f5;
+  --bg-card:        #ffffff;
+  --bg-card2:       #f5f0e7;
+  --bg-deep:        #f0ebe1;
+  --bg-hover:       #ebe5da;
+  --border:         #e6dfd8;
+  --border-md:      #d6cdbe;
+  --border-strong:  #c1b6a3;
+  --text:           #141413;
+  --text-muted:     #6c6a64;
+  --text-dim:       #8e8b82;
+  --accent:         #6c57e8;
+  --accent-dim:     rgba(108, 87, 232, 0.14);
+  --accent-glow:    rgba(108, 87, 232, 0.22);
+  --accent-dark:    #4f3ec8;
+  --purple:         #7c6be0;
+  --purple-dim:     rgba(124, 107, 224, 0.12);
+  --green:          #0a8a6e;
+  --green-dim:      rgba(10, 138, 110, 0.12);
+  --yellow:         #d97706;
+  --surface-subtle: rgba(20,20,19,0.015);
+  --surface-muted:  rgba(20,20,19,0.025);
+  --surface-raised: rgba(20,20,19,0.03);
+  --surface-hover:  rgba(20,20,19,0.06);
+  --header-bg:      linear-gradient(140deg, #ffffff 0%, #f5f0e7 55%, #f0ebe1 100%);
+  --title-start:    #141413;
+  --brand-wordmark: #141413;
+  --inner-active-text: #4f3ec8;
+  --control-active-text: #ffffff;
+  --scrollbar-thumb: rgba(108,87,232,0.22);
+  --scrollbar-thumb-hover: rgba(108,87,232,0.42);
+  --plotly-paper:   rgba(0,0,0,0);
+  --plotly-text:    #141413;
+  --plotly-grid:    rgba(108,87,232,0.12);
+  --plotly-zero:    rgba(108,87,232,0.20);
+  --plotly-hover-bg: #ffffff;
+  --plotly-hover-border: #d6cdbe;
+  --shadow-sm:      0 1px 2px rgba(20,20,19,0.04), 0 4px 12px rgba(20,20,19,0.06);
+  --shadow:         0 4px 16px rgba(20,20,19,0.07), 0 12px 32px rgba(20,20,19,0.05);
+  --shadow-lg:      0 12px 24px rgba(20,20,19,0.09), 0 24px 48px rgba(20,20,19,0.07);
 }
 
 html { scroll-behavior: smooth; }
@@ -48,9 +111,9 @@ body {
 /* thin global scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(129,109,248,0.2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(129,109,248,0.38); }
-* { scrollbar-width: thin; scrollbar-color: rgba(129,109,248,0.2) transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
 
 /* ── Layout ──────────────────────────────────────────────────── */
 .container {
@@ -204,10 +267,11 @@ body {
   height: 20px;
   width: auto;
 }
+.brand-logo svg path[fill="#D8D8E3"] { fill: var(--brand-wordmark); }
 
 /* ── Header card ─────────────────────────────────────────────── */
 .report-header {
-  background: linear-gradient(140deg, #0e0e28 0%, #13163a 55%, #0b1024 100%);
+  background: var(--header-bg);
   border: 1px solid var(--border-md);
   border-radius: var(--radius-xl);
   padding: 2.75rem 2.5rem 2.25rem;
@@ -258,7 +322,7 @@ body {
 .report-title {
   font-size: 2.4rem;
   font-weight: 800;
-  background: linear-gradient(130deg, #e2e8f0 30%, var(--accent) 100%);
+  background: linear-gradient(130deg, var(--title-start) 30%, var(--accent) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -276,7 +340,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  background: rgba(255,255,255,0.03);
+  background: var(--surface-raised);
   border: 1px solid var(--border-md);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.9rem;
@@ -347,7 +411,7 @@ body {
   gap: 0.75rem;
   padding: 0.8rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,0.015);
+  background: var(--surface-subtle);
 }
 .card-title {
   font-size: 0.78rem;
@@ -387,6 +451,8 @@ body {
 /* ── Chart wrap ──────────────────────────────────────────────── */
 .chart-wrap { padding: 0.75rem; min-height: 350px; }
 .chart-wrap > div { width: 100% !important; }
+.modebar-btn path { fill: var(--plotly-text) !important; }
+.modebar-btn:hover path { fill: var(--accent) !important; }
 
 /* ── Tables ──────────────────────────────────────────────────── */
 .table-wrap {
@@ -401,7 +467,7 @@ table {
   background: transparent;
 }
 
-thead tr { background: rgba(255,255,255,0.025); }
+thead tr { background: var(--surface-muted); }
 
 th {
   padding: 0.7rem 1.1rem;
@@ -475,7 +541,7 @@ tbody tr:hover td { background: rgba(129,109,248,0.04); }
   justify-content: space-between;
   gap: 0.75rem;
   user-select: none;
-  background: rgba(255,255,255,0.02);
+  background: var(--surface-muted);
   transition: background var(--transition);
 }
 .ds-summary::-webkit-details-marker { display: none; }
@@ -543,13 +609,13 @@ tbody tr:hover td { background: rgba(129,109,248,0.04); }
 }
 .inner-toggle > summary::-webkit-details-marker { display: none; }
 .inner-toggle > summary:hover {
-  color: #fff;
+  color: var(--inner-active-text);
   background: rgba(129,109,248,0.18);
   border-color: rgba(129,109,248,0.5);
   box-shadow: 0 0 8px rgba(129,109,248,0.2);
 }
 .inner-toggle[open] > summary {
-  color: #fff;
+  color: var(--inner-active-text);
   background: rgba(129,109,248,0.15);
   border-color: rgba(129,109,248,0.45);
 }
@@ -685,8 +751,8 @@ tbody tr:hover td { background: rgba(129,109,248,0.04); }
   letter-spacing: 0.04em;
   line-height: 1.4;
 }
-.lang-btn:hover  { background: rgba(255,255,255,0.06); color: var(--text); }
-.lang-btn.active { background: var(--accent); color: #0d1117; }
+.lang-btn:hover  { background: var(--surface-hover); color: var(--text); }
+.lang-btn.active { background: var(--accent); color: var(--control-active-text); }
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
