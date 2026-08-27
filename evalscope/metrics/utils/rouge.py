@@ -21,14 +21,18 @@ def is_contains_chinese(string: str) -> bool:
     return any('\u4e00' <= c <= '\u9fa5' for c in string)
 
 
+def _mean(values: List[float]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
 def compute_rouge_score_one_sample_zh(predict: List[str],
                                       reference: List[str],
                                       strict: bool = False) -> Dict[str, float]:
     if isinstance(predict, str) or isinstance(reference, str):
         raise ValueError(f'Expected list of strings, but got {type(predict)} and {type(reference)}')
 
-    result = dict()
     zh_scorer = Rouge()
+    pair_scores = []
     for p, r in zip(predict, reference, strict=strict):
         p = ' '.join(jieba.cut(p)) if is_contains_chinese(p) else p
         r = ' '.join(jieba.cut(r)) if is_contains_chinese(r) else r
@@ -38,16 +42,16 @@ def compute_rouge_score_one_sample_zh(predict: List[str],
         except Exception as e:
             logger.warning(f'rouge score error: {p} {r} {e}')
             continue
-        result['Rouge-1-R'] = score['rouge-1']['r']
-        result['Rouge-1-P'] = score['rouge-1']['p']
-        result['Rouge-1-F'] = score['rouge-1']['f']
-        result['Rouge-2-R'] = score['rouge-2']['r']
-        result['Rouge-2-P'] = score['rouge-2']['p']
-        result['Rouge-2-F'] = score['rouge-2']['f']
-        result['Rouge-L-R'] = score['rouge-l']['r']
-        result['Rouge-L-P'] = score['rouge-l']['p']
-        result['Rouge-L-F'] = score['rouge-l']['f']
+        pair_scores.append(score)
 
+    # Average per metric over the scored pairs instead of letting the last pair overwrite
+    # the rest.  Keys stay present (0.0) when no pair scored so consumers indexing into the
+    # result do not fail.
+    result = dict()
+    for prefix, key in (('Rouge-1', 'rouge-1'), ('Rouge-2', 'rouge-2'), ('Rouge-L', 'rouge-l')):
+        for stat in ('r', 'p', 'f'):
+            values = [score[key][stat] for score in pair_scores]
+            result[f'{prefix}-{stat.upper()}'] = _mean(values)
     return result
 
 
@@ -55,22 +59,19 @@ def compute_rouge_score_one_sample(predict: List[str], reference: List[str], str
     if isinstance(predict, str) or isinstance(reference, str):
         raise ValueError(f'Expected list of strings, but got {type(predict)} and {type(reference)}')
 
-    result = dict()
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=DummyTokenizer())
+    pair_scores = []
     for p, r in zip(predict, reference, strict=strict):
         try:
             score = scorer.score(target=r, prediction=p)
         except Exception as e:
             logger.warning(f'rouge score error: {p} {r} {e}')
             continue
-        result['rouge-1-r'] = score['rouge1'].recall
-        result['rouge-1-p'] = score['rouge1'].precision
-        result['rouge-1-f'] = score['rouge1'].fmeasure
-        result['rouge-2-r'] = score['rouge2'].recall
-        result['rouge-2-p'] = score['rouge2'].precision
-        result['rouge-2-f'] = score['rouge2'].fmeasure
-        result['rouge-l-r'] = score['rougeL'].recall
-        result['rouge-l-p'] = score['rougeL'].precision
-        result['rouge-l-f'] = score['rougeL'].fmeasure
+        pair_scores.append(score)
 
+    result = dict()
+    for suffix, key in (('rouge-1', 'rouge1'), ('rouge-2', 'rouge2'), ('rouge-l', 'rougeL')):
+        for stat, attr in (('r', 'recall'), ('p', 'precision'), ('f', 'fmeasure')):
+            values = [getattr(score[key], attr) for score in pair_scores]
+            result[f'{suffix}-{stat}'] = _mean(values)
     return result
