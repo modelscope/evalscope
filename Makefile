@@ -143,6 +143,11 @@ package-check:
 # Development
 # ============================================================================
 
+.PHONY: format
+format:
+	ruff check --fix .
+	ruff format .
+
 .PHONY: lint
 lint:
 	pre-commit run --all-files
@@ -150,7 +155,6 @@ lint:
 .PHONY: dev
 dev:
 	pip install -e '.[dev,perf,docs]'
-	pip install pre-commit
 
 .PHONY: install
 install:
