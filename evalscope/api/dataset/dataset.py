@@ -95,18 +95,15 @@ class Dataset(Sequence[Sample], abc.ABC):
 
     @property
     @abc.abstractmethod
-    def name(self) -> Optional[str]:
-        ...
+    def name(self) -> Optional[str]: ...
 
     @property
     @abc.abstractmethod
-    def location(self) -> Optional[str]:
-        ...
+    def location(self) -> Optional[str]: ...
 
     @property
     @abc.abstractmethod
-    def shuffled(self) -> bool:
-        ...
+    def shuffled(self) -> bool: ...
 
     @abc.abstractmethod
     def __iter__(self) -> Iterator[Sample]:
@@ -114,12 +111,10 @@ class Dataset(Sequence[Sample], abc.ABC):
         ...
 
     @abc.abstractmethod
-    def __getitem__(self, index: Union[int, slice]) -> Union[Sample, 'Dataset']:
-        ...
+    def __getitem__(self, index: Union[int, slice]) -> Union[Sample, 'Dataset']: ...
 
     @abc.abstractmethod
-    def __len__(self) -> int:
-        ...
+    def __len__(self) -> int: ...
 
     @abc.abstractmethod
     def filter(self, predicate: Callable[[Sample], bool], name: Optional[str] = None) -> 'Dataset':
@@ -319,7 +314,7 @@ class DatasetDict:
         dataset: Dataset,
         subset_list: List[str],
         limit: Optional[Union[int, float]] = None,
-        repeats: int = 1
+        repeats: int = 1,
     ) -> 'DatasetDict':
         """
         Create a DatasetDict from a single Dataset using subset key in the sample.

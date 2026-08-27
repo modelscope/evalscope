@@ -63,10 +63,14 @@ class JobBenchArtifactEnvironment(AgentEnvironment):
         finally:
             output_dir = self._artifact_dir / SANDBOX_OUTPUT_DIR
             self._metadata['artifact_dir'] = str(self._artifact_dir)
-            self._metadata['output_files'] = [{
-                'path': f'{SANDBOX_OUTPUT_DIR}/{path.relative_to(output_dir).as_posix()}',
-                'local_path': str(path),
-            } for path in sorted(output_dir.rglob('*')) if path.is_file()]
+            self._metadata['output_files'] = [
+                {
+                    'path': f'{SANDBOX_OUTPUT_DIR}/{path.relative_to(output_dir).as_posix()}',
+                    'local_path': str(path),
+                }
+                for path in sorted(output_dir.rglob('*'))
+                if path.is_file()
+            ]
 
 
 def artifact_dir(sample: Any, output_dir: str) -> Path:
@@ -114,13 +118,16 @@ def build_failed_rubric_result(
             'score': 0,
             'criteria_count': len(criteria),
             'criteria_passed': 0,
-            'criteria_results': [{
-                'index': idx,
-                'criterion': criterion,
-                'passed': False,
-                'reasoning': overall_reasoning,
-                'evidence': '',
-            } for idx, criterion in enumerate(criteria)],
+            'criteria_results': [
+                {
+                    'index': idx,
+                    'criterion': criterion,
+                    'passed': False,
+                    'reasoning': overall_reasoning,
+                    'evidence': '',
+                }
+                for idx, criterion in enumerate(criteria)
+            ],
             'overall_reasoning': overall_reasoning,
         },
     }
@@ -270,10 +277,7 @@ def collect_image_attachments(output_dir: Path, cap: int = MAX_VISION_IMAGES_DEF
                         image_bytes = base64.b64decode(''.join(encoded.split()), validate=True)
                     except (ValueError, binascii.Error):
                         continue
-                    name = (
-                        f'{notebook_path.relative_to(output_dir).as_posix()}:'
-                        f'cell-{cell_index}-output-{output_index}'
-                    )
+                    name = f'{notebook_path.relative_to(output_dir).as_posix()}:cell-{cell_index}-output-{output_index}'
                     if add_attachment(name, mime, image_bytes):
                         return attachments
     return attachments
@@ -338,7 +342,7 @@ def parse_judge_json(content: str) -> Dict[str, Any]:
     last = content.rfind('}')
     if first != -1 and last > first:
         try:
-            return json.loads(content[first:last + 1])
+            return json.loads(content[first : last + 1])
         except json.JSONDecodeError:
             pass
     raise ValueError(f'Could not extract JSON from response: {content[:500]}')
@@ -384,13 +388,15 @@ def judge_rubric(
     criteria_results = []
     for idx, criterion in enumerate(criteria):
         item = model_criteria[idx] if idx < len(model_criteria) and isinstance(model_criteria[idx], dict) else {}
-        criteria_results.append({
-            'index': idx,
-            'criterion': criterion,
-            'passed': bool(item.get('passed', False)),
-            'reasoning': item.get('reasoning', ''),
-            'evidence': item.get('evidence', ''),
-        })
+        criteria_results.append(
+            {
+                'index': idx,
+                'criterion': criterion,
+                'passed': bool(item.get('passed', False)),
+                'reasoning': item.get('reasoning', ''),
+                'evidence': item.get('evidence', ''),
+            }
+        )
 
     rubric_passed = bool(parsed.get('rubric_passed', False))
     return {

@@ -112,7 +112,6 @@ MMLU (Massive Multitask Language Understanding) is a comprehensive evaluation be
     )
 )
 class MMLUAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)

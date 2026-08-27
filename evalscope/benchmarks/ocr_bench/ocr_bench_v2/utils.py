@@ -56,9 +56,15 @@ def ocrbench_v2_process_results(doc, pred):
     score = 0
 
     if (
-        data_type == 'APP agent en' or data_type == 'ASCII art classification en' or data_type == 'math QA en'
-        or data_type == 'reasoning VQA en' or data_type == 'science QA en' or data_type == 'text recognition en'
-        or data_type == 'document classification en' or data_type == 'cognition VQA en' or data_type == 'diagram QA en'
+        data_type == 'APP agent en'
+        or data_type == 'ASCII art classification en'
+        or data_type == 'math QA en'
+        or data_type == 'reasoning VQA en'
+        or data_type == 'science QA en'
+        or data_type == 'text recognition en'
+        or data_type == 'document classification en'
+        or data_type == 'cognition VQA en'
+        or data_type == 'diagram QA en'
     ):
         if doc['eval'] == 'multiple choice':
             if not isinstance(gt_ans, list):
@@ -99,8 +105,10 @@ def ocrbench_v2_process_results(doc, pred):
         if '简答' in question:
             ocr_metric = cal_per_metrics(pred, gt_ans[0])
             score = (
-                get_value_or_zero(ocr_metric['bleu']) + get_value_or_zero(ocr_metric['meteor'])
-                + get_value_or_zero(ocr_metric['f_measure']) + (1 - get_value_or_zero(ocr_metric['edit_dist']))
+                get_value_or_zero(ocr_metric['bleu'])
+                + get_value_or_zero(ocr_metric['meteor'])
+                + get_value_or_zero(ocr_metric['f_measure'])
+                + (1 - get_value_or_zero(ocr_metric['edit_dist']))
             ) / 4
         else:
             assert len(gt_ans) == 1
@@ -108,8 +116,16 @@ def ocrbench_v2_process_results(doc, pred):
             chars = list(answer)
             if len(answer) > 1:
                 answer_list = [
-                    ''.join(chars), '.'.join(chars), '. '.join(chars), ','.join(chars), ', '.join(chars),
-                    '、'.join(chars), ';'.join(chars), '; '.join(chars), ' '.join(chars), '和'.join(chars)
+                    ''.join(chars),
+                    '.'.join(chars),
+                    '. '.join(chars),
+                    ','.join(chars),
+                    ', '.join(chars),
+                    '、'.join(chars),
+                    ';'.join(chars),
+                    '; '.join(chars),
+                    ' '.join(chars),
+                    '和'.join(chars),
                 ]
                 max_score = 0
                 for answer in answer_list:
@@ -290,8 +306,10 @@ def ocrbench_v2_process_results(doc, pred):
         else:
             ocr_metric = cal_per_metrics(pred, gt_ans[0])
             score = (
-                get_value_or_zero(ocr_metric['bleu']) + get_value_or_zero(ocr_metric['meteor'])
-                + get_value_or_zero(ocr_metric['f_measure']) + (1 - get_value_or_zero(ocr_metric['edit_dist']))
+                get_value_or_zero(ocr_metric['bleu'])
+                + get_value_or_zero(ocr_metric['meteor'])
+                + get_value_or_zero(ocr_metric['f_measure'])
+                + (1 - get_value_or_zero(ocr_metric['edit_dist']))
             ) / 4
     elif data_type == 'full-page OCR en':
         if not pred:
@@ -299,8 +317,10 @@ def ocrbench_v2_process_results(doc, pred):
         else:
             ocr_metric = cal_per_metrics(pred, gt_ans[0])
             score = (
-                get_value_or_zero(ocr_metric['bleu']) + get_value_or_zero(ocr_metric['meteor'])
-                + get_value_or_zero(ocr_metric['f_measure']) + (1 - get_value_or_zero(ocr_metric['edit_dist']))
+                get_value_or_zero(ocr_metric['bleu'])
+                + get_value_or_zero(ocr_metric['meteor'])
+                + get_value_or_zero(ocr_metric['f_measure'])
+                + (1 - get_value_or_zero(ocr_metric['edit_dist']))
             ) / 4
 
     elif data_type == 'full-page OCR cn':
@@ -364,7 +384,6 @@ def ocrbench_v2_aggregate_accuracy(results):
     }
 
     for result in results:
-
         question_type = result['question_type']
         score = result['score']
 
@@ -416,13 +435,22 @@ def ocrbench_v2_aggregate_accuracy(results):
             raise TypeError
 
     english_tasks = [
-        'text_recognition_en', 'text_detection_en', 'text_spotting_en', 'relationship_extraction_en',
-        'element_parsing_en', 'mathematical_calculation_en', 'visual_text_understanding_en', 'knowledge_reasoning_en'
+        'text_recognition_en',
+        'text_detection_en',
+        'text_spotting_en',
+        'relationship_extraction_en',
+        'element_parsing_en',
+        'mathematical_calculation_en',
+        'visual_text_understanding_en',
+        'knowledge_reasoning_en',
     ]
 
     chinese_tasks = [
-        'text_recognition_cn', 'relationship_extraction_cn', 'element_parsing_cn', 'visual_text_understanding_cn',
-        'knowledge_reasoning_cn'
+        'text_recognition_cn',
+        'relationship_extraction_cn',
+        'element_parsing_cn',
+        'visual_text_understanding_cn',
+        'knowledge_reasoning_cn',
     ]
 
     OCRBench_v2_English_subset_score = calculate_average_score(english_tasks, OCRBench_v2_score)

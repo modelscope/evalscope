@@ -470,21 +470,25 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool, theme: str = '
             marker=dict(size=4),
         )
     ]
-    tabs.append({
-        'label': 'Latency',
-        'chart': ChartBuilder.line(
-            lat_traces,
-            x_title='Request Index',
-            y_title='Latency (s)',
-            div_id=f'req-latency-{safe}',
-            theme=theme,
-        ),
-    })
+    tabs.append(
+        {
+            'label': 'Latency',
+            'chart': ChartBuilder.line(
+                lat_traces,
+                x_title='Request Index',
+                y_title='Latency (s)',
+                div_id=f'req-latency-{safe}',
+                theme=theme,
+            ),
+        }
+    )
 
     # ── Tab 2: TTFT / TPOT / ITL (milliseconds, LLM only) ───────────────────
     if not is_embedding:
-        itl_y = [(sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
-                 for r in sorted_reqs]
+        itl_y = [
+            (sum(r.inter_token_latencies) / len(r.inter_token_latencies)) if r.inter_token_latencies else 0
+            for r in sorted_reqs
+        ]
         ttft_tpot_itl_traces = [
             dict(
                 x=xs,
@@ -511,16 +515,18 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool, theme: str = '
                 marker=dict(size=4),
             ),
         ]
-        tabs.append({
-            'label': 'TTFT / TPOT / ITL',
-            'chart': ChartBuilder.line(
-                ttft_tpot_itl_traces,
-                x_title='Request Index',
-                y_title='Time (ms)',
-                div_id=f'req-ttft-tpot-itl-{safe}',
-                theme=theme,
-            ),
-        })
+        tabs.append(
+            {
+                'label': 'TTFT / TPOT / ITL',
+                'chart': ChartBuilder.line(
+                    ttft_tpot_itl_traces,
+                    x_title='Request Index',
+                    y_title='Time (ms)',
+                    div_id=f'req-ttft-tpot-itl-{safe}',
+                    theme=theme,
+                ),
+            }
+        )
 
     # ── Tab 3: Tokens ─────────────────────────────────────────────────────
     tok_traces = [
@@ -544,44 +550,48 @@ def build_request_detail_tabs(run: 'RunData', is_embedding: bool, theme: str = '
                 marker=dict(size=4),
             )
         )
-    tabs.append({
-        'label': 'Tokens',
-        'chart': ChartBuilder.line(
-            tok_traces,
-            x_title='Request Index',
-            y_title='Token Count',
-            div_id=f'req-tokens-{safe}',
-            theme=theme,
-        ),
-    })
+    tabs.append(
+        {
+            'label': 'Tokens',
+            'chart': ChartBuilder.line(
+                tok_traces,
+                x_title='Request Index',
+                y_title='Token Count',
+                div_id=f'req-tokens-{safe}',
+                theme=theme,
+            ),
+        }
+    )
 
     # ── Tab 4: Success ────────────────────────────────────────────────────
-    tabs.append({
-        'label': 'Success',
-        'chart': ChartBuilder.line(
-            [
-                dict(
-                    x=xs,
-                    y=[1 if r.success else 0 for r in sorted_reqs],
-                    mode='lines+markers',
-                    name='Success',
-                    line=dict(color=GREEN, width=1.5),
-                    marker=dict(
-                        color=[GREEN if r.success else RED for r in sorted_reqs],
-                        size=6,
-                        symbol=['circle' if r.success else 'x' for r in sorted_reqs],
-                    ),
-                    hovertemplate='Request %{x}<br>%{customdata}<extra></extra>',
-                    customdata=['OK' if r.success else 'FAIL' for r in sorted_reqs],
-                )
-            ],
-            x_title='Request Index',
-            y_title='Success (1 = OK, 0 = Fail)',
-            div_id=f'req-success-{safe}',
-            extra_layout=dict(yaxis=dict(range=[-0.2, 1.4], tickvals=[0, 1], ticktext=['Fail', 'OK'], **_GRID)),
-            theme=theme,
-        ),
-    })
+    tabs.append(
+        {
+            'label': 'Success',
+            'chart': ChartBuilder.line(
+                [
+                    dict(
+                        x=xs,
+                        y=[1 if r.success else 0 for r in sorted_reqs],
+                        mode='lines+markers',
+                        name='Success',
+                        line=dict(color=GREEN, width=1.5),
+                        marker=dict(
+                            color=[GREEN if r.success else RED for r in sorted_reqs],
+                            size=6,
+                            symbol=['circle' if r.success else 'x' for r in sorted_reqs],
+                        ),
+                        hovertemplate='Request %{x}<br>%{customdata}<extra></extra>',
+                        customdata=['OK' if r.success else 'FAIL' for r in sorted_reqs],
+                    )
+                ],
+                x_title='Request Index',
+                y_title='Success (1 = OK, 0 = Fail)',
+                div_id=f'req-success-{safe}',
+                extra_layout=dict(yaxis=dict(range=[-0.2, 1.4], tickvals=[0, 1], ticktext=['Fail', 'OK'], **_GRID)),
+                theme=theme,
+            ),
+        }
+    )
 
     return tabs
 

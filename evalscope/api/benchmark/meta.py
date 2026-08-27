@@ -147,6 +147,7 @@ class BenchmarkMeta:
     def __post_init__(self):
         """Validate fields after initialization."""
         from evalscope.evaluation_versioning import validate_evaluation_version
+
         validate_evaluation_version(self.evaluation_version)
         if self.few_shot_num < 0:
             raise ValueError('few_shot_num must be >= 0')
@@ -232,8 +233,7 @@ class BenchmarkMeta:
 
         if self.primary_metric is not None:
             canonical_names = {
-                migrate_legacy_identity(name, self.aggregation, benchmark_name=self.name).name
-                for name in names
+                migrate_legacy_identity(name, self.aggregation, benchmark_name=self.name).name for name in names
             }
             if self.primary_metric.name not in canonical_names:
                 raise ValueError(

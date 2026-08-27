@@ -120,7 +120,7 @@ def polygon_diou_score(
 
     c1 = poly1.centroid
     c2 = poly2.centroid
-    center_dist_sq = (c1.x - c2.x)**2 + (c1.y - c2.y)**2
+    center_dist_sq = (c1.x - c2.x) ** 2 + (c1.y - c2.y) ** 2
 
     minx1, miny1, maxx1, maxy1 = poly1.bounds
     minx2, miny2, maxx2, maxy2 = poly2.bounds
@@ -130,7 +130,7 @@ def polygon_diou_score(
     x_max = max(maxx1, maxx2)
     y_max = max(maxy1, maxy2)
 
-    diag_length_sq = (x_max - x_min)**2 + (y_max - y_min)**2
+    diag_length_sq = (x_max - x_min) ** 2 + (y_max - y_min) ** 2
 
     if diag_length_sq < eps:
         diou = iou
@@ -225,7 +225,7 @@ def evaluate_layout_sample(
         eps=eps,
     )
 
-    final_score = (pred_to_gt_weight * pred_to_gt_score + gt_to_pred_weight * gt_to_pred_score)
+    final_score = pred_to_gt_weight * pred_to_gt_score + gt_to_pred_weight * gt_to_pred_score
     final_score = max(min_reward, min(max_reward, final_score))
 
     return {'diou_score': float(final_score)}
@@ -552,11 +552,13 @@ def evaluate_dataset(
             text_score = text_metrics['text_score']
             overall_score = 0.7 * diou_score + 0.3 * text_score
 
-            sample_results.append({
-                'diou_score': float(diou_score),
-                'text_score': float(text_score),
-                'overall_score': float(overall_score),
-            })
+            sample_results.append(
+                {
+                    'diou_score': float(diou_score),
+                    'text_score': float(text_score),
+                    'overall_score': float(overall_score),
+                }
+            )
 
     if not sample_results:
         result = {

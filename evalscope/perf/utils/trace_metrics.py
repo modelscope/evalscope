@@ -34,6 +34,7 @@ Metric definitions (per trace):
   (turn 1 contributes 0 to both numerator and denominator).  Reflects the
   fraction of theoretically-cacheable tokens the server actually reused.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -240,17 +241,20 @@ class TraceLevelSummary(BaseModel):
         if self.is_empty():
             return ''
         headers = ['Metric', 'mean', 'min', 'p50', 'p90', 'p95', 'p99', 'max']
-        body = [[
-            r.metric,
-            format_perf_value(r.mean, r.metric, include_unit=False),
-            format_perf_value(r.min, r.metric, include_unit=False),
-            format_perf_value(r.p50, r.metric, include_unit=False),
-            format_perf_value(r.p90, r.metric, include_unit=False),
-            format_perf_value(r.p95, r.metric, include_unit=False),
-            format_perf_value(r.p99, r.metric, include_unit=False),
-            format_perf_value(r.max, r.metric, include_unit=False),
-        ] for r in self.rows]
-        col_align = ('left', ) + ('right', ) * 7
+        body = [
+            [
+                r.metric,
+                format_perf_value(r.mean, r.metric, include_unit=False),
+                format_perf_value(r.min, r.metric, include_unit=False),
+                format_perf_value(r.p50, r.metric, include_unit=False),
+                format_perf_value(r.p90, r.metric, include_unit=False),
+                format_perf_value(r.p95, r.metric, include_unit=False),
+                format_perf_value(r.p99, r.metric, include_unit=False),
+                format_perf_value(r.max, r.metric, include_unit=False),
+            ]
+            for r in self.rows
+        ]
+        col_align = ('left',) + ('right',) * 7
         return tabulate(
             body,
             headers=headers,

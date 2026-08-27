@@ -135,7 +135,6 @@ class DefaultApiPlugin(ApiPluginBase):
                         output.is_stream = True
                         handler = StreamedResponseHandler()
                         async for chunk_bytes in response.content.iter_any():
-
                             if not chunk_bytes:
                                 continue
 
@@ -158,8 +157,9 @@ class DefaultApiPlugin(ApiPluginBase):
                                             content = choices[0].get('text') or ''
                                         else:
                                             delta = choices[0].get('delta', {})
-                                            content = (delta.get('content')
-                                                       or '') + (delta.get('reasoning_content') or '')
+                                            content = (delta.get('content') or '') + (
+                                                delta.get('reasoning_content') or ''
+                                            )
                                         # First token
                                         if ttft == 0.0:
                                             ttft = timestamp - st

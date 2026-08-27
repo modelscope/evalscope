@@ -65,10 +65,14 @@ def _apply_bash_command_timeout(handlers: Dict[str, Any], command_timeout: float
         if 'timeout' not in args:
             call = call.model_copy(
                 update={
-                    'function': call.function.model_copy(update={'arguments': {
-                        **args,
-                        'timeout': command_timeout,
-                    }})
+                    'function': call.function.model_copy(
+                        update={
+                            'arguments': {
+                                **args,
+                                'timeout': command_timeout,
+                            }
+                        }
+                    )
                 }
             )
         return await bash_handler(call, env)

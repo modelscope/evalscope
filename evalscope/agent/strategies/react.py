@@ -78,7 +78,9 @@ class ReactStrategy(AgentStrategy):
     def build_system_prompt(self, ctx: AgentContext) -> Optional[str]:
         if self._system_prompt:
             return self._system_prompt
-        return REACT_SYSTEM_PROMPT_TEMPLATE.format(tool_descriptions=_format_tools(ctx.tools), )
+        return REACT_SYSTEM_PROMPT_TEMPLATE.format(
+            tool_descriptions=_format_tools(ctx.tools),
+        )
 
     def prepare_messages(self, ctx: AgentContext) -> List[ChatMessage]:
         return ctx.messages

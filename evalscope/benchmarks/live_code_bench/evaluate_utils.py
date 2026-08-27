@@ -19,6 +19,7 @@ def _temp_run(sample, generation, debug, result, metadata_list, timeout):
     nested functions are not picklable.
     """
     from .testing_util import run_test
+
     res, metadata = run_test(sample, test=generation, debug=debug, timeout=timeout)
     result.append(res)
     metadata_list.append(metadata)
@@ -87,12 +88,16 @@ def evaluate_generations_by_problem(problem_generations: list, sample: list, deb
             curr_res = fixed
             if not np.all(curr_res):
                 if debug:
-                    logger.info(f'Results were not True for all test cases'  # noqa: F541, E501
-                                f' {curr_res=}\n')
+                    logger.info(
+                        f'Results were not True for all test cases'  # noqa: F541, E501
+                        f' {curr_res=}\n'
+                    )
         except Exception as e:
             if debug:
-                logger.info(f'Compilation failed, test framework exception'  # noqa: F541, E501
-                            f' = {repr(e)}{e}\n')
+                logger.info(
+                    f'Compilation failed, test framework exception'  # noqa: F541, E501
+                    f' = {repr(e)}{e}\n'
+                )
             # break
             curr_metadata = {}
         finally:
@@ -140,8 +145,9 @@ def evaluate_generations(
         results[index] = result
         metadata[index] = meta
 
-    assert len(results
-               ) == len(generations_list), f'results = {len(results)} inputs = {len(generations_list)} {results=}'
+    assert len(results) == len(generations_list), (
+        f'results = {len(results)} inputs = {len(generations_list)} {results=}'
+    )
 
     return results, metadata
 

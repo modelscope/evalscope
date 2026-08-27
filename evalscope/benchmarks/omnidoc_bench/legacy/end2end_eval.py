@@ -9,15 +9,14 @@ from evalscope.utils import get_logger
 logger = get_logger()
 
 
-class End2EndEvaluator():
-
+class End2EndEvaluator:
     def __init__(
         self,
         prediction: List,
         reference: List,
         metrics: Dict,
         match_method: str = 'quick_match',
-        filter_types: dict = None
+        filter_types: dict = None,
     ):
 
         self.match_method = match_method
@@ -35,7 +34,7 @@ class End2EndEvaluator():
                 if select_flag:
                     filtered_gt_samples.append(gt_sample)
         else:
-            filtered_gt_samples = self.references  #[{},{},{}]
+            filtered_gt_samples = self.references  # [{},{},{}]
         self.references = filtered_gt_samples
 
     def score(self) -> dict:
@@ -53,8 +52,9 @@ class End2EndEvaluator():
                 truncated_all[relation['target_anno_id']] = ''
                 exist_flag = False
                 for merge_list in related_truncated:
-                    if relation['source_anno_id'] in merge_list or relation[
-                        'target_anno_id'] in merge_list:  # Consider cases where three text blocks may need to be merged
+                    if (
+                        relation['source_anno_id'] in merge_list or relation['target_anno_id'] in merge_list
+                    ):  # Consider cases where three text blocks may need to be merged
                         merge_list.append(relation['source_anno_id'])
                         merge_list.append(relation['target_anno_id'])
                         exist_flag = True
@@ -78,7 +78,7 @@ class End2EndEvaluator():
                 'order': sorted_block[0]['order'],
                 'anno_id': sorted_block[0]['anno_id'],
                 'text': text,
-                'merge_list': sorted_block
+                'merge_list': sorted_block,
             }
             saved_element_dict[sorted_block[0]['category_type']].append(merged_block)
 
@@ -112,9 +112,11 @@ class End2EndEvaluator():
         return filted_items
 
     def get_order_paired(self, order_match_s, img_name):
-        matched = [(item['gt_position'], item['pred_position'])
-                   for item in order_match_s
-                   if (item['gt_position'] != [''] and item['pred_position'] != '')]
+        matched = [
+            (item['gt_position'], item['pred_position'])
+            for item in order_match_s
+            if (item['gt_position'] != [''] and item['pred_position'] != '')
+        ]
         gt_idx_all = [item['gt_position'] for item in order_match_s if (item['gt_position'] != [''])]
         read_order_pred = [i[0] for i in sorted(matched, key=lambda x: x[1])]
         read_order_gt = sum(gt_idx_all, [])  # Convert to one-dimensional list
@@ -124,6 +126,7 @@ class End2EndEvaluator():
         pred = [x for x in pred if x]
         if len(pred) > 0 or len(gt) > 0:
             import Levenshtein
+
             edit = Levenshtein.distance(gt, pred) / max(len(pred), len(gt))
             return {'gt': gt, 'pred': pred, 'img_id': img_name, 'edit': edit}
         else:
@@ -149,8 +152,11 @@ class End2EndEvaluator():
             pred_content = predictions[i]
             result = self.process_get_matched_elements(sample, pred_content, img_name)
             [
-                plain_text_match_clean, formated_display_formula, latex_table_match_s, html_table_match_s,
-                order_match_single
+                plain_text_match_clean,
+                formated_display_formula,
+                latex_table_match_s,
+                html_table_match_s,
+                order_match_single,
             ] = result
 
             if order_match_single:
@@ -175,7 +181,7 @@ class End2EndEvaluator():
             'text_block': recogition_end2end_base_dataset(plain_text_match),
             'display_formula': recogition_end2end_base_dataset(display_formula_match),
             'table': recogition_end2end_table_dataset(table_match, table_format),
-            'reading_order': recogition_end2end_base_dataset(order_match)
+            'reading_order': recogition_end2end_base_dataset(order_match),
         }
 
         return matched_samples_all
@@ -196,11 +202,25 @@ class End2EndEvaluator():
         gt_page_elements = self.get_page_elements(sample)
 
         text_all = self.get_page_elements_list(
-            gt_page_elements, [
-                'text_block', 'title', 'code_txt', 'code_txt_caption', 'reference', 'equation_caption',
-                'figure_caption', 'figure_footnote', 'table_caption', 'table_footnote', 'code_algorithm',
-                'code_algorithm_caption', 'header', 'footer', 'page_footnote', 'page_number'
-            ]
+            gt_page_elements,
+            [
+                'text_block',
+                'title',
+                'code_txt',
+                'code_txt_caption',
+                'reference',
+                'equation_caption',
+                'figure_caption',
+                'figure_footnote',
+                'table_caption',
+                'table_footnote',
+                'code_algorithm',
+                'code_algorithm_caption',
+                'header',
+                'footer',
+                'page_footnote',
+                'page_number',
+            ],
         )
 
         display_formula_match_s = []
@@ -221,10 +241,20 @@ class End2EndEvaluator():
                 logger.warning(f'No text match of {img_name}. The plain text match will be empty.')
             else:
                 plain_text_match_clean = self.filtered_out_ignore(
-                    plain_text_match_s, [
-                        'figure_caption', 'figure_footnote', 'table_caption', 'table_footnote', 'code_algorithm',
-                        'code_algorithm_caption', 'header', 'footer', 'page_footnote', 'page_number', 'equation_caption'
-                    ]
+                    plain_text_match_s,
+                    [
+                        'figure_caption',
+                        'figure_footnote',
+                        'table_caption',
+                        'table_footnote',
+                        'code_algorithm',
+                        'code_algorithm_caption',
+                        'header',
+                        'footer',
+                        'page_footnote',
+                        'page_number',
+                        'equation_caption',
+                    ],
                 )
 
         if gt_page_elements.get('equation_isolated'):
@@ -257,7 +287,11 @@ class End2EndEvaluator():
             order_match_single = self.get_order_paired(order_match_s, img_name)
 
         return [
-            plain_text_match_clean, display_formula_match_s, latex_table_match_s, html_table_match_s, order_match_single
+            plain_text_match_clean,
+            display_formula_match_s,
+            latex_table_match_s,
+            html_table_match_s,
+            order_match_single,
         ]
 
     def process_generated_metric_results(self, samples, save_name: str = 'end2end_quick_match'):
@@ -266,14 +300,13 @@ class End2EndEvaluator():
         result_all = {}
         page_info = {}
         metircs_dict = self.dafault_metircs_dict
-        pages = self.references  #gt_samples list
+        pages = self.references  # gt_samples list
 
         for page in pages:
             img_path = os.path.basename(page['page_info']['image_path'])
             page_info[img_path] = page['page_info']['page_attribute']
 
         for element in metircs_dict.keys():
-
             result = {}
             group_info = metircs_dict[element].get('group', [])
             # samples = samples.get(element) ##
@@ -299,24 +332,38 @@ class End2EndEvaluator():
         save_dict = {}
         en_overall = []
         ch_overall = []
-        for category_type, metric in [('text_block', 'Edit_dist'), ('display_formula', 'Edit_dist'),
-                                      ('display_formula', 'CDM'), ('table', 'TEDS'), ('table', 'Edit_dist'),
-                                      ('reading_order', 'Edit_dist')]:
+        for category_type, metric in [
+            ('text_block', 'Edit_dist'),
+            ('display_formula', 'Edit_dist'),
+            ('display_formula', 'CDM'),
+            ('table', 'TEDS'),
+            ('table', 'Edit_dist'),
+            ('reading_order', 'Edit_dist'),
+        ]:
             if metric == 'TEDS':
-                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
-                    category_type]['page']:
-                    save_dict[category_type + '_' + metric
-                              + '_EN'] = result_all[category_type]['page'][metric]['language: english']
-                    save_dict[category_type + '_' + metric
-                              + '_CH'] = result_all[category_type]['page'][metric]['language: simplified_chinese']
+                if (
+                    category_type in result_all
+                    and 'page' in result_all[category_type]
+                    and metric in result_all[category_type]['page']
+                ):
+                    save_dict[category_type + '_' + metric + '_EN'] = result_all[category_type]['page'][metric][
+                        'language: english'
+                    ]
+                    save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric][
+                        'language: simplified_chinese'
+                    ]
                 else:
                     save_dict[category_type + '_' + metric + '_EN'] = np.nan
                     save_dict[category_type + '_' + metric + '_CH'] = np.nan
             else:
-                if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
-                    category_type]['page']:
-                    save_dict[category_type + '_' + metric
-                              + '_EN'] = result_all[category_type]['page'][metric].get('language: english', np.nan)
+                if (
+                    category_type in result_all
+                    and 'page' in result_all[category_type]
+                    and metric in result_all[category_type]['page']
+                ):
+                    save_dict[category_type + '_' + metric + '_EN'] = result_all[category_type]['page'][metric].get(
+                        'language: english', np.nan
+                    )
                     save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric].get(
                         'language: simplified_chinese', np.nan
                     )
@@ -327,12 +374,19 @@ class End2EndEvaluator():
         # Calculate overall scores
         # We use 1 - Edit_dist for text/formula/order (converting error to score)
         # We use TEDS for tables (already a score)
-        overall_metric_cfg = [('text_block', 'Edit_dist', True), ('display_formula', 'Edit_dist', True),
-                              ('table', 'TEDS', False), ('reading_order', 'Edit_dist', True)]
+        overall_metric_cfg = [
+            ('text_block', 'Edit_dist', True),
+            ('display_formula', 'Edit_dist', True),
+            ('table', 'TEDS', False),
+            ('reading_order', 'Edit_dist', True),
+        ]
 
         for category_type, metric, is_error in overall_metric_cfg:
-            if category_type in result_all and 'page' in result_all[category_type] and metric in result_all[
-                category_type]['page']:
+            if (
+                category_type in result_all
+                and 'page' in result_all[category_type]
+                and metric in result_all[category_type]['page']
+            ):
                 val_en = result_all[category_type]['page'][metric].get('language: english', np.nan)
                 val_ch = result_all[category_type]['page'][metric].get('language: simplified_chinese', np.nan)
 

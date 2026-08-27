@@ -18,6 +18,7 @@ logger = get_logger()
 
 class RubricGrade(BaseModel):
     """The judge's reply per rubric item; GRADER_TEMPLATE already asks for exactly these keys."""
+
     explanation: str = ''
     criteria_met: bool
 
@@ -161,9 +162,9 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
                 'type': 'str',
                 'description': f'Dataset file version, choices: {VERSION}.',
                 'value': VERSION[0],
-                'choices': VERSION
+                'choices': VERSION,
             }
-        }
+        },
     )
 )
 class HealthBenchAdapter(DefaultDataAdapter):
@@ -174,6 +175,7 @@ class HealthBenchAdapter(DefaultDataAdapter):
     This adapter supports multiple dataset versions and uses LLM judges to evaluate
     responses against detailed medical criteria.
     """
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -245,30 +247,29 @@ class HealthBenchAdapter(DefaultDataAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import RubricItem
+
             metadata = judge_context.task_state.metadata or {}
             rubric = RubricItem.from_dict(metadata['rubrics'][case.metadata['rubric_index']])
             conversation = metadata['prompt'] + [dict(content=judge_context.original_prediction, role='assistant')]
             prompt = GRADER_TEMPLATE.replace(
-                '<<conversation>>', '\n\n'.join(f"{message['role']}: {message['content']}" for message in conversation)
+                '<<conversation>>', '\n\n'.join(f'{message["role"]}: {message["content"]}' for message in conversation)
             ).replace('<<rubric_item>>', str(rubric))
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
             from .utils import RubricItem, calculate_rubric_tag_scores, calculate_score, construct_readable_explanation
+
             metadata = copy.deepcopy(judge_context.task_state.metadata or {})
             items = [RubricItem.from_dict(item) for item in metadata['rubrics']]
             by_case = {verdict.case_id: verdict for verdict in case_verdicts}
             responses = [by_case[f'rubric_{index}'].value.model_dump() for index in range(len(items))]
             tags, axes = calculate_rubric_tag_scores(items, responses)
             return ReducedVerdict(
-                value={
-                    'overall_score': calculate_score(items, responses),
-                    **axes
-                },
+                value={'overall_score': calculate_score(items, responses), **axes},
                 metadata={
                     'readable_explanation': construct_readable_explanation(items, responses),
                     'rubric_tag_scores': tags,
-                }
+                },
             )
 
         def finalize(score, review, judge_context) -> Score:

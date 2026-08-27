@@ -1,4 +1,5 @@
 """Adapter-facing declarations for one Native LLM judge review."""
+
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Sequence, Type
 

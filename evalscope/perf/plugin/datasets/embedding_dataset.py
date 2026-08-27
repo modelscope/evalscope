@@ -132,8 +132,9 @@ class EmbeddingDatasetPlugin(DatasetPluginBase):
                     try:
                         item = json.loads(line)
                         if isinstance(item, dict):
-                            text = item.get('text') or item.get('input') or item.get('sentence'
-                                                                                     ) or item.get('content', '')
+                            text = (
+                                item.get('text') or item.get('input') or item.get('sentence') or item.get('content', '')
+                            )
                             if text:
                                 self.texts.append(text)
                         elif isinstance(item, str):

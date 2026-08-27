@@ -60,7 +60,8 @@ async def statistic_benchmark_metric(
 
         cur_run_name = (
             f'rate_{args.rate}_number_{args.number}'
-            if args.open_loop else f'parallel_{args.parallel}_number_{args.number}'
+            if args.open_loop
+            else f'parallel_{args.parallel}_number_{args.number}'
         )
 
         # Warmup bar

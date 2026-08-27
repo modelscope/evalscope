@@ -41,6 +41,7 @@ def require_min_version(
         reason: Optional explanation of why the floor exists.
     """
     from packaging.version import InvalidVersion, Version, parse
+
     try:
         supported = parse(installed_version) >= Version(f'{min_version}.dev0')
     except InvalidVersion:
@@ -54,7 +55,6 @@ def require_min_version(
 
 
 class RAGEvalBackendManager(BackendManager):
-
     def __init__(self, config: Union[str, dict], **kwargs):
         """BackendManager for RAG Evaluation.
 
@@ -79,6 +79,7 @@ class RAGEvalBackendManager(BackendManager):
         """
         import mteb
         import sentence_transformers
+
         require_min_version('MTEB', mteb.__version__, '2.7.0', 'mteb>=2.7.0,<3.0.0')
         require_min_version(
             'sentence-transformers',
@@ -101,6 +102,7 @@ class RAGEvalBackendManager(BackendManager):
             config: RAGASToolConfig instance or dict with RAGAS configuration.
         """
         import ragas
+
         require_min_version('RAGAS', ragas.__version__, '0.4.0', 'ragas>=0.4.0,<0.5.0')
         from evalscope.backend.rag_eval.ragas import RAGASToolConfig, rag_eval
         from evalscope.backend.rag_eval.ragas.tasks import generate_testset

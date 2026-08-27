@@ -21,7 +21,7 @@ from h5py import Dataset, File, Group  # type: ignore
 
 H5PY_FILE = '/workspace/test_data.h5'
 
-SparseMatrix: TypeAlias = (scipy.sparse.coo_matrix | scipy.sparse.bsr_matrix | scipy.sparse.csr_matrix)
+SparseMatrix: TypeAlias = scipy.sparse.coo_matrix | scipy.sparse.bsr_matrix | scipy.sparse.csr_matrix
 
 
 def process_hdf5_list(group: Group) -> list[Any]:
@@ -65,7 +65,9 @@ def process_hdf5_sparse_matrix(group: Group) -> SparseMatrix:
         return scipy.sparse.csr_matrix((data, indices, indptr), shape=shape)
 
 
-def process_hdf5_datagroup(group: Group, ) -> list[Any] | dict[str | float, Any] | SparseMatrix:
+def process_hdf5_datagroup(
+    group: Group,
+) -> list[Any] | dict[str | float, Any] | SparseMatrix:
     assert len(group) > 0
     for key in group.keys():
         if key == 'list':

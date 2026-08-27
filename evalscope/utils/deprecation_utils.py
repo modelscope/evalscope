@@ -29,7 +29,7 @@ def deprecated(since: str, remove_in: Optional[str] = None, alternative: Optiona
             warning_parts = [
                 f'{func.__name__} in {file_name} has been deprecated since version {since}',
                 f'and will be removed in version {remove_in}' if remove_in else None,
-                f'Use {alternative} instead' if alternative else None
+                f'Use {alternative} instead' if alternative else None,
             ]
             warning_message = '. '.join(filter(None, warning_parts))
 

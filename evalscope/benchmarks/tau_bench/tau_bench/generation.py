@@ -31,20 +31,14 @@ def _patch_agent_solve(model: Model):
         info = env_reset_res.info.model_dump()
         reward = 0.0
         messages: List[Dict[str, Any]] = [
-            {
-                'role': 'system',
-                'content': self.wiki
-            },
-            {
-                'role': 'user',
-                'content': obs
-            },
+            {'role': 'system', 'content': self.wiki},
+            {'role': 'user', 'content': obs},
         ]
 
         for step_index in range(max_num_steps):
             res = model.generate(
                 input=[dict_to_chat_message(msg) for msg in messages],
-                tools=[ToolInfo.model_validate(tool['function']) for tool in self.tools_info]
+                tools=[ToolInfo.model_validate(tool['function']) for tool in self.tools_info],
             )
             oai_res = openai_chat_choices(res.choices, include_reasoning=False)
 
@@ -63,23 +57,24 @@ def _patch_agent_solve(model: Model):
 
             if action.name != RESPOND_ACTION_NAME:
                 next_message['tool_calls'] = next_message['tool_calls'][:1]
-                messages.extend([
-                    next_message,
-                    {
-                        'role': 'tool',
-                        'tool_call_id': next_message['tool_calls'][0]['id'],
-                        'name': next_message['tool_calls'][0]['function']['name'],
-                        'content': env_response.observation,
-                    },
-                ])
+                messages.extend(
+                    [
+                        next_message,
+                        {
+                            'role': 'tool',
+                            'tool_call_id': next_message['tool_calls'][0]['id'],
+                            'name': next_message['tool_calls'][0]['function']['name'],
+                            'content': env_response.observation,
+                        },
+                    ]
+                )
             else:
-                messages.extend([
-                    next_message,
-                    {
-                        'role': 'user',
-                        'content': env_response.observation
-                    },
-                ])
+                messages.extend(
+                    [
+                        next_message,
+                        {'role': 'user', 'content': env_response.observation},
+                    ]
+                )
             logger.debug(f'Task: {task_index} Step: {step_index} finished')
 
             if env_response.done:

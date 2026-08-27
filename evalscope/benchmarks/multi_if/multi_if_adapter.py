@@ -80,13 +80,12 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
                 'type': 'int',
                 'description': 'Maximum number of interactive turns to evaluate (1-3).',
                 'value': 3,
-                'choices': [1, 2, 3]
+                'choices': [1, 2, 3],
             }
-        }
+        },
     )
 )
 class MultiIFAdapter(MultiTurnAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -95,7 +94,7 @@ class MultiIFAdapter(MultiTurnAdapter):
             module_name=['nltk', 'langdetect', 'emoji', 'pythainlp'],
             extra='multi_if',
             raise_error=True,
-            feature_name=self.pretty_name
+            feature_name=self.pretty_name,
         )
 
         self.reformat_subset = True
@@ -176,12 +175,14 @@ class MultiIFAdapter(MultiTurnAdapter):
                 outputs_loose = gen_acc_loose(record)
                 prompt_level_strict, inst_level_strict = parse_result([outputs_strict])
                 prompt_level_loose, inst_level_loose = parse_result([outputs_loose])
-                results.update({
-                    f'turn_{step}_prompt_level_strict': prompt_level_strict,
-                    f'turn_{step}_inst_level_strict': inst_level_strict,
-                    f'turn_{step}_prompt_level_loose': prompt_level_loose,
-                    f'turn_{step}_inst_level_loose': inst_level_loose,
-                })
+                results.update(
+                    {
+                        f'turn_{step}_prompt_level_strict': prompt_level_strict,
+                        f'turn_{step}_inst_level_strict': inst_level_strict,
+                        f'turn_{step}_prompt_level_loose': prompt_level_loose,
+                        f'turn_{step}_inst_level_loose': inst_level_loose,
+                    }
+                )
             score.value.update(results)
 
             # Set main score name

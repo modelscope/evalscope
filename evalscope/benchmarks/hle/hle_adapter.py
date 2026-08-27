@@ -106,13 +106,12 @@ Humanity's Last Exam (HLE) is a comprehensive language model benchmark consistin
             'include_multi_modal': {
                 'type': 'bool',
                 'description': 'Include multi-modal (image) questions during evaluation.',
-                'value': True
+                'value': True,
             }
-        }
+        },
     )
 )
 class HLEAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -123,7 +122,7 @@ class HLEAdapter(DefaultDataAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answer_type = record['answer_type']
-        system_prompt = (SYSTEM_EXACT_ANSWER if answer_type == ANSWER_TYPE_EXACT_MATCH else SYSTEM_MC)
+        system_prompt = SYSTEM_EXACT_ANSWER if answer_type == ANSWER_TYPE_EXACT_MATCH else SYSTEM_MC
         text_content = ContentText(text=record['question'])
 
         content: List[Content] = [text_content]
@@ -158,11 +157,14 @@ class HLEAdapter(DefaultDataAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
-            prompt = JUDGE_PROMPT.format(
-                question=judge_context.task_state.input_text,
-                response=judge_context.filtered_prediction,
-                correct_answer=judge_context.reference,
-            ) + case.output_contract.instruction()
+            prompt = (
+                JUDGE_PROMPT.format(
+                    question=judge_context.task_state.input_text,
+                    response=judge_context.filtered_prediction,
+                    correct_answer=judge_context.reference,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -177,7 +179,7 @@ class HLEAdapter(DefaultDataAdapter):
             request=request,
             reduce=reduce,
             main_score_name='acc',
-            finalize=finalize
+            finalize=finalize,
         )
 
     @staticmethod

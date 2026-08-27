@@ -74,7 +74,7 @@ def build_model(agent_model, adapter_instance):
         eval_type=EvalType.OPENAI_API,
         base_url=adapter_instance.api_base,
         api_key=adapter_instance.api_key,
-        config=GenerateConfig(**adapter_instance.generation_config)
+        config=GenerateConfig(**adapter_instance.generation_config),
     )
     MODEL_DICT['user'] = user_server
     MODEL_DICT['agent'] = agent_model
@@ -123,7 +123,8 @@ def patched_generate(
             id=tool_call.id,
             name=tool_call.function.name,
             arguments=json.loads(tool_call.function.arguments),
-        ) for tool_call in tool_calls
+        )
+        for tool_call in tool_calls
     ]
     tool_calls = tool_calls or None
     usage = completion.usage.model_dump(exclude_none=True)

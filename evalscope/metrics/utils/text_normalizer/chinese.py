@@ -51,7 +51,10 @@ ER_WHITELIST_PATTERN = re.compile(ER_WHITELIST)
 # 中文数字系统类型
 NUMBERING_TYPES = ['low', 'mid', 'high']
 
-CURRENCY_NAMES = '(人民币|美元|日元|英镑|欧元|马克|法郎|加拿大元|澳元|港币|先令|芬兰马克|爱尔兰镑|' '里拉|荷兰盾|埃斯库多|比塞塔|印尼盾|林吉特|新西兰元|比索|卢布|新加坡元|韩元|泰铢)'
+CURRENCY_NAMES = (
+    '(人民币|美元|日元|英镑|欧元|马克|法郎|加拿大元|澳元|港币|先令|芬兰马克|爱尔兰镑|'
+    '里拉|荷兰盾|埃斯库多|比塞塔|印尼盾|林吉特|新西兰元|比索|卢布|新加坡元|韩元|泰铢)'
+)
 CURRENCY_UNITS = '((亿|千万|百万|万|千|百)|(亿|千万|百万|万|千|百|)元|(亿|千万|百万|万|千|百|)块|角|毛|分)'
 COM_QUANTIFIERS = (
     '(匹|张|座|回|场|尾|条|个|首|阙|阵|网|炮|顶|丘|棵|只|支|袭|辆|挑|担|颗|壳|窠|曲|墙|群|腔|'
@@ -657,7 +660,7 @@ def num2chn(
     alt_one=False,
     alt_two=True,
     use_zeros=True,
-    use_units=True
+    use_units=True,
 ):
 
     def get_value(value_string, use_zeros=True):
@@ -677,8 +680,8 @@ def num2chn(
         # recursively record multiple digits
         else:
             result_unit = next(u for u in reversed(system.units) if u.power < len(striped_string))
-            result_string = value_string[:-result_unit.power]
-            return get_value(result_string) + [result_unit] + get_value(striped_string[-result_unit.power:])
+            result_string = value_string[: -result_unit.power]
+            return get_value(result_string) + [result_unit] + get_value(striped_string[-result_unit.power :])
 
     system = create_system(numbering_type)
 
@@ -739,9 +742,11 @@ def num2chn(
             return CHINESE_DIGIS[0] + result
 
     # ^10, 11, .., 19
-    if len(result) >= 2 and result[1] in [
-        SMALLER_CHINESE_NUMERING_UNITS_SIMPLIFIED[0], SMALLER_CHINESE_NUMERING_UNITS_TRADITIONAL[0]
-    ] and result[0] in [CHINESE_DIGIS[1], BIG_CHINESE_DIGIS_SIMPLIFIED[1], BIG_CHINESE_DIGIS_TRADITIONAL[1]]:
+    if (
+        len(result) >= 2
+        and result[1] in [SMALLER_CHINESE_NUMERING_UNITS_SIMPLIFIED[0], SMALLER_CHINESE_NUMERING_UNITS_TRADITIONAL[0]]
+        and result[0] in [CHINESE_DIGIS[1], BIG_CHINESE_DIGIS_SIMPLIFIED[1], BIG_CHINESE_DIGIS_TRADITIONAL[1]]
+    ):
         result = result[1:]
 
     return result
@@ -1034,11 +1039,11 @@ def remove_erhua(text):
                 remove_er_flag = 1
 
         if remove_er_flag == 0:
-            new_str = new_str + text[0:a[0]]
-            text = text[a[1]:]
+            new_str = new_str + text[0 : a[0]]
+            text = text[a[1] :]
         else:
-            new_str = new_str + text[0:b[1]]
-            text = text[b[1]:]
+            new_str = new_str + text[0 : b[1]]
+            text = text[b[1] :]
 
     text = new_str + text
     return text
@@ -1056,7 +1061,6 @@ def remove_space(text):
 
 
 class TextNorm:
-
     def __init__(
         self,
         to_banjiao: bool = False,
@@ -1126,7 +1130,9 @@ if __name__ == '__main__':
     p.add_argument('--to_upper', action='store_true', help='convert to upper case')
     p.add_argument('--to_lower', action='store_true', help='convert to lower case')
     p.add_argument('--remove_fillers', action='store_true', help='remove filler chars such as "呃, 啊"')
-    p.add_argument('--remove_erhua', action='store_true', help='remove erhua chars such as "他女儿在那边儿 -> 他女儿在那边"')
+    p.add_argument(
+        '--remove_erhua', action='store_true', help='remove erhua chars such as "他女儿在那边儿 -> 他女儿在那边"'
+    )
     p.add_argument('--check_chars', action='store_true', help='skip sentences containing illegal chars')
     p.add_argument('--remove_space', action='store_true', help='remove whitespace')
     p.add_argument(

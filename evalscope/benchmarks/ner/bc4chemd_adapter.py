@@ -48,7 +48,6 @@ The BC4CHEMD (BioCreative IV CHEMDNER) dataset is a corpus of 10,000 PubMed abst
     )
 )
 class BC4CHEMDAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)

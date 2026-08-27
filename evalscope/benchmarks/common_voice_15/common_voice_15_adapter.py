@@ -61,7 +61,6 @@ Common Voice 15 is a massively multilingual speech corpus collected by Mozilla, 
     )
 )
 class CommonVoice15Adapter(AudioLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -80,7 +79,7 @@ class CommonVoice15Adapter(AudioLanguageAdapter):
                 'locale': locale,
                 'path': record.get('path', ''),
                 'lang_id': LOCALE_TO_LANG.get(locale, locale),
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):

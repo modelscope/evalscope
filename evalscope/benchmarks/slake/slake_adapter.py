@@ -151,7 +151,7 @@ class SLAKEAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'],
-            subset_key=f"{record['q_lang']}_{record['answer_type'].lower()}",
+            subset_key=f'{record["q_lang"]}_{record["answer_type"].lower()}',
             metadata={
                 'qid': record['qid'],
                 'img_name': img_name,

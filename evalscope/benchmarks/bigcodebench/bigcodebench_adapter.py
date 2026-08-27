@@ -76,41 +76,34 @@ _EXTRA_PARAMS = {
         'type': 'str',
         'description': 'Evaluation mode: "complete" (docstring completion) or "instruct" (NL instruction).',
         'value': 'instruct',
-        'choices': ['complete', 'instruct']
+        'choices': ['complete', 'instruct'],
     },
     'version': {
         'type': 'str',
         'description': 'Dataset version. Use "default" for the latest available version.',
-        'value': 'default'
+        'value': 'default',
     },
     'calibrate': {
         'type': 'bool',
         'description': 'Whether to prepend code_prompt to the solution for function signature alignment.',
-        'value': True
+        'value': True,
     },
     'docker_build_context': {
         'type': 'str',
         'description': 'Optional local Docker build context. When set, overrides the default sandbox image.',
-        'value': ''
+        'value': '',
     },
-    'dockerfile': {
-        'type': 'str',
-        'description': 'Dockerfile path inside docker_build_context.',
-        'value': 'Dockerfile'
-    },
+    'dockerfile': {'type': 'str', 'description': 'Dockerfile path inside docker_build_context.', 'value': 'Dockerfile'},
     'force_rebuild': {
         'type': 'bool',
         'description': 'Force rebuilding the optional local Docker image.',
-        'value': False
-    }
+        'value': False,
+    },
 }
 
 _SANDBOX_CONFIG = {
     'image': 'bigcodebench/bigcodebench-evaluate:latest',
-    'tools_config': {
-        'shell_executor': {},
-        'python_executor': {}
-    },
+    'tools_config': {'shell_executor': {}, 'python_executor': {}},
     'memory_limit': '4g',
 }
 
@@ -174,7 +167,7 @@ class BigCodeBenchAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
                 'complete_prompt': record['complete_prompt'],
                 'code_prompt': record['code_prompt'],
                 'test': record['test'],
-            }
+            },
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
@@ -250,4 +243,5 @@ class BigCodeBenchHardAdapter(BigCodeBenchAdapter):
     BigCodeBench-Hard adapter. Inherits all logic from BigCodeBenchAdapter.
     Uses the curated hard subset (148 tasks) of BigCodeBench.
     """
+
     pass

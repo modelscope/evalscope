@@ -175,7 +175,7 @@ def _create_ngrams(tokens, n):
     """
 
     ngrams = collections.Counter()
-    for ngram in (tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)):
+    for ngram in (tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)):
         ngrams[ngram] += 1
     return ngrams
 

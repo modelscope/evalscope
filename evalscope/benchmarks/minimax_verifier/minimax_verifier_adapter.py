@@ -8,6 +8,7 @@ specific validators; rows without ``check_type`` default to tool_calls
 validation. The ``error_only_reasoning`` detector is always-on across all
 rows.
 """
+
 from __future__ import annotations
 
 import json
@@ -106,7 +107,6 @@ def _decode_maybe_json(value: Any) -> Any:
     )
 )
 class MiniMaxVerifierAdapter(FunctionCallAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

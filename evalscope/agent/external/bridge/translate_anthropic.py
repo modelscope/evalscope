@@ -157,7 +157,8 @@ def _anthropic_internal_from_block(block: Dict[str, Any]) -> Optional[Dict[str, 
 
 def _has_anthropic_cache_control(internal: Any) -> bool:
     return (
-        isinstance(internal, dict) and isinstance(internal.get('anthropic'), dict)
+        isinstance(internal, dict)
+        and isinstance(internal.get('anthropic'), dict)
         and isinstance(internal['anthropic'].get('cache_control'), dict)
     )
 
@@ -188,10 +189,12 @@ def anthropic_tools_to_tool_infos(tools: Sequence[Dict[str, Any]]) -> List[ToolI
 def _safe_tool_params(schema: Dict[str, Any]) -> ToolParams:
     try:
         # ToolParams.type is Literal['object']; only forward properties/required.
-        return ToolParams.model_validate({
-            'properties': schema.get('properties', {}) or {},
-            'required': schema.get('required', []) or [],
-        })
+        return ToolParams.model_validate(
+            {
+                'properties': schema.get('properties', {}) or {},
+                'required': schema.get('required', []) or [],
+            }
+        )
     except Exception:
         return ToolParams()
 
@@ -210,12 +213,14 @@ def model_output_to_anthropic_response(
             blocks.append({'type': 'text', 'text': text})
         for tc in message.tool_calls or []:
             name, args = unpack_tool_call(tc)
-            blocks.append({
-                'type': 'tool_use',
-                'id': tc.id,
-                'name': name,
-                'input': args,
-            })
+            blocks.append(
+                {
+                    'type': 'tool_use',
+                    'id': tc.id,
+                    'name': name,
+                    'input': args,
+                }
+            )
     if not blocks:
         blocks.append({'type': 'text', 'text': ''})
 

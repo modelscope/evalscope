@@ -48,7 +48,6 @@ BiomixQA is a curated biomedical question-answering dataset designed to evaluate
     )
 )
 class BioMixQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

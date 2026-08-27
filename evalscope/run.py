@@ -2,6 +2,7 @@
 """
 Run evaluation for LLMs.
 """
+
 import os
 from argparse import Namespace
 from typing import Dict, List, Union
@@ -61,6 +62,7 @@ def shutdown_sandbox_service_if_enabled(task_cfg: TaskConfig) -> None:
 
     try:
         from evalscope.api.sandbox import shutdown_sandbox_service
+
         shutdown_sandbox_service()
     except Exception as exc:
         logger.warning(f'Failed to shut down sandbox service: {exc}')
@@ -86,6 +88,7 @@ def setup_work_directory(task_cfg: TaskConfig):
         task_cfg.eval_config['work_dir'] = task_cfg.work_dir
     elif task_cfg.eval_backend == EvalBackend.RAG_EVAL:
         from evalscope.backend.rag_eval import Tools
+
         eval_cfg = task_cfg.eval_config
         tool = getattr(eval_cfg, 'tool', '').lower()
         if tool == Tools.MTEB:
@@ -119,14 +122,17 @@ def get_backend_manager_class(eval_backend: EvalBackend):
     if eval_backend == EvalBackend.OPEN_COMPASS:
         logger.info('Using OpenCompassBackendManager')
         from evalscope.backend.opencompass import OpenCompassBackendManager
+
         return OpenCompassBackendManager
     elif eval_backend == EvalBackend.VLM_EVAL_KIT:
         logger.info('Using VLMEvalKitBackendManager')
         from evalscope.backend.vlm_eval_kit import VLMEvalKitBackendManager
+
         return VLMEvalKitBackendManager
     elif eval_backend == EvalBackend.RAG_EVAL:
         logger.info('Using RAGEvalBackendManager')
         from evalscope.backend.rag_eval import RAGEvalBackendManager
+
         return RAGEvalBackendManager
     elif eval_backend == EvalBackend.THIRD_PARTY:
         raise NotImplementedError(f'Not implemented for evaluation backend {eval_backend}')
@@ -240,8 +246,10 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         gc.collect()
 
         from evalscope.utils.import_utils import check_import
+
         if check_import('torch', raise_warning=False):
             import torch
+
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
@@ -250,6 +258,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
 
 def main():
     from evalscope.arguments import parse_args
+
     args = parse_args()
     run_task(args)
 

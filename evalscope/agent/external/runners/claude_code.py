@@ -164,9 +164,7 @@ class ClaudeCodeRunner(AgentRunner):
             'ANTHROPIC_API_KEY': bridge.trial_token,
             'ANTHROPIC_AUTH_TOKEN': bridge.trial_token,
             # Anthropic SDK's "model" env var (used by some auto-discovery paths).
-            **({
-                'ANTHROPIC_MODEL': self._model_name
-            } if self._model_name else {}),
+            **({'ANTHROPIC_MODEL': self._model_name} if self._model_name else {}),
             # Inspect-AI's two load-bearing env vars: suppress the OAuth /
             # keychain probe and the telemetry / auto-update HTTPS calls
             # that otherwise block for ~60s in offline / bridged setups.
@@ -230,8 +228,7 @@ class ClaudeCodeRunner(AgentRunner):
             )
             if result.timed_out:
                 raise RunnerTimeoutError(
-                    f'claude-code timed out after {task.timeout}s '
-                    f'(returncode={result.returncode})'
+                    f'claude-code timed out after {task.timeout}s (returncode={result.returncode})'
                 )
             if result.returncode != 0:
                 tail_stderr = (result.stderr or '').strip()[-2000:]

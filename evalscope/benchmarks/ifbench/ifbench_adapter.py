@@ -60,7 +60,6 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
     )
 )
 class IFBenchAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

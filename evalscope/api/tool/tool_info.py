@@ -12,13 +12,11 @@ ToolParam: TypeAlias = JSONSchema
 
 
 class Tool:
-
     def __call__(
         self,
         *args: Any,
         **kwargs: Any,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 class ToolParams(BaseModel):
@@ -95,7 +93,7 @@ class ToolInfo(BaseModel):
 def parse_tool_info(func: Callable[..., Any]) -> ToolInfo:
     # tool may already have registry attributes w/ tool info
     description = tool_description(func)
-    if (description.name and description.description and description.parameters is not None):
+    if description.name and description.description and description.parameters is not None:
         return ToolInfo(
             name=description.name,
             description=description.description,

@@ -47,7 +47,6 @@ The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created t
     )
 )
 class JNLPBARareAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)
@@ -58,7 +57,7 @@ class JNLPBARareAdapter(NERAdapter):
         # Add descriptions for each entity type
         self.entity_descriptions = {
             'RNA': 'Names of RNA molecules',
-            'CELL_LINE': 'Names of specific, cultured cell lines'
+            'CELL_LINE': 'Names of specific, cultured cell lines',
         }
 
         # Setup entity mappings based on the defined entity types

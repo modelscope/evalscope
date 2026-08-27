@@ -29,6 +29,7 @@ class AudioLanguageAdapter(DefaultDataAdapter):
         import io
 
         from evalscope.utils.import_utils import check_import
+
         check_import('soundfile', raise_error=True, feature_name='AudioLanguageAdapter')
         import soundfile as sf
 

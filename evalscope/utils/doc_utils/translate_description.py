@@ -92,13 +92,13 @@ Example translations:
     try:
         completion = client.chat.completions.create(
             model='qwen3-max',
-            messages=[{
-                'role': 'system',
-                'content': system_prompt
-            }, {
-                'role': 'user',
-                'content': f'Translate this benchmark documentation for "{benchmark_name}":\n\n{readme_content}'
-            }],
+            messages=[
+                {'role': 'system', 'content': system_prompt},
+                {
+                    'role': 'user',
+                    'content': f'Translate this benchmark documentation for "{benchmark_name}":\n\n{readme_content}',
+                },
+            ],
             temperature=0.3,
         )
         translated = completion.choices[0].message.content.strip()

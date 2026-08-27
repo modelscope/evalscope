@@ -118,18 +118,9 @@ def gen_perf_html_report(
         latency_tabs.append({'label': 'TPOT', 'chart': charts.build_tpot_chart(runs)})
 
     throughput_tabs = [
-        {
-            'label': 'Request Throughput',
-            'chart': charts.build_rps_chart(runs)
-        },
-        {
-            'label': 'Token Throughput',
-            'chart': charts.build_throughput_chart(runs, is_emb)
-        },
-        {
-            'label': 'Success Rate',
-            'chart': charts.build_success_chart(runs)
-        },
+        {'label': 'Request Throughput', 'chart': charts.build_rps_chart(runs)},
+        {'label': 'Token Throughput', 'chart': charts.build_throughput_chart(runs, is_emb)},
+        {'label': 'Success Rate', 'chart': charts.build_success_chart(runs)},
     ]
 
     # ── Summary table ───────────────────────────────────────────────────────

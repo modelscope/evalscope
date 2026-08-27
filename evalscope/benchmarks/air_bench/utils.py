@@ -133,10 +133,7 @@ def download_air_bench(
     # Fast path: return immediately when every requested subset is cached.
     local_cached = _resolve_local_cache(dataset_id, track, cache_dir, subset_dirs)
     if local_cached is not None:
-        logger.info(
-            f'AIR-Bench {track} already present in local cache at `{local_cached}`. '
-            'Skipping remote download.'
-        )
+        logger.info(f'AIR-Bench {track} already present in local cache at `{local_cached}`. Skipping remote download.')
         return local_cached
 
     from modelscope import dataset_snapshot_download
@@ -180,8 +177,7 @@ def load_meta(track_root: str, track: str) -> List[Dict[str, Any]]:
     meta_path = os.path.join(track_root, track, f'{track}_meta.json')
     if not os.path.exists(meta_path):
         raise FileNotFoundError(
-            f'AIR-Bench meta file not found at {meta_path}. '
-            'Make sure the dataset has been downloaded correctly.'
+            f'AIR-Bench meta file not found at {meta_path}. Make sure the dataset has been downloaded correctly.'
         )
     with open(meta_path, 'r', encoding='utf-8') as f:
         return json.load(f)

@@ -64,7 +64,6 @@ ChartQA is a benchmark designed to evaluate question-answering capabilities over
     )
 )
 class ChartQAAdapter(VisionLanguageAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -77,7 +76,7 @@ class ChartQAAdapter(VisionLanguageAdapter):
 
         content_list: List[Content] = [
             ContentText(text=OPEN_PROMPT.format(question=question)),
-            ContentImage(image=image_base64)
+            ContentImage(image=image_base64),
         ]
 
         return Sample(

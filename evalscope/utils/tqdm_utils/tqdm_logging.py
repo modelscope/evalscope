@@ -80,8 +80,10 @@ class TqdmLogging(tqdm):
 
     def check_log(self):
         """Check if logging is needed based on time interval."""
-        if self.custom_logger and self.log_interval is not None and (
-            time.time() - self.last_log_time >= self.log_interval
+        if (
+            self.custom_logger
+            and self.log_interval is not None
+            and (time.time() - self.last_log_time >= self.log_interval)
         ):
             self._log_status()
             self.last_log_time = time.time()
@@ -111,7 +113,9 @@ class TqdmLogging(tqdm):
         # Variables like {desc}, {percentage}, {remaining} are standard placeholders supported by format_meter
         # We removed {bar} to keep only text information
         # {remaining} is the ETA calculated by tqdm
-        log_fmt = '{desc} {percentage:3.0f}%| {n_fmt}/{total_fmt} [Elapsed: {elapsed} < Remaining: {remaining}, {rate_fmt}]'  # noqa E501
+        log_fmt = (
+            '{desc} {percentage:3.0f}%| {n_fmt}/{total_fmt} [Elapsed: {elapsed} < Remaining: {remaining}, {rate_fmt}]'  # noqa E501
+        )
 
         # 3. Force override bar_format
         d['bar_format'] = log_fmt

@@ -4,6 +4,7 @@ The contract owns both halves of the format agreement -- the requirement written
 and the parser that reads the reply -- so the two cannot drift apart. A reply that does not
 satisfy the schema is a ``parse_error``, never a silently-zero score.
 """
+
 import json
 from typing import Any, List, Literal, Optional, Sequence, Type, get_args, get_origin
 
@@ -100,7 +101,7 @@ def _payloads(response: str) -> List[str]:
         elif char == '}' and depth:
             depth -= 1
             if depth == 0:
-                found.append(response[start:index + 1])
+                found.append(response[start : index + 1])
     return found
 
 
@@ -113,13 +114,23 @@ def _describe(field: Any) -> str:
 
     bounds = [
         f'>= {meta.ge}'
-        if getattr(meta, 'ge', None) is not None else f'<= {meta.le}' if getattr(meta, 'le', None) is not None else ''
+        if getattr(meta, 'ge', None) is not None
+        else f'<= {meta.le}'
+        if getattr(meta, 'le', None) is not None
+        else ''
         for meta in field.metadata
     ]
     bounds = [bound for bound in bounds if bound]
     kind = (
-        'true or false' if annotation is bool else 'an integer' if annotation is int else
-        'a number' if annotation is float else 'a list' if get_origin(annotation) is list else 'a string'
+        'true or false'
+        if annotation is bool
+        else 'an integer'
+        if annotation is int
+        else 'a number'
+        if annotation is float
+        else 'a list'
+        if get_origin(annotation) is list
+        else 'a string'
     )
     if bounds:
         return f'{kind} {" and ".join(bounds)}'

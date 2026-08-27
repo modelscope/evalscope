@@ -249,8 +249,7 @@ class SandboxService:
 
         self._managers[key] = manager
         logger.info(
-            f'SandboxService: manager started for engine={engine.value} '
-            f'(total_managers={len(self._managers)}).'
+            f'SandboxService: manager started for engine={engine.value} (total_managers={len(self._managers)}).'
         )
         return manager
 
@@ -299,6 +298,7 @@ class SandboxService:
 
         # Default path: ms_enclave ``SandboxManagerFactory`` (covers docker).
         from ms_enclave.sandbox.manager import SandboxManagerFactory
+
         return SandboxManagerFactory.create_manager(**manager_config)
 
     # ------------------------------------------------------------------

@@ -64,10 +64,10 @@ class BERTScorer:
             - :param: `use_fast_tokenizer` (bool): `use_fast` parameter passed to HF tokenizer
         """
 
-        assert (lang is not None or model_type is not None), 'Either lang or model_type should be specified'
+        assert lang is not None or model_type is not None, 'Either lang or model_type should be specified'
 
         if rescale_with_baseline:
-            assert (lang is not None), 'Need to specify Language when rescaling with baseline'
+            assert lang is not None, 'Need to specify Language when rescaling with baseline'
 
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'

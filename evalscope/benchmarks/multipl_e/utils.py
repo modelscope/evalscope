@@ -79,7 +79,7 @@ def trim_by_stop_tokens(text: str, stop_tokens: List[str]) -> str:
             pattern = re.compile(st[3:].strip())
             match = pattern.search(text)
             if match:
-                text = text[:match.start()]
+                text = text[: match.start()]
         else:
             index = text.find(st)
             if index != -1:

@@ -66,7 +66,7 @@ class CoNLL2003Adapter(NERAdapter):
             'PER': 'Names of people, including first and last names',
             'ORG': 'Names of companies, institutions, organizations, etc.',
             'LOC': 'Names of locations, cities, states, countries, etc.',
-            'MISC': 'Miscellaneous entities not in the above categories'
+            'MISC': 'Miscellaneous entities not in the above categories',
         }
 
         # Setup entity mappings based on the defined entity types

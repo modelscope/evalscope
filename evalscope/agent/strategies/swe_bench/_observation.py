@@ -97,10 +97,10 @@ def parse_exec_metadata(observation: str) -> Tuple[int, bool, str]:
         return 0, False, ''
     timeout_match = _TIMEOUT_TAIL_RE.search(observation)
     if timeout_match:
-        return 124, True, observation[:timeout_match.start()].rstrip('\n')
+        return 124, True, observation[: timeout_match.start()].rstrip('\n')
     exit_match = _EXIT_TAIL_RE.search(observation)
     if exit_match:
-        return int(exit_match.group(1)), False, observation[:exit_match.start()].rstrip('\n')
+        return int(exit_match.group(1)), False, observation[: exit_match.start()].rstrip('\n')
     return 0, False, observation
 
 
@@ -194,13 +194,11 @@ def format_exec_observation(
     rc, timed_out, body = parse_exec_metadata(observation or '')
 
     if timed_out:
-        return (f'<returncode>{rc}</returncode>\n'
-                f'<exception>Command timed out.</exception>')
+        return f'<returncode>{rc}</returncode>\n<exception>Command timed out.</exception>'
 
     body_text = body or ''
     if len(body_text) < max_chars:
-        return (f'<returncode>{rc}</returncode>\n'
-                f'<output>\n{body_text.rstrip()}\n</output>')
+        return f'<returncode>{rc}</returncode>\n<output>\n{body_text.rstrip()}\n</output>'
 
     elided = len(body_text) - max_chars
     return (

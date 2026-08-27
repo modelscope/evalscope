@@ -1,4 +1,5 @@
 """OpenAI/Cohere-style Rerank API plugin for evalscope perf."""
+
 import json
 import sys
 import time

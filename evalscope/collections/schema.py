@@ -11,6 +11,7 @@ from evalscope.config import TaskConfig
 @dataclass
 class DatasetInfo:
     """Metadata and configuration for a single dataset in a collection."""
+
     name: str
     weight: float = 1.0  # dataset-level weight in the collection
     task_type: str = ''
@@ -64,6 +65,7 @@ def flatten_datasets(collection: 'CollectionSchema') -> List[DatasetInfo]:
 @dataclass
 class CollectionSchema:
     """Schema describing a collection of datasets, possibly nested."""
+
     name: str
     weight: float = 1.0
     datasets: List[Union[DatasetInfo, 'CollectionSchema']] = field(default_factory=list)
@@ -113,14 +115,17 @@ if __name__ == '__main__':
     schema = CollectionSchema(
         name='reasoning',
         datasets=[
-            CollectionSchema(name='english', datasets=[
-                DatasetInfo(name='arc', weight=1, tags=['en']),
-            ]),
+            CollectionSchema(
+                name='english',
+                datasets=[
+                    DatasetInfo(name='arc', weight=1, tags=['en']),
+                ],
+            ),
             CollectionSchema(
                 name='chinese',
-                datasets=[DatasetInfo(name='ceval', weight=1, tags=['zh'], args={'subset_list': ['logic']})]
-            )
-        ]
+                datasets=[DatasetInfo(name='ceval', weight=1, tags=['zh'], args={'subset_list': ['logic']})],
+            ),
+        ],
     )
     print(schema)
     print(schema.flatten())
@@ -131,4 +136,4 @@ if __name__ == '__main__':
     # 打印扁平化后的结果
     for dataset in schema.flatten():
         print(f'Dataset: {dataset.name}')
-        print(f"Hierarchy: {' -> '.join(dataset.hierarchy)}")
+        print(f'Hierarchy: {" -> ".join(dataset.hierarchy)}')

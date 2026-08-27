@@ -34,10 +34,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
     total_count = args.total_count
 
     if warmup_count > 0:
-        logger.info(
-            f'Warmup enabled: {warmup_count} warmup requests '
-            f'(total: {total_count}, benchmark: {args.number})'
-        )
+        logger.info(f'Warmup enabled: {warmup_count} warmup requests (total: {total_count}, benchmark: {args.number})')
 
     async def _generate_from_prompt():
         """Generate requests by repeating a single prompt."""
@@ -74,7 +71,7 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
                 desc='Generating[requests]',
                 total=total_count,
                 initial=0,
-                logger=logger
+                logger=logger,
             ) as pbar:
                 for messages in pbar:
                     dataset_messages.append(messages)

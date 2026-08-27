@@ -3,6 +3,7 @@
 
 The 'app' command is deprecated.  Use 'evalscope service' instead.
 """
+
 import warnings
 from argparse import ArgumentParser
 

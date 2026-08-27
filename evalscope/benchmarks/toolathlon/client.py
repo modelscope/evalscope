@@ -216,10 +216,7 @@ class ToolathlonServiceClient:
     def _download_task_archive(self, client: Any, job_id: str, task_name: str) -> None:
         response = client.get(
             f'{self.config.server_url}/get_task_archive',
-            params={
-                'job_id': job_id,
-                'task_name': task_name
-            },
+            params={'job_id': job_id, 'task_name': task_name},
             timeout=120.0,
         )
         response.raise_for_status()
@@ -408,8 +405,9 @@ async def run_ws_proxy(server_url: str, llm_base_url: str, llm_api_key: str, job
             queue_get_task = asyncio.create_task(request_queue.get())
             try:
                 while True:
-                    done, _ = await asyncio.wait({queue_get_task, *active_request_tasks},
-                                                 return_when=asyncio.FIRST_COMPLETED)
+                    done, _ = await asyncio.wait(
+                        {queue_get_task, *active_request_tasks}, return_when=asyncio.FIRST_COMPLETED
+                    )
                     if queue_get_task in done:
                         request = queue_get_task.result()
                         request_task = asyncio.create_task(process_request(request, client))

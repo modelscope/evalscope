@@ -88,15 +88,20 @@ def _legacy_primary_identity(metrics: Any, legacy_primary_name: Any) -> Optional
 
     if isinstance(legacy_primary_name, str) and legacy_primary_name:
         matches = [
-            metric.get('identity') for metric in metrics if isinstance(metric, dict) and
-            (metric.get('legacy_name') == legacy_primary_name or metric.get('name') == legacy_primary_name)
+            metric.get('identity')
+            for metric in metrics
+            if isinstance(metric, dict)
+            and (metric.get('legacy_name') == legacy_primary_name or metric.get('name') == legacy_primary_name)
         ]
         if len(matches) == 1 and isinstance(matches[0], dict):
             return matches[0]
 
     role_matches = [
-        metric.get('identity') for metric in metrics if isinstance(metric, dict)
-        and isinstance(metric.get('semantics'), dict) and metric['semantics'].get('role') == 'primary'
+        metric.get('identity')
+        for metric in metrics
+        if isinstance(metric, dict)
+        and isinstance(metric.get('semantics'), dict)
+        and metric['semantics'].get('role') == 'primary'
     ]
     if len(role_matches) == 1 and isinstance(role_matches[0], dict):
         return role_matches[0]

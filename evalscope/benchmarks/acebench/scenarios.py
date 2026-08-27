@@ -6,6 +6,7 @@ The simulated API classes themselves are vendored under
 in ``multi_step_utils``: picking the classes a sample involves, applying its initial state, and
 capturing the attributes the checker grades.
 """
+
 import importlib
 import json
 from copy import deepcopy

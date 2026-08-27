@@ -1,6 +1,7 @@
 """
 Data loading and processing utilities for reports and predictions.
 """
+
 import glob
 import os
 from typing import Any, Dict, List, Union
@@ -125,15 +126,17 @@ def get_quality_report_df(report_list: List[Report]) -> pd.DataFrame:
         quality_ratio = bounded_quality_ratio(metric.score, metric.semantics)
         if quality_ratio is None:
             continue
-        rows.append({
-            ReportKey.model_name: report.model_name,
-            ReportKey.dataset_name: report.dataset_name,
-            ReportKey.metric_name: metric.name,
-            ReportKey.score: quality_ratio,
-            ReportKey.raw_score: metric.score,
-            ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
-            ReportKey.num: metric.num,
-        })
+        rows.append(
+            {
+                ReportKey.model_name: report.model_name,
+                ReportKey.dataset_name: report.dataset_name,
+                ReportKey.metric_name: metric.name,
+                ReportKey.score: quality_ratio,
+                ReportKey.raw_score: metric.score,
+                ReportKey.display_score: format_metric_value(metric.score, metric.semantics),
+                ReportKey.num: metric.num,
+            }
+        )
     return pd.DataFrame.from_records(
         rows,
         columns=[
@@ -168,9 +171,11 @@ def get_comparison_quality_report_df(report_groups: List[tuple[ReportRef, List[R
 
 def get_quality_metric_df(report_list: List[Report], metric_df: pd.DataFrame) -> pd.DataFrame:
     """Normalize metric rows for charts while retaining their native display value."""
-    semantics_by_metric = {(report.model_name, report.dataset_name, metric.name): metric.semantics
-                           for report in report_list
-                           for metric in report.metrics}
+    semantics_by_metric = {
+        (report.model_name, report.dataset_name, metric.name): metric.semantics
+        for report in report_list
+        for metric in report.metrics
+    }
     rows = []
     for _, row in metric_df.iterrows():
         semantics = semantics_by_metric.get(
@@ -322,11 +327,14 @@ def _serialize_messages(review_result: ReviewResult) -> List[Dict[str, Any]]:
             if m.role == 'assistant':
                 tool_calls = getattr(m, 'tool_calls', None)
                 if tool_calls:
-                    entry['tool_calls'] = [{
-                        'id': tc.id,
-                        'function': tc.function.name,
-                        'arguments': tc.function.arguments,
-                    } for tc in tool_calls]
+                    entry['tool_calls'] = [
+                        {
+                            'id': tc.id,
+                            'function': tc.function.name,
+                            'arguments': tc.function.arguments,
+                        }
+                        for tc in tool_calls
+                    ]
                 model_name = getattr(m, 'model', None)
                 if model_name:
                     entry['model'] = model_name
@@ -382,11 +390,13 @@ def _apply_legacy_perf_compat(
     if prediction:
         has_assistant = any(m['role'] == 'assistant' for m in messages_data)
         if not has_assistant:
-            messages_data.append({
-                'role': 'assistant',
-                'content': prediction,
-                'perf_metrics': fallback_perf,
-            })
+            messages_data.append(
+                {
+                    'role': 'assistant',
+                    'content': prediction,
+                    'perf_metrics': fallback_perf,
+                }
+            )
 
     return messages_data
 

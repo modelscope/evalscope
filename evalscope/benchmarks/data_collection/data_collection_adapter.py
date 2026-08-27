@@ -69,7 +69,6 @@ Data-Collection is a flexible framework for mixing multiple evaluation datasets 
     )
 )
 class DataCollectionAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         """
         Data adapter for collection dataset.
@@ -162,12 +161,9 @@ class DataCollectionAdapter(DefaultDataAdapter):
         # Compute all reports from sample-level data; macro is hierarchical where applicable
         subset_report_df = self._group_and_compute(df, ['task_type', 'dataset_name', 'subset_name'])
         # Only keep micro_avg. for subset level (drop macro_avg. and weighted_avg.)
-        subset_report_df = [{
-            k: v
-            for k, v in row.items()
-            if k not in ('macro_avg.', 'weighted_avg.')
-        }
-                            for row in subset_report_df]  # noqa
+        subset_report_df = [
+            {k: v for k, v in row.items() if k not in ('macro_avg.', 'weighted_avg.')} for row in subset_report_df
+        ]  # noqa
         dataset_report_df = self._group_and_compute(df, ['task_type', 'dataset_name'], macro_child='subset_name')
         task_report_df = self._group_and_compute(df, ['task_type'], macro_child='subset_name')
         tag_report_df = self._build_tag_level_report(df)
@@ -226,17 +222,19 @@ class DataCollectionAdapter(DefaultDataAdapter):
                 continue
 
             # Each row represents one sample
-            records.append({
-                'task_type': collection_info['task_type'],
-                'categories': tuple(collection_info['categories']),
-                'dataset_name': collection_info['dataset_name'],
-                'subset_name': collection_info['subset_name'],
-                'tags': collection_info['tags'],
-                'sample_id': sample_score.sample_id,
-                'metric': main_metric,
-                'score': main_score,
-                'sample_weight': sample_weight,
-            })
+            records.append(
+                {
+                    'task_type': collection_info['task_type'],
+                    'categories': tuple(collection_info['categories']),
+                    'dataset_name': collection_info['dataset_name'],
+                    'subset_name': collection_info['subset_name'],
+                    'tags': collection_info['tags'],
+                    'sample_id': sample_score.sample_id,
+                    'metric': main_metric,
+                    'score': main_score,
+                    'sample_weight': sample_weight,
+                }
+            )
         # NOTE: All sample weights are assumed (as per new requirement) to sum to ~1 globally.
         # The columns are declared so that an all-excluded run still yields a frame every groupby
         # and the report generator can read, rather than a column-less frame that raises KeyError.
@@ -256,7 +254,7 @@ class DataCollectionAdapter(DefaultDataAdapter):
         grouped = df.groupby(group_cols)
         for keys, g in grouped:
             if not isinstance(keys, tuple):
-                keys = (keys, )
+                keys = (keys,)
             base = {col: key for col, key in zip(group_cols, keys)}
 
             scores = g['score']

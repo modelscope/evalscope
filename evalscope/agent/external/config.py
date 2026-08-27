@@ -83,5 +83,6 @@ class ExternalAgentConfig(BaseAgentConfig):
     @classmethod
     def _validate_framework(cls, v: str) -> str:
         from evalscope.api.registry import get_runner
+
         get_runner(v)  # raises ValueError with available list on typo
         return v

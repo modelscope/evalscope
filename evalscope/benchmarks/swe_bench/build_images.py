@@ -138,7 +138,7 @@ def build_images(
         for s in samples_hf
         if id_to_docker_image[s['instance_id']] not in available_docker_images
     ]
-    assert len(missing_images) == 0, (f'Not all images were built: {missing_images}, {id_to_docker_image}')
+    assert len(missing_images) == 0, f'Not all images were built: {missing_images}, {id_to_docker_image}'
 
     return id_to_docker_image
 

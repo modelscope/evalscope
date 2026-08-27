@@ -30,7 +30,6 @@ from .parallel import parallel_process
 
 
 class TableTree(Tree):
-
     def __init__(self, tag, colspan=None, rowspan=None, content=None, *children):
         self.tag = tag
         self.colspan = colspan
@@ -42,7 +41,10 @@ class TableTree(Tree):
         """Show tree using brackets notation"""
         if self.tag == 'td':
             result = '"tag": %s, "colspan": %d, "rowspan": %d, "text": %s' % (
-                self.tag, self.colspan, self.rowspan, self.content
+                self.tag,
+                self.colspan,
+                self.rowspan,
+                self.content,
             )
         else:
             result = '"tag": %s' % self.tag
@@ -52,7 +54,6 @@ class TableTree(Tree):
 
 
 class CustomConfig(Config):
-
     @staticmethod
     def maximum(*sequences):
         """Get maximum possible value"""
@@ -307,7 +308,7 @@ def convert_str_to_multi_dict(predict_str: str):
 
     last_brace_pos = content.rfind('}')
     if last_brace_pos != -1:
-        content = content[:last_brace_pos + 1]
+        content = content[: last_brace_pos + 1]
 
     data = {}
     success = False
@@ -537,6 +538,7 @@ def get_anls(s1, s2):
     if s1 == s2:
         return 1.0
     import editdistance
+
     iou = 1 - editdistance.eval(s1, s2) / max(len(s1), len(s2))
     anls = iou
     return anls
@@ -714,17 +716,26 @@ def csv_eval(predictions, references, easy, pred_type='json'):
         for elem1 in a:
             for elem2 in b:
                 if is_float(elem1[-1]) and is_float(elem2[-1]):
-                    if (((Levenshtein.distance(''.join(elem1[:-1]), ''.join(elem2[:-1])) <= tol_word) and
-                         (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num))
-                        or ((''.join(elem1[:-1]) in ''.join(elem2[:-1])) and
-                            (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num))
-                        or ((''.join(elem2[:-1]) in ''.join(elem1[:-1])) and
-                            (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num))):
+                    if (
+                        (
+                            (Levenshtein.distance(''.join(elem1[:-1]), ''.join(elem2[:-1])) <= tol_word)
+                            and (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num)
+                        )
+                        or (
+                            (''.join(elem1[:-1]) in ''.join(elem2[:-1]))
+                            and (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num)
+                        )
+                        or (
+                            (''.join(elem2[:-1]) in ''.join(elem1[:-1]))
+                            and (abs(elem1[-1] - elem2[-1]) / (abs(elem2[-1]) + 0.000001) <= tol_num)
+                        )
+                    ):
                         c.add(elem1)
                 else:
-                    if Levenshtein.distance(
-                        ''.join([str(i) for i in elem1]), ''.join([str(j) for j in elem2])
-                    ) <= tol_word:
+                    if (
+                        Levenshtein.distance(''.join([str(i) for i in elem1]), ''.join([str(j) for j in elem2]))
+                        <= tol_word
+                    ):
                         c.add(elem1)
         return list(c)
 
@@ -810,7 +821,7 @@ def csv_eval(predictions, references, easy, pred_type='json'):
             delimiter=delimiter,
             tol_word=tol_word,
             tol_num=tol_num,
-            pred_type=pred_type
+            pred_type=pred_type,
         )
         ap = len([num for num in sim_list if num >= sim_threhold]) / (len(sim_list) + 1e-16)
         return ap
@@ -858,7 +869,21 @@ def csv_eval(predictions, references, easy, pred_type='json'):
     ap_75_high = get_ap(predictions, labels, sim_threhold=0.75, tolerance='high', separator=s, delimiter=d, easy=easy)
     ap_90_high = get_ap(predictions, labels, sim_threhold=0.90, tolerance='high', separator=s, delimiter=d, easy=easy)
 
-    return em, map_strict, map_slight, map_high, ap_50_strict, ap_75_strict, ap_90_strict, ap_50_slight, ap_75_slight, ap_90_slight, ap_50_high, ap_75_high, ap_90_high
+    return (
+        em,
+        map_strict,
+        map_slight,
+        map_high,
+        ap_50_strict,
+        ap_75_strict,
+        ap_90_strict,
+        ap_50_slight,
+        ap_75_slight,
+        ap_90_slight,
+        ap_50_high,
+        ap_75_high,
+        ap_90_high,
+    )
 
 
 def draw_SCRM_table(
@@ -893,9 +918,9 @@ def draw_SCRM_table(
             -----------------------------------------------------------\n
             |             |                 |   strict    |    {'%.4f' % ap_50_strict}    |\n
             |             |                  ---------------------------\n
-            |  Precison   |       0.5       |   slight    |    {'%.4f' % ap_50_slight }    |\n
+            |  Precison   |       0.5       |   slight    |    {'%.4f' % ap_50_slight}    |\n
             |             |                  ---------------------------\n
-            |             |                 |    high     |    {'%.4f' % ap_50_high }    |\n
+            |             |                 |    high     |    {'%.4f' % ap_50_high}    |\n
             -----------------------------------------------------------\n
             |             |                 |   strict    |    {'%.4f' % ap_75_strict}    |\n
             |             |                  ---------------------------\n
@@ -905,7 +930,7 @@ def draw_SCRM_table(
             -----------------------------------------------------------\n
             |             |                 |   strict    |    {'%.4f' % ap_90_strict}    |\n
             |             |                  ---------------------------\n
-            |  Precison   |       0.9       |   slight    |    {'%.4f' % ap_90_slight }    |\n
+            |  Precison   |       0.9       |   slight    |    {'%.4f' % ap_90_slight}    |\n
             |             |                  ---------------------------\n
             |             |                 |    high     |    {'%.4f' % ap_90_high}    |\n
             -----------------------------------------------------------\n
@@ -949,7 +974,7 @@ if __name__ == '__main__':
         'company': ['OLD TOWN KOPITAM SND BHD'],
         'date': ['2024/9/27'],
         'address': ['SRI RAMPAI'],
-        'total': ['30']
+        'total': ['30'],
     }
     teds = TEDS(n_jobs=4)
     pred_dict_html = dict_to_html(pred_dict)

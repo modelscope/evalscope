@@ -159,7 +159,7 @@ def calculate_score_fullscale(reference, user):
                     # S-shaped scaling function
                     # Formula visualization: https://www.desmos.com/calculator
                     # 6.5 * 1 / (1 + e^(-1.2 * (x - 4)))
-                    scaled_difference = 6.5 * (1 / (1 + math.e**(-1.2 * (d - 4))))
+                    scaled_difference = 6.5 * (1 / (1 + math.e ** (-1.2 * (d - 4))))
                 else:
                     scaled_difference = d
                 difference_tally += scaled_difference

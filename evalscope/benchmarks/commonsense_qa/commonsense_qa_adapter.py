@@ -48,7 +48,6 @@ CommonsenseQA is a benchmark for evaluating AI models' ability to answer questio
     )
 )
 class CommonsenseQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

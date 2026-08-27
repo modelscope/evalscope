@@ -78,18 +78,13 @@ CMMU is a novel Chinese multi-modal benchmark designed to evaluate domain-specif
 - Chain-of-thought prompting for reasoning
 """,
         subset_list=SUBSET_LIST,
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         default_subset='default',
         eval_split='val',
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
 class CMMUAdapter(VisionLanguageAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, *args, **kwargs):
@@ -112,7 +107,7 @@ class CMMUAdapter(VisionLanguageAdapter):
 
         question_type = record.get('type')
         if question_type == FILL_IN_BLANK_TYPE:
-            target_str = '\n'.join(f'答案 ({i+1}): {ans}' for i, ans in enumerate(record['answer']))
+            target_str = '\n'.join(f'答案 ({i + 1}): {ans}' for i, ans in enumerate(record['answer']))
             return Sample(
                 input=[ChatMessageUser(content=content_list)],
                 target=target_str,
@@ -149,21 +144,21 @@ class CMMUAdapter(VisionLanguageAdapter):
                     extracted_prediction=context.filtered_prediction,
                     prediction=context.original_prediction,
                     value={'acc': 1.0 if context.filtered_prediction == context.reference else 0.0},
-                    main_score_name='acc'
+                    main_score_name='acc',
                 ),
                 reason='deterministic_choice_scoring',
             )
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .prompt import EVALUATION_SYSTEM_PROMPT, EVALUATION_USER_TEMPLATE
+
             prompt_text = EVALUATION_USER_TEMPLATE.format(
                 question=judge_context.task_state.input_text,
                 target=judge_context.reference,
                 predicted_answer=judge_context.original_prediction,
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=EVALUATION_SYSTEM_PROMPT),
-                          ChatMessageUser(content=prompt_text)]
+                messages=[ChatMessageSystem(content=EVALUATION_SYSTEM_PROMPT), ChatMessageUser(content=prompt_text)]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -180,7 +175,7 @@ class CMMUAdapter(VisionLanguageAdapter):
             request=request,
             reduce=reduce,
             main_score_name='acc',
-            finalize=finalize
+            finalize=finalize,
         )
 
     @staticmethod
@@ -211,7 +206,7 @@ class CMMUAdapter(VisionLanguageAdapter):
             content_list: List[Content] = [ContentText(text=input_text)]
         else:
             answers_list: List[str] = []
-            sub_questions_str = '\n'.join(f'问题 ({i+1}): {q}' for i, q in enumerate(record['sub_questions']))
+            sub_questions_str = '\n'.join(f'问题 ({i + 1}): {q}' for i, q in enumerate(record['sub_questions']))
             open_question = record['question_info'] + sub_questions_str
             content_list: List[Content] = [ContentText(text=FILL_IN_BLANK_PROMPT.format(question=open_question))]
 

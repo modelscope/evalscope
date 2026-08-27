@@ -174,10 +174,7 @@ class BridgeTraceRecorder:
                         step=next_step,
                         type=EventType.TOOL_RESULT,
                         message_id=msg.id,
-                        payload={
-                            'id': tc_id,
-                            'error': 'unknown' if is_error else None
-                        },
+                        payload={'id': tc_id, 'error': 'unknown' if is_error else None},
                     )
 
             self._step += 1
@@ -204,11 +201,7 @@ class BridgeTraceRecorder:
                     step=self._step,
                     type=EventType.TOOL_CALL,
                     message_id=assistant_msg.id,
-                    payload={
-                        'name': name,
-                        'arguments': args,
-                        'id': tc.id
-                    },
+                    payload={'name': name, 'arguments': args, 'id': tc.id},
                 )
 
     def record_run_start(self, *, framework: str, cmd_summary: str) -> None:
@@ -389,9 +382,7 @@ class BridgeTraceRecorder:
             'local_shell_call_output',
         }
         already_recorded = {
-            m.tool_call_id
-            for m in self._messages
-            if isinstance(m, ChatMessageTool) and m.tool_call_id is not None
+            m.tool_call_id for m in self._messages if isinstance(m, ChatMessageTool) and m.tool_call_id is not None
         }
         new_entries: List[Dict[str, Any]] = []
         for entry in items:
@@ -494,11 +485,13 @@ class BridgeTraceRecorder:
         tool_calls: List[ToolCall] = []
         for tc in src.tool_calls or []:
             name, args = unpack_tool_call(tc)
-            tool_calls.append(ToolCall(
-                id=tc.id,
-                function=ToolFunction(name=name, arguments=args),
-                type='function',
-            ))
+            tool_calls.append(
+                ToolCall(
+                    id=tc.id,
+                    function=ToolFunction(name=name, arguments=args),
+                    type='function',
+                )
+            )
         return ChatMessageAssistant(
             content=src.text or '',
             tool_calls=tool_calls or None,

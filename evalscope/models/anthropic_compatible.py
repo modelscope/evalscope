@@ -56,8 +56,9 @@ class AnthropicCompatibleAPI(ModelAPI):
         assert self.api_key, f'API key for {model_name} not found. Set ANTHROPIC_API_KEY or EVALSCOPE_API_KEY.'
 
         # Use service prefix to lookup base_url (optional for Anthropic)
-        self.base_url = base_url or os.environ.get('ANTHROPIC_BASE_URL',
-                                                   None) or os.environ.get('EVALSCOPE_BASE_URL', None)
+        self.base_url = (
+            base_url or os.environ.get('ANTHROPIC_BASE_URL', None) or os.environ.get('EVALSCOPE_BASE_URL', None)
+        )
 
         # Remove trailing slash from base_url if present
         if self.base_url:
@@ -271,8 +272,9 @@ class AnthropicCompatibleAPI(ModelAPI):
         except (BadRequestError, PermissionDeniedError) as ex:
             return self.handle_bad_request(ex)
 
-    def resolve_tools(self, tools: List[ToolInfo], tool_choice: ToolChoice,
-                      config: GenerateConfig) -> Tuple[List[ToolInfo], ToolChoice, GenerateConfig]:
+    def resolve_tools(
+        self, tools: List[ToolInfo], tool_choice: ToolChoice, config: GenerateConfig
+    ) -> Tuple[List[ToolInfo], ToolChoice, GenerateConfig]:
         """Provides an opportunity for concrete classes to customize tool resolution."""
         return tools, tool_choice, config
 

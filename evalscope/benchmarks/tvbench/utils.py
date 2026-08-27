@@ -67,7 +67,9 @@ def find_archive_member(zip_file: zipfile.ZipFile, video_name: str) -> str:
     video_basename = os.path.basename(normalized_video_name)
     member_names = [name for name in zip_file.namelist() if not name.endswith('/')]
     exact_matches = [
-        name for name in member_names if name.replace('\\', '/').endswith(f'/{normalized_video_name}')
+        name
+        for name in member_names
+        if name.replace('\\', '/').endswith(f'/{normalized_video_name}')
         or name.replace('\\', '/') == normalized_video_name
     ]
     if exact_matches:

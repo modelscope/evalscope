@@ -393,7 +393,7 @@ class ToolathlonAdapter(AgentAdapter):
         if not task_list:
             task_list = list(DEFAULT_TASK_LIST)
         if isinstance(self.limit, int) and self.limit > 0:
-            task_list = task_list[:self.limit]
+            task_list = task_list[: self.limit]
         return task_list
 
     def _empty_to_none(self, value: Optional[str]) -> Optional[str]:

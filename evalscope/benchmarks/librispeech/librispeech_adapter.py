@@ -52,7 +52,6 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
     )
 )
 class LibriSpeechAdapter(AudioLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -67,7 +66,7 @@ class LibriSpeechAdapter(AudioLanguageAdapter):
             metadata={
                 'audio_id': record['audio_id'],
                 'audio_duration': record['audio_duration'],
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):

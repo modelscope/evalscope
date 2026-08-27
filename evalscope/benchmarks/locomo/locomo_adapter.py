@@ -100,12 +100,14 @@ class LoCoMoAdapter(DefaultDataAdapter):
             conversation = conversation_record['conversation']
             sample_id = conversation_record['sample_id']
             for qa_index, qa in enumerate(conversation_record['qa']):
-                records.append({
-                    'sample_id': sample_id,
-                    'qa_index': qa_index,
-                    'conversation': conversation,
-                    'qa': qa,
-                })
+                records.append(
+                    {
+                        'sample_id': sample_id,
+                        'qa_index': qa_index,
+                        'conversation': conversation,
+                        'qa': qa,
+                    }
+                )
         return records
 
     def _resolve_dataset_file(self) -> str:

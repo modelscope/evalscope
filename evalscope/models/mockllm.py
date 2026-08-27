@@ -39,10 +39,12 @@ class MockLLM(ModelAPI):
                 )
             self.outputs = iter(custom_outputs)
         else:
-            self.outputs = iter((
-                ModelOutput.from_content(model='mockllm', content=self.default_output)
-                for _ in iter(int, 1)  # produce an infinite iterator
-            ))
+            self.outputs = iter(
+                (
+                    ModelOutput.from_content(model='mockllm', content=self.default_output)
+                    for _ in iter(int, 1)  # produce an infinite iterator
+                )
+            )
 
     @thread_safe
     def generate(

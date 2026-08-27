@@ -175,25 +175,21 @@ WMT2024++ is a comprehensive machine translation benchmark based on the WMT 2024
 """,
         subset_list=LANGUAGE_PAIRS,
         eval_split='test',
-        metric_list=[{
-            'bleu': {}
-        }, {
-            'bert_score': {
-                'model_id_or_path': 'AI-ModelScope/xlm-roberta-large',
-                'model_type': 'xlm-roberta-large'
-            }
-        }, {
-            'comet': {
-                'model_id_or_path': 'evalscope/wmt22-comet-da',
-            }
-        }],
+        metric_list=[
+            {'bleu': {}},
+            {'bert_score': {'model_id_or_path': 'AI-ModelScope/xlm-roberta-large', 'model_type': 'xlm-roberta-large'}},
+            {
+                'comet': {
+                    'model_id_or_path': 'evalscope/wmt22-comet-da',
+                }
+            },
+        ],
         primary_metric='comet',
         few_shot_num=0,
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class WMT24PPAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs: Any) -> None:
         """Initialize adapter and configure dataset subsets."""
         super().__init__(**kwargs)
@@ -309,11 +305,10 @@ class WMT24PPAdapter(DefaultDataAdapter):
 
                 score_args = self.get_metric_args('comet')
                 comet_scorer = COMETScore(**score_args)
-                data = [{
-                    'src': st.metadata.get('source_text'),
-                    'mt': pred,
-                    'ref': ref
-                } for pred, ref, st in zip(filtered_predictions, references, task_states)]
+                data = [
+                    {'src': st.metadata.get('source_text'), 'mt': pred, 'ref': ref}
+                    for pred, ref, st in zip(filtered_predictions, references, task_states)
+                ]
                 comet_scores = comet_scorer.apply(data)
                 for i in range(len(scores)):
                     scores[i].value.update({'comet': comet_scores[i]})

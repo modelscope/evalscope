@@ -12,7 +12,6 @@ logger = get_logger()
 
 
 class DummyTokenizer:
-
     def tokenize(self, text: str):
         return text.split()
 
@@ -21,9 +20,9 @@ def is_contains_chinese(string: str) -> bool:
     return any('\u4e00' <= c <= '\u9fa5' for c in string)
 
 
-def compute_rouge_score_one_sample_zh(predict: List[str],
-                                      reference: List[str],
-                                      strict: bool = False) -> Dict[str, float]:
+def compute_rouge_score_one_sample_zh(
+    predict: List[str], reference: List[str], strict: bool = False
+) -> Dict[str, float]:
     if isinstance(predict, str) or isinstance(reference, str):
         raise ValueError(f'Expected list of strings, but got {type(predict)} and {type(reference)}')
 

@@ -5,6 +5,7 @@ Patches MTEB task ``load_data`` methods so that datasets are fetched from
 ModelScope instead of HuggingFace. When ``hub`` is anything other than
 ``modelscope``, the patching is a no-op and MTEB loads natively.
 """
+
 import types
 from collections import defaultdict
 from typing import List, Optional
@@ -41,6 +42,7 @@ def _is_retrieval_task(task) -> bool:
         return True
     try:
         from mteb.abstasks.retrieval import AbsTaskRetrieval
+
         return isinstance(task, AbsTaskRetrieval)
     except ImportError:
         return False
@@ -124,8 +126,9 @@ def _apply_retrieval_limits_after_native_load(task, limits=None):
         # Normalize: detect flat structure (first value has 'queries')
         dataset_dict = task.dataset
         first_val = next(iter(dataset_dict.values()), None)
-        if first_val is not None and ((isinstance(first_val, dict) and 'queries' in first_val)
-                                      or hasattr(first_val, 'queries')):
+        if first_val is not None and (
+            (isinstance(first_val, dict) and 'queries' in first_val) or hasattr(first_val, 'queries')
+        ):
             dataset_dict = {'default': dataset_dict}
 
         for subset_key, subset_data in dataset_dict.items():
@@ -152,16 +155,13 @@ def _apply_retrieval_limits_after_native_load(task, limits=None):
                     try:
                         if isinstance(relevant_docs, dict):
                             _set_val(
-                                split_data, 'relevant_docs', {
-                                    k: v
-                                    for k, v in relevant_docs.items()
-                                    if k in keep_qids
-                                }
+                                split_data, 'relevant_docs', {k: v for k, v in relevant_docs.items() if k in keep_qids}
                             )
                         elif hasattr(relevant_docs, 'filter'):
                             _set_val(
-                                split_data, 'relevant_docs',
-                                relevant_docs.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids)
+                                split_data,
+                                'relevant_docs',
+                                relevant_docs.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids),
                             )
                     except Exception as e:
                         logger.warning(f'Could not filter relevant_docs: {e}')
@@ -174,8 +174,9 @@ def _apply_retrieval_limits_after_native_load(task, limits=None):
                             _set_val(split_data, 'top_ranked', {k: v for k, v in top_ranked.items() if k in keep_qids})
                         elif hasattr(top_ranked, 'filter'):
                             _set_val(
-                                split_data, 'top_ranked',
-                                top_ranked.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids)
+                                split_data,
+                                'top_ranked',
+                                top_ranked.filter(lambda x: str(x.get('query-id', x.get('qid', ''))) in keep_qids),
                             )
                     except Exception as e:
                         logger.warning(f'Could not filter top_ranked: {e}')
@@ -206,8 +207,7 @@ def _load_retrieval_from_modelscope(task, limits: Optional[int] = None) -> None:
         qrels_ds = MsDataset.load(path, subset_name='default', split=eval_split)
     except Exception as e:
         logger.warning(
-            f'Failed to load retrieval data from ModelScope ({path}), '
-            f'falling back to HuggingFace native loading: {e}'
+            f'Failed to load retrieval data from ModelScope ({path}), falling back to HuggingFace native loading: {e}'
         )
         task.data_loaded = False
         task.__class__.load_data(task)

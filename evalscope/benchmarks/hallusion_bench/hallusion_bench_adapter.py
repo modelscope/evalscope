@@ -55,10 +55,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
         primary_metric=MetricSelector(
             name='accuracy',
             aggregation='mean',
-            dimensions={
-                'level': 'overall',
-                'target': 'answer'
-            },
+            dimensions={'level': 'overall', 'target': 'answer'},
         ),
         aggregation='mean',
         eval_split='image',
@@ -66,7 +63,6 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
     )
 )
 class HallusionBenchAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -91,7 +87,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                 'question_id': record.get('question_id'),
                 'gt_answer': record.get('gt_answer'),
                 'gt_answer_details': record.get('gt_answer_details'),
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
@@ -137,18 +133,9 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             f_acc, f_n = compute_group_accuracy(scores, 'figure')
             q_acc, q_n = compute_group_accuracy(scores, 'question')
             return {
-                'aAcc': {
-                    'score': a_acc,
-                    'num': a_n
-                },
-                'fAcc': {
-                    'score': f_acc,
-                    'num': f_n
-                },
-                'qAcc': {
-                    'score': q_acc,
-                    'num': q_n
-                },
+                'aAcc': {'score': a_acc, 'num': a_n},
+                'fAcc': {'score': f_acc, 'num': f_n},
+                'qAcc': {'score': q_acc, 'num': q_n},
             }
 
         outputs: List[AggScore] = []
@@ -202,10 +189,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
                     score=overall[metric]['score'],
                     metric_name='accuracy',
                     aggregation='mean',
-                    dimensions={
-                        'level': 'overall',
-                        'target': target_names[metric]
-                    },
+                    dimensions={'level': 'overall', 'target': target_names[metric]},
                     num=overall[metric]['num'],
                 )
             )

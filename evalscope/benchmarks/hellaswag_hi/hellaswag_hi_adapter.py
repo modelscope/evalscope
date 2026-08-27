@@ -55,7 +55,6 @@ ID redirects here), the same dataset used by lighteval's `community_hellaswag_hi
     )
 )
 class HellaSwagHiAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         target_letter = chr(ord('A') + int(record['label']))
 

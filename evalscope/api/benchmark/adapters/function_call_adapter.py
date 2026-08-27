@@ -13,6 +13,7 @@ The base intentionally provides no metric aggregation logic; each concrete
 adapter computes its own ``aggregate_scores`` because the metric names and
 formulas are benchmark-specific.
 """
+
 from __future__ import annotations
 
 import json

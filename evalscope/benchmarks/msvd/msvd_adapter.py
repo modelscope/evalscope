@@ -143,8 +143,9 @@ class MSVDAdapter(VisionLanguageAdapter):
         score.main_score_name = CAPTION_MAIN_SCORE
         return score
 
-    def batch_calculate_metrics(self, task_states: List[TaskState],
-                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+    def batch_calculate_metrics(
+        self, task_states: List[TaskState], sample_scores: List[SampleScore]
+    ) -> List[SampleScore]:
         predictions = [self.filter_prediction(ts.output.completion, ts) for ts in task_states]
         references = [ts.metadata.get('references') or json.loads(ts.target) for ts in task_states]
         batch_scores = compute_caption_scores(predictions, references)
@@ -154,8 +155,7 @@ class MSVDAdapter(VisionLanguageAdapter):
         return sample_scores
 
     def _load_records(self) -> List[Dict[str, Any]]:
-        logger.info(f'Loading MSVD from {self.dataset_hub}: '
-                    f'{self.source_dataset_id}, split={self.eval_split}.')
+        logger.info(f'Loading MSVD from {self.dataset_hub}: {self.source_dataset_id}, split={self.eval_split}.')
         dataset = self.source_dataset.load(split=self.eval_split, subset='default')
         return list(dataset)
 

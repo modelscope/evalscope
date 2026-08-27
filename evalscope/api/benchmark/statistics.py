@@ -47,7 +47,9 @@ class ImageStatistics:
             'resolution_range': {
                 'min': self.resolution_min,
                 'max': self.resolution_max,
-            } if self.resolution_min or self.resolution_max else None,
+            }
+            if self.resolution_min or self.resolution_max
+            else None,
             'formats': self.formats,
         }
 
@@ -96,7 +98,9 @@ class AudioStatistics:
                 'min': round(self.duration_min, 2) if self.duration_min else None,
                 'max': round(self.duration_max, 2) if self.duration_max else None,
                 'mean': round(self.duration_mean, 2) if self.duration_mean else None,
-            } if self.duration_min is not None else None,
+            }
+            if self.duration_min is not None
+            else None,
             'sample_rates': self.sample_rates,
             'formats': self.formats,
         }
@@ -146,7 +150,9 @@ class VideoStatistics:
                 'min': round(self.duration_min, 2) if self.duration_min else None,
                 'max': round(self.duration_max, 2) if self.duration_max else None,
                 'mean': round(self.duration_mean, 2) if self.duration_mean else None,
-            } if self.duration_min is not None else None,
+            }
+            if self.duration_min is not None
+            else None,
             'resolutions': self.resolutions[:10] if len(self.resolutions) > 10 else self.resolutions,
             'formats': self.formats,
         }

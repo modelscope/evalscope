@@ -157,7 +157,7 @@ class JobBenchAdapter(AgentLoopAdapter):
                 logger.warning(f'JobBench reference directory not found: {reference_dir}')
 
         return Sample(
-            input=f"{record['prompt'].strip()}{reference_hint}{_PROMPT_SUFFIX}",
+            input=f'{record["prompt"].strip()}{reference_hint}{_PROMPT_SUFFIX}',
             tools=[BASH_TOOL_INFO, PYTHON_EXEC_TOOL_INFO],
             metadata=metadata,
         )
@@ -236,7 +236,7 @@ class JobBenchAdapter(AgentLoopAdapter):
             request=self._build_request,
             reduce=self._reduce_verdicts,
             main_score_name='normalized_score',
-            finalize=self._finalize_score
+            finalize=self._finalize_score,
         )
 
     def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
@@ -258,7 +258,8 @@ class JobBenchAdapter(AgentLoopAdapter):
                     'file_contents': contents,
                     'image_attachments': attachments,
                 },
-            ) for index, rubric in enumerate(rubrics)
+            )
+            for index, rubric in enumerate(rubrics)
         ]
 
     def _build_request(self, case, placement, completed_cases, context) -> JudgeRequest:
@@ -290,28 +291,33 @@ class JobBenchAdapter(AgentLoopAdapter):
             parsed = verdict.value
             criteria = normalize_criteria(rubric)
             returned = {item.index: item for item in parsed.criteria_results}
-            criteria_results = [{
-                'index': index,
-                'criterion': criterion,
-                'passed': bool(returned.get(index) and returned[index].passed),
-                'reasoning': returned[index].reasoning if index in returned else '',
-                'evidence': returned[index].evidence if index in returned else '',
-            } for index, criterion in enumerate(criteria)]
+            criteria_results = [
+                {
+                    'index': index,
+                    'criterion': criterion,
+                    'passed': bool(returned.get(index) and returned[index].passed),
+                    'reasoning': returned[index].reasoning if index in returned else '',
+                    'evidence': returned[index].evidence if index in returned else '',
+                }
+                for index, criterion in enumerate(criteria)
+            ]
             passed = bool(parsed.rubric_passed) and all(item['passed'] for item in criteria_results)
             weight = float(rubric.get('weight') or 0)
-            results.append({
-                'index': verdict.metadata['index'],
-                'rubric': rubric.get('rubric', ''),
-                'weight': weight,
-                'result': {
-                    'passed': passed,
-                    'score': weight if passed else 0.0,
-                    'criteria_count': len(criteria),
-                    'criteria_passed': sum(item['passed'] for item in criteria_results),
-                    'criteria_results': criteria_results,
-                    'overall_reasoning': parsed.overall_reasoning,
-                },
-            })
+            results.append(
+                {
+                    'index': verdict.metadata['index'],
+                    'rubric': rubric.get('rubric', ''),
+                    'weight': weight,
+                    'result': {
+                        'passed': passed,
+                        'score': weight if passed else 0.0,
+                        'criteria_count': len(criteria),
+                        'criteria_passed': sum(item['passed'] for item in criteria_results),
+                        'criteria_results': criteria_results,
+                        'overall_reasoning': parsed.overall_reasoning,
+                    },
+                }
+            )
         scorecard = build_scorecard(results)
         return ReducedVerdict(
             value={
@@ -319,16 +325,15 @@ class JobBenchAdapter(AgentLoopAdapter):
                 'pass_rate': float(scorecard['pass_rate']),
                 'judge_score': float(scorecard['total_score']),
             },
-            metadata={
-                'rubrics': results,
-                'max_score': float(scorecard['max_score'])
-            },
+            metadata={'rubrics': results, 'max_score': float(scorecard['max_score'])},
         )
 
     def _finalize_score(self, score: Score, review, context) -> Score:
-        score.metadata.update({
-            'task_id': context.task_state.metadata.get('task_id'),
-            'artifact_dir': context.task_state.metadata.get('artifact_dir'),
-            'output_files': context.task_state.metadata.get('output_files') or [],
-        })
+        score.metadata.update(
+            {
+                'task_id': context.task_state.metadata.get('task_id'),
+                'artifact_dir': context.task_state.metadata.get('artifact_dir'),
+                'output_files': context.task_state.metadata.get('output_files') or [],
+            }
+        )
         return score

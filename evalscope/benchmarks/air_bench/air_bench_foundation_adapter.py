@@ -140,7 +140,7 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
         skipped_missing_audio = 0
 
         for record in records:
-            folder = f"{record['task_name']}_{record['dataset_name']}"
+            folder = f'{record["task_name"]}_{record["dataset_name"]}'
             if folder not in wanted:
                 continue
             sample = self._record_to_sample_with_root(record, track_root)
@@ -155,17 +155,19 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
                 f'were missing on disk (likely partial download).'
             )
 
-        dataset_dict = DatasetDict({
-            k: prepare_samples(
-                v,
-                limit=self.limit,
-                repeats=self.repeats,
-                shuffle=self.shuffle,
-                seed=self.seed,
-                name=f'air_bench_foundation/{k}',
-            )
-            for k, v in per_subset_samples.items()
-        })
+        dataset_dict = DatasetDict(
+            {
+                k: prepare_samples(
+                    v,
+                    limit=self.limit,
+                    repeats=self.repeats,
+                    shuffle=self.shuffle,
+                    seed=self.seed,
+                    name=f'air_bench_foundation/{k}',
+                )
+                for k, v in per_subset_samples.items()
+            }
+        )
         return dataset_dict, None
 
     # ------------------------------------------------------------------
@@ -176,14 +178,11 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
         # sample construction happens in ``_record_to_sample_with_root`` so we
         # have access to the resolved track root for path joining.
         if self._track_root is None:
-            raise RuntimeError(
-                '`_track_root` is not initialised; AIR-Bench samples must be '
-                'constructed via `load()`.'
-            )
+            raise RuntimeError('`_track_root` is not initialised; AIR-Bench samples must be constructed via `load()`.')
         sample = self._record_to_sample_with_root(record, self._track_root)
         if sample is None:
             raise FileNotFoundError(
-                f"Audio file missing for AIR-Bench Foundation record uniq_id={record.get('uniq_id')}."
+                f'Audio file missing for AIR-Bench Foundation record uniq_id={record.get("uniq_id")}.'
             )
         return sample
 
@@ -213,8 +212,7 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
         choice_c = record.get('choice_c')
         choice_d = record.get('choice_d')
 
-        choices_block = (f'A. {choice_a}\nB. {choice_b}\n'
-                         f'C. {choice_c}\nD. {choice_d}')
+        choices_block = f'A. {choice_a}\nB. {choice_b}\nC. {choice_c}\nD. {choice_d}'
         instruction = f'{QUESTION_PROMPT}\n{question}\n{choices_block}'
 
         target_letter = self._answer_to_letter(
@@ -242,12 +240,7 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
                 'dataset_name': dataset_name,
                 'category': category,
                 'answer_gt_text': record['answer_gt'],
-                'choices': {
-                    'A': choice_a,
-                    'B': choice_b,
-                    'C': choice_c,
-                    'D': choice_d
-                },
+                'choices': {'A': choice_a, 'B': choice_b, 'C': choice_c, 'D': choice_d},
             },
         )
 
@@ -293,7 +286,9 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
             prediction=original_prediction,
         )
         is_correct = (
-            isinstance(filtered_prediction, str) and isinstance(reference, str) and reference != ''
+            isinstance(filtered_prediction, str)
+            and isinstance(reference, str)
+            and reference != ''
             and filtered_prediction.upper() == reference.upper()
         )
         score.value = {'acc': 1.0 if is_correct else 0.0}

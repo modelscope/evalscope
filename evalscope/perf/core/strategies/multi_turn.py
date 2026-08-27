@@ -67,10 +67,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
         self._next_trace_seq = 0
 
         if self._warmup_count > 0:
-            logger.info(
-                f'Warmup enabled: {self._warmup_count} warmup conversations '
-                f'(benchmark: {self.args.number})'
-            )
+            logger.info(f'Warmup enabled: {self._warmup_count} warmup conversations (benchmark: {self.args.number})')
 
     def _next_conversation(self) -> Conversation:
         """Return the next conversation from the cycled pool."""
@@ -82,7 +79,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
         """Allocate a unique trace_id string for one claimed conversation."""
         seq = self._next_trace_seq
         self._next_trace_seq += 1
-        return f"{'warmup' if is_warmup else 'bench'}-{seq}"
+        return f'{"warmup" if is_warmup else "bench"}-{seq}'
 
     async def _worker(self, worker_id: int) -> None:
         """Process conversations until the current phase budget is reached."""
@@ -149,8 +146,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 request = self.api_plugin.build_request(list(context))
                 if request is None:
                     logger.error(
-                        f'worker={worker_id} turn={turn_idx}: build_request returned None; '
-                        'abandoning conversation.'
+                        f'worker={worker_id} turn={turn_idx}: build_request returned None; abandoning conversation.'
                     )
                     break
                 if turn.max_tokens is not None:
@@ -161,7 +157,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                 benchmark_data.is_warmup = is_warmup
                 benchmark_data.input_num_turns = turn_idx + 1
                 benchmark_data.trace_id = trace_id
-                benchmark_data.is_first_turn = (turn_idx == 0)
+                benchmark_data.is_first_turn = turn_idx == 0
 
                 # Ensure token counts are available before computing cache ratio.
                 # Some OpenAI-compatible servers omit ``usage`` in the stream, so
@@ -212,16 +208,17 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
                 if not benchmark_data.success:
                     logger.debug(
-                        f'worker={worker_id} turn={turn_idx} '
-                        f'failed ({benchmark_data.error}), abandoning conversation.'
+                        f'worker={worker_id} turn={turn_idx} failed ({benchmark_data.error}), abandoning conversation.'
                     )
                     break
 
                 # Append real response to context for next turn.
-                context.append({
-                    'role': 'assistant',
-                    'content': benchmark_data.generated_text,
-                })
+                context.append(
+                    {
+                        'role': 'assistant',
+                        'content': benchmark_data.generated_text,
+                    }
+                )
 
     async def run(self) -> None:
         # Two-phase dispatch: warmup conversations complete in full before any

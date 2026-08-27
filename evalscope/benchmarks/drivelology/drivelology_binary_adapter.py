@@ -112,11 +112,10 @@ logger = get_logger()
         few_shot_num=0,
         eval_split='test',
         prompt_template='{question}',
-        few_shot_prompt_template='{question}'
+        few_shot_prompt_template='{question}',
     )
 )
 class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_overall_metric = False
@@ -131,9 +130,13 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
             prompt = PROMPT_TEMPLATE.format(text=record['text'])
         content_list: List[Content] = [ContentText(text=prompt)]
         answer = 'YES' if str(record['label']) == 'drivelology' else 'NO'  # 'YES' or 'NO'
-        return Sample(input=[ChatMessageUser(content=content_list)], target=answer, metadata={
-            'answer': answer,
-        })
+        return Sample(
+            input=[ChatMessageUser(content=content_list)],
+            target=answer,
+            metadata={
+                'answer': answer,
+            },
+        )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         score = Score(
@@ -181,7 +184,7 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
                 'precision': precision,
                 'recall': recall,
                 'f1_score': f1_score,
-                'yes_ratio': yes_ratio
+                'yes_ratio': yes_ratio,
             }
 
         overall_metrics = compute_metrics(sample_scores)

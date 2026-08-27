@@ -11,7 +11,6 @@ from evalscope.utils.import_utils import check_import
 
 @register_metric(name='wer')
 class WER(Metric):
-
     def __init__(self, language: str = 'English'):
         self.language = language
 
@@ -41,7 +40,9 @@ class AudioWER(Metric):
         timeout: float = 60,
     ):
         self.api_base = (
-            api_base or os.getenv('SEED_TTS_EVAL_ASR_API_BASE') or os.getenv('OPENAI_BASE_URL')
+            api_base
+            or os.getenv('SEED_TTS_EVAL_ASR_API_BASE')
+            or os.getenv('OPENAI_BASE_URL')
             or self.DEFAULT_OPENAI_API_BASE
         ).rstrip('/')
         self.api_key = api_key or os.getenv('SEED_TTS_EVAL_ASR_API_KEY') or os.getenv('OPENAI_API_KEY')
@@ -120,19 +121,21 @@ class AudioWER(Metric):
             },
             json={
                 'model': self.model,
-                'input': [{
-                    'role': 'user',
-                    'content': [
-                        {
-                            'type': 'input_audio',
-                            'audio_url': self._audio_url(audio),
-                        },
-                        {
-                            'type': 'input_text',
-                            'text': self.prompt,
-                        },
-                    ],
-                }],
+                'input': [
+                    {
+                        'role': 'user',
+                        'content': [
+                            {
+                                'type': 'input_audio',
+                                'audio_url': self._audio_url(audio),
+                            },
+                            {
+                                'type': 'input_text',
+                                'text': self.prompt,
+                            },
+                        ],
+                    }
+                ],
             },
             timeout=self.timeout,
         )
@@ -197,7 +200,6 @@ class AudioWER(Metric):
 
 @register_metric(name='cer')
 class CER(Metric):
-
     def __init__(self, language: str = 'en'):
         self.language = language
 

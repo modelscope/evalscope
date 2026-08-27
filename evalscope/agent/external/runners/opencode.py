@@ -176,21 +176,14 @@ class OpenCodeRunner(AgentRunner):
             config = {
                 'provider': {
                     'openai': {
-                        'models': {
-                            model_id: {}
-                        },
-                        'options': {
-                            'baseURL': f'{bridge.base_url}/openai/v1'
-                        },
+                        'models': {model_id: {}},
+                        'options': {'baseURL': f'{bridge.base_url}/openai/v1'},
                     }
                 }
             }
             config_json = json.dumps(config, indent=2)
             escaped_config = shlex.quote(config_json)
-            config_cmd = (
-                'mkdir -p ~/.config/opencode && '
-                f'echo {escaped_config} > ~/.config/opencode/opencode.json'
-            )
+            config_cmd = f'mkdir -p ~/.config/opencode && echo {escaped_config} > ~/.config/opencode/opencode.json'
 
             # Write config first.
             cfg_result = await env.exec(
@@ -239,15 +232,11 @@ class OpenCodeRunner(AgentRunner):
                 f'timed_out={result.timed_out}'
             )
             if result.timed_out:
-                raise RunnerTimeoutError(
-                    f'opencode timed out after {task.timeout}s '
-                    f'(returncode={result.returncode})'
-                )
+                raise RunnerTimeoutError(f'opencode timed out after {task.timeout}s (returncode={result.returncode})')
             if result.returncode != 0:
                 tail_stderr = (result.stderr or '').strip()[-2000:]
                 tail_stdout = (result.stdout or '').strip()[-2000:]
-                raise RuntimeError(f'opencode exited with code {result.returncode}: '
-                                   f'{tail_stderr or tail_stdout}')
+                raise RuntimeError(f'opencode exited with code {result.returncode}: {tail_stderr or tail_stdout}')
             return AgentRunResult(
                 output=result.stdout.strip(),
                 metrics={

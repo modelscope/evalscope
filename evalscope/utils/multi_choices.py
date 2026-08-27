@@ -209,7 +209,7 @@ def _last_labelled_answer(
     earlier marker may carry an echoed placeholder or a choice the model went on to reject.
     """
     for marker in reversed(list(marker_re.finditer(text))):
-        tail = text[marker.end():]
+        tail = text[marker.end() :]
         for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
             label = label_re.match(tail)
             if label is None:

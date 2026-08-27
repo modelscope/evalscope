@@ -93,7 +93,6 @@ class TextCompletionResponse(BaseModel):
 
 
 class ChatService:
-
     def __init__(self, model_path, attn_implementation):
         import torch
         from modelscope import AutoModelForCausalLM, AutoTokenizer

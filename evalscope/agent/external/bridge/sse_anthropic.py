@@ -51,7 +51,8 @@ async def stream_anthropic_response(
     # 1. message_start — sent BEFORE awaiting completion so the SDK initializes
     # its parser and intermediate proxies don't time out.
     yield _sse(
-        'message_start', {
+        'message_start',
+        {
             'type': 'message_start',
             'message': {
                 'id': message_id,
@@ -61,12 +62,9 @@ async def stream_anthropic_response(
                 'model': model_name,
                 'stop_reason': None,
                 'stop_sequence': None,
-                'usage': {
-                    'input_tokens': 0,
-                    'output_tokens': 0
-                },
+                'usage': {'input_tokens': 0, 'output_tokens': 0},
             },
-        }
+        },
     )
 
     # 2. Keep-alive pings while waiting for the underlying generation.
@@ -80,13 +78,13 @@ async def stream_anthropic_response(
             yield _sse('ping', {'type': 'ping'})
 
     if output.error:
-        yield _sse('error', {
-            'type': 'error',
-            'error': {
-                'type': 'api_error',
-                'message': output.error
+        yield _sse(
+            'error',
+            {
+                'type': 'error',
+                'error': {'type': 'api_error', 'message': output.error},
             },
-        })
+        )
         return
 
     # 3. Per content block in the assistant message.
@@ -110,10 +108,7 @@ async def stream_anthropic_response(
     stop_reason = map_stop_reason_to_anthropic(output.choices[0].stop_reason if output.choices else 'stop')
     delta_payload: Dict[str, Any] = {
         'type': 'message_delta',
-        'delta': {
-            'stop_reason': stop_reason,
-            'stop_sequence': None
-        },
+        'delta': {'stop_reason': stop_reason, 'stop_sequence': None},
         'usage': anthropic_usage_payload(output.usage),
     }
     yield _sse('message_delta', delta_payload)
@@ -124,37 +119,37 @@ async def stream_anthropic_response(
 
 async def _emit_text_block(text: str, index: int) -> AsyncIterator[bytes]:
     yield _sse(
-        'content_block_start', {
+        'content_block_start',
+        {
             'type': 'content_block_start',
             'index': index,
-            'content_block': {
-                'type': 'text',
-                'text': ''
-            },
-        }
+            'content_block': {'type': 'text', 'text': ''},
+        },
     )
     for chunk in iter_chunks(text, TEXT_CHUNK):
         yield _sse(
-            'content_block_delta', {
+            'content_block_delta',
+            {
                 'type': 'content_block_delta',
                 'index': index,
-                'delta': {
-                    'type': 'text_delta',
-                    'text': chunk
-                },
-            }
+                'delta': {'type': 'text_delta', 'text': chunk},
+            },
         )
         await asyncio.sleep(0)
-    yield _sse('content_block_stop', {
-        'type': 'content_block_stop',
-        'index': index,
-    })
+    yield _sse(
+        'content_block_stop',
+        {
+            'type': 'content_block_stop',
+            'index': index,
+        },
+    )
 
 
 async def _emit_tool_use_block(tool_call: Any, index: int) -> AsyncIterator[bytes]:
     name, args = unpack_tool_call(tool_call)
     yield _sse(
-        'content_block_start', {
+        'content_block_start',
+        {
             'type': 'content_block_start',
             'index': index,
             'content_block': {
@@ -163,22 +158,23 @@ async def _emit_tool_use_block(tool_call: Any, index: int) -> AsyncIterator[byte
                 'name': name,
                 'input': {},
             },
-        }
+        },
     )
     encoded = json.dumps(args, ensure_ascii=False)
     for chunk in iter_chunks(encoded, TOOL_INPUT_CHUNK):
         yield _sse(
-            'content_block_delta', {
+            'content_block_delta',
+            {
                 'type': 'content_block_delta',
                 'index': index,
-                'delta': {
-                    'type': 'input_json_delta',
-                    'partial_json': chunk
-                },
-            }
+                'delta': {'type': 'input_json_delta', 'partial_json': chunk},
+            },
         )
         await asyncio.sleep(0)
-    yield _sse('content_block_stop', {
-        'type': 'content_block_stop',
-        'index': index,
-    })
+    yield _sse(
+        'content_block_stop',
+        {
+            'type': 'content_block_stop',
+            'index': index,
+        },
+    )

@@ -44,8 +44,7 @@ def load_tokenizer(tokenizer_path: str) -> object:
     except AttributeError as e:
         if 'max_position_embeddings' in str(e):
             logger.warning(
-                f'Tokenizer loading with trust_remote_code=True failed: {e}. '
-                'Retrying with trust_remote_code=False.'
+                f'Tokenizer loading with trust_remote_code=True failed: {e}. Retrying with trust_remote_code=False.'
             )
             return AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=False)
         raise
@@ -292,7 +291,7 @@ def fit_prefix_to_budget(prefix_ids: List[int], budget: int, tokenizer, max_retr
         nonlocal cursor
         while cursor + size > len(pool):
             pool.extend(prefix_ids)
-        chunk = pool[cursor:cursor + size]
+        chunk = pool[cursor : cursor + size]
         cursor += size
         return chunk
 

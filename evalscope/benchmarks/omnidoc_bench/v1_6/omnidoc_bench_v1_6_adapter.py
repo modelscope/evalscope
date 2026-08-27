@@ -18,8 +18,7 @@ from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
 
 OFFICIAL_IMAGE = (
-    'ghcr.io/zeng-weijun/omnidocbench-eval'
-    '@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617'
+    'ghcr.io/zeng-weijun/omnidocbench-eval@sha256:6116ad72172e763b5c43e963d5efebf2093f2362b975f58156ce4f6c9142e617'
 )
 REVIEW_TIMEOUT = 900
 DEFAULT_SANDBOX_CONFIG = {
@@ -29,9 +28,7 @@ DEFAULT_SANDBOX_CONFIG = {
     'platform': 'linux/amd64',
     'working_dir': '/workspace',
     'network_enabled': False,
-    'tools_config': {
-        'python_executor': {}
-    },
+    'tools_config': {'python_executor': {}},
 }
 
 DESCRIPTION = """
@@ -197,8 +194,7 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                     ids=[sample_score.sample_id for sample_score in sample_scores],
                     metadata={
                         'component_page_denominators': {
-                            component: len(metric_values[component])
-                            for component in overall_components
+                            component: len(metric_values[component]) for component in overall_components
                         }
                     },
                 )

@@ -104,14 +104,14 @@ class ArxivRollBenchBaseAdapter(MultiChoiceAdapter):
         if 'context' in record:
             question = (
                 'Given the context, select the text that is the next sequence.'
-                f"\n\nContext:\n{record.get('context', '')}"
+                f'\n\nContext:\n{record.get("context", "")}'
             )
             task_type = 'p'
             target = str(label).strip().upper()
         else:
             question = (
                 'Select the option that correctly completes the sequencing '
-                f"or cloze task.\n\n{record.get('shuffled_text', '')}"
+                f'or cloze task.\n\n{record.get("shuffled_text", "")}'
             )
             task_type = 's/c'
             target = _selection_to_letter(label)

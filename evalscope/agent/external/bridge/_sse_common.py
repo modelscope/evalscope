@@ -23,4 +23,4 @@ PING_INTERVAL_S = 5.0
 def iter_chunks(text: str, max_len: int) -> List[str]:
     """Slice ``text`` into ``max_len`` segments; always yields at least one
     entry (an empty string when ``text`` is empty)."""
-    return [text[i:i + max_len] for i in range(0, len(text), max_len)] or ['']
+    return [text[i : i + max_len] for i in range(0, len(text), max_len)] or ['']

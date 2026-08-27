@@ -58,7 +58,6 @@ HellaSwag is a benchmark for evaluating commonsense natural language inference, 
     )
 )
 class HellaSwagAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

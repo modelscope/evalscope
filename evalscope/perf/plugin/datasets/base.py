@@ -44,7 +44,6 @@ Conversation = List[Turn]
 
 
 class DatasetPluginBase:
-
     args_schema: ClassVar[Type[BaseDatasetArgs]] = BaseDatasetArgs
     """Pydantic schema for this dataset's ``--dataset-args``.
 
@@ -74,7 +73,8 @@ class DatasetPluginBase:
         else:
             self.tokenizer = None
         if (
-            isinstance(self.dataset_args, TextLengthArgs) and self.dataset_args.target_input_len is not None
+            isinstance(self.dataset_args, TextLengthArgs)
+            and self.dataset_args.target_input_len is not None
             and self.tokenizer is None
         ):
             raise ValueError('`target_input_len` requires a tokenizer; please set --tokenizer-path.')
@@ -185,6 +185,7 @@ class DatasetPluginBase:
     def _get_multi_turn_args(self):
         """Resolve the effective MultiTurnArgs (new dataset_args or legacy field)."""
         from evalscope.perf.multi_turn_args import MultiTurnArgs
+
         if isinstance(self.dataset_args, MultiTurnArgs):
             return self.dataset_args
         return self.query_parameters.multi_turn_args

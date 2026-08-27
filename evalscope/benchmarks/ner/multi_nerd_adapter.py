@@ -50,7 +50,6 @@ MultiNERD is a large-scale, multilingual, and multi-genre dataset for fine-grain
     )
 )
 class MultiNERDAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)
@@ -71,7 +70,7 @@ class MultiNERDAdapter(NERAdapter):
             'MYTH': 'mythological_entity',
             'PLANT': 'plant',
             'TIME': 'time',
-            'VEHI': 'vehicle'
+            'VEHI': 'vehicle',
         }
 
         # Add descriptions for each entity type
@@ -90,7 +89,7 @@ class MultiNERDAdapter(NERAdapter):
             'MYTH': 'Mythological and religious entities.',
             'PLANT': 'Types of trees, flowers, and other plants, including their scientific names.',
             'TIME': 'Specific and well-defined time intervals, such as eras, historical periods, centuries, years and important days. No months and days of the week.',
-            'VEHI': 'Cars, motorcycles and other vehicles.'
+            'VEHI': 'Cars, motorcycles and other vehicles.',
         }
 
         # Setup entity mappings based on the defined entity types

@@ -50,7 +50,6 @@ MaritimeBench is a benchmark for evaluating AI models on maritime-related multip
     )
 )
 class MaritimeBenchAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -77,6 +76,7 @@ class MaritimeBenchAdapter(MultiChoiceAdapter):
     def extract_answer(self, prediction, task_state):
         # use regex to extract the answer from the prediction
         import re
+
         matches = re.findall(r'\[([A-D])\]', prediction)
         if matches:
             return matches[-1]

@@ -271,8 +271,10 @@ def xml_to_bio_tags(xml_text: str, original_tokens: List[str], reverse_entity_ma
             potential_context_end = min(len(original_text), potential_start + len(entity_text) + len(context_after))
 
             before_match = context_before.strip() in original_text[potential_context_start:potential_start].strip()
-            after_match = context_after.strip() in original_text[potential_start
-                                                                 + len(entity_text):potential_context_end].strip()
+            after_match = (
+                context_after.strip()
+                in original_text[potential_start + len(entity_text) : potential_context_end].strip()
+            )
 
             # If context matches or we can't find a better match, use this position
             if before_match or after_match or search_pos > len(original_text) // 2:

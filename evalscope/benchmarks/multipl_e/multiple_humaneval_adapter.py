@@ -82,7 +82,7 @@ MultiPL-E HumanEval is a multilingual code generation benchmark derived from Ope
             'tools_config': {
                 'shell_executor': {},
                 'python_executor': {},
-                'multi_code_executor': {}  # Multi-language code executor
+                'multi_code_executor': {},  # Multi-language code executor
             },
             'memory_limit': '2g',
             'cpu_limit': '2.0',
@@ -111,7 +111,7 @@ class MultiPLEHumanEvalAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
                 'task_id': record.get('name', record.get('task_id')),
                 'language': record.get('language'),
                 'doctests': record.get('doctests', ''),
-            }
+            },
         )
 
     def format_prompt_template(self, sample: Sample) -> str:

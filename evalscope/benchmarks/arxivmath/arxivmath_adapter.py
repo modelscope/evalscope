@@ -56,16 +56,11 @@ ArXiv-Math is a benchmark of 103 research-level mathematics problems extracted f
         few_shot_num=0,
         train_split=None,
         eval_split='train',  # Dataset only provides 'train' split
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class ArxivMathAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

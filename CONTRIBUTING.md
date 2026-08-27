@@ -306,17 +306,20 @@ evalscope service
 
 This project uses **pre-commit** with the following hooks:
 
-- **flake8** — Python style checker
-- **Ruff** — Import sorting (`I` rules)
-- **yapf** — Code formatting
-- Trailing whitespace, YAML checks, line ending fixes
+- **Ruff check** — Python linting (`E`, `F`, and `W`) and import sorting (`I`)
+- **Ruff format** — Python code formatting with 120-character lines and single quotes
+- Trailing whitespace, YAML checks, and line ending fixes
+
+Ruff's lint hook runs before its formatter so that any automatic fixes are formatted consistently. Pre-commit is installed by `make dev` with the version pinned in `requirements/dev.txt`.
 
 ```bash
-# Run all checks
+# Apply safe fixes, format maintained Python files, and run all repository checks
 make lint
 # or
 pre-commit run --all-files
 ```
+
+If pre-commit modifies files, review and stage those changes, then run `make lint` again. The configured Ruff scope and exclusions are defined in `pyproject.toml`.
 
 ### Testing
 
@@ -342,9 +345,9 @@ pytest tests/benchmark/test_xxx.py
    git commit -m "feat: add MyBenchmark adapter"
    ```
 
-3. **Run quality checks** before pushing:
+3. **Run quality checks before pushing:**
    ```bash
-   pre-commit run --all-files
+   make lint
    pytest tests/
    ```
 

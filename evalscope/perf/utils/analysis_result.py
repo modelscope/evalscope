@@ -24,7 +24,7 @@ for row in rows:
     row_dict['response_messages'] = pickle.loads(base64.b64decode(row_dict['response_messages']))
     # print(row_dict)
     print(
-        f"request_id: {json.loads(row_dict['response_messages'][0])['id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"  # noqa: E501
+        f'request_id: {json.loads(row_dict["response_messages"][0])["id"]}, first_chunk_latency: {row_dict["first_chunk_latency"]}'  # noqa: E501
     )
     # 如果只想看一个可以break
     # break

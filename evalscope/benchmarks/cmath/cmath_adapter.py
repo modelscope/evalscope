@@ -55,16 +55,11 @@ CMATH is a Chinese elementary school mathematics benchmark containing 1,698 prob
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
     )
 )
 class CMathAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

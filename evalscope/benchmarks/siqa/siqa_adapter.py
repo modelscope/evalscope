@@ -48,7 +48,6 @@ SIQA (Social Interaction QA) is a benchmark for evaluating social commonsense in
     )
 )
 class SIQAAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

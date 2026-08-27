@@ -58,7 +58,6 @@ A-OKVQA (Augmented OK-VQA) is a benchmark designed to evaluate commonsense reaso
     )
 )
 class AOkvqaAdapter(VisionLanguageAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

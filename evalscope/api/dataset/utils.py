@@ -6,7 +6,9 @@ from tqdm import tqdm
 from .dataset import Dataset, FieldSpec, Sample
 
 
-def record_to_sample_fn(sample_fields: Union[FieldSpec, Callable, None] = None, ) -> Callable:
+def record_to_sample_fn(
+    sample_fields: Union[FieldSpec, Callable, None] = None,
+) -> Callable:
     if sample_fields is None:
         sample_fields = FieldSpec()
 

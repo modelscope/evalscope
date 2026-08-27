@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """CLI command for starting the EvalScope Flask service."""
+
 import os
 from argparse import ArgumentParser, ArgumentTypeError
 
@@ -38,7 +39,7 @@ class ServiceCMD(CLICommand):
             type=existing_directory,
             default=None,
             help='Root directory for evaluation outputs (default: ./outputs). '
-            'The web dashboard will use this as the default scan path.'
+            'The web dashboard will use this as the default scan path.',
         )
         parser.add_argument('--debug', action='store_true', default=False, help='Enable Flask debug mode')
         parser.set_defaults(func=subparser_func)

@@ -19,12 +19,10 @@ class Target(Sequence[str]):
         self.target = target if isinstance(target, list) else [target]
 
     @overload
-    def __getitem__(self, index: int) -> str:
-        ...
+    def __getitem__(self, index: int) -> str: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[str]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[str]: ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[str, Sequence[str]]:
         return self.target[index]
@@ -86,12 +84,10 @@ class Choices(Sequence[Choice]):
                 self._choices.append(choice)
 
     @overload
-    def __getitem__(self, index: int) -> Choice:
-        ...
+    def __getitem__(self, index: int) -> Choice: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Sequence[Choice]:
-        ...
+    def __getitem__(self, index: slice) -> Sequence[Choice]: ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[Choice, Sequence[Choice]]:
         return self._choices[index]

@@ -189,7 +189,7 @@ def format_metric_label(
 
 
 def format_metric_labels(
-    metrics: Iterable[Tuple[Union[MetricIdentity, str], Optional[MetricSemantics]]]
+    metrics: Iterable[Tuple[Union[MetricIdentity, str], Optional[MetricSemantics]]],
 ) -> Dict[str, str]:
     """Render all metric labels of one report and disambiguate repeated display names.
 
@@ -247,6 +247,7 @@ def format_perf_value(
         # Function-local import preserves the one-way package import graph: resolver imports the
         # formatting-independent perf catalog, while renderers can still use this convenience API.
         from evalscope.metrics.semantics.resolver import get_semantics_resolver
+
         resolver = get_semantics_resolver()
     semantics = resolver.resolve_perf_field(field_key).semantics
     if not include_unit and semantics.display_unit:

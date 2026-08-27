@@ -66,6 +66,7 @@ _OUTCOME_SCORE = {'fulfilled': 1.0, 'partially_fulfilled': 0.5, 'not_fulfilled':
 )
 class MCPAtlasAdapter(AgentLoopAdapter):
     """EvalScope-native MCP-Atlas adapter using MCP-Atlas agent-environment."""
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     strategy_name = 'function_calling'
@@ -157,15 +158,12 @@ class MCPAtlasAdapter(AgentLoopAdapter):
             total = len(scores)
             coverage_score = sum(scores) / total if total else 0.0
             return ReducedVerdict(
-                value={
-                    'coverage_score': coverage_score,
-                    'pass': 1.0 if coverage_score >= self.pass_threshold else 0.0
-                },
+                value={'coverage_score': coverage_score, 'pass': 1.0 if coverage_score >= self.pass_threshold else 0.0},
                 metadata={
                     'pass_threshold': self.pass_threshold,
                     'total_claims': total,
                     'fully_covered_claims': scores.count(1.0),
-                    'partially_covered_claims': scores.count(0.5)
+                    'partially_covered_claims': scores.count(0.5),
                 },
             )
 
@@ -204,8 +202,7 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         try:
             self._enabled_servers = self.client.enabled_servers()
             self._tool_infos_by_name = {
-                tool.name: tool
-                for tool in (mcp_tool_to_tool_info(raw_tool) for raw_tool in self.client.list_tools())
+                tool.name: tool for tool in (mcp_tool_to_tool_info(raw_tool) for raw_tool in self.client.list_tools())
             }
         except Exception as exc:
             raise RuntimeError(
@@ -228,10 +225,12 @@ class MCPAtlasAdapter(AgentLoopAdapter):
         missing = [server for server in required_servers if server not in enabled]
         if not missing:
             return True
-        self._excluded_tasks.append({
-            'task_id': sample.metadata.get('task_id'),
-            'missing_servers': missing,
-        })
+        self._excluded_tasks.append(
+            {
+                'task_id': sample.metadata.get('task_id'),
+                'missing_servers': missing,
+            }
+        )
         logger.warning(
             'Skipping MCP-Atlas task %s because required servers are not enabled: %s',
             sample.metadata.get('task_id'),
