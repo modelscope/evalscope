@@ -799,6 +799,20 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('hmmt26', dataset_args, limit=5)
 
+    def test_hmmt_nov25_mock(self):
+        """Test HMMT November 2025 dataset with the mock model."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('hmmt_nov25', dataset_args, limit=5, use_mock=True)
+
+    def test_hmmt_nov25(self):
+        """Test HMMT November 2025 dataset with a real API."""
+        dataset_args = {
+            'few_shot_num': 0,
+        }
+        self._run_dataset_test('hmmt_nov25', dataset_args, limit=5, eval_batch_size=5)
+
     def test_imo_answerbench(self):
         """Test IMO-AnswerBench dataset."""
         dataset_args = {

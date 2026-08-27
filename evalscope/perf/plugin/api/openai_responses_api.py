@@ -258,7 +258,8 @@ _DELTA_EVENT_TYPES = {
 
 def _extract_sse_data(message: str) -> str:
     data_lines = []
-    for line in message.splitlines():
+    # SSE lines use CR/LF only; preserve other Unicode line separators in JSON.
+    for line in message.split('\n'):
         line = line.strip()
         if not line or line.startswith(':'):
             continue

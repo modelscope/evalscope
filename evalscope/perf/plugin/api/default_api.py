@@ -38,7 +38,9 @@ class StreamedResponseHandler:
         drop continuation lines.
         """
         data_values: list[str] = []
-        for line in message.strip().splitlines():
+        # SSE lines use CR/LF only; splitlines() also splits valid JSON characters
+        # such as U+0085, U+2028, and U+2029.
+        for line in message.strip().split('\n'):
             if line.startswith('data:'):
                 data_values.append(line.removeprefix('data:').lstrip(' '))
 
