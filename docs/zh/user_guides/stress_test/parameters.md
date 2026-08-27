@@ -284,7 +284,7 @@ trace 文件为 JSONL，每行一条请求记录：
 | `--frequency-penalty` | `float` | frequency_penalty值 | - |
 | `--logprobs` | `bool` | 是否返回对数概率 | - |
 | `--max-tokens` | `int` 或 `int int` | 可以生成的最大token数量<br>• 单个整数：固定值，如 `--max-tokens 2048`<br>• 两个整数：`最小值 最大值`，每次请求从该范围均匀随机采样，如 `--max-tokens 512 2048` | `2048` |
-| `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'` | - |
+| `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'`<br>闭环模式下与 `--max-tokens` 取相同值会让所有请求耗时一致，于是同时完成、又被同时放出，表现为 TTFT 每 `--parallel` 个请求周期性爬高；如需避开，改用 `--max-tokens <最小值> <最大值>` 的范围形式，或改用 `--open-loop`（到达过程与完成解耦，不受影响） | - |
 | `--n-choices` | `int` | 生成的补全选择数量 | - |
 | `--seed` | `int` | 随机种子 | `None` |
 | `--stop` | `str` | 停止生成的tokens | - |
