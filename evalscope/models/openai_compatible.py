@@ -52,6 +52,32 @@ NON_RETRYABLE_OPENAI_ERRORS: Tuple[Type[Exception], ...] = (
 )
 
 
+class EmptyCompletionError(RuntimeError):
+    """A 200 response whose body carried no choices (usually a gateway error)."""
+
+
+def raise_if_error_payload(completion: ChatCompletion) -> None:
+    """Reject an error payload that the SDK deserialized as a completion.
+
+    Some gateways (OpenRouter among them) commit ``200 OK`` headers before the
+    upstream has produced anything, holding the connection open with whitespace
+    padding. When the request then fails, the status line is already sent, so
+    the error can only be appended to the body:
+
+        {"error": {"message": "Insufficient balance", "code": 402}}
+
+    The SDK parses that into a ``ChatCompletion`` whose ``choices`` is None and
+    keeps the real error in ``model_extra``. Raising here — inside the retry
+    boundary — turns a silent, run-killing corruption into a retried request
+    that reports what the gateway actually said.
+    """
+    if completion.choices is not None:
+        return
+    error = (completion.model_extra or {}).get('error')
+    detail = f': {error}' if error else ' (no error detail in body)'
+    raise EmptyCompletionError(f'Gateway returned a response with no choices{detail}')
+
+
 class OpenAICompatibleAPI(ModelAPI):
     def __init__(
         self,
@@ -150,6 +176,7 @@ class OpenAICompatibleAPI(ModelAPI):
             def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
                 raw_completion = self.client.chat.completions.create(**request)
                 if isinstance(raw_completion, ChatCompletion):
+                    raise_if_error_payload(raw_completion)
                     return raw_completion, None
                 return collect_stream_response(raw_completion, request_start=t_start)
 
@@ -233,6 +260,7 @@ class OpenAICompatibleAPI(ModelAPI):
             async def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
                 raw_completion = await self.async_client.chat.completions.create(**request)
                 if isinstance(raw_completion, ChatCompletion):
+                    raise_if_error_payload(raw_completion)
                     return raw_completion, None
                 return await async_collect_stream_response(raw_completion, request_start=t_start)
 
