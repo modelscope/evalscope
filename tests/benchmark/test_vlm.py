@@ -516,6 +516,14 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {'subset_list': ['CAD']}
         self._run_dataset_test('screenspot_pro', dataset_args=dataset_args, limit=5, use_mock=True)
 
+    def test_ref_adv_s(self):
+        """Test Ref-Adv-s adversarial referring expression benchmark."""
+        self._run_dataset_test('ref_adv_s', limit=5)
+
+    def test_ref_adv_s_mock(self):
+        """Test Ref-Adv-s with mock LLM."""
+        self._run_dataset_test('ref_adv_s', limit=5, use_mock=True)
+
     def test_cc_ocr_v2(self):
         """Test CC-OCR-V2 real-world document OCR benchmark."""
         dataset_args = {'subset_list': ['info_board_parsing', 'text_grounding', 'blueprint_qa']}
