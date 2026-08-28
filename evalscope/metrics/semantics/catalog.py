@@ -423,6 +423,10 @@ METRIC_DEFINITIONS.update(
         # non-primary and directionless, but deserve report labels rather than internal identities.
         'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
         'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
+        'bias_ratio': MetricEntry(
+            baseline='quality.error_rate.ratio',
+            metric_name='Bias Ratio',
+        ),
         # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
         'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

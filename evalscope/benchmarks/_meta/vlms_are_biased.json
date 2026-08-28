@@ -1,0 +1,372 @@
+{
+  "meta": {
+    "pretty_name": "VLMs Are Biased",
+    "dataset_id": "evalscope/vlms-are-biased",
+    "paper_url": "https://arxiv.org/abs/2505.23941",
+    "tags": [
+      "MultiModal",
+      "QA",
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy",
+      "bias_ratio"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "main",
+    "train_split": "",
+    "subset_list": [
+      "main",
+      "identification",
+      "withtitle",
+      "original",
+      "remove_background_q1q2",
+      "remove_background_q3"
+    ],
+    "description": "\n## Overview\n\nVLMs Are Biased (VLMBias) evaluates whether vision-language models answer objective visual questions from the image or fall back to memorized prior knowledge. It uses counterfactual images whose visible properties conflict with familiar concepts, such as an Adidas-style logo with four stripes or an animal with an unusual number of legs.\n\n## Task Description\n\n- **Task Type**: Free-form visual question answering for counting and identification\n- **Input**: A counterfactual or control image paired with a counting, binary identification, or short-answer question\n- **Output**: A number, `Yes`/`No`, or a short identity enclosed in curly brackets\n- **Domain**: Animals, logos, flags, chess pieces, game boards, optical illusions, and patterned grids\n\n## Key Features\n\n- The primary `main` split contains 2,784 objective visual questions over 1,392 counterfactual images at 384, 768, and 1152 pixel resolutions\n- Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants\n- Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`\n- The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets\n\n## Evaluation Notes\n\n- The dataset prompt is used verbatim, including its required curly-bracket answer format\n- Primary metric: **Accuracy** (`acc`), using the official case-insensitive comparison after stripping outer braces; if exact text matching fails, digit sequences are compared\n- Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization\n- Accuracy is also reported by topic, matching the official lmms-eval integration\n- `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`\n- The six official dataset splits are exposed as separate EvalScope subsets and evaluated by default; select only `main` to reproduce the paper's headline benchmark\n- Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens\n- [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": null,
+      "dimensions": {
+        "scope": "overall"
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 11594,
+    "subset_stats": [
+      {
+        "name": "main",
+        "sample_count": 2784,
+        "prompt_length_mean": 91.52,
+        "prompt_length_min": 78,
+        "prompt_length_max": 129,
+        "prompt_length_std": 10.44,
+        "target_length_mean": 1.53,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2784,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1152",
+              "1027x1152",
+              "1152x1055",
+              "1152x1057",
+              "1152x1149",
+              "1152x1152",
+              "1152x1296",
+              "1152x551",
+              "1152x571",
+              "1152x615"
+            ],
+            "resolution_range": {
+              "min": "384x183",
+              "max": "1862x1152"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "identification",
+        "sample_count": 1392,
+        "prompt_length_mean": 83.27,
+        "prompt_length_min": 68,
+        "prompt_length_max": 102,
+        "prompt_length_std": 7.6,
+        "target_length_mean": 2.14,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1392,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1152",
+              "1027x1152",
+              "1152x1055",
+              "1152x1057",
+              "1152x1149",
+              "1152x1152",
+              "1152x1296",
+              "1152x551",
+              "1152x571",
+              "1152x615"
+            ],
+            "resolution_range": {
+              "min": "384x183",
+              "max": "1152x1296"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "withtitle",
+        "sample_count": 2784,
+        "prompt_length_mean": 91.52,
+        "prompt_length_min": 78,
+        "prompt_length_max": 129,
+        "prompt_length_std": 10.44,
+        "target_length_mean": 1.53,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2784,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1303",
+              "1027x1304",
+              "1152x1000",
+              "1152x1007",
+              "1152x1014",
+              "1152x1015",
+              "1152x1025",
+              "1152x1027",
+              "1152x1028",
+              "1152x1030"
+            ],
+            "resolution_range": {
+              "min": "384x239",
+              "max": "1862x1430"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "original",
+        "sample_count": 458,
+        "prompt_length_mean": 85.03,
+        "prompt_length_min": 60,
+        "prompt_length_max": 130,
+        "prompt_length_std": 20.87,
+        "target_length_mean": 12.33,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 458,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1024x1024",
+              "1024x491",
+              "1024x510",
+              "1024x567",
+              "1024x572",
+              "1024x608",
+              "1024x616",
+              "1024x617",
+              "1024x618",
+              "1024x630"
+            ],
+            "resolution_range": {
+              "min": "768x512",
+              "max": "1324x1324"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "remove_background_q1q2",
+        "sample_count": 2784,
+        "prompt_length_mean": 94.23,
+        "prompt_length_min": 78,
+        "prompt_length_max": 138,
+        "prompt_length_std": 12.83,
+        "target_length_mean": 1.58,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2784,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1152",
+              "1027x1152",
+              "1152x1055",
+              "1152x1057",
+              "1152x1149",
+              "1152x1152",
+              "1152x1296",
+              "1152x551",
+              "1152x571",
+              "1152x615"
+            ],
+            "resolution_range": {
+              "min": "384x183",
+              "max": "1152x1296"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      },
+      {
+        "name": "remove_background_q3",
+        "sample_count": 1392,
+        "prompt_length_mean": 83.91,
+        "prompt_length_min": 70,
+        "prompt_length_max": 102,
+        "prompt_length_std": 7.37,
+        "target_length_mean": 2.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1392,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1021x1152",
+              "1027x1152",
+              "1152x1055",
+              "1152x1057",
+              "1152x1149",
+              "1152x1152",
+              "1152x1296",
+              "1152x551",
+              "1152x571",
+              "1152x615"
+            ],
+            "resolution_range": {
+              "min": "384x183",
+              "max": "1152x1296"
+            },
+            "formats": [
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 90.01,
+      "min": 60,
+      "max": 138,
+      "std": 11.78
+    },
+    "target_length_mean": 2.14,
+    "computed_at": "2026-08-28T13:46:07.900906+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 11594,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1021x1152",
+          "1021x1303",
+          "1024x1024",
+          "1024x491",
+          "1024x510",
+          "1024x567",
+          "1024x572",
+          "1024x608",
+          "1024x616",
+          "1024x617"
+        ],
+        "resolution_range": {
+          "min": "384x183",
+          "max": "1862x1430"
+        },
+        "formats": [
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "3872fe66",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: png, ~1.9KB]"
+            },
+            {
+              "text": "Are the horizontal and vertical lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}."
+            }
+          ]
+        }
+      ],
+      "target": "Yes",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "VerticalHorizontal_001_Q1_notitle_px384",
+        "topic": "Optical Illusion",
+        "sub_topic": "Vertical-Horizontal illusion",
+        "type_of_question": "Q1",
+        "expected_bias": "No",
+        "with_title": false,
+        "pixel": 384
+      }
+    },
+    "subset": "main",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# VLMs Are Biased\n\n\n## Overview\n\nVLMs Are Biased (VLMBias) evaluates whether vision-language models answer objective visual questions from the image or fall back to memorized prior knowledge. It uses counterfactual images whose visible properties conflict with familiar concepts, such as an Adidas-style logo with four stripes or an animal with an unusual number of legs.\n\n## Task Description\n\n- **Task Type**: Free-form visual question answering for counting and identification\n- **Input**: A counterfactual or control image paired with a counting, binary identification, or short-answer question\n- **Output**: A number, `Yes`/`No`, or a short identity enclosed in curly brackets\n- **Domain**: Animals, logos, flags, chess pieces, game boards, optical illusions, and patterned grids\n\n## Key Features\n\n- The primary `main` split contains 2,784 objective visual questions over 1,392 counterfactual images at 384, 768, and 1152 pixel resolutions\n- Five official analysis splits cover binary identification, in-image title injection, original unmodified controls, and background-removed variants\n- Each counterfactual record provides both the visually correct `ground_truth` and the prior-knowledge `expected_bias`\n- The benchmark exposes seven topics and nineteen sub-topics for detailed analysis without creating synthetic EvalScope subsets\n\n## Evaluation Notes\n\n- The dataset prompt is used verbatim, including its required curly-bracket answer format\n- Primary metric: **Accuracy** (`acc`), using the official case-insensitive comparison after stripping outer braces; if exact text matching fails, digit sequences are compared\n- Secondary metric: **Bias Ratio** (`bias_ratio`, lower is better), the fraction of predictions matching `expected_bias` under the same normalization\n- Accuracy is also reported by topic, matching the official lmms-eval integration\n- `bias_ratio` is omitted for the `original` split because those control records do not define `expected_bias`\n- The six official dataset splits are exposed as separate EvalScope subsets and evaluated by default; select only `main` to reproduce the paper's headline benchmark\n- Generation should be deterministic and concise; the official lmms-eval setup uses `temperature=0` and at most 32 new tokens\n- [Paper](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [Project page](https://vlmsarebiased.github.io/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `vlms_are_biased` |\n| **Dataset ID** | [evalscope/vlms-are-biased](https://modelscope.cn/datasets/evalscope/vlms-are-biased/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2505.23941) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `accuracy`, `bias_ratio` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `main` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 11,594 |\n| Prompt Length (Mean) | 90.01 chars |\n| Prompt Length (Min/Max) | 60 / 138 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `main` | 2,784 | 91.52 | 78 | 129 |\n| `identification` | 1,392 | 83.27 | 68 | 102 |\n| `withtitle` | 2,784 | 91.52 | 78 | 129 |\n| `original` | 458 | 85.03 | 60 | 130 |\n| `remove_background_q1q2` | 2,784 | 94.23 | 78 | 138 |\n| `remove_background_q3` | 1,392 | 83.91 | 70 | 102 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 11,594 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 384x183 - 1862x1430 |\n| Formats | png |\n\n\n## Sample Example\n\n**Subset**: `main`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3872fe66\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.9KB]\"\n        },\n        {\n          \"text\": \"Are the horizontal and vertical lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Yes\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"VerticalHorizontal_001_Q1_notitle_px384\",\n    \"topic\": \"Optical Illusion\",\n    \"sub_topic\": \"Vertical-Horizontal illusion\",\n    \"type_of_question\": \"Q1\",\n    \"expected_bias\": \"No\",\n    \"with_title\": false,\n    \"pixel\": 384\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vlms_are_biased \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vlms_are_biased'],\n    dataset_args={\n        'vlms_are_biased': {\n            # subset_list: ['main', 'identification', 'withtitle']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VLMs Are Biased\n\n\n## 概述\n\nVLMs Are Biased（VLMBias）用于评估视觉-语言模型（VLM）在回答客观视觉问题时，是依据图像内容作答，还是依赖于记忆中的先验知识。该基准测试使用反事实图像（counterfactual images），这些图像的可见属性与常见概念相冲突，例如带有四条纹的阿迪达斯风格标志，或拥有异常腿数的动物。\n\n## 任务描述\n\n- **任务类型**：自由形式的视觉问答（计数与识别）\n- **输入**：一张反事实图像或对照图像，配以计数、二元识别或简短回答类问题\n- **输出**：一个数字、`Yes`/`No`，或用花括号括起的简短身份标识\n- **领域**：动物、商标、旗帜、国际象棋棋子、游戏棋盘、视错觉和图案网格\n\n## 核心特性\n\n- 主要的 `main` 划分包含 2,784 个客观视觉问题，覆盖 1,392 张反事实图像，分辨率分别为 384、768 和 1152 像素\n- 五个官方分析划分涵盖二元识别、图像内标题注入、原始未修改对照图像，以及去除背景的变体\n- 每条反事实记录同时提供视觉上正确的 `ground_truth` 和基于先验知识的 `expected_bias`\n- 该基准测试涵盖七个主题和十九个子主题，支持细粒度分析，无需创建合成的 EvalScope 子集\n\n## 评估说明\n\n- 数据集提示词按原文使用，包括其要求的花括号答案格式\n- 主要指标：**准确率**（`acc`），采用官方提供的大小写不敏感比较方法（去除外层花括号后）；若精确文本匹配失败，则比较其中的数字序列\n- 次要指标：**偏见比率**（`bias_ratio`，越低越好），即在相同归一化条件下，预测结果与 `expected_bias` 一致的比例\n- 准确率也按主题分别报告，与官方 lmms-eval 集成一致\n- `original` 划分不计算 `bias_ratio`，因为这些对照样本未定义 `expected_bias`\n- 六个官方数据集划分作为独立的 EvalScope 子集公开，并默认全部参与评估；若仅选择 `main` 子集，可复现论文中的主要基准结果\n- 生成应具有确定性且简洁；官方 lmms-eval 设置使用 `temperature=0`，最多生成 32 个新 token\n- [论文](https://arxiv.org/abs/2505.23941) | [GitHub](https://github.com/anvo25/vlms-are-biased) | [项目主页](https://vlmsarebiased.github.io/)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `vlms_are_biased` |\n| **数据集ID** | [evalscope/vlms-are-biased](https://modelscope.cn/datasets/evalscope/vlms-are-biased/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2505.23941) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `accuracy`, `bias_ratio` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `main` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 11,594 |\n| 提示词长度（平均） | 90.01 字符 |\n| 提示词长度（最小/最大） | 60 / 138 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `main` | 2,784 | 91.52 | 78 | 129 |\n| `identification` | 1,392 | 83.27 | 68 | 102 |\n| `withtitle` | 2,784 | 91.52 | 78 | 129 |\n| `original` | 458 | 85.03 | 60 | 130 |\n| `remove_background_q1q2` | 2,784 | 94.23 | 78 | 138 |\n| `remove_background_q3` | 1,392 | 83.91 | 70 | 102 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 11,594 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 384x183 - 1862x1430 |\n| 格式 | png |\n\n\n## 样例示例\n\n**子集**: `main`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3872fe66\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: png, ~1.9KB]\"\n        },\n        {\n          \"text\": \"Are the horizontal and vertical lines equal in length? Answer in curly brackets, e.g., {Yes} or {No}.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"Yes\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"VerticalHorizontal_001_Q1_notitle_px384\",\n    \"topic\": \"Optical Illusion\",\n    \"sub_topic\": \"Vertical-Horizontal illusion\",\n    \"type_of_question\": \"Q1\",\n    \"expected_bias\": \"No\",\n    \"with_title\": false,\n    \"pixel\": 384\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets vlms_are_biased \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['vlms_are_biased'],\n    dataset_args={\n        'vlms_are_biased': {\n            # subset_list: ['main', 'identification', 'withtitle']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "6e7abd5b93971e0f76453dccd923ce57",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-28T13:46:17.233686+08:00",
+  "translation_updated_at": "2026-08-28T13:46:22+08:00"
+}
