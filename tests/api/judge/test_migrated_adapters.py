@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
+from evalscope.benchmarks.prbench.prbench_adapter import PRBenchAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import JudgeScoreType, ScoreStatus
 from evalscope.metrics.judge.llm_judge import DEFAULT_PROMPT_TEMPLATE, LLMJudge
@@ -42,6 +43,88 @@ class TransportFailingJudge(ScriptedJudge):
 def make_state(prediction: str, target: str) -> TaskState:
     sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
     return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+
+
+def make_prbench_adapter() -> PRBenchAdapter:
+    config = TaskConfig(
+        model='m',
+        datasets=['prbench'],
+        dataset_args={'prbench': {'subset_list': ['finance']}},
+        judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]},
+    )
+    return get_benchmark('prbench', config)
+
+
+def make_prbench_state(adapter: PRBenchAdapter) -> TaskState:
+    sample = adapter.record_to_sample({
+        'task': 'task-1',
+        'turns': 1,
+        'field': 'Finance',
+        'topic': 'Accounting',
+        'expert': 'Expert',
+        'rubric': [
+            {
+                'id': 'positive',
+                'title': 'Includes the required answer.',
+                'annotations': {
+                    'weight_class': 'critically important',
+                    'critically_important_weight': 8,
+                    'criteria_category': 'Financial Accuracy',
+                },
+            },
+            {
+                'id': 'negative',
+                'title': 'Contains a material error.',
+                'annotations': {
+                    'weight_class': 'detrimental',
+                    'detrimental_weight': -4,
+                    'criteria_category': 'Financial Accuracy',
+                },
+            },
+        ],
+        'prompt_0': 'Analyze the transaction.',
+        'reference_texts_0': [],
+        'economic_pathway': 'Value Creation',
+        'decision_type': 'Modeling & Measurement',
+    })
+    sample.id = 0
+    return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', 'Answer'), completed=True)
+
+
+def test_prbench_valid_verdicts_use_official_weighting() -> None:
+    adapter = make_prbench_adapter()
+    adapter.llm_judge = ScriptedJudge([
+        '{"explanation": "present", "criteria_met": true}',
+        '{"explanation": "present", "criteria_met": true}',
+    ])
+
+    score = adapter.calculate_metrics(make_prbench_state(adapter)).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == {'clipped_score': 0.5, 'normalized_score': pytest.approx(2 / 3)}
+
+
+@pytest.mark.parametrize('reply', ['not JSON', '[ERROR] judge transport unavailable'])
+def test_prbench_invalid_judge_reply_excludes_the_sample(reply: str) -> None:
+    adapter = make_prbench_adapter()
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.calculate_metrics(make_prbench_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+def test_prbench_transport_failure_excludes_the_sample() -> None:
+    adapter = make_prbench_adapter()
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_prbench_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'
 
 
 @pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
