@@ -164,7 +164,12 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         """Average official page metrics and compute Overall from the aggregated components."""
         metric_values = defaultdict(list)
         metric_ids = defaultdict(list)
-        for sample_score in sample_scores:
+        scored_sample_scores = [
+            sample_score
+            for sample_score in sample_scores
+            if sample_score.score.status.is_usable and sample_score.score.value
+        ]
+        for sample_score in scored_sample_scores:
             for metric_name, value in sample_score.score.value.items():
                 metric_values[metric_name].append(float(value))
                 metric_ids[metric_name].append(sample_score.sample_id)
@@ -195,8 +200,8 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
                     score=overall,
                     metric_name='normalized_score',
                     aggregation='official',
-                    num=len(sample_scores),
-                    ids=[sample_score.sample_id for sample_score in sample_scores],
+                    num=len(scored_sample_scores),
+                    ids=[sample_score.sample_id for sample_score in scored_sample_scores],
                     metadata={
                         'component_page_denominators': {
                             component: len(metric_values[component]) for component in overall_components

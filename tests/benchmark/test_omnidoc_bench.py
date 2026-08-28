@@ -56,6 +56,29 @@ def test_v16_match_score_handles_pages_without_supported_metrics(
         assert score.metadata == {'scoring_excluded_reason': 'no_page_metrics'}
 
 
+def test_v16_aggregation_excludes_unscored_pages_from_normalized_score_count() -> None:
+    adapter = OmniDocBenchV16Adapter.__new__(OmniDocBenchV16Adapter)
+    sample_scores = [
+        SampleScore(
+            sample_id=1,
+            score=Score(
+                value={
+                    'text_block_Edit_dist': 0.2,
+                    'display_formula_CDM': 0.8,
+                    'table_TEDS': 0.7,
+                }
+            ),
+        ),
+        SampleScore(sample_id=2, score=Score(status=ScoreStatus.EXCLUDED)),
+    ]
+
+    aggregated = adapter.aggregate_scores(sample_scores)
+
+    normalized_score = next(score for score in aggregated if score.metric_name == 'normalized_score')
+    assert normalized_score.num == 1
+    assert normalized_score.ids == [1]
+
+
 def test_v16_loads_snapshot_once_and_reads_images_locally(tmp_path: Path) -> None:
     image_names = ['page.png', 'long_' + '页面' * 36 + '.png']
     records = [{'page_info': {'image_path': image_name}} for image_name in image_names]
