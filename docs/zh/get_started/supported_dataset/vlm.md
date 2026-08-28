@@ -68,6 +68,7 @@
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
+| `visfactor` | [VisFactor](../../benchmarks/visfactor.md) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
@@ -144,6 +145,7 @@
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
+../../benchmarks/visfactor.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
