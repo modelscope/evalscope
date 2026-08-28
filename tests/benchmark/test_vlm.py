@@ -631,6 +631,14 @@ class TestVLMBenchmark(TestBenchmark):
         """Test olmOCR-Bench with mock LLM."""
         self._run_dataset_test('olmocr_bench', limit=5, use_mock=True)
 
+    def test_visfactor(self):
+        """Test VisFactor visual cognition benchmark."""
+        self._run_dataset_test('visfactor', limit=5)
+
+    def test_visfactor_mock(self):
+        """Test VisFactor with mock LLM."""
+        self._run_dataset_test('visfactor', limit=5, use_mock=True)
+
     def test_vtcbench(self):
         """Test VTCBench long context vision-text compression benchmark."""
         self._run_dataset_test('vtcbench', limit=1)
