@@ -959,6 +959,12 @@ class TestNativeBenchmark(TestBenchmark):
             'perspective_gap_prompt_writing', limit=5, model='qwen-plus', generation_config=generation_config
         )
 
+    def test_prbench(self):
+        """Test PRBench with real inference and judge APIs."""
+        if not env.get('DASHSCOPE_API_KEY'):
+            self.skipTest('DASHSCOPE_API_KEY is required for the PRBench real-API smoke test.')
+        self._run_dataset_test('prbench', dataset_args={'subset_list': ['finance_hard']}, limit=2)
+
     def test_plawbench_mock(self):
         """Test PLawBench with a mock model and a mock judge."""
         self._run_dataset_test(

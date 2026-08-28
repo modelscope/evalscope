@@ -121,6 +121,7 @@
 | `piqa` | [PIQA](../../benchmarks/piqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
 | `plawbench` | [PLawBench](../../benchmarks/plawbench.md) | `Chinese`, `Knowledge`, `QA`, `Reasoning` |
 | `poly_math` | [PolyMath](../../benchmarks/poly_math.md) | `Math`, `MultiLingual`, `Reasoning` |
+| `prbench` | [PRBench](../../benchmarks/prbench.md) | `Knowledge`, `MultiTurn`, `QA`, `Reasoning` |
 | `process_bench` | [ProcessBench](../../benchmarks/process_bench.md) | `Math`, `Reasoning` |
 | `pubmedqa` | [PubMedQA](../../benchmarks/pubmedqa.md) | `Knowledge`, `Yes/No` |
 | `qasc` | [QASC](../../benchmarks/qasc.md) | `Knowledge`, `MCQ` |
@@ -268,6 +269,7 @@
 ../../benchmarks/piqa.md
 ../../benchmarks/plawbench.md
 ../../benchmarks/poly_math.md
+../../benchmarks/prbench.md
 ../../benchmarks/process_bench.md
 ../../benchmarks/pubmedqa.md
 ../../benchmarks/qasc.md

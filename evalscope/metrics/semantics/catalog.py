@@ -383,6 +383,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
     'quality.rouge.ratio': ('rouge', 'rouge_l'),
     'quality.score.points_100': ('eq_bench_score', 'weighted_score_percent'),
     'quality.score.ratio': (
+        'clipped_score',
         'compliance_score',
         'contains_all',
         'contains_any',
