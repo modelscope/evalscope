@@ -602,6 +602,14 @@ class TestVLMBenchmark(TestBenchmark):
         dataset_args = {'subset_list': ['main']}
         self._run_dataset_test('vlms_are_biased', dataset_args=dataset_args, limit=5, use_mock=True)
 
+    def test_surds(self):
+        """Test SURDS driving-scene spatial reasoning benchmark."""
+        self._run_dataset_test('surds', limit=5)
+
+    def test_surds_mock(self):
+        """Test SURDS with mock LLM."""
+        self._run_dataset_test('surds', limit=5, use_mock=True)
+
     def test_phyx_mc(self):
         """Test PhyX multiple-choice physical reasoning benchmark."""
         dataset_args = {'subset_list': ['optics', 'modern_physics']}

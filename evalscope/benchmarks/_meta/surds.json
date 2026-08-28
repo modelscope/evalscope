@@ -1,0 +1,321 @@
+{
+  "meta": {
+    "pretty_name": "SURDS",
+    "dataset_id": "evalscope/SURDS_eval",
+    "paper_url": "https://arxiv.org/abs/2411.13112",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "QA",
+      "Grounding"
+    ],
+    "metrics": [
+      "normalized_score"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "",
+    "subset_list": [
+      "yaw",
+      "xy2d",
+      "depth",
+      "distance",
+      "left_right",
+      "front_behind"
+    ],
+    "description": "\n## Overview\n\nSURDS benchmarks fine-grained spatial understanding and reasoning by vision-language models in realistic driving\nscenes. It is derived from the six-camera nuScenes dataset and evaluates object-centric and relational spatial skills\nwithout supplying depth maps or visual markers.\n\n## Task Description\n\n- **Task Type**: Multi-task visual spatial question answering\n- **Input**: A 1600 x 900 driving-scene image and an English spatial reasoning question\n- **Output**: A structured response ending in an answer inside `<answer>...</answer>`\n- **Domain**: Autonomous driving and outdoor 3D spatial reasoning\n\n## Key Features\n\n- 9,250 model queries generated deterministically from 5,919 validation images, following the official seed-42 code\n- Six equally weighted task subsets: yaw orientation, pixel localization, depth range, pairwise distance, left/right\n  ordering, and front/behind relation\n- Yaw, distance, left/right, and front/behind are consistency tests: both complementary prompts for an evaluation unit\n  must be correct to receive credit\n- Images come from six nuScenes cameras and contain unmarked objects described by appearance rather than overlays\n\n## Evaluation Notes\n\n- The official prompts and `<think>...<answer>...</answer>` response contract are reproduced verbatim\n- Pixel localization uses the official centerness metric: predictions outside the target box receive 0, while points\n  nearer the box center receive scores approaching 1; normalized coordinates and predicted boxes are also accepted\n- The other five tasks use official normalized exact match, removing case, punctuation, articles, and extra whitespace\n- Every subset contains 925 evaluation units; the overall normalized score is therefore the equal average of all six\n  task scores. A full run makes 9,250 model requests but reports `Num=5,550`, because each complementary prompt pair\n  is one official evaluation unit\n- Invalid or missing `<answer>` blocks score 0, matching the official benchmark denominator semantics\n- The dataset is evaluation-only and downloaded as a complete snapshot from ModelScope\n- Resources: [Paper](https://arxiv.org/abs/2411.13112) |\n  [GitHub](https://github.com/XiandaGuo/Drive-MLLM)\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm",
+    "primary_metric": {
+      "name": "normalized_score",
+      "aggregation": null,
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 9250,
+    "subset_stats": [
+      {
+        "name": "yaw",
+        "sample_count": 1850,
+        "prompt_length_mean": 725.18,
+        "prompt_length_min": 714,
+        "prompt_length_max": 769,
+        "prompt_length_std": 11.55,
+        "target_length_mean": 6.1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1850,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "xy2d",
+        "sample_count": 925,
+        "prompt_length_mean": 677.32,
+        "prompt_length_min": 672,
+        "prompt_length_max": 717,
+        "prompt_length_std": 7.05,
+        "target_length_mean": 10.28,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 925,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "depth",
+        "sample_count": 925,
+        "prompt_length_mean": 861.75,
+        "prompt_length_min": 854,
+        "prompt_length_max": 901,
+        "prompt_length_std": 7.08,
+        "target_length_mean": 30.63,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 925,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "distance",
+        "sample_count": 1850,
+        "prompt_length_mean": 770.04,
+        "prompt_length_min": 743,
+        "prompt_length_max": 910,
+        "prompt_length_std": 25.91,
+        "target_length_mean": 18.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1850,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "left_right",
+        "sample_count": 1850,
+        "prompt_length_mean": 658.04,
+        "prompt_length_min": 631,
+        "prompt_length_max": 798,
+        "prompt_length_std": 25.91,
+        "target_length_mean": 18.43,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1850,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      },
+      {
+        "name": "front_behind",
+        "sample_count": 1850,
+        "prompt_length_mean": 718.77,
+        "prompt_length_min": 703,
+        "prompt_length_max": 791,
+        "prompt_length_std": 13.19,
+        "target_length_mean": 3.7,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1850,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1600x900"
+            ],
+            "resolution_range": {
+              "min": "1600x900",
+              "max": "1600x900"
+            },
+            "formats": [
+              "webp"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 728.31,
+      "min": 631,
+      "max": 910,
+      "std": 61.13
+    },
+    "target_length_mean": 13.41,
+    "computed_at": "2026-08-28T15:42:17.791279+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 9250,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1600x900"
+        ],
+        "resolution_range": {
+          "min": "1600x900",
+          "max": "1600x900"
+        },
+        "formats": [
+          "webp"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "ff9ad0a4",
+          "content": [
+            {
+              "text": "Task Description: \nThe primary goal of this task is to identify the direction that the specified object is facing in the given image. The camera in the image is facing North, and you need to analyze the object's orientation based on this refe ... [TRUNCATED 232 chars] ... evant error checks.\nFinally, provide a concise and definitive response in the <answer> tag. Use the following format:\n<think>[Step-by-step reasoning with attention to detail and potential error checks]</think>\n<answer>[Final answer]</answer>\n"
+            },
+            {
+              "image": "~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp"
+            }
+          ]
+        }
+      ],
+      "target": "West",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "task": "yaw",
+        "pair_id": "yaw-3",
+        "variant_index": 0,
+        "paired": true,
+        "bbox": [
+          662,
+          504,
+          774,
+          545
+        ],
+        "options": [
+          "North",
+          "South",
+          "East",
+          "West"
+        ],
+        "image_size": [
+          1600,
+          900
+        ],
+        "image_path": "~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp"
+      }
+    },
+    "subset": "yaw",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# SURDS\n\n\n## Overview\n\nSURDS benchmarks fine-grained spatial understanding and reasoning by vision-language models in realistic driving\nscenes. It is derived from the six-camera nuScenes dataset and evaluates object-centric and relational spatial skills\nwithout supplying depth maps or visual markers.\n\n## Task Description\n\n- **Task Type**: Multi-task visual spatial question answering\n- **Input**: A 1600 x 900 driving-scene image and an English spatial reasoning question\n- **Output**: A structured response ending in an answer inside `<answer>...</answer>`\n- **Domain**: Autonomous driving and outdoor 3D spatial reasoning\n\n## Key Features\n\n- 9,250 model queries generated deterministically from 5,919 validation images, following the official seed-42 code\n- Six equally weighted task subsets: yaw orientation, pixel localization, depth range, pairwise distance, left/right\n  ordering, and front/behind relation\n- Yaw, distance, left/right, and front/behind are consistency tests: both complementary prompts for an evaluation unit\n  must be correct to receive credit\n- Images come from six nuScenes cameras and contain unmarked objects described by appearance rather than overlays\n\n## Evaluation Notes\n\n- The official prompts and `<think>...<answer>...</answer>` response contract are reproduced verbatim\n- Pixel localization uses the official centerness metric: predictions outside the target box receive 0, while points\n  nearer the box center receive scores approaching 1; normalized coordinates and predicted boxes are also accepted\n- The other five tasks use official normalized exact match, removing case, punctuation, articles, and extra whitespace\n- Every subset contains 925 evaluation units; the overall normalized score is therefore the equal average of all six\n  task scores. A full run makes 9,250 model requests but reports `Num=5,550`, because each complementary prompt pair\n  is one official evaluation unit\n- Invalid or missing `<answer>` blocks score 0, matching the official benchmark denominator semantics\n- The dataset is evaluation-only and downloaded as a complete snapshot from ModelScope\n- Resources: [Paper](https://arxiv.org/abs/2411.13112) |\n  [GitHub](https://github.com/XiandaGuo/Drive-MLLM)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `surds` |\n| **Dataset ID** | [evalscope/SURDS_eval](https://modelscope.cn/datasets/evalscope/SURDS_eval/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2411.13112) |\n| **Tags** | `Grounding`, `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `normalized_score` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 9,250 |\n| Prompt Length (Mean) | 728.31 chars |\n| Prompt Length (Min/Max) | 631 / 910 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `yaw` | 1,850 | 725.18 | 714 | 769 |\n| `xy2d` | 925 | 677.32 | 672 | 717 |\n| `depth` | 925 | 861.75 | 854 | 901 |\n| `distance` | 1,850 | 770.04 | 743 | 910 |\n| `left_right` | 1,850 | 658.04 | 631 | 798 |\n| `front_behind` | 1,850 | 718.77 | 703 | 791 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 9,250 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 1600x900 - 1600x900 |\n| Formats | webp |\n\n\n## Sample Example\n\n**Subset**: `yaw`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ff9ad0a4\",\n      \"content\": [\n        {\n          \"text\": \"Task Description: \\nThe primary goal of this task is to identify the direction that the specified object is facing in the given image. The camera in the image is facing North, and you need to analyze the object's orientation based on this refe ... [TRUNCATED 232 chars] ... evant error checks.\\nFinally, provide a concise and definitive response in the <answer> tag. Use the following format:\\n<think>[Step-by-step reasoning with attention to detail and potential error checks]</think>\\n<answer>[Final answer]</answer>\\n\"\n        },\n        {\n          \"image\": \"~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"West\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task\": \"yaw\",\n    \"pair_id\": \"yaw-3\",\n    \"variant_index\": 0,\n    \"paired\": true,\n    \"bbox\": [\n      662,\n      504,\n      774,\n      545\n    ],\n    \"options\": [\n      \"North\",\n      \"South\",\n      \"East\",\n      \"West\"\n    ],\n    \"image_size\": [\n      1600,\n      900\n    ],\n    \"image_path\": \"~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets surds \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['surds'],\n    dataset_args={\n        'surds': {\n            # subset_list: ['yaw', 'xy2d', 'depth']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SURDS\n\n\n## 概述\n\nSURDS 通过在真实驾驶场景中对视觉-语言模型进行评测，衡量其细粒度的空间理解与推理能力。该基准源自六摄像头 nuScenes 数据集，在不提供深度图或视觉标记的情况下，评估以物体为中心及关系性的空间技能。\n\n## 任务描述\n\n- **任务类型**：多任务视觉空间问答\n- **输入**：一张 1600 x 900 的驾驶场景图像和一个英文空间推理问题\n- **输出**：结构化响应，答案需包含在 `<answer>...</answer>` 标签内\n- **领域**：自动驾驶与室外 3D 空间推理\n\n## 主要特点\n\n- 基于官方 seed-42 代码，从 5,919 张验证图像中确定性地生成了 9,250 条模型查询\n- 包含六个权重相等的任务子集：偏航方向（yaw orientation）、像素定位（pixel localization）、深度范围（depth range）、成对距离（pairwise distance）、左右顺序（left/right ordering）和前后关系（front/behind relation）\n- 偏航、距离、左右和前后任务为一致性测试：每个评估单元的两个互补提示都必须正确才能得分\n- 图像来自 nuScenes 的六个摄像头，其中包含未标记的物体，仅通过外观描述而非叠加标记\n\n## 评测说明\n\n- 官方提示词及 `<think>...<answer>...</answer>` 响应格式被逐字复现\n- 像素定位采用官方的中心度（centerness）指标：预测点若在目标框外得分为 0；越接近框中心，得分越接近 1；也接受归一化坐标和预测框形式\n- 其余五个任务使用官方的归一化精确匹配（normalized exact match），忽略大小写、标点、冠词及多余空格\n- 每个子集包含 925 个评估单元，因此整体归一化分数为六个子任务分数的等权平均值。完整运行需发起 9,250 次模型请求，但报告的 `Num=5,550`，因为每对互补提示被视为一个官方评估单元\n- 无效或缺失 `<answer>` 块的答案得分为 0，符合官方基准的分母语义\n- 该数据集仅用于评测，以完整快照形式从 ModelScope 下载\n- 资源链接：[论文](https://arxiv.org/abs/2411.13112) |\n  [GitHub](https://github.com/XiandaGuo/Drive-MLLM)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `surds` |\n| **数据集ID** | [evalscope/SURDS_eval](https://modelscope.cn/datasets/evalscope/SURDS_eval/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2411.13112) |\n| **标签** | `Grounding`, `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `normalized_score` |\n| **默认示例数** | 0-shot |\n| **评测划分** | `validation` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 9,250 |\n| 提示词长度（平均） | 728.31 字符 |\n| 提示词长度（最小/最大） | 631 / 910 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `yaw` | 1,850 | 725.18 | 714 | 769 |\n| `xy2d` | 925 | 677.32 | 672 | 717 |\n| `depth` | 925 | 861.75 | 854 | 901 |\n| `distance` | 1,850 | 770.04 | 743 | 910 |\n| `left_right` | 1,850 | 658.04 | 631 | 798 |\n| `front_behind` | 1,850 | 718.77 | 703 | 791 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 9,250 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 1600x900 - 1600x900 |\n| 格式 | webp |\n\n\n## 样例示例\n\n**子集**: `yaw`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"ff9ad0a4\",\n      \"content\": [\n        {\n          \"text\": \"Task Description: \\nThe primary goal of this task is to identify the direction that the specified object is facing in the given image. The camera in the image is facing North, and you need to analyze the object's orientation based on this refe ... [TRUNCATED 232 chars] ... evant error checks.\\nFinally, provide a concise and definitive response in the <answer> tag. Use the following format:\\n<think>[Step-by-step reasoning with attention to detail and potential error checks]</think>\\n<answer>[Final answer]</answer>\\n\"\n        },\n        {\n          \"image\": \"~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"West\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"task\": \"yaw\",\n    \"pair_id\": \"yaw-3\",\n    \"variant_index\": 0,\n    \"paired\": true,\n    \"bbox\": [\n      662,\n      504,\n      774,\n      545\n    ],\n    \"options\": [\n      \"North\",\n      \"South\",\n      \"East\",\n      \"West\"\n    ],\n    \"image_size\": [\n      1600,\n      900\n    ],\n    \"image_path\": \"~/.cache/modelscope/hub/datasets/evalscope/SURDS_eval/validation/image/CAM_BACK_RIGHT/nuscenes_0033_CAM_BACK_RIGHT.webp\"\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets surds \\\n    --limit 10  # 正式评测时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['surds'],\n    dataset_args={\n        'surds': {\n            # subset_list: ['yaw', 'xy2d', 'depth']  # 可选，用于评测特定子集\n        }\n    },\n    limit=10,  # 正式评测时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "d5a36df9c08542c14f7c5fcf3618d71a",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-28T15:42:26.239100+08:00",
+  "translation_updated_at": "2026-08-28T15:42:33+08:00"
+}
