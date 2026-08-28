@@ -78,10 +78,16 @@ class AioHttpClient:
         Returns:
             BenchmarkData: The benchmark data object containing request and response information.
         """
+        start_time = time.perf_counter()
         try:
             headers, request_id = self.api_plugin.extract_body_meta(body, self.headers)
             # Delegate the request processing to the API plugin
             output = await self.api_plugin.process_request(self.client, self.url, headers, body)
+            if not output.success:
+                if output.start_time <= 0:
+                    output.start_time = start_time
+                if output.completed_time < output.start_time:
+                    output.completed_time = time.perf_counter()
             if request_id:
                 output.request_id = request_id
             return output
@@ -89,10 +95,26 @@ class AioHttpClient:
             logger.error(
                 f'TimeoutError: total_timeout: {self.total_timeout}, connect_timeout: {self.connect_timeout}, read_timeout: {self.read_timeout}. Please set longer timeout.'  # noqa: E501
             )
-            return BenchmarkData(success=False, error=str(e), is_stream=is_stream_body(body))
+            return self._failure_record(body, str(e), start_time)
         except (aiohttp.ClientConnectorError, Exception) as e:
             logger.error(e)
-            return BenchmarkData(success=False, error=str(e), is_stream=is_stream_body(body))
+            return self._failure_record(body, str(e), start_time)
+
+    @staticmethod
+    def _failure_record(body, error: str, start_time: float) -> BenchmarkData:
+        """Build a BenchmarkData for a request that never produced a response.
+
+        The start time is captured before request preparation so failures cover
+        the same lifecycle and use the same ``perf_counter()`` clock as successful
+        requests.
+        """
+        return BenchmarkData(
+            success=False,
+            error=error,
+            is_stream=is_stream_body(body),
+            start_time=start_time,
+            completed_time=time.perf_counter(),
+        )
 
     @staticmethod
     async def on_request_start(session, context, params: aiohttp.TraceRequestStartParams):

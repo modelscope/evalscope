@@ -285,7 +285,14 @@ class MetricsAccumulator:
         self._update_wall_time(data)
 
     def _update_wall_time(self, data: BenchmarkData) -> None:
-        """Expand the wall-clock window to cover *data*'s lifecycle."""
+        """Expand the wall-clock window to cover *data*'s lifecycle.
+
+        Records without a valid timing interval are skipped: folding an absent
+        start or a completion before its start into the window would corrupt
+        QPS and throughput.
+        """
+        if data.start_time <= 0 or data.completed_time < data.start_time:
+            return
         if self._wall_start is None:
             self._wall_start = data.start_time
         else:

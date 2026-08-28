@@ -118,11 +118,16 @@ async def statistic_benchmark_metric(
                     await asyncio.to_thread(con.commit)
                     processed_since_commit = 0
 
-                message = accumulator.to_result().create_message(api_type=args.api)
-
-                await asyncio.to_thread(maybe_log_to_visualizer, args, message)
+                # Snapshot metrics and ship them to the visualizer off the event
+                # loop.  Skipped entirely when no visualizer is configured (the
+                # default): building the message for every request would be
+                # pure per-request overhead.
+                if args.visualizer:
+                    message = accumulator.to_result().create_message(api_type=args.api)
+                    await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
                 if int(accumulator.n_total) % args.log_every_n_query == 0:
+                    message = accumulator.to_result().create_message(api_type=args.api)
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
                     logger.info(msg)
 

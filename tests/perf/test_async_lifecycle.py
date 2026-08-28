@@ -1,10 +1,15 @@
 import asyncio
+import subprocess
+import sys
+import textwrap
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, List, Tuple
 
 import pytest
 from aiohttp import web
 
+import evalscope.perf.main as perf_main
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.benchmark import run_benchmark
 from evalscope.perf.core import pipeline
@@ -13,7 +18,7 @@ from evalscope.perf.core.strategies.closed_loop import ClosedLoopStrategy
 from evalscope.perf.core.strategies.multi_turn import MultiTurnStrategy
 from evalscope.perf.core.strategies.open_loop import OpenLoopStrategy
 from evalscope.perf.utils.db_util import get_result_db_path
-from evalscope.perf.utils.handler import exception_handler
+from evalscope.perf.utils.handler import exception_handler, signal_handler
 
 
 def _make_args(**kwargs: Any) -> Arguments:
@@ -195,6 +200,127 @@ def test_existing_result_database_raises_file_exists_error(tmp_path) -> None:
 
     with pytest.raises(FileExistsError, match=str(db_path)):
         get_result_db_path(SimpleNamespace(outputs_dir=str(tmp_path)))
+
+
+class TestSignalHandlerGracefulShutdown:
+    """SIGINT/SIGTERM must cancel pending tasks instead of stopping the loop.
+
+    ``loop.stop()`` used to make ``run_until_complete`` raise a confusing
+    ``RuntimeError: Event loop stopped before Future completed`` while skipping
+    every ``finally`` block of the benchmark coroutine.
+    """
+
+    def test_running_coroutine_is_cancelled_and_cleanup_runs(self) -> None:
+        loop = asyncio.new_event_loop()
+        cleanup: List[str] = []
+
+        async def benchmark_coroutine() -> None:
+            # Simulate the loop firing the registered SIGINT callback mid-run.
+            loop.call_soon(signal_handler, 'SIGINT', loop)
+            try:
+                await asyncio.sleep(30)
+            finally:
+                cleanup.append('ran')
+
+        try:
+            with pytest.raises(asyncio.CancelledError):
+                loop.run_until_complete(benchmark_coroutine())
+            assert cleanup == ['ran']
+        finally:
+            loop.close()
+
+    def test_in_flight_requests_are_cancelled_too(self) -> None:
+        loop = asyncio.new_event_loop()
+        in_flight_cleanup: List[str] = []
+
+        async def in_flight_request() -> None:
+            try:
+                await asyncio.Event().wait()
+            finally:
+                in_flight_cleanup.append('ran')
+
+        async def benchmark_coroutine() -> None:
+            task = asyncio.create_task(in_flight_request())
+            await asyncio.sleep(0)  # let the in-flight request start
+            loop.call_soon(signal_handler, 'SIGTERM', loop)
+            await asyncio.sleep(30)
+
+        try:
+            with pytest.raises(asyncio.CancelledError):
+                loop.run_until_complete(benchmark_coroutine())
+            # Drain the cancellation delivered to the in-flight request.
+            loop.run_until_complete(asyncio.sleep(0))
+            assert in_flight_cleanup == ['ran']
+        finally:
+            loop.close()
+
+    def test_sigint_exits_cleanly_after_cleanup(self, tmp_path: Path) -> None:
+        script = textwrap.dedent(
+            """
+            import asyncio
+            import os
+            import signal
+            import sys
+
+            sys.path.insert(0, sys.argv[2])
+
+            from evalscope.perf.arguments import Arguments
+            import evalscope.perf.main as perf_main
+
+            args = Arguments(model='test-model', api='openai', number=1, parallel=1, rate=-1)
+            args.number = 1
+            args.parallel = 1
+            args.rate = -1
+
+            async def interrupted(_: Arguments) -> None:
+                loop = asyncio.get_running_loop()
+                loop.call_later(0.05, os.kill, os.getpid(), signal.SIGINT)
+                try:
+                    await asyncio.Event().wait()
+                finally:
+                    print('CLEANUP_RAN=True', flush=True)
+
+            output_path = sys.argv[1]
+
+            def run_test_perf(cli_args: object) -> None:
+                perf_main.run_one_benchmark(args, output_path)
+
+            perf_main.run_benchmark = interrupted
+            perf_main.run_perf_benchmark = run_test_perf
+
+            from evalscope.cli.cli import run_cmd
+
+            sys.argv = ['evalscope', 'perf', '--model', 'test-model']
+            run_cmd()
+            """
+        )
+
+        result = subprocess.run(
+            [sys.executable, '-c', script, str(tmp_path), str(Path(__file__).parents[2])],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+
+        assert result.returncode == 130
+        assert 'CLEANUP_RAN=True' in result.stdout
+        assert 'Traceback' not in result.stderr
+        assert 'CancelledError' not in result.stderr
+
+    def test_internal_cancellation_is_not_treated_as_a_signal(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+    ) -> None:
+        async def cancelled_benchmark(_args: Arguments) -> None:
+            raise asyncio.CancelledError
+
+        monkeypatch.setattr(perf_main, 'run_benchmark', cancelled_benchmark)
+
+        with pytest.raises(asyncio.CancelledError):
+            perf_main.run_one_benchmark(_make_args(), str(tmp_path))
 
 
 def test_aiohttp_client_context_returns_self_and_closes() -> None:

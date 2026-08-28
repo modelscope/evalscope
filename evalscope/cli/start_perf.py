@@ -27,11 +27,14 @@ class PerfBenchCMD(CLICommand):
 
     def execute(self):
         try:
-            from evalscope.perf.main import run_perf_benchmark
+            from evalscope.perf.main import PerfBenchmarkInterrupted, run_perf_benchmark
         except ImportError as e:
             raise ImportError(
                 f'Failed to import run_perf_benchmark from evalscope.perf.main, due to {e}. '
                 "Please run `pip install 'evalscope[perf]'`."
             )
 
-        run_perf_benchmark(self.args)
+        try:
+            run_perf_benchmark(self.args)
+        except PerfBenchmarkInterrupted as e:
+            raise SystemExit(e.exit_code) from None
