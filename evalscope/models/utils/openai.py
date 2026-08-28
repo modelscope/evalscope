@@ -121,7 +121,8 @@ def openai_chat_completion_part(
     elif content.type == 'audio':
         # Standard OpenAI / vllm: raw base64 (no data URI prefix)
         # DashScope: requires data URI prefix (data:<mime>;base64,...)
-        audio_data = file_as_data_uri(content.audio)
+        audio_mime = 'audio/wav' if content.format == 'wav' else 'audio/mpeg'
+        audio_data = file_as_data_uri(content.audio, default_mime_type=audio_mime)
         if not _is_dashscope_endpoint(base_url):
             audio_data = data_uri_to_base64(audio_data)
         return ChatCompletionContentPartInputAudioParam(

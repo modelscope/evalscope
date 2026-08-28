@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -185,10 +186,14 @@ class OpenAICompatibleAPI(ModelAPI):
             tools=len(tools) > 0,
         )
 
+        messages = await asyncio.to_thread(
+            openai_chat_messages,
+            input,
+            reasoning_format=(config.reasoning_history or 'reasoning_field'),
+            base_url=self.base_url,
+        )
         request = dict(
-            messages=openai_chat_messages(
-                input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
-            ),
+            messages=messages,
             tools=openai_chat_tools(tools) if len(tools) > 0 else NOT_GIVEN,
             tool_choice=openai_chat_tool_choice(tool_choice) if len(tools) > 0 else NOT_GIVEN,
             **completion_params,
