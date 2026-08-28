@@ -7,6 +7,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -54,6 +55,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
             'inst_level_loose',
         ],
         primary_metric='prompt_level_strict',
+        aggregation='weighted_mean',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -92,6 +94,14 @@ class IFBenchAdapter(DefaultDataAdapter):
             # Process results using the existing ifeval utility
             results = process_results(doc, [filtered_prediction])
             score.value.update(results)
+
+            # Weight the instruction-level ratios by this prompt's instruction count so the
+            # aggregate pools instructions rather than averaging prompts.
+            instruction_count = len(doc.get('instruction_id_list') or [])
+            score.metadata[METRIC_WEIGHTS_KEY] = {
+                'inst_level_strict': instruction_count,
+                'inst_level_loose': instruction_count,
+            }
 
             # Set main score name
             score.main_score_name = 'prompt_level_strict'

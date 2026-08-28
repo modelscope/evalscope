@@ -28,6 +28,7 @@ IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明
   - `prompt_level_loose`：允许对轻微偏差有一定容忍度
   - `inst_level_strict`：按每条指令计算准确率（严格）
   - `inst_level_loose`：按每条指令计算准确率（宽松）
+- `inst_level_*` 对全数据集的指令取 micro-average，与官方实现一致：含 3 条指令的 prompt 权重是含 1 条指令 prompt 的 3 倍
 - 主要指标为 `prompt_level_strict`
 - 支持自动验证指令遵循情况
 

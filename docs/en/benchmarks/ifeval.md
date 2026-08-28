@@ -28,6 +28,8 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
   - `prompt_level_loose`: Some tolerance for minor deviations
   - `inst_level_strict`: Per-instruction accuracy (strict)
   - `inst_level_loose`: Per-instruction accuracy (loose)
+- `inst_level_*` is a micro-average over every instruction in the dataset, matching the official
+  implementation: a prompt carrying 3 instructions weighs 3x one carrying a single instruction
 - `prompt_level_strict` is the primary metric
 - Automatic verification of instruction compliance
 

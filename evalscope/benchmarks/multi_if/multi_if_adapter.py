@@ -9,6 +9,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -72,6 +73,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
             'inst_level_loose',
         ],
         primary_metric='prompt_level_strict',
+        aggregation='weighted_mean',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -169,6 +171,7 @@ class MultiIFAdapter(MultiTurnAdapter):
 
         step_record = task_state.metadata['step_record']
         results = {}
+        weights = {}
         try:
             for step, record in step_record.items():
                 outputs_strict = gen_acc_strict(record)
@@ -183,7 +186,14 @@ class MultiIFAdapter(MultiTurnAdapter):
                         f'turn_{step}_inst_level_loose': inst_level_loose,
                     }
                 )
+                # ``parse_result`` on a single turn collapses to that turn's own ratio, so each turn
+                # needs its instruction count to be pooled rather than macro-averaged. Strict and
+                # loose walk the same instruction list, so one count covers both.
+                instruction_count = len(outputs_strict['instruction_id_list'])
+                weights[f'turn_{step}_inst_level_strict'] = instruction_count
+                weights[f'turn_{step}_inst_level_loose'] = instruction_count
             score.value.update(results)
+            score.metadata[METRIC_WEIGHTS_KEY] = weights
 
             # Set main score name
             if results:
