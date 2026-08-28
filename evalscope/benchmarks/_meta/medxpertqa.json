@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "pretty_name": "MedXpertQA",
+    "dataset_id": "evalscope/MedXpertQA",
+    "paper_url": "https://arxiv.org/abs/2501.18362",
+    "tags": [
+      "MultiModal",
+      "Medical",
+      "MCQ",
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Text",
+      "MM"
+    ],
+    "description": "\n## Overview\n\nMedXpertQA is an expert-level medical multiple-choice benchmark designed to evaluate advanced\nmedical knowledge and reasoning. It contains separate text-only and multimodal tracks built from\nchallenging medical examination questions and reviewed by licensed physicians.\n\n## Task Description\n\n- **Task Type**: Single-answer medical multiple choice\n- **Input**: A clinical or biomedical question with answer choices, optionally accompanied by up to six images\n- **Output**: One answer letter (A-J for Text or A-E for MM)\n- **Domain**: Medicine across 17 specialties and 11 human body systems\n\n## Key Features\n\n- The test split contains 4,450 questions: 2,450 Text questions with ten options and 2,000 MM questions with five options\n- The MM track contains radiology, pathology, optical, photographic, diagram, chart, table, document, and vital-sign imagery\n- Questions are annotated by medical task, body system, and question type; 3,307 test questions require reasoning and 1,143 assess understanding\n- Questions underwent difficulty filtering, option augmentation, leakage mitigation, and multiple rounds of expert review\n\n## Evaluation Notes\n\n- Primary metric: **Accuracy** by exact match of the predicted option letter\n- The default prompt uses EvalScope's zero-shot chain-of-thought template, preserving the official step-by-step instruction and exact answer-letter scoring\n- Set `max_tokens` high enough for the model to emit the required final `ANSWER: [LETTER]` line; truncated reasoning may otherwise fall back to the shared parser's last valid uppercase letter\n- Results are reported separately for the Text and MM subsets and combined with sample-weighted aggregation\n- MM images are stored in `images.zip` (about 517 MB) and read directly from the archive without extracting a second copy\n- The published dataset has 4,460 records including ten development examples; this integration evaluates the 4,450 held-out test questions\n- [Paper](https://arxiv.org/abs/2501.18362) | [GitHub](https://github.com/TsinghuaC3I/MedXpertQA)\n",
+    "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+    "system_prompt": "You are a helpful medical assistant.",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 4450,
+    "subset_stats": [
+      {
+        "name": "Text",
+        "sample_count": 2450,
+        "prompt_length_mean": 1337.92,
+        "prompt_length_min": 435,
+        "prompt_length_max": 4771,
+        "prompt_length_std": 402.31,
+        "target_length_mean": 1
+      },
+      {
+        "name": "MM",
+        "sample_count": 2000,
+        "prompt_length_mean": 886.91,
+        "prompt_length_min": 346,
+        "prompt_length_max": 2335,
+        "prompt_length_std": 340.51,
+        "target_length_mean": 1,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2852,
+            "count_per_sample": {
+              "min": 1,
+              "max": 6,
+              "mean": 1.43
+            },
+            "resolutions": [
+              "1000x1000",
+              "1000x153",
+              "1000x500",
+              "1000x512",
+              "1000x565",
+              "1000x657",
+              "1000x666",
+              "1000x690",
+              "1000x723",
+              "1000x734"
+            ],
+            "resolution_range": {
+              "min": "323x34",
+              "max": "4248x2144"
+            },
+            "formats": [
+              "jpeg",
+              "png"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 1135.22,
+      "min": 346,
+      "max": 4771,
+      "std": 437.65
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-08-27T18:19:57.492770+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2852,
+        "count_per_sample": {
+          "min": 1,
+          "max": 6,
+          "mean": 1.43
+        },
+        "resolutions": [
+          "1000x1000",
+          "1000x153",
+          "1000x500",
+          "1000x512",
+          "1000x565",
+          "1000x657",
+          "1000x666",
+          "1000x690",
+          "1000x723",
+          "1000x734"
+        ],
+        "resolution_range": {
+          "min": "323x34",
+          "max": "4248x2144"
+        },
+        "formats": [
+          "jpeg",
+          "png"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "3f1d2f2a",
+          "content": "You are a helpful medical assistant."
+        },
+        {
+          "id": "1a9f9143",
+          "content": [
+            {
+              "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\n\nWhich pat ... [TRUNCATED 885 chars] ... ere posterior wear undergoing shoulder arthroplasty\nI) 58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty\nJ) 55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty"
+            }
+          ]
+        }
+      ],
+      "choices": [
+        "70-year-old male with glenoid retroversion of 18-degrees undergoing shoulder arthroplasty",
+        "70-year-old female with humeral anteversion of 13-degrees undergoing shoulder arthroplasty",
+        "63-year-old female with glenoid retroversion of 22-degrees and mild posterior wear undergoing shoulder arthroplasty",
+        "65-year-old female with glenoid retroversion of 25-degrees undergoing shoulder arthroplasty",
+        "65-year-old female with a glenoid retroversion of 13-degrees undergoing shoulder arthroplasty",
+        "68-year-old female with glenoid retroversion of 20-degrees undergoing reverse shoulder arthroplasty",
+        "72-year-old male with glenoid retroversion of 15-degrees undergoing shoulder arthroplasty",
+        "65-year-old female with glenoid retroversion of 30-degrees and severe posterior wear undergoing shoulder arthroplasty",
+        "58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty",
+        "55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty"
+      ],
+      "target": "E",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "id": "Text-0",
+        "medical_task": "Basic Science",
+        "body_system": "Skeletal",
+        "question_type": "Reasoning",
+        "images": []
+      }
+    },
+    "subset": "Text",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# MedXpertQA\n\n\n## Overview\n\nMedXpertQA is an expert-level medical multiple-choice benchmark designed to evaluate advanced\nmedical knowledge and reasoning. It contains separate text-only and multimodal tracks built from\nchallenging medical examination questions and reviewed by licensed physicians.\n\n## Task Description\n\n- **Task Type**: Single-answer medical multiple choice\n- **Input**: A clinical or biomedical question with answer choices, optionally accompanied by up to six images\n- **Output**: One answer letter (A-J for Text or A-E for MM)\n- **Domain**: Medicine across 17 specialties and 11 human body systems\n\n## Key Features\n\n- The test split contains 4,450 questions: 2,450 Text questions with ten options and 2,000 MM questions with five options\n- The MM track contains radiology, pathology, optical, photographic, diagram, chart, table, document, and vital-sign imagery\n- Questions are annotated by medical task, body system, and question type; 3,307 test questions require reasoning and 1,143 assess understanding\n- Questions underwent difficulty filtering, option augmentation, leakage mitigation, and multiple rounds of expert review\n\n## Evaluation Notes\n\n- Primary metric: **Accuracy** by exact match of the predicted option letter\n- The default prompt uses EvalScope's zero-shot chain-of-thought template, preserving the official step-by-step instruction and exact answer-letter scoring\n- Set `max_tokens` high enough for the model to emit the required final `ANSWER: [LETTER]` line; truncated reasoning may otherwise fall back to the shared parser's last valid uppercase letter\n- Results are reported separately for the Text and MM subsets and combined with sample-weighted aggregation\n- MM images are stored in `images.zip` (about 517 MB) and read directly from the archive without extracting a second copy\n- The published dataset has 4,460 records including ten development examples; this integration evaluates the 4,450 held-out test questions\n- [Paper](https://arxiv.org/abs/2501.18362) | [GitHub](https://github.com/TsinghuaC3I/MedXpertQA)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `medxpertqa` |\n| **Dataset ID** | [evalscope/MedXpertQA](https://modelscope.cn/datasets/evalscope/MedXpertQA/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2501.18362) |\n| **Tags** | `MCQ`, `Medical`, `MultiModal`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 4,450 |\n| Prompt Length (Mean) | 1135.22 chars |\n| Prompt Length (Min/Max) | 346 / 4771 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Text` | 2,450 | 1337.92 | 435 | 4771 |\n| `MM` | 2,000 | 886.91 | 346 | 2335 |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,852 |\n| Images per Sample | min: 1, max: 6, mean: 1.43 |\n| Resolution Range | 323x34 - 4248x2144 |\n| Formats | jpeg, png |\n\n\n## Sample Example\n\n**Subset**: `Text`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3f1d2f2a\",\n      \"content\": \"You are a helpful medical assistant.\"\n    },\n    {\n      \"id\": \"1a9f9143\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\\n\\nWhich pat ... [TRUNCATED 885 chars] ... ere posterior wear undergoing shoulder arthroplasty\\nI) 58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty\\nJ) 55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"70-year-old male with glenoid retroversion of 18-degrees undergoing shoulder arthroplasty\",\n    \"70-year-old female with humeral anteversion of 13-degrees undergoing shoulder arthroplasty\",\n    \"63-year-old female with glenoid retroversion of 22-degrees and mild posterior wear undergoing shoulder arthroplasty\",\n    \"65-year-old female with glenoid retroversion of 25-degrees undergoing shoulder arthroplasty\",\n    \"65-year-old female with a glenoid retroversion of 13-degrees undergoing shoulder arthroplasty\",\n    \"68-year-old female with glenoid retroversion of 20-degrees undergoing reverse shoulder arthroplasty\",\n    \"72-year-old male with glenoid retroversion of 15-degrees undergoing shoulder arthroplasty\",\n    \"65-year-old female with glenoid retroversion of 30-degrees and severe posterior wear undergoing shoulder arthroplasty\",\n    \"58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty\",\n    \"55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty\"\n  ],\n  \"target\": \"E\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Text-0\",\n    \"medical_task\": \"Basic Science\",\n    \"body_system\": \"Skeletal\",\n    \"question_type\": \"Reasoning\",\n    \"images\": []\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nYou are a helpful medical assistant.\n```\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets medxpertqa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['medxpertqa'],\n    dataset_args={\n        'medxpertqa': {\n            # subset_list: ['Text', 'MM']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# MedXpertQA\n\n\n## 概述\n\nMedXpertQA 是一个专家级医学多项选择基准测试，旨在评估高级医学知识与推理能力。该基准包含独立的纯文本（Text-only）和多模态（Multimodal, MM）两个赛道，题目源自具有挑战性的医学考试试题，并经由持证医师审核。\n\n## 任务描述\n\n- **任务类型**：单答案医学多项选择题\n- **输入**：一道临床或生物医学问题及其选项，可选附带最多六张图像\n- **输出**：一个答案字母（Text 赛道为 A-J，MM 赛道为 A-E）\n- **领域**：涵盖17个医学专科和11个人体系统\n\n## 主要特点\n\n- 测试集包含4,450道题目：其中2,450道为Text题目（含十个选项），2,000道为MM题目（含五个选项）\n- MM赛道包含放射影像、病理切片、光学图像、照片、示意图、图表、表格、文档及生命体征图像\n- 所有题目均标注了医学任务类型、人体系统和问题类型；其中3,307道测试题侧重推理能力，1,143道侧重理解能力\n- 题目经过难度筛选、选项增强、数据泄露缓解以及多轮专家评审\n\n## 评估说明\n\n- 主要指标：**准确率（Accuracy）**，通过预测答案字母与标准答案的精确匹配计算\n- 默认提示词采用 EvalScope 的零样本思维链（zero-shot chain-of-thought）模板，保留官方指定的逐步推理指令及严格的答案字母评分格式\n- 应将 `max_tokens` 设置得足够高，以确保模型能完整输出所需的最终行 `ANSWER: [LETTER]`；否则，若推理过程被截断，解析器可能回退到提取最后一个有效的大写字母作为答案\n- 结果分别报告 Text 和 MM 子集的表现，并通过样本加权聚合计算整体得分\n- MM图像存储在 `images.zip`（约517 MB）中，直接从压缩包读取，无需额外解压副本\n- 公开数据集共包含4,460条记录（含10个开发样例）；本集成仅评估其中4,450道预留的测试题\n- [论文](https://arxiv.org/abs/2501.18362) | [GitHub](https://github.com/TsinghuaC3I/MedXpertQA)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `medxpertqa` |\n| **数据集ID** | [evalscope/MedXpertQA](https://modelscope.cn/datasets/evalscope/MedXpertQA/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2501.18362) |\n| **标签** | `MCQ`, `Medical`, `MultiModal`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 4,450 |\n| 提示词长度（平均） | 1135.22 字符 |\n| 提示词长度（最小/最大） | 346 / 4771 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Text` | 2,450 | 1337.92 | 435 | 4771 |\n| `MM` | 2,000 | 886.91 | 346 | 2335 |\n\n**图像统计：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 2,852 |\n| 每样本图像数 | 最小: 1, 最大: 6, 平均: 1.43 |\n| 分辨率范围 | 323x34 - 4248x2144 |\n| 格式 | jpeg, png |\n\n\n## 样例示例\n\n**子集**: `Text`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"3f1d2f2a\",\n      \"content\": \"You are a helpful medical assistant.\"\n    },\n    {\n      \"id\": \"1a9f9143\",\n      \"content\": [\n        {\n          \"text\": \"Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J. Think step by step before answering.\\n\\nWhich pat ... [TRUNCATED 885 chars] ... ere posterior wear undergoing shoulder arthroplasty\\nI) 58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty\\nJ) 55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty\"\n        }\n      ]\n    }\n  ],\n  \"choices\": [\n    \"70-year-old male with glenoid retroversion of 18-degrees undergoing shoulder arthroplasty\",\n    \"70-year-old female with humeral anteversion of 13-degrees undergoing shoulder arthroplasty\",\n    \"63-year-old female with glenoid retroversion of 22-degrees and mild posterior wear undergoing shoulder arthroplasty\",\n    \"65-year-old female with glenoid retroversion of 25-degrees undergoing shoulder arthroplasty\",\n    \"65-year-old female with a glenoid retroversion of 13-degrees undergoing shoulder arthroplasty\",\n    \"68-year-old female with glenoid retroversion of 20-degrees undergoing reverse shoulder arthroplasty\",\n    \"72-year-old male with glenoid retroversion of 15-degrees undergoing shoulder arthroplasty\",\n    \"65-year-old female with glenoid retroversion of 30-degrees and severe posterior wear undergoing shoulder arthroplasty\",\n    \"58-year-old male with glenoid retroversion of 12-degrees undergoing shoulder arthroplasty\",\n    \"55-year-old male with glenoid retroversion of 8-degrees undergoing total shoulder arthroplasty\"\n  ],\n  \"target\": \"E\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"id\": \"Text-0\",\n    \"medical_task\": \"Basic Science\",\n    \"body_system\": \"Skeletal\",\n    \"question_type\": \"Reasoning\",\n    \"images\": []\n  }\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**系统提示：**\n```text\nYou are a helpful medical assistant.\n```\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets medxpertqa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['medxpertqa'],\n    dataset_args={\n        'medxpertqa': {\n            # subset_list: ['Text', 'MM']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "54e8e02ae73513066596f46673d98359",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-27T18:20:00.984631+08:00",
+  "translation_updated_at": "2026-08-27T18:20:06+08:00"
+}

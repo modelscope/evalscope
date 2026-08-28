@@ -35,6 +35,7 @@
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `measure_bench` | [MeasureBench](../../benchmarks/measure_bench.md) | `MultiModal`, `QA`, `Reasoning` |
+| `medxpertqa` | [MedXpertQA](../../benchmarks/medxpertqa.md) | `MCQ`, `Medical`, `MultiModal`, `Reasoning` |
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -110,6 +111,7 @@
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md
 ../../benchmarks/measure_bench.md
+../../benchmarks/medxpertqa.md
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
