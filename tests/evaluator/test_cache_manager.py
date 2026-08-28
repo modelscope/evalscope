@@ -1,6 +1,7 @@
 """Unit tests for cache resume behavior."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -46,7 +47,21 @@ def _write_review_cache(manager: CacheManager, subset: str, rows: list[Dict[str,
     return review_file
 
 
-def test_filter_review_cache_intersects_and_dedupes(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+@pytest.fixture
+def caplog_evalscope(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> pytest.LogCaptureFixture:
+    """Capture records from EvalScope's non-propagating logger."""
+    monkeypatch.setattr(logging.getLogger('evalscope'), 'propagate', True)
+    caplog.set_level(logging.WARNING, logger='evalscope')
+    return caplog
+
+
+def test_filter_review_cache_intersects_and_dedupes(
+    tmp_path: Path,
+    caplog_evalscope: pytest.LogCaptureFixture,
+) -> None:
     manager = _make_manager(tmp_path)
     task_states = [_make_task_state(0), _make_task_state(1)]
     _write_review_cache(
@@ -65,7 +80,7 @@ def test_filter_review_cache_intersects_and_dedupes(tmp_path: Path, caplog: pyte
     assert [score.sample_id for score in cached_scores] == [0, 1]
     assert cached_scores[1].score.main_value == 1.0
     assert remaining_states == []
-    assert 'Dropped 1 orphan and 1 duplicate rows' in caplog.text
+    assert 'Dropped 1 orphan and 1 duplicate rows' in caplog_evalscope.text
 
 
 def test_filter_review_cache_does_not_merge_distinct_repeat_samples(tmp_path: Path) -> None:
@@ -102,7 +117,7 @@ def test_filter_review_cache_keeps_uncovered_states(tmp_path: Path) -> None:
 
 def test_filter_review_cache_skips_malformed_and_schema_invalid_rows(
     tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
+    caplog_evalscope: pytest.LogCaptureFixture,
 ) -> None:
     manager = _make_manager(tmp_path)
     task_states = [_make_task_state(0), _make_task_state(1)]
@@ -122,13 +137,13 @@ def test_filter_review_cache_skips_malformed_and_schema_invalid_rows(
 
     assert [score.sample_id for score in cached_scores] == [0, 1]
     assert remaining_states == []
-    assert 'Skipping invalid JSONL row' in caplog.text
-    assert 'Skipping invalid review cache row' in caplog.text
+    assert 'Skipping invalid JSONL row' in caplog_evalscope.text
+    assert 'Skipping invalid review cache row' in caplog_evalscope.text
 
 
 def test_filter_prediction_cache_skips_malformed_and_schema_invalid_rows(
     tmp_path: Path,
-    caplog: pytest.LogCaptureFixture,
+    caplog_evalscope: pytest.LogCaptureFixture,
 ) -> None:
     manager = _make_manager(tmp_path)
     dataset = MemoryDataset(
@@ -152,5 +167,5 @@ def test_filter_prediction_cache_skips_malformed_and_schema_invalid_rows(
 
     assert [state.sample_id for state in cached_task_states] == [0]
     assert [sample.id for sample in filtered_dataset.samples] == [1]
-    assert 'Skipping invalid JSONL row' in caplog.text
-    assert 'Skipping invalid prediction cache row' in caplog.text
+    assert 'Skipping invalid JSONL row' in caplog_evalscope.text
+    assert 'Skipping invalid prediction cache row' in caplog_evalscope.text
