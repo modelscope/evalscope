@@ -5,12 +5,15 @@ load_dotenv('.env')
 
 env = dotenv_values('.env')
 
+import json
 import os
 import unittest
+from unittest.mock import patch
 
 import pytest
 
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
+from evalscope.models.mockllm import MockLLM
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
@@ -980,6 +983,49 @@ class TestNativeBenchmark(TestBenchmark):
             }
         }}
         self._run_dataset_test('plawbench', limit=2, judge=judge)
+
+    def test_one_million_bench_mock(self):
+        """Test $OneMillion-Bench with a mock model and judge."""
+        judge_response = json.dumps(
+            {
+                'results': [
+                    {'rubric_id': rubric_id, 'status': '否', 'justification': 'Mock verdict.'}
+                    for rubric_id in range(1, 12)
+                ]
+            },
+            ensure_ascii=False,
+        )
+        with patch.object(MockLLM, 'default_output', judge_response):
+            self._run_dataset_test(
+                'one_million_bench',
+                dataset_args={'subset_list': ['global_law']},
+                limit=1,
+                use_mock=True,
+                judge={'models': {'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM}},
+            )
+
+    def test_one_million_bench(self):
+        """Test $OneMillion-Bench with a real model and judge API."""
+        judge = {'models': {
+            'model_id': 'qwen3-max',
+            'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            'api_key': env.get('DASHSCOPE_API_KEY'),
+            'generation_config': {
+                'temperature': 0.0,
+                'max_tokens': 8192,
+                'extra_body': {
+                    'enable_thinking': False
+                }
+            }
+        }}
+        self._run_dataset_test(
+            'one_million_bench',
+            dataset_args={'subset_list': ['global_law']},
+            limit=1,
+            eval_batch_size=5,
+            generation_config={'temperature': 0.0, 'max_tokens': 8192},
+            judge=judge,
+        )
 
     # Indic-language benchmarks
     def test_milu_mock(self):

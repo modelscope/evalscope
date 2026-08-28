@@ -1,4 +1,6 @@
 """Smoke tests for migrated Native judge adapters."""
+
+import json
 from typing import Any, List
 
 import pytest
@@ -30,7 +32,6 @@ class ScriptedJudge:
 
 
 class TransportFailingJudge(ScriptedJudge):
-
     def __init__(self) -> None:
         super().__init__([])
 
@@ -42,6 +43,69 @@ class TransportFailingJudge(ScriptedJudge):
 def make_state(prediction: str, target: str) -> TaskState:
     sample = Sample(id=0, input='Who wrote Hamlet?', target=target, metadata={})
     return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+
+
+def make_one_million_state(adapter) -> TaskState:
+    sample = adapter.record_to_sample(
+        {
+            'id': 'sample-id',
+            'case_id': 1,
+            'language': 'global',
+            'system_prompt': '',
+            'question': 'Write a professional answer.',
+            'tags': {
+                'topics': ['Law'],
+                'time_sensitivity': {'time_sensitivity': 'Time-agnostic', 'year_month': 'NA', 'day': 'NA'},
+            },
+            'rubrics': [
+                {
+                    'rubric_number': 1,
+                    'rubric_detail': 'Includes the requested analysis.',
+                    'rubric_weight': 10,
+                    'rubric_tag': 'Analytical Reasoning',
+                }
+            ],
+        }
+    )
+    sample.id = 0
+    sample.group_id = 0
+    return TaskState(
+        model='m', sample=sample, output=ModelOutput.from_content('m', 'Professional answer.'), completed=True
+    )
+
+
+def test_one_million_bench_valid_verdict_scores_the_sample() -> None:
+    config = TaskConfig(
+        model='m', datasets=['one_million_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]}
+    )
+    adapter = get_benchmark('one_million_bench', config)
+    adapter.llm_judge = ScriptedJudge(
+        [
+            json.dumps(
+                {'results': [{'rubric_id': 1, 'status': '是', 'justification': 'The requested analysis is present.'}]},
+                ensure_ascii=False,
+            )
+        ]
+    )
+
+    score = adapter.calculate_metrics(make_one_million_state(adapter)).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == {'expert_score': 1.0, 'pass_rate': 1.0}
+
+
+@pytest.mark.parametrize('judge', [ScriptedJudge(['not JSON']), TransportFailingJudge()])
+def test_one_million_bench_judge_failure_excludes_the_sample(judge) -> None:
+    config = TaskConfig(
+        model='m', datasets=['one_million_bench'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]}
+    )
+    adapter = get_benchmark('one_million_bench', config)
+    adapter.llm_judge = judge
+
+    score = adapter.calculate_metrics(make_one_million_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
 
 
 @pytest.mark.parametrize('benchmark_name', ['simple_qa', 'chinese_simpleqa', 'simple_vqa'])
