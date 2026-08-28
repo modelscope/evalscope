@@ -198,32 +198,35 @@ def parquet_to_list(parquet_file: str) -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-def jsonl_to_list(jsonl_file: str) -> List[Dict[str, Any]]:
+def jsonl_to_list(jsonl_file: str, skip_invalid: bool = False) -> List[Dict[str, Any]]:
     """Read a JSONL file into a list of dicts.
-
-    Attempts to use the ``jsonlines`` library first; falls back to
-    line-by-line ``json.loads`` parsing on any error.
 
     Args:
         jsonl_file (str): Path to the ``.jsonl`` file.
+        skip_invalid (bool): Whether malformed or non-object rows should be
+            logged and skipped. Defaults to ``False`` so dataset inputs do
+            not silently lose records.
 
     Returns:
         List[Dict[str, Any]]: Parsed records.  Returns an empty list and
         logs a warning when the file contains no valid records.
     """
     res_list: List[Dict[str, Any]] = []
-    try:
-        with jsonl.open(jsonl_file, mode='r') as reader:
-            for line in reader.iter(type=dict, allow_none=True, skip_invalid=False):
-                res_list.append(line)
-    except Exception:
-        # Fallback: parse line-by-line with the stdlib json module.
-        res_list = []
-        with open(jsonl_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                stripped = line.strip()
-                if stripped:
-                    res_list.append(json.loads(stripped))
+    with open(jsonl_file, 'r', encoding='utf-8') as f:
+        for line_number, line in enumerate(f, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                parsed = json.loads(stripped)
+                if not isinstance(parsed, dict):
+                    raise TypeError(f'Expected a JSON object, got {type(parsed).__name__}')
+            except (json.JSONDecodeError, TypeError) as e:
+                if not skip_invalid:
+                    raise
+                logger.warning(f'Skipping invalid JSONL row {line_number} in {jsonl_file}: {e}')
+                continue
+            res_list.append(parsed)
 
     if not res_list:
         logger.warning(f'No data found in {jsonl_file}.')
