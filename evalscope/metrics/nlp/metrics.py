@@ -132,7 +132,7 @@ class ANLS(Metric):
                 det_answer = ' '.join(prediction.strip().lower().split())
 
                 dist = levenshtein_distance(gt_answer, det_answer)
-                length = max(len(ans.upper()), len(prediction.upper()))
+                length = max(len(gt_answer), len(det_answer))
                 values.append(0.0 if length == 0 else float(dist) / float(length))
 
             question_result = 0.0
