@@ -65,6 +65,7 @@
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `slake` | [SLAKE](../../benchmarks/slake.md) | `Medical`, `MultiModal`, `QA` |
+| `surds` | [SURDS](../../benchmarks/surds.md) | `Grounding`, `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
@@ -143,6 +144,7 @@
 ../../benchmarks/seed_bench_2_plus.md
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/slake.md
+../../benchmarks/surds.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
