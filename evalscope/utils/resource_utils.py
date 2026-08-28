@@ -16,6 +16,45 @@ logger = get_logger()
 # Path to the benchmark metadata directory (individual JSON files per benchmark)
 BENCHMARK_META_DIR = Path(__file__).parent.parent / 'benchmarks' / '_meta'
 
+# Mirror archives are pinned per URL because mirrors can serve different
+# nltk_data snapshots. Only archives with a verified digest may be extracted.
+MIRROR_MAP: Dict[str, Dict[str, Any]] = {
+    'punkt_tab': {
+        'resource_path': 'tokenizers/punkt_tab',
+        'zip_name': 'punkt_tab.zip',
+        'extract_dir': 'tokenizers',
+        'mirrors': [
+            {
+                'url': 'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip',
+                'sha256': 'c2b16c23d738effbdc5789d7aa601397c13ba2819bf922fb904687f3f16657ed',
+            },
+        ],
+    },
+    'stopwords': {
+        'resource_path': 'corpora/stopwords',
+        'zip_name': 'stopwords.zip',
+        'extract_dir': 'corpora',
+        'mirrors': [
+            {
+                'url': 'https://gitee.com/yzy0612/nltk_data/raw/gh-pages/packages/corpora/stopwords.zip',
+                'sha256': '15c94179887425ca1bedc265608cab9f27d650211f709bb929e320990a4b01d1',
+            },
+        ],
+    },
+    'averaged_perceptron_tagger_eng': {
+        'resource_path': 'taggers/averaged_perceptron_tagger_eng/',
+        'zip_name': 'averaged_perceptron_tagger_eng.zip',
+        'extract_dir': 'taggers',
+        'mirrors': [
+            {
+                'url': 'https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages/taggers/'
+                'averaged_perceptron_tagger_eng.zip',
+                'sha256': '6025f530624335c67d6547d44757b357b4e79bae030a0383e9887a92c1718f0b',
+            },
+        ],
+    },
+}
+
 
 @lru_cache
 def check_nltk_data(name: str) -> None:
@@ -26,37 +65,6 @@ def check_nltk_data(name: str) -> None:
     """  # noqa: E501
     import nltk
 
-    GITEE_MIRROR = 'https://gitee.com/yzy0612/nltk_data/raw/gh-pages/packages'
-    NLTK_DATA_RAW = 'https://raw.githubusercontent.com/nltk/nltk_data/gh-pages/packages'
-
-    MIRROR_MAP = {
-        'punkt_tab': {
-            'resource_path': 'tokenizers/punkt_tab',
-            'zip_name': 'punkt_tab.zip',
-            'extract_dir': 'tokenizers',
-            'urls': [
-                'https://modelscope-open.oss-cn-hangzhou.aliyuncs.com/open_data/nltk_data/punkt_tab.zip',
-                f'{GITEE_MIRROR}/tokenizers/punkt_tab.zip',
-            ],
-        },
-        'stopwords': {
-            'resource_path': 'corpora/stopwords',
-            'zip_name': 'stopwords.zip',
-            'extract_dir': 'corpora',
-            'urls': [
-                f'{GITEE_MIRROR}/corpora/stopwords.zip',
-            ],
-        },
-        'averaged_perceptron_tagger_eng': {
-            'resource_path': 'taggers/averaged_perceptron_tagger_eng/',
-            'zip_name': 'averaged_perceptron_tagger_eng.zip',
-            'extract_dir': 'taggers',
-            'urls': [
-                f'{NLTK_DATA_RAW}/taggers/averaged_perceptron_tagger_eng.zip',
-            ],
-        },
-    }
-
     def has_resource(resource_path: str) -> bool:
         try:
             nltk.data.find(resource_path)
@@ -64,15 +72,16 @@ def check_nltk_data(name: str) -> None:
         except LookupError:
             return False
 
-    def download_from_mirrors(meta: dict) -> None:
+    def download_from_mirrors(meta: Dict[str, Any]) -> None:
         nltk_base = os.path.expanduser('~/nltk_data')
         extract_dir = os.path.join(nltk_base, meta['extract_dir'])
         os.makedirs(extract_dir, exist_ok=True)
         zip_path = os.path.join(extract_dir, meta['zip_name'])
         last_error = None
-        for url in meta['urls']:
+        for mirror in meta['mirrors']:
+            url = mirror['url']
             try:
-                download_url(url, zip_path)
+                download_url(url, zip_path, sha256=mirror['sha256'])
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(extract_dir)
                 return
