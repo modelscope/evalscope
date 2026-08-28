@@ -57,6 +57,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
         few_shot_num=0,
         train_split=None,
         eval_split='train',
+        evaluation_version='v1.1',
     )
 )
 class IFBenchAdapter(DefaultDataAdapter):

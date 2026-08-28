@@ -932,7 +932,8 @@ class CharacterCountUniqueWordsChecker(Instruction):
         for sentence in sentences:
             if len(sentence.strip()) != char_count:
                 return False
-        return True
+        words = [word.casefold() for word in _word_tokens_without_punctuation(value)]
+        return bool(words) and len(words) == len(set(words))
 
 
 class NthWordJapaneseChecker(Instruction):
