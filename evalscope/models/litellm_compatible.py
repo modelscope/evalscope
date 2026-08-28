@@ -9,7 +9,7 @@ See https://docs.litellm.ai/docs/providers for the full list.
 """
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from openai.types.chat import ChatCompletion
 
@@ -33,6 +33,26 @@ from .utils.openai import (
 )
 
 logger = get_logger()
+
+
+def _litellm_no_retry_exceptions() -> Tuple[Type[Exception], ...]:
+    """LiteLLM 4xx client-error types that must not be retried.
+
+    LiteLLM maps provider client errors (context length exceeded, bad credentials, unknown
+    model, invalid parameters, ...) onto its own exception types. Retrying them only burns
+    retries * retry_interval per failing sample, so pass them as no-retry exceptions.
+    Transient errors (timeouts, connection failures, 429/5xx) stay retryable.
+    The litellm import stays lazy to keep this module importable without litellm.
+    """
+    from litellm.exceptions import (
+        AuthenticationError,
+        BadRequestError,
+        NotFoundError,
+        PermissionDeniedError,
+        UnprocessableEntityError,
+    )
+
+    return (AuthenticationError, BadRequestError, NotFoundError, PermissionDeniedError, UnprocessableEntityError)
 
 
 class LiteLLMAPI(ModelAPI):
@@ -96,6 +116,7 @@ class LiteLLMAPI(ModelAPI):
                 litellm.completion,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=_litellm_no_retry_exceptions(),
                 **request,
             )
 
@@ -167,6 +188,7 @@ class LiteLLMAPI(ModelAPI):
                 litellm.acompletion,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=_litellm_no_retry_exceptions(),
                 **request,
             )
 
