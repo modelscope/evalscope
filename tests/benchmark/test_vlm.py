@@ -568,6 +568,14 @@ class TestVLMBenchmark(TestBenchmark):
         """Test PMC-VQA with mock LLM."""
         self._run_dataset_test('pmc_vqa', limit=5, use_mock=True)
 
+    def test_medxpertqa(self):
+        """Test MedXpertQA expert-level medical reasoning benchmark."""
+        self._run_dataset_test('medxpertqa', limit=5)
+
+    def test_medxpertqa_mock(self):
+        """Test the Text and MM subsets of MedXpertQA with mock LLM."""
+        self._run_dataset_test('medxpertqa', limit=5, use_mock=True)
+
     def test_count_qa(self):
         """Test CountQA object counting benchmark."""
         self._run_dataset_test('count_qa', limit=5)
