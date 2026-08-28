@@ -584,6 +584,16 @@ class TestVLMBenchmark(TestBenchmark):
         """Test CountQA with mock LLM."""
         self._run_dataset_test('count_qa', limit=5, use_mock=True)
 
+    def test_vlms_are_biased(self):
+        """Test VLMs Are Biased counterfactual visual reasoning benchmark."""
+        dataset_args = {'subset_list': ['main']}
+        self._run_dataset_test('vlms_are_biased', dataset_args=dataset_args, limit=5)
+
+    def test_vlms_are_biased_mock(self):
+        """Test VLMs Are Biased with mock LLM."""
+        dataset_args = {'subset_list': ['main']}
+        self._run_dataset_test('vlms_are_biased', dataset_args=dataset_args, limit=5, use_mock=True)
+
     def test_phyx_mc(self):
         """Test PhyX multiple-choice physical reasoning benchmark."""
         dataset_args = {'subset_list': ['optics', 'modern_physics']}

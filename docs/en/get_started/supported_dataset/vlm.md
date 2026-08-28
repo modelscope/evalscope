@@ -69,6 +69,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `vlms_are_biased` | [VLMs Are Biased](../../benchmarks/vlms_are_biased.md) | `MultiModal`, `QA`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
 | `vtcbench` | [VTCBench](../../benchmarks/vtcbench.md) | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |
@@ -145,6 +146,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
 ../../benchmarks/visulogic.md
+../../benchmarks/vlms_are_biased.md
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
 ../../benchmarks/vtcbench.md
