@@ -98,6 +98,8 @@ class ImageEditAPI(ModelAPI):
         config: GenerateConfig,
     ) -> ModelOutput:
 
+        start_time = time.monotonic()
+
         # prepare generator
         kwargs: Dict[str, Any] = {}
         if config.num_inference_steps is not None:
@@ -117,10 +119,12 @@ class ImageEditAPI(ModelAPI):
         output = self.model(image=input_image, prompt=prompt, **kwargs)
         image = output.images[0]
 
-        image_base64 = PIL_to_base64(image)
+        # Emit a data URI so downstream consumers (e.g. an LLM-judge request)
+        # treat the image as inline base64 instead of a local file path.
+        image_base64 = PIL_to_base64(image, add_header=True)
 
         return ModelOutput(
             model=self.model_name,
             choices=[ChatCompletionChoice.from_content(content=[ContentImage(image=image_base64)])],
-            time=time.time(),
+            time=time.monotonic() - start_time,
         )

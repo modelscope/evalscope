@@ -368,6 +368,7 @@ def get_model(
     if memoize:
         model_cache_key = (
             model
+            + str(eval_type)
             + str(role)
             + config.model_dump_json(exclude_none=True)
             + str(base_url)

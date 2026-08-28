@@ -87,7 +87,9 @@ class LiteLLMAPI(ModelAPI):
 
         request: Dict[str, Any] = {}
 
-        messages = openai_chat_messages(input)
+        messages = openai_chat_messages(
+            input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+        )
         completion_params = openai_completion_params(
             model=self.model_name,
             config=config,
@@ -160,7 +162,9 @@ class LiteLLMAPI(ModelAPI):
         """
         import litellm
 
-        messages = openai_chat_messages(input)
+        messages = openai_chat_messages(
+            input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+        )
         completion_params = openai_completion_params(
             model=self.model_name,
             config=config,
