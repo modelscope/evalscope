@@ -66,6 +66,7 @@ class LLMJudgeMixin:
         self._task_config = task_config
 
         self._llm_judges: Optional[List[LLMJudge]] = None
+        self._llm_judges_lock = threading.Lock()
         self._judge_executor: Optional['JudgeExecutor'] = None
         self._judge_executor_lock = threading.Lock()
 
@@ -73,9 +74,11 @@ class LLMJudgeMixin:
 
     @property
     def llm_judges(self) -> List[LLMJudge]:
-        """Every configured judge model, lazily built."""
+        """Every configured judge model, lazily built exactly once."""
         if self._llm_judges is None and self.use_llm_judge:
-            self._llm_judges = self.init_llm_judges()
+            with self._llm_judges_lock:
+                if self._llm_judges is None:
+                    self._llm_judges = self.init_llm_judges()
         return self._llm_judges or []
 
     @property
