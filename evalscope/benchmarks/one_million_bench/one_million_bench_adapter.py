@@ -199,11 +199,9 @@ def _is_hit(status: str) -> bool:
         description=_DESCRIPTION,
         paper_url='https://arxiv.org/abs/2603.07980',
         subset_list=SUBSET_LIST,
-        default_subset='default',
         eval_split='test',
         metric_list=['expert_score', 'pass_rate'],
         primary_metric='expert_score',
-        prompt_template='{question}',
         evaluation_version='v1.0',
     )
 )
