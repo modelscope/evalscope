@@ -88,6 +88,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 - **Early returns** over nested conditionals.
 - **Minimal changes**: only touch code related to the current task; no drive-by cleanup.
 - **Pydantic-first**: cross-module data contracts use Pydantic models. Use `TaskConfig` / `Arguments` for configuration — never raw dicts at module boundaries.
+- **Web API responses**: successful JSON responses consumed by the dashboard use models from `evalscope/service/api_models/` and `json_response()`. Regenerate frontend contracts with `cd evalscope/web && npm run contracts:generate`; never hand-edit generated artifacts or add parallel response schemas.
 - **Reuse existing patterns**: new benchmarks / models / metrics go through existing registries and adapter base classes — no parallel mechanisms.
 - **DRY** but don't over-abstract just to remove minor duplication.
 
@@ -110,6 +111,7 @@ Don't try to learn the architecture from this file — read these and grep:
 | Model layer | `evalscope/api/model/model.py`, `evalscope/models/model_apis.py` |
 | CLI dispatch | `evalscope/cli/` |
 | Cache schema | `evalscope/api/evaluator/cache.py` |
+| Web API response contracts | `evalscope/service/api_models/`, `evalscope/service/responses.py`, `evalscope/web/src/api/generated/` |
 
 **Registry decorators**: `@register_benchmark`, `@register_model_api`, `@register_metric`, `@register_aggregation`, `@register_filter`, `@register_evaluator`.
 
