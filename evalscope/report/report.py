@@ -412,11 +412,13 @@ class Report(BaseModel):
         table = defaultdict(list)
         for metric in self.metrics:
             metric_count = 0
+            has_overall_subset = False
             for category in metric.categories:
                 for subset in category.subsets:
                     if subset.is_aggregate and not include_aggregate:
                         continue
                     metric_count += 1
+                    has_overall_subset = has_overall_subset or subset.name == ReportKey.overall_score
                     table[ReportKey.model_name].append(self.model_name)
                     table[ReportKey.dataset_name].append(self.dataset_name)
                     table[ReportKey.metric_name].append(metric.name)
@@ -425,11 +427,7 @@ class Report(BaseModel):
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
-            if (
-                metric_count > 1
-                and add_overall_metric
-                and (ReportKey.overall_score not in table[ReportKey.subset_name])
-            ):
+            if metric_count > 1 and add_overall_metric and not has_overall_subset:
                 table[ReportKey.model_name].append(self.model_name)
                 table[ReportKey.dataset_name].append(self.dataset_name)
                 table[ReportKey.metric_name].append(metric.name)
