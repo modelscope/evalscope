@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "pretty_name": "$OneMillion-Bench",
+    "dataset_id": "evalscope/OneMillion-Bench",
+    "paper_url": "https://arxiv.org/abs/2603.07980",
+    "tags": [
+      "Agent",
+      "Knowledge",
+      "QA",
+      "Reasoning",
+      "MultiLingual"
+    ],
+    "metrics": [
+      "expert_score",
+      "pass_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "global_economics_and_finance",
+      "global_healthcare_and_medicine",
+      "global_industry",
+      "global_law",
+      "global_natural_sciences",
+      "cn_economics_and_finance",
+      "cn_healthcare_and_medicine",
+      "cn_industry",
+      "cn_law",
+      "cn_natural_sciences"
+    ],
+    "description": "\n## Overview\n\n$OneMillion-Bench ($1M-Bench) evaluates how well language models and agents complete economically valuable,\nexpert-level professional work. The public release contains 400 bilingual tasks written and reviewed by domain\nexperts across finance, healthcare, industry, law, and natural science.\n\n## Task Description\n\n- **Task Type**: Open-ended professional question answering with rubric-based LLM judging\n- **Input**: A realistic, context-heavy professional request in Chinese or English\n- **Output**: A complete free-form professional analysis or deliverable\n- **Domain**: Economics and finance, healthcare and medicine, industry, law, and natural sciences\n\n## Key Features\n\n- 400 zero-shot tasks, balanced across Chinese and global tracks and five professional domains (40 tasks per\n  language-domain subset)\n- Each task has 11-37 expert-authored criteria covering factual information, analytical reasoning, instruction\n  following, and structure and formatting\n- Every task includes both positive criteria and negative penalties, with rubric weights ranging from -20 to 12 in\n  the hosted release\n- Samples are exposed as ten language-domain subsets so both the paper's language tracks and domain breakdowns are\n  visible in EvalScope reports\n\n## Evaluation Notes\n\n- An LLM judge is required. Configure `judge.strategy='llm'` (or `'auto'`) and `judge.models`; the official harness\n  currently recommends Gemini 3.1 Pro Preview, but judge identity affects absolute scores and is not hard-coded here\n- All rubrics for one response are judged together in one request using the official binary hit/miss instructions\n- `expert_score` is the weighted sum of hit rubrics divided by the sum of positive weights, clipped to `[0, 1]`;\n  `pass_rate` is 1 when `expert_score >= 0.7`, otherwise 0\n- Judge replies must contain every rubric exactly once. Malformed replies and transport failures are excluded instead\n  of being silently converted to zero scores\n- The official study compares vanilla models, search-enabled models, and deep-research agents separately. This native\n  adapter performs the benchmark's one-turn generation path; results from external tool-using agents are comparable\n  only when their final responses are evaluated under the same judge configuration\n- Tasks often require long, cited reports. Configure sufficiently large generation and judge `max_tokens` values;\n  with one judge and one repeat, a full run performs 400 generation calls and 400 judge calls\n\nResources: [Paper](https://arxiv.org/abs/2603.07980) |\n[GitHub](https://github.com/humanlaya/OneMillion-Bench) |\n[Dataset](https://modelscope.cn/datasets/evalscope/OneMillion-Bench)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "expert_score",
+      "aggregation": null,
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 400,
+    "subset_stats": [
+      {
+        "name": "global_economics_and_finance",
+        "sample_count": 40,
+        "prompt_length_mean": 1810.97,
+        "prompt_length_min": 868,
+        "prompt_length_max": 3723,
+        "prompt_length_std": 634.18,
+        "target_length_mean": 5313.43
+      },
+      {
+        "name": "global_healthcare_and_medicine",
+        "sample_count": 40,
+        "prompt_length_mean": 2029.97,
+        "prompt_length_min": 479,
+        "prompt_length_max": 8870,
+        "prompt_length_std": 1575.31,
+        "target_length_mean": 4261.62
+      },
+      {
+        "name": "global_industry",
+        "sample_count": 40,
+        "prompt_length_mean": 2581.15,
+        "prompt_length_min": 453,
+        "prompt_length_max": 9538,
+        "prompt_length_std": 2099.52,
+        "target_length_mean": 4612.4
+      },
+      {
+        "name": "global_law",
+        "sample_count": 40,
+        "prompt_length_mean": 3277.78,
+        "prompt_length_min": 404,
+        "prompt_length_max": 15951,
+        "prompt_length_std": 3584.08,
+        "target_length_mean": 4756.1
+      },
+      {
+        "name": "global_natural_sciences",
+        "sample_count": 40,
+        "prompt_length_mean": 1634.65,
+        "prompt_length_min": 284,
+        "prompt_length_max": 5775,
+        "prompt_length_std": 1138.76,
+        "target_length_mean": 4451.6
+      },
+      {
+        "name": "cn_economics_and_finance",
+        "sample_count": 40,
+        "prompt_length_mean": 555.05,
+        "prompt_length_min": 111,
+        "prompt_length_max": 1169,
+        "prompt_length_std": 227.91,
+        "target_length_mean": 2870.15
+      },
+      {
+        "name": "cn_healthcare_and_medicine",
+        "sample_count": 40,
+        "prompt_length_mean": 584.38,
+        "prompt_length_min": 135,
+        "prompt_length_max": 2628,
+        "prompt_length_std": 500.36,
+        "target_length_mean": 2109.47
+      },
+      {
+        "name": "cn_industry",
+        "sample_count": 40,
+        "prompt_length_mean": 965.6,
+        "prompt_length_min": 144,
+        "prompt_length_max": 7755,
+        "prompt_length_std": 1237.56,
+        "target_length_mean": 2230
+      },
+      {
+        "name": "cn_law",
+        "sample_count": 40,
+        "prompt_length_mean": 709.55,
+        "prompt_length_min": 208,
+        "prompt_length_max": 2041,
+        "prompt_length_std": 450.85,
+        "target_length_mean": 2250.3
+      },
+      {
+        "name": "cn_natural_sciences",
+        "sample_count": 40,
+        "prompt_length_mean": 555.83,
+        "prompt_length_min": 105,
+        "prompt_length_max": 1590,
+        "prompt_length_std": 393.56,
+        "target_length_mean": 2303.55
+      }
+    ],
+    "prompt_length": {
+      "mean": 1470.49,
+      "min": 105,
+      "max": 15951,
+      "std": 1770.97
+    },
+    "target_length_mean": 3515.86,
+    "computed_at": "2026-08-28T10:59:21.667165+08:00"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "24273bb5",
+          "content": "You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \"risk of sharp market correction\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response."
+        }
+      ],
+      "target": "[{\"rubric_number\": 1, \"rubric_detail\": \"Mention the high weighting of top US companies (e.g., Top 5 or AI-related stocks) in the index (approximately 30% or more) and identify this as a source of systemic risk.\", \"rubric_weight\": 10, \"rubric_ ... [TRUNCATED 3986 chars] ... c_number\": 16, \"rubric_detail\": \"The report contains hollow concluding remarks (e.g., \\\"In summary,\\\" \\\"We look forward to\\\") or transitional sentences lacking substantive content.\", \"rubric_weight\": -2, \"rubric_tag\": \"Analytical Reasoning\"}]",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "global_economics_and_finance",
+      "metadata": {
+        "id": "e1b94c86-b6c9-43f6-8251-2e513e5efc52",
+        "case_id": 1663,
+        "language": "global",
+        "domain": "Economics and Finance",
+        "topics": [
+          "Economics and Finance",
+          "Financing & M&A",
+          "Mergers & Acquisitions"
+        ],
+        "time_sensitivity": {
+          "time_sensitivity": "Weakly time-sensitive",
+          "year_month": "2025-10",
+          "day": "NA"
+        },
+        "question": "You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \"risk of sharp market correction\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response."
+      }
+    },
+    "subset": "global_economics_and_finance",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# $OneMillion-Bench\n\n\n## Overview\n\n$OneMillion-Bench ($1M-Bench) evaluates how well language models and agents complete economically valuable,\nexpert-level professional work. The public release contains 400 bilingual tasks written and reviewed by domain\nexperts across finance, healthcare, industry, law, and natural science.\n\n## Task Description\n\n- **Task Type**: Open-ended professional question answering with rubric-based LLM judging\n- **Input**: A realistic, context-heavy professional request in Chinese or English\n- **Output**: A complete free-form professional analysis or deliverable\n- **Domain**: Economics and finance, healthcare and medicine, industry, law, and natural sciences\n\n## Key Features\n\n- 400 zero-shot tasks, balanced across Chinese and global tracks and five professional domains (40 tasks per\n  language-domain subset)\n- Each task has 11-37 expert-authored criteria covering factual information, analytical reasoning, instruction\n  following, and structure and formatting\n- Every task includes both positive criteria and negative penalties, with rubric weights ranging from -20 to 12 in\n  the hosted release\n- Samples are exposed as ten language-domain subsets so both the paper's language tracks and domain breakdowns are\n  visible in EvalScope reports\n\n## Evaluation Notes\n\n- An LLM judge is required. Configure `judge.strategy='llm'` (or `'auto'`) and `judge.models`; the official harness\n  currently recommends Gemini 3.1 Pro Preview, but judge identity affects absolute scores and is not hard-coded here\n- All rubrics for one response are judged together in one request using the official binary hit/miss instructions\n- `expert_score` is the weighted sum of hit rubrics divided by the sum of positive weights, clipped to `[0, 1]`;\n  `pass_rate` is 1 when `expert_score >= 0.7`, otherwise 0\n- Judge replies must contain every rubric exactly once. Malformed replies and transport failures are excluded instead\n  of being silently converted to zero scores\n- The official study compares vanilla models, search-enabled models, and deep-research agents separately. This native\n  adapter performs the benchmark's one-turn generation path; results from external tool-using agents are comparable\n  only when their final responses are evaluated under the same judge configuration\n- Tasks often require long, cited reports. Configure sufficiently large generation and judge `max_tokens` values;\n  with one judge and one repeat, a full run performs 400 generation calls and 400 judge calls\n\nResources: [Paper](https://arxiv.org/abs/2603.07980) |\n[GitHub](https://github.com/humanlaya/OneMillion-Bench) |\n[Dataset](https://modelscope.cn/datasets/evalscope/OneMillion-Bench)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `one_million_bench` |\n| **Dataset ID** | [evalscope/OneMillion-Bench](https://modelscope.cn/datasets/evalscope/OneMillion-Bench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2603.07980) |\n| **Tags** | `Agent`, `Knowledge`, `MultiLingual`, `QA`, `Reasoning` |\n| **Metrics** | `expert_score`, `pass_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 400 |\n| Prompt Length (Mean) | 1470.49 chars |\n| Prompt Length (Min/Max) | 105 / 15951 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `global_economics_and_finance` | 40 | 1810.97 | 868 | 3723 |\n| `global_healthcare_and_medicine` | 40 | 2029.97 | 479 | 8870 |\n| `global_industry` | 40 | 2581.15 | 453 | 9538 |\n| `global_law` | 40 | 3277.78 | 404 | 15951 |\n| `global_natural_sciences` | 40 | 1634.65 | 284 | 5775 |\n| `cn_economics_and_finance` | 40 | 555.05 | 111 | 1169 |\n| `cn_healthcare_and_medicine` | 40 | 584.38 | 135 | 2628 |\n| `cn_industry` | 40 | 965.6 | 144 | 7755 |\n| `cn_law` | 40 | 709.55 | 208 | 2041 |\n| `cn_natural_sciences` | 40 | 555.83 | 105 | 1590 |\n\n## Sample Example\n\n**Subset**: `global_economics_and_finance`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"24273bb5\",\n      \"content\": \"You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \\\"risk of sharp market correction\\\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response.\"\n    }\n  ],\n  \"target\": \"[{\\\"rubric_number\\\": 1, \\\"rubric_detail\\\": \\\"Mention the high weighting of top US companies (e.g., Top 5 or AI-related stocks) in the index (approximately 30% or more) and identify this as a source of systemic risk.\\\", \\\"rubric_weight\\\": 10, \\\"rubric_ ... [TRUNCATED 3986 chars] ... c_number\\\": 16, \\\"rubric_detail\\\": \\\"The report contains hollow concluding remarks (e.g., \\\\\\\"In summary,\\\\\\\" \\\\\\\"We look forward to\\\\\\\") or transitional sentences lacking substantive content.\\\", \\\"rubric_weight\\\": -2, \\\"rubric_tag\\\": \\\"Analytical Reasoning\\\"}]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"global_economics_and_finance\",\n  \"metadata\": {\n    \"id\": \"e1b94c86-b6c9-43f6-8251-2e513e5efc52\",\n    \"case_id\": 1663,\n    \"language\": \"global\",\n    \"domain\": \"Economics and Finance\",\n    \"topics\": [\n      \"Economics and Finance\",\n      \"Financing & M&A\",\n      \"Mergers & Acquisitions\"\n    ],\n    \"time_sensitivity\": {\n      \"time_sensitivity\": \"Weakly time-sensitive\",\n      \"year_month\": \"2025-10\",\n      \"day\": \"NA\"\n    },\n    \"question\": \"You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \\\"risk of sharp market correction\\\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response.\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets one_million_bench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['one_million_bench'],\n    dataset_args={\n        'one_million_bench': {\n            # subset_list: ['global_economics_and_finance', 'global_healthcare_and_medicine', 'global_industry']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# $OneMillion-Bench\n\n\n## 概述\n\n$OneMillion-Bench（简称 $1M-Bench）用于评估语言模型和智能体在完成具有经济价值的专家级专业工作方面的表现。公开版本包含由金融、医疗、工业、法律和自然科学等领域的专家编写并审核的400个双语任务。\n\n## 任务描述\n\n- **任务类型**：基于评分标准的开放式专业问答，由大语言模型（LLM）进行评判\n- **输入**：一段现实且上下文丰富的中文或英文专业请求\n- **输出**：一份完整的自由格式专业分析报告或交付成果\n- **领域**：经济学与金融、医疗与医学、工业、法律、自然科学\n\n## 核心特性\n\n- 包含400个零样本任务，在中文和全球两条语言赛道及五个专业领域之间均衡分布（每个语言-领域子集包含40个任务）\n- 每个任务包含11至37条由专家编写的评分标准，涵盖事实信息、分析推理、指令遵循以及结构与格式等方面\n- 每个任务同时包含正向评分项和负向扣分项，在公开版本中评分权重范围为 -20 到 12\n- 样本以十个语言-领域子集的形式提供，以便在 EvalScope 报告中清晰展示论文中的语言赛道和领域划分\n\n## 评估说明\n\n- 需要使用 LLM 作为评判器。请配置 `judge.strategy='llm'`（或 `'auto'`）及 `judge.models`；官方评测框架当前推荐使用 Gemini 3.1 Pro Preview，但评判器的选择会影响绝对得分，此处未硬编码指定\n- 对单个回答的所有评分标准将在一次请求中统一评判，并采用官方提供的二元命中/未命中（hit/miss）判断指令\n- `expert_score` 是命中评分项的加权总和除以所有正向权重之和，结果裁剪至 `[0, 1]` 区间；当 `expert_score >= 0.7` 时，`pass_rate` 为 1，否则为 0\n- 评判器回复必须包含每条评分标准恰好一次。格式错误的回复和传输失败将被排除，而非静默转换为零分\n- 官方研究分别比较了基础模型、支持搜索的模型和深度研究型智能体。本原生适配器执行的是基准测试中的单轮生成路径；只有当外部工具调用型智能体的最终回答在相同评判器配置下进行评估时，其结果才具有可比性\n- 任务通常要求生成长篇、带引用的报告。请配置足够大的生成和评判 `max_tokens` 值；使用一个评判器和一次重复运行时，完整评测将执行400次生成调用和400次评判调用\n\n资源链接：[论文](https://arxiv.org/abs/2603.07980) |\n[GitHub](https://github.com/humanlaya/OneMillion-Bench) |\n[数据集](https://modelscope.cn/datasets/evalscope/OneMillion-Bench)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `one_million_bench` |\n| **数据集ID** | [evalscope/OneMillion-Bench](https://modelscope.cn/datasets/evalscope/OneMillion-Bench/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2603.07980) |\n| **标签** | `Agent`, `Knowledge`, `MultiLingual`, `QA`, `Reasoning` |\n| **指标** | `expert_score`, `pass_rate` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 400 |\n| 提示词长度（平均） | 1470.49 字符 |\n| 提示词长度（最小/最大） | 105 / 15951 字符 |\n\n**各子集统计信息：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `global_economics_and_finance` | 40 | 1810.97 | 868 | 3723 |\n| `global_healthcare_and_medicine` | 40 | 2029.97 | 479 | 8870 |\n| `global_industry` | 40 | 2581.15 | 453 | 9538 |\n| `global_law` | 40 | 3277.78 | 404 | 15951 |\n| `global_natural_sciences` | 40 | 1634.65 | 284 | 5775 |\n| `cn_economics_and_finance` | 40 | 555.05 | 111 | 1169 |\n| `cn_healthcare_and_medicine` | 40 | 584.38 | 135 | 2628 |\n| `cn_industry` | 40 | 965.6 | 144 | 7755 |\n| `cn_law` | 40 | 709.55 | 208 | 2041 |\n| `cn_natural_sciences` | 40 | 555.83 | 105 | 1590 |\n\n## 样例示例\n\n**子集**: `global_economics_and_finance`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"24273bb5\",\n      \"content\": \"You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \\\"risk of sharp market correction\\\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response.\"\n    }\n  ],\n  \"target\": \"[{\\\"rubric_number\\\": 1, \\\"rubric_detail\\\": \\\"Mention the high weighting of top US companies (e.g., Top 5 or AI-related stocks) in the index (approximately 30% or more) and identify this as a source of systemic risk.\\\", \\\"rubric_weight\\\": 10, \\\"rubric_ ... [TRUNCATED 3986 chars] ... c_number\\\": 16, \\\"rubric_detail\\\": \\\"The report contains hollow concluding remarks (e.g., \\\\\\\"In summary,\\\\\\\" \\\\\\\"We look forward to\\\\\\\") or transitional sentences lacking substantive content.\\\", \\\"rubric_weight\\\": -2, \\\"rubric_tag\\\": \\\"Analytical Reasoning\\\"}]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"global_economics_and_finance\",\n  \"metadata\": {\n    \"id\": \"e1b94c86-b6c9-43f6-8251-2e513e5efc52\",\n    \"case_id\": 1663,\n    \"language\": \"global\",\n    \"domain\": \"Economics and Finance\",\n    \"topics\": [\n      \"Economics and Finance\",\n      \"Financing & M&A\",\n      \"Mergers & Acquisitions\"\n    ],\n    \"time_sensitivity\": {\n      \"time_sensitivity\": \"Weakly time-sensitive\",\n      \"year_month\": \"2025-10\",\n      \"day\": \"NA\"\n    },\n    \"question\": \"You are an international financial risk analyst. Based on the Financial Stability Report released by the Bank of England's Financial Policy Committee in October 2025, global financial markets may face a \\\"risk of sharp market correction\\\" if in ... [TRUNCATED 924 chars] ... ields, and global capital flows.\\nSpecial Conditions: Use only information published before December 31, 2025; do not fabricate information; generated content must cite real URLs. The answer must be complete and useful; do not fake a response.\"\n  }\n}\n```\n\n*注：部分内容因显示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用命令行（CLI）\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets one_million_bench \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['one_million_bench'],\n    dataset_args={\n        'one_million_bench': {\n            # subset_list: ['global_economics_and_finance', 'global_healthcare_and_medicine', 'global_industry']  # 可选，用于评估特定子集\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "b8447100ff45f3c90d20cbaf107ee68f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-28T10:59:21.773792+08:00",
+  "translation_updated_at": "2026-08-28T10:59:26+08:00"
+}

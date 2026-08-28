@@ -123,7 +123,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
-ignore = ["E501", "E741", "F401", "F403", "F405", "F541", "F821"]
+ignore = ["E501", "E741", "F401", "F403", "F405", "F541"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["E", "F", "W"]

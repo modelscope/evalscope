@@ -427,6 +427,8 @@ METRIC_DEFINITIONS.update(
             baseline='quality.error_rate.ratio',
             metric_name='Bias Ratio',
         ),
+        # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
+        'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
@@ -467,6 +469,9 @@ BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
     # job_bench, i.e. an intermediate judge value: reassign the collision to a diagnostic.
     ('job_bench', 'judge_score'): MetricEntry(baseline='diagnostic.unspecified'),
+    # $OneMillion-Bench defines pass rate as the share of tasks whose expert score reaches 0.7,
+    # not as pass@k over repeated generations.
+    ('one_million_bench', 'pass_rate'): MetricEntry(baseline='quality.accuracy.ratio', metric_name='Pass Rate'),
 }
 """``(benchmark_name, final_metric_name)`` -> entry, only for same-name / different-meaning
 collisions. Each entry carries the collision reason in a comment."""

@@ -59,6 +59,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `pmc_vqa` | [PMC-VQA](../../benchmarks/pmc_vqa.md) | `MCQ`, `Medical`, `MultiModal` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `ref_adv_s` | [Ref-Adv-s](../../benchmarks/ref_adv_s.md) | `Grounding`, `MultiModal`, `Reasoning` |
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `screenspot_pro` | [ScreenSpot-Pro](../../benchmarks/screenspot_pro.md) | `Agent`, `Grounding`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
@@ -68,6 +69,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
+| `visfactor` | [VisFactor](../../benchmarks/visfactor.md) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vlms_are_biased` | [VLMs Are Biased](../../benchmarks/vlms_are_biased.md) | `MultiModal`, `QA`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
@@ -136,6 +138,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/pmc_vqa.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
+../../benchmarks/ref_adv_s.md
 ../../benchmarks/science_qa.md
 ../../benchmarks/screenspot_pro.md
 ../../benchmarks/seed_bench_2_plus.md
@@ -145,6 +148,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
+../../benchmarks/visfactor.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vlms_are_biased.md
 ../../benchmarks/vqav2.md
