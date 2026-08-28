@@ -1,0 +1,197 @@
+{
+  "meta": {
+    "pretty_name": "Ref-Adv-s",
+    "dataset_id": "evalscope/ref-adv-s",
+    "paper_url": "https://arxiv.org/abs/2602.23898",
+    "tags": [
+      "MultiModal",
+      "Grounding",
+      "Reasoning"
+    ],
+    "metrics": [
+      "ACC@0.5",
+      "ACC@0.75",
+      "ACC@0.9",
+      "2-3/ACC@0.5",
+      "4-6/ACC@0.5",
+      ">=7/ACC@0.5"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "train",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nRef-Adv-s is the public 1,142-case subset of Ref-Adv, a referring expression comprehension benchmark designed to test whether multimodal large language models can distinguish a target from hard same-category visual distractors instead of relying on grounding shortcuts.\n\n## Task Description\n\n- **Task Type**: Referring expression comprehension / visual grounding\n- **Input**: One image and an English referring expression\n- **Output**: One or more bounding boxes in JSON, with the first box used for scoring\n- **Domain**: COCO and OpenImages scenes containing hard same-category distractors\n\n## Key Features\n\n- Contains 1,142 public cases sampled from the 5,000-case Ref-Adv benchmark\n- Includes human-authored and model-assisted expressions, explicit negation, and at least two distractors per case\n- Preserves the official `direct` and chain-of-thought (`cot`) prompt modes\n- Uses the dataset's single `train` split as the evaluation split\n\n## Evaluation Notes\n\n- Reports official `Acc@0.5`, `Acc@0.75`, and `Acc@0.9` metrics from the IoU of the first parsed box\n- Also reports `Acc@0.5` for the official distractor-count bins `2-3`, `4-6`, and `>=7`\n- Parses the last valid fenced JSON object, or an unfenced JSON value that ends the response, using the official key search order\n- A failed first parse triggers the official one-turn format-repair prompt; a second failure receives zero accuracy\n- Set `pred_box_format` to `abs_xyxy` for Qwen2.5-VL and to `norm_1000_xyxy` for Qwen3-VL/Qwen3.5; `norm_1_xyxy` is also supported by the official evaluator\n- [Paper](https://arxiv.org/abs/2602.23898) | [GitHub](https://github.com/dddraxxx/Ref-Adv)\n",
+    "prompt_template": "<image>\nLocate every object that matches the description \"{ref_sentence}\" in the image. Report bbox coordinates in JSON format.",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "prompt_mode": {
+        "type": "str",
+        "description": "Official prompt mode.",
+        "value": "direct",
+        "choices": [
+          "direct",
+          "cot"
+        ]
+      },
+      "pred_box_format": {
+        "type": "str",
+        "description": "Coordinate format emitted by the evaluated model.",
+        "value": "norm_1000_xyxy",
+        "choices": [
+          "abs_xyxy",
+          "norm_1000_xyxy",
+          "norm_1_xyxy"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "vlm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall",
+        "threshold": 0.5
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 1142,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 1142,
+        "prompt_length_mean": 177.67,
+        "prompt_length_min": 136,
+        "prompt_length_max": 282,
+        "prompt_length_std": 19.7,
+        "target_length_mean": 32.15,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 1142,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1011x1024",
+              "1019x1024",
+              "1024x1024",
+              "1024x413",
+              "1024x430",
+              "1024x434",
+              "1024x469",
+              "1024x471",
+              "1024x542",
+              "1024x550"
+            ],
+            "resolution_range": {
+              "min": "240x320",
+              "max": "1024x1024"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 177.67,
+      "min": 136,
+      "max": 282,
+      "std": 19.7
+    },
+    "target_length_mean": 32.15,
+    "computed_at": "2026-08-28T13:10:31.339045",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 1142,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1011x1024",
+          "1019x1024",
+          "1024x1024",
+          "1024x413",
+          "1024x430",
+          "1024x434",
+          "1024x469",
+          "1024x471",
+          "1024x542",
+          "1024x550"
+        ],
+        "resolution_range": {
+          "min": "240x320",
+          "max": "1024x1024"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "d3a7e578",
+          "content": [
+            {
+              "text": "<image>\nLocate every object that matches the description \"the computer screen that is in the middle vertically of the three stacks\" in the image. Report bbox coordinates in JSON format."
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~118.1KB]"
+            }
+          ]
+        }
+      ],
+      "target": "[297.0, 345.0, 427.0, 440.0]",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "row_idx": 0,
+        "file_name": "000000547144.jpg",
+        "image_source": "coco_val2017",
+        "human_authored": true,
+        "use_negation": false,
+        "distractor_count": 5,
+        "target_box_normalized": [
+          0.4640625,
+          0.71875,
+          0.6671875,
+          0.9166666666666666
+        ],
+        "sent_size": [
+          640,
+          480
+        ],
+        "retry_followup_used": false
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Ref-Adv-s\n\n\n## Overview\n\nRef-Adv-s is the public 1,142-case subset of Ref-Adv, a referring expression comprehension benchmark designed to test whether multimodal large language models can distinguish a target from hard same-category visual distractors instead of relying on grounding shortcuts.\n\n## Task Description\n\n- **Task Type**: Referring expression comprehension / visual grounding\n- **Input**: One image and an English referring expression\n- **Output**: One or more bounding boxes in JSON, with the first box used for scoring\n- **Domain**: COCO and OpenImages scenes containing hard same-category distractors\n\n## Key Features\n\n- Contains 1,142 public cases sampled from the 5,000-case Ref-Adv benchmark\n- Includes human-authored and model-assisted expressions, explicit negation, and at least two distractors per case\n- Preserves the official `direct` and chain-of-thought (`cot`) prompt modes\n- Uses the dataset's single `train` split as the evaluation split\n\n## Evaluation Notes\n\n- Reports official `Acc@0.5`, `Acc@0.75`, and `Acc@0.9` metrics from the IoU of the first parsed box\n- Also reports `Acc@0.5` for the official distractor-count bins `2-3`, `4-6`, and `>=7`\n- Parses the last valid fenced JSON object, or an unfenced JSON value that ends the response, using the official key search order\n- A failed first parse triggers the official one-turn format-repair prompt; a second failure receives zero accuracy\n- Set `pred_box_format` to `abs_xyxy` for Qwen2.5-VL and to `norm_1000_xyxy` for Qwen3-VL/Qwen3.5; `norm_1_xyxy` is also supported by the official evaluator\n- [Paper](https://arxiv.org/abs/2602.23898) | [GitHub](https://github.com/dddraxxx/Ref-Adv)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ref_adv_s` |\n| **Dataset ID** | [evalscope/ref-adv-s](https://modelscope.cn/datasets/evalscope/ref-adv-s/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2602.23898) |\n| **Tags** | `Grounding`, `MultiModal`, `Reasoning` |\n| **Metrics** | `ACC@0.5`, `ACC@0.75`, `ACC@0.9`, `2-3/ACC@0.5`, `4-6/ACC@0.5`, `>=7/ACC@0.5` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,142 |\n| Prompt Length (Mean) | 177.67 chars |\n| Prompt Length (Min/Max) | 136 / 282 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 1,142 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 240x320 - 1024x1024 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d3a7e578\",\n      \"content\": [\n        {\n          \"text\": \"<image>\\nLocate every object that matches the description \\\"the computer screen that is in the middle vertically of the three stacks\\\" in the image. Report bbox coordinates in JSON format.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~118.1KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[297.0, 345.0, 427.0, 440.0]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"row_idx\": 0,\n    \"file_name\": \"000000547144.jpg\",\n    \"image_source\": \"coco_val2017\",\n    \"human_authored\": true,\n    \"use_negation\": false,\n    \"distractor_count\": 5,\n    \"target_box_normalized\": [\n      0.4640625,\n      0.71875,\n      0.6671875,\n      0.9166666666666666\n    ],\n    \"sent_size\": [\n      640,\n      480\n    ],\n    \"retry_followup_used\": false\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n<image>\nLocate every object that matches the description \"{ref_sentence}\" in the image. Report bbox coordinates in JSON format.\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `prompt_mode` | `str` | `direct` | Official prompt mode. Choices: ['direct', 'cot'] |\n| `pred_box_format` | `str` | `norm_1000_xyxy` | Coordinate format emitted by the evaluated model. Choices: ['abs_xyxy', 'norm_1000_xyxy', 'norm_1_xyxy'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ref_adv_s \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ref_adv_s'],\n    dataset_args={\n        'ref_adv_s': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Ref-Adv-s\n\n\n## 概述\n\nRef-Adv-s 是 Ref-Adv 基准测试中公开的 1,142 个样例子集。该基准测试旨在评估多模态大语言模型是否能够从同类视觉干扰物中准确识别目标对象，而非依赖简单的视觉定位捷径。\n\n## 任务描述\n\n- **任务类型**：指代表达理解 / 视觉定位\n- **输入**：一张图像和一个英文指代表达式\n- **输出**：一个或多个 JSON 格式的边界框，其中第一个边界框用于评分\n- **领域**：包含同类干扰物的 COCO 和 OpenImages 场景\n\n## 主要特点\n\n- 包含从 5,000 个样例的 Ref-Adv 基准测试中采样的 1,142 个公开样例\n- 包含人工撰写和模型辅助生成的表达式、显式否定词，且每个样例至少包含两个干扰物\n- 保留官方的 `direct` 和思维链（`cot`）提示模式\n- 使用数据集唯一的 `train` 划分作为评估划分\n\n## 评估说明\n\n- 报告官方指标 `Acc@0.5`、`Acc@0.75` 和 `Acc@0.9`，基于第一个解析出的边界框与真实框的 IoU 计算\n- 同时报告干扰物数量分组（`2-3`、`4-6` 和 `>=7`）下的 `Acc@0.5` 指标\n- 使用官方指定的键搜索顺序，解析响应中最后一个有效的围栏式 JSON 对象，或以非围栏式 JSON 值结尾的内容\n- 若首次解析失败，将触发官方的一轮格式修复提示；若第二次仍失败，则该样本得分为零\n- 对于 Qwen2.5-VL，请将 `pred_box_format` 设置为 `abs_xyxy`；对于 Qwen3-VL/Qwen3.5，请设置为 `norm_1000_xyxy`；官方评估器也支持 `norm_1_xyxy`\n- [论文](https://arxiv.org/abs/2602.23898) | [GitHub](https://github.com/dddraxxx/Ref-Adv)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ref_adv_s` |\n| **数据集ID** | [evalscope/ref-adv-s](https://modelscope.cn/datasets/evalscope/ref-adv-s/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2602.23898) |\n| **标签** | `Grounding`, `MultiModal`, `Reasoning` |\n| **指标** | `ACC@0.5`, `ACC@0.75`, `ACC@0.9`, `2-3/ACC@0.5`, `4-6/ACC@0.5`, `>=7/ACC@0.5` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,142 |\n| 提示词长度（平均） | 177.67 字符 |\n| 提示词长度（最小/最大） | 136 / 282 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 1,142 |\n| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 240x320 - 1024x1024 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"d3a7e578\",\n      \"content\": [\n        {\n          \"text\": \"<image>\\nLocate every object that matches the description \\\"the computer screen that is in the middle vertically of the three stacks\\\" in the image. Report bbox coordinates in JSON format.\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~118.1KB]\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"[297.0, 345.0, 427.0, 440.0]\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"row_idx\": 0,\n    \"file_name\": \"000000547144.jpg\",\n    \"image_source\": \"coco_val2017\",\n    \"human_authored\": true,\n    \"use_negation\": false,\n    \"distractor_count\": 5,\n    \"target_box_normalized\": [\n      0.4640625,\n      0.71875,\n      0.6671875,\n      0.9166666666666666\n    ],\n    \"sent_size\": [\n      640,\n      480\n    ],\n    \"retry_followup_used\": false\n  }\n}\n```\n\n## 提示模板\n\n**提示模板：**\n```text\n<image>\nLocate every object that matches the description \"{ref_sentence}\" in the image. Report bbox coordinates in JSON format.\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `prompt_mode` | `str` | `direct` | 官方提示模式。选项：['direct', 'cot'] |\n| `pred_box_format` | `str` | `norm_1000_xyxy` | 被评估模型输出的坐标格式。选项：['abs_xyxy', 'norm_1000_xyxy', 'norm_1_xyxy'] |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ref_adv_s \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ref_adv_s'],\n    dataset_args={\n        'ref_adv_s': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5d4c867292184df5ca68fda4a252a09e",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-28T13:10:32.195552",
+  "translation_updated_at": "2026-08-28T13:11:24+08:00"
+}

@@ -59,6 +59,7 @@
 | `pmc_vqa` | [PMC-VQA](../../benchmarks/pmc_vqa.md) | `MCQ`, `Medical`, `MultiModal` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `ref_adv_s` | [Ref-Adv-s](../../benchmarks/ref_adv_s.md) | `Grounding`, `MultiModal`, `Reasoning` |
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `screenspot_pro` | [ScreenSpot-Pro](../../benchmarks/screenspot_pro.md) | `Agent`, `Grounding`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
@@ -136,6 +137,7 @@
 ../../benchmarks/pmc_vqa.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
+../../benchmarks/ref_adv_s.md
 ../../benchmarks/science_qa.md
 ../../benchmarks/screenspot_pro.md
 ../../benchmarks/seed_bench_2_plus.md
