@@ -8,7 +8,7 @@ from PIL import Image
 from evalscope.api.metric import MetricDirection, SampleScore
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import get_benchmark
-from evalscope.benchmarks.vlms_are_biased.vlms_are_biased_adapter import normalize_answer, score_answer
+from evalscope.benchmarks.vlms_are_biased.utils import normalize_answer, score_answer
 from evalscope.config import TaskConfig
 from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS
 
