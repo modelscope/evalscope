@@ -9,8 +9,16 @@ from evalscope.config import TaskConfig
 from evalscope.constants import EvalType
 from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
+from evalscope.service.api_models import (
+    BenchmarksResponse,
+    EvalInvokeResponse,
+    LogResponse,
+    ProgressResponse,
+    TaskStatusResponse,
+)
 from evalscope.utils.logger import get_logger
 
+from ..responses import json_response
 from ..utils import (
     DEFAULT_MULTIMODAL_BENCHMARKS,
     DEFAULT_TEXT_BENCHMARKS,
@@ -158,12 +166,13 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
             logger.error(f'[{task_id}] {label} produced empty results: {error_msg}')
             return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
         logger.info(f'[{task_id}] {label} completed successfully')
-        return jsonify(
-            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str}
+        return json_response(
+            EvalInvokeResponse,
+            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str},
         )
     except TaskStoppedError:
         logger.info(f'[{task_id}] {label} stopped by user.')
-        return jsonify({'status': 'stopped', 'task_id': task_id})
+        return json_response(EvalInvokeResponse, {'status': 'stopped', 'task_id': task_id})
     except Exception as e:
         logger.error(f'[{task_id}] {label} failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
@@ -199,7 +208,7 @@ def stop_evaluation():
 
     stopped = stop_process(task_id)
     if stopped:
-        return jsonify({'status': 'stopped', 'task_id': task_id}), 200
+        return json_response(TaskStatusResponse, {'status': 'stopped', 'task_id': task_id})
     else:
         return jsonify({'error': f'No running task found for task_id: {task_id}'}), 404
 
@@ -242,9 +251,9 @@ def get_evaluation_progress():
     try:
         with open(progress_file, 'r', encoding='utf-8') as f:
             progress = json.load(f)
-        return jsonify(progress), 200
+        return json_response(ProgressResponse, progress)
     except FileNotFoundError:
-        return jsonify({'percent': 0.0}), 200
+        return json_response(ProgressResponse, {'percent': 0.0})
     except Exception as e:
         logger.error(f'Failed to get progress for task {task_id}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -294,7 +303,7 @@ def get_evaluation_log():
 
     try:
         result = get_log_content(task_id, os.path.join('logs', 'eval_log.log'), start_line, page)
-        return jsonify(result), 200
+        return json_response(LogResponse, result)
     except Exception as e:
         logger.error(f'Failed to get evaluation log: {str(e)}')
         return jsonify({'error': str(e)}), 500
@@ -356,7 +365,7 @@ def list_benchmarks():
         if filter_type and filter_type not in ('text', 'multimodal'):
             return jsonify({'error': f"Unknown type '{filter_type}'. Use 'text' or 'multimodal'."}), 400
 
-        return jsonify(result), 200
+        return json_response(BenchmarksResponse, result)
     except Exception as e:
         logger.error(f'Failed to list benchmarks: {e}')
         return jsonify({'error': str(e)}), 500

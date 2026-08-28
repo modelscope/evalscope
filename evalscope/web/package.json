@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "contracts:generate": "tsx scripts/generateApiContracts.ts",
+    "contracts:check": "tsx scripts/generateApiContracts.ts --check",
     "drift": "tsx scripts/drift/index.ts",
     "drift:tokens": "tsx scripts/drift/tokenDrift.ts",
     "design:tokens": "tsx scripts/drift/tokenDrift.ts --write",
@@ -32,8 +34,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.4",
-    "zod": "4.4.3"
+    "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -52,6 +53,7 @@
     "globals": "^17.5.0",
     "jest-axe": "10.0.0",
     "jsdom": "29.1.1",
+    "json-schema-to-typescript": "^15.0.4",
     "tsx": "4.20.6",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",

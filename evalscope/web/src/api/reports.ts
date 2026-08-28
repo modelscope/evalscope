@@ -1,12 +1,4 @@
 import { apiDeleteValidated, apiValidated } from './client'
-import {
-  analysisResponseSchema,
-  dataFrameResponseSchema,
-  deleteReportResponseSchema,
-  listReportsResponseSchema,
-  loadReportResponseSchema,
-  predictionsResponseSchema,
-} from './schemas'
 import type {
   AnalysisResponse,
   DataFrameResponse,
@@ -37,7 +29,7 @@ export async function listReports(params: {
   /** Optional signal to cancel a superseded list/search request. */
   signal?: AbortSignal
 }): Promise<ListReportsResponse> {
-  return apiValidated(BASE, listReportsResponseSchema, {
+  return apiValidated<ListReportsResponse>(BASE, {
     params: {
       root_path: params.rootPath,
       search: params.search,
@@ -57,7 +49,7 @@ export async function deleteReport(
   ref: string,
   signal?: AbortSignal,
 ): Promise<DeleteReportResponse> {
-  return apiDeleteValidated(reportPath(ref), deleteReportResponseSchema, {
+  return apiDeleteValidated<DeleteReportResponse>(reportPath(ref), {
     params: { root_path: rootPath },
     signal,
   })
@@ -68,7 +60,7 @@ export async function loadReport(
   ref: string,
   signal?: AbortSignal,
 ): Promise<LoadReportResponse> {
-  return apiValidated(reportPath(ref), loadReportResponseSchema, {
+  return apiValidated<LoadReportResponse>(reportPath(ref), {
     params: { root_path: rootPath },
     signal,
   })
@@ -81,7 +73,7 @@ export async function getDataFrame(
   datasetName?: string,
   signal?: AbortSignal,
 ): Promise<DataFrameResponse> {
-  return apiValidated(`${reportPath(ref)}/table`, dataFrameResponseSchema, {
+  return apiValidated<DataFrameResponse>(`${reportPath(ref)}/table`, {
     params: {
       root_path: rootPath,
       view,
@@ -98,7 +90,7 @@ export async function getPredictions(
   subsetName: string,
   signal?: AbortSignal,
 ): Promise<PredictionsResponse> {
-  return apiValidated(`${reportPath(ref)}/predictions`, predictionsResponseSchema, {
+  return apiValidated<PredictionsResponse>(`${reportPath(ref)}/predictions`, {
     params: {
       root_path: rootPath,
       dataset_name: datasetName,
@@ -114,7 +106,7 @@ export async function getAnalysis(
   datasetName: string,
   signal?: AbortSignal,
 ): Promise<string> {
-  const res: AnalysisResponse = await apiValidated(`${reportPath(ref)}/analysis`, analysisResponseSchema, {
+  const res = await apiValidated<AnalysisResponse>(`${reportPath(ref)}/analysis`, {
     params: {
       root_path: rootPath,
       dataset_name: datasetName,

@@ -118,7 +118,7 @@ export function HeaderPerfChip({
 export interface MessageRowProps {
   role: Role
   content: string | ContentBlock[]
-  msgId?: string
+  msgId?: string | null
   model?: string | null
   highlightId?: string
   /** extra right-side header content (e.g. perf chip). */
@@ -213,7 +213,7 @@ export function SystemPromptRow({
   msgId,
 }: {
   content: string | ContentBlock[]
-  msgId?: string
+  msgId?: string | null
   highlightId?: string
 }) {
   const { t } = useLocale()

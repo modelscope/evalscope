@@ -85,15 +85,15 @@ export function renderContentBlocks(
   const nodes: React.ReactNode[] = []
   blocks.forEach((b, i) => {
     if (b.type === 'reasoning' && opts.includeReasoning) {
-      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} tokens={b.reasoning_tokens} />)
+      nodes.push(<ReasoningBlock key={`r${i}`} text={b.reasoning ?? ''} tokens={b.reasoning_tokens ?? undefined} />)
     } else if (b.type === 'text') {
       if (b.text) nodes.push(<MarkdownRenderer key={`t${i}`} content={b.text} />)
     } else if (b.type === 'image') {
       if (b.image) nodes.push(<ImageBlock key={`img${i}`} src={b.image} />)
     } else if (b.type === 'audio') {
-      if (b.audio) nodes.push(<AudioBlock key={`aud${i}`} src={b.audio} format={b.format} />)
+      if (b.audio) nodes.push(<AudioBlock key={`aud${i}`} src={b.audio} format={b.format ?? undefined} />)
     } else if (b.type === 'video') {
-      if (b.video) nodes.push(<VideoBlock key={`vid${i}`} src={b.video} format={b.format} />)
+      if (b.video) nodes.push(<VideoBlock key={`vid${i}`} src={b.video} format={b.format ?? undefined} />)
     }
   })
   return nodes

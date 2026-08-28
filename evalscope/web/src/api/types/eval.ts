@@ -2,11 +2,10 @@
 // "eval" API domain types                                             //
 // ------------------------------------------------------------------ //
 //
-// All endpoint response types are derived from runtime zod schemas; this file
-// preserves the domain import boundary without duplicating contracts.
+// Public evaluation API types are generated from backend Pydantic response models.
 export type {
   BenchmarkEntry,
   BenchmarksResponse,
   EvalInvokeResponse,
   ProgressResponse,
-} from '@/api/schemas/eval.schema'
+} from '@/api/generated/contracts'

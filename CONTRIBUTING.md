@@ -99,6 +99,20 @@ The dev server runs at `http://localhost:5173` and automatically proxies `/api/v
 
 **Tech stack:** React 19 · TypeScript · Vite · Tailwind CSS 4 · React Router · Plotly.js
 
+#### Web API response contracts
+
+Backend Pydantic models in `evalscope/service/api_models/` are the single source of truth for successful JSON responses consumed by the dashboard. Route handlers validate those payloads with `json_response()` before serialization; the frontend uses generated TypeScript types rather than hand-written response schemas.
+
+After changing a Web API response model, regenerate and commit both generated artifacts:
+
+```bash
+cd evalscope/web
+npm run contracts:generate
+npm run contracts:check
+```
+
+Do not edit `src/api/generated/contracts.ts` or `contracts.schema.json` by hand. `make web-contracts-check` performs the same drift check from the repository root and is part of the release build. Error responses and non-JSON responses such as HTML reports and media files remain outside this generated response contract.
+
 ### Full-Stack Development
 
 For the best development experience, run both servers simultaneously:

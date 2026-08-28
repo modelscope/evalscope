@@ -2,9 +2,8 @@
 // "reports" API domain types                                          //
 // ------------------------------------------------------------------ //
 //
-// All endpoint response types are derived from runtime zod schemas. This barrel
-// preserves the stable `@/api/types` import path while keeping the schemas as
-// the single compile-time/runtime source of truth.
+// Public report API types are generated from backend Pydantic response models.
+// This barrel preserves the stable `@/api/types` import path.
 
 export type {
   // Report score tree
@@ -18,7 +17,7 @@ export type {
   ListReportsResponse,
   // Prediction rows (chat messages + agent trace)
   ContentBlock,
-  ToolCall,
+  PredictionToolCall as ToolCall,
   ChatMessage,
   AgentTraceEvent,
   AgentTrace,
@@ -30,4 +29,4 @@ export type {
   PredictionsResponse,
   DeleteReportResponse,
   AnalysisResponse,
-} from '@/api/schemas/reports.schema'
+} from '@/api/generated/contracts'

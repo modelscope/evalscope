@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install build dependencies
-        run: pip install build twine
+        run: pip install build twine '.[service]'
       - name: Build and verify EvalScope
         run: make package
       - name: Publish package to PyPI
