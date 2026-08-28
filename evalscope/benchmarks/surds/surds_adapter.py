@@ -57,7 +57,7 @@ without supplying depth maps or visual markers.
   task scores. A full run makes 9,250 model requests but reports `Num=5,550`, because each complementary prompt pair
   is one official evaluation unit
 - Invalid or missing `<answer>` blocks score 0, matching the official benchmark denominator semantics
-- The dataset is evaluation-only and downloaded from ModelScope; only images needed by the selected subsets are fetched
+- The dataset is evaluation-only and downloaded as a complete snapshot from ModelScope
 - Resources: [Paper](https://arxiv.org/abs/2411.13112) |
   [GitHub](https://github.com/XiandaGuo/Drive-MLLM)
 """
@@ -98,9 +98,9 @@ class SURDSAdapter(VisionLanguageAdapter):
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
         )
-        metadata_relpath = f'{self.eval_split}/metadata.jsonl'
-        metadata_path = hub.download_file(metadata_relpath)
-        self._split_root = os.path.dirname(metadata_path)
+        dataset_root = hub.download_snapshot()
+        self._split_root = os.path.join(dataset_root, self.eval_split)
+        metadata_path = os.path.join(self._split_root, 'metadata.jsonl')
         with open(metadata_path, 'r', encoding='utf-8') as file:
             source_records = [json.loads(line) for line in file if line.strip()]
 
@@ -115,23 +115,6 @@ class SURDSAdapter(VisionLanguageAdapter):
             shuffle=self.shuffle,
             seed=self.seed,
         )
-
-        dataset_root = os.path.dirname(self._split_root)
-        image_relpaths = sorted(
-            {
-                os.path.relpath(sample.metadata['image_path'], dataset_root)
-                for dataset in datasets.values()
-                for sample in dataset
-            }
-        )
-        missing_images = [path for path in image_relpaths if not os.path.isfile(os.path.join(dataset_root, path))]
-        if self.force_redownload or missing_images:
-            download_images = image_relpaths if self.force_redownload else missing_images
-            hub.download_snapshot(allow_file_pattern=[metadata_relpath, *download_images])
-            missing_images = [path for path in image_relpaths if not os.path.isfile(os.path.join(dataset_root, path))]
-        if missing_images:
-            raise FileNotFoundError(f'SURDS snapshot is missing {len(missing_images)} required images.')
-
         return datasets, None
 
     def record_to_sample(self, record: Dict[str, Any]) -> List[Sample]:

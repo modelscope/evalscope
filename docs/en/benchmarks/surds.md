@@ -33,7 +33,7 @@ without supplying depth maps or visual markers.
   task scores. A full run makes 9,250 model requests but reports `Num=5,550`, because each complementary prompt pair
   is one official evaluation unit
 - Invalid or missing `<answer>` blocks score 0, matching the official benchmark denominator semantics
-- The dataset is evaluation-only and downloaded from ModelScope; only images needed by the selected subsets are fetched
+- The dataset is evaluation-only and downloaded as a complete snapshot from ModelScope
 - Resources: [Paper](https://arxiv.org/abs/2411.13112) |
   [GitHub](https://github.com/XiandaGuo/Drive-MLLM)
 
@@ -88,7 +88,7 @@ without supplying depth maps or visual markers.
 {
   "input": [
     {
-      "id": "1e46d04d",
+      "id": "ff9ad0a4",
       "content": [
         {
           "text": "Task Description: \nThe primary goal of this task is to identify the direction that the specified object is facing in the given image. The camera in the image is facing North, and you need to analyze the object's orientation based on this refe ... [TRUNCATED 232 chars] ... evant error checks.\nFinally, provide a concise and definitive response in the <answer> tag. Use the following format:\n<think>[Step-by-step reasoning with attention to detail and potential error checks]</think>\n<answer>[Final answer]</answer>\n"
