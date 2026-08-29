@@ -32,7 +32,15 @@ WS_HEARTBEAT_TIMEOUT_SECONDS = 120
 WS_CLIENT_API_KEY_ENV = 'TOOLATHLON_LLM_API_KEY'
 
 _COMPLETED_JOB_STATES = {'completed', 'finished', 'success', 'succeeded'}
-_FAILED_JOB_STATES = {'failed', 'error', 'cancelled', 'canceled'}
+_FAILED_JOB_STATES = {'failed', 'error', 'timeout', 'cancelled', 'canceled'}
+
+
+class _FatalToolathlonError(RuntimeError):
+    """An unrecoverable protocol or output validation error."""
+
+
+class _TransientToolathlonError(RuntimeError):
+    """A service or download error that can be retried while polling."""
 
 
 @dataclass
@@ -74,6 +82,7 @@ class ToolathlonServiceClient:
     def __init__(self, config: ToolathlonServiceConfig) -> None:
         self.config = config
         self.output_dir = Path(config.output_dir)
+        self._pending_task_names: set[str] = set()
 
     def run_private(self) -> Dict[str, Any]:
         check_import('httpx', extra='toolathlon', raise_error=True, feature_name='Toolathlon')
@@ -189,43 +198,50 @@ class ToolathlonServiceClient:
         import httpx
 
         start_time = time.monotonic()
-        downloaded_tasks = set()
+        downloaded_tasks: set[str] = set()
+        self._pending_task_names.clear()
         cancel_reason: Optional[str] = 'Polling aborted'
         try:
             with httpx.Client(timeout=30.0, trust_env=self.config.trust_env_in_httpx) as client:
                 while True:
                     exit_code = ws_process.poll()
-                    if exit_code is not None:
-                        if exit_code == 0:
-                            status = self._get_job_status(client, job_id)
-                            state = _job_state(status)
-                            if state in _COMPLETED_JOB_STATES:
-                                cancel_reason = None
-                                self._download_completed_tasks(client, job_id, downloaded_tasks)
-                                self._download_static_files(client, job_id)
-                                return
-                            if state in _FAILED_JOB_STATES:
-                                cancel_reason = None
-                                self._download_static_files(client, job_id)
-                                raise RuntimeError(f'Toolathlon job failed: {status}')
-                        cancel_reason = 'WebSocket relay exited'
-                        raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
                     if time.monotonic() - start_time > self.config.timeout_seconds:
-                        cancel_reason = 'Timeout'
+                        if cancel_reason is not None:
+                            cancel_reason = 'Timeout'
                         raise TimeoutError(f'Toolathlon job exceeded {self.config.timeout_seconds} seconds.')
 
-                    downloaded_tasks.update(self._download_completed_tasks(client, job_id, downloaded_tasks))
-                    status = self._get_job_status(client, job_id)
+                    if exit_code is None:
+                        new_tasks = self._try_download_completed_tasks(client, job_id, downloaded_tasks)
+                        if new_tasks is not None:
+                            downloaded_tasks.update(new_tasks)
+
+                    status = self._try_get_job_status(client, job_id)
+                    if status is None:
+                        if exit_code not in {None, 0}:
+                            cancel_reason = 'WebSocket relay exited'
+                            raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
+                        time.sleep(self.config.poll_interval)
+                        continue
+
                     state = _job_state(status)
                     if state in _COMPLETED_JOB_STATES:
                         cancel_reason = None
-                        self._download_completed_tasks(client, job_id, downloaded_tasks)
-                        self._download_static_files(client, job_id)
+                        new_tasks = self._try_download_completed_tasks(client, job_id, downloaded_tasks)
+                        if new_tasks is None:
+                            time.sleep(self.config.poll_interval)
+                            continue
+                        downloaded_tasks.update(new_tasks)
+                        if not self._try_download_static_files(client, job_id):
+                            time.sleep(self.config.poll_interval)
+                            continue
                         return
                     if state in _FAILED_JOB_STATES:
                         cancel_reason = None
-                        self._download_static_files(client, job_id)
+                        self._try_download_static_files(client, job_id)
                         raise RuntimeError(f'Toolathlon job failed: {status}')
+                    if exit_code is not None:
+                        cancel_reason = 'WebSocket relay exited'
+                        raise RuntimeError(f'Toolathlon WebSocket relay exited unexpectedly with code {exit_code}.')
 
                     time.sleep(self.config.poll_interval)
         except (Exception, KeyboardInterrupt, SystemExit):
@@ -233,30 +249,72 @@ class ToolathlonServiceClient:
                 self._cancel_job_safely(job_id, cancel_reason)
             raise
 
+    def _try_get_job_status(self, client: Any, job_id: str) -> Optional[Dict[str, Any]]:
+        try:
+            return self._get_job_status(client, job_id)
+        except _FatalToolathlonError:
+            raise
+        except Exception as exc:
+            logger.warning(f'Failed to poll Toolathlon job status; retrying: {exc}')
+            return None
+
+    def _try_download_completed_tasks(self, client: Any, job_id: str, downloaded_tasks: set[str]) -> Optional[set[str]]:
+        try:
+            return self._download_completed_tasks(client, job_id, downloaded_tasks)
+        except _FatalToolathlonError:
+            raise
+        except Exception as exc:
+            logger.warning(f'Failed to download completed Toolathlon tasks; retrying: {exc}')
+            return None
+
+    def _try_download_static_files(self, client: Any, job_id: str) -> bool:
+        try:
+            self._download_static_files(client, job_id)
+            return True
+        except _FatalToolathlonError:
+            raise
+        except Exception as exc:
+            logger.warning(f'Failed to download Toolathlon result files; retrying: {exc}')
+            return False
+
     def _get_job_status(self, client: Any, job_id: str) -> Dict[str, Any]:
         for endpoint in ('poll_job_status', 'status'):
             response = client.get(f'{self.config.server_url}/{endpoint}', params={'job_id': job_id})
             if response.status_code == 404:
                 continue
-            response.raise_for_status()
+            _raise_for_status(response, f'polling {endpoint}')
             status = response.json()
             if not isinstance(status, dict):
-                raise RuntimeError(f'Toolathlon job status must be an object, got {type(status).__name__}.')
+                raise _FatalToolathlonError(f'Toolathlon job status must be an object, got {type(status).__name__}.')
             return status
-        raise RuntimeError('Toolathlon service does not expose a supported job status endpoint.')
+        raise _FatalToolathlonError('Toolathlon service does not expose a supported job status endpoint.')
 
-    def _download_completed_tasks(self, client: Any, job_id: str, downloaded_tasks: set) -> set:
+    def _download_completed_tasks(self, client: Any, job_id: str, downloaded_tasks: set[str]) -> set[str]:
         response = client.get(f'{self.config.server_url}/get_completed_tasks', params={'job_id': job_id})
-        if response.status_code == 404:
-            return set()
-        response.raise_for_status()
-        data = response.json()
-        if not isinstance(data, dict):
-            raise RuntimeError(f'Toolathlon completed-task response must be an object, got {type(data).__name__}.')
-        task_names = data.get('completed_tasks') or data.get('tasks') or []
-        new_tasks = {name for name in task_names if name not in downloaded_tasks}
-        for task_name in new_tasks:
+        if response.status_code != 404:
+            _raise_for_status(response, 'checking completed Toolathlon tasks')
+            data = response.json()
+            if not isinstance(data, dict):
+                raise _FatalToolathlonError(
+                    f'Toolathlon completed-task response must be an object, got {type(data).__name__}.'
+                )
+            task_names = None
+            for key in ('task_names', 'completed_tasks', 'tasks'):
+                if key in data:
+                    task_names = data[key]
+                    break
+            if task_names is None:
+                task_names = []
+            if not isinstance(task_names, list) or not all(isinstance(name, str) for name in task_names):
+                raise _FatalToolathlonError('Toolathlon completed-task response task_names must be a list of strings.')
+            self._pending_task_names.update(task_names)
+
+        new_tasks: set[str] = set()
+        for task_name in sorted(self._pending_task_names - downloaded_tasks):
             self._download_task_archive(client, job_id, task_name)
+            downloaded_tasks.add(task_name)
+            self._pending_task_names.discard(task_name)
+            new_tasks.add(task_name)
         return new_tasks
 
     def _download_task_archive(self, client: Any, job_id: str, task_name: str) -> None:
@@ -265,24 +323,36 @@ class ToolathlonServiceClient:
             params={'job_id': job_id, 'task_name': task_name},
             timeout=120.0,
         )
-        response.raise_for_status()
+        _raise_for_status(response, f'downloading Toolathlon task archive {task_name}')
         expected_md5 = response.headers.get('X-Content-MD5')
         archive_bytes = response.content
         actual_md5 = md5(archive_bytes).hexdigest()
         if expected_md5 and expected_md5 != actual_md5:
-            raise RuntimeError(f'Toolathlon archive MD5 mismatch for {task_name}: {actual_md5} != {expected_md5}')
+            raise _TransientToolathlonError(
+                f'Toolathlon archive MD5 mismatch for {task_name}: {actual_md5} != {expected_md5}'
+            )
 
         finalpool_dir = self.output_dir / 'finalpool'
         finalpool_dir.mkdir(parents=True, exist_ok=True)
-        with tarfile.open(fileobj=_BytesIO(archive_bytes), mode='r:gz') as archive:
-            _extract_tar_safely(archive, finalpool_dir)
+        try:
+            with tarfile.open(fileobj=_BytesIO(archive_bytes), mode='r:gz') as archive:
+                _extract_tar_safely(archive, finalpool_dir)
+        except _FatalToolathlonError:
+            raise
+        except tarfile.TarError as exc:
+            raise _TransientToolathlonError(f'Failed to read Toolathlon task archive {task_name}: {exc}') from exc
 
     def _download_static_files(self, client: Any, job_id: str) -> None:
         response = client.get(f'{self.config.server_url}/get_static_files', params={'job_id': job_id}, timeout=60.0)
         if response.status_code == 404:
             return
-        response.raise_for_status()
-        for filename, content in response.json().items():
+        _raise_for_status(response, 'downloading Toolathlon result files')
+        files_data = response.json()
+        if not isinstance(files_data, dict):
+            raise _FatalToolathlonError(
+                f'Toolathlon static-file response must be an object, got {type(files_data).__name__}.'
+            )
+        for filename, content in files_data.items():
             if content is None:
                 continue
             target = _resolve_output_path(self.output_dir, filename)
@@ -335,7 +405,7 @@ class ToolathlonServiceClient:
 
 
 def _extract_accuracy(stats: Dict[str, Any], task_results: List[Dict[str, Any]]) -> float:
-    for key in ('acc', 'accuracy', 'pass_rate', 'success_rate', 'score'):
+    for key in ('acc', 'accuracy', 'pass_rate', 'success_rate', 'average_success_rate', 'score'):
         if key in stats:
             return _validate_accuracy_value(stats[key], f'eval_stats.{key}')
 
@@ -366,6 +436,16 @@ def _extract_accuracy(stats: Dict[str, Any], task_results: List[Dict[str, Any]])
 
 def _job_state(status: Dict[str, Any]) -> str:
     return str(status.get('status') or status.get('state') or '').lower()
+
+
+def _raise_for_status(response: Any, operation: str) -> None:
+    status_code = getattr(response, 'status_code', None)
+    if isinstance(status_code, int) and (status_code >= 500 or status_code in {404, 408, 409, 425, 429}):
+        raise _TransientToolathlonError(f'Toolathlon service returned HTTP {status_code} while {operation}.')
+    try:
+        response.raise_for_status()
+    except Exception as exc:
+        raise _FatalToolathlonError(f'Toolathlon service request failed while {operation}: {exc}') from exc
 
 
 def _first_present(values: Dict[str, Any], keys: tuple[str, ...]) -> tuple[Optional[str], Any]:
@@ -425,7 +505,7 @@ def _extract_tar_safely(archive: tarfile.TarFile, destination: Path) -> None:
     members = archive.getmembers()
     for member in members:
         if member.issym() or member.islnk() or not (member.isfile() or member.isdir()):
-            raise RuntimeError(f'Unsafe Toolathlon archive member type: {member.name}')
+            raise _FatalToolathlonError(f'Unsafe Toolathlon archive member type: {member.name}')
         _resolve_output_path(destination, member.name)
     archive.extractall(destination, members=members)
 
@@ -436,7 +516,7 @@ def _resolve_output_path(base_dir: Path, relative_path: str) -> Path:
     try:
         target.relative_to(base)
     except ValueError as exc:
-        raise RuntimeError(f'Unsafe Toolathlon output path: {relative_path}') from exc
+        raise _FatalToolathlonError(f'Unsafe Toolathlon output path: {relative_path}') from exc
     return target
 
 

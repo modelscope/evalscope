@@ -275,6 +275,7 @@ EXTRA_PARAMS = {
         subset_list=['default'],
         prompt_template='{question}',
         extra_params=EXTRA_PARAMS,
+        evaluation_version='v1.1',
     )
 )
 class ToolathlonAdapter(AgentAdapter):

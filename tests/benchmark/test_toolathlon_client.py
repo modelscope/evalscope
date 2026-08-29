@@ -50,6 +50,7 @@ class TestToolathlonClient(unittest.TestCase):
         self.assertEqual(_extract_accuracy({'passed': 3, 'total': 4}, []), 0.75)
         self.assertEqual(_extract_accuracy({'passed': 0, 'total': 4}, []), 0.0)
         self.assertEqual(_extract_accuracy({'pass_rate': 0.5}, []), 0.5)
+        self.assertEqual(_extract_accuracy({'average_success_rate': 0.25}, []), 0.25)
         self.assertEqual(_extract_accuracy({}, [{'pass': True}, {'pass': False}]), 0.5)
         self.assertEqual(_extract_accuracy({}, [{'pass': False}, {'pass': False}]), 0.0)
 
@@ -254,7 +255,7 @@ class TestToolathlonClient(unittest.TestCase):
             def get(self, url: str, params: Optional[dict] = None, timeout: Optional[float] = None) -> FakeResponse:
                 calls.append(('get', url, params))
                 if url.endswith('/get_completed_tasks'):
-                    return FakeResponse({'completed_tasks': ['find-alita-paper']})
+                    return FakeResponse({'task_names': ['find-alita-paper']})
                 if url.endswith('/get_task_archive'):
                     return FakeResponse(content=archive_bytes)
                 if url.endswith('/poll_job_status'):
@@ -303,6 +304,53 @@ class TestToolathlonClient(unittest.TestCase):
         self.assertIn('http://toolathlon.example:8080/get_task_archive', called_urls)
         self.assertIn('http://toolathlon.example:8080/poll_job_status', called_urls)
         self.assertIn('http://toolathlon.example:8080/get_static_files', called_urls)
+
+    def test_failed_archive_is_retried_when_service_drops_task_name(self) -> None:
+        archive_bytes = _make_task_archive()
+        completed_calls = 0
+        archive_calls = 0
+
+        class FakeResponse:
+
+            status_code = 200
+            headers: dict = {}
+            content = archive_bytes
+
+            def raise_for_status(self) -> None:
+                pass
+
+            def json(self) -> dict:
+                return {'task_names': ['find-alita-paper']}
+
+        class FakeHttpxClient:
+
+            def get(self, url: str, params: Optional[dict] = None, timeout: Optional[float] = None) -> FakeResponse:
+                nonlocal completed_calls, archive_calls
+                if url.endswith('/get_completed_tasks'):
+                    completed_calls += 1
+                    return FakeResponse() if completed_calls == 1 else _EmptyTaskResponse()
+                if url.endswith('/get_task_archive'):
+                    archive_calls += 1
+                    if archive_calls == 1:
+                        raise RuntimeError('temporary archive download failure')
+                    return FakeResponse()
+                raise AssertionError(f'Unexpected URL: {url}')
+
+        class _EmptyTaskResponse(FakeResponse):
+
+            def json(self) -> dict:
+                return {'task_names': []}
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            client = ToolathlonServiceClient(ToolathlonServiceConfig(output_dir=Path(tmp_dir) / 'toolathlon'))
+            downloaded_tasks = set()
+            with self.assertRaisesRegex(RuntimeError, 'temporary archive download failure'):
+                client._download_completed_tasks(FakeHttpxClient(), 'job-1', downloaded_tasks)
+
+            self.assertEqual(downloaded_tasks, set())
+            self.assertEqual(client._download_completed_tasks(FakeHttpxClient(), 'job-1', downloaded_tasks), {'find-alita-paper'})
+
+        self.assertEqual(archive_calls, 2)
 
     def test_rejects_unsafe_task_archive_path(self) -> None:
 
@@ -406,28 +454,18 @@ class TestToolathlonClient(unittest.TestCase):
         download_static.assert_called_once()
         cancel_job.assert_not_called()
 
-    def test_poll_cancels_job_when_status_poll_fails(self) -> None:
-        class FakeResponse:
-            status_code = 500
-
-            def raise_for_status(self) -> None:
-                raise RuntimeError('HTTP 500')
-
-        class FakeHttpxClient(_HttpxContext):
-
-            def get(self, url: str, params: Optional[dict] = None) -> FakeResponse:
-                return FakeResponse()
-
+    def test_poll_retries_when_status_poll_fails(self) -> None:
         client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0))
         with (
-            patch('httpx.Client', return_value=FakeHttpxClient()),
+            patch('httpx.Client', return_value=_HttpxContext()),
             patch.object(client, '_download_completed_tasks', return_value=set()),
+            patch.object(client, '_get_job_status', side_effect=[RuntimeError('HTTP 500'), {'status': 'completed'}]),
+            patch.object(client, '_download_static_files'),
             patch.object(client, '_cancel_job') as cancel_job,
         ):
-            with self.assertRaisesRegex(RuntimeError, 'HTTP 500'):
-                client._poll_until_finished('job-1', _RelayProcess(None))
+            client._poll_until_finished('job-1', _RelayProcess(None))
 
-        cancel_job.assert_called_once()
+        cancel_job.assert_not_called()
 
     def test_poll_cancels_job_when_status_body_is_not_a_dict(self) -> None:
         class FakeResponse:
@@ -456,7 +494,7 @@ class TestToolathlonClient(unittest.TestCase):
         cancel_job.assert_called_once()
 
     def test_poll_cancels_once_and_preserves_abort_exception(self) -> None:
-        for error in [RuntimeError('download failed'), KeyboardInterrupt('ctrl-c'), SystemExit(2)]:
+        for error in [KeyboardInterrupt('ctrl-c'), SystemExit(2)]:
             with self.subTest(error=type(error).__name__):
                 client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0))
                 with (
@@ -470,9 +508,28 @@ class TestToolathlonClient(unittest.TestCase):
                 self.assertIs(raised.exception, error)
                 cancel_job.assert_called_once()
 
+    def test_poll_retries_transient_download_failure_without_cancel(self) -> None:
+        client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0))
+        with (
+            patch('httpx.Client', return_value=_HttpxContext()),
+            patch.object(
+                client, '_download_completed_tasks', side_effect=[RuntimeError('download failed'), set(), set()]
+            ) as download_tasks,
+            patch.object(
+                client, '_get_job_status', side_effect=[{'status': 'running'}, {'status': 'completed'}]
+            ) as get_status,
+            patch.object(client, '_download_static_files'),
+            patch.object(client, '_cancel_job') as cancel_job,
+        ):
+            client._poll_until_finished('job-1', _RelayProcess(None))
+
+        self.assertEqual(download_tasks.call_count, 3)
+        self.assertEqual(get_status.call_count, 2)
+        cancel_job.assert_not_called()
+
     def test_cancel_failure_does_not_replace_poll_error(self) -> None:
         client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0))
-        poll_error = RuntimeError('poll failed')
+        poll_error = toolathlon_client._FatalToolathlonError('poll failed')
         with (
             patch('httpx.Client', return_value=_HttpxContext()),
             patch.object(client, '_download_completed_tasks', side_effect=poll_error),
@@ -490,13 +547,37 @@ class TestToolathlonClient(unittest.TestCase):
             patch('httpx.Client', return_value=_HttpxContext()),
             patch.object(client, '_download_completed_tasks', return_value=set()),
             patch.object(client, '_get_job_status', return_value={'status': 'completed'}),
-            patch.object(client, '_download_static_files', side_effect=RuntimeError('download failed')),
+            patch.object(client, '_download_static_files', side_effect=[RuntimeError('download failed'), None]),
             patch.object(client, '_cancel_job') as cancel_job,
         ):
-            with self.assertRaisesRegex(RuntimeError, 'download failed'):
-                client._poll_until_finished('job-1', _RelayProcess(None))
+            client._poll_until_finished('job-1', _RelayProcess(None))
 
         cancel_job.assert_not_called()
+
+    def test_poll_does_not_cancel_timed_out_job_after_clean_relay_exit(self) -> None:
+        client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0))
+        with (
+            patch('httpx.Client', return_value=_HttpxContext()),
+            patch.object(client, '_get_job_status', return_value={'status': 'timeout'}),
+            patch.object(client, '_download_static_files'),
+            patch.object(client, '_cancel_job') as cancel_job,
+        ):
+            with self.assertRaisesRegex(RuntimeError, 'Toolathlon job failed'):
+                client._poll_until_finished('job-1', _RelayProcess(0))
+
+        cancel_job.assert_not_called()
+
+    def test_poll_cancels_job_on_local_timeout(self) -> None:
+        client = ToolathlonServiceClient(ToolathlonServiceConfig(poll_interval=0, timeout_seconds=1))
+        with (
+            patch('httpx.Client', return_value=_HttpxContext()),
+            patch.object(toolathlon_client.time, 'monotonic', side_effect=[0.0, 2.0]),
+            patch.object(client, '_cancel_job') as cancel_job,
+        ):
+            with self.assertRaisesRegex(TimeoutError, 'exceeded 1 seconds'):
+                client._poll_until_finished('job-1', _RelayProcess(None))
+
+        cancel_job.assert_called_once_with('job-1', 'Timeout')
 
     def test_run_private_cancels_job_when_ws_client_start_fails(self) -> None:
         client = ToolathlonServiceClient(ToolathlonServiceConfig())
