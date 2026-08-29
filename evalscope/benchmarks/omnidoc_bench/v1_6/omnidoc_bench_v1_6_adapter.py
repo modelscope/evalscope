@@ -75,6 +75,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         metric_list=[*PAGE_METRICS, 'normalized_score'],
         primary_metric='normalized_score',
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template=PROMPT_TEMPLATE,
         review_timeout=REVIEW_TIMEOUT,
         sandbox_config=DEFAULT_SANDBOX_CONFIG,
@@ -194,14 +195,19 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
 
         overall_components = ('text_block_Edit_dist', 'display_formula_CDM', 'table_TEDS')
         if all(component in means for component in overall_components):
+            overall_sample_scores = [
+                sample_score
+                for sample_score in scored_sample_scores
+                if any(component in sample_score.score.value for component in overall_components)
+            ]
             overall = ((1.0 - means['text_block_Edit_dist']) + means['display_formula_CDM'] + means['table_TEDS']) / 3.0
             aggregated.append(
                 AggScore(
                     score=overall,
                     metric_name='normalized_score',
                     aggregation='official',
-                    num=len(scored_sample_scores),
-                    ids=[sample_score.sample_id for sample_score in scored_sample_scores],
+                    num=len(overall_sample_scores),
+                    ids=[sample_score.sample_id for sample_score in overall_sample_scores],
                     metadata={
                         'component_page_denominators': {
                             component: len(metric_values[component]) for component in overall_components
