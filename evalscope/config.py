@@ -86,6 +86,7 @@ REMOTE_API_EVAL_TYPES = frozenset(
         EvalType.OPENAI_RESPONSES_API,
         EvalType.ANTHROPIC_API,
         EvalType.LITELLM,
+        EvalType.ORCAROUTER_API,
     }
 )
 

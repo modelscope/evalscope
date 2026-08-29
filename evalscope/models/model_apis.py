@@ -43,6 +43,13 @@ def litellm_api() -> type[ModelAPI]:
     return LiteLLMAPI
 
 
+@register_model_api(name='orcarouter_api')
+def orcarouter_api() -> type[ModelAPI]:
+    from .orcarouter_compatible import OrcaRouterCompatibleAPI
+
+    return OrcaRouterCompatibleAPI
+
+
 @register_model_api(name='server')
 @deprecated(since='1.0.0', remove_in='2.0.0', alternative='openai_api')
 def server() -> type[ModelAPI]:

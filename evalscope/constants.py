@@ -82,6 +82,7 @@ class EvalType:
     OPENAI_RESPONSES_API = 'openai_responses_api'
     ANTHROPIC_API = 'anthropic_api'
     LITELLM = 'litellm'
+    ORCAROUTER_API = 'orcarouter_api'
 
 
 class OutputType:

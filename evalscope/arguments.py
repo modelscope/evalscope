@@ -67,6 +67,7 @@ def add_argument(parser: argparse.ArgumentParser):
                             EvalType.OPENAI_RESPONSES_API,
                             EvalType.ANTHROPIC_API,
                             EvalType.LITELLM,
+                            EvalType.ORCAROUTER_API,
                             EvalType.MOCK_LLM,
                             EvalType.TEXT2IMAGE,
                             EvalType.TEXT2SPEECH,
