@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 from collections import defaultdict
+from math import isfinite
 from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.metric import Aggregator, AggScore, SampleScore
@@ -104,37 +105,27 @@ carry one, so a benchmark can mix weighted and unweighted metrics in the same ``
 """
 
 
-def collect_metric_weights(score: SampleScore) -> Dict[str, float]:
-    """Read one sample's per-metric weights, tolerating scores that declare none or declare junk.
-
-    A malformed weight must not abort a finished evaluation, so anything non-numeric is dropped and
-    the metric falls back to its unweighted mean.
-    """
+def collect_metric_weights(score: SampleScore) -> Dict[str, int]:
+    """Read valid non-negative unit counts from one sample's metadata."""
     metadata = score.score.metadata or {}
     declared = metadata.get(METRIC_WEIGHTS_KEY) or {}
     if not isinstance(declared, dict):
         return {}
-    weights: Dict[str, float] = {}
+
+    weights: Dict[str, int] = {}
     for metric_name, weight in declared.items():
         if isinstance(weight, bool) or not isinstance(weight, (int, float)):
             continue
-        weights[metric_name] = float(weight)
+        numeric_weight = float(weight)
+        if not isfinite(numeric_weight) or numeric_weight < 0 or not numeric_weight.is_integer():
+            continue
+        weights[metric_name] = int(numeric_weight)
     return weights
 
 
 @register_aggregation(name='weighted_mean')
 class WeightedMean(Aggregator):
-    """Mean that honours per-sample weights declared in ``Score.metadata``.
-
-    A per-sample value is often itself a ratio over several units, so averaging the ratios gives
-    every sample the same say regardless of how many units it covered -- a macro-average. Weighting
-    each value by its unit count restores the micro-average the underlying benchmark defines
-    (IFEval's instruction-level accuracy pools every instruction, see
-    ``instruction_following_eval/evaluation_lib.py``).
-
-    Metrics without a declared weight fall back to an unweighted mean, so prompt-level and
-    instruction-level metrics coexist under one aggregator.
-    """
+    """Mean using per-sample unit counts declared in ``Score.metadata``."""
 
     name = 'weighted_mean'
 
@@ -143,42 +134,40 @@ class WeightedMean(Aggregator):
             return []
 
         metric_values: Dict[str, List[float]] = defaultdict(list)
-        metric_weights: Dict[str, List[float]] = defaultdict(list)
+        metric_weights: Dict[str, List[Optional[int]]] = defaultdict(list)
         metric_sample_ids: Dict[str, List[Any]] = defaultdict(list)
-        metric_declared: Dict[str, bool] = defaultdict(bool)
 
         for score in scores:
             weights = collect_metric_weights(score)
             for metric_name, value in score.score.value.items():
                 metric_values[metric_name].append(value)
-                # A neutral 1.0 keeps a sample that declared no weight from vanishing out of a
-                # weighted metric's denominator.
-                metric_weights[metric_name].append(weights.get(metric_name, 1.0))
-                metric_declared[metric_name] |= metric_name in weights
+                metric_weights[metric_name].append(weights.get(metric_name))
                 metric_sample_ids[metric_name].append(score.sample_id)
 
         aggregated_scores = []
         for metric_name, values in metric_values.items():
             weights = metric_weights[metric_name]
-            total_weight = sum(weights)
-            # A fully zero-weight metric carries no units to average over; fall back rather than
-            # divide by zero and report a spurious 0.0.
-            if total_weight > 0:
-                aggregated = sum(value * weight for value, weight in zip(values, weights)) / total_weight
+            weighted = all(weight is not None for weight in weights) and any(weight is not None for weight in weights)
+            if weighted:
+                declared_weights = [weight for weight in weights if weight is not None]
+                total_weight = sum(declared_weights)
+                if total_weight == 0:
+                    continue
+                aggregated = sum(value * weight for value, weight in zip(values, declared_weights)) / total_weight
+                aggregation = self.name
+                num = total_weight
             else:
                 aggregated = mean(values)
-            # Declared-ness, not the numeric value, decides what ``num`` means: a dataset whose
-            # prompts all carry exactly one instruction yields all-1.0 weights yet is still a
-            # weighted metric whose unit total happens to equal the sample count.
-            weighted = metric_declared[metric_name] and total_weight > 0
+                aggregation = 'mean'
+                num = len(values)
+                total_weight = float(num)
+
             aggregated_scores.append(
                 AggScore(
                     score=aggregated,
                     metric_name=metric_name,
-                    aggregation=self.name,
-                    # ``num`` is the weight total for a weighted metric, so the report layer's
-                    # ``micro_mean`` rollup across subsets stays a true micro-average.
-                    num=int(total_weight) if weighted else len(values),
+                    aggregation=aggregation,
+                    num=num,
                     ids=metric_sample_ids[metric_name],
                     metadata={'weighted': weighted, 'samples': len(values), 'total_weight': total_weight},
                 )

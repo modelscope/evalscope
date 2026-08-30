@@ -42,6 +42,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
 
 - Default configuration uses **0-shot** evaluation
 - Metrics: prompt_level_strict, inst_level_strict, prompt_level_loose, inst_level_loose
+- `inst_level_*` pools every instruction in the dataset, matching the official micro-average
 - Requires emoji, syllapy packages
 - Evaluates both strict and loose constraint satisfaction
 """,  # noqa: E501
@@ -56,6 +57,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
         ],
         primary_metric='prompt_level_strict',
         aggregation='weighted_mean',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -95,8 +97,6 @@ class IFBenchAdapter(DefaultDataAdapter):
             results = process_results(doc, [filtered_prediction])
             score.value.update(results)
 
-            # Weight the instruction-level ratios by this prompt's instruction count so the
-            # aggregate pools instructions rather than averaging prompts.
             instruction_count = len(doc.get('instruction_id_list') or [])
             score.metadata[METRIC_WEIGHTS_KEY] = {
                 'inst_level_strict': instruction_count,

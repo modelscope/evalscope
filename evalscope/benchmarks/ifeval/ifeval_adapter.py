@@ -62,6 +62,7 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
         ],
         primary_metric='prompt_level_strict',
         aggregation='weighted_mean',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -110,9 +111,6 @@ class IFEvalAdapter(DefaultDataAdapter):
             results = process_results(doc, [filtered_prediction])
             score.value.update(results)
 
-            # ``inst_level_*`` is a per-sample ratio over this prompt's instructions. Declaring the
-            # instruction count lets the weighted_mean aggregator pool every instruction, matching
-            # the official micro-average instead of averaging prompts.
             instruction_count = len(doc.get('instruction_id_list') or [])
             score.metadata[METRIC_WEIGHTS_KEY] = {
                 'inst_level_strict': instruction_count,

@@ -1,12 +1,14 @@
 """Instruction-level metrics are per-sample ratios, so averaging the ratios makes a prompt with one
 instruction count as much as a prompt with three. ``WeightedMean`` restores the official
 micro-average by pooling the underlying units."""
+from types import SimpleNamespace
 from typing import Dict, List, Optional
 
 import pytest
 
-from evalscope.api.metric import SampleScore, Score
+from evalscope.api.metric import MetricIdentity, MetricSelector, SampleScore, Score
 from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY, WeightedMean
+from evalscope.report.generator import ReportGenerator
 
 
 def make_sample_score(
@@ -65,6 +67,7 @@ def test_unweighted_metric_keeps_plain_mean_and_sample_count():
     assert agg.score == pytest.approx(0.5)
     assert agg.num == 2
     assert agg.metadata['weighted'] is False
+    assert agg.aggregation == 'mean'
 
 
 def test_weighted_and_unweighted_metrics_coexist_in_one_score():
@@ -114,30 +117,43 @@ def test_only_counts_present_values():
     assert agg_scores[0].num == 2
 
 
-def test_zero_weight_metric_falls_back_instead_of_dividing_by_zero():
-    """A prompt with an empty instruction list carries no units to pool."""
+def test_zero_weight_metric_is_excluded():
     scores = [
         make_sample_score({'inst_level_strict': 0.0}, {'inst_level_strict': 0}, sample_id='s0'),
         make_sample_score({'inst_level_strict': 1.0}, {'inst_level_strict': 0}, sample_id='s1'),
     ]
 
-    agg = find(WeightedMean()(scores), 'inst_level_strict')
-
-    assert agg.score == pytest.approx(0.5)
+    assert find(WeightedMean()(scores), 'inst_level_strict') is None
 
 
-def test_malformed_weight_metadata_is_ignored():
+def test_malformed_weight_metadata_falls_back_to_plain_mean():
     scores = [
+        make_sample_score({'inst_level_strict': 1.0}, {'inst_level_strict': 3}, sample_id='s0'),
         SampleScore(
-            score=Score(value={'inst_level_strict': 1.0}, metadata={METRIC_WEIGHTS_KEY: 'not-a-dict'}),
-            sample_id='s0',
+            score=Score(value={'inst_level_strict': 0.0}, metadata={METRIC_WEIGHTS_KEY: 'not-a-dict'}),
+            sample_id='s1',
         ),
-        make_sample_score({'inst_level_strict': 0.0}, sample_id='s1'),
     ]
 
     agg = find(WeightedMean()(scores), 'inst_level_strict')
 
     assert agg.score == pytest.approx(0.5)
+    assert agg.num == 2
+    assert agg.aggregation == 'mean'
+
+
+@pytest.mark.parametrize('weight', [-1, float('nan'), float('inf'), 0.5])
+def test_invalid_weight_falls_back_to_plain_mean(weight: float):
+    scores = [
+        make_sample_score({'inst_level_strict': 1.0}, {'inst_level_strict': 2}, sample_id='s0'),
+        make_sample_score({'inst_level_strict': 0.0}, {'inst_level_strict': weight}, sample_id='s1'),
+    ]
+
+    agg = find(WeightedMean()(scores), 'inst_level_strict')
+
+    assert agg.score == pytest.approx(0.5)
+    assert agg.num == 2
+    assert agg.aggregation == 'mean'
 
 
 def test_all_single_unit_weights_still_count_as_weighted():
@@ -167,6 +183,46 @@ def test_prompt_with_no_instructions_is_excluded_rather_than_scored_zero():
 
     assert agg.score == pytest.approx(1.0)
     assert agg.num == 2
+
+
+def test_report_preserves_mean_and_weighted_identities():
+    subset_scores = {
+        'a': WeightedMean()(
+            [
+                make_sample_score(
+                    {'prompt_level_strict': 1.0, 'inst_level_strict': 1.0},
+                    {'inst_level_strict': 1},
+                    sample_id='a',
+                )
+            ]
+        ),
+        'b': WeightedMean()(
+            [
+                make_sample_score(
+                    {'prompt_level_strict': 0.0, 'inst_level_strict': 1 / 3},
+                    {'inst_level_strict': 3},
+                    sample_id='b',
+                )
+            ]
+        ),
+    }
+    adapter = SimpleNamespace(
+        name='ifeval',
+        pretty_name='IFEval',
+        description='',
+        category_map={},
+        primary_metric=MetricSelector(name='prompt_level_strict'),
+    )
+
+    report = ReportGenerator.generate_report(subset_scores, 'model', adapter)
+    metrics = {metric.identity.name: metric for metric in report.metrics}
+
+    assert report.primary_metric_identity == MetricIdentity(name='prompt_level_strict', aggregation='mean')
+    assert metrics['prompt_level_strict'].score == pytest.approx(0.5)
+    assert metrics['prompt_level_strict'].num == 2
+    assert metrics['inst_level_strict'].identity.aggregation == 'weighted_mean'
+    assert metrics['inst_level_strict'].score == pytest.approx(0.5)
+    assert metrics['inst_level_strict'].num == 4
 
 
 def test_empty_scores_return_no_aggregates():

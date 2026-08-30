@@ -60,7 +60,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
 - Configurable max_turns (1-3, default: 3)
 - Four metrics tracked:
   - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy
-  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy
+  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy, micro-averaged over instructions
 - Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)
 """,  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.MULTI_LINGUAL, Tags.MULTI_TURN],
@@ -74,6 +74,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
         ],
         primary_metric='prompt_level_strict',
         aggregation='weighted_mean',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -186,9 +187,6 @@ class MultiIFAdapter(MultiTurnAdapter):
                         f'turn_{step}_inst_level_loose': inst_level_loose,
                     }
                 )
-                # ``parse_result`` on a single turn collapses to that turn's own ratio, so each turn
-                # needs its instruction count to be pooled rather than macro-averaged. Strict and
-                # loose walk the same instruction list, so one count covers both.
                 instruction_count = len(outputs_strict['instruction_id_list'])
                 weights[f'turn_{step}_inst_level_strict'] = instruction_count
                 weights[f'turn_{step}_inst_level_loose'] = instruction_count
