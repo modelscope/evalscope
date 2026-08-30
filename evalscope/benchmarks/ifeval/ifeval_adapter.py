@@ -7,6 +7,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -45,6 +46,8 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
   - `prompt_level_loose`: Some tolerance for minor deviations
   - `inst_level_strict`: Per-instruction accuracy (strict)
   - `inst_level_loose`: Per-instruction accuracy (loose)
+- `inst_level_*` is a micro-average over every instruction in the dataset, matching the official
+  implementation: a prompt carrying 3 instructions weighs 3x one carrying a single instruction
 - `prompt_level_strict` is the primary metric
 - Automatic verification of instruction compliance
 """,
@@ -58,6 +61,8 @@ IFEval (Instruction-Following Eval) is a benchmark for evaluating how well langu
             'inst_level_loose',
         ],
         primary_metric='prompt_level_strict',
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -105,6 +110,12 @@ class IFEvalAdapter(DefaultDataAdapter):
             # Process results using the existing ifeval utility
             results = process_results(doc, [filtered_prediction])
             score.value.update(results)
+
+            instruction_count = len(doc.get('instruction_id_list') or [])
+            score.metadata[METRIC_WEIGHTS_KEY] = {
+                'inst_level_strict': instruction_count,
+                'inst_level_loose': instruction_count,
+            }
 
             # Set main score name
             score.main_score_name = 'prompt_level_strict'

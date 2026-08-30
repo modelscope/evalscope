@@ -3,20 +3,20 @@
 
 ## 概述
 
-IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明确、可验证指令能力的基准测试。它包含一系列带有特定格式、内容或结构要求的提示（prompts），这些要求可以被客观地验证。
+IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明确、可验证指令能力的基准测试。该基准包含具有特定格式、内容或结构要求的提示，这些要求均可客观验证。
 
 ## 任务描述
 
 - **任务类型**：指令遵循评估
 - **输入**：包含明确、可验证约束条件的提示
-- **输出**：完全遵循所有指定指令的响应
+- **输出**：严格遵循所有指定指令的响应
 - **约束类型**：格式、长度、关键词、结构等
 
 ## 主要特点
 
-- 包含约500个提示，涵盖25种可验证的指令类型
-- 指令可被客观检查（非主观判断）
-- 示例：“写恰好3段文字”、“包含单词X”、“使用项目符号列表”
+- 包含约 500 个提示，涵盖 25 种可验证指令类型
+- 所有指令均可客观检查（非主观判断）
+- 示例包括：“写恰好 3 个段落”、“包含单词 X”、“使用项目符号列表”
 - 测试模型对指令的理解与遵守能力
 - 评估标准无歧义
 
@@ -24,11 +24,12 @@ IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明
 
 - 默认配置采用 **0-shot** 评估方式
 - 提供四种评估指标：
-  - `prompt_level_strict`：提示中的所有指令都必须被严格遵循
-  - `prompt_level_loose`：允许对轻微偏差有一定容忍度
+  - `prompt_level_strict`：必须严格遵循提示中的所有指令
+  - `prompt_level_loose`：允许轻微偏差
   - `inst_level_strict`：按每条指令计算准确率（严格）
   - `inst_level_loose`：按每条指令计算准确率（宽松）
-- 主要指标为 `prompt_level_strict`
+- `inst_level_*` 指标对数据集中每条指令进行微观平均，与官方实现一致：包含 3 条指令的提示权重是仅含 1 条指令提示的 3 倍
+- 主要评估指标为 `prompt_level_strict`
 - 支持自动验证指令遵循情况
 
 ## 属性
@@ -40,8 +41,9 @@ IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明
 | **论文** | N/A |
 | **标签** | `InstructionFollowing` |
 | **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |
-| **默认示例数（Shots）** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `train` |
+| **聚合方式** | `weighted_mean` |
 
 
 ## 数据统计
@@ -54,7 +56,7 @@ IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明
 
 ## 样例示例
 
-**子集**：`default`
+**子集**: `default`
 
 ```json
 {
@@ -165,7 +167,7 @@ IFEval（Instruction-Following Eval）是一个用于评估语言模型遵循明
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
