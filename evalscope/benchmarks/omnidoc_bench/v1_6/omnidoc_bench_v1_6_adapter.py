@@ -12,7 +12,7 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import ScoreStatus, Tags
 
 from ..legacy.omnidoc_bench_adapter import PROMPT_TEMPLATE
 from .sandbox_scorer import PAGE_METRICS, build_scoring_program, parse_scoring_result
@@ -75,6 +75,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         metric_list=[*PAGE_METRICS, 'normalized_score'],
         primary_metric='normalized_score',
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template=PROMPT_TEMPLATE,
         review_timeout=REVIEW_TIMEOUT,
         sandbox_config=DEFAULT_SANDBOX_CONFIG,
@@ -148,18 +149,28 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
         program = build_scoring_program(annotation, image_name, original_prediction)
         result = self.execute_code_in_sandbox(program, timeout=int(self.review_timeout), language='python')
         metrics = parse_scoring_result(result)
-        return Score(
+        score = Score(
             value=metrics,
             prediction=original_prediction,
             extracted_prediction=filtered_prediction,
-            main_score_name=next(name for name in PAGE_METRICS if name in metrics),
         )
+        if not metrics:
+            score.status = ScoreStatus.EXCLUDED
+            score.metadata = {'scoring_excluded_reason': 'no_page_metrics'}
+            return score
+        score.main_score_name = next(name for name in PAGE_METRICS if name in metrics)
+        return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """Average official page metrics and compute Overall from the aggregated components."""
         metric_values = defaultdict(list)
         metric_ids = defaultdict(list)
-        for sample_score in sample_scores:
+        scored_sample_scores = [
+            sample_score
+            for sample_score in sample_scores
+            if sample_score.score.status.is_usable and sample_score.score.value
+        ]
+        for sample_score in scored_sample_scores:
             for metric_name, value in sample_score.score.value.items():
                 metric_values[metric_name].append(float(value))
                 metric_ids[metric_name].append(sample_score.sample_id)
@@ -184,14 +195,19 @@ class OmniDocBenchV16Adapter(CodeExecutionSandboxMixin, VisionLanguageAdapter):
 
         overall_components = ('text_block_Edit_dist', 'display_formula_CDM', 'table_TEDS')
         if all(component in means for component in overall_components):
+            overall_sample_scores = [
+                sample_score
+                for sample_score in scored_sample_scores
+                if any(component in sample_score.score.value for component in overall_components)
+            ]
             overall = ((1.0 - means['text_block_Edit_dist']) + means['display_formula_CDM'] + means['table_TEDS']) / 3.0
             aggregated.append(
                 AggScore(
                     score=overall,
                     metric_name='normalized_score',
                     aggregation='official',
-                    num=len(sample_scores),
-                    ids=[sample_score.sample_id for sample_score in sample_scores],
+                    num=len(overall_sample_scores),
+                    ids=[sample_score.sample_id for sample_score in overall_sample_scores],
                     metadata={
                         'component_page_denominators': {
                             component: len(metric_values[component]) for component in overall_components

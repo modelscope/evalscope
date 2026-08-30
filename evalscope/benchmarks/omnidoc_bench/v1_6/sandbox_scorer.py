@@ -136,8 +136,8 @@ def parse_scoring_result(result: Dict[str, Any]) -> Dict[str, float]:
         values = json.loads(payload)
     except json.JSONDecodeError as error:
         raise RuntimeError('Official OmniDocBench v1.6 scoring returned invalid JSON.') from error
-    if not isinstance(values, dict) or not values:
-        raise RuntimeError('Official OmniDocBench v1.6 scoring returned no page metrics.')
+    if not isinstance(values, dict):
+        raise RuntimeError('Official OmniDocBench v1.6 scoring returned a non-object metric result.')
 
     unexpected = sorted(set(values) - set(PAGE_METRICS))
     if unexpected:
