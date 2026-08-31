@@ -1,4 +1,7 @@
+import math
 from typing import List
+
+import pytest
 
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.dataset.dataset import DatasetDict
@@ -39,3 +42,29 @@ def test_from_dataset_no_limit_keeps_all_samples() -> None:
 
     assert len(dataset_dict['small']) == 4
     assert len(dataset_dict['large']) == 10
+
+
+@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf])
+def test_from_dataset_rejects_invalid_limits(limit: float | int) -> None:
+    dataset = _build_dataset({'small': 4})
+
+    with pytest.raises(ValueError, match='Limit must'):
+        DatasetDict.from_dataset(dataset, subset_list=['small'], limit=limit)
+
+
+@pytest.mark.parametrize(
+    'limit, expected',
+    [
+        (None, 4),
+        (0, 0),
+        (0.5, 2),
+        (1.0, 4),
+        (2, 2),
+    ],
+)
+def test_from_dataset_preserves_valid_limit_semantics(limit: float | int | None, expected: int) -> None:
+    dataset = _build_dataset({'small': 4})
+
+    dataset_dict = DatasetDict.from_dataset(dataset, subset_list=['small'], limit=limit)
+
+    assert len(dataset_dict['small']) == expected
