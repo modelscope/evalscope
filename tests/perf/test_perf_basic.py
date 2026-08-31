@@ -375,6 +375,7 @@ class TestPerfBasic(PerfTestBase):
             stream=True,
         )
         results = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(results)
 
     def test_warmup_multi_turn_absolute(self):
         """Multi-turn warmup with absolute count (warmup_num=2).

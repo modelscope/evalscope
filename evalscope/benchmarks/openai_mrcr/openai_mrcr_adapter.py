@@ -271,12 +271,12 @@ class OpenAIMRCRAdapter(DefaultDataAdapter):
         for i, vals in bin_scores.items():
             if not vals:
                 continue
-            l, r = OPENAI_MRCR_BINS[i]
+            min_tokens, max_tokens = OPENAI_MRCR_BINS[i]
             agg.append(
                 AggScore(
                     metric_name='mrcr_score',
                     aggregation='mean',
-                    dimensions={'min_tokens': l, 'max_tokens': r},
+                    dimensions={'min_tokens': min_tokens, 'max_tokens': max_tokens},
                     score=sum(vals) / len(vals),
                     num=len(vals),
                 )

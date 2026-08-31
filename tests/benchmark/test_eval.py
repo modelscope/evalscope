@@ -271,22 +271,6 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('chinese_simpleqa', dataset_args)
 
-    # Code datasets
-    def test_live_code_bench(self):
-        """Test LiveCodeBench dataset."""
-        dataset_args = {
-            'extra_params': {
-                'start_date': '2024-08-01',
-                'end_date': '2025-02-28'
-            },
-            'local_path': '/root/.cache/modelscope/hub/datasets/evalscope/livecodebench_code_generation_lite_parquet'
-        }
-        self._run_dataset_test('live_code_bench', dataset_args)
-
-    def test_humaneval(self):
-        """Test HumanEval dataset."""
-        self._run_dataset_test('humaneval')
-
     # Custom & specialized datasets
     def test_general_qa(self):
         """Test custom general QA dataset."""
@@ -358,10 +342,6 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('needle_haystack', dataset_args)
 
-    def test_ifeval(self):
-        """Test IFEval dataset."""
-        self._run_dataset_test('ifeval')
-
     def test_ifeval_load(self):
         """Test IFEval dataset loading."""
         self._run_dataset_load_test('ifeval')
@@ -385,10 +365,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_humaneval(self):
         """Test HumanEval dataset."""
-        dataset_args = {
-            # 'metric_list': ['Pass@1']
-        }
-        self._run_dataset_test('humaneval', dataset_args, limit=10, repeats=3)
+        self._run_dataset_test('humaneval', {}, limit=10, repeats=3)
 
     def test_live_code_bench(self):
         """Test LiveCodeBench dataset."""

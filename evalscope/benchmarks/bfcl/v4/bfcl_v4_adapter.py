@@ -297,7 +297,7 @@ class BFCLV4Adapter(AgentAdapter):
                 )
                 idx += 1
 
-        total_lat = float(sum(l or 0.0 for l in lat_list))
+        total_lat = float(sum(latency or 0.0 for latency in lat_list))
         output.message.perf_metrics = PerformanceMetrics(
             latency=total_lat,
             ttft=None,

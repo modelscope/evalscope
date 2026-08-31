@@ -40,7 +40,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
             max_prompt_length=256,
             tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
     def test_embedding_from_dataset(self):
         """Embedding from a custom queries dataset.
@@ -62,7 +62,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
             tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
             dataset_path='custom_eval/text/retrieval/queries.jsonl',
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
     def test_embedding_random_batch(self):
         """Random batch embedding sweep.
@@ -87,7 +87,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
             tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
             extra_args={'batch_size': 8},
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
     def test_embedding_batch_from_dataset(self):
         """Batch embedding from a custom queries dataset.
@@ -110,7 +110,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
             tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
             dataset_path='custom_eval/text/retrieval/queries.jsonl',
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
     # ------------------------------------------------------------------
     # Rerank tests
@@ -141,7 +141,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
                 'document_length_ratio': 3,
             },
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
     def test_rerank_from_dataset(self):
         """Rerank from a custom example dataset.
@@ -163,7 +163,7 @@ class TestPerfEmbeddingRerank(PerfTestBase):
             tokenizer_path='Qwen/Qwen3-Embedding-0.6B',
             dataset_path='custom_eval/text/rerank/example.jsonl',
         )
-        result = run_perf_benchmark(task_cfg)
+        self.assertIsNotNone(run_perf_benchmark(task_cfg))
 
 
 if __name__ == '__main__':

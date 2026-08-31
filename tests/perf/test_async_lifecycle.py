@@ -240,7 +240,7 @@ class TestSignalHandlerGracefulShutdown:
                 in_flight_cleanup.append('ran')
 
         async def benchmark_coroutine() -> None:
-            task = asyncio.create_task(in_flight_request())
+            _task = asyncio.create_task(in_flight_request())
             await asyncio.sleep(0)  # let the in-flight request start
             loop.call_soon(signal_handler, 'SIGTERM', loop)
             await asyncio.sleep(30)

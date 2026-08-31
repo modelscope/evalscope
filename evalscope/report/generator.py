@@ -8,7 +8,7 @@ from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.identity import canonicalize_producer_identity
 from evalscope.metrics.semantics.resolver import select_primary_identity
-from evalscope.report.report import *
+from evalscope.report.report import Category, Metric, Report, Subset
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter

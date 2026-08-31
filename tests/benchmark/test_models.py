@@ -99,8 +99,3 @@ class TestModels(TestBenchmark):
             }
         }
         self._run_dataset_test('bfcl_v4', dataset_args=dataset_args)
-
-    def test_chartqa(self):
-        """Test ChartQA math reasoning dataset."""
-
-        self._run_dataset_test('chartqa')
