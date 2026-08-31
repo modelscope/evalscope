@@ -3,18 +3,33 @@
 
 ## 概述
 
-Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准测试，覆盖多种基于 MCP 的软件环境。本 EvalScope 基准测试是对官方 Toolathlon 远程评估服务的封装，并非对 MCP 环境或官方评估器的本地重新实现。
+Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准测试，覆盖多种基于 MCP 的软件环境。本 EvalScope 基准测试是对官方 Toolathlon 远程评估服务的封装，而非对 MCP 环境或官方评估器的本地重新实现。
 
-## 评估模式
+## 任务描述
 
-- 基准测试 ID：`toolathlon`
-- 支持模式：官方服务私有模式（official service private mode）
-- EvalScope 负责控制模型端点、任务选择、作业参数、轮询、结果下载和报告生成
-- 官方 Toolathlon 服务负责控制 MCP 环境、任务容器、智能体循环执行和评分
-- 使用官方公共评估服务时，无需安装 Toolathlon、MCP 应用账户或 Toolathlon Python 包
-- 私有模式下需要一个本地或内网的 OpenAI 兼容端点
-- EvalScope 将一个远程 Toolathlon 作业视为一个本地样本；生成的数据统计计数的是封装作业数量，而 `task_list` 和 `limit` 控制该作业内部提交的 Toolathlon 任务
-- 所附带的 Toolathlon-Verified 任务列表源自官方仓库提交记录 `b7bbac3f9a1f381b095c878debe1a47dd164ad85`
+- **任务类型**：长周期智能体工具使用，支持多轮函数调用
+- **输入**：从 Toolathlon-Verified 任务集中选取的真实软件任务
+- **输出**：由官方 Toolathlon 智能体循环执行的模型响应和工具调用
+- **领域**：基于 MCP 的生产力、开发、数据及 Web 软件环境
+
+## 核心特性
+
+- 使用官方 Toolathlon 服务进行 MCP 环境、任务容器、智能体执行和评分
+- 支持官方服务的私有模式（private mode），可搭配本地或内网的 OpenAI 兼容模型端点
+- 将一次远程 Toolathlon 作业视为一个 EvalScope 样本，通过 `task_list` 和 `limit` 参数选择作业中的具体任务
+- 对临时性的轮询和结果下载失败自动重试，而不取消远程评估
+- 对失败的归档下载保持挂起状态以供后续重试，并验证已下载的输出路径
+- 模型 API 密钥保留在 EvalScope 侧，并通过环境变量传递给本地 WebSocket 中继
+- 包含从官方仓库提交 `b7bbac3f9a1f381b095c878debe1a47dd164ad85` 中提取的 Toolathlon-Verified 任务列表
+
+## 评估说明
+
+- 主要指标为官方 Toolathlon 评分器报告的准确率（accuracy）
+- 聚合分数从官方统计中读取，包括 `average_success_rate`，并为兼容的服务输出提供计数和按任务回退机制
+- 缺失、非有限值或超出范围的分数将导致验证失败，而非静默报告为零
+- EvalScope 评估语义版本为 `v1.1`；本封装遵循 Toolathlon 服务协议 `1.3`
+- 运行时依赖 `httpx`、`websockets`，且 EvalScope 进程需能访问 OpenAI 兼容端点
+- 共享公共服务存在队列和基于 IP 的使用限制；如需持续评估，请使用专用或自托管服务
 
 ## 使用指南
 
@@ -57,7 +72,7 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 {
   "input": [
     {
-      "id": "22a512d8",
+      "id": "ba8702fc",
       "content": "Run Toolathlon official remote evaluation service."
     }
   ],
@@ -82,6 +97,8 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 }
 ```
 
+*注：部分内容因显示需要已被截断。*
+
 ## 提示模板
 
 **提示模板:**
@@ -99,12 +116,12 @@ Toolathlon 是一个面向现实场景、长周期工具使用的智能体基准
 | `ws_proxy_port` | `int` | `8081` | 私有模式下官方 Toolathlon WebSocket 代理端口。 |
 | `workers` | `int` | `10` | 向官方服务请求的并行 Toolathlon 工作进程数量。 |
 | `provider` | `str` | `unified` | Toolathlon 模型提供者类型。选项：['unified', 'openai_stateful_responses'] |
-| `task_list` | `list` | `[]` | 可选的待评估 Toolathlon 任务名称列表。留空则使用内置的 Toolathlon-Verified 列表。 |
+| `task_list` | `list` | `[]` | 可选的 Toolathlon 任务名称列表。留空则使用内置的 Toolathlon-Verified 列表。 |
 | `task_list_file` | `str` | `` | 可选文件路径，每行包含一个 Toolathlon 任务名称。 |
-| `model_params` | `dict` | `{}` | 额外模型参数，将转发给 Toolathlon，并在 TaskConfig.generation_config 之后合并。 |
+| `model_params` | `dict` | `{}` | 额外模型参数，将转发给 Toolathlon，在 TaskConfig.generation_config 之后合并。 |
 | `job_id` | `str` | `` | 可选的 Toolathlon 作业 ID。可用于恢复未完成的官方服务作业。 |
-| `force_redownload` | `bool` | `False` | 强制重新下载 Toolathlon 结果压缩包。 |
-| `override_output_dir` | `bool` | `False` | 当 Toolathlon 输出目录已存在文件时，是否清空目录。 |
+| `force_redownload` | `bool` | `False` | 强制重新下载 Toolathlon 结果归档。 |
+| `override_output_dir` | `bool` | `False` | 当 Toolathlon 输出目录已存在文件时，清空该目录。 |
 | `skip_container_restart` | `bool` | `False` | 跳过 Toolathlon 容器重启。仅用于小型调试任务子集。 |
 | `trust_env_in_httpx` | `bool` | `False` | 允许 httpx 使用代理环境变量。 |
 | `timeout_seconds` | `int` | `14400` | 等待 Toolathlon 官方服务作业的最大时间（秒）。 |
