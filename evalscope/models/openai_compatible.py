@@ -52,6 +52,32 @@ NON_RETRYABLE_OPENAI_ERRORS: Tuple[Type[Exception], ...] = (
 )
 
 
+class EmptyCompletionError(ValueError):
+    """A 200 response whose body carried no choices."""
+
+
+class _NonRetryableEmptyCompletionError(EmptyCompletionError):
+    pass
+
+
+_NON_RETRYABLE_COMPLETION_ERRORS = (*NON_RETRYABLE_OPENAI_ERRORS, _NonRetryableEmptyCompletionError)
+_NON_RETRYABLE_GATEWAY_CODES = {'400', '401', '402', '403', '404', '422'}
+
+
+def raise_if_error_payload(completion: ChatCompletion) -> None:
+    """Reject an error payload that the SDK deserialized as a completion."""
+    if completion.choices is not None:
+        return
+    error = (completion.model_extra or {}).get('error')
+    detail = f': {error}' if error else ' (no error detail in body)'
+    error_type = (
+        _NonRetryableEmptyCompletionError
+        if isinstance(error, dict) and str(error.get('code')) in _NON_RETRYABLE_GATEWAY_CODES
+        else EmptyCompletionError
+    )
+    raise error_type(f'Gateway returned a response with no choices{detail}')
+
+
 class OpenAICompatibleAPI(ModelAPI):
     def __init__(
         self,
@@ -150,6 +176,7 @@ class OpenAICompatibleAPI(ModelAPI):
             def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
                 raw_completion = self.client.chat.completions.create(**request)
                 if isinstance(raw_completion, ChatCompletion):
+                    raise_if_error_payload(raw_completion)
                     return raw_completion, None
                 return collect_stream_response(raw_completion, request_start=t_start)
 
@@ -157,7 +184,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
+                no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
@@ -233,6 +260,7 @@ class OpenAICompatibleAPI(ModelAPI):
             async def _create_and_collect() -> Tuple[ChatCompletion, Optional[float]]:
                 raw_completion = await self.async_client.chat.completions.create(**request)
                 if isinstance(raw_completion, ChatCompletion):
+                    raise_if_error_payload(raw_completion)
                     return raw_completion, None
                 return await async_collect_stream_response(raw_completion, request_start=t_start)
 
@@ -240,7 +268,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
+                no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
