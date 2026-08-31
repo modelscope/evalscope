@@ -94,8 +94,11 @@ class RunLoader:
         requests = RunLoader._load_db(run_dir) if with_requests else []
 
         summary = BenchmarkSummary.from_dict(summary_dict)
-        percentiles = PercentileResult.from_list(percentile_rows) if isinstance(percentile_rows, list) \
+        percentiles = (
+            PercentileResult.from_list(percentile_rows)
+            if isinstance(percentile_rows, list)
             else PercentileResult.from_transposed(percentile_rows)
+        )
 
         m_parallel = _PARALLEL_RE.match(dir_name)
         m_rate = _RATE_RE.match(dir_name)

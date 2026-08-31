@@ -11,6 +11,7 @@ That pins both the score path and the agent → model wiring.
 """
 
 import os
+
 import pytest
 
 from evalscope.api.model import ModelOutput

@@ -65,7 +65,6 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
     )
 )
 class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.split_as_subset = True
@@ -83,7 +82,7 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
                 break
 
         # Format choices string
-        letters_str = ', '.join(LETTERS[:len(choices)])
+        letters_str = ', '.join(LETTERS[: len(choices)])
         choices_str = '\n'.join([f'{LETTERS[i]}. {c}' for i, c in enumerate(choices)])
         input_text = MMAU_PROMPT.format(
             letters=letters_str,
@@ -105,7 +104,7 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
                 'task': record.get('task', ''),
                 'answer': answer_text,
                 'audio_id': record.get('audio_id', ''),
-            }
+            },
         )
 
     def match_score(

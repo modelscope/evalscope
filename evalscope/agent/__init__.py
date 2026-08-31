@@ -14,8 +14,10 @@ submodules below.
 # Trigger tool handler registration (T2).
 # Trigger environment registration (T2).
 # Trigger strategy registration.
-from . import environments  # noqa: F401
-from . import strategies  # noqa: F401
-from . import tools  # noqa: F401
+from . import (
+    environments,  # noqa: F401
+    strategies,  # noqa: F401
+    tools,  # noqa: F401
+)
 
 __all__ = []

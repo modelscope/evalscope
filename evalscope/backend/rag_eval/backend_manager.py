@@ -14,8 +14,47 @@ class Tools:
     CLIP_BENCHMARK = 'clip_benchmark'
 
 
-class RAGEvalBackendManager(BackendManager):
+# Rationale appended to the sentence-transformers floor error, since an older version fails
+# silently rather than loudly and the symptom on its own looks like a model quality problem.
+_SENTENCE_TRANSFORMERS_REASON = (
+    'Generative (CausalLM-based) rerankers such as Qwen3-Reranker need the CrossEncoder '
+    'LogitScore module added in 5.4.0; older versions silently fall back to a '
+    'randomly-initialized classification head and produce meaningless scores.'
+)
 
+
+def require_min_version(
+    package: str, installed_version: str, min_version: str, install_spec: str, reason: str = ''
+) -> None:
+    """Raise ImportError if `installed_version` is below `min_version`.
+
+    Pre-releases of the floor are accepted: a dev/rc build of `min_version` already carries the
+    feature the floor exists for. Comparing against `<min_version>.dev0` rather than
+    `min_version` also keeps a two-component version such as '5.4' from reading as older than
+    '5.4.0'. An unparseable version fails closed.
+
+    Args:
+        package: Distribution name as shown to the user.
+        installed_version: Version string reported by the installed package.
+        min_version: Lowest supported release, as a plain 'X.Y.Z' string.
+        install_spec: Requirement specifier to put in the suggested pip command.
+        reason: Optional explanation of why the floor exists.
+    """
+    from packaging.version import InvalidVersion, Version, parse
+
+    try:
+        supported = parse(installed_version) >= Version(f'{min_version}.dev0')
+    except InvalidVersion:
+        supported = False
+    if not supported:
+        detail = f'{reason} ' if reason else ''
+        raise ImportError(
+            f'{package} >= {min_version} is required (got {installed_version}). '
+            f'{detail}Please upgrade: pip install "{install_spec}"'
+        )
+
+
+class RAGEvalBackendManager(BackendManager):
     def __init__(self, config: Union[str, dict], **kwargs):
         """BackendManager for RAG Evaluation.
 
@@ -39,19 +78,16 @@ class RAGEvalBackendManager(BackendManager):
             config: MTEBToolConfig instance or dict with MTEB configuration.
         """
         import mteb
-        from packaging.version import InvalidVersion, Version, parse
-        try:
-            mteb_version = parse(mteb.__version__)
-        except InvalidVersion:
-            raise ImportError(
-                f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
-                'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
-            )
-        if mteb_version < Version('2.7.0'):
-            raise ImportError(
-                f'MTEB >= 2.7.0 is required (got {mteb.__version__}). '
-                'Please upgrade: pip install "mteb>=2.7.0,<3.0.0"'
-            )
+        import sentence_transformers
+
+        require_min_version('MTEB', mteb.__version__, '2.7.0', 'mteb>=2.7.0,<3.0.0')
+        require_min_version(
+            'sentence-transformers',
+            sentence_transformers.__version__,
+            '5.4.0',
+            'sentence-transformers>=5.4.0',
+            reason=_SENTENCE_TRANSFORMERS_REASON,
+        )
         from evalscope.backend.rag_eval.mteb import MTEBToolConfig, run_mteb_eval
 
         if isinstance(config, dict):
@@ -66,19 +102,8 @@ class RAGEvalBackendManager(BackendManager):
             config: RAGASToolConfig instance or dict with RAGAS configuration.
         """
         import ragas
-        from packaging.version import InvalidVersion, Version, parse
-        try:
-            ragas_version = parse(ragas.__version__)
-        except InvalidVersion:
-            raise ImportError(
-                f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
-                'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
-            )
-        if ragas_version < Version('0.4.0'):
-            raise ImportError(
-                f'RAGAS >= 0.4.0 is required (got {ragas.__version__}). '
-                'Please upgrade: pip install "ragas>=0.4.0,<0.5.0"'
-            )
+
+        require_min_version('RAGAS', ragas.__version__, '0.4.0', 'ragas>=0.4.0,<0.5.0')
         from evalscope.backend.rag_eval.ragas import RAGASToolConfig, rag_eval
         from evalscope.backend.rag_eval.ragas.tasks import generate_testset
 

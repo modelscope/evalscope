@@ -5,6 +5,7 @@ import platform
 import threading
 import time
 from argparse import Namespace
+from typing import Optional
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.utils.asyncio_runtime import shutdown_event_loop
@@ -12,12 +13,18 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
+
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
 from .multi_turn_benchmark import run_multi_turn_benchmark
 from .sla.sla_run import run_sla_auto_tune
 from .utils.db_util import get_output_path
-from .utils.handler import add_signal_handlers, install_uvloop_if_available
+from .utils.handler import (
+    PerfBenchmarkInterrupted,
+    ShutdownSignalState,
+    add_signal_handlers,
+    install_uvloop_if_available,
+)
 from .utils.local_server import start_app
 from .utils.log_utils import init_visualizer
 from .utils.report.generate_report import gen_perf_html_report
@@ -46,10 +53,11 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         install_uvloop_if_available()
 
     loop = asyncio.new_event_loop()
+    signal_state: Optional[ShutdownSignalState] = None
     # Only add signal handlers in main thread
     if platform.system() != 'Windows' and threading.current_thread() is threading.main_thread():
         try:
-            add_signal_handlers(loop)
+            signal_state = add_signal_handlers(loop)
         except ValueError as e:
             logger.warning(f'Cannot add signal handlers (running in non-main thread): {e}')
 
@@ -63,6 +71,10 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
                 metrics_result, percentile_result, trace_summary, workload_throughput = loop.run_until_complete(
                     run_benchmark(args)
                 )
+    except asyncio.CancelledError:
+        if signal_state is None or signal_state.signal_name is None:
+            raise
+        raise PerfBenchmarkInterrupted(signal_state) from None
     finally:
         shutdown_event_loop(loop)
 
@@ -166,7 +178,7 @@ def run_perf_benchmark(args):
     # Initialize local server if needed
     if args.api.startswith('local'):
         #  start local server
-        server = threading.Thread(target=start_app, args=(copy.deepcopy(args), ), daemon=True)
+        server = threading.Thread(target=start_app, args=(copy.deepcopy(args),), daemon=True)
         server.start()
 
     total_count = sum(args.number) if isinstance(args.number, list) else args.number

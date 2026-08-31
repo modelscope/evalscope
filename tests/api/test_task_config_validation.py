@@ -1,9 +1,11 @@
 """Tests for unknown-key rejection and the eval_batch_size default resolution."""
 
 import argparse
+import math
+from typing import Optional
+
 import pytest
 from pydantic import ValidationError
-from typing import Optional
 
 from evalscope.arguments import add_argument
 from evalscope.config import (
@@ -217,3 +219,25 @@ def test_update_merges_generation_config_and_recoerces() -> None:
     assert merged['top_p'] == 0.9
     assert isinstance(config.sandbox, SandboxTaskConfig)
     assert config.sandbox.engine == 'volcengine'
+
+
+@pytest.mark.parametrize('limit', [2.5, -1, -0.1, math.nan, math.inf])
+def test_invalid_limits_are_rejected(limit: float | int) -> None:
+    with pytest.raises(ValueError, match='limit'):
+        TaskConfig.from_dict({'model': 'x', 'limit': limit})
+
+
+@pytest.mark.parametrize(
+    'limit, expected',
+    [
+        (None, None),
+        (0, None),
+        (0.5, 0.5),
+        (1.0, 1),
+        (2, 2),
+    ],
+)
+def test_valid_limit_semantics_are_preserved(limit: float | int | None, expected: float | int | None) -> None:
+    config = TaskConfig.from_dict({'model': 'x', 'limit': limit})
+
+    assert config.limit == expected

@@ -10,6 +10,7 @@ from evalscope.utils.media_utils import (
     guess_audio_format,
     guess_video_format,
 )
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
@@ -99,7 +100,7 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         for match in MEDIA_PLACEHOLDER_PATTERN.finditer(text):
             # Add text before the image placeholder
             if match.start() > last_end:
-                text_segment = text[last_end:match.start()]
+                text_segment = text[last_end : match.start()]
                 if text_segment.strip():
                     content_list.append(ContentText(text=text_segment))
 
@@ -230,8 +231,10 @@ class VisionLanguageAdapter(DefaultDataAdapter):
         raw_media: Dict[int, Any] = {}
         media_formats: Dict[int, Optional[str]] = {}
 
-        indexed_indices = range(1, max_media + 1) if indices is None else sorted(
-            index for index in indices if 1 <= index <= max_media
+        indexed_indices = (
+            range(1, max_media + 1)
+            if indices is None
+            else sorted(index for index in indices if 1 <= index <= max_media)
         )
         for index in indexed_indices:
             value = record.get(f'{media_type}_{index}')

@@ -4,6 +4,8 @@ import re
 import time
 from collections import defaultdict
 from copy import copy
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
+
 from openai import APIStatusError, OpenAIError
 from openai.types.chat import (
     ChatCompletion,
@@ -31,7 +33,6 @@ from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.completion_usage import CompletionUsage
 from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import JsonValue
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -69,7 +70,6 @@ BASE_64_DATA_REMOVED = '<base64-data-removed>'
 
 
 class OpenAIResponseError(OpenAIError):
-
     def __init__(self, code: str, message: str) -> None:
         self.code = code
         self.message = message
@@ -121,7 +121,8 @@ def openai_chat_completion_part(
     elif content.type == 'audio':
         # Standard OpenAI / vllm: raw base64 (no data URI prefix)
         # DashScope: requires data URI prefix (data:<mime>;base64,...)
-        audio_data = file_as_data_uri(content.audio)
+        audio_mime = 'audio/wav' if content.format == 'wav' else 'audio/mpeg'
+        audio_data = file_as_data_uri(content.audio, default_mime_type=audio_mime)
         if not _is_dashscope_endpoint(base_url):
             audio_data = data_uri_to_base64(audio_data)
         return ChatCompletionContentPartInputAudioParam(
@@ -166,8 +167,9 @@ def openai_chat_message(
         return ChatCompletionUserMessageParam(
             role=message.role,
             content=(
-                message.content if isinstance(message.content, str) else
-                [openai_chat_completion_part(content, base_url=base_url) for content in message.content]
+                message.content
+                if isinstance(message.content, str)
+                else [openai_chat_completion_part(content, base_url=base_url) for content in message.content]
             ),
         )
     elif message.role == 'assistant':
@@ -341,9 +343,7 @@ def openai_assistant_content(
 
     if message.internal:
         content = f"""{content}\n<internal>{
-            base64.b64encode(json.dumps(message.internal).encode("utf-8")).decode(
-                "utf-8"
-            )
+            base64.b64encode(json.dumps(message.internal).encode('utf-8')).decode('utf-8')
         }</internal>\n"""
     return content
 
@@ -388,7 +388,7 @@ def openai_completion_usage(usage: ModelUsage) -> CompletionUsage:
 
 
 def openai_finish_reason(
-    stop_reason: StopReason
+    stop_reason: StopReason,
 ) -> Literal['stop', 'length', 'tool_calls', 'content_filter', 'function_call']:
     if stop_reason in ('stop', 'tool_calls', 'content_filter'):
         return stop_reason
@@ -411,7 +411,9 @@ def openai_chat_tools(tools: List[ToolInfo]) -> List[ChatCompletionToolParam]:
     return [openai_chat_tool_param(tool) for tool in tools]
 
 
-def openai_chat_tool_choice(tool_choice: ToolChoice, ) -> ChatCompletionToolChoiceOptionParam:
+def openai_chat_tool_choice(
+    tool_choice: ToolChoice,
+) -> ChatCompletionToolChoiceOptionParam:
     if isinstance(tool_choice, ToolFunction):
         return ChatCompletionNamedToolChoiceParam(type='function', function=dict(name=tool_choice.name))
     # openai supports 'any' via the 'required' keyword
@@ -581,10 +583,12 @@ def content_from_openai(
     elif content['type'] == 'image_url':
         return [ContentImage(image=content['image_url']['url'], detail=content['image_url'].get('detail', 'auto'))]
     elif content['type'] == 'input_audio':
-        return [ContentAudio(
-            audio=content['input_audio']['data'],
-            format=content['input_audio']['format'],
-        )]
+        return [
+            ContentAudio(
+                audio=content['input_audio']['data'],
+                format=content['input_audio']['format'],
+            )
+        ]
     elif content['type'] == 'video_url':  # type: ignore[comparison-overlap]
         video_url = content['video_url']
         if isinstance(video_url, str):
@@ -648,15 +652,19 @@ def model_output_from_openai(
                 input_tokens=completion.usage.prompt_tokens,
                 output_tokens=completion.usage.completion_tokens,
                 input_tokens_cache_read=(
-                    completion.usage.prompt_tokens_details.cached_tokens if completion.usage.prompt_tokens_details
-                    is not None else None  # openai only have cache read stats/pricing.
+                    completion.usage.prompt_tokens_details.cached_tokens
+                    if completion.usage.prompt_tokens_details is not None
+                    else None  # openai only have cache read stats/pricing.
                 ),
                 reasoning_tokens=(
                     completion.usage.completion_tokens_details.reasoning_tokens
-                    if completion.usage.completion_tokens_details is not None else None
+                    if completion.usage.completion_tokens_details is not None
+                    else None
                 ),
                 total_tokens=completion.usage.total_tokens,
-            ) if completion.usage else None
+            )
+            if completion.usage
+            else None
         ),
     )
 
@@ -687,9 +695,11 @@ def chat_choices_from_openai(response: ChatCompletion, tools: List[ToolInfo]) ->
             stop_reason=as_stop_reason(choice.finish_reason),
             logprobs=(
                 Logprobs(**choice.logprobs.model_dump())
-                if choice.logprobs and choice.logprobs.content is not None else None
+                if choice.logprobs and choice.logprobs.content is not None
+                else None
             ),
-        ) for choice in choices
+        )
+        for choice in choices
     ]
 
 
@@ -716,12 +726,15 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
     # uses code='invalid_parameter_error' with "Range of input length ...").
     if stop_reason is None:
         msg = (content or '').lower()
-        if any(p in msg for p in (
-            'input length',
-            'maximum context length',
-            'context window',
-            'too many tokens',
-        )):
+        if any(
+            p in msg
+            for p in (
+                'input length',
+                'maximum context length',
+                'context window',
+                'too many tokens',
+            )
+        ):
             stop_reason = 'model_length'
 
     if stop_reason:
@@ -751,7 +764,9 @@ def openai_media_filter(key: Optional[JsonValue], value: JsonValue) -> JsonValue
     return value
 
 
-def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValue]]:
+def _parse_content_with_internal(
+    content: str,
+) -> Tuple[str, Optional[JsonValue]]:
     """
     Extracts and removes a smuggled <internal>...</internal> tag from the content string, if present.
 
@@ -776,10 +791,14 @@ def _parse_content_with_internal(content: str, ) -> Tuple[str, Optional[JsonValu
     internal_pattern = r'<internal>(.*?)</internal>'
     internal_match = re.search(r'<internal>(.*?)</internal>', content, re.DOTALL)
 
-    return ((
-        re.sub(internal_pattern, '', content, flags=re.DOTALL).strip(),
-        json.loads(base64.b64decode(internal_match.group(1)).decode('utf-8')),
-    ) if internal_match else (content, None))
+    return (
+        (
+            re.sub(internal_pattern, '', content, flags=re.DOTALL).strip(),
+            json.loads(base64.b64decode(internal_match.group(1)).decode('utf-8')),
+        )
+        if internal_match
+        else (content, None)
+    )
 
 
 def collect_stream_response(
@@ -825,9 +844,11 @@ def collect_stream_response(
                 reasoning_content = getattr(choice.delta, 'reasoning', None)
 
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '')
-                           or (reasoning_content is not None and reasoning_content != '')
-                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = (
+                (choice.delta.content is not None and choice.delta.content != '')
+                or (reasoning_content is not None and reasoning_content != '')
+                or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls)
+            )
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
@@ -849,10 +870,7 @@ def collect_stream_response(
                         collected_tool_calls[choice.index][tool_id] = {
                             'id': tool_call.id if hasattr(tool_call, 'id') and tool_call.id else None,
                             'type': tool_call.type if hasattr(tool_call, 'type') and tool_call.type else None,
-                            'function': {
-                                'name': '',
-                                'arguments': ''
-                            }
+                            'function': {'name': '', 'arguments': ''},
                         }
 
                     # Update tool call with new chunks
@@ -861,8 +879,9 @@ def collect_stream_response(
                             collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
 
                         if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
-                            collected_tool_calls[choice.index
-                                                 ][tool_id]['function']['arguments'] += tool_call.function.arguments
+                            collected_tool_calls[choice.index][tool_id]['function']['arguments'] += (
+                                tool_call.function.arguments
+                            )
 
                     # Update ID if it was received later
                     if hasattr(tool_call, 'id') and tool_call.id:
@@ -886,8 +905,10 @@ def collect_stream_response(
         # use the finish_reason from the last chunk that generated this choice
         finish_reason = None
         for chunk in reversed(collected_chunks):
-            if chunk.choices and chunk.choices[0].index == index:
-                finish_reason = chunk.choices[0].finish_reason
+            # a single chunk may pack several choices (n > 1); match by index
+            matched = next((c for c in chunk.choices if c.index == index), None)
+            if matched is not None:
+                finish_reason = matched.finish_reason
                 break
 
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
@@ -913,7 +934,7 @@ def collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None)
+        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None),
     ), ttft
 
 
@@ -956,9 +977,11 @@ async def async_collect_stream_response(
                 reasoning_content = getattr(choice.delta, 'reasoning', None)
 
             # Detect first meaningful content chunk for TTFT
-            has_content = ((choice.delta.content is not None and choice.delta.content != '')
-                           or (reasoning_content is not None and reasoning_content != '')
-                           or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls))
+            has_content = (
+                (choice.delta.content is not None and choice.delta.content != '')
+                or (reasoning_content is not None and reasoning_content != '')
+                or (hasattr(choice.delta, 'tool_calls') and choice.delta.tool_calls)
+            )
             if ttft is None and has_content:
                 ttft = time.monotonic() - t_start
 
@@ -980,10 +1003,7 @@ async def async_collect_stream_response(
                         collected_tool_calls[choice.index][tool_id] = {
                             'id': tool_call.id if hasattr(tool_call, 'id') and tool_call.id else None,
                             'type': tool_call.type if hasattr(tool_call, 'type') and tool_call.type else None,
-                            'function': {
-                                'name': '',
-                                'arguments': ''
-                            }
+                            'function': {'name': '', 'arguments': ''},
                         }
 
                     # Update tool call with new chunks
@@ -992,8 +1012,9 @@ async def async_collect_stream_response(
                             collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
 
                         if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
-                            collected_tool_calls[choice.index
-                                                 ][tool_id]['function']['arguments'] += tool_call.function.arguments
+                            collected_tool_calls[choice.index][tool_id]['function']['arguments'] += (
+                                tool_call.function.arguments
+                            )
 
                     # Update ID if it was received later
                     if hasattr(tool_call, 'id') and tool_call.id:
@@ -1017,8 +1038,10 @@ async def async_collect_stream_response(
         # use the finish_reason from the last chunk that generated this choice
         finish_reason = None
         for chunk in reversed(collected_chunks):
-            if chunk.choices and chunk.choices[0].index == index:
-                finish_reason = chunk.choices[0].finish_reason
+            # a single chunk may pack several choices (n > 1); match by index
+            matched = next((c for c in chunk.choices if c.index == index), None)
+            if matched is not None:
+                finish_reason = matched.finish_reason
                 break
 
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
@@ -1044,5 +1067,5 @@ async def async_collect_stream_response(
         created=collected_chunks[0].created,
         model=collected_chunks[0].model,
         object='chat.completion',
-        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None)
+        usage=usage if usage is not None else getattr(collected_chunks[-1], 'usage', None),
     ), ttft

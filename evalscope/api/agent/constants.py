@@ -63,8 +63,7 @@ class TraceSources:
     LOOP = 'loop'
 
 
-NUDGE_PROMPT = ('No tool was called. Please use an available tool '
-                'or call the submit tool with your final answer.')
+NUDGE_PROMPT = 'No tool was called. Please use an available tool or call the submit tool with your final answer.'
 """User-facing reminder injected when the model produces no tool call."""
 
 __all__ = [

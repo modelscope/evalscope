@@ -844,7 +844,7 @@ Token values live once in `evalscope/web/src/index.css`. Run `npm run design:tok
 
 ### D6 — Additive, reversible migration
 
-Refactors preserve raw values, keep chart data-table fallbacks, retain old components until visual-regression parity is proven, and let `zod` schemas coexist with hand-written interfaces during transition.
+Refactors preserve raw values, keep chart data-table fallbacks, and retain old components until visual-regression parity is proven. Web API response contracts are not duplicated during migration: backend Pydantic models are the single source of truth, and the frontend consumes generated TypeScript types.
 
 ### Do's and Don'ts
 

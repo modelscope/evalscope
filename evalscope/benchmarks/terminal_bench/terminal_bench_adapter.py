@@ -29,7 +29,7 @@ COMMON_EXTRA_PARAMS = {
         'type': 'str',
         'description': 'Environment type for running the benchmark.',
         'value': 'docker',
-        'choices': ['docker', 'daytona', 'e2b', 'modal']
+        'choices': ['docker', 'daytona', 'e2b', 'modal'],
     },
     'agent_name': {
         'type': 'str',
@@ -37,7 +37,14 @@ COMMON_EXTRA_PARAMS = {
         'other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys.',
         'value': 'terminus-2',
         'choices': [
-            'oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'
+            'oracle',
+            'terminus-2',
+            'claude-code',
+            'codex',
+            'qwen-coder',
+            'openhands',
+            'opencode',
+            'mini-swe-agent',
         ],
     },
     'timeout_multiplier': {
@@ -87,15 +94,16 @@ def _validate_environment_requirements(environment_type: str):
 
     if shutil.which('docker') is None:
         raise RuntimeError(
-            'Terminal-Bench with environment_type=\'docker\' requires the Docker CLI to be installed in the '
+            "Terminal-Bench with environment_type='docker' requires the Docker CLI to be installed in the "
             'environment running EvalScope. Mounting /var/run/docker.sock only exposes the Docker daemon socket; '
             'it does not provide the docker command. Install the Docker CLI in the container or switch '
-            'environment_type to \'daytona\', \'e2b\', or \'modal\'.'
+            "environment_type to 'daytona', 'e2b', or 'modal'."
         )
 
 
-def _phase_timeout_options(timeout_sec: Optional[float], timeout_multiplier: Optional[float],
-                           phase: str) -> Tuple[Optional[float], Optional[float]]:
+def _phase_timeout_options(
+    timeout_sec: Optional[float], timeout_multiplier: Optional[float], phase: str
+) -> Tuple[Optional[float], Optional[float]]:
     if timeout_sec is not None and timeout_multiplier is not None:
         raise ValueError(f'{phase}_timeout_sec cannot be combined with {phase}_timeout_multiplier.')
     if timeout_sec is not None:
@@ -123,8 +131,9 @@ class _TerminalBenchBase(AgentAdapter):
             self.extra_params.get('agent_timeout_sec'), self.extra_params.get('agent_timeout_multiplier'), 'agent'
         )
         self.verifier_timeout_sec, self.verifier_timeout_multiplier = _phase_timeout_options(
-            self.extra_params.get('verifier_timeout_sec'), self.extra_params.get('verifier_timeout_multiplier'),
-            'verifier'
+            self.extra_params.get('verifier_timeout_sec'),
+            self.extra_params.get('verifier_timeout_multiplier'),
+            'verifier',
         )
         self.max_turns = self.extra_params.get('max_turns', 200)
         self.environment_kwargs = self.extra_params.get('environment_kwargs', {})
@@ -164,9 +173,8 @@ class _TerminalBenchBase(AgentAdapter):
         return Sample(input='', metadata=record)
 
     def _on_inference(self, model: Model, sample: Sample) -> InferenceResult:
-        from harbor.models.trial.config import AgentConfig, EnvironmentConfig
+        from harbor.models.trial.config import AgentConfig, EnvironmentConfig, TrialConfig, VerifierConfig
         from harbor.models.trial.config import TaskConfig as TrialTaskConfig
-        from harbor.models.trial.config import TrialConfig, VerifierConfig
         from harbor.trial.trial import Trial
 
         from .utils import HarborLLM
@@ -176,12 +184,14 @@ class _TerminalBenchBase(AgentAdapter):
 
         agent_kwargs = {'max_turns': self.max_turns}
         if self.agent_name == 'terminus-2':
-            agent_kwargs.update({
-                'parser_name': 'json',
-                'enable_summarize': True,
-                'proactive_summarization_threshold': 8000,
-                'collect_rollout_details': False,
-            })
+            agent_kwargs.update(
+                {
+                    'parser_name': 'json',
+                    'enable_summarize': True,
+                    'proactive_summarization_threshold': 8000,
+                    'collect_rollout_details': False,
+                }
+            )
 
         agent_config = AgentConfig(
             name=self.agent_name,
@@ -203,7 +213,6 @@ class _TerminalBenchBase(AgentAdapter):
         )
 
         try:
-
             harbor_llm = HarborLLM(model=model) if self.agent_name == 'terminus-2' else None
 
             async def _run_trial():
@@ -235,7 +244,7 @@ class _TerminalBenchBase(AgentAdapter):
     def _load_harbor_trace(
         self,
         result_dict: dict,
-        perf_metrics: Optional[List[Any]] = None
+        perf_metrics: Optional[List[Any]] = None,
     ) -> Tuple[Optional[AgentTrace], Optional[List[ChatMessage]]]:
         trial_uri = result_dict.get('trial_uri') or ''
         if trial_uri.startswith('file://'):
@@ -280,8 +289,7 @@ class _TerminalBenchBase(AgentAdapter):
                 for tc in step.get('tool_calls', []):
                     tool_calls.append(
                         ToolCall(
-                            id=tc.get('tool_call_id',
-                                      uuid.uuid4().hex[:8]),
+                            id=tc.get('tool_call_id', uuid.uuid4().hex[:8]),
                             function=ToolFunction(
                                 name=tc.get('function_name', 'bash_command'),
                                 arguments=tc.get('arguments', {}),
@@ -324,11 +332,7 @@ class _TerminalBenchBase(AgentAdapter):
                             step=step_id,
                             type=EventType.TOOL_CALL,
                             timestamp=ts_epoch or 0,
-                            payload={
-                                'id': tc.id,
-                                'name': tc.function.name,
-                                'arguments': tc.function.arguments
-                            },
+                            payload={'id': tc.id, 'name': tc.function.name, 'arguments': tc.function.arguments},
                         )
                     )
 
@@ -497,7 +501,6 @@ Terminal-Bench v2 is a command-line benchmark suite that evaluates AI agents on 
     )
 )
 class TerminalBenchV2Adapter(_TerminalBenchBase):
-
     hub_dataset_name = 'terminal-bench/terminal-bench-2'
 
 
@@ -543,5 +546,4 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
     )
 )
 class TerminalBenchV2_1Adapter(_TerminalBenchBase):
-
     hub_dataset_name = 'terminal-bench/terminal-bench-2-1'

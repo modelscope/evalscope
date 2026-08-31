@@ -1,10 +1,11 @@
 import json
 import os
-import pandas as pd
 import re
 from collections import defaultdict
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+
+import pandas as pd
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
 from typing_extensions import Self
 
 from evalscope.api.metric import JudgeSummary
@@ -96,25 +97,34 @@ def _score_summary(report: 'Report') -> Dict[str, Any]:
         'primary_metric_identity': (
             report.primary_metric_identity.model_dump(mode='json') if report.primary_metric_identity else None
         ),
-        'metrics': [{
-            'name': metric.name,
-            'identity': metric.identity.model_dump(mode='json'),
-            'num': metric.num,
-            'score': metric.score,
-            'macro_score': metric.macro_score,
-            'categories': [{
-                'name': list(category.name),
-                'num': category.num,
-                'score': category.score,
-                'macro_score': category.macro_score,
-                'subsets': [{
-                    'name': subset.name,
-                    'num': subset.num,
-                    'score': subset.score,
-                    'is_aggregate': subset.is_aggregate,
-                } for subset in category.subsets],
-            } for category in metric.categories],
-        } for metric in report.metrics],
+        'metrics': [
+            {
+                'name': metric.name,
+                'identity': metric.identity.model_dump(mode='json'),
+                'num': metric.num,
+                'score': metric.score,
+                'macro_score': metric.macro_score,
+                'categories': [
+                    {
+                        'name': list(category.name),
+                        'num': category.num,
+                        'score': category.score,
+                        'macro_score': category.macro_score,
+                        'subsets': [
+                            {
+                                'name': subset.name,
+                                'num': subset.num,
+                                'score': subset.score,
+                                'is_aggregate': subset.is_aggregate,
+                            }
+                            for subset in category.subsets
+                        ],
+                    }
+                    for category in metric.categories
+                ],
+            }
+            for metric in report.metrics
+        ],
     }
 
 
@@ -166,7 +176,7 @@ class Category(BaseModel):
     @classmethod
     def _coerce_name_to_tuple(cls, v) -> Tuple[str, ...]:
         if isinstance(v, str):
-            return (v, )
+            return (v,)
         return tuple(v)
 
     @field_serializer('name')
@@ -200,6 +210,7 @@ class Metric(BaseModel):
     @classmethod
     def _migrate_v1_shape(cls, data: Any) -> Any:
         from evalscope.metrics.semantics.migration import migrate_legacy_metric_payload
+
         return migrate_legacy_metric_payload(data)
 
     @model_validator(mode='after')
@@ -277,6 +288,7 @@ class Report(BaseModel):
     @classmethod
     def _migrate_v1_shape(cls, data: Any) -> Any:
         from evalscope.metrics.semantics.migration import migrate_legacy_report_payload
+
         return migrate_legacy_report_payload(data)
 
     @model_validator(mode='after')
@@ -361,9 +373,11 @@ class Report(BaseModel):
         if is_v2:
             return report
         from evalscope.metrics.semantics import hydrate_report_semantics
+
         report = hydrate_report_semantics(report)
         if report.perf_metrics:
             from evalscope.metrics.semantics import attach_perf_semantics
+
             report.perf_metrics = attach_perf_semantics(report.perf_metrics)
         return report
 
@@ -398,11 +412,13 @@ class Report(BaseModel):
         table = defaultdict(list)
         for metric in self.metrics:
             metric_count = 0
+            has_overall_subset = False
             for category in metric.categories:
                 for subset in category.subsets:
                     if subset.is_aggregate and not include_aggregate:
                         continue
                     metric_count += 1
+                    has_overall_subset = has_overall_subset or subset.name == ReportKey.overall_score
                     table[ReportKey.model_name].append(self.model_name)
                     table[ReportKey.dataset_name].append(self.dataset_name)
                     table[ReportKey.metric_name].append(metric.name)
@@ -411,13 +427,11 @@ class Report(BaseModel):
                     table[ReportKey.num].append(subset.num)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
-            if metric_count > 1 and add_overall_metric and (
-                ReportKey.overall_score not in table[ReportKey.subset_name]
-            ):
+            if metric_count > 1 and add_overall_metric and not has_overall_subset:
                 table[ReportKey.model_name].append(self.model_name)
                 table[ReportKey.dataset_name].append(self.dataset_name)
                 table[ReportKey.metric_name].append(metric.name)
-                table[ReportKey.category_name].append(('-', ))
+                table[ReportKey.category_name].append(('-',))
                 table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
                 table[ReportKey.score].append(metric.score)
@@ -435,8 +449,9 @@ class Report(BaseModel):
         # multi-level aggregation for categories
         max_depth = df_categories[ReportKey.category_name].apply(len).max()
         for level in range(max_depth):
-            df_categories[f'{ReportKey.category_prefix}{level}'] = df_categories[
-                ReportKey.category_name].apply(lambda x: x[level] if len(x) > level else None)
+            df_categories[f'{ReportKey.category_prefix}{level}'] = df_categories[ReportKey.category_name].apply(
+                lambda x: x[level] if len(x) > level else None
+            )
 
         df_categories.drop(columns=[ReportKey.category_name], inplace=True)
         return df_categories

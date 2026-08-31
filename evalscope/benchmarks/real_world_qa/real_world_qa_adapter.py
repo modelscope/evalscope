@@ -66,7 +66,6 @@ RealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI
     )
 )
 class RealWorldQAAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -79,7 +78,7 @@ class RealWorldQAAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'].lower(),
-            metadata={'image_path': record['image_path']}
+            metadata={'image_path': record['image_path']},
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:

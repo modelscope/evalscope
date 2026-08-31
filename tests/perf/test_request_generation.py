@@ -1,9 +1,10 @@
 import argparse
 import asyncio
+from typing import Dict, Iterator, List, Optional, Tuple
+
 import numpy as np
 import pytest
 from pytest import MonkeyPatch
-from typing import Dict, Iterator, List, Optional, Tuple
 
 from evalscope.perf.arguments import Arguments, add_argument
 from evalscope.perf.benchmark import get_requests

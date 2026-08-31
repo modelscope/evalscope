@@ -17,11 +17,13 @@ def parse_args() -> argparse.Namespace:
 def expected_web_files() -> Dict[str, Path]:
     web_root = REPO_ROOT / 'evalscope' / 'web'
     expected = {'evalscope/web/__init__.py': web_root / '__init__.py'}
-    expected.update({
-        f'evalscope/web/{path.relative_to(web_root).as_posix()}': path
-        for path in (web_root / 'dist').rglob('*')
-        if path.is_file()
-    })
+    expected.update(
+        {
+            f'evalscope/web/{path.relative_to(web_root).as_posix()}': path
+            for path in (web_root / 'dist').rglob('*')
+            if path.is_file()
+        }
+    )
     return expected
 
 

@@ -6,10 +6,11 @@ and the agent rollouts are driven by scripted models against the vendored scenar
 import copy
 import json
 import os
-import pytest
 import re
 import sys
 from typing import Any, Dict, List
+
+import pytest
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.metric import SampleScore, Score

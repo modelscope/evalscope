@@ -14,7 +14,6 @@ from evalscope.utils.import_utils import check_import
 
 @register_metric(name='exact_match')
 class ExactMatch(Metric):
-
     def apply(self, predictions, references):
         return [
             float(normalize_text(prediction) == normalize_text(reference))
@@ -24,7 +23,6 @@ class ExactMatch(Metric):
 
 @register_metric(name=['accuracy', 'acc'])
 class Accuracy(ExactMatch):
-
     def __init__(self, allow_inclusion: bool = False, numeric: bool = False):
         self.allow_inclusion = allow_inclusion
         self.numeric = numeric
@@ -53,14 +51,12 @@ class Accuracy(ExactMatch):
 
 @register_metric(name='numeric_match')
 class NumericMatch(Metric):
-
     def apply(self, predictions, references):
         return [float(prediction == reference) for prediction, reference in zip(predictions, references)]
 
 
 @register_metric(name='math_acc')
 class MathAcc(Metric):
-
     def apply(self, predictions, references):
         from evalscope.metrics.math.parser import extract_answer, math_equal, strip_answer_string
 
@@ -75,7 +71,6 @@ class MathAcc(Metric):
 
 @register_metric(name='multi_choice_acc')
 class MultiChoiceAcc(Metric):
-
     def apply(self, predictions, references):
         """
         Calculate accuracy for multiple-choice questions.
@@ -102,7 +97,6 @@ class MultiChoiceAcc(Metric):
 
 @register_metric(name='anls')
 class ANLS(Metric):
-
     def __init__(self, thresh_hold=0.5):
         self.thresh_hold = thresh_hold
 
@@ -138,7 +132,7 @@ class ANLS(Metric):
                 det_answer = ' '.join(prediction.strip().lower().split())
 
                 dist = levenshtein_distance(gt_answer, det_answer)
-                length = max(len(ans.upper()), len(prediction.upper()))
+                length = max(len(gt_answer), len(det_answer))
                 values.append(0.0 if length == 0 else float(dist) / float(length))
 
             question_result = 0.0
@@ -152,7 +146,6 @@ class ANLS(Metric):
 
 @register_metric(name=['bert_score', 'bertscore'])
 class BertScore(SingletonMetric):
-
     def _init_once(self, model_id_or_path: str = 'google-bert/bert-base-chinese', **kwargs):
         """BertScore metric.
 
@@ -163,6 +156,7 @@ class BertScore(SingletonMetric):
         check_import('torch', 'torch', raise_error=True, feature_name='BertScore Metric')
 
         from .bert_score.scorer import BERTScorer
+
         self.scorer = BERTScorer(model_id_or_path=model_id_or_path, batch_size=1024, **kwargs)
 
     def apply(self, predictions: List[str], references: List[str]) -> List[float]:
@@ -172,7 +166,6 @@ class BertScore(SingletonMetric):
 
 @register_metric(name='comet')
 class COMETScore(SingletonMetric):
-
     def _init_once(self, model_id_or_path: str = 'evalscope/wmt22-comet-da'):
         """COMETScore metric.
 
@@ -207,14 +200,13 @@ class COMETScore(SingletonMetric):
 
 @register_metric(name='sem_score')
 class SemScore(SingletonMetric):
-
     def _init_once(self, **kwargs):
-        """SemScore metric.
-        """
+        """SemScore metric."""
         check_import('bert_score', 'bert-score', raise_error=True, feature_name='SemScore Metric')
         check_import('torch', 'torch', raise_error=True, feature_name='SemScore Metric')
 
         from .sem_score.scorer import SemScorer
+
         self.scorer = SemScorer(batch_size=1024, **kwargs)
 
     def apply(self, predictions: List[str], references: List[str]) -> List[float]:

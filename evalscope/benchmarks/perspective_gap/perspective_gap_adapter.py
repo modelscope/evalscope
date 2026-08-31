@@ -16,8 +16,7 @@ logger = get_logger()
 DATASET_ID = 'evalscope/PerspectiveGap'
 PERSPECTIVE_GAP_COMMIT = '9c6921b3337ff3e6a6a453f68d117a8c1663135e'
 PERSPECTIVE_GAP_REQUIREMENT = (
-    'perspective-gap @ '
-    f'git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@{PERSPECTIVE_GAP_COMMIT}'
+    f'perspective-gap @ git+https://github.com/WhymustIhaveaname/PerspectiveGap.git@{PERSPECTIVE_GAP_COMMIT}'
 )
 PERSPECTIVE_GAP_PIP_INSTALL = f"pip install '{PERSPECTIVE_GAP_REQUIREMENT}'"
 PERSPECTIVE_GAP_UV_INSTALL = f"uv pip install '{PERSPECTIVE_GAP_REQUIREMENT}'"
@@ -142,12 +141,7 @@ class PerspectiveGapBaseAdapter(DefaultDataAdapter):
                     'boundary_precision': 0.0,
                     'distractor_leakage': 0.0,
                 },
-                'counts': {
-                    'tp': 0,
-                    'fp': 0,
-                    'fn': 0,
-                    'distractor_leak': 0
-                },
+                'counts': {'tp': 0, 'fp': 0, 'fn': 0, 'distractor_leak': 0},
                 'error': str(exc),
             }
         return _score_from_result(result, original_prediction, filtered_prediction)

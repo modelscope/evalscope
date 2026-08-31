@@ -1,7 +1,8 @@
-import torch
 from abc import abstractmethod
-from modelscope import AutoModel, AutoProcessor
 from typing import List
+
+import torch
+from modelscope import AutoModel, AutoProcessor
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel

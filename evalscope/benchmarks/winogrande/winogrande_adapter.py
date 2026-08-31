@@ -47,7 +47,6 @@ Winogrande is a large-scale benchmark for commonsense reasoning, specifically de
     )
 )
 class WinograndeAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

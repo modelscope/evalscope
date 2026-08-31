@@ -108,14 +108,21 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         metric_list=[
-            'puzzle_acc', 'cell_acc', 'easy_puzzle_acc', 'hard_puzzle_acc', 'small_puzzle_acc', 'medium_puzzle_acc',
-            'large_puzzle_acc', 'xl_puzzle_acc', 'avg_reason_lens', 'no_answer_num'
+            'puzzle_acc',
+            'cell_acc',
+            'easy_puzzle_acc',
+            'hard_puzzle_acc',
+            'small_puzzle_acc',
+            'medium_puzzle_acc',
+            'large_puzzle_acc',
+            'xl_puzzle_acc',
+            'avg_reason_lens',
+            'no_answer_num',
         ],
         primary_metric='puzzle_acc',
     )
 )
 class ZebraLogicBenchAdapter(DefaultDataAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Convert one dataset record to the Sample format used by evaluator."""
         puzzle = record['puzzle']
@@ -158,7 +165,7 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
                         stack.pop()
                         if not stack and last_json_start is not None:
                             # Found a complete JSON object
-                            candidate = s[last_json_start:i + 1]
+                            candidate = s[last_json_start : i + 1]
                             last_json_str = candidate
                             last_json_start = None
 
@@ -183,8 +190,9 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
             prediction=original_prediction,
         )
         try:
-            results: Dict[str,
-                          float] = {} if not filtered_prediction else process_results(filtered_prediction, reference)
+            results: Dict[str, float] = (
+                {} if not filtered_prediction else process_results(filtered_prediction, reference)
+            )
             score.value.update(results)
             score.main_score_name = 'puzzle_acc'
         except Exception as e:
@@ -207,43 +215,52 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
         total_xl_puzzle_num = sum(ss.score.value.get('XL Puzzle Num', 0.0) for ss in sample_scores)
 
         puzzle_acc = (
-            sum(ss.score.value.get('Solved Puzzle', 0.0)
-                for ss in sample_scores) / total_puzzle_num if total_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Puzzle', 0.0) for ss in sample_scores) / total_puzzle_num
+            if total_puzzle_num > 0
+            else 0.0
         )
         cell_acc = (
-            sum(ss.score.value.get('Solved Cell', 0.0)
-                for ss in sample_scores) / total_cell_num if total_cell_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Cell', 0.0) for ss in sample_scores) / total_cell_num
+            if total_cell_num > 0
+            else 0.0
         )
 
         easy_puzzle_acc = (
-            sum(ss.score.value.get('Solved Easy Puzzle', 0.0)
-                for ss in sample_scores) / total_easy_puzzle_num if total_easy_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Easy Puzzle', 0.0) for ss in sample_scores) / total_easy_puzzle_num
+            if total_easy_puzzle_num > 0
+            else 0.0
         )
         hard_puzzle_acc = (
-            sum(ss.score.value.get('Solved Hard Puzzle', 0.0)
-                for ss in sample_scores) / total_hard_puzzle_num if total_hard_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Hard Puzzle', 0.0) for ss in sample_scores) / total_hard_puzzle_num
+            if total_hard_puzzle_num > 0
+            else 0.0
         )
 
         small_puzzle_acc = (
-            sum(ss.score.value.get('Solved Small Puzzle', 0.0)
-                for ss in sample_scores) / total_small_puzzle_num if total_small_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Small Puzzle', 0.0) for ss in sample_scores) / total_small_puzzle_num
+            if total_small_puzzle_num > 0
+            else 0.0
         )
         medium_puzzle_acc = (
-            sum(ss.score.value.get('Solved Medium Puzzle', 0.0)
-                for ss in sample_scores) / total_medium_puzzle_num if total_medium_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Medium Puzzle', 0.0) for ss in sample_scores) / total_medium_puzzle_num
+            if total_medium_puzzle_num > 0
+            else 0.0
         )
         large_puzzle_acc = (
-            sum(ss.score.value.get('Solved Large Puzzle', 0.0)
-                for ss in sample_scores) / total_large_puzzle_num if total_large_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved Large Puzzle', 0.0) for ss in sample_scores) / total_large_puzzle_num
+            if total_large_puzzle_num > 0
+            else 0.0
         )
         xl_puzzle_acc = (
-            sum(ss.score.value.get('Solved XL Puzzle', 0.0)
-                for ss in sample_scores) / total_xl_puzzle_num if total_xl_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Solved XL Puzzle', 0.0) for ss in sample_scores) / total_xl_puzzle_num
+            if total_xl_puzzle_num > 0
+            else 0.0
         )
 
         avg_reason_lens = (
-            sum(ss.score.value.get('Reason Lens', 0.0)
-                for ss in sample_scores) / total_puzzle_num if total_puzzle_num > 0 else 0.0
+            sum(ss.score.value.get('Reason Lens', 0.0) for ss in sample_scores) / total_puzzle_num
+            if total_puzzle_num > 0
+            else 0.0
         )
 
         agg_scores = [
@@ -253,46 +270,46 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
                 metric_name='easy_puzzle_acc',
                 score=easy_puzzle_acc,
                 num=total_easy_puzzle_num,
-                metadata={'type': 'easy_puzzle_acc'}
+                metadata={'type': 'easy_puzzle_acc'},
             ),
             AggScore(
                 metric_name='hard_puzzle_acc',
                 score=hard_puzzle_acc,
                 num=total_hard_puzzle_num,
-                metadata={'type': 'hard_puzzle_acc'}
+                metadata={'type': 'hard_puzzle_acc'},
             ),
             AggScore(
                 metric_name='small_puzzle_acc',
                 score=small_puzzle_acc,
                 num=total_small_puzzle_num,
-                metadata={'type': 'small_puzzle_acc'}
+                metadata={'type': 'small_puzzle_acc'},
             ),
             AggScore(
                 metric_name='medium_puzzle_acc',
                 score=medium_puzzle_acc,
                 num=total_medium_puzzle_num,
-                metadata={'type': 'medium_puzzle_acc'}
+                metadata={'type': 'medium_puzzle_acc'},
             ),
             AggScore(
                 metric_name='large_puzzle_acc',
                 score=large_puzzle_acc,
                 num=total_large_puzzle_num,
-                metadata={'type': 'large_puzzle_acc'}
+                metadata={'type': 'large_puzzle_acc'},
             ),
             AggScore(
                 metric_name='xl_puzzle_acc',
                 score=xl_puzzle_acc,
                 num=total_xl_puzzle_num,
-                metadata={'type': 'xl_puzzle_acc'}
+                metadata={'type': 'xl_puzzle_acc'},
             ),
             AggScore(
                 metric_name='avg_reason_lens',
                 score=avg_reason_lens,
                 num=total_puzzle_num,
-                metadata={'type': 'avg_reason_lens'}
+                metadata={'type': 'avg_reason_lens'},
             ),
             AggScore(
                 metric_name='no_answer_num', score=no_answer_num, num=no_answer_num, metadata={'type': 'no_answer_num'}
-            )
+            ),
         ]
         return agg_scores

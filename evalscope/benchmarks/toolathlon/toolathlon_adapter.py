@@ -10,6 +10,7 @@ from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.argument_utils import get_secret_value
+
 from .client import (
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_SERVER_HOST,
@@ -149,19 +150,34 @@ Toolathlon is an agent benchmark for realistic, long-horizon tool use across man
 environments. This EvalScope benchmark is a wrapper around the official Toolathlon remote evaluation service,
 not a local reimplementation of the MCP environments or official evaluator.
 
-## Evaluation Mode
+## Task Description
 
-- Benchmark id: `toolathlon`
-- Supported mode: official service private mode
-- EvalScope controls model endpoint, task selection, job parameters, polling, result download, and reporting
-- The official Toolathlon service controls MCP environments, task containers, agent loop execution, and scoring
-- No Toolathlon, MCP application accounts, or Toolathlon Python package installation are required when using the
-  official public evaluation service
-- A local or intranet OpenAI-compatible endpoint is required for private mode
-- EvalScope represents one remote Toolathlon job as one local sample; the generated data statistics count wrapper
-  jobs, while `task_list` and `limit` control the Toolathlon tasks submitted inside that job
-- The bundled Toolathlon-Verified task list was inspected from official repository commit
+- Task Type: Long-horizon agent tool use with multi-turn function calling
+- Input: Realistic software tasks selected from the Toolathlon-Verified task set
+- Output: Model responses and tool calls executed by the official Toolathlon agent loop
+- Domain: MCP-backed productivity, development, data, and web software environments
+
+## Key Features
+
+- Uses the official Toolathlon service for MCP environments, task containers, agent execution, and scoring
+- Supports official-service private mode with a local or intranet OpenAI-compatible model endpoint
+- Represents one remote Toolathlon job as one EvalScope sample, while `task_list` and `limit` select tasks in the job
+- Retries transient polling and result-download failures without cancelling the remote evaluation
+- Keeps failed archive downloads pending for later retries and validates downloaded output paths
+- Keeps the model API key on the EvalScope side and passes it to the local WebSocket relay through the environment
+- Includes the Toolathlon-Verified task list inspected from official repository commit
   `b7bbac3f9a1f381b095c878debe1a47dd164ad85`
+
+## Evaluation Notes
+
+- The primary metric is accuracy reported by the official Toolathlon scorer
+- Aggregate scores are read from official statistics, including `average_success_rate`, with count and per-task
+  fallbacks for compatible service outputs
+- Missing, non-finite, or out-of-range scores fail validation instead of being silently reported as zero
+- EvalScope evaluation semantics are versioned as `v1.1`; the wrapper follows Toolathlon service protocol `1.3`
+- Runtime requires `httpx`, `websockets`, and an OpenAI-compatible endpoint reachable from the EvalScope process
+- The shared public service has queue and IP-based usage limits; use a dedicated or self-hosted service for sustained
+  evaluation
 
 ## Usage Guide
 
@@ -274,6 +290,7 @@ EXTRA_PARAMS = {
         subset_list=['default'],
         prompt_template='{question}',
         extra_params=EXTRA_PARAMS,
+        evaluation_version='v1.1',
     )
 )
 class ToolathlonAdapter(AgentAdapter):
@@ -392,7 +409,7 @@ class ToolathlonAdapter(AgentAdapter):
         if not task_list:
             task_list = list(DEFAULT_TASK_LIST)
         if isinstance(self.limit, int) and self.limit > 0:
-            task_list = task_list[:self.limit]
+            task_list = task_list[: self.limit]
         return task_list
 
     def _empty_to_none(self, value: Optional[str]) -> Optional[str]:

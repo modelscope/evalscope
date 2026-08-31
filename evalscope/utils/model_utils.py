@@ -1,7 +1,8 @@
-import numpy as np
 import random
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+
+import numpy as np
 
 from evalscope.utils.import_utils import check_import
 
@@ -23,8 +24,8 @@ def fix_do_sample_warning(generation_config: 'GenerationConfig') -> None:
     if generation_config.temperature == 0:
         generation_config.do_sample = False
     if generation_config.do_sample is False:
-        generation_config.temperature = 1.
-        generation_config.top_p = 1.
+        generation_config.temperature = 1.0
+        generation_config.top_p = 1.0
         generation_config.top_k = 50
 
 
@@ -45,12 +46,12 @@ def get_device() -> str:
 
 def dict_torch_dtype_to_str(d: Dict[str, Any]) -> dict:
     """
-        Checks whether the passed dictionary and its nested dicts have a *torch_dtype* key and if it's not None,
-        converts torch.dtype to a string of just the type. For example, `torch.float32` get converted into *"float32"*
-        string, which can then be stored in the json format.
+    Checks whether the passed dictionary and its nested dicts have a *torch_dtype* key and if it's not None,
+    converts torch.dtype to a string of just the type. For example, `torch.float32` get converted into *"float32"*
+    string, which can then be stored in the json format.
 
-        Refer to: https://github.com/huggingface/transformers/pull/16065/files for details.
-        """
+    Refer to: https://github.com/huggingface/transformers/pull/16065/files for details.
+    """
     if d.get('torch_dtype', None) is not None and not isinstance(d['torch_dtype'], str):
         d['torch_dtype'] = str(d['torch_dtype']).split('.')[1]
 

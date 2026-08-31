@@ -37,6 +37,7 @@ from evalscope.api.messages import (
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils.logger import get_logger
+
 from .translate_openai import (
     _parse_tool_arguments,
     _safe_tool_params,
@@ -53,19 +54,23 @@ logger = get_logger()
 
 # Item types treated as "user-triggered tool outputs" — they share the
 # function_call_output handling path (mapped to ChatMessageTool).
-_TOOL_OUTPUT_ITEM_TYPES = frozenset({
-    'function_call_output',
-    'custom_tool_call_output',
-    'computer_call_output',
-    'local_shell_call_output',
-})
+_TOOL_OUTPUT_ITEM_TYPES = frozenset(
+    {
+        'function_call_output',
+        'custom_tool_call_output',
+        'computer_call_output',
+        'local_shell_call_output',
+    }
+)
 
 # Item types treated as "assistant-side function calls" — they share the
 # function_call handling path (mapped to ToolCall on the pending assistant).
-_TOOL_CALL_ITEM_TYPES = frozenset({
-    'function_call',
-    'custom_tool_call',
-})
+_TOOL_CALL_ITEM_TYPES = frozenset(
+    {
+        'function_call',
+        'custom_tool_call',
+    }
+)
 
 # Item types that represent built-in tool use the agent CLI initiated
 # itself (web search, MCP, file search, etc.). The downstream model
@@ -74,18 +79,20 @@ _TOOL_CALL_ITEM_TYPES = frozenset({
 # stays coherent. Rendered as opaque placeholder text on the pending
 # assistant message — never a ChatMessageTool, since there's no
 # matching tool_call_id on our side.
-_BUILTIN_ASSISTANT_ITEM_TYPES = frozenset({
-    'computer_call',
-    'web_search_call',
-    'file_search_call',
-    'image_generation_call',
-    'code_interpreter_call',
-    'mcp_call',
-    'mcp_list_tools',
-    'mcp_approval_request',
-    'mcp_approval_response',
-    'local_shell_call',
-})
+_BUILTIN_ASSISTANT_ITEM_TYPES = frozenset(
+    {
+        'computer_call',
+        'web_search_call',
+        'file_search_call',
+        'image_generation_call',
+        'code_interpreter_call',
+        'mcp_call',
+        'mcp_list_tools',
+        'mcp_approval_request',
+        'mcp_approval_response',
+        'local_shell_call',
+    }
+)
 
 
 def responses_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
@@ -218,8 +225,7 @@ def responses_request_to_messages(body: Dict[str, Any]) -> List[ChatMessage]:
             # Pointer to a stored response item from a previous turn;
             # bridge is stateless, can't resolve. Log + drop.
             logger.warning(
-                f'responses translator: dropping item_reference '
-                f'(stateful sessions not supported); item={item!r}'
+                f'responses translator: dropping item_reference (stateful sessions not supported); item={item!r}'
             )
 
         else:
@@ -415,35 +421,35 @@ def model_output_to_responses_payload(
         text, reasoning = _split_text_and_reasoning(msg)
 
         if reasoning:
-            output_items.append({
-                'type': 'reasoning',
-                'id': f'rs_{uuid.uuid4().hex[:24]}',
-                'summary': [{
-                    'type': 'summary_text',
-                    'text': reasoning
-                }],
-            })
+            output_items.append(
+                {
+                    'type': 'reasoning',
+                    'id': f'rs_{uuid.uuid4().hex[:24]}',
+                    'summary': [{'type': 'summary_text', 'text': reasoning}],
+                }
+            )
         if text:
-            output_items.append({
-                'type': 'message',
-                'id': f'msg_{uuid.uuid4().hex[:24]}',
-                'role': 'assistant',
-                'content': [{
-                    'type': 'output_text',
-                    'text': text
-                }],
-                'status': 'completed',
-            })
+            output_items.append(
+                {
+                    'type': 'message',
+                    'id': f'msg_{uuid.uuid4().hex[:24]}',
+                    'role': 'assistant',
+                    'content': [{'type': 'output_text', 'text': text}],
+                    'status': 'completed',
+                }
+            )
         for tc in msg.tool_calls or []:
             name, args = unpack_openai_tool_call(tc)
-            output_items.append({
-                'type': 'function_call',
-                'id': f'fc_{uuid.uuid4().hex[:24]}',
-                'call_id': tc.id,
-                'name': name,
-                'arguments': json.dumps(args, ensure_ascii=False),
-                'status': 'completed',
-            })
+            output_items.append(
+                {
+                    'type': 'function_call',
+                    'id': f'fc_{uuid.uuid4().hex[:24]}',
+                    'call_id': tc.id,
+                    'name': name,
+                    'arguments': json.dumps(args, ensure_ascii=False),
+                    'status': 'completed',
+                }
+            )
 
     usage = output.usage
     return {

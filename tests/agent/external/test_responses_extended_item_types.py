@@ -15,6 +15,7 @@ in the other test files.
 """
 
 import logging
+
 import pytest
 
 from evalscope.agent.external.bridge.translate_responses import responses_request_to_messages

@@ -53,12 +53,15 @@ def maybe_log_to_visualizer(args: Arguments, message: dict) -> None:
     visualizer = args.visualizer
     if visualizer == VisualizerType.WANDB:
         import wandb
+
         wandb.log(message)
     elif visualizer == VisualizerType.SWANLAB:
         import swanlab
+
         swanlab.log(message)
     elif visualizer == VisualizerType.CLEARML:
         from clearml import Task
+
         task = Task.current_task()
         if task:
             logger_instance = task.get_logger()
@@ -110,7 +113,7 @@ def init_swanlab(args: Arguments) -> None:
         'project': os.getenv('SWANLAB_PROJ_NAME', 'perf_benchmark'),
         'name': name,
         'config': logging_config,
-        'mode': 'local' if swanlab_api_key == 'local' else None
+        'mode': 'local' if swanlab_api_key == 'local' else None,
     }
 
     workspace = os.getenv('SWANLAB_WORKSPACE')

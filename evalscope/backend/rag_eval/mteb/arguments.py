@@ -1,12 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from pydantic import Field, field_validator, model_validator
 from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import Field, field_validator, model_validator
 
 from evalscope.utils.argument_utils import BaseArgument
 
 
 class CustomTaskConfig(BaseArgument):
     """Configuration for a custom MTEB task."""
+
     name: str = 'CustomRetrieval'
     data_path: str
     eval_splits: List[str] = Field(default_factory=lambda: ['test'])

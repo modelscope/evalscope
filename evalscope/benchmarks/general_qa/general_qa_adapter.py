@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser, dict_to_c
 from evalscope.api.metric import Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.general_qa_vqa_metrics import METRIC_SCORE_KEYS, MetricScoringError, calculate_metric_score
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -51,19 +52,16 @@ General-QA is a customizable question answering benchmark for evaluating languag
         dataset_id='general_qa',
         metric_list=['BLEU', 'Rouge'],
         primary_metric=MetricSelector(
-            name='rouge', aggregation='mean', dimensions={
-                'variant': 'l',
-                'statistic': 'recall'
-            }
+            name='rouge', aggregation='mean', dimensions={'variant': 'l', 'statistic': 'recall'}
         ),
         few_shot_num=0,
         train_split=None,
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
+        evaluation_version='v1.1',
     )
 )
 class GeneralQAAdapter(DefaultDataAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -109,18 +107,16 @@ class GeneralQAAdapter(DefaultDataAdapter):
 
         # Calculate scores for each configured metric
         for metric in self.metric_list:
+            if metric not in METRIC_SCORE_KEYS:
+                continue
             try:
-                if metric == 'Rouge':
-                    from evalscope.metrics.utils.rouge import compute_rouge_score_one_sample_zh
-
-                    score.value.update(compute_rouge_score_one_sample_zh([filtered_prediction], [reference]))
-                elif metric == 'BLEU':
-                    from evalscope.metrics import bleu_ngram_one_sample
-
-                    score.value.update(bleu_ngram_one_sample(filtered_prediction, reference))
-            except Exception as e:
+                metric_score = calculate_metric_score(metric, filtered_prediction, reference)
+            except (ImportError, LookupError, MetricScoringError) as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                return None
+                score.value.update(dict.fromkeys(METRIC_SCORE_KEYS[metric], 0.0))
+                score.metadata.setdefault('metric_errors', {})[metric] = f'{type(e).__name__}: {e}'
+                continue
+            score.value.update(metric_score)
 
         score.main_score_name = 'Rouge-L-R'
         return score

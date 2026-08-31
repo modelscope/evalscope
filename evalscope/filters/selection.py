@@ -7,7 +7,6 @@ from evalscope.api.registry import register_filter
 
 @register_filter('take_first')
 class TakeFirstFilter(Filter):
-
     def __init__(self) -> None:
         """
         Can define custom behavior here, if an individual instantiation of a Filter class should have state.
@@ -22,7 +21,6 @@ class TakeFirstFilter(Filter):
 
 @register_filter('take_first_k')
 class TakeKFilter(Filter):
-
     def __init__(self, **kwargs) -> None:
         self.k = kwargs.pop('k')
         super().__init__(**kwargs)
@@ -34,12 +32,11 @@ class TakeKFilter(Filter):
         assert len(instance) >= self.k, (
             f'Need at least {self.k} responses to take first {self.k}, but got {len(instance)} only!'
         )
-        return instance[:self.k]
+        return instance[: self.k]
 
 
 @register_filter('majority_vote')
 class MajorityVoteFilter(Filter):
-
     def __init__(self) -> None:
         """
         Can define custom behavior here, if an individual instantiation of a Filter class should have state.

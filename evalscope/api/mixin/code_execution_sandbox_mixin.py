@@ -116,6 +116,7 @@ class EnclaveCodeExecutionBackend(CodeExecutionBackend):
     def execute(self, code: Union[str, List[str]], timeout: int, language: str) -> Dict[str, Any]:
         import asyncio
         import concurrent.futures as cf
+
         from ms_enclave.sandbox.model import ExecutionStatus
 
         async def _execute_async():
@@ -142,20 +143,14 @@ class EnclaveCodeExecutionBackend(CodeExecutionBackend):
             return {
                 'status': ExecutionStatus.TIMEOUT,
                 'error': 'Code execution timed out.',
-                'metadata': {
-                    'code': code,
-                    'language': language
-                },
+                'metadata': {'code': code, 'language': language},
             }
         except Exception as exc:
             logger.exception(f'Code execution in sandbox failed: {exc!r}')
             return {
                 'status': ExecutionStatus.ERROR,
                 'error': str(exc),
-                'metadata': {
-                    'code': code,
-                    'language': language
-                },
+                'metadata': {'code': code, 'language': language},
             }
 
     def stop(self) -> None:

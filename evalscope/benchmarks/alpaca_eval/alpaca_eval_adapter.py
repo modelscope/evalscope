@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -105,11 +106,10 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
         few_shot_num=0,
         train_split=None,
         eval_split='eval',
-        prompt_template='{question}'
+        prompt_template='{question}',
     )
 )
 class AlpacaEvalAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
     supports_position_swap = True
     official_position_swap = False
@@ -133,10 +133,7 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
         return Sample(
             input=instruction,
             target=baseline_output,
-            metadata={
-                'generator': record.get('generator', 'unknown'),
-                'dataset': record.get('dataset', 'unknown')
-            }
+            metadata={'generator': record.get('generator', 'unknown'), 'dataset': record.get('dataset', 'unknown')},
         )
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
@@ -151,7 +148,7 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
             return JudgeRequest(
                 messages=[
                     ChatMessageSystem(content=GRADER_SYSTEM_PROMPT),
-                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                    ChatMessageUser(content=prompt + case.output_contract.instruction()),
                 ]
             )
 
@@ -163,8 +160,11 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
                 )
                 for name, verdict in values.items()
             }
-            result = next(iter(item.result for item in outcomes.values())) \
-                if len({item.result for item in outcomes.values()}) == 1 else 'tie'
+            result = (
+                next(iter(item.result for item in outcomes.values()))
+                if len({item.result for item in outcomes.values()}) == 1
+                else 'tie'
+            )
             outcome = PairwiseOutcome(metric_name='win_rate', result=result, placements=outcomes)
             return ReducedVerdict(value={'win_rate': outcome.score}, outcome=outcome)
 

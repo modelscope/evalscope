@@ -12,13 +12,14 @@ Test plan:
 """
 
 import os
-import pytest
 import sys
 import tempfile
 import time
 import types
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 import evalscope  # noqa: F401 – trigger strategy / env / tool registration
 from evalscope.api.agent import (

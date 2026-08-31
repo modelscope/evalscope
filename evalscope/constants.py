@@ -19,6 +19,7 @@ DEFAULT_ROOT_CACHE_DIR = DEFAULT_DATASET_CACHE_DIR  # compatible with old versio
 DEFAULT_EVALSCOPE_CACHE_DIR = os.path.expanduser(
     os.getenv('EVALSCOPE_CACHE', '~/.cache/evalscope')
 )  # ~/.cache/evalscope
+DATASET_TRANSFORM_BATCH_SIZE = int(os.getenv('DATASET_TF_BATCH_SIZE', '100'))
 HEARTBEAT_INTERVAL_SEC = int(os.getenv('EVALSCOPE_HEARTBEAT_INTERVAL', '60'))  # 60 seconds
 DEFAULT_LANGUAGE = os.getenv('EVALSCOPE_LANGUAGE', 'en')  # default language: 'en' or 'zh'
 USE_OSS = os.getenv('USE_OSS', '0') == '1'  # whether to use OSS/FUSE-mounted filesystem
@@ -53,7 +54,6 @@ class MetricsConstant:
 
 
 class ArenaWinner:
-
     MODEL_A = 'model_a'
     MODEL_B = 'model_b'
     TIE = 'tie'
@@ -72,7 +72,6 @@ class AnswerKeys:
 
 
 class EvalType:
-
     CUSTOM = 'custom'
     MOCK_LLM = 'mock_llm'
     CHECKPOINT = 'llm_ckpt'  # native model checkpoint
@@ -222,23 +221,28 @@ class VisualizerType:
 PLOTLY_THEME = 'plotly_dark'
 PLOTLY_CDN_URL = 'https://resources.modelscope.cn/third-part/js/plotly/plotly-2.35.2.min.js'
 DEFAULT_BAR_WIDTH = 0.2
-LATEX_DELIMITERS = [{
-    'left': '$$',
-    'right': '$$',
-    'display': True,
-}, {
-    'left': '$',
-    'right': '$',
-    'display': False,
-}, {
-    'left': '\\(',
-    'right': '\\)',
-    'display': False,
-}, {
-    'left': '\\[',
-    'right': '\\]',
-    'display': True,
-}]
+LATEX_DELIMITERS = [
+    {
+        'left': '$$',
+        'right': '$$',
+        'display': True,
+    },
+    {
+        'left': '$',
+        'right': '$',
+        'display': False,
+    },
+    {
+        'left': '\\(',
+        'right': '\\)',
+        'display': False,
+    },
+    {
+        'left': '\\[',
+        'right': '\\]',
+        'display': True,
+    },
+]
 
 
 class LoggingConstants:
@@ -248,10 +252,7 @@ class LoggingConstants:
         '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d'
         ' - %(log_color)s%(levelname)s%(reset)s: %(message)s'
     )
-    COLOR_SIMPLE_FORMAT = ('%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s')
+    COLOR_SIMPLE_FORMAT = '%(asctime)s - %(name)s - %(log_color)s%(levelname)s%(reset)s: %(message)s'
     # File output formats (plain)
-    DETAILED_FORMAT = (
-        '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d'
-        ' - %(levelname)s: %(message)s'
-    )
+    DETAILED_FORMAT = '%(asctime)s - %(name)s - %(filename)s - %(funcName)s - %(lineno)d - %(levelname)s: %(message)s'
     SIMPLE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s: %(message)s'

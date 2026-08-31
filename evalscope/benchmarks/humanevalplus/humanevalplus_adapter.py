@@ -60,16 +60,9 @@ HumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed
         aggregation='mean_and_pass_at_k',
         primary_metric=MetricSelector(name='accuracy', aggregation='pass_at_k', dimensions={'k': 1}),
         eval_split='test',
-        prompt_template=
-        'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',  # noqa: E501
+        prompt_template='Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{question}',  # noqa: E501
         review_timeout=300,
-        sandbox_config={
-            'image': 'python3.11-numpy',
-            'tools_config': {
-                'shell_executor': {},
-                'python_executor': {}
-            }
-        },
+        sandbox_config={'image': 'python3.11-numpy', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
     )
 )
 class HumanevalplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -94,7 +87,7 @@ class HumanevalplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
                 'entry_point': record['entry_point'],
                 'prompt': record['prompt'],
                 'test': record['test'],
-            }
+            },
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
@@ -130,7 +123,7 @@ class HumanevalplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         completion = filtered_prediction
 
         check_program = (
-            problem['prompt'] + completion + '\n' + problem['test'] + '\n' + f"check({problem['entry_point']})"
+            problem['prompt'] + completion + '\n' + problem['test'] + '\n' + f'check({problem["entry_point"]})'
         )
         res = self.execute_code_in_sandbox(code=check_program, timeout=self.review_timeout, language='python')
         passed = res.get('status') == 'success'

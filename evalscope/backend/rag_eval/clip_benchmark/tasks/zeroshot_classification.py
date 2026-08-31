@@ -3,9 +3,10 @@ Code adapated from https://github.com/mlfoundations/open_clip/blob/main/src/trai
 Thanks to the authors of OpenCLIP
 """
 
+from contextlib import suppress
+
 import torch
 import torch.nn.functional as F
-from contextlib import suppress
 from sklearn.metrics import balanced_accuracy_score, classification_report
 from tqdm import tqdm
 

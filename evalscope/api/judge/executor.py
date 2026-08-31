@@ -1,12 +1,15 @@
 """The single execution path for Native LLM judge contracts."""
+
 import time
 from collections import Counter, defaultdict
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, Dict, List, Literal, Optional, Sequence
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric import JudgeSummary, Score
 from evalscope.constants import ScoreStatus
 from evalscope.utils.logger import get_logger
+
 from .aggregation import (
     aggregate_judge_values,
     aggregate_pairwise_outcomes,
@@ -99,7 +102,7 @@ class JudgeExecutor:
         completed: Sequence[CaseVerdict],
         review: JudgeReview,
     ) -> Optional[CaseVerdict]:
-        placements = (Placement.ORIGINAL, Placement.SWAPPED) if self.config.position_swap else (Placement.ORIGINAL, )
+        placements = (Placement.ORIGINAL, Placement.SWAPPED) if self.config.position_swap else (Placement.ORIGINAL,)
         values: Dict[str, Any] = {}
         for placement in placements:
             value = self._resolve_placement(definition, context, judge, repeat_id, case, placement, completed, review)
@@ -111,10 +114,7 @@ class JudgeExecutor:
                 fallback = definition.fallback_verdict(case, context)
                 if fallback is not None:
                     return fallback.model_copy(
-                        update={
-                            'status': ScoreStatus.FALLBACK,
-                            'metadata': fallback.metadata or dict(case.metadata)
-                        }
+                        update={'status': ScoreStatus.FALLBACK, 'metadata': fallback.metadata or dict(case.metadata)}
                     )
                 return None
             values[placement.value] = value
@@ -202,7 +202,9 @@ class JudgeExecutor:
                 self._aggregate_rule_fallback(review)
                 return
             review.status = ScoreStatus.EXCLUDED
-            review.error = f'only {len(per_judge)} judge(s) produced valid verdicts; need {self.config.min_valid_judges}'
+            review.error = (
+                f'only {len(per_judge)} judge(s) produced valid verdicts; need {self.config.min_valid_judges}'
+            )
             return
         judge_values: Dict[str, Dict[str, float]] = {}
         repeat_ties: Dict[str, List[str]] = {}
@@ -221,15 +223,11 @@ class JudgeExecutor:
             review.status = ScoreStatus.EXCLUDED
             review.error = 'no metric received enough valid judge verdicts'
             return
-        excluded_metrics = sorted({metric_name
-                                   for values in judge_values.values()
-                                   for metric_name in values} - eligible_metrics)
+        excluded_metrics = sorted(
+            {metric_name for values in judge_values.values() for metric_name in values} - eligible_metrics
+        )
         judge_values = {
-            judge_id: {
-                metric_name: value
-                for metric_name, value in values.items()
-                if metric_name in eligible_metrics
-            }
+            judge_id: {metric_name: value for metric_name, value in values.items() if metric_name in eligible_metrics}
             for judge_id, values in judge_values.items()
         }
         combined, tie_broken, unresolved_ties = aggregate_judge_values(
@@ -249,18 +247,22 @@ class JudgeExecutor:
         tie_broken = tie_broken or pairwise_tie_broken
         primary_observation = next(
             (
-                observation for observation in review.valid_observations
+                observation
+                for observation in review.valid_observations
                 if observation.judge_id == _judge_id(self.judges[0])
             ),
             review.valid_observations[0],
         )
         review.metadata = dict(primary_observation.reduced.metadata)
-        review.observation_metadata = [{
-            'judge_id': observation.judge_id,
-            'repeat_id': observation.repeat_id,
-            'status': observation.status.value,
-            'metadata': dict(observation.reduced.metadata),
-        } for observation in review.usable_observations]
+        review.observation_metadata = [
+            {
+                'judge_id': observation.judge_id,
+                'repeat_id': observation.repeat_id,
+                'status': observation.status.value,
+                'metadata': dict(observation.reduced.metadata),
+            }
+            for observation in review.usable_observations
+        ]
         review.disagreement = judge_disagreement(per_judge, review.valid_observations)
         if excluded_metrics:
             review.metadata['metrics_without_quorum'] = excluded_metrics
@@ -285,12 +287,15 @@ class JudgeExecutor:
         review.value = dict(fallback.reduced.value)
         review.outcome = fallback.reduced.outcome
         review.metadata = dict(fallback.reduced.metadata)
-        review.observation_metadata = [{
-            'judge_id': observation.judge_id,
-            'repeat_id': observation.repeat_id,
-            'status': observation.status.value,
-            'metadata': dict(observation.reduced.metadata),
-        } for observation in review.fallback_observations]
+        review.observation_metadata = [
+            {
+                'judge_id': observation.judge_id,
+                'repeat_id': observation.repeat_id,
+                'status': observation.status.value,
+                'metadata': dict(observation.reduced.metadata),
+            }
+            for observation in review.fallback_observations
+        ]
         review.status = ScoreStatus.DEGRADED
 
     def build_score(

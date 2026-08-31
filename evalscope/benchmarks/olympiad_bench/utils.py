@@ -13,7 +13,7 @@ logger = get_logger()
 
 def get_single_answer_type_text(answer_type, is_chinese):
     if '-' in answer_type:  # No need now
-        answer_type = answer_type[:answer_type.find('-')]
+        answer_type = answer_type[: answer_type.find('-')]
     chinese_answer_type_dict = {
         'Numerical': '数值',
         'Expression': '表达式',
@@ -44,16 +44,14 @@ def get_answer_type_text(answer_type, is_chinese, multiple_answer):
         if is_chinese:
             return f'，答案类型为{answer_text}'
         else:
-            return (f'The answer of The problem should be '
-                    f'{answer_text}. ')
+            return f'The answer of The problem should be {answer_text}. '
     # Multiple answers case
     if ',' not in answer_type:  # Same answer type for all answers
         answer_text = get_single_answer_type_text(answer_type, is_chinese)
         if is_chinese:
             return f'，题目有多个答案，答案类型均为{answer_text}'
         else:
-            return (f'The problem has multiple answers, each of them '
-                    f'should be {answer_text}. ')
+            return f'The problem has multiple answers, each of them should be {answer_text}. '
     # Different answer types
     answer_types = answer_type.split(',')
     answer_types = [get_single_answer_type_text(t, is_chinese) for t in answer_types]
@@ -62,20 +60,17 @@ def get_answer_type_text(answer_type, is_chinese, multiple_answer):
         if is_chinese:
             return f'，题目有多个答案，答案类型均为{answer_text}'
         else:
-            return (f'The problem has multiple answers, each of them '
-                    f'should be {answer_text}. ')
+            return f'The problem has multiple answers, each of them should be {answer_text}. '
     else:
         if is_chinese:
             answer_text = '、'.join(answer_types)
             return f'，题目有多个答案，答案类型分别为{answer_text}'
         else:
             answer_text = ', '.join(answer_types)
-            return (f'The problem has multiple answers, '
-                    f'with the answers in order being {answer_text}. ')
+            return f'The problem has multiple answers, with the answers in order being {answer_text}. '
 
 
 class OlympiadBenchPrompter:
-
     def __init__(self):
         pass
 
@@ -96,8 +91,10 @@ class OlympiadBenchPrompter:
         if self.is_chinese:
             subject_content = '数学' if self.is_math else '物理'
             if self.is_theorem_proving:
-                prompt = (f'以下是中国{subject_content}竞赛中的证明题。请根据题目的要求，'
-                          f'运用逻辑推理及常用定理证明题目中的命题。证明过程中使用的变量和公式请使用LaTeX格式表示。')
+                prompt = (
+                    f'以下是中国{subject_content}竞赛中的证明题。请根据题目的要求，'
+                    f'运用逻辑推理及常用定理证明题目中的命题。证明过程中使用的变量和公式请使用LaTeX格式表示。'
+                )
             else:
                 answer_type_text = get_answer_type_text(
                     answer_type,
@@ -131,14 +128,13 @@ class OlympiadBenchPrompter:
                 )
             else:
                 if is_multiple_answer:
-                    multiple_answer_text = ('\\boxed{multiple answers connected with commas}')
+                    multiple_answer_text = '\\boxed{multiple answers connected with commas}'
                 else:
                     multiple_answer_text = '\\boxed{answer}'
                 unit_text = ''
                 if unit:
                     multiple_answer_text += '(unit)'
-                    unit_text = (', note that the unit of the answer should '
-                                 'not be included in \\boxed{}')
+                    unit_text = ', note that the unit of the answer should not be included in \\boxed{}'
                 answer_type_text = get_answer_type_text(
                     answer_type,
                     is_chinese=False,
@@ -161,8 +157,7 @@ class OlympiadBenchPrompter:
         if self.is_chinese:
             prompt += '\n请通过逐步推理来解答问题，并把最终答案放置于\\boxed{}中。'
         else:
-            prompt += ('\nPlease reason step by step, and put your final '
-                       'answer within \\boxed{}.')
+            prompt += '\nPlease reason step by step, and put your final answer within \\boxed{}.'
         return prompt
 
 
@@ -170,9 +165,9 @@ class OlympiadBenchPrompter:
 
 
 class MathJudger:
-
     def __init__(self):
         from latex2sympy2_extended import latex2sympy as parse_latex
+
         self.special_signal_map = {
             '\\left': '',
             '\\right': '',
@@ -274,7 +269,7 @@ class MathJudger:
         return expression_sympy.subs(self.pi, math.pi)
 
     def is_equal(self, expression1, expression2):
-        if (expression1 == expression2 and expression1 != '' and expression2 != ''):
+        if expression1 == expression2 and expression1 != '' and expression2 != '':
             return True
 
         # 先判断是否是两个区间
@@ -346,6 +341,7 @@ class MathJudger:
 
         # 将表达式转换为 sympy 中能够进行处理的格式
         from latex2sympy2_extended import latex2sympy as parse_latex
+
         expr1_sym = sympify(parse_latex(exp1))
         expr2_sym = sympify(parse_latex(exp2))
 
@@ -355,8 +351,9 @@ class MathJudger:
             expr1_sym = self.sympy_sub_pi(expr1_sym)
             expr2_sym = self.sympy_sub_pi(expr2_sym)
 
-            if (expr1_sym.has(sp.Symbol)
-                and not expr2_sym.has(sp.Symbol)) or (not expr1_sym.has(sp.Symbol) and expr2_sym.has(sp.Symbol)):
+            if (expr1_sym.has(sp.Symbol) and not expr2_sym.has(sp.Symbol)) or (
+                not expr1_sym.has(sp.Symbol) and expr2_sym.has(sp.Symbol)
+            ):
                 return False
             elif not expr1_sym.has(sp.Symbol) and not expr2_sym.has(sp.Symbol):
                 try:
@@ -368,7 +365,7 @@ class MathJudger:
                         )
                         return False
 
-                    if (abs(expr1_sym.evalf() - expr2_sym.evalf()) <= self.precision * 1.01):
+                    if abs(expr1_sym.evalf() - expr2_sym.evalf()) <= self.precision * 1.01:
                         return True
                     else:
                         return False
@@ -400,6 +397,7 @@ class MathJudger:
 
             # Parse LaTeX expressions using parse_latex
             from latex2sympy2_extended import latex2sympy as parse_latex
+
             lhs_expr = parse_latex(lhs)
             rhs_expr = parse_latex(rhs)
 
@@ -419,8 +417,9 @@ class MathJudger:
 
         # If division result or its reciprocal is
         # non-zero integer, equations are equivalent
-        if (division_result_1.is_Integer
-            and division_result_1 != 0) or (division_result_2.is_Integer and division_result_2 != 0):
+        if (division_result_1.is_Integer and division_result_1 != 0) or (
+            division_result_2.is_Integer and division_result_2 != 0
+        ):
             return True
         else:
             return False
@@ -492,7 +491,7 @@ class MathJudger:
 
                 if stack == 0:
                     # Extract content inside \boxed{}
-                    content = latex_str[start_index:end_index - 1]
+                    content = latex_str[start_index : end_index - 1]
                     results += content + ','
                 else:
                     raise ValueError('Mismatched braces in LaTeX string.')

@@ -14,7 +14,7 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 ## Build, lint, test
 
 ```bash
-make lint                                                                       # required before commit (yapf + isort + flake8 + basic pre-commit hooks)
+make lint                                                                       # apply Ruff fixes/formatting and run all pre-commit checks
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
 pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
@@ -63,9 +63,10 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 ## Code style (enforced)
 
 - **Line width 120**, 4-space indent, LF endings, trailing newline at EOF.
-- **Quotes** governed by `double-quote-string-fixer` hook — follow existing file style; do not mix.
+- **Quotes**: single quotes, enforced by the Ruff formatter.
+- **Linting**: Ruff's `E`, `F`, and `W` rules for maintained source files.
+- **Imports**: Ruff's `I` rules, with `evalscope` detected as first-party and standard import sections.
 - **f-strings** for formatting (no `%` or `.format()` unless necessary).
-- **Imports**: isort with `first_party = evalscope`, groups `STDLIB / THIRDPARTY / LOCALFOLDER`, `multi_line_output=3`.
 - **Type hints required** on every function signature.
 - **English only** for comments and docstrings.
 - **Public APIs need docstrings**; internal helpers only when intent is non-obvious.
@@ -80,13 +81,14 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 | Handler function | `handle_` prefix |
 | Benchmark adapter file | `<name>_adapter.py` |
 
-**flake8 ignore list** (`setup.cfg`): `F401, F403, F405, F821, W503, E251, W504, F824, F541, E501, E226, E121-E129, E131, E741`. Do not expand — new ignores must be justified in the PR.
+**Ruff ignore list** (`pyproject.toml`): `E501, E741, F401, F403, F405, F541, F821`. Do not expand — new ignores must be justified in the PR.
 
 ## Design rules
 
 - **Early returns** over nested conditionals.
 - **Minimal changes**: only touch code related to the current task; no drive-by cleanup.
 - **Pydantic-first**: cross-module data contracts use Pydantic models. Use `TaskConfig` / `Arguments` for configuration — never raw dicts at module boundaries.
+- **Web API responses**: successful JSON responses consumed by the dashboard use models from `evalscope/service/api_models/` and `json_response()`. Regenerate frontend contracts with `cd evalscope/web && npm run contracts:generate`; never hand-edit generated artifacts or add parallel response schemas.
 - **Reuse existing patterns**: new benchmarks / models / metrics go through existing registries and adapter base classes — no parallel mechanisms.
 - **DRY** but don't over-abstract just to remove minor duplication.
 
@@ -109,6 +111,7 @@ Don't try to learn the architecture from this file — read these and grep:
 | Model layer | `evalscope/api/model/model.py`, `evalscope/models/model_apis.py` |
 | CLI dispatch | `evalscope/cli/` |
 | Cache schema | `evalscope/api/evaluator/cache.py` |
+| Web API response contracts | `evalscope/service/api_models/`, `evalscope/service/responses.py`, `evalscope/web/src/api/generated/` |
 
 **Registry decorators**: `@register_benchmark`, `@register_model_api`, `@register_metric`, `@register_aggregation`, `@register_filter`, `@register_evaluator`.
 
@@ -155,7 +158,7 @@ An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply i
 - `repeats`: duplicates items for k-metrics. `generation_config.n` is deprecated and mapped.
 - Use `generation_config` for runtime params. `TaskConfig.timeout` / `stream` are deprecated — forwarded with a warning.
 - `dataset_args` merges into `BenchmarkMeta._update()` (supports `local_path`, `filters` OrderedDict prepended).
-- Models are memoized by `(name, config, base_url, api_key, args)`.
+- Models are memoized by `(name, eval_type, config, base_url, api_key, args)`.
 - Use `@thread_safe` for model creation, `run_in_threads_with_progress` for concurrent eval.
 - Outputs land in `outputs/<timestamp>/{logs,predictions,reviews,reports,configs}/` (see `OutputsStructure`). `use_cache` resumes runs; `rerun_review` recomputes scores only.
 - `evalscope app` CLI command is **deprecated** (see `evalscope/cli/start_app.py`) — use `evalscope service` for the Web dashboard.
@@ -164,6 +167,6 @@ An adapter must **never** call `self.llm_judge.judge()` or parse a judge reply i
 
 ```bash
 make dev      # once
-make lint     # before every commit
+make lint     # apply fixes and run all checks before every commit
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings
 ```

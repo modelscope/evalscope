@@ -1,9 +1,11 @@
-import editdistance
 import re
 import unicodedata
+
+import editdistance
 import zhconv
 
 from evalscope.utils.logger import get_logger
+
 from .basic import BasicTextNormalizer
 from .chinese import TextNorm as ChineseTextNormalizer
 from .english import EnglishTextNormalizer

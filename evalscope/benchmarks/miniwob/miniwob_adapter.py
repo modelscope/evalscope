@@ -9,6 +9,7 @@ from evalscope.api.benchmark import BenchmarkMeta, BrowserGymAdapter
 from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import (
     BROWSER_ACTION_TOOL_INFO,
     MINIWOB_MAX_STEPS,
@@ -83,10 +84,12 @@ class MiniWobAdapter(BrowserGymAdapter):
         for sample in dataset:
             repeat = sample.id % self.repeats
             episode_seeds = sample.metadata.pop('_episode_seeds')
-            sample.metadata.update({
-                'seed': episode_seeds[repeat],
-                'repeat': repeat,
-            })
+            sample.metadata.update(
+                {
+                    'seed': episode_seeds[repeat],
+                    'repeat': repeat,
+                }
+            )
         return DatasetDict({'default': dataset}), None
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

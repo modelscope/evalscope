@@ -208,7 +208,6 @@ _EXTRA_PARAMS: Dict[str, Any] = {
     )
 )
 class SWEBenchProAgenticAdapter(AgentLoopAdapter):
-
     strategy_name = 'swe_bench_toolcall'
     max_steps_default = 250
 
@@ -224,6 +223,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
             self.repo_path = ''
         else:
             from .utils import ensure_pro_repo
+
             self.repo_path = ensure_pro_repo(self.extra_params.get('swe_bench_pro_repo_path', ''))
 
     # ------------------------------------------------------------------
@@ -292,7 +292,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         image = sample.metadata.get('docker_image')
         if not image:
             raise RuntimeError(
-                f"docker_image missing for instance {sample.metadata.get('instance_id')!r}; "
+                f'docker_image missing for instance {sample.metadata.get("instance_id")!r}; '
                 'did _post_process_samples run?'
             )
         agent_required = {
@@ -317,8 +317,9 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         )
 
     def build_initial_messages(self, sample: Sample) -> List[Any]:
-        problem_statement = sample.metadata.get('problem_statement'
-                                                ) or (sample.input if isinstance(sample.input, str) else '')
+        problem_statement = sample.metadata.get('problem_statement') or (
+            sample.input if isinstance(sample.input, str) else ''
+        )
         rendered = INSTANCE_TEMPLATE.format(problem_statement=problem_statement)
         return [ChatMessageUser(content=rendered)]
 
@@ -339,6 +340,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
         SWE-bench_Pro evaluation pipeline.
         """
         from evalscope.agent.external.helpers import extract_patch
+
         return await extract_patch(env, cwd=self.working_dir)
 
     # ------------------------------------------------------------------
@@ -359,6 +361,7 @@ class SWEBenchProAgenticAdapter(AgentLoopAdapter):
                     break
         try:
             from swebench.inference.make_datasets.utils import extract_diff
+
             return extract_diff(last_assistant) or ''
         except Exception:
             # Minimal fallback: return raw text starting at the first ``diff --git`` block.

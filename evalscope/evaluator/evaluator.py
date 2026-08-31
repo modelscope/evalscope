@@ -327,8 +327,7 @@ class DefaultEvaluator(Evaluator):
             completion order.  ``sample_score`` is ``None`` for batch-scoring
             benchmarks (review is deferred to :meth:`_aggregate_scores`).
         """
-        results_by_subset: Dict[str, List[Tuple[TaskState, Optional[SampleScore]]]] = \
-            defaultdict(list)
+        results_by_subset: Dict[str, List[Tuple[TaskState, Optional[SampleScore]]]] = defaultdict(list)
 
         def worker(item: _WorkItem) -> Tuple[TaskState, Optional[SampleScore]]:
             return self._process_work_item(item, context.model_prediction_dir)
@@ -382,7 +381,7 @@ class DefaultEvaluator(Evaluator):
             with self._prediction_cache_lock:
                 self.cache_manager.save_prediction_cache(item.subset, task_state, self.benchmark.save_metadata)
             item.prediction_persisted = True
-        sample_score = (None if self.benchmark.use_batch_scoring else self._review_task_state(task_state))
+        sample_score = None if self.benchmark.use_batch_scoring else self._review_task_state(task_state)
         return task_state, sample_score
 
     def _persist_result(
@@ -431,9 +430,11 @@ class DefaultEvaluator(Evaluator):
         """
         assistant_messages = [(t, m) for t, m in enumerate(task_state.messages) if m.role == 'assistant']
         self._perf_request_count += len(assistant_messages) or 1
-        perfs = [(turn_index, message.perf_metrics)
-                 for turn_index, message in assistant_messages
-                 if message.perf_metrics is not None]
+        perfs = [
+            (turn_index, message.perf_metrics)
+            for turn_index, message in assistant_messages
+            if message.perf_metrics is not None
+        ]
         if not perfs and task_state.output.perf_metrics is not None:
             perfs = [(0, task_state.output.perf_metrics)]
         for turn_index, perf in perfs:
@@ -567,8 +568,7 @@ class DefaultEvaluator(Evaluator):
         if agg_score_dict:
             try:
                 report_table = gen_table(report_list=[report], add_overall_metric=self.benchmark.add_overall_metric)
-                logger.info(f'\n{self.benchmark_name} report table:'
-                            f'\n{report_table} \n')
+                logger.info(f'\n{self.benchmark_name} report table:\n{report_table} \n')
             except Exception as e:
                 logger.error(f'Failed to generate report table: {e}')
 
@@ -594,6 +594,7 @@ class DefaultEvaluator(Evaluator):
                 'total_requests': self._perf_request_count,
             }
             from evalscope.metrics.semantics import attach_perf_semantics
+
             report.perf_metrics = attach_perf_semantics(perf_metrics)
 
         # Save the complete report to file

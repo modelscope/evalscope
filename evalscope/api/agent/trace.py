@@ -7,8 +7,9 @@ file) and is ``None`` for non-agent benchmarks.
 
 import time
 from enum import Enum
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.model import ModelUsage
 

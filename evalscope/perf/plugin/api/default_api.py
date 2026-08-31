@@ -1,10 +1,11 @@
-import aiohttp
 import codecs
 import json
 import sys
 import time
 import traceback
 from typing import Any, Dict
+
+import aiohttp
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.base import ApiPluginBase
@@ -37,7 +38,9 @@ class StreamedResponseHandler:
         drop continuation lines.
         """
         data_values: list[str] = []
-        for line in message.strip().splitlines():
+        # SSE lines use CR/LF only; splitlines() also splits valid JSON characters
+        # such as U+0085, U+2028, and U+2029.
+        for line in message.strip().split('\n'):
             if line.startswith('data:'):
                 data_values.append(line.removeprefix('data:').lstrip(' '))
 
@@ -117,12 +120,12 @@ class DefaultApiPlugin(ApiPluginBase):
         data = json.dumps(body, ensure_ascii=False)  # serialize to JSON
 
         output = BenchmarkData()
-        ttft = 0.0
         generated_text = ''
         st = time.perf_counter()
         output.start_time = st
         output.request = data
         most_recent_timestamp = st
+        last_output_timestamp: float | None = None
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
                 content_type = response.headers.get('Content-Type', '')
@@ -132,7 +135,6 @@ class DefaultApiPlugin(ApiPluginBase):
                         output.is_stream = True
                         handler = StreamedResponseHandler()
                         async for chunk_bytes in response.content.iter_any():
-
                             if not chunk_bytes:
                                 continue
 
@@ -155,16 +157,19 @@ class DefaultApiPlugin(ApiPluginBase):
                                             content = choices[0].get('text') or ''
                                         else:
                                             delta = choices[0].get('delta', {})
-                                            content = (delta.get('content')
-                                                       or '') + (delta.get('reasoning_content') or '')
-                                        # First token
-                                        if ttft == 0.0:
-                                            ttft = timestamp - st
-                                            output.first_chunk_latency = ttft
+                                            content = (delta.get('content') or '') + (
+                                                delta.get('reasoning_content') or ''
+                                            )
+                                        if content:
+                                            # First token
+                                            if last_output_timestamp is None:
+                                                output.first_chunk_latency = timestamp - st
 
-                                        # Decoding phase
-                                        else:
-                                            output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
+                                            # Decoding phase
+                                            else:
+                                                output.inter_chunk_latency.append(timestamp - last_output_timestamp)
+
+                                            last_output_timestamp = timestamp
 
                                         generated_text += content
                                         output.response_messages.append(data)

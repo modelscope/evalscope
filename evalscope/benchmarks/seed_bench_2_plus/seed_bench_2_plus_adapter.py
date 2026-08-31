@@ -60,7 +60,6 @@ SEED-Bench-2-Plus is a large-scale benchmark designed to evaluate Multimodal Lar
     )
 )
 class SeedBench2PlusAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

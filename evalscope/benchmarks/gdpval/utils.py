@@ -88,10 +88,12 @@ class GDPvalArtifactEnvironment(AgentEnvironment):
                 host_path = self._artifact_dir / SANDBOX_DELIVERABLE_DIR / relative_path
                 host_path.parent.mkdir(parents=True, exist_ok=True)
                 host_path.write_bytes(base64.b64decode(encoded.stdout))
-                deliverables.append({
-                    'path': f'{SANDBOX_DELIVERABLE_DIR}/{relative_path}',
-                    'local_path': str(host_path),
-                })
+                deliverables.append(
+                    {
+                        'path': f'{SANDBOX_DELIVERABLE_DIR}/{relative_path}',
+                        'local_path': str(host_path),
+                    }
+                )
             except Exception as exc:
                 logger.warning(f'Failed to write extracted GDPval deliverable {file_path!r} to host: {exc}')
 
@@ -192,7 +194,7 @@ def export_submission(
         'local_metric': 'submission_ready',
         'official_gdpval_score_computed_locally': False,
         'next_step': (
-            'Local submission package exported. Run OpenAI\'s official GDPval judge externally to compute quality scores.'
+            "Local submission package exported. Run OpenAI's official GDPval judge externally to compute quality scores."
         ),
     }
     with open(submission_dir / 'submission_info.json', 'w', encoding='utf-8') as f:
@@ -305,7 +307,7 @@ def relative_deliverable_path(file_path: str) -> str:
     prefix = f'{SANDBOX_DELIVERABLE_DIR}/'
     if not file_path.startswith(prefix):
         return ''
-    relative_path = file_path[len(prefix):].strip()
+    relative_path = file_path[len(prefix) :].strip()
     if not is_safe_relative_path(relative_path):
         return ''
     return relative_path

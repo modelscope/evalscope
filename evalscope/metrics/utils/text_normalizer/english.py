@@ -2,8 +2,9 @@ import json
 import os
 import re
 from fractions import Fraction
-from more_itertools import windowed
 from typing import Iterator, List, Match, Optional, Union
+
+from more_itertools import windowed
 
 from .basic import remove_symbols_and_diacritics
 
@@ -60,7 +61,8 @@ class EnglishNumberNormalizer:
             'twelfth': (12, 'th'),
             **{
                 name + ('h' if name.endswith('t') else 'th'): (value, 'th')
-                for name, value in self.ones.items() if value > 3 and value != 5 and value != 12
+                for name, value in self.ones.items()
+                if value > 3 and value != 5 and value != 12
             },
         }
         self.ones_suffixed = {**self.ones_plural, **self.ones_ordinal}
@@ -119,28 +121,30 @@ class EnglishNumberNormalizer:
         }
         self.prefixes = set(list(self.preceding_prefixers.values()) + list(self.following_prefixers.values()))
         self.suffixers = {
-            'per': {
-                'cent': '%'
-            },
+            'per': {'cent': '%'},
             'percent': '%',
         }
         self.specials = {'and', 'double', 'triple', 'point'}
 
-        self.words = set([
-            key for mapping in [
-                self.zeros,
-                self.ones,
-                self.ones_suffixed,
-                self.tens,
-                self.tens_suffixed,
-                self.multipliers,
-                self.multipliers_suffixed,
-                self.preceding_prefixers,
-                self.following_prefixers,
-                self.suffixers,
-                self.specials,
-            ] for key in mapping
-        ])
+        self.words = set(
+            [
+                key
+                for mapping in [
+                    self.zeros,
+                    self.ones,
+                    self.ones_suffixed,
+                    self.tens,
+                    self.tens_suffixed,
+                    self.multipliers,
+                    self.multipliers_suffixed,
+                    self.preceding_prefixers,
+                    self.following_prefixers,
+                    self.suffixers,
+                    self.specials,
+                ]
+                for key in mapping
+            ]
+        )
         self.literal_words = {'one', 'ones'}
 
     def process_words(self, words: List[str]) -> Iterator[str]:
@@ -444,7 +448,6 @@ class EnglishSpellingNormalizer:
 
 
 class EnglishTextNormalizer:
-
     def __init__(self):
         self.ignore_patterns = r'\b(hmm|mm|mhm|mmm|uh|um)\b'
         self.replacers = {

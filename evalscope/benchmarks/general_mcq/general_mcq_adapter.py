@@ -70,7 +70,6 @@ General-MCQ is a customizable multiple-choice question answering benchmark for e
     )
 )
 class GeneralMCQAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -105,7 +104,7 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
             raise ValueError(
                 f"general_mcq with multiple_correct=True requires 'answer' as a list "
                 f"of letters (e.g., ['A', 'C']), got {type(answer).__name__}: {answer!r} "
-                f"(id={record.get('id', 'unknown')})."
+                f'(id={record.get("id", "unknown")}).'
             )
 
         return Sample(

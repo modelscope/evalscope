@@ -31,9 +31,10 @@ In these examples settings.xml lists input files and formats.
 from __future__ import absolute_import, division, print_function
 
 import collections
+import re
+
 import nltk
 import numpy as np
-import re
 import six
 from absl import logging
 from rouge_score import scoring, tokenizers
@@ -174,7 +175,7 @@ def _create_ngrams(tokens, n):
     """
 
     ngrams = collections.Counter()
-    for ngram in (tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)):
+    for ngram in (tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)):
         ngrams[ngram] += 1
     return ngrams
 

@@ -1,0 +1,168 @@
+{
+  "meta": {
+    "pretty_name": "VisFactor",
+    "dataset_id": "lmms-lab-encoder/visfactor",
+    "paper_url": "https://arxiv.org/abs/2502.16435",
+    "tags": [
+      "MultiModal",
+      "Reasoning",
+      "QA"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nVisFactor evaluates foundational visual cognition in multimodal large language models using 20 vision-centric subtests adapted from the Factor-Referenced Cognitive Test (FRCT). It isolates abilities that support higher-level visual reasoning instead of measuring performance on a single downstream task.\n\n## Task Description\n\n- **Task Type**: Visual cognition assessment with binary and short free-form questions\n- **Input**: One to four images interleaved with a task-specific instruction\n- **Output**: A JSON object containing a boolean, word, number, coordinate pair, or letter answer\n- **Domain**: Visualization and spatial processing, perceptual closure, visual memory, and reasoning\n\n## Key Features\n\n- Contains 3,046 rows representing 808 test items across 20 FRCT subtests\n- Uses rule-based variants and grouped consistency checks to reduce average chance performance to approximately 2.9%\n- Preserves the official zero-shot prompts and their image ordering from the VLMEvalKit implementation\n- Covers hidden figures, gestalt completion, visual memory, mental rotation, path finding, paper folding, and related abilities\n\n## Evaluation Notes\n\n- Uses the **test** split from the ModelScope mirror of the official `VisFactor.tsv`\n- Extracts the last `{\"answer\": ...}` object and applies the official category-specific normalization rules\n- A logical test item may contain multiple rows and receives credit only when every row is correct\n- Reports each subtest's item-level accuracy; the primary score is the unweighted macro-average over represented subtests\n- Scoring is deterministic and does not require an LLM judge\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": "macro_mean",
+      "dimensions": {
+        "scope": "categories"
+      }
+    }
+  },
+  "statistics": {
+    "total_samples": 3046,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3046,
+        "prompt_length_mean": 463.45,
+        "prompt_length_min": 188,
+        "prompt_length_max": 932,
+        "prompt_length_std": 135.38,
+        "target_length_mean": 1.36,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 6048,
+            "count_per_sample": {
+              "min": 1,
+              "max": 4,
+              "mean": 1.99
+            },
+            "resolutions": [
+              "100x100",
+              "100x101",
+              "100x102",
+              "100x103",
+              "100x104",
+              "100x105",
+              "100x106",
+              "100x107",
+              "100x108",
+              "100x109"
+            ],
+            "resolution_range": {
+              "min": "100x100",
+              "max": "668x911"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 463.45,
+      "min": 188,
+      "max": 932,
+      "std": 135.38
+    },
+    "target_length_mean": 1.36,
+    "computed_at": "2026-08-28T10:49:49.933894+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 6048,
+        "count_per_sample": {
+          "min": 1,
+          "max": 4,
+          "mean": 1.99
+        },
+        "resolutions": [
+          "100x100",
+          "100x101",
+          "100x102",
+          "100x103",
+          "100x104",
+          "100x105",
+          "100x106",
+          "100x107",
+          "100x108",
+          "100x109"
+        ],
+        "resolution_range": {
+          "min": "100x100",
+          "max": "668x911"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "1a4f53fe",
+          "content": [
+            {
+              "text": "Look at the two images:\n\nBelow is the first image, one simple shape:"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~2.6KB]"
+            },
+            {
+              "text": "Below is the second image, a larger, complex pattern:"
+            },
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~8.5KB]"
+            },
+            {
+              "text": "Task: Decide whether the shape in the first image is hidden anywhere inside the second image. The shape will never be rotated, flipped, or resized. The shape will always be right-side-up and exactly the same size as in the first image.\n\nOutput: Respond with only one word: “TRUE” if it is present, “FALSE” if it is not, in JSON format as follows: {\"answer\": YOUR_ANSWER_HERE}."
+            }
+          ]
+        }
+      ],
+      "target": "T",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "index": 0,
+        "category_id": "CF1",
+        "category_name": "Hidden Figures Test",
+        "eval_index": 0,
+        "additional": ""
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# VisFactor\n\n\n## Overview\n\nVisFactor evaluates foundational visual cognition in multimodal large language models using 20 vision-centric subtests adapted from the Factor-Referenced Cognitive Test (FRCT). It isolates abilities that support higher-level visual reasoning instead of measuring performance on a single downstream task.\n\n## Task Description\n\n- **Task Type**: Visual cognition assessment with binary and short free-form questions\n- **Input**: One to four images interleaved with a task-specific instruction\n- **Output**: A JSON object containing a boolean, word, number, coordinate pair, or letter answer\n- **Domain**: Visualization and spatial processing, perceptual closure, visual memory, and reasoning\n\n## Key Features\n\n- Contains 3,046 rows representing 808 test items across 20 FRCT subtests\n- Uses rule-based variants and grouped consistency checks to reduce average chance performance to approximately 2.9%\n- Preserves the official zero-shot prompts and their image ordering from the VLMEvalKit implementation\n- Covers hidden figures, gestalt completion, visual memory, mental rotation, path finding, paper folding, and related abilities\n\n## Evaluation Notes\n\n- Uses the **test** split from the ModelScope mirror of the official `VisFactor.tsv`\n- Extracts the last `{\"answer\": ...}` object and applies the official category-specific normalization rules\n- A logical test item may contain multiple rows and receives credit only when every row is correct\n- Reports each subtest's item-level accuracy; the primary score is the unweighted macro-average over represented subtests\n- Scoring is deterministic and does not require an LLM judge\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `visfactor` |\n| **Dataset ID** | [lmms-lab-encoder/visfactor](https://modelscope.cn/datasets/lmms-lab-encoder/visfactor/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2502.16435) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,046 |\n| Prompt Length (Mean) | 463.45 chars |\n| Prompt Length (Min/Max) | 188 / 932 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 6,048 |\n| Images per Sample | min: 1, max: 4, mean: 1.99 |\n| Resolution Range | 100x100 - 668x911 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1a4f53fe\",\n      \"content\": [\n        {\n          \"text\": \"Look at the two images:\\n\\nBelow is the first image, one simple shape:\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~2.6KB]\"\n        },\n        {\n          \"text\": \"Below is the second image, a larger, complex pattern:\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~8.5KB]\"\n        },\n        {\n          \"text\": \"Task: Decide whether the shape in the first image is hidden anywhere inside the second image. The shape will never be rotated, flipped, or resized. The shape will always be right-side-up and exactly the same size as in the first image.\\n\\nOutput: Respond with only one word: “TRUE” if it is present, “FALSE” if it is not, in JSON format as follows: {\\\"answer\\\": YOUR_ANSWER_HERE}.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"T\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"category_id\": \"CF1\",\n    \"category_name\": \"Hidden Figures Test\",\n    \"eval_index\": 0,\n    \"additional\": \"\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visfactor \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visfactor'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VisFactor\n\n\n## 概述\n\nVisFactor 使用从 Factor-Referenced Cognitive Test (FRCT) 改编而来的 20 个以视觉为中心的子测试，评估多模态大语言模型的基础视觉认知能力。它聚焦于支撑高层视觉推理的基本能力，而非衡量单一下游任务的表现。\n\n## 任务描述\n\n- **任务类型**：包含二元判断和简短自由回答的视觉认知评估\n- **输入**：1 至 4 张图像，与任务特定指令交错排列\n- **输出**：一个 JSON 对象，包含布尔值、单词、数字、坐标对或字母形式的答案\n- **领域**：可视化与空间处理、知觉闭合、视觉记忆及推理\n\n## 主要特性\n\n- 包含 3,046 行数据，对应 20 个 FRCT 子测试中的 808 个测试项\n- 采用基于规则的变体和分组一致性检查，将平均随机猜测准确率降至约 2.9%\n- 保留 VLMEvalKit 实现中的官方零样本提示及其图像顺序\n- 覆盖隐藏图形识别、格式塔完形、视觉记忆、心理旋转、路径查找、折纸推理等相关能力\n\n## 评估说明\n\n- 使用官方 `VisFactor.tsv` 在 ModelScope 镜像中的 **test** 划分\n- 提取最后一个 `{\"answer\": ...}` 对象，并应用官方针对不同类别的标准化规则\n- 单个逻辑测试项可能包含多行数据，仅当所有行均正确时才计为正确\n- 报告每个子测试在测试项级别的准确率；主得分是所涵盖子测试的未加权宏平均值\n- 评分过程完全确定，无需依赖 LLM 评判器\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `visfactor` |\n| **数据集ID** | [lmms-lab-encoder/visfactor](https://modelscope.cn/datasets/lmms-lab-encoder/visfactor/summary) |\n| **论文** | [Paper](https://arxiv.org/abs/2502.16435) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,046 |\n| 提示词长度（平均） | 463.45 字符 |\n| 提示词长度（最小/最大） | 188 / 932 字符 |\n\n**图像统计信息：**\n\n| 指标 | 值 |\n|--------|-------|\n| 图像总数 | 6,048 |\n| 每样本图像数 | 最小: 1, 最大: 4, 平均: 1.99 |\n| 分辨率范围 | 100x100 - 668x911 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"1a4f53fe\",\n      \"content\": [\n        {\n          \"text\": \"Look at the two images:\\n\\nBelow is the first image, one simple shape:\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~2.6KB]\"\n        },\n        {\n          \"text\": \"Below is the second image, a larger, complex pattern:\"\n        },\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~8.5KB]\"\n        },\n        {\n          \"text\": \"Task: Decide whether the shape in the first image is hidden anywhere inside the second image. The shape will never be rotated, flipped, or resized. The shape will always be right-side-up and exactly the same size as in the first image.\\n\\nOutput: Respond with only one word: “TRUE” if it is present, “FALSE” if it is not, in JSON format as follows: {\\\"answer\\\": YOUR_ANSWER_HERE}.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"T\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"index\": 0,\n    \"category_id\": \"CF1\",\n    \"category_name\": \"Hidden Figures Test\",\n    \"eval_index\": 0,\n    \"additional\": \"\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visfactor \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visfactor'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "2f171efc95f7ced1caeb6d6fd8cc3576",
+    "needs_translation": false
+  },
+  "updated_at": "2026-08-28T10:49:50.615738+08:00",
+  "translation_updated_at": "2026-08-28T10:49:58+08:00"
+}

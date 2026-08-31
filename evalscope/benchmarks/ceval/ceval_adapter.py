@@ -60,9 +60,13 @@ SUBJECT_MAPPING = {
     'urban_and_rural_planner': ['Urban and Rural Planner', '注册城乡规划师', 'Other'],
     'accountant': ['Accountant', '注册会计师', 'Other'],
     'fire_engineer': ['Fire Engineer', '注册消防工程师', 'Other'],
-    'environmental_impact_assessment_engineer': ['Environmental Impact Assessment Engineer', '环境影响评价工程师', 'Other'],
+    'environmental_impact_assessment_engineer': [
+        'Environmental Impact Assessment Engineer',
+        '环境影响评价工程师',
+        'Other',
+    ],
     'tax_accountant': ['Tax Accountant', '税务师', 'Other'],
-    'physician': ['Physician', '医师资格', 'Other']
+    'physician': ['Physician', '医师资格', 'Other'],
 }
 
 # Based on the prompt template for Chinese evaluation
@@ -124,7 +128,6 @@ C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the kn
     )
 )
 class CEVALAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
@@ -140,11 +143,7 @@ class CEVALAdapter(MultiChoiceAdapter):
             input=record['question'],
             choices=choices,
             target=record['answer'],
-            metadata={
-                'id': record.get('id', ''),
-                'explanation': record.get('explanation', ''),
-                'subject': subset
-            },
+            metadata={'id': record.get('id', ''), 'explanation': record.get('explanation', ''), 'subject': subset},
         )
 
     def sample_to_fewshot(self, sample: Sample) -> str:

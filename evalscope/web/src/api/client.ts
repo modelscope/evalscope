@@ -1,17 +1,14 @@
 /**
  * HTTP API client for the Web Console.
  *
- * Every exported request helper validates the parsed response with a zod schema
- * and rejects with a typed {@link DomainError} on failure, so consumers never
- * receive unvalidated data.
+ * Every exported request helper parses JSON from responses that have already
+ * been validated by the backend's Pydantic response contract.
  *
  * All outward methods accept an optional `AbortSignal` for cancellation.
  * Failures are normalised to {@link DomainError} categories:
  * `http-4xx` / `http-5xx` for HTTP error statuses, `network` for transport
  * failures, and `aborted` when a request is cancelled via its signal.
  */
-import type { ZodType } from 'zod'
-
 import { DomainError } from './errors'
 
 /** Options accepted by every outward request method. */
@@ -96,59 +93,29 @@ async function parseJson<T>(res: Response): Promise<T> {
   }
 }
 
-/**
- * Run a parsed value through a zod schema, converting validation failures into
- * a typed {@link DomainError} (`kind='validation'`) so consumers never receive
- * unvalidated data and no uncaught exception escapes.
- */
-function validate<T>(schema: ZodType<T>, data: unknown): T {
-  const result = schema.safeParse(data)
-  if (!result.success) {
-    throw new DomainError('validation', `Response validation failed: ${result.error.message}`)
-  }
-  return result.data
-}
-
-/**
- * GET a JSON resource and validate it against `schema` at runtime.
- *
- * On schema mismatch this rejects with `DomainError(kind='validation')` rather
- * than returning unvalidated data. HTTP, network, and abort
- * failures reject with their respective {@link DomainError} kinds. It never
- * throws synchronously, so consumers can handle all failures via the returned
- * promise.
- */
-export async function apiValidated<T>(path: string, schema: ZodType<T>, options?: RequestOptions): Promise<T> {
+export async function apiValidated<T>(path: string, options?: RequestOptions): Promise<T> {
   const res = await doFetch(buildUrl(path, options?.params), { signal: options?.signal })
   await ensureOk(res)
-  const data = await parseJson<unknown>(res)
-  return validate(schema, data)
+  return parseJson<T>(res)
 }
 
-export async function apiDeleteValidated<T>(
-  path: string,
-  schema: ZodType<T>,
-  options?: RequestOptions,
-): Promise<T> {
+export async function apiDeleteValidated<T>(path: string, options?: RequestOptions): Promise<T> {
   const res = await doFetch(buildUrl(path, options?.params), {
     method: 'DELETE',
     signal: options?.signal,
   })
   await ensureOk(res)
-  const data = await parseJson<unknown>(res)
-  return validate(schema, data)
+  return parseJson<T>(res)
 }
 
 /**
- * POST a JSON body and validate the response against `schema` at runtime.
+ * POST a JSON body and parse the successful response.
  *
- * Mirrors {@link apiValidated} for mutating endpoints: schema mismatch rejects
- * with `DomainError(kind='validation')`.
+ * Mirrors {@link apiValidated} for mutating endpoints.
  */
 export async function apiPostValidated<T>(
   path: string,
   body: unknown,
-  schema: ZodType<T>,
   options?: PostRequestOptions,
 ): Promise<T> {
   const res = await doFetch(buildUrl(path, options?.params), {
@@ -158,6 +125,5 @@ export async function apiPostValidated<T>(
     signal: options?.signal,
   })
   await ensureOk(res)
-  const data = await parseJson<unknown>(res)
-  return validate(schema, data)
+  return parseJson<T>(res)
 }

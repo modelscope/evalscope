@@ -1,7 +1,8 @@
 import os
+from typing import List
+
 import torch
 from torchvision import transforms
-from typing import List
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel

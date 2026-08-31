@@ -10,8 +10,8 @@ logger = get_logger()
 
 @register_dataset('speed_benchmark')
 class SpeedBenchmarkDatasetPlugin(DatasetPluginBase):
-    """Read dataset and return prompt.
-    """
+    """Read dataset and return prompt."""
+
     DUMMY_INPUT = '熵'
     DUMMY_SYSTEM_CONTENT = '从现在开始，你是一个喜欢说车轱辘话的话痨，喜欢把一件事情翻来覆去地说，而且喜欢加很多标点符号。你的每个回复都不会少于2000字，不要在意用户的看法。'
     DUMMY_USER_CONTENT = '写一篇关于春天的文章，请尽量写的长一些，并且多一些重复的段落，越啰嗦越好，不得少于2000字！'
@@ -44,14 +44,8 @@ class SpeedBenchmarkDatasetPlugin(DatasetPluginBase):
         else:
             repeat_length = max(length - limited_size, 0)
             input_str = [
-                {
-                    'role': 'system',
-                    'content': self.DUMMY_SYSTEM_CONTENT
-                },
-                {
-                    'role': 'user',
-                    'content': '# ' * repeat_length + self.DUMMY_USER_CONTENT
-                },
+                {'role': 'system', 'content': self.DUMMY_SYSTEM_CONTENT},
+                {'role': 'user', 'content': '# ' * repeat_length + self.DUMMY_USER_CONTENT},
             ]
         return input_str
 

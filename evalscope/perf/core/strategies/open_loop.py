@@ -1,7 +1,8 @@
 import asyncio
-import numpy as np
 import time
 from typing import TYPE_CHECKING, List, Optional
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
@@ -149,7 +150,7 @@ class OpenLoopStrategy(BenchmarkStrategy):
                 #    locked to the configured value across runs / seeds.
                 target_total_s = n / rate
                 if delay_ts[-1] > 0:
-                    delay_ts *= (target_total_s / delay_ts[-1])
+                    delay_ts *= target_total_s / delay_ts[-1]
 
                 # 4) Anchor the schedule to absolute monotonic timestamps and
                 #    drive dispatch.  We pre-compute ``target_times`` (a numpy

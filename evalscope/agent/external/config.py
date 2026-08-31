@@ -6,8 +6,9 @@ The ``mode`` literal serves as the Pydantic discriminator on the
 :attr:`TaskConfig.agent_config` union.
 """
 
-from pydantic import BaseModel, Field, field_validator
 from typing import Literal, Optional
+
+from pydantic import BaseModel, Field, field_validator
 
 from evalscope.api.agent.types import BaseAgentConfig
 
@@ -82,5 +83,6 @@ class ExternalAgentConfig(BaseAgentConfig):
     @classmethod
     def _validate_framework(cls, v: str) -> str:
         from evalscope.api.registry import get_runner
+
         get_runner(v)  # raises ValueError with available list on typo
         return v

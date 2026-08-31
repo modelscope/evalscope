@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 from pathlib import Path
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal, Tuple, Union
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, MemoryDataset, Sample, build_dataset_from_records
@@ -22,6 +23,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import QUESTION_TYPES, SUBSET_TO_FILE, build_generation_prompt, get_anscheck_prompt
 
 logger = get_logger()
@@ -120,6 +122,7 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 )
 class LongMemEvalAdapter(DefaultDataAdapter):
     """Adapter for LongMemEval."""
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs) -> None:
@@ -259,13 +262,16 @@ class LongMemEvalAdapter(DefaultDataAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             metadata = judge_context.task_state.metadata
-            prompt = get_anscheck_prompt(
-                task=metadata['question_type'],
-                question=metadata['question'],
-                answer=judge_context.reference,
-                response=judge_context.filtered_prediction,
-                abstention=metadata.get('is_abstention', False),
-            ) + case.output_contract.instruction()
+            prompt = (
+                get_anscheck_prompt(
+                    task=metadata['question_type'],
+                    question=metadata['question'],
+                    answer=judge_context.reference,
+                    response=judge_context.filtered_prediction,
+                    abstention=metadata.get('is_abstention', False),
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -273,10 +279,9 @@ class LongMemEvalAdapter(DefaultDataAdapter):
 
         def finalize(score, review, judge_context) -> Score:
             metadata = judge_context.task_state.metadata
-            score.metadata.update({
-                'question_type': metadata['question_type'],
-                'is_abstention': metadata.get('is_abstention', False)
-            })
+            score.metadata.update(
+                {'question_type': metadata['question_type'], 'is_abstention': metadata.get('is_abstention', False)}
+            )
             return score
 
         return JudgeDefinition.workflow(
@@ -284,7 +289,7 @@ class LongMemEvalAdapter(DefaultDataAdapter):
             request=request,
             reduce=reduce,
             main_score_name='accuracy',
-            finalize=finalize
+            finalize=finalize,
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

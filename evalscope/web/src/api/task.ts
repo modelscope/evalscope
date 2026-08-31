@@ -1,10 +1,4 @@
 import { apiPostValidated, apiValidated } from './client'
-import {
-  evalInvokeResponseSchema,
-  logResponseSchema,
-  progressResponseSchema,
-  taskStatusResponseSchema,
-} from './schemas'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse, TaskStatusResponse } from './types'
 
 type TaskScope = 'eval' | 'perf'
@@ -18,14 +12,14 @@ export function createTaskApi(scope: TaskScope) {
       taskId: string,
       signal?: AbortSignal,
     ): Promise<EvalInvokeResponse> {
-      return apiPostValidated(`${basePath}/invoke`, payload, evalInvokeResponseSchema, {
+      return apiPostValidated<EvalInvokeResponse>(`${basePath}/invoke`, payload, {
         headers: { 'EvalScope-Task-Id': taskId },
         signal,
       })
     },
 
     progress(taskId: string, signal?: AbortSignal): Promise<ProgressResponse> {
-      return apiValidated(`${basePath}/progress`, progressResponseSchema, {
+      return apiValidated<ProgressResponse>(`${basePath}/progress`, {
         params: { task_id: taskId },
         signal,
       })
@@ -39,7 +33,7 @@ export function createTaskApi(scope: TaskScope) {
     ): Promise<LogResponse> {
       const params: Record<string, string> = { task_id: taskId, page: String(page) }
       if (startLine !== undefined) params.start_line = String(startLine)
-      return apiValidated(`${basePath}/log`, logResponseSchema, { params, signal })
+      return apiValidated<LogResponse>(`${basePath}/log`, { params, signal })
     },
 
     reportUrl(taskId: string): string {
@@ -47,10 +41,9 @@ export function createTaskApi(scope: TaskScope) {
     },
 
     stop(taskId: string, signal?: AbortSignal): Promise<TaskStatusResponse> {
-      return apiPostValidated(
+      return apiPostValidated<TaskStatusResponse>(
         `${basePath}/stop`,
         {},
-        taskStatusResponseSchema,
         { params: { task_id: taskId }, signal },
       )
     },

@@ -16,6 +16,7 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
+
 from .utils import (
     OPTION_LABELS,
     VERDICT_CONTRACT,
@@ -183,8 +184,10 @@ class PhyXAdapter(VisionLanguageAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
-            prompt = self.build_judge_prompt(judge_context.filtered_prediction,
-                                             judge_context.reference) + case.output_contract.instruction()
+            prompt = (
+                self.build_judge_prompt(judge_context.filtered_prediction, judge_context.reference)
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -194,7 +197,7 @@ class PhyXAdapter(VisionLanguageAdapter):
             cases=[JudgeCase(case_id='equivalence', output_contract=VERDICT_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )
 
 

@@ -1,8 +1,9 @@
 import random
 from abc import ABC, abstractmethod
+from typing import List
+
 from pydantic import BaseModel, Field
 from tqdm import tqdm
-from typing import List
 
 from evalscope.collections.schema import CollectionSchema, DatasetInfo
 
@@ -20,7 +21,6 @@ class DatasetEntry(BaseModel):
 
 # Define an abstract base class for Samplers
 class Sampler(ABC):
-
     def __init__(self, schema: CollectionSchema):
         self.schema = schema
 

@@ -1,8 +1,9 @@
 import base64
 import os
+from typing import List
+
 import torch
 from openai import OpenAI
-from typing import List
 
 from .vqa_model import VQAScoreModel
 

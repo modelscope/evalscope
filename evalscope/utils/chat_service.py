@@ -2,9 +2,10 @@ import os
 import time
 from contextlib import contextmanager
 from functools import partial
-from pydantic import BaseModel, Field
 from threading import Thread
 from typing import Any, List, Literal, Optional, Union
+
+from pydantic import BaseModel, Field
 
 
 class Usage(BaseModel):
@@ -92,7 +93,6 @@ class TextCompletionResponse(BaseModel):
 
 
 class ChatService:
-
     def __init__(self, model_path, attn_implementation):
         import torch
         from modelscope import AutoModelForCausalLM, AutoTokenizer

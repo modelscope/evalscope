@@ -3,7 +3,6 @@ import os
 import shutil
 import tarfile
 import uuid
-import yaml
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,6 +10,8 @@ from functools import lru_cache
 from inspect import signature
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+import yaml
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.dataset import DatasetHub
@@ -332,9 +333,7 @@ def load_claw_eval_trace(trace_path: Optional[str]) -> Tuple[Optional[AgentTrace
                 msg_id = uuid.uuid4().hex[:8]
                 text, tool_calls = _parse_assistant_content(content)
                 messages.append(
-                    ChatMessageAssistant(
-                        id=msg_id, content=text, tool_calls=tool_calls or None, model=row.get('model')
-                    )
+                    ChatMessageAssistant(id=msg_id, content=text, tool_calls=tool_calls or None, model=row.get('model'))
                 )
                 trace.add(
                     AgentTraceEvent(

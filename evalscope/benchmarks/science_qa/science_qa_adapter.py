@@ -56,7 +56,6 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
     )
 )
 class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

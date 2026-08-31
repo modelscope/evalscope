@@ -4,17 +4,19 @@ Exposes the file-system report data through a REST API so that the
 React SPA frontend can load reports, predictions and analyses without
 direct filesystem access.
 """
+
 import json
 import mimetypes
 import os
-import plotly.express as px
-import plotly.graph_objects as go
 import shutil
 from datetime import datetime
+from typing import List, Optional, Tuple
+
+import plotly.express as px
+import plotly.graph_objects as go
 from flask import Blueprint, jsonify, request, send_file
 from flask.typing import ResponseReturnValue
 from pydantic import ValidationError
-from typing import List, Optional, Tuple
 
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
@@ -25,6 +27,14 @@ from evalscope.report.visualization import (
     plot_single_dataset_scores,
     plot_single_report_scores,
     plot_single_report_sunburst,
+)
+from evalscope.service.api_models import (
+    AnalysisResponse,
+    DataFrameResponse,
+    DeleteReportResponse,
+    ListReportsResponse,
+    LoadReportResponse,
+    PredictionsResponse,
 )
 from evalscope.service.report_meta_cache import (
     Fingerprint,
@@ -49,6 +59,8 @@ from evalscope.utils.data_utils import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
+
+from ..responses import json_response
 from ..utils import OUTPUT_DIR, active_task_ids
 
 logger = get_logger()
@@ -125,6 +137,7 @@ def serve_media_file() -> ResponseReturnValue:
 def _root_path() -> str:
     # Priority: URL query param > app config (from --outputs CLI arg) > default
     from flask import current_app
+
     return request.args.get('root_path', current_app.config.get('OUTPUTS_ROOT') or _DEFAULT_ROOT)
 
 
@@ -217,16 +230,20 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
             identity=metric.identity,
             score=metric.score,
             semantics=metric.semantics,
-        ) for r, metric in zip(report_list, primary_metrics) if metric
+        )
+        for r, metric in zip(report_list, primary_metrics)
+        if metric
     ]
     return {
         'run_id': ref.run_id,
         'model_id': ref.model_id,
         'model_name': first.model_name,
-        'dataset_name': ', '.join(dataset_names) if len(dataset_names) > 1 else
-        (dataset_names[0] if dataset_names else ''),
-        'dataset_pretty_name': ', '.join(dataset_pretty_names) if len(dataset_pretty_names) > 1 else
-        (dataset_pretty_names[0] if dataset_pretty_names else ''),
+        'dataset_name': ', '.join(dataset_names)
+        if len(dataset_names) > 1
+        else (dataset_names[0] if dataset_names else ''),
+        'dataset_pretty_name': ', '.join(dataset_pretty_names)
+        if len(dataset_pretty_names) > 1
+        else (dataset_pretty_names[0] if dataset_pretty_names else ''),
         'num_samples': total_num,
         'timestamp': timestamp,
         'primary_metrics': [ref.model_dump(mode='json') for ref in primary_metric_refs],
@@ -248,6 +265,7 @@ def _refresh_html_report(reports_dir: str) -> None:
 
     try:
         from evalscope.report import gen_html_report_file
+
         gen_html_report_file(reports_dir)
     except Exception as e:
         logger.warning(f'Failed to refresh report HTML after deletion, removing stale file: {e}')
@@ -286,7 +304,10 @@ def _apply_report_filters(items: List[dict], search: str, models_filter: str, da
     """Narrow the metadata list by fuzzy search, model set and dataset set."""
     if search:
         items = [
-            it for it in items if search in it['model_name'].lower() or search in it['dataset_name'].lower()
+            it
+            for it in items
+            if search in it['model_name'].lower()
+            or search in it['dataset_name'].lower()
             or search in it['dataset_pretty_name'].lower()
         ]
     if models_filter:
@@ -299,23 +320,32 @@ def _apply_report_filters(items: List[dict], search: str, models_filter: str, da
 
 
 def _list_response(
-    page_items: List[dict], total: int, page: int, page_size: int, available_models: List[str],
-    available_datasets: List[str], fingerprints: List[Tuple[str, Fingerprint]], query_parts: List[str]
+    page_items: List[dict],
+    total: int,
+    page: int,
+    page_size: int,
+    available_models: List[str],
+    available_datasets: List[str],
+    fingerprints: List[Tuple[str, Fingerprint]],
+    query_parts: List[str],
 ) -> ResponseReturnValue:
     """Serialize the page with an ETag so unchanged responses revalidate as 304."""
     # Project internal keys into fresh dicts: meta objects are shared with the
     # cache, so mutating them here would corrupt later requests.
     response_reports = [{k: v for k, v in it.items() if k != '_datasets'} for it in page_items]
-    resp = jsonify({
-        'reports': response_reports,
-        'total': total,
-        'page': page,
-        'page_size': page_size,
-        'filters': {
-            'available_models': available_models,
-            'available_datasets': available_datasets,
+    resp = json_response(
+        ListReportsResponse,
+        {
+            'reports': response_reports,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'filters': {
+                'available_models': available_models,
+                'available_datasets': available_datasets,
+            },
         },
-    })
+    )
     resp.set_etag(list_etag(fingerprints, query_parts))
     resp.headers['Cache-Control'] = 'no-cache'
     return resp.make_conditional(request)
@@ -341,7 +371,7 @@ def list_reports() -> ResponseReturnValue:
 
     removed_score_params = sorted({'score_min', 'score_max'} & set(request.args))
     if removed_score_params:
-        return jsonify({'error': f"unsupported query parameters: {', '.join(removed_score_params)}"}), 400
+        return jsonify({'error': f'unsupported query parameters: {", ".join(removed_score_params)}'}), 400
     sort_by = request.args.get('sort_by', 'time')
     sort_order = request.args.get('sort_order', 'desc')
     if sort_by not in _SORT_KEYS:
@@ -366,7 +396,7 @@ def list_reports() -> ResponseReturnValue:
         page = max(1, request.args.get('page', 1, type=int))
         page_size = max(1, min(100, request.args.get('page_size', 20, type=int)))
         total = len(items)
-        page_items = items[(page - 1) * page_size:(page - 1) * page_size + page_size]
+        page_items = items[(page - 1) * page_size : (page - 1) * page_size + page_size]
 
         query_parts = [
             f'search={search}',
@@ -434,7 +464,14 @@ def delete_report(run_id: str, model_id: str) -> ResponseReturnValue:
         else:
             _refresh_html_report(reports_dir)
         logger.info(f'Deleted eval report {ref.key} under {run_dir}')
-        return jsonify({'success': True, 'run_id': ref.run_id, 'model_id': ref.model_id}), 200
+        return json_response(
+            DeleteReportResponse,
+            {
+                'success': True,
+                'run_id': ref.run_id,
+                'model_id': ref.model_id,
+            },
+        )
     except Exception:
         logger.error(f'Failed to delete report {ref.key}', exc_info=True)
         return jsonify({'error': 'Failed to delete report'}), 500
@@ -454,11 +491,14 @@ def load_report(run_id: str, model_id: str) -> ResponseReturnValue:
 
     try:
         report_list, datasets, task_cfg = load_report_bundle(_root_path(), ref)
-        return jsonify({
-            'report_list': [_report_to_service_dict(r) for r in report_list],
-            'datasets': datasets,
-            'task_config': task_cfg,
-        }), 200
+        return json_response(
+            LoadReportResponse,
+            {
+                'report_list': [_report_to_service_dict(r) for r in report_list],
+                'datasets': datasets,
+                'task_config': task_cfg,
+            },
+        )
     except FileNotFoundError as e:
         logger.warning(f'Report {ref.key} not found: {e}')
         return jsonify({'error': f'Report not found: {ref.key}'}), 404
@@ -495,14 +535,18 @@ def get_dataframe(run_id: str, model_id: str) -> ResponseReturnValue:
                 return jsonify({'error': 'dataset_name is required for view=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
             from evalscope.utils.data_utils import get_single_dataset_df
+
             df = get_single_dataset_df(report_df, dataset_name)
         else:
             df = acc_df
 
-        return jsonify({
-            'columns': list(df.columns),
-            'data': _df_to_records(df),
-        }), 200
+        return json_response(
+            DataFrameResponse,
+            {
+                'columns': list(df.columns),
+                'data': _df_to_records(df),
+            },
+        )
     except Exception:
         logger.error('Failed to get report table', exc_info=True)
         return jsonify({'error': 'Failed to get report table'}), 500
@@ -530,9 +574,12 @@ def get_predictions(run_id: str, model_id: str) -> ResponseReturnValue:
     try:
         work_dir = os.path.join(_root_path(), ref.run_id)
         df = get_model_prediction(work_dir, ref.model_id, dataset_name, subset_name)
-        return jsonify({
-            'predictions': _df_to_records(df),
-        }), 200
+        return json_response(
+            PredictionsResponse,
+            {
+                'predictions': _df_to_records(df),
+            },
+        )
     except Exception:
         logger.error('Failed to get predictions', exc_info=True)
         return jsonify({'error': 'Failed to get predictions'}), 500
@@ -558,7 +605,7 @@ def get_analysis(run_id: str, model_id: str) -> ResponseReturnValue:
     try:
         report_list, _, _ = load_report_bundle(_root_path(), ref)
         analysis = get_report_analysis(report_list, dataset_name)
-        return jsonify({'analysis': analysis}), 200
+        return json_response(AnalysisResponse, {'analysis': analysis})
     except Exception:
         logger.error('Failed to get analysis', exc_info=True)
         return jsonify({'error': 'Failed to get analysis'}), 500
@@ -584,10 +631,12 @@ def get_html_report(run_id: str) -> ResponseReturnValue:
         report_html = os.path.join(root, run_id, OutputsStructure.REPORTS_DIR, 'report.html')
 
         if not os.path.exists(report_html):
-            return jsonify({
-                'error': 'Report not yet generated',
-                'message': 'The HTML report has not been generated for this evaluation. It may still be in progress.',
-            }), 404
+            return jsonify(
+                {
+                    'error': 'Report not yet generated',
+                    'message': 'The HTML report has not been generated for this evaluation. It may still be in progress.',
+                }
+            ), 404
 
         return send_file(report_html, mimetype='text/html')
     except Exception:
@@ -598,9 +647,12 @@ def get_html_report(run_id: str) -> ResponseReturnValue:
 def _render_chart_html(fig: Optional[go.Figure]) -> Tuple[str, int, dict]:
     """Turn a figure into standalone Plotly HTML, or an empty-state page when there is nothing to plot."""
     if fig is None:
-        return '<html><body style="background:#0f172a;color:#94a3b8;display:flex;align-items:center;' \
-               'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>', \
-               200, {'Content-Type': 'text/html'}
+        return (
+            '<html><body style="background:#0f172a;color:#94a3b8;display:flex;align-items:center;'
+            'justify-content:center;height:100vh;font-family:sans-serif;">No data to plot</body></html>',
+            200,
+            {'Content-Type': 'text/html'},
+        )
 
     _apply_chart_theme(fig, request.args.get('theme', 'dark'))
     html = fig.to_html(full_html=True, include_plotlyjs=False, config={'responsive': True})
@@ -647,10 +699,7 @@ def get_compare_chart(chart_type: str) -> ResponseReturnValue:
             )
             fig.update_traces(
                 textposition='outside',
-                hovertemplate=(
-                    '%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}'
-                    '<extra>%{fullData.name}</extra>'
-                ),
+                hovertemplate=('%{x}<br>%{customdata[0]}: %{text}<br>Quality: %{y:.3f}<extra>%{fullData.name}</extra>'),
             )
             fig.update_layout(
                 template=PLOTLY_THEME,
@@ -721,6 +770,7 @@ def get_chart(run_id: str, model_id: str, chart_type: str) -> ResponseReturnValu
                     return jsonify({'error': 'dataset_name is required for dataset_scores'}), 400
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
                 from evalscope.utils.data_utils import get_single_dataset_df
+
                 ds_df = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(get_quality_metric_df(report_list, ds_df))
             elif chart_type == 'scores':

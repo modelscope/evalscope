@@ -4,9 +4,10 @@ This plugin provides datasets suitable for embedding model performance testing.
 """
 
 import json
-import numpy as np
 import os
 from typing import Iterator, List
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
@@ -131,8 +132,9 @@ class EmbeddingDatasetPlugin(DatasetPluginBase):
                     try:
                         item = json.loads(line)
                         if isinstance(item, dict):
-                            text = item.get('text') or item.get('input') or item.get('sentence'
-                                                                                     ) or item.get('content', '')
+                            text = (
+                                item.get('text') or item.get('input') or item.get('sentence') or item.get('content', '')
+                            )
                             if text:
                                 self.texts.append(text)
                         elif isinstance(item, str):

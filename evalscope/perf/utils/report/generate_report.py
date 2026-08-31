@@ -19,6 +19,7 @@ from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.utils.io_utils import current_time
 from evalscope.utils.logger import get_logger
 from evalscope.version import __version__ as _evalscope_version
+
 from .summary import (
     build_basic_info,
     build_best_config,
@@ -117,18 +118,9 @@ def gen_perf_html_report(
         latency_tabs.append({'label': 'TPOT', 'chart': charts.build_tpot_chart(runs)})
 
     throughput_tabs = [
-        {
-            'label': 'Request Throughput',
-            'chart': charts.build_rps_chart(runs)
-        },
-        {
-            'label': 'Token Throughput',
-            'chart': charts.build_throughput_chart(runs, is_emb)
-        },
-        {
-            'label': 'Success Rate',
-            'chart': charts.build_success_chart(runs)
-        },
+        {'label': 'Request Throughput', 'chart': charts.build_rps_chart(runs)},
+        {'label': 'Token Throughput', 'chart': charts.build_throughput_chart(runs, is_emb)},
+        {'label': 'Success Rate', 'chart': charts.build_success_chart(runs)},
     ]
 
     # ── Summary table ───────────────────────────────────────────────────────

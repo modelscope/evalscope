@@ -4,6 +4,17 @@ on:
   pull_request:
     paths:
       - 'evalscope/web/**'
+      - 'evalscope/service/**'
+      - 'evalscope/report/report.py'
+      - 'evalscope/api/agent/trace.py'
+      - 'evalscope/api/metric/**'
+      - 'evalscope/constants.py'
+      - 'scripts/generate_web_api_contracts.py'
+      - 'tests/service/test_api_contracts.py'
+      - 'tests/report/test_report_endpoints.py'
+      - 'requirements/dev.txt'
+      - 'requirements/service.txt'
+      - 'pyproject.toml'
       - 'DESIGN.md'
       - '.github/workflows/frontend.yml'
   push:
@@ -11,17 +22,33 @@ on:
       - main
     paths:
       - 'evalscope/web/**'
+      - 'evalscope/service/**'
+      - 'evalscope/report/report.py'
+      - 'evalscope/api/agent/trace.py'
+      - 'evalscope/api/metric/**'
+      - 'evalscope/constants.py'
+      - 'scripts/generate_web_api_contracts.py'
+      - 'tests/service/test_api_contracts.py'
+      - 'tests/report/test_report_endpoints.py'
+      - 'requirements/dev.txt'
+      - 'requirements/service.txt'
+      - 'pyproject.toml'
       - 'DESIGN.md'
       - '.github/workflows/frontend.yml'
 
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: evalscope/web
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+
+      - name: Install Python contract dependencies
+        run: pip install -e '.[dev,service]'
 
       - uses: actions/setup-node@v4
         with:
@@ -30,7 +57,15 @@ jobs:
           cache-dependency-path: evalscope/web/package-lock.json
 
       - run: npm ci
+        working-directory: evalscope/web
+      - run: npm run contracts:check
+        working-directory: evalscope/web
+      - run: python -m pytest tests/service/test_api_contracts.py tests/report/test_report_endpoints.py
       - run: npm run lint
+        working-directory: evalscope/web
       - run: npm test
+        working-directory: evalscope/web
       - run: npm run drift
+        working-directory: evalscope/web
       - run: npm run build
+        working-directory: evalscope/web

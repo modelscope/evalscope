@@ -13,21 +13,21 @@ DESCRIPTIVE_RESP_INST: Dict[int, str] = {
     1: (
         '{}what is its title?\n'
         '* Your final answer should be the most relevant title of the plot that is explicitly written.\n'
-        '* If the plot does not have an explicit title or contains only a letter, answer \'Not Applicable\'.'
+        "* If the plot does not have an explicit title or contains only a letter, answer 'Not Applicable'."
     ),
     2: (
         '{}what is the label of the x-axis?\n'
         '* Your final answer should be the label of the x-axis that is explicitly written, including the case when '
         'x-axis is shared across multiple subplots. When the x-axis is present on both the top and bottom of the '
         'plot, answer the label of the x-axis at the bottom.\n'
-        '* If the plot does not have an explicit x-axis label, answer \'Not Applicable\'.'
+        "* If the plot does not have an explicit x-axis label, answer 'Not Applicable'."
     ),
     3: (
         '{}what is the label of the y-axis?\n'
         '* Your final answer should be the label of the y-axis that is explicitly written, including the case when '
         'y-axis is shared across multiple subplots. When the y-axis is present on both the left and right of the '
         'plot, answer the label of the y-axis at the left.\n'
-        '* If the plot does not have an explicit y-axis label, answer \'Not Applicable\'.'
+        "* If the plot does not have an explicit y-axis label, answer 'Not Applicable'."
     ),
     4: (
         '{}what is the leftmost labeled tick on the x-axis?\n'
@@ -133,11 +133,10 @@ REASONING_RESP_INST: Dict[int, str] = {
     3: (
         '{}\n'
         '* Your final answer must be grounded to a number that is explicitly written and relevant to '
-        'the question in the chart, even if it\'s an approximate value.\n'
+        "the question in the chart, even if it's an approximate value.\n"
         '* You are allowed to extract numbers within some text when needed.'
     ),
-    4: ('{}\n'
-        '{}'),
+    4: ('{}\n{}'),
 }
 
 
@@ -543,7 +542,10 @@ def build_reasoning_judge_prompt(reasoning_a_type: int, question: str, ground_tr
     )
 
     inst_template = REASONING_GRADING_INST.get(reasoning_a_type, REASONING_GRADING_INST[1])
-    inst = inst_template.replace('{question}', question).replace('{ground_truth}',
-                                                                 ground_truth).replace('{response}', response)
+    inst = (
+        inst_template.replace('{question}', question)
+        .replace('{ground_truth}', ground_truth)
+        .replace('{response}', response)
+    )
 
     return prefix + inst

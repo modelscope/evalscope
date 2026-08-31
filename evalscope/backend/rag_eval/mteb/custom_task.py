@@ -4,13 +4,15 @@
 Provides build_custom_task() factory to create MTEB-compatible Retrieval task
 instances from user-provided local data in JSONL format.
 """
+
 import json
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Union
+
 from datasets import DatasetDict
 from mteb import TaskMetadata
 from mteb.abstasks import AbsTaskRetrieval
-from pathlib import Path
-from typing import Any, Dict, List, Union
 
 from evalscope.utils.logger import get_logger
 
@@ -74,10 +76,7 @@ def _build_metadata(name: str, eval_splits: List[str]) -> TaskMetadata:
         name=name,
         description=f'Custom Retrieval task: {name}',
         reference=None,
-        dataset={
-            'path': name,
-            'revision': 'custom'
-        },
+        dataset={'path': name, 'revision': 'custom'},
         type='Retrieval',
         category='t2t',
         modalities=['text'],
@@ -163,8 +162,7 @@ def _build_retrieval_task(
     task.data_loaded = True
 
     logger.info(
-        f"Custom Retrieval task '{name}' loaded: "
-        f'{len(corpus)} docs, {len(queries)} queries, {len(relevant_docs)} qrels'
+        f"Custom Retrieval task '{name}' loaded: {len(corpus)} docs, {len(queries)} queries, {len(relevant_docs)} qrels"
     )
 
     return task

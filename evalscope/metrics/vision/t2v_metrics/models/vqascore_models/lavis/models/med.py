@@ -10,11 +10,13 @@
 
 import math
 import os
+import warnings
+from dataclasses import dataclass
+from typing import Optional, Tuple
+
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
-import warnings
-from dataclasses import dataclass
 from torch import Tensor, device, nn
 from torch.nn import CrossEntropyLoss
 from transformers import BatchEncoding, PreTrainedTokenizer
@@ -35,7 +37,6 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.models.bert.configuration_bert import BertConfig
 from transformers.pytorch_utils import apply_chunking_to_forward, find_pruneable_heads_and_indices, prune_linear_layer
 from transformers.utils import logging
-from typing import Optional, Tuple
 
 from ..common.utils import get_abs_path
 from ..models.base_model import BaseEncoder

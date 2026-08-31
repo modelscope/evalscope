@@ -62,7 +62,6 @@ into 10 Indic languages plus English, for evaluating multilingual world-knowledg
     )
 )
 class TriviaQAIndicAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choices = record['choices']
         # answer is a 0-based index into choices

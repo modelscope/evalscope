@@ -1,6 +1,7 @@
 # flake8: noqa: E501
 """Helpers for the HiPhO physics Olympiad benchmark: prompts, marking-scheme
 parsing, boxed-answer extraction, and judge-response parsing."""
+
 import re
 from typing import List
 

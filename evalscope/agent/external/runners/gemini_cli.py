@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 from .install_helper import ensure_node_via_apt, install_task_skills
 
@@ -189,15 +190,11 @@ class GeminiCliRunner(AgentRunner):
             f'timed_out={result.timed_out}'
         )
         if result.timed_out:
-            raise RunnerTimeoutError(
-                f'gemini-cli timed out after {task.timeout}s '
-                f'(returncode={result.returncode})'
-            )
+            raise RunnerTimeoutError(f'gemini-cli timed out after {task.timeout}s (returncode={result.returncode})')
         if result.returncode != 0:
             tail_stderr = (result.stderr or '').strip()[-2000:]
             tail_stdout = (result.stdout or '').strip()[-2000:]
-            raise RuntimeError(f'gemini-cli exited with code {result.returncode}: '
-                               f'{tail_stderr or tail_stdout}')
+            raise RuntimeError(f'gemini-cli exited with code {result.returncode}: {tail_stderr or tail_stdout}')
         return AgentRunResult(
             output=result.stdout.strip(),
             metrics={

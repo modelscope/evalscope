@@ -14,6 +14,7 @@ def cal_per_metrics(pred, gt):
     import nltk
     from nltk.metrics import f_measure, precision, recall
     from nltk.translate import meteor_score
+
     metrics = {}
 
     if contain_chinese_string(gt) or contain_chinese_string(pred):

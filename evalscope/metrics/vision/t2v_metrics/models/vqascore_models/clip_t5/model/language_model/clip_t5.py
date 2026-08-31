@@ -12,11 +12,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import torch
 from dataclasses import dataclass, field
+from typing import List, Optional, Tuple, Union
+
+import torch
 from transformers import AutoConfig, AutoModelForSeq2SeqLM, T5Config, T5ForConditionalGeneration
 from transformers.modeling_outputs import Seq2SeqLMOutput
-from typing import List, Optional, Tuple, Union
 
 from ..multimodal_encoder.builder import build_vision_tower
 from ..multimodal_projector.builder import build_vision_projector

@@ -1,8 +1,9 @@
 import base64
 import hashlib
 import re
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
@@ -63,7 +64,7 @@ def derive_key(password: str, length: int) -> bytes:
     hasher = hashlib.sha256()
     hasher.update(password.encode())
     key = hasher.digest()
-    return key * (length // len(key)) + key[:length % len(key)]
+    return key * (length // len(key)) + key[: length % len(key)]
 
 
 def decrypt(ciphertext_b64: str, password: str) -> str:
@@ -125,6 +126,7 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 )
 class BrowseCompAdapter(AgentAdapter):
     """Adapter for the BrowseComp browsing-agent benchmark."""
+
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -175,25 +177,25 @@ class BrowseCompAdapter(AgentAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             task_state = judge_context.task_state
-            prompt = GRADER_TEMPLATE.format(
-                question=(task_state.metadata or {}).get('question') or task_state.input_text,
-                response=judge_context.original_prediction,
-                correct_answer=judge_context.reference,
-            ) + case.output_contract.instruction()
+            prompt = (
+                GRADER_TEMPLATE.format(
+                    question=(task_state.metadata or {}).get('question') or task_state.input_text,
+                    response=judge_context.original_prediction,
+                    correct_answer=judge_context.reference,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
             is_correct = case_verdicts[0].value.correct == 'yes'
             return ReducedVerdict(
-                value={
-                    'is_correct': 1.0 if is_correct else 0.0,
-                    'is_incorrect': 0.0 if is_correct else 1.0
-                }
+                value={'is_correct': 1.0 if is_correct else 0.0, 'is_incorrect': 0.0 if is_correct else 1.0}
             )
 
         return JudgeDefinition.workflow(
             cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='is_correct'
+            main_score_name='is_correct',
         )

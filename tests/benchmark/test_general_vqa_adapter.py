@@ -1,15 +1,25 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-import pytest
 from io import BytesIO
 from pathlib import Path
+from typing import Any, Dict
+
+import pytest
 from PIL import Image as PILImage
 
 from evalscope.api.benchmark import BenchmarkMeta
+from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
+from evalscope.api.metric.semantics import MetricSelector
+from evalscope.api.registry import BENCHMARK_REGISTRY
+from evalscope.benchmarks.general_qa_vqa_metrics import METRIC_SCORE_KEYS
 from evalscope.benchmarks.general_vqa.general_vqa_adapter import GeneralVQAAdapter
 from evalscope.config import TaskConfig
+
+ROUGE_KEYS = METRIC_SCORE_KEYS['Rouge']
+BLEU_KEYS = METRIC_SCORE_KEYS['BLEU']
 
 
 @pytest.fixture
@@ -19,6 +29,10 @@ def adapter() -> GeneralVQAAdapter:
             name='general_vqa',
             dataset_id='dummy',
             eval_split='test',
+            metric_list=['Rouge', 'BLEU'],
+            primary_metric=MetricSelector(
+                name='rouge', aggregation='mean', dimensions={'variant': 'l', 'statistic': 'recall'}
+            ),
         ),
         task_config=TaskConfig(datasets=['general_vqa']),
     )
@@ -30,6 +44,53 @@ def png_bytes() -> bytes:
     buffer = BytesIO()
     image.save(buffer, format='PNG')
     return buffer.getvalue()
+
+
+def _task_state() -> TaskState:
+    return TaskState(model='mock-model', sample=Sample(input='question', target='answer'))
+
+
+def _rouge_values(value: float) -> Dict[str, float]:
+    return dict.fromkeys(ROUGE_KEYS, value)
+
+
+def _raise_metric_error(*args: Any, **kwargs: Any) -> Dict[str, float]:
+    raise LookupError('metric exploded')
+
+
+class TestGeneralVQAAdapterMatchScore:
+
+    def test_rouge_error_returns_real_zero_score_schema(
+        self, adapter: GeneralVQAAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            'evalscope.metrics.utils.rouge.compute_rouge_score_one_sample_zh', _raise_metric_error
+        )
+
+        score = adapter.match_score('pred', 'pred', 'answer', _task_state())
+
+        assert score is not None
+        assert score.value['Rouge-L-R'] == 0.0
+        assert {key: score.value[key] for key in ROUGE_KEYS} == dict.fromkeys(ROUGE_KEYS, 0.0)
+        assert score.metadata['metric_errors']['Rouge'] == 'LookupError: metric exploded'
+
+    def test_bleu_error_keeps_successful_rouge_values(
+        self, adapter: GeneralVQAAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            'evalscope.metrics.utils.rouge.compute_rouge_score_one_sample_zh',
+            lambda *args, **kwargs: _rouge_values(1.0),
+        )
+        monkeypatch.setattr('evalscope.metrics.bleu_ngram_one_sample', _raise_metric_error)
+
+        score = adapter.match_score('answer', 'answer', 'answer', _task_state())
+
+        assert score.value['Rouge-L-R'] == 1.0
+        assert {key: score.value[key] for key in BLEU_KEYS} == dict.fromkeys(BLEU_KEYS, 0.0)
+        assert score.metadata['metric_errors']['BLEU'] == 'LookupError: metric exploded'
+
+    def test_evaluation_version(self) -> None:
+        assert BENCHMARK_REGISTRY['general_vqa'].evaluation_version == 'v1.1'
 
 
 class TestGeneralVQAAdapterRecordToSample:

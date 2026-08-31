@@ -3,9 +3,11 @@
 
 Reference: https://github.com/NastyMarcus/PhyX (``vlmeval/dataset/utils/phyx.py``).
 """
+
 import re
-from pydantic import BaseModel
 from typing import Dict, List, Optional
+
+from pydantic import BaseModel
 
 from evalscope.api.judge import OutputContract
 
@@ -13,8 +15,7 @@ from evalscope.api.judge import OutputContract
 # suffix is concatenated without a separator and the open-ended one with a leading space, matching
 # the released ``PhyX_MC.tsv`` / ``PhyX_OE.tsv`` question strings exactly.
 MC_INSTRUCTION = (
-    'Please directly answer the question and provide the correct OPTION LETTER ONLY, '
-    'e.g., A, B, C, D. OPTION: '
+    'Please directly answer the question and provide the correct OPTION LETTER ONLY, e.g., A, B, C, D. OPTION: '
 )
 OE_INSTRUCTION = ' Please answer the question with step by step reasoning.'
 
@@ -172,7 +173,7 @@ def extract_boxed_content(text: str) -> Optional[str]:
     start = text.find(_BOXED_MARKER)
     if start == -1:
         return None
-    rest = text[start + len(_BOXED_MARKER):]
+    rest = text[start + len(_BOXED_MARKER) :]
     depth = 0
     for index, char in enumerate(rest):
         if char == '{':
@@ -228,7 +229,8 @@ def match_oe_answer(extracted: str, prediction: str, reference: str) -> bool:
     """
     reference = reference.strip()
     return (
-        reference.lower() == extracted.strip().lower() or reference.lower() == prediction.strip().lower()
+        reference.lower() == extracted.strip().lower()
+        or reference.lower() == prediction.strip().lower()
         or reference in prediction
     )
 

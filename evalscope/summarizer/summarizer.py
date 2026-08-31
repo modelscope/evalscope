@@ -14,7 +14,6 @@ logger = get_logger()
 
 
 class Summarizer:
-
     @staticmethod
     def get_report(outputs_dir: str) -> List[dict]:
         res_list: list = []

@@ -4,6 +4,7 @@
 Ports the official grading prompt and verdict parsing from
 https://github.com/MoonshotAI/PerceptionBench (``eval/judge_prompt.txt`` and ``eval/eval.py``).
 """
+
 import re
 
 JUDGE_TEMPLATE = """Please act as a professional teacher and grade the student's answer. Below are the question, the student's answer, and the reference answer. Based on the question and the reference answer, analyze the student's answer and judge whether it correctly answers the question. I will provide several examples to help you understand how to judge.

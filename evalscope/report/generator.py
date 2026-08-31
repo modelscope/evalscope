@@ -1,6 +1,7 @@
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
 import pandas as pd
 from pandas import DataFrame
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
@@ -16,7 +17,6 @@ if TYPE_CHECKING:
 
 
 class ReportGenerator:
-
     @staticmethod
     def gen_collection_report(
         df: DataFrame,
@@ -30,8 +30,9 @@ class ReportGenerator:
             categories = []
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []
-                for (dataset_name, subset_name), group_subset in group_category.groupby(['dataset_name',
-                                                                                         'subset_name']):
+                for (dataset_name, subset_name), group_subset in group_category.groupby(
+                    ['dataset_name', 'subset_name']
+                ):
                     avg_score = group_subset['score'].mean()
                     num = group_subset['score'].count()
                     subsets.append(Subset(name=f'{dataset_name}/{subset_name}', score=float(avg_score), num=int(num)))
@@ -103,7 +104,7 @@ class ReportGenerator:
                             num=agg_score_item.num,
                             identity_key=identity.key,
                             identity=identity,
-                            categories=tuple(categories)
+                            categories=tuple(categories),
                         )
                     )
             df = pd.DataFrame(subsets)

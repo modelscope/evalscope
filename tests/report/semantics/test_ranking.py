@@ -1,6 +1,7 @@
 """Tests for direction-aware quality ratios."""
 
 import math
+
 import pytest
 
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES

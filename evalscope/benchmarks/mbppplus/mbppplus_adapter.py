@@ -62,13 +62,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
         eval_split='test',
         prompt_template=PROMPT,
         review_timeout=20,
-        sandbox_config={
-            'image': 'python:3.11-slim',
-            'tools_config': {
-                'shell_executor': {},
-                'python_executor': {}
-            }
-        }
+        sandbox_config={'image': 'python:3.11-slim', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
     )
 )
 class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -91,7 +85,7 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
                 'test_imports': record['test_imports'],
                 'test_list': record['test_list'],
                 'test': record['test'],
-            }
+            },
         )
 
     def format_prompt_template(self, sample: Sample) -> str:
@@ -102,7 +96,7 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         """Extract code from the prediction."""
         code = self.postprocess_completion(prediction)
         if 'if __name__ ==' in code:
-            code = code[:code.index('if __name__ ==')]
+            code = code[: code.index('if __name__ ==')]
         return code
 
     @classmethod
@@ -110,7 +104,7 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         from evalscope.utils.code_utils import extract_code_from_freeform_completion
 
         if '[DONE]' in completion:
-            completion = completion[:completion.index('[DONE]')]
+            completion = completion[: completion.index('[DONE]')]
 
         code, _ = extract_code_from_freeform_completion(completion, 'python', first_block_only=True)
 

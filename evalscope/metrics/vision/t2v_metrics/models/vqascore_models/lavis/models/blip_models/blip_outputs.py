@@ -5,14 +5,15 @@
  For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/BSD-3-Clause
 """
 
-import torch
 from dataclasses import dataclass
+from typing import Optional
+
+import torch
 from transformers.modeling_outputs import (
     BaseModelOutputWithPoolingAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
     ModelOutput,
 )
-from typing import Optional
 
 
 @dataclass

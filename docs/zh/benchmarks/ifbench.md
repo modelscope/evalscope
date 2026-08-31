@@ -12,20 +12,21 @@ IFBench 是一个用于评估 AI 模型在遵循新颖、具有挑战性且多�
 - **输出**：必须满足特定约束的响应
 - **重点**：精确遵循指令的能力
 
-## 主要特性
+## 核心特性
 
-- 包含 58 个手动整理的可验证约束
+- 包含 58 个手动精心整理的可验证约束
 - 约束类别涵盖计数、格式、词汇使用等
-- 聚焦于域外泛化能力
-- 支持对约束满足情况的程序化验证
-- 针对数据污染问题进行了专门设计
+- 重点关注域外泛化能力
+- 通过程序化方式验证约束是否被满足
+- 有效缓解数据污染问题
 
 ## 评估说明
 
 - 默认配置采用 **0-shot** 评估方式
 - 评估指标包括：`prompt_level_strict`、`inst_level_strict`、`prompt_level_loose`、`inst_level_loose`
-- 需要安装 `emoji` 和 `syllapy` 包
-- 同时评估严格和宽松条件下的约束满足情况
+- `inst_level_*` 指标将数据集中所有指令合并计算，与官方微平均（micro-average）一致
+- 需要安装 `emoji` 和 `syllapy` 依赖包
+- 同时评估严格（strict）和宽松（loose）条件下的约束满足情况
 
 ## 属性
 
@@ -36,8 +37,9 @@ IFBench 是一个用于评估 AI 模型在遵循新颖、具有挑战性且多�
 | **论文** | N/A |
 | **标签** | `InstructionFollowing` |
 | **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |
-| **默认示例数量** | 0-shot |
+| **默认示例数量（Shots）** | 0-shot |
 | **评估划分** | `train` |
+| **聚合方式** | `weighted_mean` |
 
 ## 数据统计
 
@@ -49,7 +51,7 @@ IFBench 是一个用于评估 AI 模型在遵循新颖、具有挑战性且多�
 
 ## 样例示例
 
-**子集**: `default`
+**子集**：`default`
 
 ```json
 {
@@ -126,7 +128,7 @@ IFBench 是一个用于评估 AI 模型在遵循新颖、具有挑战性且多�
 
 ## 使用方法
 
-### 使用 CLI
+### 通过命令行（CLI）
 
 ```bash
 evalscope eval \
@@ -137,7 +139,7 @@ evalscope eval \
     --limit 10  # 正式评估时请删除此行
 ```
 
-### 使用 Python
+### 通过 Python
 
 ```python
 from evalscope import run_task

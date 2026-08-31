@@ -30,6 +30,7 @@ hook: each assistant message in ``history`` automatically carries its own
 ``perf_metrics``, and ``PerfCollector`` reads them straight from
 ``task_state.messages`` in :meth:`DefaultEvaluator._persist_result`.
 """
+
 from typing import Any, Optional, Union
 
 from evalscope.api.dataset import Sample
@@ -37,6 +38,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput
 from evalscope.utils.logger import get_logger
+
 from .default_data_adapter import DefaultDataAdapter
 
 logger = get_logger()
@@ -124,10 +126,7 @@ class MultiTurnAdapter(DefaultDataAdapter):
         """
         if last_output is not None:
             return last_output
-        logger.warning(
-            f'MultiTurnAdapter produced no turns for sample {sample.id}; '
-            'returning an empty ModelOutput.'
-        )
+        logger.warning(f'MultiTurnAdapter produced no turns for sample {sample.id}; returning an empty ModelOutput.')
         return ModelOutput(model=model.name)
 
     # ------------------------------------------------------------------ #

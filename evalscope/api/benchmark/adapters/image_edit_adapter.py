@@ -5,6 +5,7 @@ from evalscope.constants import EvalType, FileConstants
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
 from evalscope.utils.io_utils import jsonl_to_list
+
 from .text2image_adapter import Text2ImageAdapter
 
 logger = get_logger()

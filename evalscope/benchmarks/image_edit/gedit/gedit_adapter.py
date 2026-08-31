@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import copy
 import os
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, ImageEditAdapter
 from evalscope.api.dataset import Sample
@@ -18,8 +19,17 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 SUBSET_LIST = [
-    'background_change', 'color_alter', 'material_alter', 'motion_change', 'ps_human', 'style_change', 'subject-add',
-    'subject-remove', 'subject-replace', 'text_change', 'tone_transfer'
+    'background_change',
+    'color_alter',
+    'material_alter',
+    'motion_change',
+    'ps_human',
+    'style_change',
+    'subject-add',
+    'subject-remove',
+    'subject-replace',
+    'text_change',
+    'tone_transfer',
 ]
 
 LANGUAGE_LIST = ['en', 'cn']
@@ -78,13 +88,12 @@ GEdit-Bench (Grounded Edit Benchmark) is an image editing benchmark grounded in 
                 'type': 'str',
                 'description': f'Language of the instruction. Choices: {LANGUAGE_LIST}.',
                 'value': 'en',
-                'choices': LANGUAGE_LIST
+                'choices': LANGUAGE_LIST,
             }
-        }
+        },
     )
 )
 class GEditAdapter(ImageEditAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):
@@ -99,9 +108,9 @@ class GEditAdapter(ImageEditAdapter):
         from . import vie_prompts
 
         self.context = vie_prompts._context_no_delimit
-        self.SC_prompt = '\n'.join([
-            self.context, vie_prompts._prompts_0shot_two_image_edit_rule, vie_prompts._prompts_0shot_tie_rule_SC
-        ])
+        self.SC_prompt = '\n'.join(
+            [self.context, vie_prompts._prompts_0shot_two_image_edit_rule, vie_prompts._prompts_0shot_tie_rule_SC]
+        )
         self.PQ_prompt = '\n'.join([self.context, vie_prompts._prompts_0shot_rule_PQ])
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
@@ -131,7 +140,7 @@ class GEditAdapter(ImageEditAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
         cases = [
             JudgeCase(case_id='SC', output_contract=GEDIT_CONTRACT, metadata={'kind': 'SC'}),
-            JudgeCase(case_id='PQ', output_contract=GEDIT_CONTRACT, metadata={'kind': 'PQ'})
+            JudgeCase(case_id='PQ', output_contract=GEDIT_CONTRACT, metadata={'kind': 'PQ'}),
         ]
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
@@ -141,7 +150,7 @@ class GEditAdapter(ImageEditAdapter):
                 content = [
                     ContentImage(image=metadata['input_image']),
                     ContentImage(image=edited_image),
-                    ContentText(text=self.SC_prompt.replace('<instruction>', metadata['instruction']))
+                    ContentText(text=self.SC_prompt.replace('<instruction>', metadata['instruction'])),
                 ]
             else:
                 content = [ContentImage(image=edited_image), ContentText(text=self.PQ_prompt)]
@@ -150,13 +159,14 @@ class GEditAdapter(ImageEditAdapter):
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
             import math
+
             by_case = {verdict.case_id: verdict for verdict in case_verdicts}
             semantic, perceptual = min(by_case['SC'].value.score), min(by_case['PQ'].value.score)
             return ReducedVerdict(
                 value={
                     'semantic_consistency': float(semantic),
                     'perceptual_similarity': float(perceptual),
-                    'normalized_score': math.sqrt(semantic * perceptual)
+                    'normalized_score': math.sqrt(semantic * perceptual),
                 }
             )
 

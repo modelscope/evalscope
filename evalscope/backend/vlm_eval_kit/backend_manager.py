@@ -13,7 +13,6 @@ logger = get_logger()
 
 
 class ExecutionMode:
-
     # The command mode is to run the command directly with the command line.
     CMD = 'cmd'
 
@@ -22,7 +21,6 @@ class ExecutionMode:
 
 
 class VLMEvalKitBackendManager(BackendManager):
-
     def __init__(self, config: Union[str, dict], **kwargs):
         """BackendManager for VLM Evaluation Kit
 
@@ -32,6 +30,7 @@ class VLMEvalKitBackendManager(BackendManager):
         self._check_env()
         super().__init__(config, **kwargs)
         from vlmeval.utils.arguments import Arguments as VLMEvalArguments
+
         self.args = VLMEvalArguments(**self.config_d)
 
         self.valid_models = self.list_supported_models()
@@ -54,8 +53,10 @@ class VLMEvalKitBackendManager(BackendManager):
         if isinstance(self.args.model[0], dict):
             model_names = [model['name'] for model in self.args.model]
             valid_model_names, invalid_model_names = get_valid_list(model_names, self.valid_model_names)
-            assert len(invalid_model_names) == 0, f'Invalid models: {invalid_model_names}, ' \
+            assert len(invalid_model_names) == 0, (
+                f'Invalid models: {invalid_model_names}, '
                 f'refer to the following list to get proper model name: {self.valid_model_names}'
+            )
 
             # set model_cfg
             new_model_names = []
@@ -94,11 +95,13 @@ class VLMEvalKitBackendManager(BackendManager):
     @staticmethod
     def list_supported_models():
         from vlmeval.config import supported_VLM
+
         return supported_VLM
 
     @staticmethod
     def list_supported_datasets():
         from vlmeval.dataset import SUPPORTED_DATASETS
+
         return SUPPORTED_DATASETS
 
     @staticmethod
@@ -124,18 +127,20 @@ class VLMEvalKitBackendManager(BackendManager):
         assert self.args.data, 'The datasets are required.'
         assert self.args.model, 'The models are required.'
 
-        cmd_str = f'python -m vlmeval ' \
-            f'--model {" ".join(self.args.model)} ' \
-            f'--data {" ".join(self.args.data)} ' \
-            f'{self.get_restore_arg("verbose", self.args.verbose)} ' \
-            f'{self.get_restore_arg("ignore", self.args.ignore)} ' \
-            f'{self.get_restore_arg("reuse", self.args.reuse)} ' \
-            f'{self.get_arg_with_default("work-dir", self.args.work_dir)} ' \
-            f'{self.get_arg_with_default("limit", self.args.limit)} ' \
-            f'{self.get_arg_with_default("mode", self.args.mode)} ' \
-            f'{self.get_arg_with_default("nproc", self.args.nproc)} ' \
-            f'{self.get_arg_with_default("judge", self.args.judge)} ' \
+        cmd_str = (
+            f'python -m vlmeval '
+            f'--model {" ".join(self.args.model)} '
+            f'--data {" ".join(self.args.data)} '
+            f'{self.get_restore_arg("verbose", self.args.verbose)} '
+            f'{self.get_restore_arg("ignore", self.args.ignore)} '
+            f'{self.get_restore_arg("reuse", self.args.reuse)} '
+            f'{self.get_arg_with_default("work-dir", self.args.work_dir)} '
+            f'{self.get_arg_with_default("limit", self.args.limit)} '
+            f'{self.get_arg_with_default("mode", self.args.mode)} '
+            f'{self.get_arg_with_default("nproc", self.args.nproc)} '
+            f'{self.get_arg_with_default("judge", self.args.judge)} '
             f'{self.get_arg_with_default("retry", self.args.retry)} '
+        )
 
         return cmd_str
 
@@ -155,6 +160,7 @@ class VLMEvalKitBackendManager(BackendManager):
 
         elif run_mode == ExecutionMode.FUNCTION:
             from vlmeval.run import run_task
+
             logger.info(f'*** Run task with config: {self.args} \n')
             run_task(self.args)
 

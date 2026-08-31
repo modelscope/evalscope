@@ -72,7 +72,7 @@ class MITMovieTriviaAdapter(NERAdapter):
             'QUOTE': 'quote',
             'RELATIONSHIP': 'relationship',
             'SOUNDTRACK': 'soundtrack',
-            'YEAR': 'year'
+            'YEAR': 'year',
         }
 
         # Add descriptions for each entity type
@@ -84,11 +84,11 @@ class MITMovieTriviaAdapter(NERAdapter):
             'GENRE': 'The category or style of the movie.',
             'OPINION': 'A subjective review or personal opinion about the movie.',
             'ORIGIN': 'The source material or basis for the movie.',
-            'PLOT': 'A description or summary of the movie\'s storyline.',
+            'PLOT': "A description or summary of the movie's storyline.",
             'QUOTE': 'A memorable line or phrase spoken in the movie.',
             'RELATIONSHIP': 'The connection or relationship between characters.',
             'SOUNDTRACK': 'The music or a specific song from the movie.',
-            'YEAR': 'The release year of the movie.'
+            'YEAR': 'The release year of the movie.',
         }
 
         # Setup entity mappings based on the defined entity types

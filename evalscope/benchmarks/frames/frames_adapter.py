@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
@@ -71,7 +72,6 @@ FRAMES is a comprehensive evaluation dataset designed to test the capabilities o
     )
 )
 class FramesAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs):
@@ -104,14 +104,11 @@ class FramesAdapter(DefaultDataAdapter):
         Returns:
             Sample: Sample object with input, target, and metadata.
         """
-        context = '\n'.join([f"{i['title']}\n{i['text']}" for i in record['wiki_items']])
+        context = '\n'.join([f'{i["title"]}\n{i["text"]}' for i in record['wiki_items']])
         question = record['Prompt']
 
         return Sample(
-            input=question, target=record['Answer'], metadata={
-                'context': context,
-                'wiki_items': record['wiki_items']
-            }
+            input=question, target=record['Answer'], metadata={'context': context, 'wiki_items': record['wiki_items']}
         )
 
     def format_prompt_template(self, sample):
@@ -143,6 +140,7 @@ class FramesAdapter(DefaultDataAdapter):
         Calculate accuracy score by matching prediction with reference.
         """
         from evalscope.metrics import exact_match
+
         from .utils import normalize_answer
 
         score = Score(
@@ -163,14 +161,17 @@ class FramesAdapter(DefaultDataAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import GENERAL_ORM_PROMPT, ORM_USER_TEMPLATE
-            prompt = ORM_USER_TEMPLATE.format(
-                problem=judge_context.task_state.input_text,
-                answer_1=judge_context.reference,
-                answer_2=judge_context.filtered_prediction,
-            ) + case.output_contract.instruction()
+
+            prompt = (
+                ORM_USER_TEMPLATE.format(
+                    problem=judge_context.task_state.input_text,
+                    answer_1=judge_context.reference,
+                    answer_2=judge_context.filtered_prediction,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT),
-                          ChatMessageUser(content=prompt)]
+                messages=[ChatMessageSystem(content=GENERAL_ORM_PROMPT), ChatMessageUser(content=prompt)]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -180,5 +181,5 @@ class FramesAdapter(DefaultDataAdapter):
             cases=[JudgeCase(case_id='equivalence', output_contract=EQUIVALENCE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )

@@ -122,5 +122,4 @@ class RemoveUntilFilter(Filter):
 
 
 @register_filter('extract')
-class ExtractFilter(RegexFilter):
-    ...
+class ExtractFilter(RegexFilter): ...

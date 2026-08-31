@@ -1,7 +1,8 @@
 # flake8: noqa: E501
 import json
-from pydantic import BaseModel
 from typing import Any, Dict, List, Optional, Tuple
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -12,6 +13,7 @@ from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     CONSULTATION_MAX_QUESTIONS,
     JUDGE_SYSTEM_PROMPTS,
@@ -35,11 +37,13 @@ class SectionScore(BaseModel):
 
 class CaseAnalysisGrade(BaseModel):
     """The ``case_analysis`` judge reply; section denominators come from the dataset, not the judge."""
+
     score_details: Dict[str, SectionScore]
 
 
 class TotalPointsGrade(BaseModel):
     """The single-total judge reply for ``legal_qa`` / ``document_generation``."""
+
     total_points: float
     max_points: Optional[float] = None
 
@@ -167,8 +171,9 @@ class PLawBenchAdapter(DefaultDataAdapter):
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             current_metadata = judge_context.task_state.metadata or {}
             current_type = current_metadata['judge_type']
-            rubric_sections = parse_rubric_sections(current_metadata['rubrics']) \
-                if current_type == JUDGE_TYPE_CASE_ANALYSIS else None
+            rubric_sections = (
+                parse_rubric_sections(current_metadata['rubrics']) if current_type == JUDGE_TYPE_CASE_ANALYSIS else None
+            )
             system_prompt, user_prompt = self._build_judge_prompts(
                 judge_type=current_type,
                 metadata=current_metadata,
@@ -176,8 +181,7 @@ class PLawBenchAdapter(DefaultDataAdapter):
                 rubric_sections=rubric_sections,
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=system_prompt),
-                          ChatMessageUser(content=user_prompt)]
+                messages=[ChatMessageSystem(content=system_prompt), ChatMessageUser(content=user_prompt)]
             )
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -201,7 +205,7 @@ class PLawBenchAdapter(DefaultDataAdapter):
             request=request,
             reduce=reduce,
             main_score_name='acc',
-            finalize=finalize
+            finalize=finalize,
         )
 
     def _build_judge_prompts(
@@ -222,10 +226,12 @@ class PLawBenchAdapter(DefaultDataAdapter):
             rubric_text = metadata['rubrics']
 
         conversation = build_conversation(prompt=metadata['prompt'], response=response)
-        user_prompt = JUDGE_USER_PROMPTS[judge_type] \
-            .replace('<<conversation>>', conversation) \
-            .replace('<<rubric_item>>', rubric_text) \
+        user_prompt = (
+            JUDGE_USER_PROMPTS[judge_type]
+            .replace('<<conversation>>', conversation)
+            .replace('<<rubric_item>>', rubric_text)
             .replace('<<score>>', str(metadata['max_points']))
+        )
         return system_prompt, user_prompt
 
     @staticmethod

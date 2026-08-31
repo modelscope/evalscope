@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import time
+
 from aiohttp import web
 
 from evalscope.perf.arguments import Arguments

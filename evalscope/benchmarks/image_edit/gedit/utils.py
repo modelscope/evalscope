@@ -2,8 +2,9 @@ import ast
 import json
 import os
 import random
-import regex as re
 from typing import Union
+
+import regex as re
 
 from evalscope.utils.logger import get_logger
 
@@ -150,7 +151,7 @@ def is_str_valid_score_format_brackets(s):
 
             scores[key] = value
 
-        fetch_words = [f'score{i+1}' for i in range(length)]
+        fetch_words = [f'score{i + 1}' for i in range(length)]
         # Check if at least 'score1' and 'score2' are present
         return all(key in scores for key in fetch_words)
 

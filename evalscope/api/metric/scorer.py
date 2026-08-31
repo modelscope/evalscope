@@ -1,6 +1,7 @@
 import warnings
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from typing import Any, Callable, Dict, List, Optional, Union
+
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.constants import ScoreStatus
@@ -192,7 +193,6 @@ class AggScore(BaseModel):
 
 
 class Aggregator:
-
     name = 'default'
 
     def __call__(self, scores: List[SampleScore]) -> List[AggScore]:

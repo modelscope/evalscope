@@ -6,6 +6,7 @@ streamable-HTTP on ``127.0.0.1:<port>/mcp`` instead.
 """
 
 import sys
+
 from mcp.server.fastmcp import FastMCP
 
 

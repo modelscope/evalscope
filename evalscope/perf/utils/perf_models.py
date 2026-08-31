@@ -16,9 +16,10 @@ Public classes
 from __future__ import annotations
 
 import json
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from tabulate import tabulate
-from typing import Any, Dict, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
@@ -81,7 +82,7 @@ class BenchmarkSummary(BaseModel):
         'failed_requests',
         'stream_requests',
         'non_stream_requests',
-        mode='before'
+        mode='before',
     )
     @classmethod
     def _round_to_int(cls, v):
@@ -150,15 +151,19 @@ class BenchmarkSummary(BaseModel):
 
         # ── Tokens ──
         rows.append(('── Tokens ──', ''))
-        rows.append((
-            Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST,
-            _fmt(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, self.avg_input_tokens)
-        ))
+        rows.append(
+            (
+                Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST,
+                _fmt(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, self.avg_input_tokens),
+            )
+        )
         if self.avg_output_tokens:
-            rows.append((
-                Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
-                _fmt(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, self.avg_output_tokens)
-            ))
+            rows.append(
+                (
+                    Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST,
+                    _fmt(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, self.avg_output_tokens),
+                )
+            )
         if self.output_token_throughput:
             rows.append(
                 (Metrics.OUTPUT_TOKEN_THROUGHPUT, _fmt(Metrics.OUTPUT_TOKEN_THROUGHPUT, self.output_token_throughput))
@@ -174,7 +179,8 @@ class BenchmarkSummary(BaseModel):
 
         # ── Multi-turn (optional) ──
         multiturn_present = any(
-            v is not None for v in (
+            v is not None
+            for v in (
                 self.avg_turns,
                 self.avg_cached_percent,
                 self.avg_first_turn_ttft,
@@ -184,10 +190,12 @@ class BenchmarkSummary(BaseModel):
         if multiturn_present:
             rows.append(('── Multi-turn ──', ''))
             if self.avg_turns is not None:
-                rows.append((
-                    Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST,
-                    _fmt(Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST, self.avg_turns)
-                ))
+                rows.append(
+                    (
+                        Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST,
+                        _fmt(Metrics.AVERAGE_INPUT_TURNS_PER_REQUEST, self.avg_turns),
+                    )
+                )
             if self.avg_cached_percent is not None:
                 rows.append(
                     (Metrics.AVERAGE_CACHED_PERCENT, _fmt(Metrics.AVERAGE_CACHED_PERCENT, self.avg_cached_percent))
@@ -197,24 +205,30 @@ class BenchmarkSummary(BaseModel):
                     (Metrics.AVERAGE_FIRST_TURN_TTFT, _fmt(Metrics.AVERAGE_FIRST_TURN_TTFT, self.avg_first_turn_ttft))
                 )
             if self.avg_subsequent_turn_ttft is not None:
-                rows.append((
-                    Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT,
-                    _fmt(Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT, self.avg_subsequent_turn_ttft)
-                ))
+                rows.append(
+                    (
+                        Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT,
+                        _fmt(Metrics.AVERAGE_SUBSEQUENT_TURN_TTFT, self.avg_subsequent_turn_ttft),
+                    )
+                )
 
         # ── Speculative Decoding (optional) ──
         if self.avg_decoded_tokens_per_iter is not None or self.approx_spec_acceptance_rate is not None:
             rows.append(('── Speculative Decoding ──', ''))
             if self.avg_decoded_tokens_per_iter is not None:
-                rows.append((
-                    Metrics.AVERAGE_DECODED_TOKENS_PER_ITER,
-                    _fmt(Metrics.AVERAGE_DECODED_TOKENS_PER_ITER, self.avg_decoded_tokens_per_iter)
-                ))
+                rows.append(
+                    (
+                        Metrics.AVERAGE_DECODED_TOKENS_PER_ITER,
+                        _fmt(Metrics.AVERAGE_DECODED_TOKENS_PER_ITER, self.avg_decoded_tokens_per_iter),
+                    )
+                )
             if self.approx_spec_acceptance_rate is not None:
-                rows.append((
-                    Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE,
-                    _fmt(Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE, self.approx_spec_acceptance_rate)
-                ))
+                rows.append(
+                    (
+                        Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE,
+                        _fmt(Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE, self.approx_spec_acceptance_rate),
+                    )
+                )
 
         raw = tabulate(rows, headers=['Metric', 'Value'], tablefmt='simple_outline', colalign=('left', 'right'))
 
@@ -325,9 +339,7 @@ class PercentileResult(BaseModel):
         """
         # Build alias -> field name mapping once at call time
         alias_map = {
-            field_info.alias: name
-            for name, field_info in PercentileRow.model_fields.items()
-            if field_info.alias
+            field_info.alias: name for name, field_info in PercentileRow.model_fields.items() if field_info.alias
         }
         field_name = alias_map.get(alias)
         if field_name is None:
@@ -373,12 +385,11 @@ class PercentileResult(BaseModel):
         p_labels = col_data.get(PercentileMetrics.PERCENTILES, [])
         rows = [
             [metric]
-            + [format_perf_value(v, metric, include_unit=False) if isinstance(v, (int, float)) else v
-               for v in values]
+            + [format_perf_value(v, metric, include_unit=False) if isinstance(v, (int, float)) else v for v in values]
             for metric, values in col_data.items()
             if metric != PercentileMetrics.PERCENTILES
         ]
-        col_align = ('left', ) + ('right', ) * len(p_labels)
+        col_align = ('left',) + ('right',) * len(p_labels)
         return tabulate(
             rows,
             headers=['Metric'] + p_labels,

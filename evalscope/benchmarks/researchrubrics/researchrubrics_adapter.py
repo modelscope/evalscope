@@ -26,6 +26,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     BINARY_SYSTEM_PROMPT,
     BINARY_USER_PROMPT,
@@ -152,6 +153,7 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
 )
 class ResearchRubricsAdapter(AgentLoopAdapter):
     """Deep Research agent benchmark with binary rubric-based LLM judging."""
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     strategy_name = 'function_calling'
@@ -312,7 +314,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
             reduce=self._reduce_verdicts,
             main_score_name='compliance_score',
             expand=self._expand_cases,
-            finalize=self._finalize_score
+            finalize=self._finalize_score,
         )
 
     def _build_cases(self, context: JudgeContext) -> List[JudgeCase]:
@@ -404,8 +406,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 rubric_weight=meta['weight'],
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=BINARY_SYSTEM_PROMPT),
-                          ChatMessageUser(content=prompt)]
+                messages=[ChatMessageSystem(content=BINARY_SYSTEM_PROMPT), ChatMessageUser(content=prompt)]
             )
         elif kind == 'chunk':
             chunks = self._report_chunks(context.filtered_prediction)
@@ -420,8 +421,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 rubric_category=meta['axis'],
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=CHUNK_SYSTEM_PROMPT),
-                          ChatMessageUser(content=prompt)]
+                messages=[ChatMessageSystem(content=CHUNK_SYSTEM_PROMPT), ChatMessageUser(content=prompt)]
             )
         else:  # synthesis
             synthesis_prompt = SYNTHESIS_USER_PROMPT.format(
@@ -430,8 +430,7 @@ class ResearchRubricsAdapter(AgentLoopAdapter):
                 rubric_category=meta['axis'],
             )
             return JudgeRequest(
-                messages=[ChatMessageSystem(content=BINARY_SYSTEM_PROMPT),
-                          ChatMessageUser(content=synthesis_prompt)]
+                messages=[ChatMessageSystem(content=BINARY_SYSTEM_PROMPT), ChatMessageUser(content=synthesis_prompt)]
             )
 
     def _reduce_verdicts(self, case_verdicts: List[CaseVerdict], context: JudgeContext) -> ReducedVerdict:

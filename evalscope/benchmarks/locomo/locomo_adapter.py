@@ -11,6 +11,7 @@ from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import CATEGORY_IDS, CATEGORY_NAMES, DATA_FILE, build_qa_prompt, get_target_answer, locomo_f1_score
 
 
@@ -99,12 +100,14 @@ class LoCoMoAdapter(DefaultDataAdapter):
             conversation = conversation_record['conversation']
             sample_id = conversation_record['sample_id']
             for qa_index, qa in enumerate(conversation_record['qa']):
-                records.append({
-                    'sample_id': sample_id,
-                    'qa_index': qa_index,
-                    'conversation': conversation,
-                    'qa': qa,
-                })
+                records.append(
+                    {
+                        'sample_id': sample_id,
+                        'qa_index': qa_index,
+                        'conversation': conversation,
+                        'qa': qa,
+                    }
+                )
         return records
 
     def _resolve_dataset_file(self) -> str:

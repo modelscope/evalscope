@@ -310,12 +310,18 @@ def parse_markdown_tables(md_content: str) -> List[TableData]:
 
 def _rows_to_specs(table_data: List[List[str]]) -> List[List[Dict[str, Union[str, int, bool]]]]:
     """Convert markdown rows into row specs, marking the first row and column as headings."""
-    return [[{
-        'text': cell,
-        'rowspan': 1,
-        'colspan': 1,
-        'is_heading': row_idx == 0 or col_idx == 0,
-    } for col_idx, cell in enumerate(row)] for row_idx, row in enumerate(table_data)]
+    return [
+        [
+            {
+                'text': cell,
+                'rowspan': 1,
+                'colspan': 1,
+                'is_heading': row_idx == 0 or col_idx == 0,
+            }
+            for col_idx, cell in enumerate(row)
+        ]
+        for row_idx, row in enumerate(table_data)
+    ]
 
 
 def _process_table_lines(table_lines: List[str]) -> List[List[str]]:

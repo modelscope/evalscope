@@ -4,6 +4,8 @@ import inspect
 import os
 import platform
 import signal
+from dataclasses import dataclass
+from typing import Optional
 
 from evalscope.utils.logger import get_logger
 
@@ -16,6 +18,29 @@ logger = get_logger()
 # Module-level flag so we only attempt to install uvloop once per process,
 # even when ``run_one_benchmark`` is invoked repeatedly from a sweep.
 _UVLOOP_INSTALL_ATTEMPTED = False
+
+
+@dataclass
+class ShutdownSignalState:
+    """Signal received by a benchmark loop, if any."""
+
+    signal_name: Optional[str] = None
+
+    @property
+    def exit_code(self) -> int:
+        """Return the conventional shell exit code for the received signal."""
+        if self.signal_name is None:
+            raise RuntimeError('No shutdown signal has been received.')
+        return 128 + getattr(signal, self.signal_name)
+
+
+class PerfBenchmarkInterrupted(Exception):
+    """Raised after a signal-triggered benchmark cancellation finishes cleanup."""
+
+    def __init__(self, signal_state: ShutdownSignalState) -> None:
+        self.signal_name = signal_state.signal_name
+        self.exit_code = signal_state.exit_code
+        super().__init__(f'Benchmark interrupted by {self.signal_name}')
 
 
 def install_uvloop_if_available() -> None:
@@ -113,14 +138,32 @@ def exception_handler(func):
         return sync_wrapper
 
 
-def signal_handler(signal_name, loop):
-    logger.info('Got signal %s: exit' % signal_name)
-    loop.stop()
+def signal_handler(
+    signal_name: str,
+    loop: asyncio.AbstractEventLoop,
+    signal_state: Optional[ShutdownSignalState] = None,
+) -> None:
+    """Gracefully interrupt a running benchmark loop.
+
+    ``loop.stop()`` aborts the loop mid-flight, which surfaces from
+    ``run_until_complete`` as a confusing ``RuntimeError: Event loop stopped
+    before Future completed`` and skips every ``finally`` block of the running
+    coroutine (request teardown, DB cleanup).  Cancelling the pending tasks
+    instead delivers ``CancelledError`` to the benchmark coroutine, so cleanup
+    runs and ``run_until_complete`` unwinds normally.
+    """
+    if signal_state is not None:
+        signal_state.signal_name = signal_name
+    logger.info(f'Got signal {signal_name}: cancelling pending tasks')
+    for task in asyncio.all_tasks(loop):
+        task.cancel()
 
 
-def add_signal_handlers(loop):
+def add_signal_handlers(loop: asyncio.AbstractEventLoop) -> ShutdownSignalState:
+    signal_state = ShutdownSignalState()
     for signal_name in {'SIGINT', 'SIGTERM'}:
         loop.add_signal_handler(
             getattr(signal, signal_name),
-            functools.partial(signal_handler, signal_name, loop),
+            functools.partial(signal_handler, signal_name, loop, signal_state),
         )
+    return signal_state

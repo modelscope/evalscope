@@ -16,7 +16,6 @@ logger = get_logger()
 
 
 class CmdMode(Enum):
-
     # The basic mode is to run the command directly,
     # e.g. `python -m run --models model1 model2 --datasets dataset1 dataset2`
     BASIC = 'basic'
@@ -27,7 +26,6 @@ class CmdMode(Enum):
 
 
 class RunMode(Enum):
-
     # The command mode is to run the command directly with the command line.
     CMD = 'cmd'
 
@@ -36,7 +34,6 @@ class RunMode(Enum):
 
 
 class OpenCompassBackendManager(BackendManager):
-
     def __init__(self, config: Union[str, dict], **kwargs):
         """
         The backend manager for OpenCompass.
@@ -68,6 +65,7 @@ class OpenCompassBackendManager(BackendManager):
         super().__init__(config, **kwargs)
 
         from opencompass.cli.arguments import Arguments as OpenCompassArguments
+
         self.args = OpenCompassArguments(**self.config_d)
 
     @property
@@ -109,6 +107,7 @@ class OpenCompassBackendManager(BackendManager):
     @staticmethod
     def list_datasets(return_details: bool = False):
         from dataclasses import dataclass
+
         from opencompass.utils.run import get_config_from_arg
 
         @dataclass
@@ -136,10 +135,12 @@ class OpenCompassBackendManager(BackendManager):
             assert self.args.datasets, 'The datasets are required.'
             assert self.args.models, 'The models are required.'
 
-            cmd_str = f'python -m run_oc ' \
-                      f'--models {" ".join(self.args.models)} ' \
-                      f'--datasets {" ".join(self.args.datasets)} ' \
-                      f'{self.get_arg_with_default("work-dir", self.args.work_dir)}'
+            cmd_str = (
+                f'python -m run_oc '
+                f'--models {" ".join(self.args.models)} '
+                f'--datasets {" ".join(self.args.datasets)} '
+                f'{self.get_arg_with_default("work-dir", self.args.work_dir)}'
+            )
 
         elif cmd_mode == CmdMode.SCRIPT:
             assert self.args.config, 'The script file is required.'
@@ -166,9 +167,10 @@ class OpenCompassBackendManager(BackendManager):
             assert isinstance(self.args.models, list) and len(self.args.models) > 0, 'The models are required.'
 
             tmp_model_d: dict = self.args.models[0]
-            assert 'path' in tmp_model_d and 'openai_api_base' in tmp_model_d, \
-                f'Got invalid model config: {tmp_model_d}. \nTo get valid format: ' \
+            assert 'path' in tmp_model_d and 'openai_api_base' in tmp_model_d, (
+                f'Got invalid model config: {tmp_model_d}. \nTo get valid format: '
                 "{'path': 'qwen-7b-chat', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}"
+            )
 
             # Get valid datasets
             dataset_names = self.args.datasets  # e.g. ['mmlu', 'ceval']
@@ -184,8 +186,9 @@ class OpenCompassBackendManager(BackendManager):
                         f'Invalid datasets: {invalid_dataset_names}, '
                         f'refer to the following list to get proper dataset name: {dataset_names_all}'
                     )
-                assert len(valid_dataset_names) > 0, f'No valid datasets. ' \
-                                                     f'To get the valid datasets, please refer to {dataset_names_all}'
+                assert len(valid_dataset_names) > 0, (
+                    f'No valid datasets. To get the valid datasets, please refer to {dataset_names_all}'
+                )
 
             valid_datasets = [
                 _dataset for _dataset in real_dataset_all if _dataset['dataset_name'] in valid_dataset_names
@@ -234,7 +237,6 @@ class OpenCompassBackendManager(BackendManager):
 
 
 if __name__ == '__main__':
-
     # OpenCompassBackendManager.list_datasets()
     # ['mmlu', 'WSC', 'DRCD', 'chid', 'gsm8k', 'AX_g', 'BoolQ', 'cmnli', 'ARC_e', 'ocnli_fc', 'summedits', 'MultiRC',
     # 'GaokaoBench', 'obqa', 'math', 'agieval', 'hellaswag', 'RTE', 'race', 'flores', 'ocnli', 'strategyqa',
@@ -247,11 +249,8 @@ if __name__ == '__main__':
     oc_backend_manager = OpenCompassBackendManager(
         config={
             'datasets': ['mmlu', 'ceval', 'ARC_c', 'gsm8k'],
-            'models': [{
-                'path': 'llama3-8b-instruct',
-                'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'
-            }],
-            'limit': 5
+            'models': [{'path': 'llama3-8b-instruct', 'openai_api_base': 'http://127.0.0.1:8000/v1/chat/completions'}],
+            'limit': 5,
         }
     )
     all_datasets = OpenCompassBackendManager.list_datasets()

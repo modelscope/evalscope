@@ -3,6 +3,7 @@
 Utility functions for TIR-Bench evaluation.
 Adapted from https://github.com/agents-x-project/TIR-Bench/blob/main/tools.py
 """
+
 import re
 from typing import List, Optional, Tuple
 
@@ -125,6 +126,7 @@ def extract_answer_with_classify(prediction: str, reference: str) -> str:
 def get_most_similar(prediction: str, choices: List[str]) -> str:
     """Return the choice most similar to prediction using Levenshtein distance."""
     from evalscope.metrics.utils.functions import levenshtein_distance
+
     distances = [levenshtein_distance(prediction, choice) for choice in choices]
     return choices[distances.index(min(distances))]
 
@@ -150,8 +152,10 @@ def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
             # Try to match via prompt context (e.g. "A. cat" style options)
             for x in _CHOICES:
                 if (
-                    f'{x}. {extraction}' in prompt_text or f'{x}.{extraction}' in prompt_text
-                    or f'{x} {extraction}' in prompt_text or f'{x}{extraction}' in prompt_text
+                    f'{x}. {extraction}' in prompt_text
+                    or f'{x}.{extraction}' in prompt_text
+                    or f'{x} {extraction}' in prompt_text
+                    or f'{x}{extraction}' in prompt_text
                 ):
                     extraction = x
                     break
@@ -188,6 +192,7 @@ def judge_int(extracted_answer: str, answer: str) -> float:
         # Fallback: use math_equal for symbolic/numeric equivalence
         try:
             from evalscope.metrics.math.parser import math_equal
+
             if math_equal(extracted_answer, str(answer)):
                 correctness = 1.0
         except Exception:
@@ -210,6 +215,7 @@ def judge_float(extracted_answer: str, answer: str) -> float:
     if correctness == 0.0:
         try:
             from evalscope.metrics.math.parser import math_equal
+
             if math_equal(extracted_answer, str(answer)):
                 correctness = 1.0
         except Exception:

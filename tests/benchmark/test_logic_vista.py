@@ -5,8 +5,9 @@ regression in target normalization or in the label alphabet silently turns corre
 into misses without raising anything.
 """
 import io
-from PIL import Image
 from typing import Any, Dict, List
+
+from PIL import Image
 
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState

@@ -21,11 +21,14 @@ PAGE_METRICS = (
 def build_scoring_program(annotation: Dict[str, Any], image_name: str, prediction: str) -> str:
     """Build the single-page program executed inside the pinned official image."""
     payload = base64.b64encode(
-        json.dumps({
-            'annotation': annotation,
-            'image_name': image_name,
-            'prediction': prediction,
-        }, ensure_ascii=False).encode('utf-8')
+        json.dumps(
+            {
+                'annotation': annotation,
+                'image_name': image_name,
+                'prediction': prediction,
+            },
+            ensure_ascii=False,
+        ).encode('utf-8')
     ).decode('ascii')
 
     return f'''import base64
@@ -124,7 +127,7 @@ def parse_scoring_result(result: Dict[str, Any]) -> Dict[str, float]:
     payload = None
     for line in reversed(output.splitlines()):
         if line.startswith(RESULT_SENTINEL):
-            payload = line[len(RESULT_SENTINEL):]
+            payload = line[len(RESULT_SENTINEL) :]
             break
     if payload is None:
         raise RuntimeError('Official OmniDocBench v1.6 scoring did not return a metric result.')
@@ -133,8 +136,8 @@ def parse_scoring_result(result: Dict[str, Any]) -> Dict[str, float]:
         values = json.loads(payload)
     except json.JSONDecodeError as error:
         raise RuntimeError('Official OmniDocBench v1.6 scoring returned invalid JSON.') from error
-    if not isinstance(values, dict) or not values:
-        raise RuntimeError('Official OmniDocBench v1.6 scoring returned no page metrics.')
+    if not isinstance(values, dict):
+        raise RuntimeError('Official OmniDocBench v1.6 scoring returned a non-object metric result.')
 
     unexpected = sorted(set(values) - set(PAGE_METRICS))
     if unexpected:

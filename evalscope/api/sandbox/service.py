@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Coroutine, Dict, List, Optional, Set, Tup
 
 from evalscope.utils.asyncio_runtime import AsyncioLoopThread
 from evalscope.utils.logger import get_logger
+
 from .config_builder import build_sandbox_config
 from .engine import SandboxEngine, get_enclave_types, resolve_engine
 
@@ -248,8 +249,7 @@ class SandboxService:
 
         self._managers[key] = manager
         logger.info(
-            f'SandboxService: manager started for engine={engine.value} '
-            f'(total_managers={len(self._managers)}).'
+            f'SandboxService: manager started for engine={engine.value} (total_managers={len(self._managers)}).'
         )
         return manager
 
@@ -298,6 +298,7 @@ class SandboxService:
 
         # Default path: ms_enclave ``SandboxManagerFactory`` (covers docker).
         from ms_enclave.sandbox.manager import SandboxManagerFactory
+
         return SandboxManagerFactory.create_manager(**manager_config)
 
     # ------------------------------------------------------------------

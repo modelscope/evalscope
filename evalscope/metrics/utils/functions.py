@@ -2,11 +2,12 @@
 # Copyright (c) EleutherAI. and its affiliates.
 # Copyright (c) OpenAI. and its affiliates.
 
-import editdistance
 import itertools
 import math
-import numpy as np
 from typing import Dict, List, Union
+
+import editdistance
+import numpy as np
 
 
 def normalize_text(text: str) -> str:
@@ -98,7 +99,7 @@ def exact_match(gold: str, pred: str) -> float:
 def calculate_pass_at_k(
     num_samples: Union[int, List[int], np.ndarray],
     num_correct: Union[List[int], np.ndarray],
-    k: int = 1
+    k: int = 1,
 ) -> np.ndarray:
     """
     Estimates pass@k of each problem and returns them in an array.

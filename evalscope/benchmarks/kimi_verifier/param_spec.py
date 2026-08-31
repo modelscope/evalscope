@@ -6,6 +6,7 @@ parameters to the model's recommended defaults; any other value must be
 rejected with HTTP 400. This file is a faithful port of
 ``IMMUTABLE_PARAMS`` from Kimi-Vendor-Verifier's ``verify_params.py``.
 """
+
 from dataclasses import dataclass
 from typing import Any, List
 

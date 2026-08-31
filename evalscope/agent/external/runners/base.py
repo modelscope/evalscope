@@ -7,8 +7,9 @@ emitted.
 """
 
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.agent import AgentEnvironment
 

@@ -56,17 +56,12 @@ MathVista is a comprehensive benchmark for mathematical reasoning in visual cont
 - Uses numeric equivalence checking for answer comparison
 - Chain-of-Thought (CoT) prompting for multiple-choice questions
 """,
-        metric_list=[{
-            'acc': {
-                'numeric': True
-            }
-        }],
+        metric_list=[{'acc': {'numeric': True}}],
         eval_split='testmini',
         prompt_template=OPEN_PROMPT,
     )
 )
 class MathVistaAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -83,7 +78,7 @@ class MathVistaAdapter(VisionLanguageAdapter):
                     'question_type': record['question_type'],
                     'answer_type': record['answer_type'],
                     **record['metadata'],
-                }
+                },
             )
         elif record['question_type'] == 'free_form':
             return Sample(
@@ -94,10 +89,10 @@ class MathVistaAdapter(VisionLanguageAdapter):
                     'question_type': record['question_type'],
                     'answer_type': record['answer_type'],
                     **record['metadata'],
-                }
+                },
             )
         else:
-            raise ValueError(f"Unexpected question_type: {record['question_type']}")
+            raise ValueError(f'Unexpected question_type: {record["question_type"]}')
 
     def get_option_label(self, options, value):
         try:
@@ -108,18 +103,20 @@ class MathVistaAdapter(VisionLanguageAdapter):
             return value
 
     @staticmethod
-    def create_content_and_answers_list(record: dict[str, Any], ) -> tuple[list[Content], list[str]]:
+    def create_content_and_answers_list(
+        record: dict[str, Any],
+    ) -> tuple[list[Content], list[str]]:
         """
-            Create a list of content elements and a list of answers from a record.
+        Create a list of content elements and a list of answers from a record.
 
-            Args:
-                record (dict): The record containing question, images, and options.
+        Args:
+            record (dict): The record containing question, images, and options.
 
 
-            Returns:
-                tuple: A tuple containing:
-                    - content_list (list): A list of content elements (text and images).
-                    - answers_list (list): A list of possible answers (for multiple-choice questions).
+        Returns:
+            tuple: A tuple containing:
+                - content_list (list): A list of content elements (text and images).
+                - answers_list (list): A list of possible answers (for multiple-choice questions).
         """
         question_type = record['question_type']
         if question_type == MULTI_CHOICE_TYPE:

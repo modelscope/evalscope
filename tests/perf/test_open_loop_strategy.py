@@ -1,7 +1,8 @@
 import asyncio
-import pytest
 from types import SimpleNamespace
 from typing import AsyncIterator, Dict, List, Tuple
+
+import pytest
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies import open_loop

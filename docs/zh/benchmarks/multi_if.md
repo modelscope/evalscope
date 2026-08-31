@@ -3,7 +3,7 @@
 
 ## 概述
 
-Multi-IF 是一个用于评估大语言模型（LLM）在多语言环境下执行多轮指令能力的基准测试。它检验模型在不同语言的多轮对话中遵循复杂指令的能力。
+Multi-IF 是一个用于评估大语言模型（LLM）在多语言环境下执行多轮指令能力的基准测试。该基准测试评估模型在不同语言中跨多个对话轮次遵循复杂指令的能力。
 
 ## 任务描述
 
@@ -14,32 +14,33 @@ Multi-IF 是一个用于评估大语言模型（LLM）在多语言环境下执�
 
 ## 主要特性
 
-- 支持 11 种语言：中文、英语、德语、意大利语、越南语、西班牙语、印地语、葡萄牙语、法语、泰语、俄语
+- 支持 11 种语言：中文、英文、德语、意大利语、越南语、西班牙语、印地语、葡萄牙语、法语、泰语、俄语
 - 多轮对话评估（最多 3 轮）
 - 在多语言上下文中测试指令遵循能力
-- 提供严格和宽松两种评估指标
+- 同时提供严格和宽松的评估指标
 - 支持提示词级别和指令级别的评分
 
 ## 评估说明
 
 - 默认使用 **train** 数据划分进行评估
-- 可配置 `max_turns`（1-3，默认为 3）
+- 可配置 max_turns 参数（1-3，默认为 3）
 - 跟踪四项指标：
   - `prompt_level_strict/loose`：提示词级别的严格/宽松准确率
-  - `inst_level_strict/loose`：指令级别的严格/宽松准确率
-- 依赖库：nltk、langdetect、emoji（用于中文）、pythainlp（用于泰语）
+  - `inst_level_strict/loose`：指令级别的严格/宽松准确率（对所有指令进行微观平均）
+- 依赖库：nltk, langdetect, emoji（用于中文）, pythainlp（用于泰语）
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `multi_if` |
-| **数据集 ID** | [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary) |
+| **数据集ID** | [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary) |
 | **论文** | N/A |
 | **标签** | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | **指标** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
+| **聚合方式** | `weighted_mean` |
 
 
 ## 数据统计
@@ -134,7 +135,7 @@ task_cfg = TaskConfig(
     datasets=['multi_if'],
     dataset_args={
         'multi_if': {
-            # subset_list: ['Chinese', 'English', 'Italian']  # 可选，评估指定子集
+            # subset_list: ['Chinese', 'English', 'Italian']  # 可选，仅评估指定子集
             # extra_params: {}  # 使用默认额外参数
         }
     },

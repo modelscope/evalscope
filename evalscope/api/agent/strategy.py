@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, List, Optional, Protocol, runtime_checkable
 from evalscope.api.messages import ChatMessage, ChatMessageTool
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
+
 from .constants import NUDGE_PROMPT
 from .types import AgentContext, AgentLoopResult, ParsedAction, ToolSchemaMode, TurnOutcome
 

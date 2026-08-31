@@ -13,7 +13,6 @@ logger = get_logger()
 
 @register_api('dashscope')
 class DashScopeApiPlugin(ApiPluginBase):
-
     def __init__(self, param: Arguments):
         super().__init__(param)
 

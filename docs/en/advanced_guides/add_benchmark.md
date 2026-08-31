@@ -611,8 +611,8 @@ make docs
 ```
 
 ## 6. Submitting PR
-After completing the implementation of these methods and document generation, your benchmark evaluation is ready! You can submit a [PR](https://github.com/modelscope/evalscope/pulls). Before submitting, please run the following command, which will automatically format the code:
+After completing the implementation and documentation generation, run all repository checks before submitting a [PR](https://github.com/modelscope/evalscope/pulls). This command applies safe Ruff fixes and formatting before validating the remaining hooks:
 ```bash
 make lint
 ```
-Ensure there are no formatting issues, and we will merge your contribution as soon as possible, allowing more users to use the benchmark evaluation you contributed. If you don't know how to submit a PR, you can check our [Guide](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md). Give it a try 🚀
+Once the checks pass, your contribution is ready for review. For the complete development workflow, see the [Contributing Guide](https://github.com/modelscope/evalscope/blob/main/CONTRIBUTING.md). Give it a try 🚀

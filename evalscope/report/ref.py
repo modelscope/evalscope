@@ -5,7 +5,9 @@ One evaluation run writes ``<root>/<run_id>/reports/<model_id>/<dataset>.json``,
 addressed by exactly two names: the run directory and the model directory inside it. The datasets a
 report covers are read from that directory and are therefore data, not identity.
 """
+
 import os
+
 from pydantic import BaseModel, field_validator
 
 # Characters that would make a name span more than one path segment, or address its parent.

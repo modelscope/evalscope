@@ -11,6 +11,7 @@ from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import build_task_prompt, parse_grid_from_response
 
 logger = get_logger()
@@ -70,7 +71,6 @@ PROMPT_TEMPLATE = '{question}'
     )
 )
 class ArcAgi2Adapter(DefaultDataAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         task_prompt = build_task_prompt(record)
         target_grid = record['question'][0]['output']

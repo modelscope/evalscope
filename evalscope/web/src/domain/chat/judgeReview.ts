@@ -66,12 +66,12 @@ export function selectJudgeReview(score: PredictionScore | undefined): JudgeRevi
 
   return {
     skipped,
-    skipReason: score.metadata?.judge_skip_reason,
+    skipReason: score.metadata?.judge_skip_reason ?? undefined,
     judgeModels: detail?.judge_models ?? [],
     validObservations: detail?.valid_observations,
     totalObservations: detail?.total_observations,
     failures: detail?.failures ?? {},
-    error: detail?.error,
+    error: detail?.error ?? undefined,
     totalLatency: latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) : undefined,
     cases: groupByCase(attempts),
     explanation: score.explanation || undefined,
@@ -93,7 +93,13 @@ function groupByCase(attempts: JudgeAttempt[]): JudgeCaseView[] {
     const caseId = caseAttempts[0].case_id
     const usable = caseAttempts.filter(a => USABLE_STATUSES.has(a.status))
     const decisive = usable.length > 0 ? usable[usable.length - 1] : undefined
-    const placements = [...new Set(caseAttempts.map(a => a.placement).filter((p): p is string => !!p))]
+    const placements = [
+      ...new Set(
+        caseAttempts
+          .map(a => a.placement)
+          .filter((placement): placement is NonNullable<JudgeAttempt['placement']> => placement !== undefined),
+      ),
+    ]
     // A pairwise case is judged in both orders and the pair is one verdict, so each side is
     // reported separately instead of letting the last one stand for the case.
     const placementVerdicts = placements.length > 1

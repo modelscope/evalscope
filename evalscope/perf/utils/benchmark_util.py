@@ -107,8 +107,7 @@ class BenchmarkData:
 
         # tpot = (latency - ttft) / (output_len - 1)
         if self.completion_tokens and self.completion_tokens > 1:
-            self.time_per_output_token = ((self.query_latency - self.first_chunk_latency) /
-                                          (self.completion_tokens - 1))
+            self.time_per_output_token = (self.query_latency - self.first_chunk_latency) / (self.completion_tokens - 1)
 
         # Derive inter-chunk latencies from chunk timestamps when not already set
         if not self.inter_chunk_latency and self.chunk_times:
@@ -135,6 +134,7 @@ class BenchmarkData:
         """Update max GPU memory usage across all visible CUDA devices."""
         if check_import('torch', raise_warning=False):
             import torch
+
             total_memory = sum(torch.cuda.max_memory_allocated(i) / 2**30 for i in range(torch.cuda.device_count()))
             self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
 
@@ -285,7 +285,14 @@ class MetricsAccumulator:
         self._update_wall_time(data)
 
     def _update_wall_time(self, data: BenchmarkData) -> None:
-        """Expand the wall-clock window to cover *data*'s lifecycle."""
+        """Expand the wall-clock window to cover *data*'s lifecycle.
+
+        Records without a valid timing interval are skipped: folding an absent
+        start or a completion before its start into the window would corrupt
+        QPS and throughput.
+        """
+        if data.start_time <= 0 or data.completed_time < data.start_time:
+            return
         if self._wall_start is None:
             self._wall_start = data.start_time
         else:
@@ -323,26 +330,29 @@ class MetricsAccumulator:
             avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n)
             avg_completion_tokens = _safe_div(self.total_completion_tokens, n)
             avg_inter_token_latency = (
-                sum(self.all_inter_token_latencies)
-                / len(self.all_inter_token_latencies) if self.all_inter_token_latencies else 0.0
+                sum(self.all_inter_token_latencies) / len(self.all_inter_token_latencies)
+                if self.all_inter_token_latencies
+                else 0.0
             )
             qps = _safe_div(n, t)
             # Deliberately population-wide: only used by embedding/rerank APIs
             avg_input_token_throughput = _safe_div(self.total_prompt_tokens, self.total_first_chunk_latency)
             avg_output_token_throughput = _safe_div(self.total_completion_tokens, t)
             avg_total_token_throughput = _safe_div(self.total_prompt_tokens + self.total_completion_tokens, t)
-            avg_turns_per_request = (_safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1)
+            avg_turns_per_request = _safe_div(self.total_input_turns, n) if self.total_input_turns > 0 else -1
             # Unbiased global KV-cache hit rate:
             # total_cached_tokens / total_prompt_tokens_for_cache
             # (includes turn 1 which contributes 0 cached tokens but still
             # counts in the denominator, so the ratio is not inflated).
             avg_cached_percent = (
-                _safe_div(self.total_cached_tokens
-                          * 100.0, self.total_prompt_tokens_for_cache, default=-1) if self.n_cache_turns > 0 else -1
+                _safe_div(self.total_cached_tokens * 100.0, self.total_prompt_tokens_for_cache, default=-1)
+                if self.n_cache_turns > 0
+                else -1
             )
             avg_decoded_tokens_per_iter = (
                 _safe_div(self.total_decoded_tokens_per_iter, self.n_decoded_samples)
-                if self.n_decoded_samples > 0 else -1
+                if self.n_decoded_samples > 0
+                else -1
             )
             # First-turn / subsequent-turn TTFT averages (multi-turn only).
             # -1 means "not applicable" (no multi-turn data observed).
@@ -459,7 +469,8 @@ class BenchmarkMetrics:
         base = self._build_common_fields(ndigits)
         specific = (
             self._build_embedding_fields(ndigits)
-            if Metrics.is_embedding_or_rerank(api_type) else self._build_llm_fields(ndigits)
+            if Metrics.is_embedding_or_rerank(api_type)
+            else self._build_llm_fields(ndigits)
         )
         multiturn = self._build_multiturn_fields(ndigits)
         speculative = self._build_speculative_decoding_fields(ndigits)

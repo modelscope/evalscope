@@ -28,26 +28,22 @@ describe.each(['eval', 'perf'] as const)('createTaskApi(%s)', (scope) => {
       1,
       `/api/v1/${scope}/invoke`,
       { model: 'qwen-plus' },
-      expect.anything(),
       expect.objectContaining({ headers: { 'EvalScope-Task-Id': 'task-1' } }),
     )
     expect(get).toHaveBeenNthCalledWith(
       1,
       `/api/v1/${scope}/progress`,
-      expect.anything(),
       expect.objectContaining({ params: { task_id: 'task-1' } }),
     )
     expect(get).toHaveBeenNthCalledWith(
       2,
       `/api/v1/${scope}/log`,
-      expect.anything(),
       expect.objectContaining({ params: { task_id: 'task-1', start_line: '12', page: '100' } }),
     )
     expect(post).toHaveBeenNthCalledWith(
       2,
       `/api/v1/${scope}/stop`,
       {},
-      expect.anything(),
       expect.objectContaining({ params: { task_id: 'task-1' } }),
     )
     expect(api.reportUrl('task 1')).toBe(`/api/v1/${scope}/report?task_id=task%201`)

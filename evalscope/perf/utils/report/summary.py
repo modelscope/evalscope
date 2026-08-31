@@ -101,18 +101,22 @@ def _summary_values(run: Any, is_embedding_flag: bool) -> Dict[str, float]:
         'p99_latency': run.get_p99('latency'),
     }
     if is_embedding_flag:
-        values.update({
-            'input_token_throughput': summary.input_token_throughput,
-            'avg_input_tokens': summary.avg_input_tokens,
-        })
+        values.update(
+            {
+                'input_token_throughput': summary.input_token_throughput,
+                'avg_input_tokens': summary.avg_input_tokens,
+            }
+        )
     else:
-        values.update({
-            'avg_ttft': summary.avg_ttft,
-            'p99_ttft': run.get_p99('ttft'),
-            'avg_tpot': summary.avg_tpot,
-            'p99_tpot': run.get_p99('tpot'),
-            'output_token_throughput': summary.output_token_throughput,
-        })
+        values.update(
+            {
+                'avg_ttft': summary.avg_ttft,
+                'p99_ttft': run.get_p99('ttft'),
+                'avg_tpot': summary.avg_tpot,
+                'p99_tpot': run.get_p99('tpot'),
+                'output_token_throughput': summary.output_token_throughput,
+            }
+        )
     values['success_rate'] = run.success_rate
     return values
 
@@ -152,22 +156,31 @@ def build_summary_table(
     specs = _summary_specs(is_embedding_flag)
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
-    columns: List[Dict[str, Any]] = [{
-        'key': key,
-        'label': label,
-        'semantics': semantics.get(field_key) if field_key is not None else None,
-    } for key, label, field_key in specs]
-    rows = [{
-        'values': _summary_values(run, is_embedding_flag),
-        'sample_counts': _summary_sample_counts(run, request_counts[index] if request_counts else None),
-    } for index, run in enumerate(runs)]
+    columns: List[Dict[str, Any]] = [
+        {
+            'key': key,
+            'label': label,
+            'semantics': semantics.get(field_key) if field_key is not None else None,
+        }
+        for key, label, field_key in specs
+    ]
+    rows = [
+        {
+            'values': _summary_values(run, is_embedding_flag),
+            'sample_counts': _summary_sample_counts(run, request_counts[index] if request_counts else None),
+        }
+        for index, run in enumerate(runs)
+    ]
     return columns, rows
 
 
 def format_summary_rows(columns: list, rows: list) -> List[List[str]]:
     """Format structured summary rows for the standalone HTML report."""
     all_specs = (
-        _CONFIG_COLUMNS + _COMMON_METRIC_COLUMNS + _EMBEDDING_METRIC_COLUMNS + _GENERATION_METRIC_COLUMNS
+        _CONFIG_COLUMNS
+        + _COMMON_METRIC_COLUMNS
+        + _EMBEDDING_METRIC_COLUMNS
+        + _GENERATION_METRIC_COLUMNS
         + [_SUCCESS_COLUMN]
     )
     field_keys = {key: field_key for key, _, field_key in all_specs}
@@ -196,14 +209,12 @@ def build_best_config(runs: list) -> OrderedDict:
 
     best_rps = max(runs, key=lambda r: r.summary.request_throughput)
     best['Highest RPS'] = (
-        f'{best_rps.name} '
-        f'({_cell(Metrics.REQUEST_THROUGHPUT, best_rps.summary.request_throughput, include_unit=True)})'
+        f'{best_rps.name} ({_cell(Metrics.REQUEST_THROUGHPUT, best_rps.summary.request_throughput, include_unit=True)})'
     )
 
     best_lat = min(runs, key=lambda r: r.summary.avg_latency if r.summary.avg_latency >= 0 else float('inf'))
     best['Lowest Latency'] = (
-        f'{best_lat.name} '
-        f'({_cell(Metrics.AVERAGE_LATENCY, best_lat.summary.avg_latency, include_unit=True)})'
+        f'{best_lat.name} ({_cell(Metrics.AVERAGE_LATENCY, best_lat.summary.avg_latency, include_unit=True)})'
     )
 
     return best
@@ -222,8 +233,7 @@ def build_recommendations(runs: list) -> List[str]:
         best_idx = rps_values.index(max(rps_values))
         if best_idx == len(rps_values) - 1:
             recs.append(
-                'The system has not reached its performance bottleneck. '
-                'Consider testing with higher load levels.'
+                'The system has not reached its performance bottleneck. Consider testing with higher load levels.'
             )
         elif best_idx == 0:
             recs.append('Consider lowering the load; it may be too high for the system.')

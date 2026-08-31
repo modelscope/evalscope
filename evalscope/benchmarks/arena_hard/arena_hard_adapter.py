@@ -1,6 +1,7 @@
 # flake8: noqa: E501
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -28,6 +29,7 @@ logger = get_logger()
 
 class BattleVerdict(BaseModel):
     """One game's verdict on the official five-point preference scale."""
+
     reasoning: str = ''
     verdict: Literal['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
 
@@ -36,8 +38,7 @@ BATTLE_CONTRACT = OutputContract(schema_model=BattleVerdict)
 
 GRADER_SYSTEM_PROMPT = """Please act as an impartial judge and evaluate the quality of the responses provided by two AI assistants to the user prompt displayed below. You will be given assistant A's answer and assistant B's answer. Your job is to evaluate which assistant's answer is better.\n\nBegin your evaluation by generating your own answer to the prompt. You must provide your answers before judging any answers.\n\nWhen evaluating the assistants' answers, compare both assistants' answers with your answer. You must identify and correct any mistakes or inaccurate information.\n\nThen consider if the assistant's answers are helpful, relevant, and concise. Helpful means the answer correctly responds to the prompt or follows the instructions. Note when user prompt has any ambiguity or more than one interpretation, it is more helpful and appropriate to ask for clarifications or more information from the user than providing an answer based on assumptions. Relevant means all parts of the response closely connect or are appropriate to what is being asked. Concise means the response is clear and not verbose or excessive.\n\nThen consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.\n\nAfter providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better)."""  # noqa: E501
 
-GRADER_TEMPLATE = """<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>""".strip(
-)
+GRADER_TEMPLATE = """<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's Answer|>\n{answer_1}\n<|The End of Assistant A's Answer|>\n\n<|The Start of Assistant B's Answer|>\n{answer_2}\n<|The End of Assistant B's Answer|>""".strip()
 
 
 @register_benchmark(
@@ -79,11 +80,10 @@ ArenaHard is a challenging benchmark that evaluates language models through comp
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        prompt_template='{question}'
+        prompt_template='{question}',
     )
 )
 class ArenaHardAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -123,7 +123,7 @@ class ArenaHardAdapter(DefaultDataAdapter):
             return JudgeRequest(
                 messages=[
                     ChatMessageSystem(content=GRADER_SYSTEM_PROMPT),
-                    ChatMessageUser(content=prompt + case.output_contract.instruction())
+                    ChatMessageUser(content=prompt + case.output_contract.instruction()),
                 ]
             )
 
@@ -143,11 +143,14 @@ class ArenaHardAdapter(DefaultDataAdapter):
                 score.metadata['battle_result'] = {
                     'model_a': 'gpt4-0314',
                     'model_b': 'test_model',
-                    'games': [{
-                        'score': _battle_label(review.outcome.placements['original'], candidate_is_a=False)
-                    }, *([{
-                        'score': _battle_label(review.outcome.placements['swapped'], candidate_is_a=True)
-                    }] if 'swapped' in review.outcome.placements else [])],
+                    'games': [
+                        {'score': _battle_label(review.outcome.placements['original'], candidate_is_a=False)},
+                        *(
+                            [{'score': _battle_label(review.outcome.placements['swapped'], candidate_is_a=True)}]
+                            if 'swapped' in review.outcome.placements
+                            else []
+                        ),
+                    ],
                 }
             return score
 
@@ -183,11 +186,13 @@ class ArenaHardAdapter(DefaultDataAdapter):
 
         score = get_win_rate_column(stats, 'score', 'gpt4-0314').at['test_model']
 
-        return [AggScore(
-            score=score,
-            metric_name='win_rate',
-            num=len(scored),
-        )]
+        return [
+            AggScore(
+                score=score,
+                metric_name='win_rate',
+                num=len(scored),
+            )
+        ]
 
 
 def _candidate_outcome(label: str, candidate_is_a: bool) -> str:
@@ -206,9 +211,12 @@ def _placement_outcome(label: str, candidate_is_a: bool) -> PairwisePlacementOut
 def _reduce_placements(placements: Dict[str, PairwisePlacementOutcome]) -> tuple[str, str]:
     results = [placement.result for placement in placements.values()]
     result = results[0] if len(set(results)) == 1 else 'tie'
-    strength = 'strong' if result != 'tie' and any(
-        placement.result == result and placement.strength == 'strong' for placement in placements.values()
-    ) else 'weak'
+    strength = (
+        'strong'
+        if result != 'tie'
+        and any(placement.result == result and placement.strength == 'strong' for placement in placements.values())
+        else 'weak'
+    )
     return result, strength
 
 

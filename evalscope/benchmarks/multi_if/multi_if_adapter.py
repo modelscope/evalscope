@@ -9,6 +9,7 @@ from evalscope.api.metric import Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -59,7 +60,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
 - Configurable max_turns (1-3, default: 3)
 - Four metrics tracked:
   - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy
-  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy
+  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy, micro-averaged over instructions
 - Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)
 """,  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.MULTI_LINGUAL, Tags.MULTI_TURN],
@@ -72,6 +73,8 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
             'inst_level_loose',
         ],
         primary_metric='prompt_level_strict',
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
@@ -80,13 +83,12 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
                 'type': 'int',
                 'description': 'Maximum number of interactive turns to evaluate (1-3).',
                 'value': 3,
-                'choices': [1, 2, 3]
+                'choices': [1, 2, 3],
             }
-        }
+        },
     )
 )
 class MultiIFAdapter(MultiTurnAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -95,7 +97,7 @@ class MultiIFAdapter(MultiTurnAdapter):
             module_name=['nltk', 'langdetect', 'emoji', 'pythainlp'],
             extra='multi_if',
             raise_error=True,
-            feature_name=self.pretty_name
+            feature_name=self.pretty_name,
         )
 
         self.reformat_subset = True
@@ -170,19 +172,26 @@ class MultiIFAdapter(MultiTurnAdapter):
 
         step_record = task_state.metadata['step_record']
         results = {}
+        weights = {}
         try:
             for step, record in step_record.items():
                 outputs_strict = gen_acc_strict(record)
                 outputs_loose = gen_acc_loose(record)
                 prompt_level_strict, inst_level_strict = parse_result([outputs_strict])
                 prompt_level_loose, inst_level_loose = parse_result([outputs_loose])
-                results.update({
-                    f'turn_{step}_prompt_level_strict': prompt_level_strict,
-                    f'turn_{step}_inst_level_strict': inst_level_strict,
-                    f'turn_{step}_prompt_level_loose': prompt_level_loose,
-                    f'turn_{step}_inst_level_loose': inst_level_loose,
-                })
+                results.update(
+                    {
+                        f'turn_{step}_prompt_level_strict': prompt_level_strict,
+                        f'turn_{step}_inst_level_strict': inst_level_strict,
+                        f'turn_{step}_prompt_level_loose': prompt_level_loose,
+                        f'turn_{step}_inst_level_loose': inst_level_loose,
+                    }
+                )
+                instruction_count = len(outputs_strict['instruction_id_list'])
+                weights[f'turn_{step}_inst_level_strict'] = instruction_count
+                weights[f'turn_{step}_inst_level_loose'] = instruction_count
             score.value.update(results)
+            score.metadata[METRIC_WEIGHTS_KEY] = weights
 
             # Set main score name
             if results:

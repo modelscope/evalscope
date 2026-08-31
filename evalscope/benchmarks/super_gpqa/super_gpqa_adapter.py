@@ -84,7 +84,7 @@ SUBSET_MAPPING = {
     'Textile Science and Engineering': ['Engineering'],
     'Veterinary Medicine': ['Agronomy'],
     'Instrument Science and Technology': ['Engineering'],
-    'Physical Education': ['Education']
+    'Physical Education': ['Education'],
 }
 
 
@@ -134,7 +134,6 @@ SuperGPQA is a large-scale multiple-choice question answering dataset designed t
     )
 )
 class SuperGPQAAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
@@ -164,7 +163,9 @@ class SuperGPQAAdapter(MultiChoiceAdapter):
     def format_fewshot_template(self, fewshot, sample):
         from .prompt import FEW_SHOT_SAMPLES
 
-        return FEW_SHOT_TEMPLATE.format(fewshot=FEW_SHOT_SAMPLES, ) + self.format_prompt_template(sample)
+        return FEW_SHOT_TEMPLATE.format(
+            fewshot=FEW_SHOT_SAMPLES,
+        ) + self.format_prompt_template(sample)
 
     def extract_answer(self, prediction: str, task_state) -> str:
         """

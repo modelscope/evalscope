@@ -59,7 +59,7 @@ def _extract_json_candidate(text: str) -> Optional[str]:
     start = text.find('{')
     end = text.rfind('}')
     if start != -1 and end != -1 and end > start:
-        return text[start:end + 1]
+        return text[start : end + 1]
     return None
 
 
@@ -86,8 +86,7 @@ def _serialize_items_to_legacy(items: List[SpottingItem]) -> str:
     for item in _sort_items(items):
         quad = item['quad']
         coords = ','.join(f'({_format_coord(x)},{_format_coord(y)})' for x, y in quad)
-        parts.append(f"<|object_ref_start|>{item['text']}<|object_ref_end|>"
-                     f'<|quad_start|>{coords}<|quad_end|>')
+        parts.append(f'<|object_ref_start|>{item["text"]}<|object_ref_end|><|quad_start|>{coords}<|quad_end|>')
     return ''.join(parts)
 
 
@@ -111,7 +110,7 @@ def _parse_v1_image_key(key: Any) -> Optional[int]:
         return 0
 
     if normalized_key.startswith('image'):
-        suffix = normalized_key[len('image'):]
+        suffix = normalized_key[len('image') :]
         if suffix.isdigit():
             return int(suffix)
 
@@ -446,6 +445,7 @@ def evaluate_dataset(
 def main() -> None:
     import argparse
     import os
+
     import pandas as pd
 
     parser = argparse.ArgumentParser()

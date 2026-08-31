@@ -90,7 +90,7 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
             module_name=['latex2sympy2_extended'],
             extra='olympiad_bench',
             raise_error=True,
-            feature_name=self.pretty_name
+            feature_name=self.pretty_name,
         )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

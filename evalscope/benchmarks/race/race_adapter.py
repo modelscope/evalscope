@@ -55,7 +55,6 @@ RACE (ReAding Comprehension from Examinations) is a large-scale reading comprehe
     )
 )
 class RACEAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -65,7 +64,7 @@ class RACEAdapter(MultiChoiceAdapter):
 
     def record_to_sample(self, record) -> Sample:
         # Format the article and question as context
-        context = f"Article:\n{record['article']}\nQuestion:\n{record['question']}"
+        context = f'Article:\n{record["article"]}\nQuestion:\n{record["question"]}'
 
         return Sample(
             input=context,

@@ -10,8 +10,7 @@ from evalscope.utils.json_schema import JSONSchema
 
 PYTHON_EXEC_TOOL_INFO = ToolInfo(
     name='python_exec',
-    description=('Execute Python source code inside the sandbox environment. '
-                 'Returns stdout and stderr output.'),
+    description=('Execute Python source code inside the sandbox environment. Returns stdout and stderr output.'),
     parameters=ToolParams(
         properties={
             'code': JSONSchema(type='string', description='Python source code to execute.'),

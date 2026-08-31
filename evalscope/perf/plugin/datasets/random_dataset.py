@@ -1,12 +1,13 @@
 import math
 import multiprocessing
-import numpy as np
 import os
 import re
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from multiprocessing.context import BaseContext
 from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
@@ -152,7 +153,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
     def __init__(self, query_parameters: Arguments):
         os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-        assert query_parameters.tokenizer_path, 'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'  # noqa: E501
+        assert query_parameters.tokenizer_path, (
+            'Tokenizer path is required for random data generation, please provide it with `--tokenizer-path`.'
+        )  # noqa: E501
         super().__init__(query_parameters)
 
         assert self.tokenizer is not None, 'Tokenizer should be initialized for random data generation.'  # noqa: E501
@@ -281,7 +284,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
             min_prompt_length = self.query_parameters.min_prompt_length
             max_prompt_length = self.query_parameters.max_prompt_length + 1
 
-        assert max_prompt_length >= min_prompt_length, 'max_prompt_length should be greater than or equal to min_prompt_length.'  # noqa: E501
+        assert max_prompt_length >= min_prompt_length, (
+            'max_prompt_length should be greater than or equal to min_prompt_length.'
+        )  # noqa: E501
         logger.info(f'Sampling input lengths from [{min_prompt_length}, {max_prompt_length})')
         return min_prompt_length, max_prompt_length
 
@@ -294,8 +299,9 @@ class RandomDatasetPlugin(DatasetPluginBase):
         min_prompt_length, max_prompt_length = self._resolve_prompt_length_bounds()
         input_lens = np.random.randint(min_prompt_length, max_prompt_length, size=total_count)
         global_offset = self.query_parameters.dataset_offset
-        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_count)
-                   + global_offset) % len(self.allowed_tokens)
+        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_count) + global_offset) % len(
+            self.allowed_tokens
+        )
         seeds = None
         if include_seeds:
             seeds = np.random.randint(0, np.iinfo(np.uint32).max, size=total_count, dtype=np.uint32)

@@ -48,7 +48,6 @@ PIQA (Physical Interaction QA) is a benchmark for evaluating AI models' understa
     )
 )
 class PIQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

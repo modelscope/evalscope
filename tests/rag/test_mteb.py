@@ -1,7 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import pytest
 import unittest
+
+import pytest
 from dotenv import dotenv_values
 
 from tests.utils import test_level_list

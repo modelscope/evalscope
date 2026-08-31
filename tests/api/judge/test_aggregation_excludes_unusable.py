@@ -4,8 +4,9 @@
 These guard the four aggregators fixed alongside the JSON-judge migration: the generic
 aggregators are covered separately in ``tests/metrics/aggregators/test_missing_metric_keys.py``.
 """
-import pytest
 from typing import Dict, Optional
+
+import pytest
 
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.registry import get_benchmark

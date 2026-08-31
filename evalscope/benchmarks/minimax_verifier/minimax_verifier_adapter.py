@@ -8,6 +8,7 @@ specific validators; rows without ``check_type`` default to tool_calls
 validation. The ``error_only_reasoning`` detector is always-on across all
 rows.
 """
+
 from __future__ import annotations
 
 import json
@@ -22,6 +23,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.api.tool import ToolInfo
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from ._validators import (
     check_param_order_preserved,
     extract_expected_param_order,
@@ -105,7 +107,6 @@ def _decode_maybe_json(value: Any) -> Any:
     )
 )
 class MiniMaxVerifierAdapter(FunctionCallAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

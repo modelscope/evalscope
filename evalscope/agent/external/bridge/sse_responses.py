@@ -93,10 +93,13 @@ async def _emit_output_item(
     added_item = dict(item)
     if 'status' in added_item:
         added_item['status'] = 'in_progress'
-    yield frame_fn('response.output_item.added', {
-        'item': added_item,
-        'output_index': output_index,
-    })
+    yield frame_fn(
+        'response.output_item.added',
+        {
+            'item': added_item,
+            'output_index': output_index,
+        },
+    )
 
     if itype == 'message':
         async for frame in _emit_message_content(item, item_id, output_index, frame_fn):
@@ -109,10 +112,13 @@ async def _emit_output_item(
             yield frame
     # Unknown item types: just bracket with added/done, no body events.
 
-    yield frame_fn('response.output_item.done', {
-        'item': item,
-        'output_index': output_index,
-    })
+    yield frame_fn(
+        'response.output_item.done',
+        {
+            'item': item,
+            'output_index': output_index,
+        },
+    )
 
 
 async def _emit_message_content(
@@ -130,64 +136,70 @@ async def _emit_message_content(
         elif ctype == 'refusal':
             part_for_added['refusal'] = ''
         yield frame_fn(
-            'response.content_part.added', {
+            'response.content_part.added',
+            {
                 'item_id': item_id,
                 'output_index': output_index,
                 'content_index': content_index,
                 'part': part_for_added,
-            }
+            },
         )
 
         if ctype == 'output_text':
             text = cpart.get('text', '') or ''
             for chunk in iter_chunks(text, TEXT_CHUNK):
                 yield frame_fn(
-                    'response.output_text.delta', {
+                    'response.output_text.delta',
+                    {
                         'item_id': item_id,
                         'output_index': output_index,
                         'content_index': content_index,
                         'delta': chunk,
                         'logprobs': [],
-                    }
+                    },
                 )
                 await asyncio.sleep(0)
             yield frame_fn(
-                'response.output_text.done', {
+                'response.output_text.done',
+                {
                     'item_id': item_id,
                     'output_index': output_index,
                     'content_index': content_index,
                     'text': text,
                     'logprobs': [],
-                }
+                },
             )
         elif ctype == 'refusal':
             refusal = cpart.get('refusal', '') or ''
             for chunk in iter_chunks(refusal, TEXT_CHUNK):
                 yield frame_fn(
-                    'response.refusal.delta', {
+                    'response.refusal.delta',
+                    {
                         'item_id': item_id,
                         'output_index': output_index,
                         'content_index': content_index,
                         'delta': chunk,
-                    }
+                    },
                 )
                 await asyncio.sleep(0)
             yield frame_fn(
-                'response.refusal.done', {
+                'response.refusal.done',
+                {
                     'item_id': item_id,
                     'output_index': output_index,
                     'content_index': content_index,
                     'refusal': refusal,
-                }
+                },
             )
 
         yield frame_fn(
-            'response.content_part.done', {
+            'response.content_part.done',
+            {
                 'item_id': item_id,
                 'output_index': output_index,
                 'content_index': content_index,
                 'part': cpart,
-            }
+            },
         )
 
 
@@ -200,19 +212,21 @@ async def _emit_function_call(
     args = item.get('arguments', '') or ''
     for chunk in iter_chunks(args, _FUNCTION_ARG_CHUNK):
         yield frame_fn(
-            'response.function_call_arguments.delta', {
+            'response.function_call_arguments.delta',
+            {
                 'item_id': item_id,
                 'output_index': output_index,
                 'delta': chunk,
-            }
+            },
         )
         await asyncio.sleep(0)
     yield frame_fn(
-        'response.function_call_arguments.done', {
+        'response.function_call_arguments.done',
+        {
             'item_id': item_id,
             'output_index': output_index,
             'arguments': args,
-        }
+        },
     )
 
 
@@ -224,40 +238,44 @@ async def _emit_reasoning(
 ) -> AsyncIterator[bytes]:
     for summary_index, summary in enumerate(item.get('summary') or []):
         yield frame_fn(
-            'response.reasoning_summary_part.added', {
+            'response.reasoning_summary_part.added',
+            {
                 'item_id': item_id,
                 'output_index': output_index,
                 'summary_index': summary_index,
                 'part': summary,
-            }
+            },
         )
         if summary.get('type') == 'summary_text':
             text = summary.get('text', '') or ''
             for chunk in iter_chunks(text, TEXT_CHUNK):
                 yield frame_fn(
-                    'response.reasoning_summary_text.delta', {
+                    'response.reasoning_summary_text.delta',
+                    {
                         'item_id': item_id,
                         'output_index': output_index,
                         'summary_index': summary_index,
                         'delta': chunk,
-                    }
+                    },
                 )
                 await asyncio.sleep(0)
             yield frame_fn(
-                'response.reasoning_summary_text.done', {
+                'response.reasoning_summary_text.done',
+                {
                     'item_id': item_id,
                     'output_index': output_index,
                     'summary_index': summary_index,
                     'text': text,
-                }
+                },
             )
         yield frame_fn(
-            'response.reasoning_summary_part.done', {
+            'response.reasoning_summary_part.done',
+            {
                 'item_id': item_id,
                 'output_index': output_index,
                 'summary_index': summary_index,
                 'part': summary,
-            }
+            },
         )
 
 

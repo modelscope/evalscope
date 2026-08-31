@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 import shlex
-import yaml
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List
+
+import yaml
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from evalscope.api.agent import AgentEnvironment
@@ -61,7 +62,7 @@ def discover_skills(skills_dir: str | Path, *, path_prefix: str | None = None) -
         description = frontmatter.get('description') or ''
         if not frontmatter.get('name') or not frontmatter.get('description'):
             errors.append(f'{skill_file}: missing name or description frontmatter')
-        display_base = (path_prefix.rstrip('/') if path_prefix else str(skill_dir.parent))
+        display_base = path_prefix.rstrip('/') if path_prefix else str(skill_dir.parent)
         skills.append(
             SkillMetadata(
                 name=name,
@@ -116,7 +117,7 @@ def resolve_agent_skills(
     sample_metadata: Dict[str, Any],
     config_skills_dir: str | None,
     prompt_base_dir: str = DEFAULT_SKILLS_INSTALL_DIR,
-    install_paths: Iterable[str] = (DEFAULT_SKILLS_INSTALL_DIR, ),
+    install_paths: Iterable[str] = (DEFAULT_SKILLS_INSTALL_DIR,),
     sandbox_dir: str = DEFAULT_SKILLS_SANDBOX_DIR,
 ) -> ResolvedSkills:
     """Resolve sample-bundled skills first, then user-configured skills."""
@@ -197,7 +198,7 @@ def quote_path_with_home(path: str) -> str:
     if path == '$HOME':
         return '"$HOME"'
     if path.startswith('$HOME/'):
-        rest = path[len('$HOME/'):]
+        rest = path[len('$HOME/') :]
         if not rest:
             return '"$HOME"'
         return f'"$HOME"/{shlex.quote(rest)}'

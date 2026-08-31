@@ -6,8 +6,9 @@ setup / skip logic.  The module also re-exports the symbols that every test
 file needs so that individual test files stay concise.
 """
 import unittest
-from dotenv import dotenv_values
 from typing import Optional
+
+from dotenv import dotenv_values
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark

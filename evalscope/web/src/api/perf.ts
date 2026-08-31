@@ -1,11 +1,4 @@
 import { apiDeleteValidated, apiValidated } from './client'
-import {
-  deletePerfRunResponseSchema,
-  listPerfRunsResponseSchema,
-  perfDetailResponseSchema,
-  perfRequestsResponseSchema,
-  perfRunsListResponseSchema,
-} from './schemas'
 import type {
   DeletePerfRunResponse,
   ListPerfRunsResponse,
@@ -28,7 +21,7 @@ export const stopPerfTask = perfTaskApi.stop
 // ------------------------------------------------------------------ //
 
 export async function listPerfRuns(rootPath: string, signal?: AbortSignal): Promise<ListPerfRunsResponse> {
-  return apiValidated('/api/v1/perf/list', listPerfRunsResponseSchema, {
+  return apiValidated<ListPerfRunsResponse>('/api/v1/perf/list', {
     params: { root_path: rootPath },
     signal,
   })
@@ -39,7 +32,7 @@ export async function deletePerfRun(
   path: string,
   signal?: AbortSignal,
 ): Promise<DeletePerfRunResponse> {
-  return apiDeleteValidated('/api/v1/perf/run', deletePerfRunResponseSchema, {
+  return apiDeleteValidated<DeletePerfRunResponse>('/api/v1/perf/run', {
     params: { root_path: rootPath, path },
     signal,
   })
@@ -50,7 +43,7 @@ export async function getPerfDetail(
   path: string,
   signal?: AbortSignal,
 ): Promise<PerfDetailResponse> {
-  return apiValidated('/api/v1/perf/detail', perfDetailResponseSchema, {
+  return apiValidated<PerfDetailResponse>('/api/v1/perf/detail', {
     params: { root_path: rootPath, path },
     signal,
   })
@@ -61,7 +54,7 @@ export async function listPerfRunDetails(
   path: string,
   signal?: AbortSignal,
 ): Promise<PerfRunsListResponse> {
-  return apiValidated('/api/v1/perf/runs', perfRunsListResponseSchema, {
+  return apiValidated<PerfRunsListResponse>('/api/v1/perf/runs', {
     params: { root_path: rootPath, path },
     signal,
   })
@@ -76,7 +69,7 @@ export async function getPerfRequests(params: {
   pageSize?: number
   signal?: AbortSignal
 }): Promise<PerfRequestsResponse> {
-  return apiValidated('/api/v1/perf/requests', perfRequestsResponseSchema, {
+  return apiValidated<PerfRequestsResponse>('/api/v1/perf/requests', {
     params: {
       root_path: params.rootPath,
       path: params.path,

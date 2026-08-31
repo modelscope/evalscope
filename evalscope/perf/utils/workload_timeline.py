@@ -26,12 +26,14 @@ Per-point fields:
   ``cum_total_prompt``)
 * ``cum_cached_prompt``  - cumulative ``cached_tokens``
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, List, Optional
+
 from pydantic import BaseModel, Field
 from tabulate import tabulate
-from typing import TYPE_CHECKING, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.utils.perf_constants import Metrics
@@ -235,12 +237,15 @@ class WorkloadTimeline:
         """Export raw cumulative-token points for downstream pandas / plots."""
         return {
             'wall_start': self._wall_start,
-            'points': [{
-                't': round(p.t, 6),
-                'cum_completion': p.cum_completion,
-                'cum_new_prompt': p.cum_new_prompt,
-                'cum_cached_prompt': p.cum_cached_prompt,
-            } for p in self._points],
+            'points': [
+                {
+                    't': round(p.t, 6),
+                    'cum_completion': p.cum_completion,
+                    'cum_new_prompt': p.cum_new_prompt,
+                    'cum_cached_prompt': p.cum_cached_prompt,
+                }
+                for p in self._points
+            ],
         }
 
 
@@ -283,13 +288,16 @@ class WorkloadThroughput(BaseModel):
         last_label = f'Last {int(self.last_window_s)}s'
         steady_label = f'Steady (drop {int(self.warmup_frac * 100)}%)'
         headers = ['Metric (tok/s)', 'Overall', last_label, steady_label]
-        body = [[
-            r.metric,
-            format_perf_value(r.overall, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
-            format_perf_value(r.last_window, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
-            format_perf_value(r.steady_state, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
-        ] for r in self.rows]
-        col_align = ('left', ) + ('right', ) * 3
+        body = [
+            [
+                r.metric,
+                format_perf_value(r.overall, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
+                format_perf_value(r.last_window, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
+                format_perf_value(r.steady_state, Metrics.OUTPUT_TOKEN_THROUGHPUT, include_unit=False),
+            ]
+            for r in self.rows
+        ]
+        col_align = ('left',) + ('right',) * 3
         return tabulate(
             body,
             headers=headers,

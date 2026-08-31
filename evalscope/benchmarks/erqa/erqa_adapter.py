@@ -60,7 +60,6 @@ ERQA (Embodied Reasoning QA) is a benchmark for evaluating spatial reasoning and
     )
 )
 class ERQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True

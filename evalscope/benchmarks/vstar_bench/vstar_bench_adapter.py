@@ -60,7 +60,6 @@ V*Bench is a benchmark designed for evaluating visual search capabilities within
     )
 )
 class VstarBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

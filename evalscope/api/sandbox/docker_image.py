@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List
 
+from pydantic import BaseModel, Field
+
 from evalscope.utils.logger import get_logger
+
 from .config_builder import build_docker_image, normalize_docker_build_context, should_build_docker_image
 
 logger = get_logger()

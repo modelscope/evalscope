@@ -26,7 +26,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
 - Configurable max_turns (1-3, default: 3)
 - Four metrics tracked:
   - `prompt_level_strict/loose`: Strict/loose prompt-level accuracy
-  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy
+  - `inst_level_strict/loose`: Strict/loose instruction-level accuracy, micro-averaged over instructions
 - Requires: nltk, langdetect, emoji (for Chinese), pythainlp (for Thai)
 
 
@@ -41,6 +41,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
 | **Metrics** | `prompt_level_strict`, `inst_level_strict`, `prompt_level_loose`, `inst_level_loose` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |
+| **Aggregation** | `weighted_mean` |
 
 
 ## Data Statistics

@@ -1,8 +1,9 @@
 """MultiTurnArgs: Pydantic model for multi-turn conversation benchmark parameters."""
 
 import random
-from pydantic import BaseModel, ConfigDict, field_validator
 from typing import List, Union
+
+from pydantic import BaseModel, ConfigDict, field_validator
 
 # Type alias: either an int or a [min, max] range for uniform sampling.
 IntOrRange = Union[int, List[int]]

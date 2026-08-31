@@ -8,6 +8,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
+
 from .utils import (
     GRADE_CONTRACT,
     aggregate_official_scores,
@@ -72,6 +73,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
 )
 class DeepSearchQAAdapter(AgentLoopAdapter):
     """Adapter for the DeepSearchQA deep-research benchmark."""
+
     scoring_policy = ScoringPolicy.JUDGE_DEFAULT
 
     def __init__(self, **kwargs: Any) -> None:
@@ -123,10 +125,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
                     prediction=context.original_prediction,
                     value={},
                     main_score_name='f1',
-                    metadata={
-                        'empty_model_response': True,
-                        'error_message': 'AI response was empty.'
-                    }
+                    metadata={'empty_model_response': True, 'error_message': 'AI response was empty.'},
                 ),
                 reason='empty_model_output',
             )
@@ -148,7 +147,7 @@ class DeepSearchQAAdapter(AgentLoopAdapter):
             cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='f1'
+            main_score_name='f1',
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

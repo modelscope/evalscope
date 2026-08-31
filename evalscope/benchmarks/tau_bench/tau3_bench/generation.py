@@ -1,5 +1,7 @@
 import json
 import sys
+from typing import Any, Callable, Dict, List, Optional
+
 import tau2.utils.llm_utils as tau_llm_utils
 from tau2.data_model.message import AssistantMessage, Message, ToolCall
 from tau2.data_model.tasks import Task
@@ -7,7 +9,6 @@ from tau2.environment.tool import Tool
 from tau2.evaluator.evaluator import EvaluationType
 from tau2.run import run_task
 from tau2.utils.llm_utils import to_litellm_messages
-from typing import Any, Callable, Dict, List, Optional
 
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import InferenceResult
@@ -71,7 +72,7 @@ def build_model(agent_model, adapter_instance):
         eval_type=EvalType.OPENAI_API,
         base_url=adapter_instance.api_base,
         api_key=adapter_instance.api_key,
-        config=GenerateConfig(**adapter_instance.generation_config)
+        config=GenerateConfig(**adapter_instance.generation_config),
     )
     MODEL_DICT['user'] = user_server
     MODEL_DICT['agent'] = agent_model
@@ -116,7 +117,8 @@ def patched_generate(
             id=tool_call.id,
             name=tool_call.function.name,
             arguments=json.loads(tool_call.function.arguments),
-        ) for tool_call in tool_calls
+        )
+        for tool_call in tool_calls
     ]
     tool_calls = tool_calls or None
     usage = completion.usage.model_dump(exclude_none=True) if completion.usage is not None else None
@@ -168,6 +170,7 @@ def predict(model: Model, sample: Sample, adapter_instance) -> InferenceResult:
         res = run_task(**run_task_kwargs)
     except Exception as e:
         from loguru import logger as _logger
+
         _logger.warning(f'tau2.run_task failed for domain={domain} task_id={task.id}: {e}')
         sample.metadata['task_result'] = {'reward': 0.0, 'error': str(e)}
         output = ModelOutput(

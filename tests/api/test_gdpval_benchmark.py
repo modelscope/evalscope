@@ -1,9 +1,10 @@
 import asyncio
 import base64
 import json
-import pytest
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import pytest
 
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.benchmark import BenchmarkMeta

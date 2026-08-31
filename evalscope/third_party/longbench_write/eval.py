@@ -1,13 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # Copyright (c) ZhipuAI, Inc. and its affiliates.
 import json
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import random
 import re
-import requests
 from concurrent.futures import ThreadPoolExecutor
+
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
 from tqdm import tqdm
 
 from evalscope.utils import get_logger

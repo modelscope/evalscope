@@ -54,14 +54,13 @@ EvalMuse is a text-to-image benchmark that evaluates the quality and semantic al
     )
 )
 class EvalMuseAdapter(Text2ImageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         metric_entry = self.metric_list[0]
         metric_name = list(metric_entry.keys())[0] if isinstance(metric_entry, dict) else metric_entry
-        assert len(
-            self.metric_list
-        ) == 1 and metric_name == 'FGA_BLIP2Score', 'Only FGA_BLIP2Score is supported for EvalMuse'
+        assert len(self.metric_list) == 1 and metric_name == 'FGA_BLIP2Score', (
+            'Only FGA_BLIP2Score is supported for EvalMuse'
+        )
 
     @thread_safe
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):

@@ -50,6 +50,5 @@ TIFA-160 is a text-to-image benchmark with 160 carefully curated prompts designe
     )
 )
 class TIFA_Adapter(Text2ImageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

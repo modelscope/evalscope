@@ -1,11 +1,12 @@
 import json
+import wave
+from io import BytesIO
+from pathlib import Path
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-import wave
 from datasets import Audio, Dataset, Features, Image, Sequence, Value
-from io import BytesIO
-from pathlib import Path
 from PIL import Image as PILImage
 
 from evalscope.api.benchmark import BenchmarkMeta

@@ -53,7 +53,6 @@ MicroVQA is an expert-curated benchmark for multimodal reasoning in microscopy-b
     )
 )
 class MicroVQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

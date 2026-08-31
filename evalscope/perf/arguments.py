@@ -2,8 +2,9 @@ import argparse
 import json
 import os
 from contextlib import contextmanager
-from pydantic import Field, SecretStr, field_validator, model_validator
 from typing import Any, Dict, List, Optional, Union
+
+from pydantic import Field, SecretStr, field_validator, model_validator
 
 from evalscope.constants import DEFAULT_WORK_DIR, VisualizerType
 from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs
@@ -102,6 +103,10 @@ class Arguments(BaseArgument):
     - 0 < value < 1 (float): ratio of ``--number``, e.g. 0.1 = 10% warmup.
       Actual count = max(1, int(warmup_num * number)). Useful for sweep mode
       where each run has a different number of requests.
+
+    Warmup requests go through the same concurrency slots as the measured ones
+    and are only excluded from the reported metrics; the closed-loop dispatcher
+    never drains in between, so use at least ``--parallel`` there.
     """
 
     @property
@@ -475,6 +480,11 @@ class Arguments(BaseArgument):
     def _validate_in_flight_task_multiplier(cls, v: int) -> int:
         return _at_least_one(v)
 
+    @field_validator('log_every_n_query', mode='after')
+    @classmethod
+    def _validate_log_every_n_query(cls, v: int) -> int:
+        return _at_least_one(v)
+
     @field_validator('num_workers', mode='after')
     @classmethod
     def _validate_num_workers(cls, v: int) -> int:
@@ -497,6 +507,7 @@ class Arguments(BaseArgument):
 
         if self.model is None:
             from evalscope.perf.plugin.registry import DatasetRegistry
+
             if not self.dataset or DatasetRegistry.get_class(self.dataset).requires_model:
                 raise ValueError('--model is required.')
 
@@ -529,8 +540,7 @@ class Arguments(BaseArgument):
             legacy_num_workers = self.multi_turn_args.num_workers
         if legacy_num_workers is not None:
             logger.warning(
-                '`num_workers` in dataset/multi-turn args is deprecated. '
-                'Please use top-level `--num-workers` instead.'
+                '`num_workers` in dataset/multi-turn args is deprecated. Please use top-level `--num-workers` instead.'
             )
             if 'num_workers' not in self.model_fields_set:
                 try:
@@ -607,7 +617,7 @@ class Arguments(BaseArgument):
 
     def _redirect_responses_url(self, stripped_url: str) -> bool:
         if self.api in _OPENAI_RESPONSES_APIS and stripped_url.endswith('/chat/completions'):
-            self.url = stripped_url[:-len('chat/completions')] + 'responses'
+            self.url = stripped_url[: -len('chat/completions')] + 'responses'
             logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
             return True
         return False
@@ -621,14 +631,19 @@ class Arguments(BaseArgument):
             raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
         stripped_url = self.url.rstrip('/')
         if stripped_url.endswith('chat/completions'):
-            self.url = stripped_url[:-len('chat/completions')] + 'completions'
+            self.url = stripped_url[: -len('chat/completions')] + 'completions'
             logger.warning(
-                f'--tokenize-prompt is set: URL auto-adjusted from chat/completions '
-                f'to completions endpoint: {self.url}'
+                f'--tokenize-prompt is set: URL auto-adjusted from chat/completions to completions endpoint: {self.url}'
             )
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
+        if self.multi_turn and self.open_loop:
+            raise ValueError(
+                '--multi-turn is not supported in open-loop mode: turn N cannot be dispatched before the '
+                'response of turn N-1 has been appended to the conversation context, which contradicts '
+                'open-loop scheduling (dispatch independent of in-flight requests).'
+            )
         if self.open_loop:
             self._validate_open_loop_sweep_params()
             return
@@ -642,6 +657,7 @@ class Arguments(BaseArgument):
             )
         if not all(r > 0 for r in self.rate):
             from evalscope.perf.plugin.registry import DatasetRegistry
+
             dataset_cls = DatasetRegistry.get_class(self.dataset)
             if not dataset_cls.provides_arrival_schedule:
                 raise ValueError(f'In open-loop mode all --rate values must be > 0, but got: {self.rate}')
@@ -659,6 +675,8 @@ class Arguments(BaseArgument):
                 f'The length of number and parallel should be the same, '
                 f'but got number: {self.number} and parallel: {self.parallel}'
             )
+        if any(p <= 0 for p in self.parallel):
+            raise ValueError(f'--parallel values must be > 0, but got: {self.parallel}')
 
     @contextmanager
     def output_context(self, path: str):
@@ -684,7 +702,6 @@ class Arguments(BaseArgument):
 
 
 class ParseKVAction(argparse.Action):
-
     def __call__(self, parser, namespace, values, option_string=None):
         if not values:
             setattr(namespace, self.dest, {})
@@ -702,7 +719,7 @@ class ParseKVAction(argparse.Action):
                 parser.error(f'Error parsing key-value pairs: {e}')
 
 
-# yapf: disable
+# fmt: off
 def _add_model_api_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--model', type=str, default=None, help='The test model name.')
     parser.add_argument('--attn-implementation', required=False, default=None, help='Attention implementation')
@@ -931,7 +948,7 @@ def add_argument(parser: argparse.ArgumentParser) -> None:
     _add_dataset_arguments(parser)
     _add_response_arguments(parser)
     _add_multi_turn_arguments(parser)
-# yapf: enable
+# fmt: on
 
 
 def parse_args():

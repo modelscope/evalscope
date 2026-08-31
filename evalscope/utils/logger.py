@@ -1,22 +1,24 @@
-import colorlog
 import logging
 import os
 import sys
 from datetime import datetime
 from logging import Logger
+from time import struct_time
 from types import ModuleType
-from typing import List, Optional
+from typing import Dict, List, Optional
+
+import colorlog
 
 from evalscope.constants import BEIJING_TZ, USE_OSS, LoggingConstants
 
-init_loggers = {}
+init_loggers: Dict[str, bool] = {}
 
 # Use ReopenFileHandler on OSS/FUSE mounts so each record is visible immediately;
 # fall back to the standard FileHandler on local filesystems.
 # Beijing timezone (UTC+8) for log timestamps when USE_OSS=1
 
 
-def beijing_converter(timestamp):
+def beijing_converter(timestamp: float) -> struct_time:
     """Convert a Unix timestamp to Beijing time (UTC+8) as a time.struct_time."""
     return datetime.fromtimestamp(timestamp, tz=BEIJING_TZ).timetuple()
 
@@ -24,12 +26,10 @@ def beijing_converter(timestamp):
 if USE_OSS:
 
     class BeijingColoredFormatter(colorlog.ColoredFormatter):
-
         def converter(self, timestamp):
             return beijing_converter(timestamp)
 
     class BeijingPlainFormatter(logging.Formatter):
-
         def converter(self, timestamp):
             return beijing_converter(timestamp)
 
@@ -103,20 +103,20 @@ def _is_torch_master() -> bool:
     return True
 
 
-def info_once(self, msg, *args, **kwargs):
+def info_once(logger: logging.Logger, msg: str, *args, **kwargs) -> None:
     hash_id = kwargs.get('hash_id') or msg
     if hash_id in info_set:
         return
     info_set.add(hash_id)
-    self.info(msg)
+    logger.info(msg)
 
 
-def warning_once(self, msg, *args, **kwargs):
+def warning_once(logger: logging.Logger, msg: str, *args, **kwargs) -> None:
     hash_id = kwargs.get('hash_id') or msg
     if hash_id in warning_set:
         return
     warning_set.add(hash_id)
-    self.warning(msg)
+    logger.warning(msg)
 
 
 class ReopenFileHandler(logging.FileHandler):
@@ -163,7 +163,7 @@ def get_logger(
     log_level: int = DEFAULT_LEVEL,
     file_mode: str = 'w',
     force: bool = False,
-):
+) -> logging.Logger:
     """Get logging logger
 
     Args:
@@ -174,10 +174,7 @@ def get_logger(
         force: If True, reconfigure the existing logger (levels, formatters, handlers).
     """
 
-    if name:
-        logger_name = f"evalscope.{name.split('.')[-1]}"
-    else:
-        logger_name = 'evalscope'
+    logger_name = f'evalscope.{name.split(".")[-1]}' if name else 'evalscope'
     logger = logging.getLogger(logger_name)
     logger.propagate = False
 
@@ -234,7 +231,7 @@ def get_logger(
     return logger
 
 
-def configure_logging(debug: bool, log_file: Optional[str] = None):
+def configure_logging(debug: bool, log_file: Optional[str] = None) -> None:
     """Configure logging level based on the debug flag."""
     if log_file:
         get_logger(log_file=log_file, force=True)

@@ -1,5 +1,6 @@
 # Convert datasets to webdataset format
 import os
+
 import torch
 import torch.utils.data
 import webdataset
@@ -93,7 +94,7 @@ def convert_dataset(
         nsamples += 1
         if isinstance(input, str) and transform is path_to_bytes:
             # If copying file, determine image format from extension
-            extension = (os.path.splitext(input)[1].replace('.', '').lower().replace('jpeg', 'jpg') or image_format)
+            extension = os.path.splitext(input)[1].replace('.', '').lower().replace('jpeg', 'jpg') or image_format
         else:
             extension = image_format
         # Convert label if necessary
@@ -103,11 +104,13 @@ def convert_dataset(
             else:
                 output = output.item()
         # Write example
-        sink.write({
-            '__key__': 's%07d' % index,
-            extension: transform(input) if transform else input,
-            label_type: output,
-        })
+        sink.write(
+            {
+                '__key__': 's%07d' % index,
+                extension: transform(input) if transform else input,
+                label_type: output,
+            }
+        )
     num_shards = sink.shard
     sink.close()
     if verbose:
@@ -170,14 +173,16 @@ def convert_retrieval_dataset(
         nsamples += 1
         if isinstance(input, str) and transform is path_to_bytes:
             # If copying file, determine image format from extension
-            extension = (os.path.splitext(input)[1].replace('.', '').lower().replace('jpeg', 'jpg') or image_format)
+            extension = os.path.splitext(input)[1].replace('.', '').lower().replace('jpeg', 'jpg') or image_format
         else:
             extension = image_format
-        sink.write({
-            '__key__': 's%07d' % index,
-            extension: transform(input) if transform else input,
-            'txt': '\n'.join(caption.replace('\n', r'\n') for caption in output),
-        })
+        sink.write(
+            {
+                '__key__': 's%07d' % index,
+                extension: transform(input) if transform else input,
+                'txt': '\n'.join(caption.replace('\n', r'\n') for caption in output),
+            }
+        )
     num_shards = sink.shard
     sink.close()
     if verbose:

@@ -4,11 +4,13 @@ import copy
 import json
 import os
 from argparse import Namespace
-from pydantic import ConfigDict, Field, SecretStr, field_validator, model_validator
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+
+from pydantic import ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from evalscope.agent.external.config import ExternalAgentConfig
 from evalscope.api.agent import NativeAgentConfig
+from evalscope.api.dataset.dataset import validate_dataset_limit
 from evalscope.api.model import GenerateConfig, Model, ModelAPI
 from evalscope.constants import (
     DEFAULT_DATASET_CACHE_DIR,
@@ -79,12 +81,14 @@ DEFAULT_MODEL_ARGS_CHECKPOINT = {
 
 DEFAULT_API_EVAL_BATCH_SIZE = 8
 
-REMOTE_API_EVAL_TYPES = frozenset({
-    EvalType.OPENAI_API,
-    EvalType.OPENAI_RESPONSES_API,
-    EvalType.ANTHROPIC_API,
-    EvalType.LITELLM,
-})
+REMOTE_API_EVAL_TYPES = frozenset(
+    {
+        EvalType.OPENAI_API,
+        EvalType.OPENAI_RESPONSES_API,
+        EvalType.ANTHROPIC_API,
+        EvalType.LITELLM,
+    }
+)
 
 DEPRECATED_EVAL_TYPE_ALIASES = {
     'checkpoint': EvalType.CHECKPOINT,
@@ -382,8 +386,7 @@ class TaskConfig(BaseArgument):
     def _validate_limit(cls, v: Any) -> Any:
         if v is not None:
             v = parse_int_or_float(v)
-            if v < 0:
-                raise ValueError(f'`limit` must be >= 0 or None, got {v}.')
+            v = validate_dataset_limit(v)
             if v == 0:
                 return None
         return v
@@ -426,8 +429,7 @@ class TaskConfig(BaseArgument):
                 return NativeAgentConfig.model_validate(v)
             raise ValueError(f'`agent_config.mode` must be "native" or "external", got {mode!r}.')
         raise ValueError(
-            f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig or None, '
-            f'got {type(v).__name__}.'
+            f'`agent_config` must be a dict, NativeAgentConfig, ExternalAgentConfig or None, got {type(v).__name__}.'
         )
 
     @model_validator(mode='before')
@@ -479,8 +481,9 @@ class TaskConfig(BaseArgument):
         if canonical is None:
             return
         deprecated_warning(
-            logger, f"`eval_type={values['eval_type']!r}` is deprecated and will be removed in v2.0.0. "
-            f'Use {canonical!r} instead.'
+            logger,
+            f'`eval_type={values["eval_type"]!r}` is deprecated and will be removed in v2.0.0. '
+            f'Use {canonical!r} instead.',
         )
         values['eval_type'] = canonical
 
@@ -514,12 +517,15 @@ class TaskConfig(BaseArgument):
         tool = self.eval_config.get('tool', '').lower()
         if tool == 'mteb':
             from evalscope.backend.rag_eval.mteb.arguments import MTEBToolConfig
+
             self.eval_config = MTEBToolConfig(**self.eval_config)
         elif tool == 'ragas':
             from evalscope.backend.rag_eval.ragas.arguments import RAGASToolConfig
+
             self.eval_config = RAGASToolConfig(**self.eval_config)
         elif tool == 'clip_benchmark':
             from evalscope.backend.rag_eval.clip_benchmark.arguments import ClipBenchmarkToolConfig
+
             self.eval_config = ClipBenchmarkToolConfig(**self.eval_config)
 
     def _init_model_and_id(self) -> None:
@@ -598,14 +604,14 @@ class TaskConfig(BaseArgument):
         if self.timeout is not None:
             deprecated_warning(
                 logger,
-                'The `timeout` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.timeout` instead.'
+                'The `timeout` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.timeout` instead.',
             )
             self.generation_config.timeout = self.timeout
 
         if self.stream is not None:
             deprecated_warning(
                 logger,
-                'The `stream` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.stream` instead.'
+                'The `stream` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.stream` instead.',
             )
             self.generation_config.stream = self.stream
 
@@ -614,7 +620,7 @@ class TaskConfig(BaseArgument):
             self.generation_config.n = 1
             deprecated_warning(
                 logger,
-                'The `n` parameter in generation_config is deprecated and will be removed in v2.0.0. Use `TaskConfig.repeats` instead.'
+                'The `n` parameter in generation_config is deprecated and will be removed in v2.0.0. Use `TaskConfig.repeats` instead.',
             )
 
     def _init_default_model_args(self) -> None:
@@ -634,10 +640,11 @@ class TaskConfig(BaseArgument):
             self.sandbox = self._build_sandbox_from_legacy_fields()
         elif self._legacy_sandbox_fields_set():
             deprecated_warning(
-                logger, 'Both `sandbox` and legacy sandbox fields '
+                logger,
+                'Both `sandbox` and legacy sandbox fields '
                 '(`use_sandbox` / `sandbox_type` / `sandbox_manager_config`) are set; '
                 'the nested `sandbox` object takes precedence. The legacy fields will be '
-                'removed in v2.0.0.'
+                'removed in v2.0.0.',
             )
 
         if not self.sandbox.enabled:
@@ -646,8 +653,9 @@ class TaskConfig(BaseArgument):
         check_import('ms_enclave', 'evalscope[sandbox]', raise_error=True)
 
     def _legacy_sandbox_fields_set(self) -> bool:
-        return bool(self.use_sandbox) or (self.sandbox_type
-                                          not in (None, 'docker')) or bool(self.sandbox_manager_config)
+        return (
+            bool(self.use_sandbox) or (self.sandbox_type not in (None, 'docker')) or bool(self.sandbox_manager_config)
+        )
 
     def _build_sandbox_from_legacy_fields(self) -> SandboxTaskConfig:
         return SandboxTaskConfig(
@@ -731,8 +739,9 @@ class TaskConfig(BaseArgument):
             kwargs['mode'] = mode
         return self.generation_config.model_dump(**kwargs)
 
-    def _dump_agent_config(self,
-                           mode: Optional[str] = None) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
+    def _dump_agent_config(
+        self, mode: Optional[str] = None
+    ) -> Union[dict, NativeAgentConfig, ExternalAgentConfig, None]:
         if not isinstance(self.agent_config, (NativeAgentConfig, ExternalAgentConfig)):
             return self.agent_config
         fields = set(self.agent_config.model_fields_set)

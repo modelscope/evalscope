@@ -1,6 +1,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { PerfMetrics } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import type { MetricSemantics } from '@/domain/metric'
 import DetailsTab from './DetailsTab'
@@ -89,5 +90,27 @@ describe('DetailsTab metric semantics', () => {
     })
 
     expect(screen.getByText('Token Throughput ↑')).toBeInTheDocument()
+  })
+
+  it('hides the performance panel when only coverage metadata is available', async () => {
+    const perfMetrics: PerfMetrics = {
+      coverage: { requests_with_metrics: 0, total_requests: 3 },
+    }
+    render(
+      <LocaleProvider>
+        <DetailsTab
+          reportName="fixture-report"
+          datasetName="fixture-dataset"
+          rootPath="/outputs"
+          perfMetrics={perfMetrics}
+        />
+      </LocaleProvider>,
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('Performance Metrics')).not.toBeInTheDocument()
   })
 })

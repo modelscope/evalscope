@@ -158,8 +158,10 @@ class CountQAAdapter(VisionLanguageAdapter):
             predicted_count = int(filtered_prediction)
             exact = float(predicted_count == reference_count)
             # A ground truth of 0 has no meaningful relative tolerance, so it stays exact.
-            relaxed = exact if reference_count == 0 else float(
-                abs(predicted_count - reference_count) <= RELAXED_TOLERANCE * reference_count
+            relaxed = (
+                exact
+                if reference_count == 0
+                else float(abs(predicted_count - reference_count) <= RELAXED_TOLERANCE * reference_count)
             )
         else:
             exact = relaxed = 0.0

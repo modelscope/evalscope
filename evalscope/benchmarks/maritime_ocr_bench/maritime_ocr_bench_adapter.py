@@ -3,8 +3,9 @@ import io
 import math
 import mimetypes
 import os
-from PIL import Image
 from typing import Any, Dict, List, Optional
+
+from PIL import Image
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, Sample, load_local_file_dataset, resolve_snapshot_or_local_path
@@ -32,7 +33,7 @@ TASK_TYPE_MAP = {
     'vqa': 'VQA',
     'parsing': 'parsing',
     'json1': 'json1',
-    'json2': 'json2'
+    'json2': 'json2',
 }
 
 
@@ -70,7 +71,6 @@ Each task type uses a specialized scoring method:
     )
 )
 class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -258,7 +258,7 @@ class MaritimeOCRBenchAdapter(VisionLanguageAdapter):
                 'task_type': normalized_type,
                 'prompt': prompt,
                 'images': images,
-            }
+            },
         )
 
     def match_score(

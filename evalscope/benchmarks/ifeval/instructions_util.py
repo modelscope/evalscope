@@ -14,10 +14,11 @@
 """Utility library of instructions."""
 
 import functools
-import nltk
 import os
 import random
 import re
+
+import nltk
 
 from evalscope.utils.resource_utils import check_nltk_data
 
@@ -1588,7 +1589,9 @@ LANGUAGE_CODES = {
 _ALPHABETS = '([A-Za-z])'
 _PREFIXES = '(Mr|St|Mrs|Ms|Dr)[.]'
 _SUFFIXES = '(Inc|Ltd|Jr|Sr|Co)'
-_STARTERS = r'(Mr|Mrs|Ms|Dr|Prof|Capt|Cpt|Lt|He\s|She\s|It\s|They\s|Their\s|Our\s|We\s|But\s|However\s|That\s|This\s|Wherever)'  # noqa: E501
+_STARTERS = (
+    r'(Mr|Mrs|Ms|Dr|Prof|Capt|Cpt|Lt|He\s|She\s|It\s|They\s|Their\s|Our\s|We\s|But\s|However\s|That\s|This\s|Wherever)'  # noqa: E501
+)
 _ACRONYMS = '([A-Z][.][A-Z][.](?:[A-Z][.])?)'
 _WEBSITES = '[.](com|net|org|io|gov|edu|me)'
 _DIGITS = '([0-9])'

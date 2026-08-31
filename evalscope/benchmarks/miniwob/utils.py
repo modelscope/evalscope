@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import csv
 import inspect
-import numpy as np
 import os
 import shutil
 import tarfile
@@ -13,6 +12,8 @@ import tempfile
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 from evalscope.api.tool import ToolInfo
 from evalscope.api.tool.tool_info import ToolParams
@@ -117,11 +118,13 @@ def load_miniwob_records(
     for row in rows:
         task_id = row['task_name']
         episode_seeds = [int(seed) for seed in rng.randint(low=0, high=MINIWOB_SEED_MAX, size=repeats, dtype=np.int64)]
-        records.append({
-            **row,
-            'task_id': task_id,
-            '_episode_seeds': episode_seeds,
-        })
+        records.append(
+            {
+                **row,
+                'task_id': task_id,
+                '_episode_seeds': episode_seeds,
+            }
+        )
     return records, metadata_path
 
 

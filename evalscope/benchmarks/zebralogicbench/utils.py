@@ -11,8 +11,24 @@ EASY_SIZES: List[str] = [
     '3*3',
 ]
 HARD_SIZES: List[str] = [
-    '3*4', '3*5', '4*2', '3*6', '4*3', '4*4', '5*2', '6*2', '4*5', '4*6', '5*3', '5*4', '5*5', '5*6', '6*3', '6*4',
-    '6*5', '6*6'
+    '3*4',
+    '3*5',
+    '4*2',
+    '3*6',
+    '4*3',
+    '4*4',
+    '5*2',
+    '6*2',
+    '4*5',
+    '4*6',
+    '5*3',
+    '5*4',
+    '5*5',
+    '5*6',
+    '6*3',
+    '6*4',
+    '6*5',
+    '6*6',
 ]
 
 SMALL_SIZES: List[str] = ['2*2', '2*3', '2*4', '2*5', '2*6', '3*2', '3*3', '4*2']
@@ -103,26 +119,26 @@ def process_results(prediction: str, reference: str) -> Dict[str, int]:
         no_answer += 1
 
     easy_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in EASY_SIZES])
-    easy_total_puzzles = sum([
-        num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in EASY_SIZES
-    ])
+    easy_total_puzzles = sum(
+        [num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in EASY_SIZES]
+    )
     hard_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in HARD_SIZES])
-    hard_total_puzzles = sum([
-        num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in HARD_SIZES
-    ])
+    hard_total_puzzles = sum(
+        [num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in HARD_SIZES]
+    )
 
     small_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in SMALL_SIZES])
-    small_total_puzzles = sum([
-        num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in SMALL_SIZES
-    ])
+    small_total_puzzles = sum(
+        [num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in SMALL_SIZES]
+    )
     medium_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in MEDIUM_SIZES])
-    medium_total_puzzles = sum([
-        num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in MEDIUM_SIZES
-    ])
+    medium_total_puzzles = sum(
+        [num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in MEDIUM_SIZES]
+    )
     large_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in LARGE_SIZES])
-    large_total_puzzles = sum([
-        num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in LARGE_SIZES
-    ])
+    large_total_puzzles = sum(
+        [num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in LARGE_SIZES]
+    )
     xl_solved_puzzles = sum([solved_puzzles_by_size[s] if s in solved_puzzles_by_size else 0 for s in XL_SIZES])
     xl_total_puzzles = sum([num_total_puzzles_by_size[s] if s in num_total_puzzles_by_size else 0 for s in XL_SIZES])
 

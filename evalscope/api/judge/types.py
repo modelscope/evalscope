@@ -1,12 +1,15 @@
 """Contracts for one judge review: what is asked, what came back, and what the adapter must do."""
+
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Sequence
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import ModelOutput
 from evalscope.constants import ScoreStatus
+
 from .contracts import OutputContract
 
 if TYPE_CHECKING:

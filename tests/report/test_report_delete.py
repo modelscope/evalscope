@@ -9,11 +9,12 @@ Skipped automatically when Flask (service extra) is not installed.
 """
 import json
 import os
-import pytest
 import shutil
 import tempfile
 import unittest
 from unittest import mock
+
+import pytest
 
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 

@@ -3,14 +3,16 @@
 Provides CrossEncoderReranker (local) and APIReranker (OpenAI-compatible rerank API).
 Both implement the BaseReranker interface aligned with MTEB 2.x CrossEncoderProtocol.
 """
+
 from __future__ import annotations
 
 import os
-import requests
 import time
+from typing import Any, Dict, List, Optional, Union
+
+import requests
 import torch
 from torch import Tensor
-from typing import Any, Dict, List, Optional, Union
 
 from evalscope.backend.rag_eval.models.base import Array, BaseReranker
 from evalscope.backend.rag_eval.models.utils import resolve_model_path
@@ -74,7 +76,7 @@ class CrossEncoderReranker(BaseReranker):
             self.model_name_or_path,
             trust_remote_code=True,
             max_length=self.max_seq_length,
-            automodel_args=_model_kwargs,
+            model_kwargs=_model_kwargs,
         )
 
         # Ensure pad token is set
@@ -202,7 +204,7 @@ class APIReranker(BaseReranker):
         """Truncate text that exceeds max_seq_length (estimated by character count)."""
         if self.max_seq_length > 0 and len(text) > self._max_chars:
             self._truncated_count += 1
-            return text[:self._max_chars]
+            return text[: self._max_chars]
         return text
 
     def predict(self, inputs1, inputs2=None, **kwargs: Any) -> Array:
@@ -273,7 +275,7 @@ class APIReranker(BaseReranker):
         max_retries = 3
         for query, pairs in grouped_sentences.items():
             for i in range(0, len(pairs), batch_size):
-                batch_pairs = pairs[i:i + batch_size]
+                batch_pairs = pairs[i : i + batch_size]
                 documents = [doc for _, doc in batch_pairs]
                 payload = {
                     'model': self.model_name,

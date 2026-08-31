@@ -43,6 +43,7 @@ logger = get_logger()
 # Optional dependencies
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
@@ -55,6 +56,7 @@ try:
     from mutagen.mp4 import MP4
     from mutagen.oggvorbis import OggVorbis
     from mutagen.wave import WAVE
+
     HAS_MUTAGEN = True
 except ImportError:
     HAS_MUTAGEN = False
@@ -64,6 +66,7 @@ except ImportError:
 @dataclass
 class ImageInfo:
     """Information extracted from a single image."""
+
     width: Optional[int] = None
     height: Optional[int] = None
     format: Optional[str] = None
@@ -73,6 +76,7 @@ class ImageInfo:
 @dataclass
 class AudioInfo:
     """Information extracted from a single audio file."""
+
     duration: Optional[float] = None  # seconds
     sample_rate: Optional[int] = None
     format: Optional[str] = None
@@ -82,6 +86,7 @@ class AudioInfo:
 @dataclass
 class VideoInfo:
     """Information extracted from a single video file."""
+
     duration: Optional[float] = None  # seconds
     width: Optional[int] = None
     height: Optional[int] = None
@@ -138,9 +143,9 @@ def _get_image_info_from_bytes(data: bytes) -> Tuple[Optional[int], Optional[int
         return None, None, None
 
 
-def _get_audio_info_from_bytes(data: bytes,
-                               format_hint: Optional[str] = None
-                               ) -> Tuple[Optional[float], Optional[int], Optional[str]]:
+def _get_audio_info_from_bytes(
+    data: bytes, format_hint: Optional[str] = None
+) -> Tuple[Optional[float], Optional[int], Optional[str]]:
     """
     Extract audio duration, sample rate, and format from bytes using mutagen.
 
@@ -639,6 +644,7 @@ def compute_benchmark_statistics(
     if adapter._task_config is None:
         try:
             from evalscope.config import TaskConfig
+
             adapter._task_config = TaskConfig(model='dummy', datasets=[adapter.name])
         except Exception as e:
             logger.warning(f'Could not create TaskConfig for {adapter.name}: {e}')
@@ -796,6 +802,7 @@ def get_sample_example(
     if adapter._task_config is None:
         try:
             from evalscope.config import TaskConfig
+
             adapter._task_config = TaskConfig(model='dummy', datasets=[adapter.name])
         except Exception as e:
             logger.warning(f'Could not create TaskConfig for {adapter.name}: {e}')
@@ -857,5 +864,6 @@ def _sanitize_local_paths(obj: Any) -> None:
 if __name__ == '__main__':
     # Example usage
     from evalscope.api.registry import get_benchmark
+
     adapter = get_benchmark('gsm8k')
     stats = compute_benchmark_statistics(adapter)

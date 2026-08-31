@@ -57,7 +57,6 @@ GPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198
     )
 )
 class GPQAAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -79,7 +78,9 @@ class GPQAAdapter(MultiChoiceAdapter):
             metadata={
                 'correct_answer': record['Correct Answer'],
                 'incorrect_answers': [
-                    record['Incorrect Answer 1'], record['Incorrect Answer 2'], record['Incorrect Answer 3']
+                    record['Incorrect Answer 1'],
+                    record['Incorrect Answer 2'],
+                    record['Incorrect Answer 3'],
                 ],
             },
         )
@@ -87,7 +88,9 @@ class GPQAAdapter(MultiChoiceAdapter):
     def format_fewshot_template(self, fewshot, sample):
         from .prompt import FEW_SHOT_SAMPLES
 
-        return FEW_SHOT_TEMPLATE.format(fewshot=FEW_SHOT_SAMPLES, ) + self.format_prompt_template(sample)
+        return FEW_SHOT_TEMPLATE.format(
+            fewshot=FEW_SHOT_SAMPLES,
+        ) + self.format_prompt_template(sample)
 
     def _process_input(self, input_d: dict) -> dict:
         """Process input to shuffle choices and determine correct answer letter."""

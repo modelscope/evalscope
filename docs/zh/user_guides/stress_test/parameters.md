@@ -36,7 +36,7 @@
 | `--stream` | `bool` | 是否使用SSE流输出<br>需要启用以测量TTFT（Time to First Token）指标 | `True` |
 | `--sleep-interval` | `int` | 每次性能测试之间的休眠时间（秒）<br>避免过载服务器 | `5` |
 | `--open-loop` | `bool` | 启用开放环路（open-loop）模式：<br>请求按 `--rate` 指定的速率发出，无论服务端是否已处理完之前的请求。<br>• `--rate` 变为扫描变量（支持多值）<br>• `--number` 须与 `--rate` 等长，表示每轮发出的请求总数<br>• `--parallel` 在此模式下被忽略（内部设为 -1 / INF）<br>详见[使用示例](./examples.md#open-loop-开放环路) | `False` |
-| `--warmup-num` | `float` | 预热请求数量或比例：<br>• `0`：禁用预热（默认）<br>• `>= 1`：绝对数量，如 `--warmup-num 10` 表示预热 10 个请求<br>• `0 < value < 1`：比例模式，如 `--warmup-num 0.1` 表示预热数量为 `--number` 的 10%<br>预热请求使用与正式压测相同的并发/速率发送，但**不计入性能指标**<br>适用于消除冷启动影响（如 KV-cache 填充、JIT 编译等）<br>详见[使用示例](./examples.md#warmup-预热) | `0` |
+| `--warmup-num` | `float` | 预热请求数量或比例：<br>• `0`：禁用预热（默认）<br>• `>= 1`：绝对数量，如 `--warmup-num 10` 表示预热 10 个请求<br>• `0 < value < 1`：比例模式，如 `--warmup-num 0.1` 表示预热数量为 `--number` 的 10%<br>预热请求使用与正式压测相同的并发/速率发送，但**不计入性能指标**<br>适用于消除冷启动影响（如 KV-cache 填充、JIT 编译等）<br>闭环模式下建议设为 `--parallel` 或更大，否则最初几个请求会拉高 `p99`<br>详见[使用示例](./examples.md#warmup-预热) | `0` |
 | `--duration` | `float` | 单次压测的墙钟时间预算（秒）<br>软退出语义：到点后**不再启动新请求**，但**已经在飞行中的请求会跑完**才退出<br>多轮模式下的"已在飞"指的是**已经 claim 的 trace 跑完所有剩余 turn**（trace-level soft exit，与上游 trie 一致）<br>与 `--number` 同时设置时取**先达到的那个**为停止条件 | `None` |
 
 ```{tip}
@@ -284,7 +284,7 @@ trace 文件为 JSONL，每行一条请求记录：
 | `--frequency-penalty` | `float` | frequency_penalty值 | - |
 | `--logprobs` | `bool` | 是否返回对数概率 | - |
 | `--max-tokens` | `int` 或 `int int` | 可以生成的最大token数量<br>• 单个整数：固定值，如 `--max-tokens 2048`<br>• 两个整数：`最小值 最大值`，每次请求从该范围均匀随机采样，如 `--max-tokens 512 2048` | `2048` |
-| `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'` | - |
+| `--min-tokens` | `int` | 生成的最少token数量<br>注意：并非所有模型服务都支持<br>对于`vLLM>=0.8.1`，需额外设置<br>`--extra-args '{"ignore_eos": true}'`<br>闭环模式下与 `--max-tokens` 取相同值会让所有请求耗时一致，于是同时完成、又被同时放出，表现为 TTFT 每 `--parallel` 个请求周期性爬高；如需避开，改用 `--max-tokens <最小值> <最大值>` 的范围形式，或改用 `--open-loop`（到达过程与完成解耦，不受影响） | - |
 | `--n-choices` | `int` | 生成的补全选择数量 | - |
 | `--seed` | `int` | 随机种子 | `None` |
 | `--stop` | `str` | 停止生成的tokens | - |

@@ -3,9 +3,10 @@
 import glob
 import json
 import os
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import pandas as pd
 from tabulate import tabulate
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 from evalscope.api.messages.perf_metrics import PerfSummary
 from evalscope.api.metric.semantics import MetricSemantics
@@ -38,10 +39,7 @@ def _format_category_columns_for_display(table: pd.DataFrame) -> None:
         table.rename(columns={informative_columns[0]: ReportKey.category_name}, inplace=True)
         return
     table.rename(
-        columns={
-            column: f'{ReportKey.category_name} {index}'
-            for index, column in enumerate(informative_columns, 1)
-        },
+        columns={column: f'{ReportKey.category_name} {index}' for index, column in enumerate(informative_columns, 1)},
         inplace=True,
     )
 
@@ -57,8 +55,11 @@ def _is_report_json(data: Any) -> bool:
     metrics = data.get('metrics')
     perf_metrics = data.get('perf_metrics')
     execution_summary = data.get('execution_summary')
-    return ((isinstance(metrics, list) and len(metrics) > 0) or isinstance(perf_metrics, dict)
-            or isinstance(execution_summary, dict))
+    return (
+        (isinstance(metrics, list) and len(metrics) > 0)
+        or isinstance(perf_metrics, dict)
+        or isinstance(execution_summary, dict)
+    )
 
 
 def get_report_list(reports_path_list: List[str]) -> List[Report]:
@@ -90,14 +91,14 @@ def get_data_frame(
     report_list: List[Report],
     flatten_metrics: bool = True,
     flatten_categories: bool = True,
-    add_overall_metric: bool = False
+    add_overall_metric: bool = False,
 ) -> pd.DataFrame:
     tables = []
     for report in report_list:
         df = report.to_dataframe(
             flatten_metrics=flatten_metrics,
             flatten_categories=flatten_categories,
-            add_overall_metric=add_overall_metric
+            add_overall_metric=add_overall_metric,
         )
         tables.append(df)
     return pd.concat(tables, ignore_index=True)
@@ -130,8 +131,11 @@ def get_display_data_frame(
         for metric in report.metrics:
             key = (report.model_name, report.dataset_name, metric.name)
             semantics_by_metric[key] = metric.semantics
-            labels_by_metric[key] = format_metric_label(metric.identity, metric.semantics, metric.legacy_name
-                                                        ) if metric.legacy_name else labels[metric.identity.key]
+            labels_by_metric[key] = (
+                format_metric_label(metric.identity, metric.semantics, metric.legacy_name)
+                if metric.legacy_name
+                else labels[metric.identity.key]
+            )
 
     if {'Model', 'Dataset', 'Metric', 'Score'}.issubset(display_table.columns):
         metric_labels = []
@@ -155,7 +159,7 @@ def gen_table(
     report_list: list[Report] = None,
     flatten_metrics: bool = True,
     flatten_categories: bool = True,
-    add_overall_metric: bool = False
+    add_overall_metric: bool = False,
 ) -> str:
     """
     Generates a formatted table from a list of report paths or Report objects.
@@ -175,8 +179,9 @@ def gen_table(
     Raises:
         AssertionError: If neither `reports_path_list` nor `report_list` is provided.
     """
-    assert (reports_path_list is not None) or (report_list is not None), \
+    assert (reports_path_list is not None) or (report_list is not None), (
         'Either reports_path_list or report_list must be provided.'
+    )
     if report_list is None:
         report_list = get_report_list(reports_path_list)
     display_table = get_display_data_frame(
@@ -255,8 +260,7 @@ def percentage_weighted_average_from_subsets(
     Returns:
         Subset: A new Subset object with percentage weighted average score.
     """
-    assert len(subset_names) == len(weights), \
-        'The number of subset names must match the number of weights.'
+    assert len(subset_names) == len(weights), 'The number of subset names must match the number of weights.'
 
     valid_subsets = []
     valid_weights = []
@@ -273,8 +277,9 @@ def percentage_weighted_average_from_subsets(
         return Subset(name=new_name, score=0, num=0)
 
     weight_sum = sum(valid_weights)
-    assert weight_sum > 0, \
+    assert weight_sum > 0, (
         f"Sum of weights for percentage_weighted_average_from_subsets for '{new_name}' is not positive."
+    )
 
     # Normalise weights so that they sum to 1.0
     weights_norm = [w / weight_sum for w in valid_weights]
@@ -310,8 +315,9 @@ def gen_perf_table(
     Raises:
         AssertionError: If neither argument is provided.
     """
-    assert (reports_path_list is not None) or (report_list is not None), \
+    assert (reports_path_list is not None) or (report_list is not None), (
         'Either reports_path_list or report_list must be provided.'
+    )
 
     if report_list is None:
         report_list = get_report_list(reports_path_list)

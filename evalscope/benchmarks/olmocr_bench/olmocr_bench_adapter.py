@@ -16,6 +16,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+
 from .unit_tests import load_single_test
 
 logger = get_logger()
@@ -128,7 +129,7 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
             content.append(ContentImage(image=bytes_to_base64(image['bytes'], format='png', add_header=True)))
         return Sample(
             input=[ChatMessageUser(content=content)],
-            target=f"{record['pdf']}#page={record['page']}",
+            target=f'{record["pdf"]}#page={record["page"]}',
             subset_key=record['subset'],
             metadata={
                 'pdf': record['pdf'],
@@ -204,9 +205,6 @@ class OlmocrBenchAdapter(VisionLanguageAdapter):
                 aggregation='unit_test_pass_rate',
                 num=len(sample_scores),
                 ids=ids,
-                metadata={
-                    'tests_passed': tests_passed,
-                    'tests_total': tests_total
-                },
+                metadata={'tests_passed': tests_passed, 'tests_total': tests_total},
             )
         ]

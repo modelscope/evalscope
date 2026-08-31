@@ -1,9 +1,10 @@
 import logging
 import os
+from typing import Any, Dict, List, Optional
+
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM as BaseLLM
 from langchain_openai import ChatOpenAI
-from typing import Any, Dict, List, Optional
 
 from evalscope.api.model import GenerateConfig, Model, get_model
 from evalscope.constants import DEFAULT_MODEL_REVISION, EvalType

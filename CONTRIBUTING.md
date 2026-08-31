@@ -99,6 +99,20 @@ The dev server runs at `http://localhost:5173` and automatically proxies `/api/v
 
 **Tech stack:** React 19 · TypeScript · Vite · Tailwind CSS 4 · React Router · Plotly.js
 
+#### Web API response contracts
+
+Backend Pydantic models in `evalscope/service/api_models/` are the single source of truth for successful JSON responses consumed by the dashboard. Route handlers validate those payloads with `json_response()` before serialization; the frontend uses generated TypeScript types rather than hand-written response schemas.
+
+After changing a Web API response model, regenerate and commit both generated artifacts:
+
+```bash
+cd evalscope/web
+npm run contracts:generate
+npm run contracts:check
+```
+
+Do not edit `src/api/generated/contracts.ts` or `contracts.schema.json` by hand. `make web-contracts-check` performs the same drift check from the repository root and is part of the release build. Error responses and non-JSON responses such as HTML reports and media files remain outside this generated response contract.
+
 ### Full-Stack Development
 
 For the best development experience, run both servers simultaneously:
@@ -306,17 +320,20 @@ evalscope service
 
 This project uses **pre-commit** with the following hooks:
 
-- **flake8** — Python style checker
-- **isort** — Import sorting
-- **yapf** — Code formatting
-- Trailing whitespace, YAML checks, line ending fixes
+- **Ruff check** — Python linting (`E`, `F`, and `W`) and import sorting (`I`)
+- **Ruff format** — Python code formatting with 120-character lines and single quotes
+- Trailing whitespace, YAML checks, and line ending fixes
+
+Ruff's lint hook runs before its formatter so that any automatic fixes are formatted consistently. Pre-commit is installed by `make dev` with the version pinned in `requirements/dev.txt`.
 
 ```bash
-# Run all checks
+# Apply safe fixes, format maintained Python files, and run all repository checks
 make lint
 # or
 pre-commit run --all-files
 ```
+
+If pre-commit modifies files, review and stage those changes, then run `make lint` again. The configured Ruff scope and exclusions are defined in `pyproject.toml`.
 
 ### Testing
 
@@ -342,9 +359,9 @@ pytest tests/benchmark/test_xxx.py
    git commit -m "feat: add MyBenchmark adapter"
    ```
 
-3. **Run quality checks** before pushing:
+3. **Run quality checks before pushing:**
    ```bash
-   pre-commit run --all-files
+   make lint
    pytest tests/
    ```
 

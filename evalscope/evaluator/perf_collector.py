@@ -12,10 +12,12 @@ turn_index)`` so downstream consumers can inspect / filter per-turn or
 per-sample breakdowns while aggregate statistics are always computed at the
 request granularity.
 """
+
 import math
-import pandas as pd
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
+import pandas as pd
 
 from evalscope.api.messages.perf_metrics import PerformanceMetrics, PerfSummary
 from evalscope.utils.function_utils import thread_safe
@@ -29,6 +31,7 @@ _PERCENTILES = [0.25, 0.5, 0.75, 0.9, 0.99]
 @dataclass
 class _PerfRecord:
     """Internal container pairing a PerformanceMetrics with its identity."""
+
     perf: PerformanceMetrics
     sample_index: Optional[Any] = None
     turn_index: Optional[int] = None

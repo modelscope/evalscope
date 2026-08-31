@@ -8,12 +8,14 @@ import from ``evalscope.api.agent`` to participate.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from evalscope.api.messages import ChatMessage, Content
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall, ToolInfo
+
 from .mcp.types import MCPServerConfig
 
 if TYPE_CHECKING:

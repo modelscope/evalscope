@@ -1,8 +1,9 @@
 import inspect
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
+
 from docstring_parser import Docstring, parse
 from pydantic import BaseModel, Field, field_validator
-from typing import Any, Callable, Dict, List, Literal, Optional, TypeAlias, Union, get_args, get_type_hints
 
 from evalscope.utils.json_schema import JSONSchema, JSONType, json_schema, python_type_to_json_type
 
@@ -11,13 +12,11 @@ ToolParam: TypeAlias = JSONSchema
 
 
 class Tool:
-
     def __call__(
         self,
         *args: Any,
         **kwargs: Any,
-    ) -> Any:
-        ...
+    ) -> Any: ...
 
 
 class ToolParams(BaseModel):
@@ -94,7 +93,7 @@ class ToolInfo(BaseModel):
 def parse_tool_info(func: Callable[..., Any]) -> ToolInfo:
     # tool may already have registry attributes w/ tool info
     description = tool_description(func)
-    if (description.name and description.description and description.parameters is not None):
+    if description.name and description.description and description.parameters is not None:
         return ToolInfo(
             name=description.name,
             description=description.description,

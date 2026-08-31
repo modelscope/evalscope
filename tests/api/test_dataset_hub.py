@@ -1,8 +1,9 @@
-import pytest
 import sys
 import types
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from evalscope.api.dataset import DatasetHub, download_dataset_file, download_dataset_snapshot
 from evalscope.constants import HubType

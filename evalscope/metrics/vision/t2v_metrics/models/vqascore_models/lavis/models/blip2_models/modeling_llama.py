@@ -18,6 +18,8 @@
 # limitations under the License.
 """ PyTorch LLaMA model."""
 import math
+from typing import List, Optional, Tuple, Union
+
 import torch
 import torch.utils.checkpoint
 from torch import nn
@@ -36,7 +38,6 @@ from transformers.utils import (
     logging,
     replace_return_docstrings,
 )
-from typing import List, Optional, Tuple, Union
 
 logger = logging.get_logger(__name__)
 

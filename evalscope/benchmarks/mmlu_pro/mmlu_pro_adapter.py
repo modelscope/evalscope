@@ -27,8 +27,20 @@ Options:
 """.lstrip()  # noqa: E501
 
 SUBSET_LIST = [
-    'computer science', 'math', 'chemistry', 'engineering', 'law', 'biology', 'health', 'physics', 'business',
-    'philosophy', 'economics', 'other', 'psychology', 'history'
+    'computer science',
+    'math',
+    'chemistry',
+    'engineering',
+    'law',
+    'biology',
+    'health',
+    'physics',
+    'business',
+    'philosophy',
+    'economics',
+    'other',
+    'psychology',
+    'history',
 ]
 
 
@@ -76,7 +88,6 @@ MMLU-Pro is an enhanced version of MMLU with increased difficulty and reasoning 
     )
 )
 class MMLUProAdapter(MultiChoiceAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

@@ -1,5 +1,6 @@
 import os
 import posixpath  # For URL path handling
+
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset as TorchDataset
@@ -60,7 +61,6 @@ def build_dataset(
 
 
 class Dummy:
-
     def __init__(self):
         self.classes = ['blank image', 'noisy image']
 
@@ -72,7 +72,6 @@ class Dummy:
 
 
 class DatasetWrapper(TorchDataset):
-
     def __init__(self, dataset, transform=None, image_key='image', text_key='query'):
         self.dataset = dataset
         self.transform = transform
@@ -148,10 +147,7 @@ def build_custom_dataset(dataset_name, data_dir, transform=None):
     qrels_ds = load_dataset(
         'json',
         data_files=os.path.join(data_dir, 'image_queries.jsonl'),
-        features=Features({
-            'image_path': Image(decode=True),
-            'query': Sequence(Value('string'))
-        }),
+        features=Features({'image_path': Image(decode=True), 'query': Sequence(Value('string'))}),
         split='train',
     )
 
@@ -252,7 +248,7 @@ def build_wds_dataset(dataset_name, transform, split='test', data_dir='root', ca
         dataset = dataset.to_tuple(['webp', 'png', 'jpg', 'jpeg'], 'txt').map_tuple(transform, str.splitlines)
         dataset.classes = dataset.templates = None
     else:
-        label_type = ('npy' if dataset_type == 'multilabel' else 'cls')  # Special case for multilabel
+        label_type = 'npy' if dataset_type == 'multilabel' else 'cls'  # Special case for multilabel
         dataset = dataset.to_tuple(['webp', 'png', 'jpg', 'jpeg'], label_type).map_tuple(transform, None)
         # Get class names if present
         classnames_fname = os.path.join(metadata_dir, 'classnames.txt')

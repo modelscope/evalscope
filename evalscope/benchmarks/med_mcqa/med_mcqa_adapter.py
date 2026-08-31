@@ -48,7 +48,6 @@ MedMCQA is a large-scale multiple-choice question answering dataset designed to 
     )
 )
 class MedMCQAAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

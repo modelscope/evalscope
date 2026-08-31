@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 from .install_helper import install_task_skills
 
@@ -118,9 +119,11 @@ class HermesRunner(AgentRunner):
         # Ensure curl is available
         prep = await env.exec(
             [
-                'bash', '-c', 'set -e; export DEBIAN_FRONTEND=noninteractive; '
+                'bash',
+                '-c',
+                'set -e; export DEBIAN_FRONTEND=noninteractive; '
                 'apt-get update -qq && '
-                'apt-get install -y --no-install-recommends curl ca-certificates'
+                'apt-get install -y --no-install-recommends curl ca-certificates',
             ],
             timeout=self._install_timeout_s,
         )
@@ -198,8 +201,9 @@ class HermesRunner(AgentRunner):
         )
         await env.exec(
             [
-                'bash', '-c',
-                f'mkdir -p {hermes_home} && cat > {hermes_home}/config.yaml << \'EOFCFG\'\n{config_yaml}EOFCFG'
+                'bash',
+                '-c',
+                f"mkdir -p {hermes_home} && cat > {hermes_home}/config.yaml << 'EOFCFG'\n{config_yaml}EOFCFG",
             ],
             timeout=10,
         )
@@ -242,15 +246,12 @@ class HermesRunner(AgentRunner):
             f'timed_out={result.timed_out}'
         )
         if result.timed_out:
-            raise RunnerTimeoutError(f'hermes timed out after {task.timeout}s '
-                                     f'(returncode={result.returncode})')
+            raise RunnerTimeoutError(f'hermes timed out after {task.timeout}s (returncode={result.returncode})')
         if result.returncode != 0:
             tail_stderr = (result.stderr or '').strip()[-2000:]
             tail_stdout = (result.stdout or '').strip()[-2000:]
             raise RuntimeError(
-                f'hermes exited with code {result.returncode}:\n'
-                f'  stderr: {tail_stderr}\n'
-                f'  stdout: {tail_stdout}'
+                f'hermes exited with code {result.returncode}:\n  stderr: {tail_stderr}\n  stdout: {tail_stdout}'
             )
         return AgentRunResult(
             output=result.stdout.strip(),

@@ -9,8 +9,17 @@ See https://docs.litellm.ai/docs/providers for the full list.
 """
 
 import time
+from typing import Any, Dict, List, Optional, Tuple, Type
+
+import litellm
+from litellm.exceptions import (
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+)
 from openai.types.chat import ChatCompletion
-from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -18,6 +27,7 @@ from evalscope.api.model import ChatCompletionChoice, GenerateConfig, ModelAPI, 
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import async_retry_call, retry_call
+
 from .utils.openai import (
     async_collect_stream_response,
     chat_choices_from_openai,
@@ -31,6 +41,19 @@ from .utils.openai import (
 )
 
 logger = get_logger()
+
+
+# LiteLLM maps provider client errors (context length exceeded, bad credentials, unknown
+# model, invalid parameters, ...) onto its own exception types. Retrying them only burns
+# retries * retry_interval per failing sample, so pass them as no-retry exceptions.
+# Transient errors (timeouts, connection failures, 429/5xx) stay retryable.
+NON_RETRYABLE_LITELLM_ERRORS: Tuple[Type[Exception], ...] = (
+    AuthenticationError,
+    BadRequestError,
+    NotFoundError,
+    PermissionDeniedError,
+    UnprocessableEntityError,
+)
 
 
 class LiteLLMAPI(ModelAPI):
@@ -61,11 +84,11 @@ class LiteLLMAPI(ModelAPI):
         tool_choice: ToolChoice,
         config: GenerateConfig,
     ) -> ModelOutput:
-        import litellm
-
         request: Dict[str, Any] = {}
 
-        messages = openai_chat_messages(input)
+        messages = openai_chat_messages(
+            input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+        )
         completion_params = openai_completion_params(
             model=self.model_name,
             config=config,
@@ -94,6 +117,7 @@ class LiteLLMAPI(ModelAPI):
                 litellm.completion,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_LITELLM_ERRORS,
                 **request,
             )
 
@@ -135,9 +159,9 @@ class LiteLLMAPI(ModelAPI):
         construction and response parsing are identical to the synchronous
         ``generate()``.
         """
-        import litellm
-
-        messages = openai_chat_messages(input)
+        messages = openai_chat_messages(
+            input, reasoning_format=(config.reasoning_history or 'reasoning_field'), base_url=self.base_url
+        )
         completion_params = openai_completion_params(
             model=self.model_name,
             config=config,
@@ -165,6 +189,7 @@ class LiteLLMAPI(ModelAPI):
                 litellm.acompletion,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
+                no_retry_exceptions=NON_RETRYABLE_LITELLM_ERRORS,
                 **request,
             )
 

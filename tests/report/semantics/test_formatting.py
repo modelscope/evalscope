@@ -4,8 +4,9 @@ One formatting rule set, driven only by the display fields of ``MetricSemantics`
 the CLI, the HTML report, the reports API and the Web UI.
 """
 
-import pytest
 from typing import Optional
+
+import pytest
 
 from evalscope.api.metric.semantics import (
     MetricDirection,

@@ -1,6 +1,7 @@
 import os
-import torch
 from typing import List
+
+import torch
 
 from ...constants import CACHE_DIR
 from ..model import ScoreModel

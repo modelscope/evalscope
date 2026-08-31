@@ -1,6 +1,7 @@
 import os
-from openai import OpenAI
 from typing import Dict, Optional
+
+from openai import OpenAI
 
 
 def request_url(llm_config: Dict[str, str], content: str) -> Optional[str]:

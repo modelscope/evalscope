@@ -13,6 +13,7 @@ from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.media_utils import guess_video_format
 from evalscope.utils.uri_utils import is_http_url
+
 from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()
@@ -46,8 +47,7 @@ with multiple reference captions.
 """,
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
         dataset_id='AI-ModelScope/msr-vtt',
-        paper_url=
-        'https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
+        paper_url='https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
         primary_metric='cider',
@@ -165,8 +165,9 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         score.main_score_name = CAPTION_MAIN_SCORE
         return score
 
-    def batch_calculate_metrics(self, task_states: List[TaskState],
-                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+    def batch_calculate_metrics(
+        self, task_states: List[TaskState], sample_scores: List[SampleScore]
+    ) -> List[SampleScore]:
         predictions = [self.filter_prediction(ts.output.completion, ts) for ts in task_states]
         references = [ts.metadata.get('references') or json.loads(ts.target) for ts in task_states]
         batch_scores = compute_caption_scores(predictions, references)

@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.registry import register_runner
 from evalscope.utils.logger import get_logger
+
 from .base import AgentRunner, AgentRunResult, BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
 from .install_helper import ensure_node_via_apt, install_task_skills
 
@@ -163,9 +164,7 @@ class ClaudeCodeRunner(AgentRunner):
             'ANTHROPIC_API_KEY': bridge.trial_token,
             'ANTHROPIC_AUTH_TOKEN': bridge.trial_token,
             # Anthropic SDK's "model" env var (used by some auto-discovery paths).
-            **({
-                'ANTHROPIC_MODEL': self._model_name
-            } if self._model_name else {}),
+            **({'ANTHROPIC_MODEL': self._model_name} if self._model_name else {}),
             # Inspect-AI's two load-bearing env vars: suppress the OAuth /
             # keychain probe and the telemetry / auto-update HTTPS calls
             # that otherwise block for ~60s in offline / bridged setups.
@@ -229,8 +228,7 @@ class ClaudeCodeRunner(AgentRunner):
             )
             if result.timed_out:
                 raise RunnerTimeoutError(
-                    f'claude-code timed out after {task.timeout}s '
-                    f'(returncode={result.returncode})'
+                    f'claude-code timed out after {task.timeout}s (returncode={result.returncode})'
                 )
             if result.returncode != 0:
                 tail_stderr = (result.stderr or '').strip()[-2000:]

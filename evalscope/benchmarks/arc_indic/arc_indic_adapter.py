@@ -64,7 +64,6 @@ multilingual scientific reasoning.
     )
 )
 class ARCIndicAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         choice_texts = record['choices']['text']
         answer_key = record['answerKey']

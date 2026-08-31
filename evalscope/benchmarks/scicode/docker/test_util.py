@@ -14,10 +14,11 @@
 # Modifications have been made by xantheocracy, 2025.
 # Original source: https://github.com/scicode-bench/SciCode/blob/main/src/scicode/compare/cmp.py
 
+from typing import Any
+
 import numpy as np
 import scipy.sparse  # type: ignore
 import sympy  # type: ignore
-from typing import Any
 
 
 def are_dicts_close(dict1: dict[Any, Any], dict2: dict[Any, Any], atol: float = 1e-8, rtol: float = 1e-5) -> bool:
@@ -36,10 +37,7 @@ def are_dicts_close(dict1: dict[Any, Any], dict2: dict[Any, Any], atol: float = 
                 return False
         elif isinstance(
             value1,
-            scipy.sparse.csr_matrix
-            | scipy.sparse.csc_matrix
-            | scipy.sparse.bsr_matrix
-            | scipy.sparse.coo_matrix,
+            scipy.sparse.csr_matrix | scipy.sparse.csc_matrix | scipy.sparse.bsr_matrix | scipy.sparse.coo_matrix,
         ):
             value1 = value1.toarray()
             value2 = value2.toarray()

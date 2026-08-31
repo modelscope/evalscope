@@ -41,6 +41,7 @@ class ImagePairMixin:
     @staticmethod
     def _load_pil_image(image: Any) -> Any:
         from io import BytesIO
+
         from PIL import Image
 
         from evalscope.utils.uri_utils import file_as_data
@@ -129,7 +130,7 @@ class PSNRScore(ImagePairMetric):
         check_import('numpy', 'numpy', raise_error=True, feature_name='PSNR Metric')
         import numpy as np
 
-        mse = float(np.mean((prediction - reference)**2))
+        mse = float(np.mean((prediction - reference) ** 2))
         if mse == 0:
             return 100.0
         return float(20 * math.log10(self.data_range) - 10 * math.log10(mse))
@@ -185,8 +186,9 @@ class SSIMScore(ImagePairMetric):
         mu_reference = (reference_windows * weights).sum(axis=(-2, -1))
         sigma_prediction = cov_norm * ((prediction_windows**2 * weights).sum(axis=(-2, -1)) - mu_prediction**2)
         sigma_reference = cov_norm * ((reference_windows**2 * weights).sum(axis=(-2, -1)) - mu_reference**2)
-        sigma_cross = cov_norm * ((prediction_windows * reference_windows * weights).sum(axis=(-2, -1))
-                                  - mu_prediction * mu_reference)
+        sigma_cross = cov_norm * (
+            (prediction_windows * reference_windows * weights).sum(axis=(-2, -1)) - mu_prediction * mu_reference
+        )
 
         ssim_map = self._ssim_from_moments(
             mu_prediction,
@@ -252,8 +254,8 @@ class SSIMScore(ImagePairMetric):
         sigma_reference: Any,
         sigma_cross: Any,
     ) -> Any:
-        c1 = (self.k1 * self.data_range)**2
-        c2 = (self.k2 * self.data_range)**2
+        c1 = (self.k1 * self.data_range) ** 2
+        c2 = (self.k2 * self.data_range) ** 2
         numerator = (2 * mu_prediction * mu_reference + c1) * (2 * sigma_cross + c2)
         denominator = (mu_prediction**2 + mu_reference**2 + c1) * (sigma_prediction + sigma_reference + c2)
         return numerator / denominator
@@ -270,10 +272,9 @@ class LPIPSScore(ImagePairMixin, SingletonMetric):
         resize: bool = True,
         spatial: bool = False,
     ) -> None:
-        check_import(['lpips', 'torch'], ['lpips', 'torch'],
-                     raise_error=True,
-                     feature_name='LPIPS Metric',
-                     extra='aigc')
+        check_import(
+            ['lpips', 'torch'], ['lpips', 'torch'], raise_error=True, feature_name='LPIPS Metric', extra='aigc'
+        )
 
         import lpips
 
@@ -310,10 +311,10 @@ class LPIPSScore(ImagePairMixin, SingletonMetric):
 # ##################
 @register_metric(name='VQAScore')
 class VQAScore(T2IMetric):
-
     def _init_once(self, model: str = 'clip-flant5-xxl', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.vqascore import VQAScore
+
         self.model = VQAScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -322,10 +323,10 @@ class VQAScore(T2IMetric):
 
 @register_metric(name='PickScore')
 class PickScore(T2IMetric):
-
     def _init_once(self, model: str = 'pickscore-v1', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
+
         self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -334,10 +335,10 @@ class PickScore(T2IMetric):
 
 @register_metric(name='CLIPScore')
 class CLIPScore(T2IMetric):
-
     def _init_once(self, model: str = 'openai:ViT-L-14-336', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
+
         self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -346,10 +347,10 @@ class CLIPScore(T2IMetric):
 
 @register_metric(name='BLIPv2Score')
 class BLIPv2Score(T2IMetric):
-
     def _init_once(self, model: str = 'blip2-itm', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
+
         self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -358,10 +359,10 @@ class BLIPv2Score(T2IMetric):
 
 @register_metric(name='HPSv2Score')
 class HPSv2Score(T2IMetric):
-
     def _init_once(self, model: str = 'hpsv2', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
+
         self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -370,10 +371,10 @@ class HPSv2Score(T2IMetric):
 
 @register_metric(name='HPSv2.1Score')
 class HPSv2_1Score(T2IMetric):
-
     def _init_once(self, model: str = 'hpsv2.1', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
+
         self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -382,10 +383,10 @@ class HPSv2_1Score(T2IMetric):
 
 @register_metric(name='ImageRewardScore')
 class ImageRewardScore(T2IMetric):
-
     def _init_once(self, model: str = 'image-reward-v1', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
+
         self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -394,10 +395,10 @@ class ImageRewardScore(T2IMetric):
 
 @register_metric(name='FGA_BLIP2Score')
 class FGA_BLIP2Score(T2IMetric):
-
     def _init_once(self, model: str = 'fga_blip2', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.itmscore import ITMScore
+
         self.model = ITMScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:
@@ -406,10 +407,10 @@ class FGA_BLIP2Score(T2IMetric):
 
 @register_metric(name='MPS')
 class MPS(T2IMetric):
-
     def _init_once(self, model: str = 'mps', device=None, cache_dir=None, **kwargs):
         device, cache_dir = self._resolve_defaults(device, cache_dir)
         from .t2v_metrics.clipscore import CLIPScore
+
         self.model = CLIPScore(model=model, device=device, cache_dir=cache_dir, **kwargs)
 
     def apply(self, images: List[str], texts: List[str], **kwargs) -> List[float]:

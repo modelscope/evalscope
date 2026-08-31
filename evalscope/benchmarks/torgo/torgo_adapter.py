@@ -58,7 +58,6 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
     )
 )
 class TorgoAdapter(AudioLanguageAdapter):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.reformat_subset = True
@@ -75,13 +74,16 @@ class TorgoAdapter(AudioLanguageAdapter):
             try:
                 if self.has_metric('cer'):
                     from jiwer import cer as jiwer_cer
+
                     self.jiwer_cer = jiwer_cer
 
                 if self.has_metric('wer'):
                     from jiwer import wer as jiwer_wer
+
                     self.jiwer_wer = jiwer_wer
 
                 from evalscope.metrics.utils.text_normalizer.wer import normalize_text
+
                 self.normalize_text = normalize_text
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] Failed to import jiwer components: {e}')
@@ -90,6 +92,7 @@ class TorgoAdapter(AudioLanguageAdapter):
             check_import('jellyfish', extra='torgo', raise_error=True, feature_name='SemScore Metric')
             try:
                 from evalscope.metrics.nlp.metrics import SemScore
+
                 self.sem_scorer = SemScore()
             except Exception as e:
                 logger.warning(f'[TorgoAdapter] Failed to initialize SemScore: {e}')
@@ -107,7 +110,7 @@ class TorgoAdapter(AudioLanguageAdapter):
                 'transcript': record['transcript'],
                 'intelligibility': record['intelligibility'],
                 'duration': record['duration'],
-            }
+            },
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):

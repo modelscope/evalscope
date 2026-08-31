@@ -17,6 +17,7 @@ from evalscope.api.sandbox import merge_sandbox_config_dicts, prepare_docker_ima
 from evalscope.constants import HubType, Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     SANDBOX_DELIVERABLE_DIR,
     SANDBOX_REFERENCE_DIR,
@@ -157,7 +158,7 @@ class GDPvalAdapter(AgentLoopAdapter):
         reference_file_hf_uris = as_list(record.get('reference_file_hf_uris'))
         sandbox_reference_paths = [sandbox_reference_path(path) for path in reference_files]
         reference_hint = format_reference_hint(sandbox_reference_paths)
-        prompt = f"{record['prompt'].strip()}\n{reference_hint}{_PROMPT_SUFFIX}"
+        prompt = f'{record["prompt"].strip()}\n{reference_hint}{_PROMPT_SUFFIX}'
 
         return Sample(
             input=prompt,
@@ -247,7 +248,7 @@ class GDPvalAdapter(AgentLoopAdapter):
             'artifact_dir': task_state.metadata.get('artifact_dir'),
             'official_gdpval_score': None,
             'official_gdpval_score_note': (
-                'GDPval official grading is external. Use OpenAI\'s official GDPval judge on the exported submission.'
+                "GDPval official grading is external. Use OpenAI's official GDPval judge on the exported submission."
             ),
         }
         score = Score(

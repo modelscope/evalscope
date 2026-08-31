@@ -1,7 +1,8 @@
 import json
+from typing import Any, Dict, Iterator, List, Optional
+
 import numpy as np
 from pydantic import BaseModel, ConfigDict, field_validator
-from typing import Any, Dict, Iterator, List, Optional
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
@@ -33,7 +34,6 @@ RESERVED_BODY_KEYS = frozenset({BODY_META_HEADERS, BODY_META_REQUEST_ID, BODY_ME
 
 
 class WorkloadTraceArgs(BaseDatasetArgs):
-
     speed: float = 1.0
     model_override: Optional[str] = None
     model_mapping: Optional[Dict[str, str]] = None
@@ -54,6 +54,7 @@ def _normalise_timestamp(v: Any) -> float:
         return float(v)
     if isinstance(v, str):
         from datetime import datetime, timezone
+
         s = v.strip()
         try:
             return float(s)
@@ -132,8 +133,7 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         super().__init__(query_parameters)
 
         if not query_parameters.open_loop:
-            raise ValueError('workload_trace requires open-loop mode. '
-                             'Add --open-loop to your command.')
+            raise ValueError('workload_trace requires open-loop mode. Add --open-loop to your command.')
 
         if not query_parameters.dataset_path:
             raise ValueError('workload_trace requires --dataset-path pointing to a JSONL trace file.')
@@ -155,13 +155,14 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         # carries its own model, preserving the trace's multi-model routing.
         # Use --dataset-args model_override / model_mapping for explicit rewriting.
         if (
-            'model' in query_parameters.model_fields_set and not self.dataset_args.model_override
+            'model' in query_parameters.model_fields_set
+            and not self.dataset_args.model_override
             and not self.dataset_args.model_mapping
         ):
             logger.warning(
                 f'workload_trace: --model {query_parameters.model!r} does not rewrite trace bodies; '
                 'each request keeps its own model. Use --dataset-args '
-                "'{\"model_override\": ...}' or model_mapping to rewrite."
+                '\'{"model_override": ...}\' or model_mapping to rewrite.'
             )
 
         self._warmup_count = min(query_parameters.warmup_count, n)
@@ -169,8 +170,7 @@ class WorkloadTraceDatasetPlugin(DatasetPluginBase):
         query_parameters.warmup_num = 0
 
         warmup_msg = f', warmup={self._warmup_count}' if self._warmup_count else ''
-        logger.info(f'workload_trace: loaded {n} records, '
-                    f'speed={self.dataset_args.speed}x{warmup_msg}')
+        logger.info(f'workload_trace: loaded {n} records, speed={self.dataset_args.speed}x{warmup_msg}')
         if self.dataset_args.match_output_length:
             logger.info(
                 'workload_trace: match_output_length enabled — '

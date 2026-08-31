@@ -1,7 +1,8 @@
 # flake8: noqa: E501
 import base64
-from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -12,6 +13,7 @@ from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
+
 from .utils import build_judge_prompt
 
 logger = get_logger()
@@ -99,6 +101,7 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
     Interleaves the question with its images following the official `<|image_N|>`
     placeholder convention and scores free-form answers with the official LLM judge.
     """
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):
@@ -172,18 +175,21 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
                     prediction=context.original_prediction,
                     value={'acc': 0.0},
                     main_score_name='acc',
-                    explanation='failed to obtain answer'
+                    explanation='failed to obtain answer',
                 ),
                 reason='empty_model_output',
             )
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             metadata = judge_context.task_state.metadata or {}
-            prompt = build_judge_prompt(
-                question=metadata.get('problem', judge_context.task_state.input_text),
-                prediction=judge_context.original_prediction,
-                reference=judge_context.reference,
-            ) + case.output_contract.instruction()
+            prompt = (
+                build_judge_prompt(
+                    question=metadata.get('problem', judge_context.task_state.input_text),
+                    prediction=judge_context.original_prediction,
+                    reference=judge_context.reference,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -196,5 +202,5 @@ class PerceptionBenchAdapter(VisionLanguageAdapter):
             cases=[JudgeCase(case_id='judgment', output_contract=JUDGMENT_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )

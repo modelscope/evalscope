@@ -1,11 +1,12 @@
 """Tests for the atomic, checksum-verified download helper in download_utils."""
 
 import hashlib
-import pytest
 import threading
 import time
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from evalscope.utils.download_utils import download_url, file_sha256
 from evalscope.utils.media_utils import SUPPORTED_VIDEO_FORMATS, guess_video_format, video_as_data_uri

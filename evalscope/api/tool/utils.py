@@ -1,8 +1,10 @@
 import json
-import yaml
 from typing import Any, Dict, List, Optional
 
+import yaml
+
 from evalscope.utils import get_logger
+
 from .tool_call import ToolCall, ToolFunction
 from .tool_info import ToolInfo
 

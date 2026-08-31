@@ -1,7 +1,8 @@
 import asyncio
+from typing import List
+
 from harbor.llms.base import BaseLLM, LLMResponse, UsageInfo
 from pydantic import BaseModel, ConfigDict, PrivateAttr
-from typing import List
 
 from evalscope.api.messages.chat_message import dict_to_chat_message
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
@@ -11,6 +12,7 @@ from evalscope.models.utils.openai import openai_chat_choices
 
 class HarborLLM(BaseModel, BaseLLM):
     """A mock LLM that simulates sandboxed code execution."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
     _model: Model = PrivateAttr()
     _perf_metrics: List[PerformanceMetrics] = PrivateAttr(default_factory=list)
@@ -51,8 +53,8 @@ class HarborLLM(BaseModel, BaseLLM):
                 prompt_tokens=usage.get('input_tokens', 0),
                 completion_tokens=usage.get('output_tokens', 0),
                 cache_tokens=usage.get('input_tokens_cache_read', 0),
-                cost_usd=usage.get('cost_usd', 0.0)
-            )
+                cost_usd=usage.get('cost_usd', 0.0),
+            ),
         )
 
     def get_model_context_limit(self):

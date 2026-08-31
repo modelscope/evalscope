@@ -2,8 +2,9 @@
 # flake8: noqa: E501
 import zipfile
 from pathlib import Path
-from pydantic import BaseModel
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -111,13 +112,12 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
             'text_dir': {
                 'type': 'str | null',
                 'description': 'Local directory containing extracted AA-LCR text files; if null will auto-download & extract.',
-                'value': None
+                'value': None,
             }
-        }
+        },
     )
 )
 class AALCRAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -197,7 +197,7 @@ class AALCRAdapter(DefaultDataAdapter):
                         logger.warning(f'Could not read file {file_path}, skipping: {e}')
         except OSError as e:
             logger.warning(f'Could not access document folder {doc_folder}: {e}')
-            return f"ERROR: Could not read documents for {record['document_category']}/{record['document_set_id']}"
+            return f'ERROR: Could not read documents for {record["document_category"]}/{record["document_set_id"]}'
 
         documents_text = '\n\n'.join(
             f'BEGIN DOCUMENT {i + 1}:\n{doc}\nEND DOCUMENT {i + 1}' for i, doc in enumerate(doc_blocks)
@@ -216,17 +216,20 @@ class AALCRAdapter(DefaultDataAdapter):
                 'question': record['question'],
                 'data_source_urls': record['data_source_urls'],
                 'input_tokens': record.get('input_tokens', 0),
-            }
+            },
         )
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
-            prompt = JUDGE_PROMPT.format(
-                question=judge_context.task_state.metadata['question'],
-                correct_answer=judge_context.reference,
-                response=judge_context.filtered_prediction,
-            ) + case.output_contract.instruction()
+            prompt = (
+                JUDGE_PROMPT.format(
+                    question=judge_context.task_state.metadata['question'],
+                    correct_answer=judge_context.reference,
+                    response=judge_context.filtered_prediction,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -236,5 +239,5 @@ class AALCRAdapter(DefaultDataAdapter):
             cases=[JudgeCase(case_id='grade', output_contract=GRADE_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )

@@ -7,6 +7,7 @@ network or a real model.
 """
 
 import json
+
 import pytest
 from pydantic import ValidationError
 

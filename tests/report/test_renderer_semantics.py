@@ -1,7 +1,8 @@
 """Semantic display coverage for the standalone HTML report."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from evalscope.report import renderer
 from evalscope.report.report import Report

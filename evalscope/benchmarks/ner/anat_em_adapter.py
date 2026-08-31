@@ -48,7 +48,6 @@ The AnatEM corpus is an extensive resource for anatomical entity recognition, cr
     )
 )
 class AnatEMAdapter(NERAdapter):
-
     def __init__(self, **kwargs):
         # Initialize the parent class first
         super().__init__(**kwargs)

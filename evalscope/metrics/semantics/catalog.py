@@ -235,11 +235,13 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_total_tool_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
     'mean_total_other_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
 }
-LEGACY_METRIC_MIGRATIONS.update({
-    name: MetricEntry(baseline=alias.baseline)
-    for name, alias in LEGACY_METRIC_ALIASES.items()
-    if alias.baseline is not None
-})
+LEGACY_METRIC_MIGRATIONS.update(
+    {
+        name: MetricEntry(baseline=alias.baseline)
+        for name, alias in LEGACY_METRIC_ALIASES.items()
+        if alias.baseline is not None
+    }
+)
 """Final report metric name -> catalog entry, reused by every benchmark.
 
 Seeded from the metric names this repository actually emits, so the common names render with the
@@ -272,7 +274,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'rate_invalid_auto_rater_response',
         'yes_ratio',
     ),
-    'perf.throughput.tokens_per_second': ('average_output_tps', ),
+    'perf.throughput.tokens_per_second': ('average_output_tps',),
     'quality.accuracy.ratio': (
         'accuracy',
         'cell_acc',
@@ -317,9 +319,9 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'unit_acc',
         'xl_puzzle_acc',
     ),
-    'quality.bleu.ratio': ('bleu', ),
-    'quality.cer.ratio': ('cer', ),
-    'quality.cider.unbounded': ('cider', ),
+    'quality.bleu.ratio': ('bleu',),
+    'quality.cer.ratio': ('cer',),
+    'quality.cider.unbounded': ('cider',),
     'quality.coverage.ratio': ('coverage_score', 'required_coverage'),
     'quality.error_rate.ratio': (
         'display_formula_edit_dist',
@@ -343,7 +345,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'task_averaged_f1',
         'tool_call_f1',
     ),
-    'quality.iou.ratio': ('iou', ),
+    'quality.iou.ratio': ('iou',),
     'quality.judge_score.unbounded': (
         'communication_quality',
         'completeness',
@@ -353,8 +355,8 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'max_score',
         'net_match_score',
     ),
-    'quality.mer.ratio': ('mer', ),
-    'quality.meteor.ratio': ('meteor', ),
+    'quality.mer.ratio': ('mer',),
+    'quality.meteor.ratio': ('meteor',),
     'quality.model_score.unbounded': (
         'blipv2_score',
         'clipscore',
@@ -378,10 +380,13 @@ _CANONICAL_NAMES_BY_BASELINE = {
     ),
     'quality.precision.ratio': ('boundary_precision', 'official_mean_precision', 'precision'),
     'quality.recall.ratio': ('official_mean_recall', 'recall'),
-    'quality.rouge.ratio': ('rouge', ),
+    'quality.rouge.ratio': ('rouge', 'rouge_l'),
     'quality.score.points_100': ('eq_bench_score', 'weighted_score_percent'),
     'quality.score.ratio': (
+        'clipped_score',
         'compliance_score',
+        'contains_all',
+        'contains_any',
         'mrcr_score',
         'normalized_score',
         'overall_ch',
@@ -406,41 +411,47 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'table_teds_structure_only',
     ),
     'quality.wer.ratio': ('audio_wer', 'wer'),
-    'quality.win_rate.ratio': ('win_rate', ),
+    'quality.win_rate.ratio': ('win_rate',),
 }
 
 METRIC_DEFINITIONS: Dict[str, MetricEntry] = {
-    name: MetricEntry(baseline=baseline)
-    for baseline, names in _CANONICAL_NAMES_BY_BASELINE.items()
-    for name in names
+    name: MetricEntry(baseline=baseline) for baseline, names in _CANONICAL_NAMES_BY_BASELINE.items() for name in names
 }
-METRIC_DEFINITIONS.update({
-    # Three-way answer grading exposes these distribution shares as diagnostics. They remain
-    # non-primary and directionless, but deserve report labels rather than internal identities.
-    'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
-    'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
-    'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
-    'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
-    'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
-    'total_wall_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
-    # Peak signal-to-noise ratio is reported in decibels and has no upper bound (the
-    # implementation caps a perfect match at 100.0), so it renders as a plain number with a unit
-    # rather than as a percentage.
-    'psnr': MetricEntry(
-        baseline='quality.model_score.unbounded',
-        metric_name='PSNR',
-        raw_unit='dB',
-        display_unit='dB',
-        display_precision=2,
-    ),
-    # LPIPS is a perceptual *distance*: a smaller value means the images are more alike, which is
-    # the opposite of every other scorer sharing this baseline.
-    'lpips': MetricEntry(
-        baseline='quality.model_score.unbounded',
-        metric_name='LPIPS',
-        direction=MetricDirection.LOWER_IS_BETTER,
-    ),
-})
+METRIC_DEFINITIONS.update(
+    {
+        # Three-way answer grading exposes these distribution shares as diagnostics. They remain
+        # non-primary and directionless, but deserve report labels rather than internal identities.
+        'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
+        'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
+        'bias_ratio': MetricEntry(
+            baseline='quality.error_rate.ratio',
+            metric_name='Bias Ratio',
+        ),
+        # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
+        'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
+        'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+        'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+        'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+        'total_wall_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
+        # Peak signal-to-noise ratio is reported in decibels and has no upper bound (the
+        # implementation caps a perfect match at 100.0), so it renders as a plain number with a unit
+        # rather than as a percentage.
+        'psnr': MetricEntry(
+            baseline='quality.model_score.unbounded',
+            metric_name='PSNR',
+            raw_unit='dB',
+            display_unit='dB',
+            display_precision=2,
+        ),
+        # LPIPS is a perceptual *distance*: a smaller value means the images are more alike, which is
+        # the opposite of every other scorer sharing this baseline.
+        'lpips': MetricEntry(
+            baseline='quality.model_score.unbounded',
+            metric_name='LPIPS',
+            direction=MetricDirection.LOWER_IS_BETTER,
+        ),
+    }
+)
 
 AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
     # An `accuracy` aggregated by pass@k / pass^k measures a pass ratio, not accuracy, so the
@@ -458,6 +469,9 @@ BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {
     # `total_score` is a judge score in mia_bench but the raw sum of passed rubric weights in
     # job_bench, i.e. an intermediate judge value: reassign the collision to a diagnostic.
     ('job_bench', 'judge_score'): MetricEntry(baseline='diagnostic.unspecified'),
+    # $OneMillion-Bench defines pass rate as the share of tasks whose expert score reaches 0.7,
+    # not as pass@k over repeated generations.
+    ('one_million_bench', 'pass_rate'): MetricEntry(baseline='quality.accuracy.ratio', metric_name='Pass Rate'),
 }
 """``(benchmark_name, final_metric_name)`` -> entry, only for same-name / different-meaning
 collisions. Each entry carries the collision reason in a comment."""

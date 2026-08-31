@@ -16,6 +16,7 @@ from evalscope.utils.multi_choices import (
     prompt,
     valid_template,
 )
+
 from .utils import ALL_SUBSETS, is_chinese_qa, is_cloze, is_multi_choice, is_qa
 
 logger = get_logger()
@@ -68,7 +69,6 @@ MATH_PROMPT_TEMPLATE = '{question}\nPlease reason step by step, and put your fin
     )
 )
 class AGIEvalAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         subset = self.current_subset_name
         raw_label = record.get('label', '')
@@ -108,6 +108,7 @@ class AGIEvalAdapter(MultiChoiceAdapter):
             return label
         if isinstance(label, str) and label.startswith('['):
             import ast
+
             try:
                 parsed = ast.literal_eval(label)
                 if isinstance(parsed, list):
@@ -143,6 +144,7 @@ class AGIEvalAdapter(MultiChoiceAdapter):
 
         if is_cloze(subset):
             from evalscope.metrics.math.parser import extract_answer
+
             return extract_answer(prediction)
 
         # MCQ: use evalscope's built-in parsers
@@ -162,6 +164,7 @@ class AGIEvalAdapter(MultiChoiceAdapter):
 
         if is_cloze(subset):
             from evalscope.metrics.math.parser import math_equal
+
             correct = 1.0 if math_equal(filtered_prediction, reference) else 0.0
         else:
             # MCQ: exact match on extracted letters

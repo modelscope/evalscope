@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import importlib
 import time
-import torch
 from logging import getLogger
 from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, cast
+
+import torch
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -32,7 +33,6 @@ logger = getLogger()
 
 
 class ImageEditAPI(ModelAPI):
-
     def __init__(
         self,
         model_name: str,
@@ -98,6 +98,8 @@ class ImageEditAPI(ModelAPI):
         config: GenerateConfig,
     ) -> ModelOutput:
 
+        start_time = time.monotonic()
+
         # prepare generator
         kwargs: Dict[str, Any] = {}
         if config.num_inference_steps is not None:
@@ -106,8 +108,9 @@ class ImageEditAPI(ModelAPI):
 
         # assume the first text as prompt
         content = input[0].content
-        assert isinstance(content[0], ContentText) and isinstance(content[1], ContentImage), \
+        assert isinstance(content[0], ContentText) and isinstance(content[1], ContentImage), (
             'Invalid content types, expected (ContentText, ContentImage)'
+        )
 
         prompt = content[0].text
         input_image_base64 = content[1].image
@@ -116,10 +119,12 @@ class ImageEditAPI(ModelAPI):
         output = self.model(image=input_image, prompt=prompt, **kwargs)
         image = output.images[0]
 
-        image_base64 = PIL_to_base64(image)
+        # Emit a data URI so downstream consumers (e.g. an LLM-judge request)
+        # treat the image as inline base64 instead of a local file path.
+        image_base64 = PIL_to_base64(image, add_header=True)
 
         return ModelOutput(
             model=self.model_name,
             choices=[ChatCompletionChoice.from_content(content=[ContentImage(image=image_base64)])],
-            time=time.time(),
+            time=time.monotonic() - start_time,
         )

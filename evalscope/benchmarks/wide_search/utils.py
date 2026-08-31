@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
-import pandas as pd
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
+
+import pandas as pd
 
 from evalscope.api.metric import AggScore, SampleScore
 
@@ -212,7 +213,7 @@ class WideSearchSession:
                 answer_df=pd.DataFrame(),
                 response_df=None,
                 evaluation=evaluation,
-                error=f'{type(error).__name__}: {error}'
+                error=f'{type(error).__name__}: {error}',
             )
 
     @property
@@ -272,11 +273,13 @@ class WideSearchSession:
             how='inner',
             suffixes=('_query', '_response'),
         )
-        diagnostics.update({
-            'gold_rows': len(answer_df),
-            'prediction_rows': len(response_df),
-            'matched_rows': len(inner_df),
-        })
+        diagnostics.update(
+            {
+                'gold_rows': len(answer_df),
+                'prediction_rows': len(response_df),
+                'matched_rows': len(inner_df),
+            }
+        )
         return inner_df, diagnostics
 
     def score(
@@ -317,9 +320,9 @@ class WideSearchSession:
         gold_rows = len(self.answer_df)
         row_precision = true_positive_rows / prediction_rows if prediction_rows else 0.0
         row_recall = true_positive_rows / gold_rows if gold_rows else 0.0
-        item_precision = true_positive_items / (
-            prediction_rows * len(self.required_columns)
-        ) if prediction_rows else 0.0
+        item_precision = (
+            true_positive_items / (prediction_rows * len(self.required_columns)) if prediction_rows else 0.0
+        )
         item_recall = true_positive_items / (gold_rows * len(self.required_columns)) if gold_rows else 0.0
         row_f1 = _f1(row_precision, row_recall)
         item_f1 = _f1(item_precision, item_recall)
@@ -416,9 +419,11 @@ def aggregate_official_scores(sample_scores: List[SampleScore]) -> List[AggScore
             eligible_groups = []
             for group_id, group in grouped.items():
                 indexed = sorted(
-                    ((score.generation_index if score.generation_index is not None else index, score)
-                     for index, score in enumerate(group)
-                     if metric_name in score.score.value),
+                    (
+                        (score.generation_index if score.generation_index is not None else index, score)
+                        for index, score in enumerate(group)
+                        if metric_name in score.score.value
+                    ),
                     key=lambda item: item[0],
                 )
                 if [index for index, _ in indexed] != list(range(repeats)):

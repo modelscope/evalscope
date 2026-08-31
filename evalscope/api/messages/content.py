@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, JsonValue
 from typing import Dict, Literal, Optional, Sequence, Union
+
+from pydantic import BaseModel, Field, JsonValue
 
 
 class ContentBase(BaseModel):

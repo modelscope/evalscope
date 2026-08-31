@@ -1,8 +1,9 @@
 import os
 from collections import defaultdict
 from functools import partial
-from overrides import override
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+
+from overrides import override
 
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
@@ -14,6 +15,7 @@ from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
+
 from ..benchmark import DataAdapter
 
 logger = get_logger()
@@ -288,7 +290,8 @@ class DefaultDataAdapter(DataAdapter):
             sample_fields=self.record_to_sample,
             filter_func=self.sample_filter,  # Apply sample filtering if defined
             limit=self.few_shot_num
-            if not self.reformat_subset else None,  # Limit to specified number of few-shot examples
+            if not self.reformat_subset
+            else None,  # Limit to specified number of few-shot examples
             shuffle=self.few_shot_random,  # Randomize selection if enabled
             shuffle_choices=self.shuffle_choices,  # Shuffle choices if requested
             seed=self.seed,
@@ -430,6 +433,7 @@ class DefaultDataAdapter(DataAdapter):
         if ac is not None:
             # Local import to avoid pulling the bridge stack at module load.
             from evalscope.agent.external.config import ExternalAgentConfig
+
             if isinstance(ac, ExternalAgentConfig):
                 return self._on_external_agent_inference(model, sample)
             return self._on_agent_inference(model, sample)
@@ -578,7 +582,7 @@ class DefaultDataAdapter(DataAdapter):
         return any(name in d for d in (self.metric_list or []))
 
     def get_metric_args(self, name: str) -> Dict[str, Any]:
-        for d in (self.metric_list or []):
+        for d in self.metric_list or []:
             if isinstance(d, dict) and name in d:
                 cfg = d.get(name, {})
                 return cfg if isinstance(cfg, dict) else {}
@@ -687,8 +691,7 @@ class DefaultDataAdapter(DataAdapter):
         Raises:
             AssertionError: If the task state is not marked as completed
         """
-        assert task_state.completed, \
-            'TaskState must be completed before calculating metrics.'
+        assert task_state.completed, 'TaskState must be completed before calculating metrics.'
 
         # Extract the raw prediction from the model output
         if task_state.output is None:
@@ -705,7 +708,7 @@ class DefaultDataAdapter(DataAdapter):
                 original_prediction=prediction,
                 filtered_prediction=filtered_prediction,
                 reference=task_state.target,
-                task_state=task_state
+                task_state=task_state,
             )
 
             if float(rule_based_score.main_value or 0.0) > 0.99:
@@ -726,7 +729,7 @@ class DefaultDataAdapter(DataAdapter):
                     original_prediction=prediction,
                     filtered_prediction=filtered_prediction,
                     reference=task_state.target,
-                    task_state=task_state
+                    task_state=task_state,
                 )
                 if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
                     final_score = self.fallback_to_rule_score(
@@ -746,7 +749,7 @@ class DefaultDataAdapter(DataAdapter):
                     original_prediction=prediction,
                     filtered_prediction=filtered_prediction,
                     reference=task_state.target,
-                    task_state=task_state
+                    task_state=task_state,
                 )
 
         # Package the results into a sample score object
@@ -761,8 +764,11 @@ class DefaultDataAdapter(DataAdapter):
         return sample_score
 
     def batch_match_score(
-        self, original_predictions: List[str], filtered_predictions: List[str], references: List[str],
-        task_states: List[TaskState]
+        self,
+        original_predictions: List[str],
+        filtered_predictions: List[str],
+        references: List[str],
+        task_states: List[TaskState],
     ) -> Optional[List[Score]]:
         """
         Batch calculate evaluation scores by comparing predictions with references.
@@ -782,8 +788,9 @@ class DefaultDataAdapter(DataAdapter):
         return None  # Default implementation does not support batch scoring
 
     @override
-    def batch_calculate_metrics(self, task_states: List[TaskState],
-                                sample_scores: List[SampleScore]) -> List[SampleScore]:
+    def batch_calculate_metrics(
+        self, task_states: List[TaskState], sample_scores: List[SampleScore]
+    ) -> List[SampleScore]:
         """Batch calculate metrics for a list of task states with tqdm progress and batch processing."""
         total = len(task_states)
         if total == 0:
@@ -804,12 +811,11 @@ class DefaultDataAdapter(DataAdapter):
             original_predictions=original_predictions,
             filtered_predictions=filtered_predictions,
             references=references,
-            task_states=task_states
+            task_states=task_states,
         )
 
         if batch_scores is not None:
-            assert len(batch_scores) == len(sample_scores), \
-                'Batch scores length must match sample scores length.'
+            assert len(batch_scores) == len(sample_scores), 'Batch scores length must match sample scores length.'
             for batch_score, sample_score in zip(batch_scores, sample_scores):
                 sample_score.score.value.update(batch_score.value)
 

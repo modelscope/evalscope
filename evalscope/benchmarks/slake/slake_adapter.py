@@ -9,6 +9,7 @@ from evalscope.api.messages import ChatMessageUser, Content, ContentImage, Conte
 from evalscope.api.metric.scorer import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+
 from .utils import normalize_answer, parse_answer
 
 IMAGE_ARCHIVE = 'imgs.zip'
@@ -150,7 +151,7 @@ class SLAKEAdapter(VisionLanguageAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=record['answer'],
-            subset_key=f"{record['q_lang']}_{record['answer_type'].lower()}",
+            subset_key=f'{record["q_lang"]}_{record["answer_type"].lower()}',
             metadata={
                 'qid': record['qid'],
                 'img_name': img_name,

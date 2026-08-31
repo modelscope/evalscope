@@ -10,9 +10,11 @@ requests have been collected.  It carries nested statistics by metric category
 (latency, throughput, usage, ttft, tpot) and exposes convenience properties
 for reporting.
 """
+
 from dataclasses import dataclass
-from pydantic import BaseModel, computed_field
 from typing import Optional
+
+from pydantic import BaseModel, computed_field
 
 
 class PerformanceMetrics(BaseModel):

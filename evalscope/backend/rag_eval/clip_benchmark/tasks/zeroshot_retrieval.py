@@ -1,7 +1,8 @@
 import logging
+from contextlib import suppress
+
 import torch
 import torch.nn.functional as F
-from contextlib import suppress
 from tqdm import tqdm
 
 from evalscope.utils.logger import get_logger

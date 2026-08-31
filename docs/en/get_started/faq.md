@@ -268,7 +268,7 @@ You can also use `--data-source` to specify the data source (defaults to `models
 
 **Q: How to visualize stress test results?**
 
-**A:** Results from the `perf` subcommand are not suitable for `evalscope service`. However, visualization through `wandb` or `swanlab` is supported. Please refer to [Stress Test Result Visualization Guide](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/stress_test/quick_start.html#id6).
+**A:** Start `evalscope service` with the output root containing the `perf` results (default: `outputs/`), then open the **Performance** page in the Web Dashboard. You can also send results to `wandb`, `swanlab`, or `clearml`. See the [Stress Test Result Visualization Guide](../user_guides/stress_test/quick_start.md#visualizing-test-results).
 
 ## Citing Us
 

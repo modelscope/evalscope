@@ -25,6 +25,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from evalscope.api.model import ModelOutput
 from evalscope.api.tool import ToolCall
+
 from ._sse_common import PING_INTERVAL_S, TEXT_CHUNK, TOOL_INPUT_CHUNK, iter_chunks
 from .translate_openai import _split_text_and_reasoning, map_stop_reason_to_openai, unpack_openai_tool_call
 
@@ -40,11 +41,13 @@ def _base_chunk(chunk_id: str, model: str) -> Dict[str, Any]:
         'object': 'chat.completion.chunk',
         'created': int(time.time()),
         'model': model,
-        'choices': [{
-            'index': 0,
-            'delta': {},
-            'finish_reason': None,
-        }],
+        'choices': [
+            {
+                'index': 0,
+                'delta': {},
+                'finish_reason': None,
+            }
+        ],
     }
 
 
@@ -141,26 +144,30 @@ async def _emit_tool_call(
     # arguments delta frames omit the ``id`` / ``function.name`` fields.
     announce = _base_chunk(chunk_id, model_name)
     announce['choices'][0]['delta'] = {
-        'tool_calls': [{
-            'index': index,
-            'id': tool_call.id,
-            'type': 'function',
-            'function': {
-                'name': name,
-                'arguments': '',
-            },
-        }],
+        'tool_calls': [
+            {
+                'index': index,
+                'id': tool_call.id,
+                'type': 'function',
+                'function': {
+                    'name': name,
+                    'arguments': '',
+                },
+            }
+        ],
     }
     yield _sse(announce)
     for chunk in iter_chunks(encoded, TOOL_INPUT_CHUNK):
         frame = _base_chunk(chunk_id, model_name)
         frame['choices'][0]['delta'] = {
-            'tool_calls': [{
-                'index': index,
-                'function': {
-                    'arguments': chunk,
-                },
-            }],
+            'tool_calls': [
+                {
+                    'index': index,
+                    'function': {
+                        'arguments': chunk,
+                    },
+                }
+            ],
         }
         yield _sse(frame)
         await asyncio.sleep(0)

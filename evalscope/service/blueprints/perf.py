@@ -1,5 +1,6 @@
 import json
 import os
+
 from flask import Blueprint, current_app, jsonify, request, send_file
 from tabulate import tabulate
 
@@ -7,9 +8,22 @@ from evalscope.metrics.semantics import resolve_perf_semantics
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
+from evalscope.service.api_models import (
+    DeletePerfRunResponse,
+    EvalInvokeResponse,
+    ListPerfRunsResponse,
+    LogResponse,
+    PerfDetailResponse,
+    PerfRequestsResponse,
+    PerfRunsListResponse,
+    ProgressResponse,
+    TaskStatusResponse,
+)
 from evalscope.utils.logger import get_logger
+
 from .. import perf_archive
 from ..perf_archive import PerfArchiveError
+from ..responses import json_response
 from ..utils import (
     OUTPUT_DIR,
     TaskStoppedError,
@@ -43,11 +57,31 @@ def _build_perf_table(result, api_type: str = None) -> str:
         if not analysis.rows:
             return ''
         if is_emb:
-            headers = ['并发数', '请求速率', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均输入TPS', 'P99输入TPS', '平均输入Token数', '成功率']
+            headers = [
+                '并发数',
+                '请求速率',
+                '每秒请求数',
+                '平均延迟(s)',
+                'P99延迟(s)',
+                '平均输入TPS',
+                'P99输入TPS',
+                '平均输入Token数',
+                '成功率',
+            ]
         else:
             headers = [
-                '并发数', '请求速率', '请求数', '每秒请求数', '平均延迟(s)', 'P99延迟(s)', '平均首字延迟(s)', 'P99首字延迟(s)', '平均每Token延迟(s)',
-                'P99每Token延迟(s)', '生成速度(toks/s)', '成功率'
+                '并发数',
+                '请求速率',
+                '请求数',
+                '每秒请求数',
+                '平均延迟(s)',
+                'P99延迟(s)',
+                '平均首字延迟(s)',
+                'P99首字延迟(s)',
+                '平均每Token延迟(s)',
+                'P99每Token延迟(s)',
+                '生成速度(toks/s)',
+                '成功率',
             ]
         return tabulate([list(r.values()) for r in analysis.rows], headers=headers, tablefmt='pipe')
     except Exception as e:
@@ -101,15 +135,13 @@ def run_performance_test():
         result = run_in_subprocess(run_perf_wrapper, perf_args, task_id=task_id)
         table_str = _build_perf_table(result, api_type=perf_args.api)
         logger.info(f'[{task_id}] Task completed successfully')
-        return jsonify({
-            'status': 'completed',
-            'task_id': task_id,
-            'result': serialize_result(result),
-            'table': table_str
-        })
+        return json_response(
+            EvalInvokeResponse,
+            {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str},
+        )
     except TaskStoppedError:
         logger.info(f'[{task_id}] Task stopped by user.')
-        return jsonify({'status': 'stopped', 'task_id': task_id})
+        return json_response(EvalInvokeResponse, {'status': 'stopped', 'task_id': task_id})
     except Exception as e:
         logger.error(f'[{task_id}] Task failed: {e}')
         return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
@@ -128,7 +160,7 @@ def stop_performance_test():
 
     stopped = stop_process(task_id)
     if stopped:
-        return jsonify({'status': 'stopped', 'task_id': task_id}), 200
+        return json_response(TaskStatusResponse, {'status': 'stopped', 'task_id': task_id})
     else:
         return jsonify({'error': f'No running task found for task_id: {task_id}'}), 404
 
@@ -177,7 +209,7 @@ def get_performance_log():
 
     try:
         result = get_log_content(task_id, os.path.join('perf', 'benchmark.log'), start_line, page)
-        return jsonify(result), 200
+        return json_response(LogResponse, result)
     except Exception as e:
         logger.error(f'Failed to get performance log: {str(e)}')
         return jsonify({'error': str(e)}), 500
@@ -198,9 +230,9 @@ def get_performance_progress():
     try:
         with open(progress_file, 'r', encoding='utf-8') as f:
             progress = json.load(f)
-        return jsonify(progress), 200
+        return json_response(ProgressResponse, progress)
     except FileNotFoundError:
-        return jsonify({'percent': 0.0}), 200
+        return json_response(ProgressResponse, {'percent': 0.0})
     except Exception as e:
         logger.error(f'Failed to get progress for task {task_id}: {e}')
         return jsonify({'error': str(e)}), 500
@@ -231,7 +263,14 @@ def list_perf_runs():
         # The run list exposes its numbers under stable API paths, so the semantics map is keyed
         # by those paths. The run objects themselves are unchanged.
         semantics = resolve_perf_semantics(('best_rps', 'best_latency', 'success_rate'))
-        return jsonify({'runs': runs, 'total': len(runs), 'metric_semantics': semantics}), 200
+        return json_response(
+            ListPerfRunsResponse,
+            {
+                'runs': runs,
+                'total': len(runs),
+                'metric_semantics': semantics,
+            },
+        )
     except Exception as e:
         logger.error(f'Failed to list perf runs: {e}')
         return jsonify({'error': str(e)}), 500
@@ -249,7 +288,7 @@ def get_perf_detail():
     if not rel_path:
         return jsonify({'error': 'path is required'}), 400
     try:
-        return jsonify(perf_archive.build_run_detail(_root_path(), rel_path)), 200
+        return json_response(PerfDetailResponse, perf_archive.build_run_detail(_root_path(), rel_path))
     except PerfArchiveError as e:
         return jsonify({'error': e.message}), e.status
     except Exception as e:
@@ -325,7 +364,7 @@ def list_perf_run_details():
         return jsonify({'error': 'path is required'}), 400
     try:
         items = perf_archive.list_run_items(_root_path(), rel_path)
-        return jsonify({'runs': items, 'total': len(items)}), 200
+        return json_response(PerfRunsListResponse, {'runs': items, 'total': len(items)})
     except PerfArchiveError as e:
         return jsonify({'error': e.message}), e.status
     except Exception as e:
@@ -358,7 +397,7 @@ def get_perf_requests():
             request.args.get('page', 1, type=int),
             request.args.get('page_size', 50, type=int),
         )
-        return jsonify(result), 200
+        return json_response(PerfRequestsResponse, result)
     except PerfArchiveError as e:
         return jsonify({'error': e.message}), e.status
     except Exception as e:
@@ -410,7 +449,7 @@ def delete_perf_run():
 
     try:
         perf_archive.delete_run(_root_path(), rel_path)
-        return jsonify({'success': True, 'path': rel_path}), 200
+        return json_response(DeletePerfRunResponse, {'success': True, 'path': rel_path})
     except PerfArchiveError as e:
         return jsonify({'error': e.message}), e.status
     except Exception as e:

@@ -1,10 +1,6 @@
 # Visualization
 
-EvalScope provides a web-based visualization tool that supports in-depth analysis and comparison of evaluation results for single or multiple models, compatible with mixed dataset evaluation display, and supports online evaluation task submission and monitoring.
-
-```{important}
-This visualization tool is specifically designed for displaying model **evaluation** results and is not suitable for model **stress test** results. For visualizing stress test reports, please refer to the [Stress Test Result Visualization Guide](../user_guides/stress_test/quick_start.md#visualizing-test-results).
-```
+EvalScope provides a web-based visualization tool that supports in-depth analysis and comparison of model evaluation and performance test results, compatible with mixed dataset evaluation display, and supports online task submission and monitoring.
 
 ## Installation and Startup
 

@@ -1,6 +1,7 @@
 # adapted from https://github.com/THUDM/ImageReward/tree/main/ImageReward
 
 import os
+
 import torch
 import torch.nn as nn
 from PIL import Image

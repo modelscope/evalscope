@@ -4,11 +4,13 @@
 Implements the MTEB 2.x evaluation flow with optional two-stage
 (Encoder + CrossEncoder) reranking and ModelScope data loading.
 """
-import mteb
+
 import os
 from pathlib import Path
-from tabulate import tabulate
 from typing import List
+
+import mteb
+from tabulate import tabulate
 
 from evalscope.backend.rag_eval.models import load_model
 from evalscope.backend.rag_eval.mteb.arguments import CustomTaskConfig, MTEBEvalConfig, MTEBModelConfig, MTEBToolConfig
@@ -72,12 +74,12 @@ def resolve_tasks(eval_args: MTEBEvalConfig) -> list:
         tasks = []
     else:
         raise ValueError(
-            "Must specify either 'task_names', 'task_types'/'languages', "
-            "or 'custom_tasks' in eval config."
+            "Must specify either 'task_names', 'task_types'/'languages', or 'custom_tasks' in eval config."
         )
 
     if eval_args.custom_tasks:
         from evalscope.backend.rag_eval.mteb.custom_task import build_custom_task
+
         for task_config in eval_args.custom_tasks:
             tasks.append(build_custom_task(task_config))
 
@@ -137,17 +139,21 @@ def _build_retrieval_dataset_from_attrs(task) -> dict:
 
         # Build queries dataset
         queries_data = task.queries.get(split, {})
-        queries_ds = HFDataset.from_dict({
-            'id': list(queries_data.keys()),
-            'text': list(queries_data.values()),
-        })
+        queries_ds = HFDataset.from_dict(
+            {
+                'id': list(queries_data.keys()),
+                'text': list(queries_data.values()),
+            }
+        )
 
         # Build corpus dataset
         corpus_data = task.corpus.get(split, {})
-        corpus_ds = HFDataset.from_dict({
-            'id': list(corpus_data.keys()),
-            'text': [v.get('text', '') for v in corpus_data.values()],
-        })
+        corpus_ds = HFDataset.from_dict(
+            {
+                'id': list(corpus_data.keys()),
+                'text': [v.get('text', '') for v in corpus_data.values()],
+            }
+        )
 
         splits_data[split] = {
             'corpus': corpus_ds,
@@ -262,14 +268,16 @@ def show_results(output_folder: str, model, results: List) -> None:
         scores = getattr(main_res, 'scores', {}) or {}
         for split, sub_scores in scores.items():
             for sub_score in sub_scores:
-                data.append({
-                    'Model': str(model_name).replace('eval__', ''),
-                    'Task Type': _safe_get_task_type(main_res),
-                    'Task': getattr(main_res, 'task_name', 'N/A'),
-                    'Split': split,
-                    'Subset': sub_score.get('hf_subset', 'default'),
-                    'Main Score': sub_score.get('main_score', 'N/A'),
-                })
+                data.append(
+                    {
+                        'Model': str(model_name).replace('eval__', ''),
+                        'Task Type': _safe_get_task_type(main_res),
+                        'Task': getattr(main_res, 'task_name', 'N/A'),
+                        'Split': split,
+                        'Subset': sub_score.get('hf_subset', 'default'),
+                        'Main Score': sub_score.get('main_score', 'N/A'),
+                    }
+                )
 
     if data:
         logger.info(f'Evaluation results:\n{tabulate(data, headers="keys", tablefmt="grid")}')

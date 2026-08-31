@@ -260,6 +260,10 @@ Send a batch of warmup requests before the formal benchmark to eliminate cold-st
 
 Warmup requests are sent with the same concurrency and rate as the benchmark but **excluded from performance metrics** (latency, throughput, percentiles, etc.).
 
+In closed-loop mode warmup has a second, equally important job: it absorbs the burst that occurs when the run starts. Without warmup the first `--parallel` requests are all released at the same instant against an idle server, so they queue behind one another's prefill and report a TTFT that never recurs later in the run. Warmup requests take that hit instead, and the dispatcher hands the concurrency slots over to the measured requests **without draining them first** — each warmup completion releases exactly one measured request into a server that is already busy. The first measured request therefore already faces a fully loaded server. That is what decides whether the percentiles can be trusted: without warmup, the inflated TTFT of those first `--parallel` requests enters the same percentile calculation as the normal ones, so whenever `--parallel / --number` exceeds 1% the reported `p99` is decided by that opening batch alone.
+
+That hand-over only works while every concurrency slot is held by a warmup request, so `--warmup-num` should be at least `--parallel` in closed-loop mode; when the value is too small the run logs a warning naming the value to pass. Use a larger one (for example `2 × --parallel`) if the server also has a genuinely cold start to absorb, or if you read the `max` column of the percentile table as well.
+
 **Absolute count mode**: set `--warmup-num` to an integer `>= 1`, the exact number of warmup requests.
 
 ```bash
@@ -296,8 +300,9 @@ evalscope perf \
 **Important Notes**
 
 - Warmup requests use the same dataset and request parameters as the benchmark.
-- During warmup, a separate progress bar is displayed (`Warmup[...]`), which automatically switches to the benchmark progress bar (`Processing[...]`) once warmup completes.
-- In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics.
+- A separate progress bar is displayed during warmup (`Warmup[...]`) alongside the benchmark bar (`Processing[...]`). In closed-loop mode the two overlap briefly, because the trailing warmup responses arrive after the first measured requests have already been dispatched.
+- `--duration` is anchored on the moment the first measured request is sent, so warmup does not consume the timed budget.
+- In multi-turn mode, `--warmup-num` specifies the number of warmup conversations (consistent with the `--number` semantics); all turns within a warmup conversation are excluded from metrics. The `--parallel` guidance above applies to closed-loop single-turn runs; open-loop paces dispatch by arrival rate and multi-turn counts conversations rather than requests.
 ```
 
 ### Open-loop Mode

@@ -1,11 +1,12 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.arguments import Arguments
@@ -13,6 +14,7 @@ from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 from evalscope.utils.logger import get_logger
+
 from .perf_constants import Metrics, PercentileMetrics
 
 logger = get_logger()
@@ -60,6 +62,7 @@ class AnalysisResult:
         all_results:  Original raw results retained for extra rendering.
         n_entries:    Number of processed concurrency/rate configs.
     """
+
     rows: List[Dict[str, str]]
     total_tokens: float
     total_time: float
@@ -69,6 +72,7 @@ class AnalysisResult:
 
 class ColSpec(NamedTuple):
     """Unified column specification tying a row-dict key to a Rich table header."""
+
     key: str
     header: str
     style: str = ''
@@ -77,6 +81,7 @@ class ColSpec(NamedTuple):
 
 class EmbCol:
     """Column specs for the Embedding / Rerank Detailed Performance Metrics table."""
+
     CONCURRENCY = ColSpec('concurrency', 'Conc.', style='cyan')
     RATE = ColSpec('rate', 'Rate')
     RPS = ColSpec('rps', 'RPS')
@@ -116,13 +121,15 @@ class BaseResultAnalyzer:
         """Parse a single result entry dict into typed objects. Returns ``None`` on failure."""
         raw_metrics = entry.get('metrics', {})
         raw_perc = entry.get('percentiles', {})
-        summary = (
-            raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
-        )
+        summary = raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
         percentiles = (
-            raw_perc if isinstance(raw_perc, PercentileResult) else
-            PercentileResult.from_transposed(raw_perc) if isinstance(raw_perc, dict) and raw_perc else
-            PercentileResult.from_list(raw_perc) if isinstance(raw_perc, list) else PercentileResult()
+            raw_perc
+            if isinstance(raw_perc, PercentileResult)
+            else PercentileResult.from_transposed(raw_perc)
+            if isinstance(raw_perc, dict) and raw_perc
+            else PercentileResult.from_list(raw_perc)
+            if isinstance(raw_perc, list)
+            else PercentileResult()
         )
         if summary is None:
             return None
@@ -231,12 +238,15 @@ class EmbeddingResultAnalyzer(BaseResultAnalyzer):
             EmbCol.AVG_LATENCY.key: _cell(Metrics.AVERAGE_LATENCY, avg_latency) if avg_latency is not None else 'N/A',
             EmbCol.P99_LATENCY.key: _cell(PercentileMetrics.LATENCY, p99_latency) if p99_latency is not None else 'N/A',
             EmbCol.AVG_INPUT_TPS.key: _cell(Metrics.INPUT_TOKEN_THROUGHPUT, avg_input_tps)
-            if avg_input_tps is not None else 'N/A',
+            if avg_input_tps is not None
+            else 'N/A',
             EmbCol.P99_INPUT_TPS.key: _cell(PercentileMetrics.INPUT_THROUGHPUT, p99_input_tps),
             EmbCol.AVG_INPUT_TOKENS.key: _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, avg_input_tokens)
-            if avg_input_tokens is not None else 'N/A',
+            if avg_input_tokens is not None
+            else 'N/A',
             EmbCol.SUCCESS_RATE.key: _cell('success_rate', success_rate, include_unit=True)
-            if success_rate is not None else 'N/A',
+            if success_rate is not None
+            else 'N/A',
         }
 
 
@@ -300,8 +310,10 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         return [
             ('Total Generated', f'{total_tokens:,} tokens'),
             (
-                'Avg Output Rate', _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, total_tokens
-                                         / total_time, include_unit=True) if total_time > 0 else 'N/A'
+                'Avg Output Rate',
+                _cell(Metrics.OUTPUT_TOKEN_THROUGHPUT, total_tokens / total_time, include_unit=True)
+                if total_time > 0
+                else 'N/A',
             ),
         ]
 
@@ -326,8 +338,9 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
         """Collect per-config data tuples sorted by (concurrency, rate)."""
         if not isinstance(all_results, dict):
             return []
-        entries: List[Tuple[BenchmarkSummary, PercentileResult, Optional[TraceLevelSummary],
-                            Optional[WorkloadThroughput]]] = []
+        entries: List[
+            Tuple[BenchmarkSummary, PercentileResult, Optional[TraceLevelSummary], Optional[WorkloadThroughput]]
+        ] = []
         for entry in all_results.values():
             if not isinstance(entry, dict):
                 continue
@@ -518,7 +531,7 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                     'Spec. Accept Rate',
                     summary.approx_spec_acceptance_rate,
                     Metrics.APPROX_SPECULATIVE_ACCEPTANCE_RATE,
-                    include_unit=True
+                    include_unit=True,
                 )
 
         dc.print('\n')
@@ -631,8 +644,10 @@ class EmbeddingSummaryRenderer(BaseSummaryRenderer):
         return [
             ('Total Input Tokens', f'{total_tokens:,.0f} tokens'),
             (
-                'Avg Input Rate', _cell(Metrics.INPUT_TOKEN_THROUGHPUT, total_tokens
-                                        / total_time, include_unit=True) if total_time > 0 else 'N/A'
+                'Avg Input Rate',
+                _cell(Metrics.INPUT_TOKEN_THROUGHPUT, total_tokens / total_time, include_unit=True)
+                if total_time > 0
+                else 'N/A',
             ),
         ]
 

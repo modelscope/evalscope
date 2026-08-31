@@ -39,7 +39,7 @@ def truncatefn(s, length=300):
     if len(s) <= length:
         return s
 
-    return s[:length // 2] + '...(truncated) ...' + s[-length // 2:]
+    return s[: length // 2] + '...(truncated) ...' + s[-length // 2 :]
 
 
 class CODE_TYPE(Enum):
@@ -71,7 +71,6 @@ def _set_alarm(seconds: float) -> None:
 # from https://stackoverflow.com/a/16571630/6416660
 # alternative use redirect_stdout() from contextlib
 class Capturing(list):
-
     def __enter__(self):
         self._stdout = sys.stdout
         sys.stdout = self._stringio = StringIO()
@@ -120,8 +119,11 @@ def make_function(code: str) -> str:
             lineno=-1,
         )
         main_code = (
-            import_string + '\n' + ast.unparse(import_stmts)  # type: ignore
-            + '\n' + ast.unparse(function_ast)  # type: ignore
+            import_string
+            + '\n'
+            + ast.unparse(import_stmts)  # type: ignore
+            + '\n'
+            + ast.unparse(function_ast)  # type: ignore
         )
         return main_code
     except Exception as e:

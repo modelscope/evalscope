@@ -1,6 +1,10 @@
 import json
 import re
 import time
+from collections import deque
+from copy import copy
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
+
 from anthropic import APIStatusError
 from anthropic.types import (
     ContentBlock,
@@ -22,9 +26,6 @@ from anthropic.types import (
     ToolUseBlock,
     ToolUseBlockParam,
 )
-from collections import deque
-from copy import copy
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union, cast
 
 from evalscope.api.messages import (
     ChatMessage,
@@ -362,10 +363,9 @@ def _merge_system_message(
         return new_value
     if isinstance(current, str) and isinstance(new_value, str):
         return f'{current}\n\n{new_value}'
-    return _system_blocks(current) + [cast(TextBlockParam, {
-        'type': 'text',
-        'text': '\n\n'
-    })] + _system_blocks(new_value)
+    return (
+        _system_blocks(current) + [cast(TextBlockParam, {'type': 'text', 'text': '\n\n'})] + _system_blocks(new_value)
+    )
 
 
 def _system_blocks(value: AnthropicSystemParam) -> List[TextBlockParam]:
@@ -436,8 +436,9 @@ def _is_cacheable_content_block(block: Dict[str, Any]) -> bool:
     return block.get('type') in ('text', 'image')
 
 
-def _collapse_consecutive_messages(messages: List[MessageParam], role: Literal['user',
-                                                                               'assistant']) -> List[MessageParam]:
+def _collapse_consecutive_messages(
+    messages: List[MessageParam], role: Literal['user', 'assistant']
+) -> List[MessageParam]:
     """Collapse consecutive messages of the same role."""
     if not messages:
         return messages
@@ -583,10 +584,12 @@ def chat_choices_from_anthropic(message: Message, tools: List[ToolInfo]) -> List
     assistant_message = chat_message_assistant_from_anthropic(message.model, message, tools)
     stop_reason = message_stop_reason(message)
 
-    return [ChatCompletionChoice(
-        message=assistant_message,
-        stop_reason=stop_reason,
-    )]
+    return [
+        ChatCompletionChoice(
+            message=assistant_message,
+            stop_reason=stop_reason,
+        )
+    ]
 
 
 def model_output_from_anthropic(
@@ -599,8 +602,10 @@ def model_output_from_anthropic(
     input_tokens_cache_read = usage.get('cache_read_input_tokens', None)
 
     total_tokens = (
-        message.usage.input_tokens + (input_tokens_cache_write or 0) +
-        (input_tokens_cache_read or 0) + message.usage.output_tokens
+        message.usage.input_tokens
+        + (input_tokens_cache_write or 0)
+        + (input_tokens_cache_read or 0)
+        + message.usage.output_tokens
     )
 
     return ModelOutput(
@@ -625,7 +630,8 @@ def anthropic_handle_bad_request(model_name: str, ex: APIStatusError) -> Union[M
 
     # Check for context length errors
     if any(
-        msg in error_message for msg in [
+        msg in error_message
+        for msg in [
             'prompt is too long',
             'input is too long',
             'input length and `max_tokens` exceed context limit',

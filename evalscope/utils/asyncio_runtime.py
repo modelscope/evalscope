@@ -144,7 +144,7 @@ class AsyncioLoopThread:
         generation = _LoopGeneration(loop=loop)
         thread = threading.Thread(
             target=self._run_generation,
-            args=(generation, ),
+            args=(generation,),
             daemon=True,
             name=self._name,
         )

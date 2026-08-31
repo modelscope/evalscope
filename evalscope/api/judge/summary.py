@@ -1,4 +1,5 @@
 """Aggregate per-sample judge summaries into run-level summaries."""
+
 from collections import defaultdict
 from typing import Dict, Iterable, List, Optional
 
@@ -25,8 +26,11 @@ def summarize_judge_runs(score_groups: Iterable[List[SampleScore]]) -> Optional[
             failures[name] += count
         models.extend(model for model in summary.judge_models if model not in models)
     status = (
-        ScoreStatus.EXCLUDED if not scored else ScoreStatus.DEGRADED if scored != total
-        or any(summary.status is not ScoreStatus.SUCCESS for summary in summaries) else ScoreStatus.SUCCESS
+        ScoreStatus.EXCLUDED
+        if not scored
+        else ScoreStatus.DEGRADED
+        if scored != total or any(summary.status is not ScoreStatus.SUCCESS for summary in summaries)
+        else ScoreStatus.SUCCESS
     )
     return JudgeSummary(
         status=status,
@@ -72,10 +76,12 @@ def summarize_judge_disagreement(summaries: List[JudgeSummary]) -> Dict[str, obj
         },
         'categorical': {
             name: {
-                'mean_agreement_ratio': sum(values['agreement_ratio'])
-                / len(values['agreement_ratio']) if values['agreement_ratio'] else 0.0,
-                'mean_vote_entropy': sum(values['vote_entropy'])
-                / len(values['vote_entropy']) if values['vote_entropy'] else 0.0,
+                'mean_agreement_ratio': sum(values['agreement_ratio']) / len(values['agreement_ratio'])
+                if values['agreement_ratio']
+                else 0.0,
+                'mean_vote_entropy': sum(values['vote_entropy']) / len(values['vote_entropy'])
+                if values['vote_entropy']
+                else 0.0,
                 'samples': max(len(values['agreement_ratio']), len(values['vote_entropy'])),
             }
             for name, values in categorical.items()

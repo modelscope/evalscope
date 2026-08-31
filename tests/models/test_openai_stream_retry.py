@@ -1,8 +1,9 @@
 import asyncio
-import pytest
-from openai.types.chat import ChatCompletionChunk
 from types import SimpleNamespace
 from typing import Optional
+
+import pytest
+from openai.types.chat import ChatCompletionChunk
 
 from evalscope.api.model import GenerateConfig
 from evalscope.models.openai_compatible import OpenAICompatibleAPI

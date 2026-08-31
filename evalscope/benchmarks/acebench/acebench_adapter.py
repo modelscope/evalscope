@@ -13,6 +13,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import EvalType, Tags
 from evalscope.report import Category, Report, Subset, unweighted_average_from_subsets
 from evalscope.utils.logger import get_logger
+
 from .checker import (
     check_agent_end_state,
     check_normal_answer,
@@ -199,10 +200,7 @@ class AceBenchAdapter(AgentAdapter):
                 ChatMessageSystem(content=system_prompt),
                 ChatMessageUser(content=user_prompt),
             ],
-            target=json.dumps({
-                'ground_truth': ground_truth,
-                'mile_stone': milestones
-            }, ensure_ascii=False),
+            target=json.dumps({'ground_truth': ground_truth, 'mile_stone': milestones}, ensure_ascii=False),
             subset_key=test_category,
             metadata={
                 'id': record_id,
@@ -391,9 +389,7 @@ class AceBenchAdapter(AgentAdapter):
                 continue
 
             subset_dict: Dict[str, Subset] = {
-                subset.name: subset
-                for category in metric.categories
-                for subset in category.subsets
+                subset.name: subset for category in metric.categories for subset in category.subsets
             }
 
             group_subsets = {}

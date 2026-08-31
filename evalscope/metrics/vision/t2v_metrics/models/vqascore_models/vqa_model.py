@@ -1,6 +1,7 @@
-import torch
 from abc import abstractmethod
 from typing import List
+
+import torch
 
 from ..model import ScoreModel
 

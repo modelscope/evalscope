@@ -4,15 +4,16 @@ import copy
 import functools
 import json
 import time
-import torch  # type: ignore
 from concurrent.futures import Future
 from dataclasses import dataclass
 from logging import getLogger
-from modelscope import AutoModelForCausalLM, AutoTokenizer
 from queue import Empty, Queue
 from threading import Thread
-from torch import Tensor  # type: ignore
 from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, cast
+
+import torch  # type: ignore
+from modelscope import AutoModelForCausalLM, AutoTokenizer
+from torch import Tensor  # type: ignore
 from typing_extensions import override
 
 from evalscope.api.messages import (
@@ -41,7 +42,6 @@ logger = getLogger()
 
 
 class ModelScopeAPI(ModelAPI):
-
     def __init__(
         self,
         model_name: str,
@@ -90,7 +90,7 @@ class ModelScopeAPI(ModelAPI):
             'torch.float32': torch.float32,
             'float64': torch.float64,
             'torch.float64': torch.float64,
-            'auto': 'auto'
+            'auto': 'auto',
         }
 
         if isinstance(torch_dtype, str) and torch_dtype != 'auto':
@@ -105,7 +105,7 @@ class ModelScopeAPI(ModelAPI):
             token=self.api_key,
             torch_dtype=self.torch_dtype,
             trust_remote_code=True,
-            **model_args
+            **model_args,
         )
 
         # tokenizer
@@ -223,24 +223,30 @@ class ModelScopeAPI(ModelAPI):
             )
             choices.append(choice)
 
+        # Aggregate usage over all returned choices: with n > 1 the loop above
+        # leaves `response` bound to the last choice only, undercounting tokens.
+        input_tokens = sum(r.input_tokens for r in responses)
+        output_tokens = sum(r.output_tokens for r in responses)
+        total_time = max(r.time for r in responses)
+
         # return output
         output = ModelOutput(
             model=self.model_name,
             choices=choices,
             usage=ModelUsage(
-                input_tokens=response.input_tokens,
-                output_tokens=response.output_tokens,
-                total_tokens=response.total_tokens,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                total_tokens=input_tokens + output_tokens,
             ),
-            time=response.time,
+            time=total_time,
         )
         # Populate PerformanceMetrics from the already-available fields.
         # Local models do not produce TTFT (no streaming chunks), so ttft stays None.
         output.message.perf_metrics = PerformanceMetrics(
-            latency=response.time,
+            latency=total_time,
             ttft=None,
-            input_tokens=response.input_tokens,
-            output_tokens=response.output_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
         )
         return output
 
@@ -307,21 +313,15 @@ class ModelGenerateOutput:
 
 
 class Tokenizer(Protocol):
-
-    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], Tensor]:
-        ...
+    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], Tensor]: ...
 
 
 class Generator(Protocol):
-
-    def __call__(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor:
-        ...
+    def __call__(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor: ...
 
 
 class Decoder(Protocol):
-
-    def __call__(self, sequences: Tensor) -> list[str]:
-        ...
+    def __call__(self, sequences: Tensor) -> list[str]: ...
 
 
 @dataclass
@@ -425,7 +425,7 @@ def process_batches() -> None:
                 logprobs = torch.nn.functional.log_softmax(stacked_logits, dim=-1)
 
             # decode
-            generated_tokens = generate_ids[:, input_ids.size(dim=1):]
+            generated_tokens = generate_ids[:, input_ids.size(dim=1) :]
             if logprobs is not None:
                 assert logprobs.shape[1] == generated_tokens.shape[1]
             outputs = decoder(sequences=generated_tokens)
@@ -499,11 +499,13 @@ def extract_logprobs(
             # TODO: you get byte artifacts converting single ids to tokens like this...
             # but `tokenizer.decode` strips spaces. There must be a better way to do this.
             token_str = tokenizer.convert_ids_to_tokens(tok.item())
-            top_logprobs.append(TopLogprob(
-                token=token_str,
-                logprob=val,
-                bytes=list(map(ord, token_str)),
-            ))
+            top_logprobs.append(
+                TopLogprob(
+                    token=token_str,
+                    logprob=val,
+                    bytes=list(map(ord, token_str)),
+                )
+            )
         final_logprobs.append(
             Logprob(
                 token=top_logprobs[0].token,

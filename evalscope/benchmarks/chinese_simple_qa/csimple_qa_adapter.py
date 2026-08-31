@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Any, Dict, Literal
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -132,11 +133,10 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
         few_shot_num=0,
         train_split=None,
         eval_split='train',
-        prompt_template='请回答问题：\n\n{question}'
+        prompt_template='请回答问题：\n\n{question}',
     )
 )
 class ChineseSimpleQAAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -160,7 +160,7 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
         metadata = {
             'id': record.get('id', 'unknown'),
             'primary_category': subset_key,
-            'secondary_category': record.get('secondary_category', '')
+            'secondary_category': record.get('secondary_category', ''),
         }
 
         return Sample(input=question, target=answer, subset_key=subset_key, metadata=metadata)
@@ -177,21 +177,9 @@ class ChineseSimpleQAAdapter(DefaultDataAdapter):
             schema_model=Grade,
             case_id='grade',
             scores={
-                'A': {
-                    'is_correct': 1.0,
-                    'is_incorrect': 0.0,
-                    'is_not_attempted': 0.0
-                },
-                'B': {
-                    'is_correct': 0.0,
-                    'is_incorrect': 1.0,
-                    'is_not_attempted': 0.0
-                },
-                'C': {
-                    'is_correct': 0.0,
-                    'is_incorrect': 0.0,
-                    'is_not_attempted': 1.0
-                },
+                'A': {'is_correct': 1.0, 'is_incorrect': 0.0, 'is_not_attempted': 0.0},
+                'B': {'is_correct': 0.0, 'is_incorrect': 1.0, 'is_not_attempted': 0.0},
+                'C': {'is_correct': 0.0, 'is_incorrect': 0.0, 'is_not_attempted': 1.0},
             },
             main_score_name='is_correct',
         )

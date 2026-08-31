@@ -1,6 +1,7 @@
 # flake8: noqa: E501
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Union
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
@@ -96,6 +97,7 @@ class CharXivAdapter(VisionLanguageAdapter):
 
     Scoring uses LLM judge for both question types.
     """
+
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, **kwargs):
@@ -185,6 +187,7 @@ class CharXivAdapter(VisionLanguageAdapter):
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import build_descriptive_judge_prompt, build_reasoning_judge_prompt
+
             metadata = judge_context.task_state.metadata or {}
             if metadata.get('question_type', 'reasoning') == 'descriptive':
                 prompt = build_descriptive_judge_prompt(
@@ -208,5 +211,5 @@ class CharXivAdapter(VisionLanguageAdapter):
             cases=[JudgeCase(case_id='grade', output_contract=contract)],
             request=request,
             reduce=reduce,
-            main_score_name='acc'
+            main_score_name='acc',
         )

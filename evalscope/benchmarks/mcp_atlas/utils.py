@@ -3,8 +3,9 @@ from __future__ import annotations
 import ast
 import json
 import re
-import requests
 from typing import Any, Dict, List, Tuple
+
+import requests
 
 from evalscope.api.tool import ToolInfo, ToolParams
 from evalscope.utils.json_schema import JSONSchema
@@ -40,9 +41,7 @@ class MCPAtlasClient:
 
     def list_tools(self) -> List[Dict[str, Any]]:
         response = requests.post(
-            f'{self.base_url}/list-tools',
-            headers={'Content-Type': 'application/json'},
-            timeout=self.list_tools_timeout
+            f'{self.base_url}/list-tools', headers={'Content-Type': 'application/json'}, timeout=self.list_tools_timeout
         )
         response.raise_for_status()
         data = response.json()

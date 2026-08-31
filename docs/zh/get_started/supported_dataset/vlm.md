@@ -35,6 +35,7 @@
 | `math_vision` | [MathVision](../../benchmarks/math_vision.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `math_vista` | [MathVista](../../benchmarks/math_vista.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `measure_bench` | [MeasureBench](../../benchmarks/measure_bench.md) | `MultiModal`, `QA`, `Reasoning` |
+| `medxpertqa` | [MedXpertQA](../../benchmarks/medxpertqa.md) | `MCQ`, `Medical`, `MultiModal`, `Reasoning` |
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -58,18 +59,23 @@
 | `pmc_vqa` | [PMC-VQA](../../benchmarks/pmc_vqa.md) | `MCQ`, `Medical`, `MultiModal` |
 | `pope` | [POPE](../../benchmarks/pope.md) | `Hallucination`, `MultiModal`, `Yes/No` |
 | `real_world_qa` | [RealWorldQA](../../benchmarks/real_world_qa.md) | `Knowledge`, `MultiModal`, `QA` |
+| `ref_adv_s` | [Ref-Adv-s](../../benchmarks/ref_adv_s.md) | `Grounding`, `MultiModal`, `Reasoning` |
 | `science_qa` | [ScienceQA](../../benchmarks/science_qa.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `screenspot_pro` | [ScreenSpot-Pro](../../benchmarks/screenspot_pro.md) | `Agent`, `Grounding`, `MultiModal` |
 | `seed_bench_2_plus` | [SEED-Bench-2-Plus](../../benchmarks/seed_bench_2_plus.md) | `Knowledge`, `MCQ`, `MultiModal`, `Reasoning` |
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `slake` | [SLAKE](../../benchmarks/slake.md) | `Medical`, `MultiModal`, `QA` |
+| `surds` | [SURDS](../../benchmarks/surds.md) | `Grounding`, `MultiModal`, `QA`, `Reasoning` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
+| `visfactor` | [VisFactor](../../benchmarks/visfactor.md) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
+| `vlms_are_biased` | [VLMs Are Biased](../../benchmarks/vlms_are_biased.md) | `MultiModal`, `QA`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
 | `vstar_bench` | [V*Bench](../../benchmarks/vstar_bench.md) | `Grounding`, `MCQ`, `MultiModal` |
+| `vtcbench` | [VTCBench](../../benchmarks/vtcbench.md) | `LongContext`, `MultiModal`, `QA`, `Reasoning`, `Retrieval` |
 | `wenet_speech` | [WenetSpeech](../../benchmarks/wenet_speech.md) | `Audio`, `SpeechRecognition` |
 | `world_vqa` | [WorldVQA](../../benchmarks/world_vqa.md) | `Knowledge`, `MultiModal`, `QA` |
 | `zerobench` | [ZeroBench](../../benchmarks/zerobench.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -109,6 +115,7 @@
 ../../benchmarks/math_vision.md
 ../../benchmarks/math_vista.md
 ../../benchmarks/measure_bench.md
+../../benchmarks/medxpertqa.md
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
@@ -132,18 +139,23 @@
 ../../benchmarks/pmc_vqa.md
 ../../benchmarks/pope.md
 ../../benchmarks/real_world_qa.md
+../../benchmarks/ref_adv_s.md
 ../../benchmarks/science_qa.md
 ../../benchmarks/screenspot_pro.md
 ../../benchmarks/seed_bench_2_plus.md
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/slake.md
+../../benchmarks/surds.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
+../../benchmarks/visfactor.md
 ../../benchmarks/visulogic.md
+../../benchmarks/vlms_are_biased.md
 ../../benchmarks/vqav2.md
 ../../benchmarks/vstar_bench.md
+../../benchmarks/vtcbench.md
 ../../benchmarks/wenet_speech.md
 ../../benchmarks/world_vqa.md
 ../../benchmarks/zerobench.md

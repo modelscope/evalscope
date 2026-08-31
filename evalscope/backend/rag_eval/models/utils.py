@@ -1,4 +1,5 @@
 """Shared utilities for model loading and downloading."""
+
 import os
 from typing import Optional
 
@@ -21,10 +22,12 @@ def download_model(model_id: str, revision: Optional[str] = 'master', hub: str =
     """
     if hub == HubType.MODELSCOPE:
         from modelscope import snapshot_download
+
         logger.info(f'Downloading model {model_id} from ModelScope (revision={revision})')
         model_path = snapshot_download(model_id=model_id, revision=revision)
     else:
         from huggingface_hub import snapshot_download as hf_snapshot_download
+
         logger.info(f'Downloading model {model_id} from HuggingFace (revision={revision})')
         model_path = hf_snapshot_download(repo_id=model_id, revision=revision)
     return model_path

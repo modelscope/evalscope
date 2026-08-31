@@ -8,8 +8,9 @@ This pins the wiring SWE-bench Pro relies on: the adapter's
 can still query the sandbox before close).
 """
 
-import pytest
 from typing import Any
+
+import pytest
 
 from evalscope.agent.environments.local import LocalAgentEnvironment
 from evalscope.agent.external import ExternalAgentConfig

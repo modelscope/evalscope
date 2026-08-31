@@ -3,12 +3,27 @@
 
 # Dataset classification following official AGIEval src/dataset_loader.py
 ENGLISH_QA = [
-    'aqua-rat', 'logiqa-en', 'lsat-ar', 'lsat-lr', 'lsat-rc', 'sat-math', 'sat-en', 'sat-en-without-passage',
-    'gaokao-english'
+    'aqua-rat',
+    'logiqa-en',
+    'lsat-ar',
+    'lsat-lr',
+    'lsat-rc',
+    'sat-math',
+    'sat-en',
+    'sat-en-without-passage',
+    'gaokao-english',
 ]
 CHINESE_QA = [
-    'logiqa-zh', 'gaokao-chinese', 'gaokao-geography', 'gaokao-history', 'gaokao-biology', 'gaokao-chemistry',
-    'gaokao-physics', 'gaokao-mathqa', 'jec-qa-kd', 'jec-qa-ca'
+    'logiqa-zh',
+    'gaokao-chinese',
+    'gaokao-geography',
+    'gaokao-history',
+    'gaokao-biology',
+    'gaokao-chemistry',
+    'gaokao-physics',
+    'gaokao-mathqa',
+    'jec-qa-kd',
+    'jec-qa-ca',
 ]
 ENGLISH_CLOZE = ['math']
 CHINESE_CLOZE = ['gaokao-mathcloze']

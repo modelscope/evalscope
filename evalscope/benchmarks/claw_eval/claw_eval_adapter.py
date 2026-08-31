@@ -19,6 +19,7 @@ from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType, JudgeStrat
 from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
+
 from .utils import (
     DEFAULT_CLAW_EVAL_DATASET_ID,
     DEFAULT_CLAW_EVAL_PACKAGE,
@@ -189,8 +190,11 @@ class ClawEvalAdapter(AgentAdapter):
         trace_root = output_root / 'traces'
         api_key = self._resolve_api_key(model)
         base_url = self._resolve_base_url(model)
-        judge_args = self._task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True) \
-            if self._task_config.judge.models else {}
+        judge_args = (
+            self._task_config.judge.models[0].model_dump(exclude={'judge_id'}, exclude_none=True)
+            if self._task_config.judge.models
+            else {}
+        )
         judge_model = judge_args.get('model_id')
         no_judge = self._task_config.judge.strategy == JudgeStrategy.RULE
         official_config = self._build_official_config(

@@ -15,6 +15,7 @@ from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
+
 from .prompt_templates import (
     INITIAL_PROMPT,
     INITIAL_PROMPT_PROVIDE_BACKGROUND,
@@ -70,16 +71,13 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
             'provide_background': {
                 'type': 'bool',
                 'value': False,
-                'description': 'Include scientific background information written by scientists for the problem in the model\'s prompt.'
+                'description': "Include scientific background information written by scientists for the problem in the model's prompt.",
             }
         },
         sandbox_config={
             'image': 'scicode-benchmark:latest',
-            'tools_config': {
-                'shell_executor': {},
-                'python_executor': {}
-            }
-        }
+            'tools_config': {'shell_executor': {}, 'python_executor': {}},
+        },
     )
 )
 class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
@@ -221,19 +219,12 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
 
             return Score(
                 value={subproblem['step_number']: 1.0 if result['status'] == 'success' else 0.0},
-                metadata={
-                    'executed_code': code,
-                    'execution_result': result,
-                    'explanation': explanation
-                },
+                metadata={'executed_code': code, 'execution_result': result, 'explanation': explanation},
             )
         except Exception as e:
             return Score(
                 value={subproblem['step_number']: 0.0},
-                metadata={
-                    'executed_code': code,
-                    'explanation': f'An error occurred during code execution: {e}'
-                },
+                metadata={'executed_code': code, 'explanation': f'An error occurred during code execution: {e}'},
             )
 
     def _compose_code(self, subproblem: Dict[str, Any], state: TaskState) -> str:
@@ -257,7 +248,7 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         code_sections.append(state.metadata['required_dependencies'])
 
         code_sections.append('from test_util import are_dicts_close, cmp_tuple_or_list')
-        code_sections += get_generated_code(state)[:subproblem_str_to_int(subproblem_no)]
+        code_sections += get_generated_code(state)[: subproblem_str_to_int(subproblem_no)]
 
         # Collect test cases and data.
         code_sections.append('# Test cases:')
@@ -271,8 +262,9 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         # Compose code sections to a single string.
         code = '\n'.join(code_sections)
         # Remove unused imports to avoid issues during execution.
-        code = code.replace('from scicode.compare.cmp import cmp_tuple_or_list',
-                            '').replace('from scicode.compare.cmp import are_dicts_close', '')
+        code = code.replace('from scicode.compare.cmp import cmp_tuple_or_list', '').replace(
+            'from scicode.compare.cmp import are_dicts_close', ''
+        )
         return code
 
     def _format_explanation(self, subproblem: Dict[str, Any], code: str, result: Dict) -> str:
@@ -280,9 +272,9 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         subproblem_no = subproblem['step_number']
         explanation = ''
         if result['status'] == 'success':
-            explanation += (f'All test cases passed for subproblem {subproblem_no}.\n')
+            explanation += f'All test cases passed for subproblem {subproblem_no}.\n'
         else:
             explanation += 'Code did not pass all test cases.\n'
             if result.get('stderr'):
-                explanation += f"Error details:\n```python\n{result['stderr']}\n```\n"
+                explanation += f'Error details:\n```python\n{result["stderr"]}\n```\n'
         return explanation

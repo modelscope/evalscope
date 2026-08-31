@@ -54,7 +54,8 @@ def find_archive_member(archive_path: str, video_id: str) -> str:
     expected = f'{normalize_video_id(video_id)}.mp4'
     with zipfile.ZipFile(archive_path) as zip_file:
         matches = [
-            name for name in zip_file.namelist()
+            name
+            for name in zip_file.namelist()
             if not name.endswith('/') and (name.endswith(f'/{expected}') or name.endswith(expected))
         ]
     if not matches:

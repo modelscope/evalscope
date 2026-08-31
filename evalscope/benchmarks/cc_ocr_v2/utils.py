@@ -83,7 +83,7 @@ def has_cjk(text: str) -> bool:
 def convert_to_halfwidth(text: str) -> str:
     table = str.maketrans(
         '！＂＃＄％＆＇（）＊＋，－．／０１２３４５６７８９：；＜＝＞？＠ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ［＼］＾＿｀ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ｛｜｝～',
-        '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'
+        '!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
     )
     return text.translate(table)
 
@@ -398,8 +398,13 @@ def normalize_bbox_xyxy(bbox: Any) -> Optional[List[float]]:
                     return value
         return None
 
-    for keys in (('x1', 'y1', 'x2', 'y2'), ('x1', 'y', 'x2', 'y2'), ('xmin', 'ymin', 'xmax', 'ymax'),
-                 ('left', 'top', 'right', 'bottom'), ('x0', 'y0', 'x1', 'y1')):
+    for keys in (
+        ('x1', 'y1', 'x2', 'y2'),
+        ('x1', 'y', 'x2', 'y2'),
+        ('xmin', 'ymin', 'xmax', 'ymax'),
+        ('left', 'top', 'right', 'bottom'),
+        ('x0', 'y0', 'x1', 'y1'),
+    ):
         corners = [get(key) for key in keys]
         if all(corner is not None for corner in corners):
             return corners
@@ -454,8 +459,10 @@ def _to_pixel_boxes(boxes: List[List[float]], size: Optional[Tuple[int, int]]) -
         return boxes
     width, height = size
     scale = 1 if max(value for box in boxes for value in box[:4]) <= 1.0 else 1000
-    return [[box[0] * width / scale, box[1] * height / scale, box[2] * width / scale, box[3] * height / scale]
-            for box in boxes]
+    return [
+        [box[0] * width / scale, box[1] * height / scale, box[2] * width / scale, box[3] * height / scale]
+        for box in boxes
+    ]
 
 
 def score_text_grounding(prediction: str, reference: str, image_path: str) -> float:
@@ -533,7 +540,7 @@ def _strip_latex_chatter(text: str) -> str:
         if match is not None
     ]
     if starts:
-        text = text[min(starts):]
+        text = text[min(starts) :]
     else:
         text = _LATEX_LEADING_FLUFF.sub('', text)
     return text.strip()
@@ -545,7 +552,7 @@ def _strip_html_chatter(text: str) -> str:
         return text
     match = re.search(r'(?i)<\s*(?:!DOCTYPE\b|html\b|body\b|table\b|div\b|h[1-6]\b|p\b|main\b|section\b)', text)
     if match is not None:
-        text = text[match.start():]
+        text = text[match.start() :]
     return text.lstrip()
 
 
@@ -594,8 +601,14 @@ def _score_parsing_table(prediction: str, reference: str) -> float:
 
 
 def _score_parsing_formula(prediction: str, reference: str) -> float:
-    pred = prediction.strip().replace('\n', ' ').replace('```latex',
-                                                         '').replace('```', '').replace('\t', ' ').replace(' ', '')
+    pred = (
+        prediction.strip()
+        .replace('\n', ' ')
+        .replace('```latex', '')
+        .replace('```', '')
+        .replace('\t', ' ')
+        .replace(' ', '')
+    )
     return edit_similarity(pred, reference.replace(' ', ''))
 
 

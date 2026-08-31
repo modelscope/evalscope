@@ -48,7 +48,6 @@ SciQ is a crowdsourced science exam question dataset covering Physics, Chemistry
     )
 )
 class SciQAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

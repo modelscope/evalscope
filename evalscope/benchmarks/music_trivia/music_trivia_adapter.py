@@ -48,7 +48,6 @@ MusicTrivia is a curated multiple-choice benchmark for evaluating AI models on m
     )
 )
 class MusicTriviaAdapter(MultiChoiceAdapter):
-
     def record_to_sample(self, record) -> Sample:
         return Sample(
             input=record['question'],

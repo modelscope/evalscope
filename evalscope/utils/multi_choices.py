@@ -158,14 +158,18 @@ _ANSWER_MARKER_RE = re.compile(r'(?i)ANSWER\s*:\s*\**\s*')
 _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
 
 # A label the model may wrap the way the options are printed, optionally listing several labels:
-# '(A)', '[A]', '(A, C)'.  Only label-shaped content is accepted, so bracketed prose such as
-# '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
-_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，]\s*[A-Za-z\d])*)\s*[\)\]）】]')
+# '(A)', '[A]', '(A, C)', '(A/C)'.  Only label-shaped content is accepted, so bracketed prose
+# such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
+_BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
-_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,]*)')
+_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,/、]*)')
 _PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，]*)')
 
 _LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
+
+# Words a model may place between two labels when listing several of them ('A and B').
+_LABEL_CONNECTORS = {'and', 'or'}
+_LABEL_CONNECTOR_RE = re.compile(r'\s+(?:and|or)\s+', re.IGNORECASE)
 
 
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
@@ -179,19 +183,31 @@ def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Option
     return None
 
 
+def _is_label_word(word: str, allowed_options: set[str]) -> bool:
+    return word in allowed_options or set(word).issubset(allowed_options)
+
+
 def _label_prefix(capture: str, allowed_options: set[str]) -> str:
     """Leading part of a capture that holds nothing but labels of the current sample.
 
     Models routinely justify the choice in the same breath ('ANSWER: B, not C'), and a
     capture rejected as a whole loses the label with the prose: the reply then reaches
     `_fallback_parse_answer`, which answers with the last capital - typically a distractor
-    named in that justification.
+    named in that justification.  A connector between two labels ('A and B', 'A or B')
+    separates list items and is stepped over; a connector anywhere else ends the answer.
     """
+    tokens = list(_LABEL_TOKEN_RE.finditer(capture))
     end = 0
-    for token in _LABEL_TOKEN_RE.finditer(capture):
+    for i, token in enumerate(tokens):
         word = token.group(0)
-        if word in allowed_options or set(word).issubset(allowed_options):
+        if _is_label_word(word, allowed_options):
             end = token.end()
+            continue
+        # Skip a connector only when another label follows it, so prose such as
+        # 'B, not C' or 'B and that is why' cannot swallow later labels.
+        follows_label = end > 0
+        precedes_label = i + 1 < len(tokens) and _is_label_word(tokens[i + 1].group(0), allowed_options)
+        if follows_label and precedes_label and word.lower() in _LABEL_CONNECTORS:
             continue
         break
     return capture[:end]
@@ -209,7 +225,7 @@ def _last_labelled_answer(
     earlier marker may carry an echoed placeholder or a choice the model went on to reject.
     """
     for marker in reversed(list(marker_re.finditer(text))):
-        tail = text[marker.end():]
+        tail = text[marker.end() :]
         for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
             label = label_re.match(tail)
             if label is None:
@@ -253,22 +269,23 @@ def parse_answers(state: TaskState, multiple_correct: bool = False, completion: 
 
     if multiple_correct:
         # Match must contain only the allowed choices
-        # (may be separated by commas, spaces, the word 'and', or nothing at all)
+        # (may be separated by commas, slashes, spaces, the words 'and'/'or', or nothing at all)
 
-        matched = matched.replace(' and ', '')
+        matched = _LABEL_CONNECTOR_RE.sub(',', matched)
 
         matched = matched.replace(' ', '')
 
-        # The bracketed pattern also accepts a full-width comma, which the split below would
+        # The label patterns also accept full-width separators, which the split below would
         # otherwise keep inside the label and turn a valid multi-select answer into no answer.
-        matched = matched.replace('，', ',')
+        matched = matched.replace('，', ',').replace('、', ',').replace('/', ',')
 
         split_comma = set(matched.split(','))
         if split_comma.issubset(allowed_options):
             answers = split_comma
             return answers
 
-        split_nothing = set(matched)
+        # 'AB,CD' also lists the labels one by one; split it into single characters.
+        split_nothing = set(matched.replace(',', ''))
         if split_nothing.issubset(allowed_options):
             answers = split_nothing
             return answers

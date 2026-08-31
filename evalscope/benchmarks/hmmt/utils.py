@@ -1,4 +1,5 @@
 """Shared utilities for HMMT benchmark adapters (answer extraction helpers)."""
+
 from __future__ import annotations
 
 import re
@@ -103,7 +104,7 @@ def _read_balanced_group(text: str, open_pos: int) -> Optional[str]:
         elif ch == close_ch:
             depth -= 1
             if depth == 0:
-                return text[open_pos + 1:i]
+                return text[open_pos + 1 : i]
         i += 1
 
     return None

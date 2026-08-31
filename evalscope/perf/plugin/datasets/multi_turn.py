@@ -30,9 +30,10 @@ Example (share_gpt_*_multi_turn):
 """
 
 import json
-import numpy as np
 import os
 from typing import Any, Dict, Iterator, List
+
+import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, Turn
@@ -77,8 +78,7 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
             )
         if self.max_turns_per_conv < self.min_turns_per_conv:
             raise ValueError(
-                f'--max-turns ({self.max_turns_per_conv}) must be >= '
-                f'--min-turns ({self.min_turns_per_conv}).'
+                f'--max-turns ({self.max_turns_per_conv}) must be >= --min-turns ({self.min_turns_per_conv}).'
             )
 
     def build_messages(self) -> Iterator[Conversation]:
@@ -125,8 +125,9 @@ class RandomMultiTurnDatasetPlugin(RandomDatasetPlugin):
         # Pre-sample all input lengths and offsets at once for efficiency
         input_lens = np.random.randint(min_prompt_length, max_prompt_length + 1, size=total_turns)
         global_offset = self.query_parameters.dataset_offset
-        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_turns)
-                   + global_offset) % len(self.allowed_tokens)
+        offsets = (np.random.randint(0, len(self.allowed_tokens), size=total_turns) + global_offset) % len(
+            self.allowed_tokens
+        )
 
         turn_slot = 0
         for conv_idx in range(n_convs):
@@ -181,10 +182,8 @@ class ShareGPTMultiTurnBase(ShareGPTDatasetPluginBase):
             humans.append(human)
 
         return [
-            Turn(messages=[{
-                'role': 'user',
-                'content': h
-            }], is_final=(i == len(humans) - 1)) for i, h in enumerate(humans)
+            Turn(messages=[{'role': 'user', 'content': h}], is_final=(i == len(humans) - 1))
+            for i, h in enumerate(humans)
         ]
 
     def build_messages(self) -> Iterator[Conversation]:

@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Any, Dict, List
+
+from pydantic import BaseModel, Field
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -88,23 +89,18 @@ After providing your explanation, you must rate the match on a Likert scale from
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/drivel-hub',
         subset_list=['narrative-writing-english'],
-        metric_list=[{
-            'bert_score': {
-                'model_id_or_path': 'AI-ModelScope/roberta-large',
-                'model_type': 'roberta-large'
-            }
-        }, {
-            'judge_score': {}
-        }],
+        metric_list=[
+            {'bert_score': {'model_id_or_path': 'AI-ModelScope/roberta-large', 'model_type': 'roberta-large'}},
+            {'judge_score': {}},
+        ],
         primary_metric='judge_score',
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        prompt_template=NARRATIVE_GENERATION_TEMPLATE
+        prompt_template=NARRATIVE_GENERATION_TEMPLATE,
     )
 )
 class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
-
     scoring_policy = ScoringPolicy.JUDGE_ONLY
 
     def __init__(self, *args, **kwargs):
@@ -127,10 +123,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
         return Sample(
             input=[ChatMessageUser(content=content_list)],
             target=reference_narrative,
-            metadata={
-                'text': text,
-                'reference_narrative': reference_narrative
-            }
+            metadata={'text': text, 'reference_narrative': reference_narrative},
         )
 
     def batch_match_score(self, original_predictions, filtered_predictions, references, task_states):
@@ -147,7 +140,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
             score = Score(
                 extracted_prediction=filtered_predictions[i],
                 prediction=original_predictions[i],
-                value={'bert_score': bert_score_f1[i]}
+                value={'bert_score': bert_score_f1[i]},
             )
             scores.append(score)
         return scores
@@ -155,10 +148,13 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
 
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
-            prompt = NARRATIVE_EVALUATION_TEMPLATE.format(
-                candidate=judge_context.filtered_prediction,
-                reference=judge_context.reference,
-            ) + case.output_contract.instruction()
+            prompt = (
+                NARRATIVE_EVALUATION_TEMPLATE.format(
+                    candidate=judge_context.filtered_prediction,
+                    reference=judge_context.reference,
+                )
+                + case.output_contract.instruction()
+            )
             return JudgeRequest(messages=[ChatMessageUser(content=prompt)])
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
@@ -169,7 +165,7 @@ class DrivelologyNarrativeWritingAdapter(DefaultDataAdapter):
             cases=[JudgeCase(case_id='rating', output_contract=RATING_CONTRACT)],
             request=request,
             reduce=reduce,
-            main_score_name='judge_score'
+            main_score_name='judge_score',
         )
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

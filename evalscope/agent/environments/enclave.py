@@ -214,8 +214,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
                 manager_config=self._manager_config or None,
             )
             logger.debug(
-                f'EnclaveAgentEnvironment: sandbox {self._handle.sandbox_id} ready '
-                f'(engine={self._engine.value}).'
+                f'EnclaveAgentEnvironment: sandbox {self._handle.sandbox_id} ready (engine={self._engine.value}).'
             )
         return self._handle
 

@@ -16,6 +16,7 @@ The loop also records an :class:`AgentTrace` and keeps the model's own assistant
 web dashboard renders these samples the same way it renders AgentLoop-driven benchmarks and
 ``PerfCollector`` picks up per-turn latency and token counts.
 """
+
 import json
 import re
 import time
@@ -27,6 +28,7 @@ from evalscope.api.agent import AgentTrace, EventType
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageTool, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput, ModelUsage
 from evalscope.utils.logger import get_logger
+
 from .parser import decode_execution_calls
 from .prompts import agent_prompt_set, build_agent_prompts, build_user_simulator_prompt
 from .scenarios import load_scenario_instances, snapshot_states
@@ -267,10 +269,7 @@ class _UserSimulator:
                 type=EventType.MODEL_GENERATE,
                 message_id=message.id,
                 token_usage=_usage_dict(output.usage),
-                payload={
-                    'source': 'user_simulator',
-                    'model': self.model.name
-                },
+                payload={'source': 'user_simulator', 'model': self.model.name},
             )
         return response
 
@@ -327,10 +326,7 @@ def _record_execution(result: RolloutResult, step: int, execution: _Execution) -
             step=step,
             type=EventType.ERROR,
             message_id=message.id,
-            payload={
-                'source': 'parse',
-                'message': execution.decode_error
-            },
+            payload={'source': 'parse', 'message': execution.decode_error},
         )
         return
 
@@ -340,11 +336,7 @@ def _record_execution(result: RolloutResult, step: int, execution: _Execution) -
         result.trace.add_event(
             step=step,
             type=EventType.TOOL_CALL,
-            payload={
-                'id': call_id,
-                'name': name,
-                'arguments': arguments
-            },
+            payload={'id': call_id, 'name': name, 'arguments': arguments},
         )
         observation = _serialize(outcome)
         message = ChatMessageTool(content=observation, tool_call_id=call_id, function=name)
@@ -353,11 +345,7 @@ def _record_execution(result: RolloutResult, step: int, execution: _Execution) -
             step=step,
             type=EventType.TOOL_RESULT,
             message_id=message.id,
-            payload={
-                'id': call_id,
-                'name': name,
-                'preview': observation[:500]
-            },
+            payload={'id': call_id, 'name': name, 'preview': observation[:500]},
         )
 
 
@@ -478,5 +466,5 @@ def _strip_role_prefix(text: str) -> str:
     """Drop the ``user:``/``agent:`` prefix before handing a message to the user simulator."""
     for prefix in ('user:', 'agent:'):
         if text.startswith(prefix):
-            return text[len(prefix):]
+            return text[len(prefix) :]
     return text

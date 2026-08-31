@@ -9,6 +9,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+
 from .cot_prompts import COT_PROMPTS
 
 logger = get_logger()
@@ -59,10 +60,13 @@ Q: {question}
 A: Let's think step by step. Put your final answer in the format of "So the answer is [ANSWER]" (without quotes and markdown) where [ANSWER] is the answer to the problem.
 """.lstrip()  # noqa: E501
 
-FEWSHOT_TEMPLATE = """
+FEWSHOT_TEMPLATE = (
+    """
 {fewshot}
 
-""".lstrip() + PROMPT_TEMPLATE
+""".lstrip()
+    + PROMPT_TEMPLATE
+)
 
 
 @register_benchmark(
@@ -118,8 +122,7 @@ class BBHAdapter(DefaultDataAdapter):
 
         if few_shot_num != 3 and few_shot_num != 0:
             logger.error(
-                f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. '
-                f'Use 3-shot by default.'
+                f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. Use 3-shot by default.'
             )
             kwargs['few_shot_num'] = 3
 

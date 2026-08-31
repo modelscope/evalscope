@@ -1,6 +1,7 @@
 import json
-from pydantic import BaseModel, Field, model_validator
 from typing import Any, Dict, List, Literal
+
+from pydantic import BaseModel, Field, model_validator
 
 from evalscope.api.judge import OutputContract
 
@@ -116,6 +117,7 @@ Provide your final evaluation in JSON format:
 
 class BinaryGrade(BaseModel):
     """The binary rubric judge reply — official ResearchRubrics format."""
+
     verdict: Literal['Not Satisfied', 'Satisfied']
     score: float
     confidence: float = Field(ge=0.0, le=1.0)
@@ -133,6 +135,7 @@ class BinaryGrade(BaseModel):
 
 class ChunkGrade(BaseModel):
     """Per-chunk evidence extraction reply."""
+
     relevant_evidence: List[str]
     satisfaction: bool
     confidence_for_chunk: float = Field(ge=0.0, le=1.0)
@@ -163,7 +166,7 @@ def chunk_document(content: str, max_tokens: int) -> List[str]:
                     chunks.append('\n\n'.join(current).strip())
                     current = []
                     current_length = 0
-                chunks.append(paragraph[start:start + max_chars])
+                chunks.append(paragraph[start : start + max_chars])
             continue
         current.append(paragraph)
         current_length += paragraph_length
