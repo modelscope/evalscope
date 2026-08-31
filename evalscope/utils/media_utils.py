@@ -2,14 +2,14 @@
 
 import mimetypes
 import os
-from typing import Literal, Optional, cast
+from typing import Literal, Optional, cast, get_args
 
 from evalscope.utils.uri_utils import data_uri_mime_type, file_as_data_uri, is_data_uri
 
 VideoFormat = Literal['mp4', 'mpeg', 'mov', 'avi']
 AudioFormat = Literal['mp3', 'wav']
-SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = ('mp4', 'mpeg', 'mov', 'avi')
-SUPPORTED_AUDIO_FORMATS: tuple[AudioFormat, ...] = ('mp3', 'wav')
+SUPPORTED_VIDEO_FORMATS: tuple[VideoFormat, ...] = get_args(VideoFormat)
+SUPPORTED_AUDIO_FORMATS: tuple[AudioFormat, ...] = get_args(AudioFormat)
 VIDEO_FORMAT_TO_MIME_TYPE: dict[VideoFormat, str] = {
     'mp4': 'video/mp4',
     'mpeg': 'video/mpeg',
@@ -39,11 +39,11 @@ def guess_video_format(video: Optional[str], default: VideoFormat = 'mp4') -> Vi
         if subtype == 'x-msvideo':
             return 'avi'
         if subtype in SUPPORTED_VIDEO_FORMATS:
-            return cast(VideoFormat, subtype)
+            return subtype
 
     ext = os.path.splitext(video.split('?', 1)[0].split('#', 1)[0])[1].lstrip('.').lower()
     if ext in SUPPORTED_VIDEO_FORMATS:
-        return cast(VideoFormat, ext)
+        return ext
 
     return default
 
@@ -77,13 +77,13 @@ def guess_audio_format(audio: Optional[str], default: AudioFormat = 'mp3') -> Au
     if mime_type and mime_type.startswith('audio/'):
         subtype = mime_type.split('/', 1)[1].lower()
         if subtype in SUPPORTED_AUDIO_FORMATS:
-            return cast(AudioFormat, subtype)
+            return subtype
         if subtype in format_aliases:
             return format_aliases[subtype]
 
     ext = os.path.splitext(audio.split('?', 1)[0].split('#', 1)[0])[1].lstrip('.').lower()
     if ext in SUPPORTED_AUDIO_FORMATS:
-        return cast(AudioFormat, ext)
+        return ext
     if ext in format_aliases:
         return format_aliases[ext]
 

@@ -106,12 +106,15 @@ class OutputsStructure:
         Returns:
             str: Absolute path to the sub-directory.
         """
-        if self._dirs[attr_name] is None:
-            dir_path = os.path.join(self.outputs_dir, dir_name)
-            if self.is_make:
-                _ensure_dir(dir_path)
-            self._dirs[attr_name] = dir_path
-        return self._dirs[attr_name]  # type: ignore[return-value]
+        subdir = self._dirs.get(attr_name)
+        if subdir is not None:
+            return subdir
+
+        dir_path = os.path.join(self.outputs_dir, dir_name)
+        if self.is_make:
+            _ensure_dir(dir_path)
+        self._dirs[attr_name] = dir_path
+        return dir_path
 
     @property
     def logs_dir(self) -> str:
