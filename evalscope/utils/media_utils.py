@@ -2,7 +2,7 @@
 
 import mimetypes
 import os
-from typing import Literal, Optional, cast, get_args
+from typing import Literal, Optional, get_args
 
 from evalscope.utils.uri_utils import data_uri_mime_type, file_as_data_uri, is_data_uri
 
