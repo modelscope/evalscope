@@ -52,30 +52,30 @@ NON_RETRYABLE_OPENAI_ERRORS: Tuple[Type[Exception], ...] = (
 )
 
 
-class EmptyCompletionError(RuntimeError):
-    """A 200 response whose body carried no choices (usually a gateway error)."""
+class EmptyCompletionError(ValueError):
+    """A 200 response whose body carried no choices."""
+
+
+class _NonRetryableEmptyCompletionError(EmptyCompletionError):
+    pass
+
+
+_NON_RETRYABLE_COMPLETION_ERRORS = (*NON_RETRYABLE_OPENAI_ERRORS, _NonRetryableEmptyCompletionError)
+_NON_RETRYABLE_GATEWAY_CODES = {'400', '401', '402', '403', '404', '422'}
 
 
 def raise_if_error_payload(completion: ChatCompletion) -> None:
-    """Reject an error payload that the SDK deserialized as a completion.
-
-    Some gateways (OpenRouter among them) commit ``200 OK`` headers before the
-    upstream has produced anything, holding the connection open with whitespace
-    padding. When the request then fails, the status line is already sent, so
-    the error can only be appended to the body:
-
-        {"error": {"message": "Insufficient balance", "code": 402}}
-
-    The SDK parses that into a ``ChatCompletion`` whose ``choices`` is None and
-    keeps the real error in ``model_extra``. Raising here — inside the retry
-    boundary — turns a silent, run-killing corruption into a retried request
-    that reports what the gateway actually said.
-    """
+    """Reject an error payload that the SDK deserialized as a completion."""
     if completion.choices is not None:
         return
     error = (completion.model_extra or {}).get('error')
     detail = f': {error}' if error else ' (no error detail in body)'
-    raise EmptyCompletionError(f'Gateway returned a response with no choices{detail}')
+    error_type = (
+        _NonRetryableEmptyCompletionError
+        if isinstance(error, dict) and str(error.get('code')) in _NON_RETRYABLE_GATEWAY_CODES
+        else EmptyCompletionError
+    )
+    raise error_type(f'Gateway returned a response with no choices{detail}')
 
 
 class OpenAICompatibleAPI(ModelAPI):
@@ -184,7 +184,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
+                no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
@@ -268,7 +268,7 @@ class OpenAICompatibleAPI(ModelAPI):
                 _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
-                no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
+                no_retry_exceptions=_NON_RETRYABLE_COMPLETION_ERRORS,
             )
 
             total_time = time.monotonic() - t_start
