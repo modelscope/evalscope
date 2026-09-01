@@ -26,7 +26,7 @@ from . import (
     load_benchmark_data,
     save_benchmark_data,
 )
-from .readme_generator import _format_sample_count, _format_tags, generate_readme_from_dict
+from .readme_generator import _format_tags, generate_readme_from_dict
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter

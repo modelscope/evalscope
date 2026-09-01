@@ -4,7 +4,7 @@ Data loading and processing utilities for reports and predictions.
 
 import glob
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import pandas as pd
 from pydantic import ValidationError
@@ -13,7 +13,7 @@ from evalscope.api.evaluator import CacheManager, ReviewResult
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import format_metric_value
 from evalscope.metrics.semantics.ranking import bounded_quality_ratio
-from evalscope.report import Report, ReportKey, ReportRef, get_data_frame, get_report_list
+from evalscope.report import Report, ReportKey, ReportRef, get_report_list
 from evalscope.utils.io_utils import OutputsStructure, jsonl_to_list, yaml_to_dict
 from evalscope.utils.logger import get_logger
 
