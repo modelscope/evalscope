@@ -81,7 +81,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 | Handler function | `handle_` prefix |
 | Benchmark adapter file | `<name>_adapter.py` |
 
-**Ruff ignore list** (`pyproject.toml`): `E501, E741, F401, F403, F405, F541, F821`. Do not expand — new ignores must be justified in the PR.
+**Ruff ignore list** (`pyproject.toml`): `E501, F401`. Do not expand — new ignores must be justified in the PR.
 
 ## Design rules
 

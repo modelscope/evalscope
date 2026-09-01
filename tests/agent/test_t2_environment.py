@@ -869,11 +869,8 @@ class TestDefaultAdapterEnvPath:
 
         output = adapter._on_inference(model, sample)
 
-        # Verify model was called with bash ToolInfo in the tools list
-        call_args = model.generate_async.call_args
-        tools_passed = call_args[1].get('tools') or call_args[0][1] if len(call_args[0]) > 1 else None
-        # tools_passed may be None if strategy decided not to pass them;
-        # at minimum verify execution completed without error.
+        model.generate_async.assert_awaited_once()
+        assert model.generate_async.call_args.kwargs['tools']
         assert output is not None
 
     def test_environment_extra_forwarded(self):

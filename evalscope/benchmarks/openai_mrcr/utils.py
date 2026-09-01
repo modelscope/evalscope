@@ -63,12 +63,12 @@ def bin_index_for(total_tokens: int, bins=OPENAI_MRCR_BINS) -> int:
     First and last bins inclusive both ends, middle bins left-inclusive right-exclusive.
     """
     last = len(bins) - 1
-    for i, (l, r) in enumerate(bins):
+    for i, (left, right) in enumerate(bins):
         if i == 0 or i == last:
-            if l <= total_tokens <= r:
+            if left <= total_tokens <= right:
                 return i
         else:
-            if l <= total_tokens < r:
+            if left <= total_tokens < right:
                 return i
     return 0  # fallback
 

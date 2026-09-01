@@ -753,7 +753,7 @@ class TaskConfig(BaseArgument):
 
     def dump_yaml(self, output_dir: str, generated_metadata: Optional[Dict[str, Any]] = None) -> None:
         """Dump the task configuration and optional generated runtime metadata to YAML."""
-        task_cfg_file = os.path.join(output_dir, f'task_config.yaml')
+        task_cfg_file = os.path.join(output_dir, 'task_config.yaml')
         try:
             logger.info(f'Dump task config to {task_cfg_file}')
             payload = self.to_dict()

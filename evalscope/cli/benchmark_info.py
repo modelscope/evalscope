@@ -292,7 +292,7 @@ class BenchmarkInfoCMD(CLICommand):
             workers=self.args.workers,
         )
 
-        print(f'\nTranslation complete:')
+        print('\nTranslation complete:')
         print(f'  Total: {result.get("total", 0)}')
         print(f'  Translated: {result.get("translated", 0)}')
         print(f'  Skipped: {result.get("skipped", 0)}')
@@ -343,18 +343,18 @@ class BenchmarkInfoCMD(CLICommand):
         # Metrics
         if meta.metric_list:
             formatted_metrics = self._format_metric_list(meta.metric_list)
-            print(f'\nMetrics:')
+            print('\nMetrics:')
             for m in formatted_metrics:
                 print(f'  - {m}')
 
         if meta.description:
-            print(f'\nDescription:')
+            print('\nDescription:')
             for line in meta.description.split('\n'):
                 print(f'  {line}')
 
         # Prompt template (truncated for readability)
         if meta.prompt_template:
-            print(f'\nPrompt Template:')
+            print('\nPrompt Template:')
             template = meta.prompt_template
             if len(template) > 200:
                 template = template[:200] + '... [TRUNCATED]'
@@ -363,7 +363,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         # System prompt (truncated for readability)
         if meta.system_prompt:
-            print(f'\nSystem Prompt:')
+            print('\nSystem Prompt:')
             prompt = meta.system_prompt
             if len(prompt) > 200:
                 prompt = prompt[:200] + '... [TRUNCATED]'
@@ -372,7 +372,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         # Configurable parameters (extra_params with full spec)
         if meta.extra_params:
-            print(f'\nConfigurable Parameters:')
+            print('\nConfigurable Parameters:')
             for param_name, param_spec in meta.extra_params.items():
                 print(f'  {param_name}:')
                 if meta._is_spec_entry(param_spec):
@@ -386,7 +386,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         if meta.data_statistics:
             stats = meta.data_statistics
-            print(f'\nStatistics:')
+            print('\nStatistics:')
             print(f'  Total samples:        {stats.total_samples:,}')
             print(f'  Prompt length (mean): {stats.prompt_length_mean:.1f}')
             print(f'  Prompt length (range): {stats.prompt_length_min} - {stats.prompt_length_max}')

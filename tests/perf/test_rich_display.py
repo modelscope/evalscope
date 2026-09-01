@@ -196,8 +196,8 @@ class TestPerRequestMetrics(unittest.TestCase):
         self.assertIn('Input Tokens', text)
         self.assertIn('Output Tokens', text)
         # max column header and max latency value from fixture
-        lines = [l for l in text.splitlines() if 'max' in l.lower()]
-        self.assertTrue(any('max' in l for l in lines), 'max column should appear in Per-Request Metrics')
+        lines = [line for line in text.splitlines() if 'max' in line.lower()]
+        self.assertTrue(any('max' in line for line in lines), 'max column should appear in Per-Request Metrics')
         self.assertIn('5', text)  # max latency from _make_percentiles
 
     def test_multi_turn_rows(self):

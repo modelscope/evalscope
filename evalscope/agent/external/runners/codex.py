@@ -184,11 +184,11 @@ class CodexRunner(AgentRunner):
         # escaped double quotes; the list-form ``cmd`` carries them as a
         # single argv entry, which env.exec quotes for the shell.
         config_pairs: List[str] = [
-            f'model_provider="evalscope"',
-            f'model_providers.evalscope.name="EvalScope Bridge"',
+            'model_provider="evalscope"',
+            'model_providers.evalscope.name="EvalScope Bridge"',
             f'model_providers.evalscope.base_url="{bridge.base_url}/openai/v1"',
-            f'model_providers.evalscope.env_key="EVALSCOPE_BRIDGE_TOKEN"',
-            f'model_providers.evalscope.wire_api="responses"',
+            'model_providers.evalscope.env_key="EVALSCOPE_BRIDGE_TOKEN"',
+            'model_providers.evalscope.wire_api="responses"',
         ]
         if self._model_name:
             config_pairs.append(f'model="{self._model_name}"')
