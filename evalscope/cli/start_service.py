@@ -2,9 +2,13 @@
 """CLI command for starting the EvalScope Flask service."""
 
 import os
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentTypeError
+from typing import TYPE_CHECKING
 
 from evalscope.cli.base import CLICommand
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, _SubParsersAction
 
 
 def subparser_func(args):
@@ -27,7 +31,7 @@ class ServiceCMD(CLICommand):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: ArgumentParser):
+    def define_args(parsers: '_SubParsersAction[ArgumentParser]'):
         """Define args for service command."""
         parser = parsers.add_parser(
             ServiceCMD.name, help='Start the EvalScope Flask service for eval and perf endpoints'

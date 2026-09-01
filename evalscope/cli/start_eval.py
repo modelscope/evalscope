@@ -1,5 +1,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-from argparse import ArgumentParser
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, _SubParsersAction
 
 from evalscope.cli.base import CLICommand
 
@@ -16,7 +19,7 @@ class EvalCMD(CLICommand):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: ArgumentParser):
+    def define_args(parsers: '_SubParsersAction[ArgumentParser]'):
         """define args for create pipeline template command."""
         from evalscope.arguments import add_argument
 
