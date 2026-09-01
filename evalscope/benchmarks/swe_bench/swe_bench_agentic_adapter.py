@@ -22,8 +22,11 @@ from __future__ import annotations
 
 import ast
 import json
+import math
+import shlex
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from evalscope.agent.strategies.swe_bench import SUBMIT_SENTINEL
 from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment
 from evalscope.api.benchmark import BenchmarkMeta
@@ -34,6 +37,7 @@ from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import merge_sandbox_config_dicts
+from evalscope.api.tool import ToolCall
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import, is_build_doc
 from evalscope.utils.logger import get_logger
@@ -47,6 +51,43 @@ logger = get_logger()
 # SWE-bench images activate their per-instance testbed from shell startup files;
 # mini-swe-agent's DockerEnvironment therefore runs commands through bash -lc.
 _SWE_BENCH_INTERPRETER: tuple[str, ...] = ('bash', '-lc')
+_SWE_BENCH_COMMAND_TIMEOUT = 60.0
+_SWE_BENCH_MAX_COMMAND_OUTPUT_BYTES = 100_000
+_SWE_BENCH_OUTPUT_SAMPLER_PYTHON = r"""
+import sys
+
+max_bytes = int(sys.argv[1])
+head_bytes = max_bytes // 2
+tail_bytes = max_bytes - head_bytes
+head_remaining = head_bytes
+tail = bytearray()
+total = 0
+source = sys.stdin.buffer
+sink = sys.stdout.buffer
+
+while True:
+    chunk = source.read(65536)
+    if not chunk:
+        break
+    total += len(chunk)
+    if head_remaining:
+        head_part = chunk[:head_remaining]
+        sink.write(head_part)
+        sink.flush()
+        head_remaining -= len(head_part)
+        chunk = chunk[len(head_part):]
+    if chunk:
+        tail.extend(chunk)
+        if len(tail) > tail_bytes:
+            del tail[:-tail_bytes]
+
+captured_head = head_bytes - head_remaining
+if total > max_bytes:
+    omitted = total - captured_head - len(tail)
+    marker = f'\n[OUTPUT TRUNCATED: {omitted} bytes omitted while command continued]\n'
+    sink.write(marker.encode())
+sink.write(tail)
+""".strip()
 
 # ---------------------------------------------------------------------------
 # instance_template — mirrors mini-swe-agent swebench.yaml
@@ -204,6 +245,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
 
     strategy_name = 'swe_bench_toolcall'
     max_steps_default = 250
+    command_timeout_default = _SWE_BENCH_COMMAND_TIMEOUT
 
     @staticmethod
     def _parse_test_list(value: Any) -> List[str]:
@@ -310,9 +352,86 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
     # AgentAdapter hooks
     # ------------------------------------------------------------------
 
-    def build_tools(self, sample: Sample):
-        # Only ``bash`` — sentinel protocol replaces the ``submit`` tool.
-        return {'bash': run_bash}
+    def _command_timeout_limit(self) -> float:
+        configured_timeout = self._native_command_timeout()
+        if configured_timeout is not None:
+            return configured_timeout
+        return _SWE_BENCH_COMMAND_TIMEOUT
+
+    @staticmethod
+    def _sample_command_output(command: str) -> str:
+        submit_prefix = f'echo {SUBMIT_SENTINEL}'
+        if command.lstrip().startswith(submit_prefix) and 'git diff' in command:
+            return command
+        sampler_program = shlex.quote(_SWE_BENCH_OUTPUT_SAMPLER_PYTHON)
+        command_script = shlex.quote(command)
+        return (
+            'evalscope_python=$(command -v python3 || command -v python) || {\n'
+            f'    bash -c {command_script}\n'
+            '    exit $?\n'
+            '}\n'
+            'evalscope_capture_dir=$(mktemp -d) || exit 1\n'
+            'evalscope_capture_fifo="$evalscope_capture_dir/command-output"\n'
+            'evalscope_command_pid=\n'
+            'evalscope_sampler_pid=\n'
+            'evalscope_cleanup() {\n'
+            '    if [ -n "$evalscope_command_pid" ]; then\n'
+            '        kill -KILL -- -"$evalscope_command_pid" 2>/dev/null '
+            '|| kill -KILL "$evalscope_command_pid" 2>/dev/null || true\n'
+            '        wait "$evalscope_command_pid" 2>/dev/null || true\n'
+            '    fi\n'
+            '    if [ -n "$evalscope_sampler_pid" ]; then\n'
+            '        kill -KILL "$evalscope_sampler_pid" 2>/dev/null || true\n'
+            '        wait "$evalscope_sampler_pid" 2>/dev/null || true\n'
+            '    fi\n'
+            '    rm -f "$evalscope_capture_fifo"\n'
+            '    rmdir "$evalscope_capture_dir" 2>/dev/null || true\n'
+            '}\n'
+            'trap evalscope_cleanup EXIT\n'
+            "trap 'exit 143' HUP INT TERM\n"
+            'mkfifo "$evalscope_capture_fifo" || exit 1\n'
+            f'setsid bash -c {command_script} >"$evalscope_capture_fifo" 2>&1 &\n'
+            'evalscope_command_pid=$!\n'
+            f'"$evalscope_python" -S -c {sampler_program} {_SWE_BENCH_MAX_COMMAND_OUTPUT_BYTES} '
+            '<"$evalscope_capture_fifo" &\n'
+            'evalscope_sampler_pid=$!\n'
+            'wait "$evalscope_sampler_pid"\n'
+            'evalscope_sampler_status=$?\n'
+            'evalscope_sampler_pid=\n'
+            'if [ "$evalscope_sampler_status" -ne 0 ]; then exit "$evalscope_sampler_status"; fi\n'
+            'wait "$evalscope_command_pid"\n'
+            'evalscope_command_status=$?\n'
+            'evalscope_command_pid=\n'
+            'exit "$evalscope_command_status"'
+        )
+
+    def build_tools(self, sample: Sample) -> Dict[str, Any]:
+        # Only ``bash`` — sentinel protocol replaces the ``submit`` tool. The
+        # timeout is a harness safety boundary, so model-provided arguments may
+        # shorten it but cannot disable or extend it indefinitely.
+        timeout_limit = self._command_timeout_limit()
+
+        async def run_bash_with_timeout_limit(call: ToolCall, env: Optional[AgentEnvironment]) -> str:
+            arguments = dict(call.function.arguments or {})
+            command = arguments.get('command')
+            if isinstance(command, str):
+                arguments['command'] = self._sample_command_output(command)
+            try:
+                requested_timeout = float(arguments.get('timeout', timeout_limit))
+            except (TypeError, ValueError):
+                requested_timeout = timeout_limit
+            if not math.isfinite(requested_timeout) or requested_timeout <= 0 or requested_timeout > timeout_limit:
+                requested_timeout = timeout_limit
+            bounded_call = call.model_copy(
+                update={
+                    'function': call.function.model_copy(
+                        update={'arguments': {**arguments, 'timeout': requested_timeout}}
+                    )
+                }
+            )
+            return await run_bash(bounded_call, env)
+
+        return {'bash': run_bash_with_timeout_limit}
 
     def _forced_docker_platform(self) -> Optional[str]:
         """Return the Docker platform matching the forced SWE-bench image arch."""
@@ -351,7 +470,7 @@ class _SWEBenchAgenticAdapterBase(AgentLoopAdapter):
         return EnclaveAgentEnvironment(
             engine='docker',
             sandbox_config=sandbox_config,
-            timeout=self._native_command_timeout(),
+            timeout=self._command_timeout_limit(),
             interpreter=_SWE_BENCH_INTERPRETER,
         )
 

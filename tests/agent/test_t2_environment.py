@@ -11,6 +11,7 @@ Test plan:
   TestNativeAgentEnvironmentConfig – legacy-compatible Agent environment config
 """
 
+import asyncio
 import os
 import sys
 import tempfile
@@ -386,6 +387,129 @@ class TestEnclaveEnvironmentInterpreter:
             'PIP_PROGRESS_BAR': 'off',
             'TQDM_DISABLE': '1',
         }
+
+    @pytest.mark.parametrize(
+        ('requested_timeout', 'expected_timeout'),
+        [
+            (-1, 60.0),
+            (0, 60.0),
+            (float('inf'), 60.0),
+            (3600, 60.0),
+            (5, 5.0),
+        ],
+    )
+    def test_swe_bench_agentic_caps_model_requested_command_timeout(
+        self,
+        requested_timeout: float,
+        expected_timeout: float,
+    ) -> None:
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(model='dummy')
+        environment = AsyncMock(spec=AgentEnvironment)
+        environment.exec.return_value = ExecResult()
+        call = _tool_call('bash', {'command': 'sleep 1', 'timeout': requested_timeout})
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        self._run(handler(call, environment))
+
+        assert environment.exec.await_count == 1
+        assert environment.exec.await_args.kwargs['timeout'] == expected_timeout
+
+    def test_swe_bench_agentic_uses_explicit_command_timeout_as_limit(self) -> None:
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(command_timeout=90),
+        )
+        environment = AsyncMock(spec=AgentEnvironment)
+        environment.exec.return_value = ExecResult()
+        call = _tool_call('bash', {'command': 'sleep 1', 'timeout': 3600})
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        self._run(handler(call, environment))
+
+        assert environment.exec.await_count == 1
+        assert environment.exec.await_args.kwargs['timeout'] == 90
+
+    def test_swe_bench_agentic_samples_excessive_output_without_terminating_command(self) -> None:
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(model='dummy')
+        call = _tool_call(
+            'bash',
+            {
+                'command': (
+                    'python3 -c "import sys; sys.stdout.write(\'x\' * 200000)"; '
+                    "printf '\\nCOMMAND_COMPLETED\\n'"
+                )
+            },
+        )
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        output = self._run(asyncio.wait_for(handler(call, LocalAgentEnvironment()), timeout=2))
+
+        assert '[OUTPUT TRUNCATED:' in output
+        assert 'COMMAND_COMPLETED' in output
+        assert '[exit' not in output
+        assert len(output) < 101_000
+
+    def test_swe_bench_agentic_times_out_infinite_output_without_model_override(self) -> None:
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(
+            model='dummy',
+            agent_config=NativeAgentConfig(command_timeout=0.2),
+        )
+        call = _tool_call('bash', {'command': "yes 'repeated output'", 'timeout': -1})
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        output = self._run(asyncio.wait_for(handler(call, LocalAgentEnvironment()), timeout=2))
+
+        assert '[TIMEOUT]' in output
+        assert '[OUTPUT LIMIT EXCEEDED:' not in output
+
+    def test_swe_bench_agentic_output_sampler_preserves_exit_status(self) -> None:
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(model='dummy')
+        call = _tool_call(
+            'bash',
+            {'command': 'python3 -c "import sys; sys.stdout.write(\'failed command\\n\' * 20000)"; exit 7'},
+        )
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        output = self._run(handler(call, LocalAgentEnvironment()))
+
+        assert 'failed command' in output
+        assert '[OUTPUT TRUNCATED:' in output
+        assert '[exit 7]' in output
+
+    def test_swe_bench_agentic_does_not_truncate_submission_command(self) -> None:
+        from evalscope.agent.strategies.swe_bench import SUBMIT_SENTINEL
+        from evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter import _SWEBenchAgenticAdapterBase
+
+        adapter = object.__new__(_SWEBenchAgenticAdapterBase)
+        adapter._task_config = TaskConfig(model='dummy')
+        environment = AsyncMock(spec=AgentEnvironment)
+        environment.exec.return_value = ExecResult()
+        command = f'echo {SUBMIT_SENTINEL} && git diff'
+        call = _tool_call('bash', {'command': command})
+
+        handler = adapter.build_tools(types.SimpleNamespace())['bash']
+        self._run(handler(call, environment))
+
+        assert environment.exec.await_count == 1
+        assert environment.exec.await_args.args[0] == ['/bin/bash', '-c', command]
 
     def test_swe_bench_pro_adapter_uses_login_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.benchmarks.swe_bench_pro.swe_bench_pro_agentic_adapter import SWEBenchProAgenticAdapter
