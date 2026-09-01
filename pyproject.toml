@@ -128,7 +128,7 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["E402"]
 "__init__.py" = ["F401"]
-"!evalscope/{utils,cli}/**/*.py" = ["F401"]
+"!evalscope/{utils,cli,report}/**/*.py" = ["F401"]
 
 [tool.ruff.format]
 exclude = ["tests/**/*.py"]
