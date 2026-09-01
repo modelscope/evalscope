@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 from evalscope.utils.logger import get_logger
 

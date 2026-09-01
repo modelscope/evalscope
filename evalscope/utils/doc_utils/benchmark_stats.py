@@ -36,7 +36,7 @@ from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
-    from evalscope.api.dataset import DatasetDict, Sample
+    from evalscope.api.dataset import Sample
 
 logger = get_logger()
 

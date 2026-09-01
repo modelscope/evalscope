@@ -1,9 +1,9 @@
 import asyncio
 import threading
 import time
-from concurrent.futures import Future, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import Awaitable, Callable, List, Optional, Sequence, Tuple, Type, TypeVar
 
 from evalscope.utils import asyncio_runtime
 from evalscope.utils.logger import get_logger

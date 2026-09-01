@@ -21,7 +21,7 @@ from typing import (
     is_typeddict,
 )
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 JSONType = Literal['string', 'integer', 'number', 'boolean', 'array', 'object', 'null']
 """Valid types within JSON schema."""
