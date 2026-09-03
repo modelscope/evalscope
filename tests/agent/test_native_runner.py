@@ -269,9 +269,9 @@ def test_run_agent_loop_can_leave_caller_owned_environment_open(monkeypatch: pyt
 def test_run_native_agent_reports_the_adapter_resolved_prediction() -> None:
     """The runner forwards whatever the adapter hook resolved.
 
-    ``trace.final_prediction`` is recorded further downstream, at the single
+    The reported prediction is resolved further downstream, at the single
     point every inference path converges (``DefaultDataAdapter.run_inference``),
-    not here -- an earlier revision wrote it in this runner and consequently
+    not here -- an earlier revision resolved it in this runner and consequently
     left it unset for every adapter that assembles its own ``InferenceResult``
     (SWE-bench among them).
     """
