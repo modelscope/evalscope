@@ -8,8 +8,24 @@ import aiohttp
 import pytest
 
 from evalscope.agent.external.bridge import ModelProxyServer
+from evalscope.agent.external.bridge.trace_recorder import BridgeTraceRecorder
 from evalscope.api.model import GenerateConfig
 from evalscope.utils.asyncio_runtime import AsyncioLoopRunner
+
+
+def _fake_session(model: Any) -> SimpleNamespace:
+    """A stand-in for :class:`TrialSession` with a real recorder.
+
+    ``TrialSession`` types ``recorder`` as a ``BridgeTraceRecorder``, so the
+    handlers are entitled to use it on every path -- including the failure
+    paths these tests drive.
+    """
+    return SimpleNamespace(
+        model=model,
+        framework='test',
+        trial_id='test-trial',
+        recorder=BridgeTraceRecorder(trial_id='test-trial', framework='test'),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -184,12 +200,7 @@ def test_stream_disconnect_waits_for_generation_task(
     async def run() -> None:
         owner_loop = asyncio.get_running_loop()
         proxy = ModelProxyServer('127.0.0.1', None, owner_loop)
-        session = SimpleNamespace(
-            model=BlockingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(BlockingModel())
         body = {'model': 'test-model'}
         config = GenerateConfig()
 
@@ -245,12 +256,7 @@ def test_stream_disconnect_observes_already_failed_generation_task(
         loop = asyncio.get_running_loop()
         loop.set_exception_handler(lambda _loop, context: unhandled_contexts.append(context))
         proxy = ModelProxyServer('127.0.0.1', None, loop)
-        session = SimpleNamespace(
-            model=FailingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(FailingModel())
 
         body = {'model': 'test-model'}
         config = GenerateConfig()
@@ -339,12 +345,7 @@ def test_stream_write_disconnect_waits_for_generation_task(monkeypatch: pytest.M
 
     async def run() -> None:
         proxy = ModelProxyServer('127.0.0.1', None, asyncio.get_running_loop())
-        session = SimpleNamespace(
-            model=BlockingModel(),
-            framework='test',
-            trial_id='test-trial',
-            recorder=None,
-        )
+        session = _fake_session(BlockingModel())
         await proxy._respond_streaming_openai(
             None,
             session,
