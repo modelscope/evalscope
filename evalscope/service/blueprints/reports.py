@@ -282,16 +282,18 @@ def _group_items_by_model(items: List[dict]) -> List[dict]:
         dataset_names = sorted({ds for child in children for ds in child['_datasets']})
         stripped_children = [{k: v for k, v in child.items() if k != '_datasets'} for child in children]
 
-        groups.append({
-            'model_name': model_name,
-            'dataset_name': ', '.join(dataset_names),
-            'timestamp': children[0]['timestamp'],
-            'report_count': len(children),
-            'dataset_count': len(dataset_names),
-            'num_samples': sum(child['num_samples'] for child in children),
-            'refs': [f"{child['run_id']}/{child['model_id']}" for child in children],
-            'children': stripped_children,
-        })
+        groups.append(
+            {
+                'model_name': model_name,
+                'dataset_name': ', '.join(dataset_names),
+                'timestamp': children[0]['timestamp'],
+                'report_count': len(children),
+                'dataset_count': len(dataset_names),
+                'num_samples': sum(child['num_samples'] for child in children),
+                'refs': [f'{child["run_id"]}/{child["model_id"]}' for child in children],
+                'children': stripped_children,
+            }
+        )
     return groups
 
 
@@ -377,19 +379,20 @@ def _list_response(
     # Project internal keys into fresh dicts: meta objects are shared with the
     # cache, so mutating them here would corrupt later requests.
     response_reports = [{k: v for k, v in it.items() if k != '_datasets'} for it in page_items]
-    resp = json_response(
-        ListReportsGroupedResponse if grouped else ListReportsResponse,
-        {
-            'reports': response_reports,
-            'total': total,
-            'page': page,
-            'page_size': page_size,
-            'filters': {
-                'available_models': available_models,
-                'available_datasets': available_datasets,
-            },
+    payload = {
+        'reports': response_reports,
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'filters': {
+            'available_models': available_models,
+            'available_datasets': available_datasets,
         },
-    )
+    }
+    if grouped:
+        resp = json_response(ListReportsGroupedResponse, payload)
+    else:
+        resp = json_response(ListReportsResponse, payload)
     resp.set_etag(list_etag(fingerprints, query_parts))
     resp.headers['Cache-Control'] = 'no-cache'
     return resp.make_conditional(request)
