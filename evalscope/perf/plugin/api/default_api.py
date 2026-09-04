@@ -157,9 +157,8 @@ class DefaultApiPlugin(ApiPluginBase):
                                             content = choices[0].get('text') or ''
                                         else:
                                             delta = choices[0].get('delta', {})
-                                            content = (delta.get('content') or '') + (
-                                                delta.get('reasoning_content') or ''
-                                            )
+                                            reasoning = delta.get('reasoning_content') or delta.get('reasoning') or ''
+                                            content = (delta.get('content') or '') + reasoning
                                         if content:
                                             # First token
                                             if last_output_timestamp is None:

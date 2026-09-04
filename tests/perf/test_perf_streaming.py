@@ -6,6 +6,7 @@ endpoint and the local model backend.
 """
 import json
 import unittest
+from typing import AsyncIterator
 from unittest.mock import MagicMock, patch
 
 from evalscope.perf.arguments import Arguments
@@ -104,7 +105,7 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         ]
         stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events) + 'data: [DONE]\n\n'
 
-        async def iter_chunks():
+        async def iter_chunks() -> AsyncIterator[bytes]:
             yield stream.encode()
 
         response = MagicMock()
@@ -127,6 +128,43 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(output.query_latency, 0.9)
         self.assertEqual(output.response_messages, events)
         self.assertEqual((output.prompt_tokens, output.completion_tokens), (3, 2))
+
+    async def test_reasoning_alias_contributes_to_output_timings(self) -> None:
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {'reasoning_content': '', 'reasoning': 'think'}}],
+            },
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'reasoning': 'ing'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {}, 'finish_reason': 'length'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            },
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events) + 'data: [DONE]\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenaiPlugin(Arguments(model='test-model'))
+        timestamps = [0.0, 0.1, 0.45, 0.65, 0.9]
+        with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+        self.assertAlmostEqual(output.first_chunk_latency, 0.45)
+        self.assertEqual(len(output.inter_chunk_latency), 1)
+        self.assertAlmostEqual(output.inter_chunk_latency[0], 0.2)
+        self.assertEqual(output.generated_text, 'thinking')
 
 
 class TestPerfStreaming(PerfTestBase):
