@@ -15,6 +15,37 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
+def _parse_chat_delta(delta: Any) -> tuple[str, bool]:
+    """Return concatenable text and whether a chat delta carries observable output."""
+    if not isinstance(delta, dict):
+        return '', False
+
+    content_value = delta.get('content')
+    content = content_value if isinstance(content_value, str) else ''
+
+    reasoning_value = delta.get('reasoning_content')
+    if not isinstance(reasoning_value, str) or not reasoning_value:
+        reasoning_value = delta.get('reasoning')
+    reasoning = reasoning_value if isinstance(reasoning_value, str) else ''
+
+    text = content + reasoning
+    if text:
+        return text, True
+
+    # Structured reasoning must only affect timing: providers disagree on whether
+    # these values are incremental or cumulative, so appending them would corrupt
+    # generated_text. Encrypted payloads and type-only records are metadata.
+    reasoning_details = delta.get('reasoning_details')
+    if isinstance(reasoning_details, list):
+        for detail in reasoning_details:
+            if not isinstance(detail, dict):
+                continue
+            if any(isinstance(detail.get(key), str) and detail[key] for key in ('text', 'summary')):
+                return '', True
+
+    return '', False
+
+
 class StreamedResponseHandler:
     """Handles streaming HTTP responses by accumulating chunks until complete
     messages are available."""
@@ -155,12 +186,11 @@ class DefaultApiPlugin(ApiPluginBase):
                                     if choices := data.get('choices'):
                                         if data.get('object') == 'text_completion':
                                             content = choices[0].get('text') or ''
+                                            has_output = bool(content)
                                         else:
                                             delta = choices[0].get('delta', {})
-                                            content = (delta.get('content') or '') + (
-                                                delta.get('reasoning_content') or ''
-                                            )
-                                        if content:
+                                            content, has_output = _parse_chat_delta(delta)
+                                        if has_output:
                                             # First token
                                             if last_output_timestamp is None:
                                                 output.first_chunk_latency = timestamp - st
