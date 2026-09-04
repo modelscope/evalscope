@@ -28,6 +28,7 @@ from .reports import (
     ContentBlock,
     DeleteReportResponse,
     JudgeAttempt,
+    ListReportsGroupedResponse,
     ListReportsResponse,
     LoadReportResponse,
     MetricIdentity,
@@ -39,6 +40,7 @@ from .reports import (
     PredictionsResponse,
     PredictionToolCall,
     ReportData,
+    ReportGroup,
     ReportMetric,
     ReportSummary,
     ValueRange,
@@ -59,6 +61,8 @@ class WebApiContracts(BaseModel):
     report_data: ReportData
     report_summary: ReportSummary
     list_reports_response: ListReportsResponse
+    report_group: ReportGroup
+    list_reports_grouped_response: ListReportsGroupedResponse
     load_report_response: LoadReportResponse
     percentile_stats: PercentileStats
     perf_metrics: PerfMetrics
@@ -98,6 +102,7 @@ __all__ = [
     'DeleteReportResponse',
     'EvalInvokeResponse',
     'ListPerfRunsResponse',
+    'ListReportsGroupedResponse',
     'ListReportsResponse',
     'LoadReportResponse',
     'LogResponse',
