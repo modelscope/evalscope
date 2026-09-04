@@ -135,6 +135,38 @@ class BridgeTraceRecorder:
             messages_key='contents',
         )
 
+    def record_turn_failure(
+        self,
+        *,
+        mode: str,
+        exc: BaseException,
+        latency_ms: Optional[float] = None,
+    ) -> None:
+        """Append an ``ERROR`` event for a generate call that produced no output.
+
+        Recorded at the step the attempt *would* have occupied (``_step + 1``)
+        without advancing ``_step``: the turn produced no assistant message, and
+        the agent client's retry -- once it succeeds -- claims that same step.
+        The failed attempt therefore sits next to the retry that replaced it
+        rather than shifting every later step by one.
+
+        Without this the trace only ever shows attempts that succeeded, so a run
+        served by a flaky endpoint reads as shorter and cheaper than the same run
+        on a stable one, and per-turn latency / token totals silently under-count.
+        """
+        with self._lock:
+            self._trace.add_event(
+                step=self._step + 1,
+                type=EventType.ERROR,
+                latency_ms=latency_ms,
+                payload={
+                    'source': 'upstream',
+                    'mode': mode,
+                    'error': type(exc).__name__,
+                    'message': f'{type(exc).__name__}: {str(exc)[:200]}',
+                },
+            )
+
     def _record_turn(
         self,
         request_body: Dict[str, Any],

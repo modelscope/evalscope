@@ -486,7 +486,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            _log_upstream_failure(session, exc, mode='json')
+            _handle_upstream_failure(session, exc, mode='json', latency_ms=(time.monotonic() - started) * 1000)
             return web.json_response(
                 {
                     'error': {
@@ -538,7 +538,7 @@ class ModelProxyServer:
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
             failure_handled = True
-            _log_upstream_failure(session, exc, mode='stream')
+            _handle_upstream_failure(session, exc, mode='stream', latency_ms=(time.monotonic() - started) * 1000)
             error_payload = {
                 'error': {
                     'type': 'api_error',
@@ -595,7 +595,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            _log_upstream_failure(session, exc, mode='json')
+            _handle_upstream_failure(session, exc, mode='json', latency_ms=(time.monotonic() - started) * 1000)
             return web.json_response(
                 {
                     'error': {
@@ -646,7 +646,7 @@ class ModelProxyServer:
             async for chunk in stream_responses_payload(payload):
                 await response.write(chunk)
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            _log_upstream_failure(session, exc, mode='stream')
+            _handle_upstream_failure(session, exc, mode='stream', latency_ms=(time.monotonic() - started) * 1000)
             # Responses error frame shape per OpenAI SDK ``ResponseErrorEvent``:
             # event name ``error`` (NOT ``response.failed`` — that one requires
             # a fully-constructed ``Response`` object with id/created_at/output/usage,
@@ -724,7 +724,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         except Exception as exc:
-            _log_upstream_failure(session, exc, mode='json')
+            _handle_upstream_failure(session, exc, mode='json', latency_ms=(time.monotonic() - started) * 1000)
             return web.json_response(
                 {
                     'error': {
@@ -773,7 +773,7 @@ class ModelProxyServer:
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:
             failure_handled = True
-            _log_upstream_failure(session, exc, mode='stream')
+            _handle_upstream_failure(session, exc, mode='stream', latency_ms=(time.monotonic() - started) * 1000)
             error_data = json.dumps({'error': {'code': 502, 'message': repr(exc), 'status': 'UNAVAILABLE'}})
             try:
                 await response.write(f'data: {error_data}\n\n'.encode('utf-8'))
@@ -800,7 +800,7 @@ class ModelProxyServer:
                 config=gen_config,
             )
         except Exception as exc:  # pragma: no cover - upstream-dependent
-            _log_upstream_failure(session, exc, mode='json')
+            _handle_upstream_failure(session, exc, mode='json', latency_ms=(time.monotonic() - started) * 1000)
             return web.json_response(
                 {
                     'type': 'error',
@@ -854,7 +854,7 @@ class ModelProxyServer:
             _log_turn(session, output, latency_ms, mode='stream')
         except Exception as exc:  # pragma: no cover - upstream-dependent
             failure_handled = True
-            _log_upstream_failure(session, exc, mode='stream')
+            _handle_upstream_failure(session, exc, mode='stream', latency_ms=(time.monotonic() - started) * 1000)
             error_payload = {
                 'type': 'error',
                 'error': {
@@ -969,6 +969,26 @@ def _log_upstream_failure(session: 'TrialSession', exc: BaseException, *, mode: 
         logger.warning(f'{tag} upstream {mode} {cls_name}: {str(exc)[:200]}')
         return
     logger.exception(f'{tag} {mode} generate failed')
+
+
+def _handle_upstream_failure(
+    session: 'TrialSession',
+    exc: BaseException,
+    *,
+    mode: str,
+    latency_ms: float,
+) -> None:
+    """Log an upstream failure *and* record it on the trace.
+
+    Downgrading routine upstream errors to a one-line WARNING (see
+    :func:`_log_upstream_failure`) keeps the eval log readable, but the log is
+    not the artifact anyone analyses afterwards: ``AgentTrace`` is. Recording
+    only the turns that succeeded leaves every retried attempt invisible, which
+    is what the native :class:`AgentLoop` already avoids by emitting
+    ``EventType.ERROR`` for its own failure modes.
+    """
+    _log_upstream_failure(session, exc, mode=mode)
+    session.recorder.record_turn_failure(mode=mode, exc=exc, latency_ms=latency_ms)
 
 
 def _log_turn(session: 'TrialSession', output, latency_ms: float, *, mode: str) -> None:
