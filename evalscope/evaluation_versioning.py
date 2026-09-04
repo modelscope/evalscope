@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from evalscope.config import TaskConfig
 
 EVALUATION_IDENTITY_SCHEMA_VERSION = 1
+SHARED_SCORING_VERSION = 'v1.1'
+"""Version of shared judge rendering and metric failure semantics used in cache identities."""
 _VERSION_RE = re.compile(r'^v\d+\.\d+$')
 _SECRET_KEYS = {
     'api-key',
@@ -164,6 +166,7 @@ def build_benchmark_identity(
     """Build a stable cache identity from effective evaluation semantics."""
     validate_evaluation_version(evaluation_version)
     payload = {
+        'shared_scoring_version': SHARED_SCORING_VERSION,
         'evaluation_version': evaluation_version,
         'benchmark': spec.model_dump(mode='json'),
         'task': _fingerprint_task_config(task_config),

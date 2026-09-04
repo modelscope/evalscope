@@ -75,6 +75,7 @@ SUBSET_LIST = list(SUBJECT_MAPPING.keys())
 @register_benchmark(
     BenchmarkMeta(
         name='mmlu_redux',
+        evaluation_version='v1.1',
         pretty_name='MMLU-Redux',
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""

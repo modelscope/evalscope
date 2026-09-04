@@ -23,18 +23,22 @@ class ExactMatch(Metric):
 
 @register_metric(name=['accuracy', 'acc'])
 class Accuracy(ExactMatch):
-    def __init__(self, allow_inclusion: bool = False, numeric: bool = False):
+    """Score exact answers, optionally accepting any normalized reference alternative."""
+
+    def __init__(self, allow_inclusion: bool = False, numeric: bool = False) -> None:
         self.allow_inclusion = allow_inclusion
         self.numeric = numeric
 
-    def apply(self, predictions, references):
+    def apply(self, predictions: list[str], references: list[str | list[str]]) -> list[float]:
+        """Match complete answers; inclusion treats a string reference as one alternative."""
         if self.allow_inclusion:
             results = []
             for prediction, reference in zip(predictions, references):
-                if prediction and prediction in reference:
-                    results.append(1.0)
-                else:
-                    results.append(0.0)
+                prediction = normalize_text(prediction)
+                alternatives = [reference] if isinstance(reference, str) else reference
+                results.append(
+                    float(bool(prediction) and any(prediction == normalize_text(answer) for answer in alternatives))
+                )
             return results
         elif self.numeric:
             from evalscope.metrics.math.parser import math_equal, strip_answer_string
