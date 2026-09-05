@@ -229,7 +229,7 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     assert prediction_path.read_text() == previous_prediction
 
 
-def test_legacy_full_meta_snapshot_infers_v1_identity() -> None:
+def test_legacy_full_meta_snapshot_preserves_pre_fix_identity() -> None:
     config = _task_config()
     spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
     previous_config = config.to_dict()
@@ -239,8 +239,29 @@ def test_legacy_full_meta_snapshot_infers_v1_identity() -> None:
 
     assert identity is not None
     assert identity.evaluation_version == 'v1.0'
-    assert identity.fingerprint == build_benchmark_identity(spec, 'v1.0', config).fingerprint
+    assert identity.fingerprint != build_benchmark_identity(spec, 'v1.0', config).fingerprint
     assert validate_cached_evaluation_identity(previous_config, _identity({'demo': identity}), rerun_review=False) == {}
+
+
+@pytest.mark.parametrize('legacy_snapshot', [False, True])
+def test_shared_scoring_fix_requires_review_rerun_for_old_cache(legacy_snapshot: bool) -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    previous_config = config.to_dict()
+    previous_config['dataset_args'] = {'demo': spec.model_dump(mode='json')}
+    previous = legacy_identity_from_config(previous_config, 'demo')
+    assert previous is not None
+    if not legacy_snapshot:
+        previous_config['evaluation_identity'] = _identity({'demo': previous}).model_dump(mode='json')
+    current = build_benchmark_identity(spec, 'v1.0', config)
+
+    with pytest.raises(ValueError, match='rerun_review=True'):
+        validate_cached_evaluation_identity(previous_config, _identity({'demo': current}), rerun_review=False)
+
+    sources = validate_cached_evaluation_identity(previous_config, _identity({'demo': current}), rerun_review=True)
+    assert sources['demo'].fingerprint == previous.fingerprint
+    assert sources['demo'].prediction_reused is True
+    assert sources['demo'].inferred_legacy is legacy_snapshot
 
 
 def test_analysis_uses_compact_context_without_full_meta_or_perf(monkeypatch) -> None:

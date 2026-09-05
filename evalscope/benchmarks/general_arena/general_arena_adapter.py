@@ -48,6 +48,7 @@ GRADER_TEMPLATE = "<|User Prompt|>\n{question}\n\n<|The Start of Assistant A's A
 @register_benchmark(
     BenchmarkMeta(
         name='general_arena',
+        evaluation_version='v1.1',
         pretty_name='GeneralArena',
         tags=[Tags.CUSTOM, Tags.ARENA],
         description="""
@@ -340,7 +341,7 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         bt_model_coef = compute_mle_elo(battles, baseline_model=self.baseline)
 
         bootstrap_model_coef = get_bootstrap_result(
-            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline
+            battles, func_compute_elo=compute_mle_elo, num_round=100, baseline_model=self.baseline, seed=self.seed
         )
 
         stats = pd.DataFrame()
