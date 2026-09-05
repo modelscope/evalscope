@@ -329,6 +329,13 @@ class LLMJudgeMixin:
         ``llm_recall`` exists to recover rule-based misses, so the judge can only raise the
         score: the result is ``max(rule, judge)``. A failed judge must not erase rule evidence.
         """
+        rule_main_missing = (
+            rule_based_score.main_score_name is not None
+            and rule_based_score.main_score_name not in rule_based_score.value
+        )
+        if not rule_based_score.status.is_usable or not rule_based_score.value or rule_main_missing:
+            llm_score = self._align_recovered_judge_metrics(rule_based_score, llm_score)
+
         if not rule_based_score.status.is_usable or not rule_based_score.value:
             merged = llm_score.model_copy(deep=True)
             merged.metadata = {**(rule_based_score.metadata or {}), **(llm_score.metadata or {})}
@@ -349,16 +356,13 @@ class LLMJudgeMixin:
             }
             return rule_based_score
 
-        if rule_based_score.main_score_name and rule_based_score.main_score_name not in rule_based_score.value:
+        if rule_main_missing:
             # A missing primary metric must not redirect the judge into a surviving metric.
-            metric_keys = {canonicalize_producer_identity(name, None): name for name in rule_based_score.value}
             for name, value in llm_score.value.items():
-                key = metric_keys.setdefault(canonicalize_producer_identity(name, None), name)
-                if key in rule_based_score.value:
-                    value = max(rule_based_score.value[key], value)
-                rule_based_score.value[key] = value
-            judge_main = llm_score.main_score_name or next(iter(llm_score.value))
-            rule_based_score.main_score_name = metric_keys[canonicalize_producer_identity(judge_main, None)]
+                if name in rule_based_score.value:
+                    value = max(rule_based_score.value[name], value)
+                rule_based_score.value[name] = value
+            rule_based_score.main_score_name = llm_score.main_score_name or next(iter(llm_score.value))
         else:
             rule_value = float(rule_based_score.main_value or 0.0)
             judge_value = float(llm_score.main_value or 0.0)
@@ -374,3 +378,21 @@ class LLMJudgeMixin:
         )
 
         return rule_based_score
+
+    def _align_recovered_judge_metrics(self, rule_score: Score, judge_score: Score) -> Score:
+        """Keep aliases on the rule metric's raw key so aggregation combines samples."""
+        metric_keys = {canonicalize_producer_identity(name, None): name for name in rule_score.value}
+        for metric in self._benchmark_meta.metric_list:
+            name = metric if isinstance(metric, str) else next(iter(metric))
+            metric_keys.setdefault(canonicalize_producer_identity(name, None), name)
+
+        aligned = judge_score.model_copy(deep=True)
+        aligned.value = {}
+        for name, value in judge_score.value.items():
+            key = metric_keys.get(canonicalize_producer_identity(name, None), name)
+            aligned.value[key] = max(aligned.value[key], value) if key in aligned.value else value
+        if judge_score.main_score_name is not None:
+            aligned.main_score_name = metric_keys.get(
+                canonicalize_producer_identity(judge_score.main_score_name, None), judge_score.main_score_name
+            )
+        return aligned

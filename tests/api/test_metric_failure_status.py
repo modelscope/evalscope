@@ -219,3 +219,76 @@ def test_failed_judge_preserves_partial_rule_evidence(
     assert score.status is ScoreStatus.DEGRADED
     assert score.judge_summary.status is ScoreStatus.DEGRADED
     assert score.metadata['broken_init'] == 'error: initialization failed'
+
+
+@pytest.mark.parametrize(('rule_name', 'judge_name'), [('accuracy', 'acc'), ('acc', 'accuracy')])
+@pytest.mark.parametrize('secondary_metric', [False, True])
+@pytest.mark.parametrize('configured_as_dict', [False, True])
+def test_recovered_judge_alias_keeps_one_cross_sample_denominator(
+    monkeypatch: pytest.MonkeyPatch,
+    rule_name: str,
+    judge_name: str,
+    secondary_metric: bool,
+    configured_as_dict: bool,
+) -> None:
+    """A failed rule recovered by its judge alias still belongs to the same metric."""
+    from evalscope.api.benchmark.adapters import default_data_adapter
+
+    metrics = [{rule_name: {}} if configured_as_dict else rule_name]
+    if secondary_metric:
+        metrics.append('exact_match')
+    adapter = make_adapter(monkeypatch, metrics, strategy='llm_recall')
+    # BenchmarkMeta normalizes legacy aliases before DefaultDataAdapter scores them.
+    configured_metric = adapter.metric_list[0]
+    effective_name = configured_metric if isinstance(configured_metric, str) else next(iter(configured_metric))
+    original_get_metric = default_data_adapter.get_metric
+    monkeypatch.setattr(
+        default_data_adapter, 'get_metric',
+        lambda name: FailingMetric if name == effective_name else original_get_metric(name),
+    )
+    adapter.judge_metric_name = judge_name
+    adapter.llm_judge = ScriptedJudge('{"verdict":"B"}')
+
+    samples = [calculate(adapter, 'answer', 0), calculate(adapter, 'crash', 1)]
+    results = adapter.aggregate_scores(samples)
+    accuracy = [result for result in results if result.metric_name == 'accuracy']
+
+    assert samples[1].score.value[effective_name] == 0.0
+    assert len(accuracy) == 1
+    assert accuracy[0].score == 0.5
+    assert accuracy[0].num == 2
+    assert accuracy[0].ids == [0, 1]
+    if secondary_metric:
+        exact_match = next(result for result in results if result.metric_name == 'exact_match')
+        assert exact_match.score == 0.5
+        assert exact_match.num == 2
+
+
+def test_recovered_judge_retains_a_surviving_rule_alias(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Custom rule producers may still emit an alias despite canonical metadata."""
+    adapter = make_adapter(monkeypatch, ['flaky', 'accuracy'])
+    rule = Score(value={'acc': 0.0}, main_score_name='flaky', status=ScoreStatus.DEGRADED)
+    merged = adapter._merge_scores(rule, Score(value={'accuracy': 1.0}))
+    samples = [SampleScore(sample_id=0, score=Score(value={'acc': 0.0})), SampleScore(sample_id=1, score=merged)]
+
+    assert merged.value == {'acc': 1.0}
+    result, = adapter.aggregate_scores(samples)
+    assert result.metric_name == 'accuracy'
+    assert result.score == 0.5
+    assert result.num == 2
+
+
+def test_recovered_judge_does_not_fill_an_unrelated_failed_metric(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Judge accuracy cannot contribute to an unrelated plugin metric's denominator."""
+    adapter = make_adapter(monkeypatch, ['flaky'], strategy='llm_recall')
+    adapter.llm_judge = ScriptedJudge('{"verdict":"B"}')
+
+    samples = [calculate(adapter, 'answer', 0), calculate(adapter, 'crash', 1)]
+    results = {result.metric_name: result for result in adapter.aggregate_scores(samples)}
+
+    assert samples[1].score.value == {'acc': 0.0}
+    assert results['flaky'].score == 1.0
+    assert results['flaky'].ids == [0]
+    assert results['flaky'].num == 1
+    assert results['accuracy'].ids == [1]
+    assert results['accuracy'].num == 1
