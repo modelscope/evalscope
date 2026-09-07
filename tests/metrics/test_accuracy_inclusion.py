@@ -72,6 +72,6 @@ def test_trivia_qa_accepts_normalized_aliases() -> None:
     assert Accuracy(allow_inclusion=True).apply([' NYC\n', 'York'], [sample.target] * 2) == [1.0, 0.0]
 
 
-@pytest.mark.parametrize('benchmark', ['mmlu_redux', 'trivia_qa'])
-def test_inclusion_benchmark_evaluation_version(benchmark: str) -> None:
-    assert BENCHMARK_REGISTRY[benchmark].evaluation_version == 'v1.1'
+@pytest.mark.parametrize('benchmark_name', ['mmlu_redux', 'trivia_qa'])
+def test_inclusion_benchmark_evaluation_version(benchmark_name: str) -> None:
+    assert BENCHMARK_REGISTRY[benchmark_name].evaluation_version == 'v1.1'
