@@ -8,6 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.constants import JudgeScoreType, JudgeStrategy, ScoreStatus, ScoringPolicy
 from evalscope.metrics import LLMJudge
+from evalscope.metrics.semantics.identity import canonicalize_producer_identity
 from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
@@ -305,9 +306,13 @@ class LLMJudgeMixin:
     def fallback_to_rule_score(self, rule_based_score: Score, judge_score: Score) -> Score:
         """Retain rule evidence when a ``JUDGE_DEFAULT`` review is unavailable."""
         fallback = rule_based_score.model_copy(deep=True)
-        fallback.status = ScoreStatus.DEGRADED
+        fallback.status = (
+            ScoreStatus.DEGRADED
+            if rule_based_score.status.is_usable and rule_based_score.value
+            else ScoreStatus.EXCLUDED
+        )
         fallback.judge_summary = (
-            judge_score.judge_summary.model_copy(update={'status': ScoreStatus.DEGRADED})
+            judge_score.judge_summary.model_copy(update={'status': fallback.status})
             if judge_score.judge_summary is not None
             else None
         )
@@ -324,11 +329,24 @@ class LLMJudgeMixin:
         ``llm_recall`` exists to recover rule-based misses, so the judge can only raise the
         score: the result is ``max(rule, judge)``. A failed judge must not erase rule evidence.
         """
+        rule_main_missing = (
+            rule_based_score.main_score_name is not None
+            and rule_based_score.main_score_name not in rule_based_score.value
+        )
+        if not rule_based_score.status.is_usable or not rule_based_score.value or rule_main_missing:
+            llm_score = self._align_recovered_judge_metrics(rule_based_score, llm_score)
+
+        if not rule_based_score.status.is_usable or not rule_based_score.value:
+            merged = llm_score.model_copy(deep=True)
+            merged.metadata = {**(rule_based_score.metadata or {}), **(llm_score.metadata or {})}
+            return merged
+
         if not llm_score.status.is_usable or not llm_score.value:
             # The rule score stands, so the sample is still scored -- it just fell back.
-            rule_based_score.status = ScoreStatus.FALLBACK
+            if rule_based_score.status is not ScoreStatus.DEGRADED:
+                rule_based_score.status = ScoreStatus.FALLBACK
             rule_based_score.judge_summary = (
-                llm_score.judge_summary.model_copy(update={'status': ScoreStatus.FALLBACK})
+                llm_score.judge_summary.model_copy(update={'status': rule_based_score.status})
                 if llm_score.judge_summary is not None
                 else None
             )
@@ -338,12 +356,43 @@ class LLMJudgeMixin:
             }
             return rule_based_score
 
-        rule_value = float(rule_based_score.main_value or 0.0)
-        judge_value = float(llm_score.main_value or 0.0)
-        rule_based_score.main_value = max(rule_value, judge_value)
+        if rule_main_missing:
+            # A missing primary metric must not redirect the judge into a surviving metric.
+            for name, value in llm_score.value.items():
+                if name in rule_based_score.value:
+                    value = max(rule_based_score.value[name], value)
+                rule_based_score.value[name] = value
+            rule_based_score.main_score_name = llm_score.main_score_name or next(iter(llm_score.value))
+        else:
+            rule_value = float(rule_based_score.main_value or 0.0)
+            judge_value = float(llm_score.main_value or 0.0)
+            rule_based_score.main_value = max(rule_value, judge_value)
         rule_based_score.explanation = llm_score.explanation
         rule_based_score.metadata = {**(rule_based_score.metadata or {}), **(llm_score.metadata or {})}
-        rule_based_score.status = llm_score.status
-        rule_based_score.judge_summary = llm_score.judge_summary
+        if rule_based_score.status is not ScoreStatus.DEGRADED:
+            rule_based_score.status = llm_score.status
+        rule_based_score.judge_summary = (
+            llm_score.judge_summary.model_copy(update={'status': rule_based_score.status})
+            if llm_score.judge_summary is not None
+            else None
+        )
 
         return rule_based_score
+
+    def _align_recovered_judge_metrics(self, rule_score: Score, judge_score: Score) -> Score:
+        """Keep aliases on the rule metric's raw key so aggregation combines samples."""
+        metric_keys = {canonicalize_producer_identity(name, None): name for name in rule_score.value}
+        for metric in self._benchmark_meta.metric_list:
+            name = metric if isinstance(metric, str) else next(iter(metric))
+            metric_keys.setdefault(canonicalize_producer_identity(name, None), name)
+
+        aligned = judge_score.model_copy(deep=True)
+        aligned.value = {}
+        for name, value in judge_score.value.items():
+            key = metric_keys.get(canonicalize_producer_identity(name, None), name)
+            aligned.value[key] = max(aligned.value[key], value) if key in aligned.value else value
+        if judge_score.main_score_name is not None:
+            aligned.main_score_name = metric_keys.get(
+                canonicalize_producer_identity(judge_score.main_score_name, None), judge_score.main_score_name
+            )
+        return aligned

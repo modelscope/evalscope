@@ -12,7 +12,7 @@ from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUs
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
-from evalscope.constants import HubType, JudgeStrategy
+from evalscope.constants import HubType, JudgeStrategy, ScoreStatus
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
 
@@ -651,16 +651,19 @@ class DefaultDataAdapter(DataAdapter):
         )
 
         # Calculate scores for each configured metric
+        metric_failed = False
         for metric in self.metric_list:
             try:
                 if isinstance(metric, str):
                     metric_name = metric
-                    metric_scorer = get_metric(metric)  # Get metric implementation from registry
-                    metric_func = metric_scorer()  # Instantiate the metric scorer
+                    metric_args = {}
                 elif isinstance(metric, dict):
                     metric_name = list(metric.keys())[0]
-                    metric_cls = get_metric(metric_name)
-                    metric_func = metric_cls(**metric[metric_name])  # Initialize with parameters
+                    metric_args = metric[metric_name]
+                if score.main_score_name is None:
+                    score.main_score_name = metric_name
+                metric_cls = get_metric(metric_name)
+                metric_func = metric_cls(**metric_args)
                 metric_score = metric_func(
                     prediction=filtered_prediction,
                     reference=reference,
@@ -668,8 +671,11 @@ class DefaultDataAdapter(DataAdapter):
                 score.value[metric_name] = metric_score
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                score.value[metric_name] = 0
+                metric_failed = True
                 score.metadata[metric_name] = f'error: {str(e)}'
+
+        if metric_failed:
+            score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
 
         return score
 
@@ -711,7 +717,10 @@ class DefaultDataAdapter(DataAdapter):
                 task_state=task_state,
             )
 
-            if float(rule_based_score.main_value or 0.0) > 0.99:
+            rule_main_available = rule_based_score.status.is_usable and (
+                rule_based_score.main_score_name is None or rule_based_score.main_score_name in rule_based_score.value
+            )
+            if rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
                 final_score = rule_based_score
             else:
                 # A valid judge may raise the rule score; an unavailable judge preserves it.

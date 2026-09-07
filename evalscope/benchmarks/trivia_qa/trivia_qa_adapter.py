@@ -27,6 +27,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 @register_benchmark(
     BenchmarkMeta(
         name='trivia_qa',
+        evaluation_version='v1.1',
         pretty_name='TriviaQA',
         dataset_id='evalscope/trivia_qa',
         tags=[Tags.QA, Tags.READING_COMPREHENSION],

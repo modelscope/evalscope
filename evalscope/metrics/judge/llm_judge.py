@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 from evalscope.api.messages import ChatMessage
@@ -120,15 +121,9 @@ class LLMJudge:
         return self.model.generate(messages)
 
     def build_prompt(self, pred: str, gold: str, question: Optional[str] = None) -> str:
+        """Render supported placeholders once, preserving inserted values verbatim."""
         if question is None:
             question = 'Not provided'
 
-        # check variables in prompt_template
-        prompt = self.prompt_template
-        if '{question}' in self.prompt_template:
-            prompt = prompt.replace('{question}', question)
-        if '{pred}' in self.prompt_template:
-            prompt = prompt.replace('{pred}', pred)
-        if '{gold}' in self.prompt_template:
-            prompt = prompt.replace('{gold}', gold)
-        return prompt
+        values = {'question': question, 'pred': pred, 'gold': gold}
+        return re.sub(r'\{(question|pred|gold)\}', lambda match: values[match.group(1)], self.prompt_template)
