@@ -8,7 +8,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.constants import JudgeScoreType, JudgeStrategy, ScoreStatus, ScoringPolicy
 from evalscope.metrics import LLMJudge
-from evalscope.metrics.semantics.identity import canonicalize_producer_identity
+from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 from evalscope.utils.argument_utils import get_secret_value
 from evalscope.utils.deprecation_utils import deprecated_warning
 from evalscope.utils.logger import get_logger
