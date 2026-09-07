@@ -9,7 +9,15 @@ import pytest
 
 from evalscope.agent.external.bridge.trace_recorder import BridgeTraceRecorder
 from evalscope.api.agent import AgentTrace, EventType
-from evalscope.api.messages import ChatMessageAssistant, ChatMessageSystem, ChatMessageTool, ChatMessageUser
+from evalscope.api.messages import (
+    ChatMessageAssistant,
+    ChatMessageSystem,
+    ChatMessageTool,
+    ChatMessageUser,
+    ContentReasoning,
+    ContentText,
+)
+from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.model import ModelOutput, ModelUsage
 from evalscope.api.model.model_output import ChatCompletionChoice
 from evalscope.api.tool import ToolCall, ToolFunction
@@ -251,3 +259,72 @@ def test_responses_first_turn_ingests_instructions_when_user_message_empty():
     msgs = rec.messages()
     assert [m.role for m in msgs] == ['system', 'user', 'assistant']
     assert msgs[0].text == '<full task description>'
+
+
+def test_assistant_message_is_a_copy_of_the_model_output():
+    """The transcript must carry what the model returned, not a text-only rebuild.
+
+    ``DefaultEvaluator._record_perf`` reads ``perf_metrics`` off the assistant
+    messages, so a rebuild that drops the field leaves the perf table empty
+    for every external-agent run. Reasoning blocks, ``model`` and ``metadata``
+    went missing the same way. The native loop deep-copies ``output.message``
+    (``AgentLoop._snapshot_assistant_message``) and the bridge is supposed to
+    produce the same transcript shape.
+    """
+    perf = PerformanceMetrics(latency=0.25, ttft=0.1, input_tokens=12, output_tokens=3)
+    call = ToolCall(id='call-1', function=ToolFunction(name='lookup', arguments={'q': 'x'}), type='function')
+    msg = ChatMessageAssistant(
+        content=[ContentReasoning(reasoning='6 * 7'), ContentText(text='42')],
+        tool_calls=[call],
+        model='qwen3-max',
+        metadata={'finish_reason': 'stop'},
+    )
+    msg.perf_metrics = perf
+    output = ModelOutput(model='qwen3-max', choices=[ChatCompletionChoice(message=msg, stop_reason='stop')])
+
+    rec = BridgeTraceRecorder(trial_id='t9', framework='mock')
+    rec.record_anthropic_turn(
+        request_body={'messages': [{'role': 'user', 'content': 'q'}]},
+        output=output,
+        latency_ms=250.0,
+    )
+
+    recorded = rec.messages()[1]
+    assert isinstance(recorded, ChatMessageAssistant)
+    assert recorded.perf_metrics == perf
+    assert recorded.model == 'qwen3-max'
+    assert recorded.metadata == {'finish_reason': 'stop'}
+    assert [type(block) for block in recorded.content] == [ContentReasoning, ContentText]
+    assert recorded.text == '42'
+    assert recorded.tool_calls == [call]
+
+
+def test_assistant_message_does_not_alias_the_model_output():
+    """Mutating ``output.message`` after the turn was recorded must not rewrite history."""
+    output = _output('world')
+    rec = BridgeTraceRecorder(trial_id='t10', framework='mock')
+    rec.record_anthropic_turn(request_body={'messages': [{'role': 'user', 'content': 'hello'}]}, output=output)
+
+    output.message.text = 'rewritten after recording'
+
+    assert rec.messages()[1].text == 'world'
+
+
+def test_assistant_message_normalizes_bare_string_tool_function():
+    """Some upstream paths leave ``ToolCall.function`` as a bare string.
+
+    Whatever else is copied from the model output, the transcript must carry
+    a proper :class:`ToolFunction` and the TOOL_CALL event must name the tool.
+    """
+    raw_call = ToolCall.model_construct(id='call-2', function='lookup')
+    rec = BridgeTraceRecorder(trial_id='t11', framework='mock')
+    rec.record_anthropic_turn(
+        request_body={'messages': [{'role': 'user', 'content': 'use a tool'}]},
+        output=_output('', tool_calls=[raw_call]),
+    )
+
+    recorded = rec.messages()[1]
+    assert recorded.tool_calls == [ToolCall(id='call-2', function=ToolFunction(name='lookup', arguments={}), type='function')]
+    event = [ev for ev in rec.snapshot().events if ev.type == EventType.TOOL_CALL][0]
+    assert event.payload['name'] == 'lookup'
+    assert event.payload['arguments'] == {}
