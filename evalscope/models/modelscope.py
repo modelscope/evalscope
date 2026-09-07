@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple, Union, c
 
 import torch  # type: ignore
 from modelscope import AutoModelForCausalLM, AutoTokenizer
-from torch import Tensor  # type: ignore
 from typing_extensions import override
 
 from evalscope.api.messages import (
@@ -255,7 +254,6 @@ class ModelScopeAPI(ModelAPI):
         """Default is 2048, bump it up to a value suitable for evals."""
         return 2048
 
-    @override
     def max_connections(self) -> int:
         """Effectively the batch size."""
         return 8
@@ -308,20 +306,20 @@ def message_content_to_string(messages: List[ChatMessage]) -> List[ChatMessage]:
 
 # return value from generate as a result of specifying return_dict_in_generate
 class ModelGenerateOutput:
-    sequences: Tensor
-    logits: tuple[Tensor]
+    sequences: torch.Tensor
+    logits: tuple[torch.Tensor]
 
 
 class Tokenizer(Protocol):
-    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], Tensor]: ...
+    def __call__(self, input: List[str]) -> Dict[Literal['input_ids', 'attention_mask'], torch.Tensor]: ...
 
 
 class Generator(Protocol):
-    def __call__(self, input_ids: Tensor, attention_mask: Tensor) -> Tensor: ...
+    def __call__(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor: ...
 
 
 class Decoder(Protocol):
-    def __call__(self, sequences: Tensor) -> list[str]: ...
+    def __call__(self, sequences: torch.Tensor) -> list[str]: ...
 
 
 @dataclass

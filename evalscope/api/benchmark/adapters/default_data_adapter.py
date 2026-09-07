@@ -3,7 +3,7 @@ from collections import defaultdict
 from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
-from overrides import override
+from typing_extensions import override
 
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
