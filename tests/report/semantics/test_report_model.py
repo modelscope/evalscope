@@ -80,9 +80,14 @@ def test_collection_report_keeps_mixed_metrics_without_primary() -> None:
     assert all(metric.semantics.kind is MetricKind.QUALITY for metric in report.metrics)
     assert report.primary_metric is None
     assert report.primary_metric_identity is None
+    assert report.score is None
+    assert report.primary_metric_unavailable_reason == (
+        'The collection contains multiple scored metrics, so no single primary metric is selected.'
+    )
+    assert Report.from_dict(report.to_dict()).primary_metric_unavailable_reason == report.primary_metric_unavailable_reason
 
 
-def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
+def test_report_score_comes_only_from_the_primary_metric() -> None:
     report = _report()
     assert report.score == 0.8
 
@@ -103,6 +108,25 @@ def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
     # A report with no metric produced no score; it did not score zero.
     assert Report().score is None
     assert 'score' not in report.to_dict()
+
+
+def test_score_is_absent_rather_than_taken_from_a_diagnostic_metric() -> None:
+    """Falling back to the first metric would present a token count as the run's score."""
+    report = ReportGenerator.generate_report(
+        {
+            'test': [
+                AggScore(score=7.0, metric_name='no_answer_num', aggregation='mean', num=10),
+                AggScore(score=0.9, metric_name='yes_ratio', aggregation='mean', num=10),
+            ]
+        },
+        'model',
+        _StubAdapter('diagnostics_only'),
+    )
+
+    assert [metric.identity.name for metric in report.metrics] == ['no_answer_num', 'yes_ratio']
+    assert report.primary_metric is None
+    assert report.score is None
+    assert report.num == 10
 
 
 def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
@@ -245,6 +269,34 @@ def test_transitional_v1_fields_migrate_to_current_report_shape() -> None:
     assert 'primary_metric_name' not in report.to_dict()
 
 
+@pytest.mark.parametrize('metric_name', ['accuracy', 'f1', 'precision', 'exact_match', 'pass_rate'])
+def test_v1_canonical_primary_is_resolved_before_validation(metric_name: str) -> None:
+    report = Report.from_dict({
+        'dataset_name': 'legacy_primary_probe',
+        'primary_metric_name': metric_name,
+        'metrics': [{'name': metric_name, 'score': 0.8, 'categories': []}],
+    })
+
+    assert report.score == 0.8
+    assert report.primary_metric_identity == MetricIdentity(name=metric_name, aggregation='identity')
+    assert report.metrics[0].semantics.kind is MetricKind.QUALITY
+    assert Report.from_dict(report.to_dict()) == report
+
+
+def test_v1_diagnostic_override_discards_the_legacy_primary() -> None:
+    report = Report.from_dict({
+        'dataset_name': 'job_bench',
+        'primary_metric_name': 'total_score',
+        'metrics': [{'name': 'total_score', 'score': 7.0, 'categories': []}],
+    })
+
+    assert report.metrics[0].score == 7.0
+    assert report.metrics[0].semantics.kind is MetricKind.DIAGNOSTIC
+    assert report.primary_metric_identity is None
+    assert report.score is None
+    assert Report.from_dict(report.to_dict()) == report
+
+
 def test_v1_report_migrates_without_changing_values() -> None:
     report = Report.from_dict({
         'dataset_name': 'conll2003',
@@ -370,6 +422,18 @@ def test_unknown_valid_third_party_identity_can_be_written_as_diagnostic() -> No
 def test_multi_scored_report_without_selector_fails() -> None:
     with pytest.raises(ValueError, match='declare BenchmarkMeta.primary_metric'):
         ReportGenerator.generate_report(_scores(), 'model', _StubAdapter('conll2003'))
+
+
+def test_fresh_report_rejects_a_diagnostic_primary() -> None:
+    with pytest.raises(ValueError, match='matched diagnostic identity'):
+        ReportGenerator.generate_report(
+            {'test': [
+                AggScore(score=0.8, metric_name='accuracy', aggregation='mean', num=1),
+                AggScore(score=7.0, metric_name='no_answer_num', aggregation='mean', num=1),
+            ]},
+            'model',
+            _StubAdapter('benchmark', MetricSelector(name='no_answer_num')),
+        )
 
 
 def test_selector_must_match_exactly_one_identity() -> None:

@@ -183,7 +183,7 @@ class AggScore(BaseModel):
     @model_validator(mode='after')
     def _canonicalize_identity_fields(self) -> 'AggScore':
         """Normalize producer syntax without assigning legacy semantics."""
-        from evalscope.metrics.semantics.identity import canonicalize_producer_identity
+        from evalscope.metrics.semantics.naming import canonicalize_producer_identity
 
         identity = canonicalize_producer_identity(self.metric_name, self.aggregation, self.dimensions)
         self.metric_name = identity.name

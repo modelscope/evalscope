@@ -1,136 +1,77 @@
-"""Metric identity normalization and v1 migration.
+"""Read-old metric naming: historical spellings rewritten into v2 identities.
 
-New producers must pass canonical names. The permissive rules in this module are reserved for
-built-in adapter output and historical reports; they are deliberately not used by the v2
-resolver.
+Everything here is permissive by design and is reserved for built-in adapter output and stored v1
+reports. New producers go through ``evalscope.metrics.semantics.naming``, which never reassigns an
+ambiguous name.
+
+``_BENCHMARK_RULES`` declares one pattern per benchmark shape, and both :func:`migrate_legacy_identity`
+and :func:`is_known_legacy_spelling` derive from it. Declaring it once is what keeps the rewrite and
+the membership gate from disagreeing about whether a spelling is supported.
 """
 
 import re
-from typing import Callable, Dict, Match, NamedTuple, Optional, Pattern, Tuple
+from dataclasses import dataclass
+from enum import Enum
+from typing import Callable, Dict, Match, Optional, Pattern, Tuple
 
 from evalscope.api.metric.semantics import MetricIdentity, Scalar
-from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
+from evalscope.metrics.semantics.aliases import METRIC_ALIASES, AliasScope, aliases_in_scope
+from evalscope.metrics.semantics.naming import (
+    BLEU_N,
+    ROUGE_VARIANT,
+    canonical_aggregation,
+    canonical_overlap_name,
+    snake_case,
+)
 
-_EXACT_ALIASES = {name: alias.canonical_name for name, alias in LEGACY_METRIC_ALIASES.items()}
+__all__ = [
+    'LegacyNameRule',
+    'Stage',
+    'canonical_metric_list_name',
+    'is_known_legacy_spelling',
+    'migrate_legacy_identity',
+]
 
-# Producer-side aliases are intentionally narrow. These spellings are exact synonyms; mappings
-# that reinterpret an ambiguous score remain exclusive to v1 report migration.
-_SAFE_PRODUCER_ALIASES = {
-    'acc': 'accuracy',
-    'bertscore': 'bert_score',
-    'f1_score': 'f1',
-    'em': 'exact_match',
-}
-
-_AGGREGATION_ALIASES = {
-    'avg': 'mean',
-    'average': 'mean',
-    'macro': 'macro_mean',
-    'micro': 'micro_mean',
-    'weighted': 'weighted_mean',
-    '': 'identity',
-}
-
+#: Punctuation the v1 names used to encode a structural axis. Read here only: a new producer
+#: declares these axes through ``aggregation`` and ``dimensions`` instead of spelling them.
 _DYNAMIC_K = re.compile(r'^(?P<name>.+?)_(?P<kind>pass|vote)@(?P<k>\d+)$')
 _DYNAMIC_HAT_K = re.compile(r'^(?P<name>.+?)_pass\^(?P<k>\d+)$')
-_BLEU_N = re.compile(r'^(?:mean_)?[Bb]leu[-_](?P<ngram>\d+)$')
-_ROUGE_VARIANT = re.compile(r'^(?:mean_)?Rouge-(?P<variant>[12L])-(?P<statistic>[RPF])$')
 _THRESHOLD_ACC = re.compile(r'^(?:mean_)?ACC@(?P<threshold>\d+(?:\.\d+)?)$')
 _SCOPE_METRIC = re.compile(r'^(?P<scope>[^/]+)/(?P<name>[^/]+)$')
 _K_AGGREGATION = re.compile(r'^(?P<kind>avg|mean|pass|max|vote)@(?P<k>\d+)$')
-_SNAKE_BOUNDARY = re.compile(r'(?<=[a-z0-9])(?=[A-Z])')
-_NON_NAME = re.compile(r'[^a-z0-9]+')
 
 
-def _snake_case(value: str) -> str:
-    value = _SNAKE_BOUNDARY.sub('_', value).lower()
-    return _NON_NAME.sub('_', value).strip('_')
+class Stage(str, Enum):
+    """When a benchmark rule runs, relative to the generic ``scope/metric`` split."""
+
+    RAW_NAME = 'raw_name'
+    """Before the split, so the rule sees the stored name including any scope prefix."""
+
+    AFTER_SCOPE_SPLIT = 'after_scope_split'
+    """After the split. ``Overall_aAcc`` under a scope must lose the scope first, otherwise the
+    level would absorb it."""
 
 
-def _canonical_overlap_name(name: str, dimensions: Dict[str, Scalar]) -> Optional[str]:
-    """Return the canonical identity for an unambiguous BLEU or ROUGE spelling."""
-    bleu = _BLEU_N.fullmatch(name)
-    if bleu:
-        dimensions.setdefault('ngram', int(bleu.group('ngram')))
-        return 'bleu'
+@dataclass(frozen=True)
+class LegacyNameRule:
+    """How one benchmark's historical metric-name shape maps onto a v2 identity."""
 
-    rouge = _ROUGE_VARIANT.fullmatch(name)
-    if rouge:
-        variant = rouge.group('variant')
-        if variant == 'L':
-            dimensions.setdefault('variant', 'l')
-        else:
-            dimensions.setdefault('ngram', int(variant))
-        dimensions.setdefault(
-            'statistic',
-            {
-                'R': 'recall',
-                'P': 'precision',
-                'F': 'f1',
-            }[rouge.group('statistic')],
-        )
-        return 'rouge'
-
-    return None
-
-
-def canonicalize_producer_identity(
-    metric_name: str,
-    aggregation: Optional[str],
-    dimensions: Optional[Dict[str, Scalar]] = None,
-) -> MetricIdentity:
-    """Canonicalize producer syntax without inferring what a metric measures.
-
-    New producers must express structural axes through ``aggregation`` and ``dimensions``.
-    Ambiguous or empty names are kept reportable under ``legacy_metric`` with their original
-    spelling, so resolving them can only produce diagnostic semantics.
-    """
-    original_name = metric_name
-    raw_aggregation = aggregation or 'identity'
-    canonical_aggregation = _AGGREGATION_ALIASES.get(raw_aggregation, _snake_case(raw_aggregation))
-    identity_dimensions = dict(dimensions or {})
-    canonical_name = _canonical_overlap_name(metric_name, identity_dimensions)
-    if canonical_name is None:
-        snake_name = _snake_case(metric_name)
-        canonical_name = _SAFE_PRODUCER_ALIASES.get(snake_name, snake_name)
-
-    try:
-        MetricIdentity(name=canonical_name, aggregation='identity')
-    except ValueError:
-        canonical_name = 'legacy_metric'
-        identity_dimensions['original_name'] = original_name
-
-    return MetricIdentity(
-        name=canonical_name,
-        aggregation=canonical_aggregation,
-        dimensions=identity_dimensions,
-    )
-
-
-class _BenchmarkRule(NamedTuple):
-    """How one benchmark's historical metric-name shape maps onto a v2 identity.
-
-    ``pattern`` is the single source of truth for both jobs this knowledge is needed for:
-    :func:`migrate_legacy_identity` uses its match groups to rewrite the identity, and
-    :func:`is_known_dynamic_legacy_name` uses the same pattern to decide whether a non-catalogued
-    spelling belongs to a supported family. Declaring it once is what keeps the two from drifting.
-    """
+    benchmarks: Tuple[str, ...]
+    """Benchmarks that spell their metrics this way."""
 
     pattern: Pattern[str]
-    """Full-match pattern over the raw metric name."""
+    """Full-match pattern over the metric name, read by both the rewrite and the membership gate."""
 
     apply: Callable[[Match[str], Dict[str, Scalar], str], Tuple[str, str]]
     """``(match, dimensions, aggregation) -> (raw_name, aggregation)``, mutating ``dimensions``."""
 
-    before_scope_split: bool = True
-    """Whether the rule runs before the generic ``scope/metric`` split.
+    examples: Tuple[str, ...] = ()
+    """Spellings this rule claims, sampled by the tests that pin its behaviour."""
 
-    ``hallusion_bench`` runs after it: a name such as ``scope/Overall_aAcc`` must have its scope
-    stripped first, otherwise the level would absorb the scope prefix.
-    """
+    stage: Stage = Stage.RAW_NAME
 
 
-def _scoped_suffix_rule(suffix: str, canonical_name: str) -> _BenchmarkRule:
+def _scoped_suffix_rule(benchmark: str, suffix: str, canonical_name: str, examples: Tuple[str, ...]) -> LegacyNameRule:
     """Build the ``{scope}_{suffix}`` rule shared by longmemeval and locomo.
 
     Both benchmarks report one metric per question type plus two roll-ups, spelled as a prefix on
@@ -138,8 +79,10 @@ def _scoped_suffix_rule(suffix: str, canonical_name: str) -> _BenchmarkRule:
     mean over the question types, and anything else names a single question type.
 
     Args:
+        benchmark: Benchmark the rule belongs to.
         suffix: Metric suffix the benchmark uses (``acc`` / ``f1``).
         canonical_name: Canonical metric name the suffix stands for.
+        examples: Spellings for the tests to sample.
 
     Returns:
         The rule for that benchmark.
@@ -153,10 +96,15 @@ def _scoped_suffix_rule(suffix: str, canonical_name: str) -> _BenchmarkRule:
         if scope == 'task_averaged':
             dimensions.setdefault('scope', 'question_types')
             return canonical_name, 'macro_mean'
-        dimensions.setdefault('question_type', _snake_case(scope))
+        dimensions.setdefault('question_type', snake_case(scope))
         return canonical_name, 'mean'
 
-    return _BenchmarkRule(pattern=re.compile(rf'(?P<scope>.+)_{suffix}'), apply=apply)
+    return LegacyNameRule(
+        benchmarks=(benchmark,),
+        pattern=re.compile(rf'(?P<scope>.+)_{suffix}'),
+        apply=apply,
+        examples=examples,
+    )
 
 
 def _apply_overlap_aggregation(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
@@ -194,7 +142,7 @@ def _apply_wide_search(match: Match[str], dimensions: Dict[str, Scalar], aggrega
     """WideSearch: ``{kind}@{k}_{scope}/{metric}``, optionally prefixed by a row/item target."""
     raw_name = match.group('metric')
     dimensions.setdefault('k', int(match.group('k')))
-    dimensions.setdefault('scope', _snake_case(match.group('scope')))
+    dimensions.setdefault('scope', snake_case(match.group('scope')))
     if raw_name.startswith(('row_', 'item_')):
         target, raw_name = raw_name.split('_', 1)
         dimensions.setdefault('target', target)
@@ -210,57 +158,72 @@ def _apply_hallusion_target(match: Match[str], dimensions: Dict[str, Scalar], ag
     """
     level = match.group('level')
     if level:
-        dimensions.setdefault('level', _snake_case(level))
+        dimensions.setdefault('level', snake_case(level))
     dimensions.setdefault('target', {'a': 'answer', 'f': 'figure', 'q': 'question'}[match.group('target')])
     return 'accuracy', 'mean'
 
 
-#: Benchmark -> its historical metric-name rule. One entry per benchmark, one pattern per entry.
-_BENCHMARK_RULES: Dict[str, _BenchmarkRule] = {
-    'general_qa': _BenchmarkRule(
-        pattern=re.compile(rf'(?:{_BLEU_N.pattern}|{_ROUGE_VARIANT.pattern})'),
+#: One rule per historical metric-name shape.
+LEGACY_NAME_RULES: Tuple[LegacyNameRule, ...] = (
+    LegacyNameRule(
+        benchmarks=('general_qa', 'general_vqa'),
+        pattern=re.compile(rf'(?:{BLEU_N.pattern}|{ROUGE_VARIANT.pattern})'),
         apply=_apply_overlap_aggregation,
+        examples=('Bleu_4', 'Rouge-L-R'),
     ),
-    'general_vqa': _BenchmarkRule(
-        pattern=re.compile(rf'(?:{_BLEU_N.pattern}|{_ROUGE_VARIANT.pattern})'),
-        apply=_apply_overlap_aggregation,
+    _scoped_suffix_rule(
+        'longmemeval', 'acc', 'accuracy', ('overall_acc', 'task_averaged_acc', 'single_session_user_acc')
     ),
-    'longmemeval': _scoped_suffix_rule('acc', 'accuracy'),
-    'locomo': _scoped_suffix_rule('f1', 'f1'),
-    'omni_doc_bench': _BenchmarkRule(
+    _scoped_suffix_rule('locomo', 'f1', 'f1', ('overall_f1', 'task_averaged_f1', 'multi_hop_f1')),
+    LegacyNameRule(
+        benchmarks=('omni_doc_bench',),
         pattern=re.compile(r'(?P<metric>.+)_(?P<language>EN|CH)'),
         apply=_apply_language_suffix,
+        examples=('table_TEDS_EN', 'overall_CH'),
     ),
-    'openai_mrcr': _BenchmarkRule(
+    LegacyNameRule(
+        benchmarks=('openai_mrcr',),
         pattern=re.compile(r'(?:overall|(?P<minimum>\d+)-(?P<maximum>\d+))_mrcr_score'),
         apply=_apply_mrcr_scope,
+        examples=('overall_mrcr_score', '4096-8192_mrcr_score'),
     ),
-    'wide_search': _BenchmarkRule(
+    LegacyNameRule(
+        benchmarks=('wide_search',),
         pattern=re.compile(r'(?P<kind>avg|pass|max)@(?P<k>\d+)_(?P<scope>[^/]+)/(?P<metric>[^/]+)'),
         apply=_apply_wide_search,
+        examples=('avg@4_row/f1', 'pass@2_item/precision', 'max@8_Scope Name/success_rate'),
     ),
-    'hallusion_bench': _BenchmarkRule(
+    LegacyNameRule(
+        benchmarks=('hallusion_bench',),
         pattern=re.compile(r'(?:(?P<level>.+)_)?(?P<target>[afq])Acc'),
         apply=_apply_hallusion_target,
-        before_scope_split=False,
+        examples=('Overall_aAcc', 'Easy_qAcc', 'aAcc', 'fAcc', 'qAcc'),
+        stage=Stage.AFTER_SCOPE_SPLIT,
     ),
+)
+
+_BENCHMARK_RULES: Dict[str, LegacyNameRule] = {
+    benchmark: rule for rule in LEGACY_NAME_RULES for benchmark in rule.benchmarks
 }
 
 
-def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
-    exact_match_targets = {
-        'Act.EM': 'action',
-        'Plan.EM': 'plan',
-    }
-    if name in exact_match_targets:
-        dimensions.setdefault('target', exact_match_targets[name])
-        return 'exact_match'
+def _apply_alias(name: str, dimensions: Dict[str, Scalar]) -> Optional[str]:
+    """Resolve one exact alias, adding any axis its spelling encodes."""
+    alias = METRIC_ALIASES.get(name)
+    if alias is None:
+        return None
+    for key, value in alias.dimensions.items():
+        dimensions.setdefault(key, value)
+    return alias.canonical_name
 
-    explicit = _EXACT_ALIASES.get(name)
+
+def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
+    """Canonicalize a stored metric name, extracting the axes its spelling encodes."""
+    explicit = _apply_alias(name, dimensions)
     if explicit:
         return explicit
 
-    overlap_name = _canonical_overlap_name(name, dimensions)
+    overlap_name = canonical_overlap_name(name, dimensions)
     if overlap_name is not None:
         return overlap_name
 
@@ -272,21 +235,12 @@ def _canonical_base_name(name: str, dimensions: Dict[str, Scalar]) -> str:
     if name.startswith('mean_'):
         name = name[5:]
 
-    explicit = _EXACT_ALIASES.get(name)
+    explicit = _apply_alias(name, dimensions)
     if explicit:
         return explicit
 
-    snake_name = _snake_case(name)
-    aliases = {
-        'average_accuracy': 'accuracy',
-        'f_1': 'f1',
-        'rouge_l': 'rouge',
-        'center_acc': 'accuracy',
-        'a_acc': 'accuracy',
-        'f_acc': 'accuracy',
-        'q_acc': 'accuracy',
-    }
-    return aliases.get(snake_name, snake_name)
+    snake_name = snake_case(name)
+    return _apply_alias(snake_name, dimensions) or snake_name
 
 
 def migrate_legacy_identity(
@@ -306,17 +260,17 @@ def migrate_legacy_identity(
     raw_aggregation = aggregation or 'identity'
 
     rule = _BENCHMARK_RULES.get(benchmark_name or '')
-    if rule is not None and rule.before_scope_split:
+    if rule is not None and rule.stage is Stage.RAW_NAME:
         match = rule.pattern.fullmatch(raw_name)
         if match:
             raw_name, raw_aggregation = rule.apply(match, identity_dimensions, raw_aggregation)
 
     scope_match = _SCOPE_METRIC.fullmatch(raw_name)
     if scope_match:
-        identity_dimensions.setdefault('scope', _snake_case(scope_match.group('scope')))
+        identity_dimensions.setdefault('scope', snake_case(scope_match.group('scope')))
         raw_name = scope_match.group('name')
 
-    if rule is not None and not rule.before_scope_split:
+    if rule is not None and rule.stage is Stage.AFTER_SCOPE_SPLIT:
         match = rule.pattern.fullmatch(raw_name)
         if match:
             raw_name, raw_aggregation = rule.apply(match, identity_dimensions, raw_aggregation)
@@ -348,20 +302,40 @@ def migrate_legacy_identity(
     if raw_name.startswith('mean_') and raw_aggregation in ('', 'identity'):
         raw_aggregation = 'mean'
 
-    canonical_name = _canonical_base_name(raw_name, identity_dimensions)
-    canonical_aggregation = _AGGREGATION_ALIASES.get(raw_aggregation, _snake_case(raw_aggregation))
     return MetricIdentity(
-        name=canonical_name,
-        aggregation=canonical_aggregation,
+        name=_canonical_base_name(raw_name, identity_dimensions),
+        aggregation=canonical_aggregation(raw_aggregation),
         dimensions=identity_dimensions,
     )
 
 
-def is_known_dynamic_legacy_name(metric_name: str, benchmark_name: Optional[str] = None) -> bool:
+_METRIC_LIST_ALIASES = aliases_in_scope(AliasScope.METRIC_LIST)
+
+
+def canonical_metric_list_name(raw_name: str, benchmark_name: str) -> Optional[str]:
+    """Canonicalize one ``BenchmarkMeta.metric_list`` entry, or return ``None`` to leave it alone.
+
+    Only the ``METRIC_LIST`` alias scope is rewritten, whose contract is that the canonical name
+    still resolves through ``get_metric()``. Which spellings qualify is alias knowledge, so the
+    adapter boundary asks this instead of carrying its own list.
+
+    Args:
+        raw_name: Metric name as the benchmark declared it.
+        benchmark_name: Benchmark being constructed, for benchmark-scoped rules.
+
+    Returns:
+        The canonical name, or ``None`` when the spelling is not a rewritable alias.
+    """
+    if raw_name not in _METRIC_LIST_ALIASES:
+        return None
+    return migrate_legacy_identity(raw_name, 'identity', benchmark_name=benchmark_name).name
+
+
+def is_known_legacy_spelling(metric_name: str, benchmark_name: Optional[str] = None) -> bool:
     """Whether a non-catalogued v1 name belongs to a supported structured family."""
     if _DYNAMIC_K.fullmatch(metric_name) or _DYNAMIC_HAT_K.fullmatch(metric_name):
         return True
-    if _BLEU_N.fullmatch(metric_name) or _ROUGE_VARIANT.fullmatch(metric_name) or _THRESHOLD_ACC.fullmatch(metric_name):
+    if BLEU_N.fullmatch(metric_name) or ROUGE_VARIANT.fullmatch(metric_name) or _THRESHOLD_ACC.fullmatch(metric_name):
         return True
     scope_metric = _SCOPE_METRIC.fullmatch(metric_name)
     if scope_metric and scope_metric.group('name') in {'success_rate', 'precision', 'recall', 'f1'}:

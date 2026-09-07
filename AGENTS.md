@@ -21,6 +21,11 @@ pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -
 
 Commits failing `make lint` are rejected on `main`.
 
+Choose validation for the changed behavior: targeted tests for code changes, perf tests for perf changes,
+and diff/link/format checks for documentation-only or instruction-only edits. Run the Submission checks
+before committing. After relevant checks pass, repeat or broaden them only for new changes, failures,
+or unresolved concerns. Local checks and fixes within the requested scope do not need repeated approval.
+
 ## Docs generation
 
 Benchmark detail pages (`docs/{zh,en}/benchmarks/<name>.md`) and meta cache (`evalscope/benchmarks/_meta/<name>.json`) are **auto-generated** from each adapter's `BenchmarkMeta.description` + dataset statistics. Do not hand-edit those files.
@@ -100,7 +105,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 
 ## Architecture pointers
 
-Don't try to learn the architecture from this file — read these and grep:
+Use the relevant source pointers below when the task touches that area; this is not a required reading list:
 
 | Topic | Source of truth |
 | --- | --- |

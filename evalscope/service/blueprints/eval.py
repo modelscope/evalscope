@@ -139,11 +139,14 @@ def _all_results_empty(result) -> bool:
 
     This happens when ``ignore_errors=True`` and every sample failed. Native
     evaluation returns a mapping of benchmark names to :class:`Report` objects.
+
+    Emptiness is the absence of metrics, not the absence of ``Report.score``: a report that scored
+    metrics but could not name a primary one among them is a result, not an empty run.
     """
     if not result:
         return True
     if isinstance(result, Report):
-        return result.score is None
+        return not result.metrics
     if isinstance(result, dict):
         return all(_all_results_empty(v) for v in result.values())
     if isinstance(result, list):

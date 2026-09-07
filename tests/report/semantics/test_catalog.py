@@ -13,8 +13,9 @@ from pydantic import ValidationError
 
 from evalscope.api.metric.semantics import MetricDirection, MetricKind
 from evalscope.metrics.semantics import catalog as catalog_module
-from evalscope.metrics.semantics.catalog import METRIC_DEFINITIONS
+from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS, METRIC_DEFINITIONS
 from evalscope.metrics.semantics.entry import MetricEntry
+from evalscope.metrics.semantics.legacy_identity import migrate_legacy_identity
 
 
 class TestImportTimeValidation:
@@ -73,3 +74,22 @@ def test_v2_registry_contains_only_canonical_non_dynamic_names() -> None:
         assert not name.endswith(('_s', '_ms'))
         assert all(character not in name for character in ('@', '/', ' '))
         assert name not in forbidden_names
+
+
+def test_no_legacy_entry_duplicates_a_canonical_declaration() -> None:
+    """A read-old entry must earn its place by differing from what the v2 tables already say.
+
+    A canonical name migrates to itself and resolves through ``METRIC_DEFINITIONS``, so restating it
+    here would only add a second place to forget when its display fields change.
+    """
+    redundant = []
+    for name, entry in LEGACY_METRIC_MIGRATIONS.items():
+        identity = migrate_legacy_identity(name, 'identity')
+        migrates_to_itself = identity.name == name and identity.aggregation == 'identity' and not identity.dimensions
+        if migrates_to_itself and METRIC_DEFINITIONS.get(name) == entry:
+            redundant.append(name)
+
+    assert sorted(redundant) == [], (
+        f'these read-old entries repeat their METRIC_DEFINITIONS declaration verbatim: {sorted(redundant)}; '
+        f'drop them and let the resolver read the canonical table'
+    )

@@ -1,7 +1,7 @@
 import pytest
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector
-from evalscope.metrics.semantics.resolver import SemanticsSource, get_semantics_resolver, select_primary_identity
+from evalscope.api.metric.semantics import MetricIdentity, MetricKind
+from evalscope.metrics.semantics.resolver import SemanticsSource, get_semantics_resolver
 
 
 def test_resolver_uses_canonical_name() -> None:
@@ -38,56 +38,3 @@ def test_pass_at_k_dimensions_share_one_aggregation_semantics() -> None:
     for k in (1, 7, 137):
         identity = MetricIdentity(name='accuracy', aggregation='pass_at_k', dimensions={'k': k})
         assert resolver.resolve('humaneval', identity).semantics.semantic_id == 'quality.pass_at_k.ratio'
-
-
-def test_structured_selector_selects_one_identity_without_mutating_semantics() -> None:
-    identities = [
-        MetricIdentity(name='rouge', aggregation='mean', dimensions={
-            'ngram': 1,
-            'statistic': 'recall'
-        }),
-        MetricIdentity(name='rouge', aggregation='mean', dimensions={
-            'statistic': 'recall',
-            'variant': 'l'
-        }),
-    ]
-    resolver = get_semantics_resolver()
-    semantics = {identity.key: resolver.resolve('general_qa', identity).semantics for identity in identities}
-    selector = MetricSelector(
-        name='rouge', aggregation='mean', dimensions={
-            'variant': 'l',
-            'statistic': 'recall'
-        }
-    )
-
-    primary = select_primary_identity(identities, semantics, selector)
-
-    assert primary == identities[1]
-    assert all(item.kind is MetricKind.QUALITY for item in semantics.values())
-
-
-def test_selector_zero_matches_returns_no_primary() -> None:
-    identities = [MetricIdentity(name='accuracy', aggregation='mean')]
-    resolver = get_semantics_resolver()
-    semantics = {identity.key: resolver.resolve('benchmark', identity).semantics for identity in identities}
-
-    assert select_primary_identity(identities, semantics, MetricSelector(name='recall')) is None
-
-
-def test_selector_multiple_matches_fails() -> None:
-    identities = [
-        MetricIdentity(name='accuracy', aggregation='mean', dimensions={'scope': 'a'}),
-        MetricIdentity(name='accuracy', aggregation='mean', dimensions={'scope': 'b'}),
-    ]
-    resolver = get_semantics_resolver()
-    semantics = {identity.key: resolver.resolve('benchmark', identity).semantics for identity in identities}
-
-    with pytest.raises(ValueError, match='matched 2 identities'):
-        select_primary_identity(identities, semantics, MetricSelector(name='accuracy'))
-
-
-def test_only_one_quality_identity_can_be_implicit_primary() -> None:
-    identity = MetricIdentity(name='accuracy', aggregation='mean')
-    semantics = get_semantics_resolver().resolve('benchmark', identity).semantics
-
-    assert select_primary_identity([identity], {identity.key: semantics}, None) == identity
