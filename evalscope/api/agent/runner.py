@@ -46,6 +46,7 @@ def run_agent_loop(
     trace_env_name: Optional[str],
     mcp_configs: Optional[List['MCPServerConfig']] = None,
     close_environment: bool = True,
+    validate_tool_arguments: bool = False,
 ) -> AgentLoopResult:
     """Drive a single :class:`AgentLoop` to completion and return its result.
 
@@ -71,6 +72,10 @@ def run_agent_loop(
         close_environment: Whether this helper owns and closes ``environment``.
             Set to ``False`` when the caller needs to reuse the same
             environment after the agent loop, for example to run a verifier.
+        validate_tool_arguments: Whether :class:`ToolExecutor` checks every
+            tool call against the ``ToolInfo`` schema advertised to the model
+            (native and MCP tools alike) and refuses to dispatch violating
+            calls. See :attr:`NativeAgentConfig.validate_tool_arguments`.
 
     Returns:
         AgentLoopResult: Completed result with ``messages``, ``trace`` and
@@ -93,7 +98,12 @@ def run_agent_loop(
                 merged_tools.extend(mcp_tool_infos)
 
             try:
-                tool_executor = ToolExecutor(handlers=merged_handlers, environment=environment)
+                tool_executor = ToolExecutor(
+                    handlers=merged_handlers,
+                    environment=environment,
+                    tool_infos=merged_tools,
+                    validate_arguments=validate_tool_arguments,
+                )
                 ctx = AgentContext(
                     sample_id=sample_id,
                     messages=initial_messages,

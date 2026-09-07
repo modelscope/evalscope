@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 import yaml
+from jsonschema import SchemaError, ValidationError, validate
 
 from evalscope.utils import get_logger
 
@@ -64,3 +65,29 @@ def parse_tool_call(id: str, function: str, arguments: str, tools: Optional[List
 
 def tool_parse_error_message(arguments: str, ex: Exception) -> str:
     return f'Error parsing the following tool call arguments:\n\n{arguments}\n\nError details: {ex}'
+
+
+def validate_tool_arguments(call: ToolCall, tool: ToolInfo) -> Optional[str]:
+    """Check ``call.function.arguments`` against the schema advertised in ``tool``.
+
+    Returns ``None`` when the arguments satisfy ``tool.parameters``, otherwise a
+    short description of the first violation, for example
+    ``"'query' is a required property"`` or
+    ``"'abc' is not of type 'integer' (at 'limit')"``.
+
+    The schema is ``tool.parameters.model_dump(exclude_none=True)``: exactly
+    the JSON Schema the model was shown, so a call is judged against the
+    contract it was given rather than against a handler's private
+    expectations. A schema jsonschema cannot compile is treated as
+    unconstrained, so a broken declaration never blocks a well-formed call.
+    """
+    schema = tool.parameters.model_dump(exclude_none=True)
+    try:
+        validate(instance=call.function.arguments, schema=schema)
+    except ValidationError as exc:
+        path = '/'.join(str(part) for part in exc.absolute_path)
+        return f'{exc.message} (at {path!r})' if path else exc.message
+    except SchemaError as exc:
+        logger.debug(f'validate_tool_arguments: schema of tool {tool.name!r} is invalid, skipping: {exc.message}')
+        return None
+    return None

@@ -82,6 +82,17 @@ class NativeAgentConfig(BaseAgentConfig):
     means use each tool's built-in default.
     """
 
+    validate_tool_arguments: bool = Field(default=False)
+    """Reject tool calls whose arguments violate the tool's advertised JSON schema.
+
+    When enabled, :class:`ToolExecutor` checks every call against the
+    ``ToolInfo.parameters`` shown to the model before dispatching it. A
+    violating call is not executed: the model receives the violation as a
+    ``parsing`` tool error observation and can correct itself on the next
+    turn, and the ``TOOL_RESULT`` trace event carries ``error='parsing'``.
+    Off by default so existing benchmark scores are unaffected.
+    """
+
     mcp_servers: List[MCPServerConfig] = Field(default_factory=list)
     """List of MCP servers spawned alongside this agent's per-sample loop.
 

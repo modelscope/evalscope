@@ -61,6 +61,7 @@ EvalScope 自动给模型注入 `python_exec` 工具定义，在 Docker 容器�
 | `environment_extra` | Agent 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `max_steps` | 单样本最大轮数 | 数学/QA `5-10`，代码修复 `100+` |
 | `skills_dir` | 可选的本机 Agent Skills 目录 | EvalScope 会在 agent loop 开始前让 skills 可用 |
+| `validate_tool_arguments` | 拒绝参数不符合下发 JSON schema 的工具调用；模型会收到 `parsing` 类型的工具错误并可重试 | `False`（默认）；需要衡量模型能否产出合规参数时开启 |
 | `kwargs` | 策略参数 | 最常用 `{'system_prompt': '...'}` 引导模型行为 |
 
 可选的 `strategy` 值：
