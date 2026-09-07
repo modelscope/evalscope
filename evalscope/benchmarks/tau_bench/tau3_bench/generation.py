@@ -157,6 +157,7 @@ def predict(model: Model, sample: Sample, adapter_instance) -> InferenceResult:
         # includes NL assertions can be scored. NL judging routes through our
         # patched_generate fallback (uses the user_model as judge).
         evaluation_type=EvaluationType.ALL_WITH_NL_ASSERTIONS,
+        max_steps=adapter_instance.max_steps,
     )
     # retrieval_config only applies to the knowledge domain
     if domain == KNOWLEDGE_DOMAIN:

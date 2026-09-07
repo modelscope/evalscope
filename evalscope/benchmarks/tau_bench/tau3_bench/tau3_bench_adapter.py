@@ -99,6 +99,11 @@ logger = get_logger()
                 'description': 'Optional kwargs forwarded to the retrieval pipeline.',
                 'value': {},
             },
+            'max_steps': {
+                'type': 'int',
+                'description': 'Maximum number of steps for agent to solve the task.',
+                'value': 100,
+            },
         },
     )
 )
@@ -130,6 +135,7 @@ class Tau3BenchAdapter(AgentAdapter):
         # retrieval config (banking_knowledge only)
         self.retrieval_config = self.extra_params.get('retrieval_config', 'bm25')
         self.retrieval_config_kwargs = self.extra_params.get('retrieval_config_kwargs', {}) or {}
+        self.max_steps = self.extra_params.get('max_steps', 100)
 
     def _prepare_data_dir(self):
         dataset_name_or_path = self.dataset_id

@@ -64,6 +64,7 @@ task_cfg = TaskConfig(
                 'generation_config': {
                     'temperature': 0.7,
                 },
+                'max_steps': 100,
                 # banking_knowledge only; other domains ignore these:
                 'retrieval_config': 'bm25',
                 'retrieval_config_kwargs': {},
@@ -78,6 +79,10 @@ task_cfg = TaskConfig(
 
 run_task(task_cfg)
 ```
+
+## Maximum Steps
+
+`max_steps` limits the number of Tau2 agent/simulation steps for each task and is forwarded to `tau2.run.run_task(max_steps=...)`. It defaults to `100` for all domains. Increasing it can improve completion opportunities for longer tasks, but also increases evaluation time and model-call cost.
 
 ## Retrieval Configs (banking_knowledge)
 
