@@ -5,12 +5,12 @@ migrated v1 reports -- so it lives here rather than being restated by each of th
 deliberately separate from ``resolver``: resolving what a metric *means* says nothing about which
 metric carries a report's conclusion.
 
-``select_primary`` never raises. Ambiguity that a benchmark author must fix is reported through
-``PrimarySelection.authoring_error`` and the caller decides whether that is fatal: at generation
-time it is, while reading an archived report must not fail over it.
+``select_primary`` reports the selection status and factual details. Callers decide whether a
+status is fatal and what guidance applies to their report type.
 """
 
 import json
+from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 from typing import Mapping, Optional, Sequence
@@ -23,7 +23,23 @@ from evalscope.metrics.semantics.legacy_identity import migrate_legacy_identity
 #: Meta cache of the built-in benchmarks, read instead of importing an adapter.
 BUILTIN_META_DIR = Path(__file__).parents[2] / 'benchmarks' / '_meta'
 
-__all__ = ['BUILTIN_META_DIR', 'PrimarySelection', 'read_meta_primary_selector', 'select_primary']
+__all__ = [
+    'BUILTIN_META_DIR',
+    'PrimarySelection',
+    'PrimarySelectionStatus',
+    'read_meta_primary_selector',
+    'select_primary',
+]
+
+
+class PrimarySelectionStatus(str, Enum):
+    """Outcome of selection, independent of the report type and its error policy."""
+
+    SELECTED = 'selected'
+    NO_MATCH = 'no_match'
+    NO_SCORED_METRICS = 'no_scored_metrics'
+    AMBIGUOUS = 'ambiguous'
+    DIAGNOSTIC = 'diagnostic'
 
 
 class PrimarySelection(BaseModel):
@@ -31,14 +47,14 @@ class PrimarySelection(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra='forbid')
 
+    status: PrimarySelectionStatus
+    """The observed selection outcome; callers decide how to handle it."""
+
     identity: Optional[MetricIdentity] = None
     """The selected primary identity, absent when the report has no single conclusion."""
 
     unavailable_reason: Optional[str] = None
-    """Human readable reason, present exactly when ``identity`` is absent."""
-
-    authoring_error: bool = False
-    """Whether the benchmark's own declaration is what made the choice ambiguous."""
+    """Factual reason, without report-specific error policy or configuration advice."""
 
 
 def select_primary(
@@ -64,40 +80,40 @@ def select_primary(
         matches = [identity for identity in identities if selector.matches(identity)]
         if not matches:
             return PrimarySelection(
+                status=PrimarySelectionStatus.NO_MATCH,
                 unavailable_reason=(
-                    f'Primary metric selector {selector.model_dump()} did not match any metric emitted for this '
-                    'run. The required observations may be absent from the selected samples.'
-                )
+                    f'Primary metric selector {selector.model_dump()} did not match any emitted metric identity.'
+                ),
             )
         if len(matches) != 1:
             return PrimarySelection(
+                status=PrimarySelectionStatus.AMBIGUOUS,
                 unavailable_reason=(
                     f'Primary metric selector {selector.model_dump()} matched {len(matches)} identities; '
                     'expected exactly one.'
                 ),
-                authoring_error=True,
             )
         if semantics_by_identity[matches[0].key].kind is MetricKind.DIAGNOSTIC:
             return PrimarySelection(
+                status=PrimarySelectionStatus.DIAGNOSTIC,
                 unavailable_reason=f'Primary metric selector matched diagnostic identity {matches[0].key}.',
-                authoring_error=True,
             )
-        return PrimarySelection(identity=matches[0])
+        return PrimarySelection(status=PrimarySelectionStatus.SELECTED, identity=matches[0])
 
     graded = [
         identity for identity in identities if semantics_by_identity[identity.key].kind is not MetricKind.DIAGNOSTIC
     ]
     if not graded:
-        return PrimarySelection(unavailable_reason='No scored metric was emitted for this run.')
+        return PrimarySelection(
+            status=PrimarySelectionStatus.NO_SCORED_METRICS,
+            unavailable_reason='No scored metric was emitted for this run.',
+        )
     if len(graded) != 1:
         return PrimarySelection(
-            unavailable_reason=(
-                f'Benchmark emitted {len(graded)} non-diagnostic metric identities; declare '
-                'BenchmarkMeta.primary_metric.'
-            ),
-            authoring_error=True,
+            status=PrimarySelectionStatus.AMBIGUOUS,
+            unavailable_reason=(f'Found {len(graded)} non-diagnostic metric identities; no unique primary metric.'),
         )
-    return PrimarySelection(identity=graded[0])
+    return PrimarySelection(status=PrimarySelectionStatus.SELECTED, identity=graded[0])
 
 
 @lru_cache(maxsize=256)

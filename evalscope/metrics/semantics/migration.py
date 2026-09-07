@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 from evalscope.api.metric.semantics import MetricIdentity, MetricKind, MetricSelector, MetricSemantics
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.legacy_identity import is_known_legacy_spelling, migrate_legacy_identity
-from evalscope.metrics.semantics.primary import read_meta_primary_selector, select_primary
+from evalscope.metrics.semantics.primary import PrimarySelectionStatus, read_meta_primary_selector, select_primary
 from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX, get_semantics_resolver
 from evalscope.utils import get_logger
 
@@ -46,11 +46,7 @@ def migrate_legacy_metric_payload(data: Any, benchmark_name: Optional[str] = Non
     identity = migrate_legacy_report_identity(old_name, benchmark_name)
     migrated['identity'] = identity.model_dump()
     migrated['legacy_name'] = old_name
-    legacy_entry = LEGACY_METRIC_MIGRATIONS.get(old_name)
-    if legacy_entry is not None:
-        semantics = legacy_entry.resolve(identity.name)
-    else:
-        semantics = MetricSemantics.diagnostic(old_name)
+    semantics = get_semantics_resolver().resolve(benchmark_name or '', identity, old_name).semantics
     migrated.setdefault('semantics', semantics.model_dump())
     return migrated
 
@@ -84,13 +80,15 @@ def _legacy_primary_identity(metrics: Any, legacy_primary_name: Any) -> Optional
 
     if isinstance(legacy_primary_name, str) and legacy_primary_name:
         matches = [
-            metric.get('identity')
+            metric
             for metric in metrics
             if isinstance(metric, dict)
             and (metric.get('legacy_name') == legacy_primary_name or metric.get('name') == legacy_primary_name)
         ]
-        if len(matches) == 1 and isinstance(matches[0], dict):
-            return matches[0]
+        if len(matches) == 1 and isinstance(matches[0].get('identity'), dict):
+            # A benchmark override may demote the historical primary to a diagnostic.
+            if matches[0].get('semantics', {}).get('kind') != MetricKind.DIAGNOSTIC:
+                return matches[0]['identity']
 
     role_matches = [
         metric.get('identity')
@@ -137,7 +135,7 @@ def hydrate_report_semantics(
 
     selector = selector_for(benchmark_name)
     selection = select_primary(identities, semantics_by_identity, selector)
-    if selection.identity is None and selector is not None and not selection.authoring_error:
+    if selection.status is PrimarySelectionStatus.NO_MATCH:
         # A stored identity can miss a dimension the current declaration constrains, yet the report
         # may still hold exactly one scored metric that is plainly its conclusion.
         selection = select_primary(identities, semantics_by_identity, None)

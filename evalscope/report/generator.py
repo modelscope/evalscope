@@ -7,7 +7,7 @@ from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
-from evalscope.metrics.semantics.primary import PrimarySelection, select_primary
+from evalscope.metrics.semantics.primary import PrimarySelection, PrimarySelectionStatus, select_primary
 from evalscope.metrics.semantics.resolver import AUDIT_MESSAGE_PREFIX
 from evalscope.report.report import Category, Metric, Report, Subset
 from evalscope.utils import get_logger
@@ -54,13 +54,18 @@ class ReportGenerator:
             {metric.identity.key: metric.semantics for metric in metrics_list},
             None,
         )
+        unavailable_reason = selection.unavailable_reason
+        if selection.status is PrimarySelectionStatus.AMBIGUOUS:
+            unavailable_reason = (
+                'The collection contains multiple scored metrics, so no single primary metric is selected.'
+            )
         return Report(
             name=DataCollection.NAME,
             metrics=metrics_list,
             dataset_name=all_dataset_name,
             model_name=model_name,
             primary_metric_identity=selection.identity,
-            primary_metric_unavailable_reason=None if selection.identity else selection.unavailable_reason,
+            primary_metric_unavailable_reason=unavailable_reason,
         )
 
     @staticmethod
@@ -207,8 +212,11 @@ class ReportGenerator:
             resolved.log_audit_messages()
             semantics_by_identity[identity.key] = resolved.semantics
         selection = select_primary(identities, semantics_by_identity, selector)
-        if selection.authoring_error:
-            raise ValueError(selection.unavailable_reason)
+        if selection.status in (PrimarySelectionStatus.AMBIGUOUS, PrimarySelectionStatus.DIAGNOSTIC):
+            reason = selection.unavailable_reason
+            if selection.status is PrimarySelectionStatus.AMBIGUOUS and selector is None:
+                reason = f'{reason} Please declare BenchmarkMeta.primary_metric.'
+            raise ValueError(reason)
         if selection.identity is None and selection.unavailable_reason is not None:
             logger.warning(f'{AUDIT_MESSAGE_PREFIX} {selection.unavailable_reason}')
         return semantics_by_identity, selection
