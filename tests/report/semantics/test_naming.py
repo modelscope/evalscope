@@ -2,9 +2,9 @@ import pytest
 from pydantic import ValidationError
 
 from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
+from evalscope.metrics.semantics.aliases import METRIC_ALIASES
 from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
-from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
+from evalscope.metrics.semantics.legacy_identity import migrate_legacy_identity
 
 
 def test_identity_sorts_dimensions_and_builds_stable_key() -> None:
@@ -118,7 +118,8 @@ def test_legacy_names_migrate_to_structured_identity(
     assert (identity.name, identity.aggregation, identity.dimensions) == expected
 
 
-def test_exact_alias_manifest_drives_identity_and_read_old_semantics() -> None:
-    for name, alias in LEGACY_METRIC_ALIASES.items():
-        assert migrate_legacy_identity(name, 'identity').name == alias.canonical_name
+def test_read_old_semantics_are_declared_exactly_for_the_aliases_that_carry_a_baseline() -> None:
+    """How each alias rewrites an identity is pinned in ``test_aliases.py``; this pins the table
+    correspondence, which is what keeps a declared baseline from being silently unreachable."""
+    for name, alias in METRIC_ALIASES.items():
         assert (name in LEGACY_METRIC_MIGRATIONS) is (alias.baseline is not None)

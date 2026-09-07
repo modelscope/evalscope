@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.constants import OutputType
-from evalscope.metrics.semantics.identity import migrate_legacy_identity
+from evalscope.metrics.semantics.legacy_identity import canonical_metric_list_name, migrate_legacy_identity
 from evalscope.utils import get_logger
 
 logger = get_logger()
@@ -158,25 +158,19 @@ class BenchmarkMeta:
     def _normalize_metric_list(self) -> None:
         """Normalize unambiguous legacy scorer aliases at the adapter boundary.
 
-        Only pure re-spellings are listed. An entry here must keep ``get_metric()`` working, since
-        a declared name is looked up in the metric registry: ``acc`` and ``exact_match`` are both
-        registered, and the rest name no scorer at all because their adapter computes its own
-        metrics. A name whose canonical form is *not* registered while the alias is would break
-        that lookup, so it must not be added.
-
-        Aliases that reassign meaning (``total_score`` -> ``judge_score``) are deliberately absent:
-        built-in adapters now emit canonical names directly, so listing them here would only hide
-        the reassignment warning a third-party adapter needs to see.
+        Which spellings may be rewritten is alias knowledge, so it is asked for rather than
+        restated here: a rewritten name must still resolve through ``get_metric()``, the constraint
+        the ``bertscore`` / ``bert_score`` mismatch broke. Aliases that reassign meaning
+        (``total_score`` -> ``judge_score``) are out of that scope, so no rewrite here can hide the
+        reassignment warning a third-party adapter needs to see.
         """
-        aliases = {'acc', 'f1_score', 'F1', 'em'}
         normalized = []
         for entry in self.metric_list:
             raw_name = entry if isinstance(entry, str) else next(iter(entry), '')
-            if raw_name not in aliases:
+            canonical_name = canonical_metric_list_name(raw_name, self.name)
+            if canonical_name is None:
                 normalized.append(entry)
-                continue
-            canonical_name = migrate_legacy_identity(raw_name, 'identity', benchmark_name=self.name).name
-            if isinstance(entry, str):
+            elif isinstance(entry, str):
                 normalized.append(canonical_name)
             else:
                 normalized.append({canonical_name: entry[raw_name]})

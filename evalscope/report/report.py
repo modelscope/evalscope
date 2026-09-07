@@ -337,15 +337,14 @@ class Report(BaseModel):
 
     @property
     def score(self) -> Optional[float]:
-        """Compatibility score derived from the primary or first available metric.
+        """Score of this report's primary metric.
 
-        ``None`` when an explicit primary metric was unavailable or the report carries no metric:
-        a report that could not compute its conclusion did not score zero. Report v2 serializes
-        the structured metric list and primary identity instead of this convenience value.
+        ``None`` when no primary metric was resolved or the report carries no metric: a report that
+        could not name its conclusion did not score zero. It never falls back to the first metric,
+        which may be a diagnostic such as a token count and would misreport the run. Report v2
+        serializes the structured metric list and primary identity instead of this convenience value.
         """
-        if self.primary_metric_unavailable_reason is not None:
-            return None
-        metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
+        metric = self._find_primary_metric()
         return metric.score if metric is not None else None
 
     def to_dict(self) -> Dict[str, Any]:

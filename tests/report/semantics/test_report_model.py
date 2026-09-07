@@ -82,7 +82,7 @@ def test_collection_report_keeps_mixed_metrics_without_primary() -> None:
     assert report.primary_metric_identity is None
 
 
-def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
+def test_report_score_comes_only_from_the_primary_metric() -> None:
     report = _report()
     assert report.score == 0.8
 
@@ -103,6 +103,25 @@ def test_report_score_compatibility_prefers_primary_then_first_metric() -> None:
     # A report with no metric produced no score; it did not score zero.
     assert Report().score is None
     assert 'score' not in report.to_dict()
+
+
+def test_score_is_absent_rather_than_taken_from_a_diagnostic_metric() -> None:
+    """Falling back to the first metric would present a token count as the run's score."""
+    report = ReportGenerator.generate_report(
+        {
+            'test': [
+                AggScore(score=7.0, metric_name='no_answer_num', aggregation='mean', num=10),
+                AggScore(score=0.9, metric_name='yes_ratio', aggregation='mean', num=10),
+            ]
+        },
+        'model',
+        _StubAdapter('diagnostics_only'),
+    )
+
+    assert [metric.identity.name for metric in report.metrics] == ['no_answer_num', 'yes_ratio']
+    assert report.primary_metric is None
+    assert report.score is None
+    assert report.num == 10
 
 
 def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:

@@ -1,17 +1,23 @@
 """Canonical metric semantics registry and read-old migration manifest.
 
 ``METRIC_DEFINITIONS`` is the only table used by the v2 resolver. It is keyed by canonical metric
-name and deliberately contains no aggregation prefixes or dynamic ``k`` variants. The larger
+name and deliberately contains no aggregation prefixes or dynamic ``k`` variants. The
 ``LEGACY_METRIC_MIGRATIONS`` table is a read-old manifest used only to migrate adapter output and
 historical reports; aliases in it never participate in v2 resolution.
+
+A canonical name needs no read-old entry: a v1 report carrying it already resolves through
+``METRIC_DEFINITIONS`` to the same semantics, so restating it here would only be a second place to
+forget when its display fields change. Declare a name here when reading it old differs from
+resolving it new -- a non-canonical spelling, or a name whose historical meaning differs from the
+current one (``error_rate``).
 """
 
 from typing import Dict, Tuple
 
 from evalscope.api.metric.semantics import MetricDirection
+from evalscope.metrics.semantics.aliases import read_old_baselines
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.entry import BASELINE_TABLE_LOCATION, MetricEntry
-from evalscope.metrics.semantics.legacy import LEGACY_METRIC_ALIASES
 
 #: Where to declare a canonical metric name, used in audit and validation messages.
 METRIC_NAME_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::METRIC_DEFINITIONS'
@@ -26,15 +32,7 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     # --- quality ratios: one line each, reused by every benchmark ------------------------
     # Bounded [0, 1] ratios rendered as percent, higher is better.
     'mean_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'accuracy': MetricEntry(baseline='quality.accuracy.ratio'),
-    'multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_multi_choice_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'relaxed_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'schema_accuracy': MetricEntry(baseline='quality.accuracy.ratio'),
-    'process_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'task_averaged_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'correct_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'error_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_number_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_unit_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     # Accuracy over one kind of UI target, reported alongside the overall accuracy
@@ -53,15 +51,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_ACC@0.5': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_ACC@0.7': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_ACC@0.9': MetricEntry(baseline='quality.accuracy.ratio'),
-    # Puzzle accuracy per size / difficulty bucket (zebralogicbench).
-    'puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'cell_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'easy_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'medium_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'hard_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'small_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'large_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
-    'xl_puzzle_acc': MetricEntry(baseline='quality.accuracy.ratio'),
     # Rubric dimensions of the plawbench `case_analysis` subset, reported next to the overall
     # `mean_acc` as point ratios over the same rubric.
     'mean_conclusion_acc': MetricEntry(baseline='quality.accuracy.ratio'),
@@ -75,43 +64,25 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_inst_level_loose': MetricEntry(baseline='quality.accuracy.ratio'),
     # Graded-answer benchmarks (simple_qa, browsecomp, chinese_simple_qa) report the share of
     # correct answers as `is_correct`.
-    'is_correct': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_is_correct': MetricEntry(baseline='quality.accuracy.ratio'),
     # Agent style task completion ratio (miniwob, wide_search).
-    'success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_success_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- exact match ---------------------------------------------------------------------
     'mean_em': MetricEntry(baseline='quality.exact_match.ratio'),
-    'exact_match': MetricEntry(baseline='quality.exact_match.ratio'),
     # Tool-use benchmarks score the action and the plan by exact match (tool_bench).
     'mean_Act.EM': MetricEntry(baseline='quality.exact_match.ratio'),
     'mean_Plan.EM': MetricEntry(baseline='quality.exact_match.ratio'),
     # --- pass ratios ---------------------------------------------------------------------
-    'pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'mean_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
-    'pass_at_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'mean_pass_at_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
-    'pass_hat_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'mean_pass_hat_k': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'Pass@1': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'pass@1': MetricEntry(baseline='quality.pass_at_k.ratio'),
-    'strict_pass': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'mean_strict_pass': MetricEntry(baseline='quality.pass_at_k.ratio'),
-    'main_problem_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
-    'subproblem_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     # --- F1 / precision / recall ---------------------------------------------------------
-    'f1': MetricEntry(baseline='quality.f1.ratio'),
-    'f1_macro': MetricEntry(baseline='quality.f1.ratio'),
-    'f1_micro': MetricEntry(baseline='quality.f1.ratio'),
-    'f1_weighted': MetricEntry(baseline='quality.f1.ratio'),
     'mean_f1': MetricEntry(baseline='quality.f1.ratio'),
     'mean_F1': MetricEntry(baseline='quality.f1.ratio'),
-    'task_averaged_f1': MetricEntry(baseline='quality.f1.ratio'),
-    'simple_f1_score': MetricEntry(baseline='quality.f1.ratio'),
-    'tool_call_f1': MetricEntry(baseline='quality.f1.ratio'),
-    'precision': MetricEntry(baseline='quality.precision.ratio'),
     'mean_boundary_precision': MetricEntry(baseline='quality.precision.ratio'),
-    'recall': MetricEntry(baseline='quality.recall.ratio'),
     # --- text generation overlap and similarity ------------------------------------------
     'Bleu_1': MetricEntry(baseline='quality.bleu.ratio'),
     'Bleu_2': MetricEntry(baseline='quality.bleu.ratio'),
@@ -128,21 +99,13 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_Rouge-L': MetricEntry(baseline='quality.rouge.ratio'),
     'mean_METEOR': MetricEntry(baseline='quality.meteor.ratio'),
     'mean_CIDEr': MetricEntry(baseline='quality.cider.unbounded'),
-    'bert_score': MetricEntry(baseline='quality.similarity.ratio'),
     'mean_bert_score': MetricEntry(baseline='quality.similarity.ratio'),
     'mean_comet': MetricEntry(baseline='quality.similarity.ratio'),
-    'sem_score': MetricEntry(baseline='quality.similarity.ratio'),
-    # ANLS is the normalized similarity between answer strings (docvqa, infovqa).
-    'anls': MetricEntry(baseline='quality.similarity.ratio'),
     'Semantic Consistency': MetricEntry(baseline='quality.similarity.ratio'),
     'Perceptual Similarity': MetricEntry(baseline='quality.similarity.ratio'),
-    # --- localization --------------------------------------------------------------------
     # --- speech recognition error rates: lower is better ---------------------------------
-    'wer': MetricEntry(baseline='quality.wer.ratio'),
     'mean_wer': MetricEntry(baseline='quality.wer.ratio'),
-    'audio_wer': MetricEntry(baseline='quality.wer.ratio'),
     'mean_audio_wer': MetricEntry(baseline='quality.wer.ratio'),
-    'cer': MetricEntry(baseline='quality.cer.ratio'),
     'mean_cer': MetricEntry(baseline='quality.cer.ratio'),
     'mean_mer': MetricEntry(baseline='quality.mer.ratio'),
     # --- graded failure rates: lower is better -------------------------------------------
@@ -151,8 +114,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_distractor_leakage': MetricEntry(baseline='quality.error_rate.ratio'),
     # --- bounded quality scores ----------------------------------------------------------
     'mean_score': MetricEntry(baseline='quality.score.ratio'),
-    'vqa_score': MetricEntry(baseline='quality.score.ratio'),
-    'overall_mrcr_score': MetricEntry(baseline='quality.score.ratio'),
     'mean_partial_credit': MetricEntry(baseline='quality.score.ratio'),
     'mean_submission_ready': MetricEntry(baseline='quality.score.ratio'),
     'mean_required_coverage': MetricEntry(baseline='quality.coverage.ratio'),
@@ -161,37 +122,18 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_eq_bench_score': MetricEntry(baseline='quality.score.points_100'),
     # --- win rates -----------------------------------------------------------------------
     'mean_winrate': MetricEntry(baseline='quality.win_rate.ratio'),
-    'win_rate': MetricEntry(baseline='quality.win_rate.ratio'),
     # --- judge scores (unbounded) --------------------------------------------------------
     'mean_total_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_normalized_score': MetricEntry(baseline='quality.score.ratio'),
     'mean_avg_score': MetricEntry(baseline='quality.judge_score.unbounded'),
     'mean_net_match_score': MetricEntry(baseline='quality.judge_score.unbounded'),
-    # health_bench grades each answer along named rubric axes.
-    'communication_quality': MetricEntry(baseline='quality.judge_score.unbounded'),
-    'completeness': MetricEntry(baseline='quality.judge_score.unbounded'),
-    'context_awareness': MetricEntry(baseline='quality.judge_score.unbounded'),
-    'instruction_following': MetricEntry(baseline='quality.judge_score.unbounded'),
-    # --- scoring model outputs -----------------------------------------------------------
-    # Vendor verification rates: a correctly deployed vendor reports 1.0 for both, so these
-    # grade the deployment rather than merely describing it.
-    'param_immutable_reject_rate': MetricEntry(baseline='quality.accuracy.ratio'),
-    'param_default_accept_rate': MetricEntry(baseline='quality.accuracy.ratio'),
     # --- diagnostics: distribution shares and raw counts carry no direction --------------
+    # The one name whose historical meaning differs from the current one: a v1 `error_rate` was a
+    # parse-status share, while a current run grades it as a quality error rate. This divergence is
+    # why the read-old manifest exists at all.
     'error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
-    'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
     'mean_is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
     'mean_is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
-    'inference_error_rate': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'yes_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'maybe_ratio': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'no_answer_num': MetricEntry(baseline='diagnostic.count.items'),
-    'count_successful_tool_call': MetricEntry(baseline='diagnostic.count.items'),
-    'count_finish_reason_tool_call': MetricEntry(baseline='diagnostic.count.items'),
-    'count_finish_reason_tool_calls': MetricEntry(baseline='diagnostic.count.items'),
-    # Average reasoning length: a behavioural observation, not a quality signal.
-    'avg_reason_lens': MetricEntry(baseline='diagnostic.count.items'),
     # --- legacy names: only produced by report files written before the semantics -------
     # contract. Safe to drop once no report of that vintage is expected to be opened again.
     'WeightedScorePercent': MetricEntry(baseline='quality.score.points_100'),
@@ -202,10 +144,6 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_precision': MetricEntry(baseline='quality.precision.ratio'),
     'mean_recall': MetricEntry(baseline='quality.recall.ratio'),
     'mean_f1_score': MetricEntry(baseline='quality.f1.ratio'),
-    'official_mean_precision': MetricEntry(baseline='quality.precision.ratio'),
-    'official_mean_recall': MetricEntry(baseline='quality.recall.ratio'),
-    'official_mean_f1_score': MetricEntry(baseline='quality.f1.ratio'),
-    'official_mean_all_answers_correct': MetricEntry(baseline='quality.accuracy.ratio'),
     'mean_simple_pass_rate': MetricEntry(baseline='quality.pass_at_k.ratio'),
     'mean_simple_partial_credit': MetricEntry(baseline='quality.score.ratio'),
     'mean_simple_error_rate': MetricEntry(baseline='quality.error_rate.ratio'),
@@ -221,12 +159,7 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'display_formula_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
     'table_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
     'reading_order_Edit_dist': MetricEntry(baseline='quality.error_rate.ratio'),
-    # Response and rater failure shares, and run cost breakdowns: observations, not grades.
-    'rate_empty_model_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'rate_empty_auto_rater_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'rate_invalid_auto_rater_response': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'official_mean_fully_incorrect_items': MetricEntry(baseline='diagnostic.parse_status.ratio'),
-    'official_mean_correct_with_excessive_answers': MetricEntry(baseline='diagnostic.parse_status.ratio'),
+    # Run cost breakdowns: observations, not grades.
     'mean_total_tokens': MetricEntry(baseline='diagnostic.count.items'),
     'mean_total_model_input_tokens': MetricEntry(baseline='diagnostic.count.items'),
     'mean_total_model_output_tokens': MetricEntry(baseline='diagnostic.count.items'),
@@ -236,11 +169,7 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_total_other_time_s': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
 }
 LEGACY_METRIC_MIGRATIONS.update(
-    {
-        name: MetricEntry(baseline=alias.baseline)
-        for name, alias in LEGACY_METRIC_ALIASES.items()
-        if alias.baseline is not None
-    }
+    {name: MetricEntry(baseline=baseline) for name, baseline in read_old_baselines().items()}
 )
 """Final report metric name -> catalog entry, reused by every benchmark.
 
@@ -264,8 +193,6 @@ _CANONICAL_NAMES_BY_BASELINE = {
     ),
     'diagnostic.parse_status.ratio': (
         'inference_error_rate',
-        'is_incorrect',
-        'is_not_attempted',
         'maybe_ratio',
         'official_mean_correct_with_excessive_answers',
         'official_mean_fully_incorrect_items',
@@ -420,7 +347,8 @@ METRIC_DEFINITIONS: Dict[str, MetricEntry] = {
 METRIC_DEFINITIONS.update(
     {
         # Three-way answer grading exposes these distribution shares as diagnostics. They remain
-        # non-primary and directionless, but deserve report labels rather than internal identities.
+        # non-primary and directionless, but deserve report labels rather than internal identities,
+        # which is why they are declared here instead of in the table above.
         'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
         'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
         'bias_ratio': MetricEntry(
