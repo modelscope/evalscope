@@ -359,8 +359,8 @@ class AgentLoop:
         """Record the strategy's own termination signal.
 
         ``final_answer`` here is what the *loop observed*, not the prediction
-        that gets reported: that is resolved after the loop returns by
-        ``AgentAdapter._extract_final_answer`` and lands in
+        that gets reported: that is resolved after the loop returns by the
+        adapter's ``_extract_final_answer`` hook and lands in
         ``InferenceResult.output.completion``. The two coincide for the
         sentinel protocol but must not be conflated.
         """
@@ -383,7 +383,8 @@ class AgentLoop:
         no answer of its own, and a malformed turn's ``raw_text`` is incidental
         prose rather than a submission. Only a short preview is kept, for
         diagnosis; the reported prediction is resolved after the loop returns
-        by ``AgentAdapter._extract_final_answer``.
+        by the adapter's ``_extract_final_answer`` hook and lands in
+        ``InferenceResult.output.completion``.
         """
         malformed = parsed.outcome is TurnOutcome.MALFORMED
         self.trace.add_event(
