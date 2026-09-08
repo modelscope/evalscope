@@ -511,6 +511,7 @@ class BridgeTraceRecorder:
 
     @staticmethod
     def _build_assistant_message(output: ModelOutput) -> ChatMessageAssistant:
+        """Deep-copy model output while normalizing tool calls for the transcript."""
         if not output.choices:
             return ChatMessageAssistant(content='')
         src = output.message
@@ -524,10 +525,7 @@ class BridgeTraceRecorder:
                     type='function',
                 )
             )
-        return ChatMessageAssistant(
-            content=src.text or '',
-            tool_calls=tool_calls or None,
-        )
+        return src.model_copy(deep=True, update={'tool_calls': tool_calls or None})
 
 
 def _user_text_from_content(content: Any) -> str:
