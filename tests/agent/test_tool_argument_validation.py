@@ -173,31 +173,34 @@ class TestLoopIntegration(unittest.TestCase):
             ({'answer': 1}, "1 is not of type 'string' (at 'answer')"),
             ({'answer': 'done', 'extra': True}, "'extra' was unexpected"),
         ]
-        for arguments, expected_error in cases:
-            with self.subTest(arguments=arguments):
-                model = MagicMock()
-                model.generate_async = AsyncMock(side_effect=[_output([_submit_with(arguments)]), _output([_submit('done')])])
-                result = run_agent_loop(
-                    model=model,
-                    strategy=get_strategy('function_calling')(),
-                    handlers={},
-                    environment=None,
-                    initial_messages=[ChatMessageUser(content='go')],
-                    all_tools=[],
-                    max_steps=3,
-                    sample_id='s',
-                    trace_strategy_name='function_calling',
-                    trace_env_name=None,
-                    validate_tool_arguments=True,
-                )
+        for strategy_name in ('function_calling', 'react'):
+            for arguments, expected_error in cases:
+                with self.subTest(strategy=strategy_name, arguments=arguments):
+                    model = MagicMock()
+                    model.generate_async = AsyncMock(
+                        side_effect=[_output([_submit_with(arguments)]), _output([_submit('done')])]
+                    )
+                    result = run_agent_loop(
+                        model=model,
+                        strategy=get_strategy(strategy_name)(),
+                        handlers={},
+                        environment=None,
+                        initial_messages=[ChatMessageUser(content='go')],
+                        all_tools=[],
+                        max_steps=3,
+                        sample_id='s',
+                        trace_strategy_name=strategy_name,
+                        trace_env_name=None,
+                        validate_tool_arguments=True,
+                    )
 
-                tool_message = result.messages[2]
-                self.assertIsInstance(tool_message, ChatMessageTool)
-                self.assertEqual(tool_message.error.type, 'parsing')
-                self.assertIn(expected_error, tool_message.text)
-                tool_results = [event for event in result.trace.events if event.type == EventType.TOOL_RESULT]
-                self.assertEqual([event.payload['error'] for event in tool_results], ['parsing'])
-                self.assertEqual(result.final_output.message.tool_calls[0].function.arguments, {'answer': 'done'})
+                    tool_message = next(message for message in result.messages if isinstance(message, ChatMessageTool))
+                    self.assertIsInstance(tool_message, ChatMessageTool)
+                    self.assertEqual(tool_message.error.type, 'parsing')
+                    self.assertIn(expected_error, tool_message.text)
+                    tool_results = [event for event in result.trace.events if event.type == EventType.TOOL_RESULT]
+                    self.assertEqual([event.payload['error'] for event in tool_results], ['parsing'])
+                    self.assertEqual(result.final_output.message.tool_calls[0].function.arguments, {'answer': 'done'})
 
 
 class TestConfigPlumbing(unittest.TestCase):
