@@ -11,6 +11,7 @@ Test plan:
   TestNativeAgentEnvironmentConfig – legacy-compatible Agent environment config
 """
 
+import asyncio
 import os
 import sys
 import tempfile
@@ -330,6 +331,79 @@ class TestEnclaveEnvironmentInterpreter:
 
         assert result.timed_out
         assert result.returncode == -1
+
+    def test_exec_gives_up_when_the_sandbox_never_returns(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A sandbox that never answers must not hang the whole evaluation.
+
+        ``timeout`` is handed to ms_enclave's shell_executor, and nothing above
+        this call bounds the wait, so before the backstop a single stuck command
+        (an interactive CLI re-prompting forever, a wedged exec channel) blocked
+        the sample and every sample behind it.
+        """
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        monkeypatch.setattr(type(env), '_TIMEOUT_GRACE_S', 0.2)
+        entered = asyncio.Event()
+
+        async def _never_returns(tool_name: str, payload: Dict[str, Any]) -> Any:
+            entered.set()
+            await asyncio.sleep(3600)
+
+        monkeypatch.setattr(handle, 'execute_tool', _never_returns)
+
+        started = time.monotonic()
+        result = self._run(env.exec(['bash', '-c', 'sphinx-quickstart'], timeout=0.1))
+        elapsed = time.monotonic() - started
+
+        assert entered.is_set()
+        assert result.timed_out
+        assert result.returncode == -1
+        assert 'did not return' in result.stderr
+        assert elapsed < 5, f'exec should give up near the grace window, took {elapsed:.1f}s'
+
+    def test_exec_waits_for_the_sandbox_to_report_its_own_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The backstop must not pre-empt the sandbox's own, better answer.
+
+        ms_enclave reports TIMEOUT together with whatever the command printed
+        before the deadline; that output is worth waiting the grace window for.
+        """
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        monkeypatch.setattr(type(env), '_TIMEOUT_GRACE_S', 5.0)
+
+        async def _slow_timeout(tool_name: str, payload: Dict[str, Any]) -> Any:
+            await asyncio.sleep(0.2)  # sandbox answers a little after the command deadline
+            return types.SimpleNamespace(
+                output='partial output before the deadline',
+                error='Command timed out after 0.1 seconds',
+                status=_FakeExecutionStatus.TIMEOUT,
+                execution_time=0.1,
+            )
+
+        monkeypatch.setattr(handle, 'execute_tool', _slow_timeout)
+        result = self._run(env.exec(['bash', '-c', 'sleep 10'], timeout=0.1))
+
+        assert result.timed_out
+        assert result.stdout == 'partial output before the deadline'
+
+    def test_backstop_deadline_is_the_command_timeout_plus_the_grace(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A long-running command still gets its full timeout, not the grace alone."""
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        monkeypatch.setattr(type(env), '_TIMEOUT_GRACE_S', 0.5)
+
+        async def _slower_than_the_grace(tool_name: str, payload: Dict[str, Any]) -> Any:
+            await asyncio.sleep(0.8)
+            return types.SimpleNamespace(
+                output='done', error='', status=_FakeExecutionStatus.SUCCESS, execution_time=0.8
+            )
+
+        monkeypatch.setattr(handle, 'execute_tool', _slower_than_the_grace)
+        result = self._run(env.exec(['bash', '-c', 'make'], timeout=5))
+
+        assert not result.timed_out
+        assert result.stdout == 'done'
 
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
