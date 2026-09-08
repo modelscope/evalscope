@@ -61,6 +61,7 @@ class TraceSources:
     PARSE = 'parse'
     NUDGE = 'nudge'
     LOOP = 'loop'
+    REPEATED_TOOL_CALLS = 'repeated_tool_calls'
 
 
 NUDGE_PROMPT = 'No tool was called. Please use an available tool or call the submit tool with your final answer.'

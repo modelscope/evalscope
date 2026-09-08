@@ -214,6 +214,10 @@ class AgentLoopAdapter(AgentAdapter):
     def _resolve_validate_tool_arguments(ac: Any) -> bool:
         return isinstance(ac, NativeAgentConfig) and ac.validate_tool_arguments
 
+    @staticmethod
+    def _resolve_max_repeated_tool_calls(ac: Any) -> Optional[int]:
+        return ac.max_repeated_tool_calls if isinstance(ac, NativeAgentConfig) else None
+
     # ------------------------------------------------------------------
     # Overridden inference hook
     # ------------------------------------------------------------------
@@ -262,6 +266,7 @@ class AgentLoopAdapter(AgentAdapter):
             trace_env_name=environment.name if environment else None,
             mcp_configs=mcp_configs,
             validate_tool_arguments=self._resolve_validate_tool_arguments(ac),
+            max_repeated_tool_calls=self._resolve_max_repeated_tool_calls(ac),
         )
 
         finalization_prompt = self.build_max_steps_finalization_message(sample)
