@@ -511,19 +511,7 @@ class BridgeTraceRecorder:
 
     @staticmethod
     def _build_assistant_message(output: ModelOutput) -> ChatMessageAssistant:
-        """Snapshot the assistant message as the model returned it.
-
-        Mirrors :meth:`AgentLoop._snapshot_assistant_message`: the transcript
-        carries a deep copy of ``output.message`` so ``perf_metrics``,
-        reasoning blocks, ``model`` and ``metadata`` survive the bridge.
-        ``DefaultEvaluator._record_perf`` reads ``perf_metrics`` off these
-        messages, so rebuilding them from text alone left the perf table
-        empty for every external-agent run.
-
-        Only ``tool_calls`` is rebuilt: some upstream paths leave
-        ``ToolCall.function`` as a bare string (see :func:`unpack_tool_call`)
-        and the transcript must carry proper :class:`ToolFunction` objects.
-        """
+        """Deep-copy model output while normalizing tool calls for the transcript."""
         if not output.choices:
             return ChatMessageAssistant(content='')
         src = output.message

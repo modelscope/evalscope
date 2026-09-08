@@ -262,15 +262,7 @@ def test_responses_first_turn_ingests_instructions_when_user_message_empty():
 
 
 def test_assistant_message_is_a_copy_of_the_model_output():
-    """The transcript must carry what the model returned, not a text-only rebuild.
-
-    ``DefaultEvaluator._record_perf`` reads ``perf_metrics`` off the assistant
-    messages, so a rebuild that drops the field leaves the perf table empty
-    for every external-agent run. Reasoning blocks, ``model`` and ``metadata``
-    went missing the same way. The native loop deep-copies ``output.message``
-    (``AgentLoop._snapshot_assistant_message``) and the bridge is supposed to
-    produce the same transcript shape.
-    """
+    """The bridge transcript preserves the complete model message."""
     perf = PerformanceMetrics(latency=0.25, ttft=0.1, input_tokens=12, output_tokens=3)
     call = ToolCall(id='call-1', function=ToolFunction(name='lookup', arguments={'q': 'x'}), type='function')
     msg = ChatMessageAssistant(
@@ -311,11 +303,7 @@ def test_assistant_message_does_not_alias_the_model_output():
 
 
 def test_assistant_message_normalizes_bare_string_tool_function():
-    """Some upstream paths leave ``ToolCall.function`` as a bare string.
-
-    Whatever else is copied from the model output, the transcript must carry
-    a proper :class:`ToolFunction` and the TOOL_CALL event must name the tool.
-    """
+    """Tool calls remain normalized when the model message is copied."""
     raw_call = ToolCall.model_construct(id='call-2', function='lookup')
     rec = BridgeTraceRecorder(trial_id='t11', framework='mock')
     rec.record_anthropic_turn(

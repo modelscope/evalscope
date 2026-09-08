@@ -1,11 +1,4 @@
-"""External-agent runs must keep per-turn ``perf_metrics`` on the transcript.
-
-``DefaultEvaluator._record_perf`` reads ``perf_metrics`` off the assistant
-messages in ``TaskState.messages`` and only falls back to ``task_state.output``.
-For bridge-driven runs both come from the bridge, so a recorder that drops the
-field leaves the perf table empty for every external-agent evaluation while
-``collect_perf`` defaults to True.
-"""
+"""Regression coverage for perf metrics in external-agent transcripts."""
 
 import pytest
 
