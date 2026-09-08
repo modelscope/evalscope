@@ -8,9 +8,6 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
-
-logger = get_logger()
 
 DROP_EXAMPLES = """Some examples of passages and Q&A are provided below.
 
@@ -70,6 +67,8 @@ DROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension
         metric_list=['em', 'f1'],
         primary_metric='f1',
         few_shot_num=3,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 3),
         train_split=None,
         eval_split='validation',
         prompt_template='You will be asked to read a passage and answer a question. {drop_examples}\n# Your Task\n\n---\n{query}\n\nThink step by step, then write a line of the form "Answer: [ANSWER]" at the end of your response.',  # noqa: E501
@@ -78,10 +77,6 @@ DROP (Discrete Reasoning Over Paragraphs) is a challenging reading comprehension
 class DROPAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        if self.few_shot_num != 0 and self.few_shot_num != 3:
-            self.few_shot_num = 3
-            logger.info(f'Few shot num is set to {self.few_shot_num} for DROP dataset by system.')
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """

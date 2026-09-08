@@ -72,6 +72,7 @@ Here are some examples of how to solve similar problems:
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
         primary_metric='accuracy',
         few_shot_num=0,
+        few_shot_mode='disabled',
         train_split='validation',
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,

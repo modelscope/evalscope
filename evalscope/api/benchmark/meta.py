@@ -1,7 +1,7 @@
 import copy
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel
 
@@ -41,6 +41,12 @@ class BenchmarkMeta:
 
     few_shot_num: int = 0
     """ Number of few-shot examples to use."""
+
+    few_shot_mode: Literal['auto', 'disabled', 'fixed'] = 'auto'
+    """Supported few-shot strategy for this benchmark."""
+
+    allowed_few_shot_nums: Optional[Tuple[int, ...]] = None
+    """Allowed few-shot counts, or ``None`` when every non-negative count is valid."""
 
     few_shot_random: bool = False
     """ Whether to use random few-shot examples."""
@@ -149,11 +155,33 @@ class BenchmarkMeta:
         from evalscope.evaluation_versioning import validate_evaluation_version
 
         validate_evaluation_version(self.evaluation_version)
-        if self.few_shot_num < 0:
-            raise ValueError('few_shot_num must be >= 0')
+        self._validate_few_shot_metadata()
         self._normalize_metric_list()
         self._normalize_primary_metric()
         self._validate_primary_metric()
+
+    def _validate_few_shot_metadata(self) -> None:
+        """Validate benchmark-declared few-shot capabilities."""
+        if self.few_shot_num < 0:
+            raise ValueError('few_shot_num must be >= 0')
+        if self.few_shot_mode not in {'auto', 'disabled', 'fixed'}:
+            raise ValueError(f'Unsupported few_shot_mode: {self.few_shot_mode}')
+        if self.few_shot_mode == 'disabled':
+            if self.allowed_few_shot_nums is not None:
+                raise ValueError('allowed_few_shot_nums requires few_shot_mode to be auto or fixed')
+            return
+        if self.few_shot_mode == 'fixed' and not self.allowed_few_shot_nums:
+            raise ValueError('fixed few_shot_mode requires allowed_few_shot_nums')
+        if self.allowed_few_shot_nums is not None:
+            if not self.allowed_few_shot_nums:
+                raise ValueError('allowed_few_shot_nums must not be empty')
+            if any(
+                not isinstance(count, int) or isinstance(count, bool) or count < 0
+                for count in self.allowed_few_shot_nums
+            ):
+                raise ValueError('allowed_few_shot_nums must contain non-negative integers')
+            if 0 not in self.allowed_few_shot_nums:
+                raise ValueError('allowed_few_shot_nums must include 0')
 
     def _normalize_metric_list(self) -> None:
         """Normalize unambiguous legacy scorer aliases at the adapter boundary.
@@ -294,10 +322,11 @@ class BenchmarkMeta:
         """Update instance with provided arguments, maintaining backward compatibility."""
         args = copy.deepcopy(args)
 
-        if 'evaluation_version' in args:
-            raise ValueError(
-                'evaluation_version must be declared by BenchmarkMeta, not overridden through dataset_args.'
-            )
+        protected_fields = {'evaluation_version', 'few_shot_mode', 'allowed_few_shot_nums'}
+        overridden_fields = protected_fields & args.keys()
+        if overridden_fields:
+            fields = ', '.join(sorted(overridden_fields))
+            raise ValueError(f'{fields} must be declared by BenchmarkMeta, not overridden through dataset_args.')
 
         if args.get('local_path'):
             self.dataset_id = args['local_path']
@@ -314,10 +343,9 @@ class BenchmarkMeta:
         # Update fields with validation
         for key, value in args.items():
             if hasattr(self, key):
-                setattr(self, key, value)  # Validate few_shot_num if it's being updated
-                if key == 'few_shot_num' and value < 0:
-                    raise ValueError('few_shot_num must be >= 0')
+                setattr(self, key, value)
 
+        self._validate_few_shot_metadata()
         self._normalize_metric_list()
         self._normalize_primary_metric()
         self._validate_primary_metric()

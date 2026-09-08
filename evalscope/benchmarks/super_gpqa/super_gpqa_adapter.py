@@ -7,10 +7,7 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
-
-logger = get_logger()
 
 SUBSET_MAPPING = {
     'Electronic Science and Technology': ['Engineering'],
@@ -128,6 +125,8 @@ SuperGPQA is a large-scale multiple-choice question answering dataset designed t
         subset_list=list(SUBSET_MAPPING.keys()),
         metric_list=['acc'],
         few_shot_num=0,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 5),
         train_split=None,
         eval_split='train',  # only have train split
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
@@ -137,12 +136,6 @@ class SuperGPQAAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
-        if self.few_shot_num > 0 and self.few_shot_num != 5:
-            logger.warning(
-                f'Only support few_shot_num 0 or 5 for SuperGPQA, but got {self.few_shot_num}. Use 5-shot by default.'
-            )
-            self.few_shot_num = 5
-
         self.reformat_subset = True
         self.category_map = SUBSET_MAPPING
 

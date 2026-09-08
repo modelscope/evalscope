@@ -92,6 +92,8 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
         train_split='prompt',
         eval_split='test',
         few_shot_num=3,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 3),
         prompt_template=PROMPT,
         few_shot_prompt_template=FEWSHOT_PROMPT,
         review_timeout=20,
