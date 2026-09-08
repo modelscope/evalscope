@@ -5,6 +5,7 @@
 :maxdepth: 2
 
 quick_start.md
+agentx.md
 parameters.md
 examples.md
 multi_turn.md

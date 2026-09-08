@@ -11,6 +11,8 @@ from evalscope.perf.multi_turn_args import IntOrRange, MultiTurnArgs
 from evalscope.utils import BaseArgument, get_secret_value, secretize_auth_headers
 from evalscope.utils.logger import get_logger
 
+from .scenarios.agentx import AgentXScenario, parse_agentx_scenario, validate_agentx_arguments
+
 logger = get_logger()
 
 _OPENAI_API_ENDPOINT_MAP = {
@@ -84,6 +86,9 @@ class Arguments(BaseArgument):
 
     no_test_connection: bool = False
     """Skip the connection test before starting the benchmark."""
+
+    scenario: Optional[AgentXScenario] = None
+    """Optional external Perf scenario. Currently supports AgentX."""
 
     # Performance and parallelism
     number: Union[int, List[int]] = 1000
@@ -492,6 +497,13 @@ class Arguments(BaseArgument):
             raise ValueError('--num-workers must be >= 0')
         return v
 
+    @field_validator('scenario', mode='before')
+    @classmethod
+    def _parse_scenario(cls, value: Any) -> Optional[AgentXScenario]:
+        if value is None:
+            return None
+        return parse_agentx_scenario(value)
+
     # --- Model validator (cross-field logic) ---
 
     @model_validator(mode='after')
@@ -638,6 +650,9 @@ class Arguments(BaseArgument):
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
+        if self.scenario is not None:
+            validate_agentx_arguments(self)
+            return
         if self.multi_turn and self.open_loop:
             raise ValueError(
                 '--multi-turn is not supported in open-loop mode: turn N cannot be dispatched before the '
@@ -740,6 +755,12 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        '--scenario',
+        type=str,
+        default=None,
+        help='External performance scenario: "agentx" or an AgentX JSON object.',
+    )
     parser.add_argument('-n', '--number', type=int, default=None, nargs='+', help='How many requests to be made')
     parser.add_argument('--parallel', type=int, default=1, nargs='+', help='Set number of concurrency requests, default 1')  # noqa: E501
     parser.add_argument('--rate', type=float, default=-1, nargs='+',
