@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from evalscope.cli.base import CLICommand
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, _SubParsersAction
+    from evalscope.cli.base import ArgumentParserWithSubParsers
 
 
 def subparser_func(args):
@@ -25,7 +25,7 @@ class StartAppCMD(CLICommand):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: '_SubParsersAction[ArgumentParser]'):
+    def define_args(parsers: 'ArgumentParserWithSubParsers'):
         """Define args for app command (deprecated alias for service)."""
         parser = parsers.add_parser(
             StartAppCMD.name,

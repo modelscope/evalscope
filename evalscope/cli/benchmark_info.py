@@ -38,16 +38,16 @@ Usage:
 """
 
 import json
-from argparse import ArgumentParser, Namespace
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from evalscope.cli.base import CLICommand
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser, _SubParsersAction
+    from argparse import Namespace
 
     from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+    from evalscope.cli.base import ArgumentParserWithSubParsers
 
 
 logger = get_logger()
@@ -79,11 +79,11 @@ class BenchmarkInfoCMD(CLICommand):
 
     name = 'benchmark-info'
 
-    def __init__(self, args: Namespace):
+    def __init__(self, args: 'Namespace'):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: '_SubParsersAction[ArgumentParser]'):
+    def define_args(parsers: 'ArgumentParserWithSubParsers'):
         parser = parsers.add_parser(
             BenchmarkInfoCMD.name,
             help='Display benchmark information and manage documentation',
