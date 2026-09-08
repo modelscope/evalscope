@@ -331,6 +331,57 @@ class TestEnclaveEnvironmentInterpreter:
         assert result.timed_out
         assert result.returncode == -1
 
+    def test_exec_forwards_input_as_a_shell_pipe(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``input=`` used to be accepted and silently dropped inside a sandbox.
+
+        ms_enclave's shell_executor takes a command and no stdin, so a runner
+        that piped its prompt (``runners/mock.py``) had it vanish; only the
+        local environment honoured the argument.
+        """
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], input='piped payload'))
+
+        assert handle.payload is not None
+        assert handle.payload['command'][-1] == "printf %s 'piped payload' | ( cat )"
+
+    def test_input_pipe_survives_cwd_and_env_prefixes(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The subshell must keep the pipe attached to the command, not to ``cd``."""
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], input='payload', cwd='/w', env={'FOO': 'bar'}))
+
+        assert handle.payload['command'][-1] == "printf %s payload | ( export FOO=bar; cd /w && cat )"
+
+    def test_rendered_input_pipe_runs_in_a_real_shell(self):
+        """Render as the sandbox would, then prove the construct in an actual bash."""
+        from evalscope.agent.environments.enclave import _render_command
+        from evalscope.agent.environments.local import LocalAgentEnvironment
+
+        payload = 'multi\nline with $vars `cmd` \'quotes\' "dquotes" 100%'
+        rendered = _render_command(
+            ['/bin/bash', '-c', 'cat; echo "[$FOO]"'],
+            interpreter=['bash', '-c'],
+            cwd='/tmp',
+            env={'FOO': 'bar'},
+            stdin=payload,
+        )
+        result = self._run(LocalAgentEnvironment().exec(['bash', '-c', rendered], timeout=10))
+
+        assert result.returncode == 0
+        assert result.stdout == f'{payload}[bar]\n'
+
+    def test_exec_without_input_is_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        env, handle = self._env_with_fake_handle(monkeypatch)
+        self._run(env.exec(['/bin/bash', '-c', 'cat'], cwd='/w'))
+
+        assert handle.payload['command'][-1] == 'cd /w && cat'
+
+    def test_input_is_rejected_for_a_non_shell_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The pipe is shell syntax; refuse rather than drop the payload again."""
+        env, _ = self._env_with_fake_handle(monkeypatch, interpreter=['python3', '-c'])
+
+        with pytest.raises(NotImplementedError, match='cannot supply stdin'):
+            self._run(env.exec(['print(1)'], input='payload'))
+
     def test_empty_interpreter_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from evalscope.agent.environments.enclave import EnclaveAgentEnvironment
 

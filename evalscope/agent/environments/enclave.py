@@ -79,6 +79,7 @@ def _render_command(
     interpreter: Sequence[str],
     cwd: Optional[str],
     env: Optional[Dict[str, str]],
+    stdin: Optional[str] = None,
 ) -> str:
     unwrapped_command = _unwrap_bash_c(cmd) if _interpreter_is_bash(interpreter) else None
     if unwrapped_command is not None:
@@ -92,6 +93,17 @@ def _render_command(
     if env:
         prefix = _render_env_exports(env)
         command = f'{prefix} {command}' if prefix else command
+    if stdin is not None:
+        if not _interpreter_is_bash(interpreter):
+            raise NotImplementedError(
+                f'EnclaveAgentEnvironment cannot supply stdin through interpreter {list(interpreter)!r}; '
+                'it is rendered as a shell pipeline. Use a bash interpreter or pass the payload in the command.'
+            )
+        # ms_enclave's shell_executor takes a command and no stdin, so the
+        # payload is piped in by the shell instead. The subshell keeps the
+        # pipe attached to the whole command: without it a rendered
+        # ``cd /w && foo`` would feed ``cd`` rather than ``foo``.
+        command = f'printf %s {shlex.quote(stdin)} | ( {command} )'
     return command
 
 
@@ -232,7 +244,7 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         env: Optional[Dict[str, str]] = None,
     ) -> ExecResult:
         handle = await self._ensure_sandbox()
-        command = _render_command(cmd, interpreter=self._interpreter, cwd=cwd, env=env)
+        command = _render_command(cmd, interpreter=self._interpreter, cwd=cwd, env=env, stdin=input)
 
         # ms_enclave's shell_executor splits a bare string with no shell
         # wrapping; use an explicit interpreter so cd/&&/env-prefix/quoting
