@@ -98,17 +98,23 @@ def run_agent_loop(
                 merged_tools.extend(mcp_tool_infos)
 
             try:
-                tool_executor = ToolExecutor(
-                    handlers=merged_handlers,
-                    environment=environment,
-                    tool_infos=merged_tools,
-                    validate_arguments=validate_tool_arguments,
-                )
                 ctx = AgentContext(
                     sample_id=sample_id,
                     messages=initial_messages,
                     tools=merged_tools,
                     max_steps=max_steps,
+                    validate_tool_arguments=validate_tool_arguments,
+                )
+                strategy_tools = getattr(strategy, 'tools', None)
+                if strategy_tools is not None:
+                    advertised_tools = strategy_tools(ctx)
+                    advertised_names = {tool.name for tool in merged_tools}
+                    merged_tools.extend(tool for tool in advertised_tools if tool.name not in advertised_names)
+                tool_executor = ToolExecutor(
+                    handlers=merged_handlers,
+                    environment=environment,
+                    tool_infos=merged_tools,
+                    validate_arguments=validate_tool_arguments,
                 )
                 trace = AgentTrace(
                     strategy=trace_strategy_name,

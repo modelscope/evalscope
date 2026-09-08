@@ -211,6 +211,9 @@ class AgentContext:
     tools: List[ToolInfo] = field(default_factory=list)
     step: int = 0
     max_steps: int = 10
+    validate_tool_arguments: bool = False
+    """Whether tool calls must satisfy their advertised JSON schemas."""
+
     last_output: Optional[ModelOutput] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     nudge_count: int = 0

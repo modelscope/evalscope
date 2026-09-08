@@ -66,6 +66,12 @@ class ToolExecutor:
         correct the call on its next turn.
         """
         started = time.time()
+        if self._validate_arguments:
+            violation = self._schema_violation(call)
+            if violation is not None:
+                err = ToolCallError(type='parsing', message=violation)
+                return err.message, err, time.time() - started
+
         handler = self._handlers.get(call.function.name)
         if handler is None:
             err = ToolCallError(
@@ -73,12 +79,6 @@ class ToolExecutor:
                 message=f"Tool '{call.function.name}' is not registered. Available: {sorted(self._handlers.keys())}",
             )
             return err.message, err, time.time() - started
-
-        if self._validate_arguments:
-            violation = self._schema_violation(call)
-            if violation is not None:
-                err = ToolCallError(type='parsing', message=violation)
-                return err.message, err, time.time() - started
 
         try:
             observation = await handler(call, self._environment)
