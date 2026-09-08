@@ -72,6 +72,10 @@ LongBench v2 is a challenging benchmark for evaluating long-context understandin
 class LongBenchV2Adapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if self.few_shot_num != 0:
+            raise ValueError(
+                f'LongBench-v2 received few_shot_num={self.few_shot_num}, but only supports 0-shot evaluation.'
+            )
         self.reformat_subset = True  # Split samples by 'length' field into short/medium/long subsets
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
