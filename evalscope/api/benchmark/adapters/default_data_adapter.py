@@ -122,8 +122,8 @@ class DefaultDataAdapter(DataAdapter):
             return self.load_from_remote()
 
     def _should_load_fewshot(self) -> bool:
-        """Check if few-shot dataset should be loaded."""
-        return self.few_shot_num > 0 and self.train_split is not None
+        """Check whether auto few-shot examples should be loaded from a split."""
+        return self.few_shot_mode == 'auto' and self.few_shot_num > 0
 
     def _post_process_samples(self):
         """Process all sample inputs with prompt formatting."""

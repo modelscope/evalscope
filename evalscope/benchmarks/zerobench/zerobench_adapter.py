@@ -57,6 +57,7 @@ ZeroBench is a challenging visual reasoning benchmark for Large Multimodal Model
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='zerobench',
+        few_shot_mode='disabled',
         train_split='zerobench_subquestions',
         prompt_template=PROMPT_TEMPLATE,
     )

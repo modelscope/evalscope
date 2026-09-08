@@ -8,11 +8,8 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 
 from .cot_prompts import COT_PROMPTS
-
-logger = get_logger()
 
 # BBH multiple choice subset list
 MULTIPLE_CHOICE = 'multiple_choice'
@@ -105,6 +102,8 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
 """,
         subset_list=SUBSET_LIST,
         few_shot_num=3,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 3),
         train_split=None,
         eval_split='test',
         metric_list=['acc'],
@@ -118,14 +117,6 @@ class BBHAdapter(DefaultDataAdapter):
     """
 
     def __init__(self, **kwargs):
-        few_shot_num = kwargs.get('few_shot_num', 3)
-
-        if few_shot_num != 3 and few_shot_num != 0:
-            logger.error(
-                f'BBH uses 3-shot examples with CoT or 0-shot by system, but got {few_shot_num}. Use 3-shot by default.'
-            )
-            kwargs['few_shot_num'] = 3
-
         super().__init__(**kwargs)
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

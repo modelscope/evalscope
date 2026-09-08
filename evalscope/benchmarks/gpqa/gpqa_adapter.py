@@ -9,10 +9,7 @@ from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
-
-logger = get_logger()
 
 
 @register_benchmark(
@@ -51,6 +48,8 @@ GPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198
         dataset_id='AI-ModelScope/gpqa_diamond',
         metric_list=['acc'],
         few_shot_num=0,
+        few_shot_mode='fixed',
+        allowed_few_shot_nums=(0, 5),
         train_split=None,
         eval_split='train',  # only have train split
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER_COT,
@@ -59,12 +58,6 @@ GPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198
 class GPQAAdapter(MultiChoiceAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        if self.few_shot_num > 0 and self.few_shot_num != 5:
-            logger.warning(
-                f'Only support few_shot_num 0 or 5 for {self.dataset_id}, but got {self.few_shot_num}. Use 5-shot by default.'  # noqa: E501
-            )
-            self.few_shot_num = 5
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         # Process the input to create shuffled choices and correct answer
