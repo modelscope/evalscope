@@ -105,7 +105,9 @@ class AudioWER(Metric):
         if not isinstance(payload, dict):
             raise ValueError(f'Unexpected response payload format (expected dict): {payload}')
 
-        text = payload.get('text') or payload.get('transcription')
+        text = payload.get('text')
+        if text is None:
+            text = payload.get('transcription')
         if text is None and isinstance(payload.get('result'), dict):
             text = payload['result'].get('text')
         if text is None:

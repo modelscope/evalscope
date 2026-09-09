@@ -1,7 +1,9 @@
 import base64
+import json
 from typing import Any, Optional
 
 import pytest
+import requests
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.dataset import Sample
@@ -79,7 +81,8 @@ def test_inference_end_saves_audio_output(tmp_path: Any) -> None:
         assert f.read() == b'fake-audio'
 
 
-def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
+@pytest.mark.parametrize('transcript,expected_score', [('hello', 0.0), ('', 1.0)])
+def test_match_score_uses_generated_audio_path(monkeypatch: Any, transcript: str, expected_score: float) -> None:
     adapter = make_adapter(metric_list=[{'audio_wer': {'api_key': 'test-key', 'api_base': 'https://asr.test/v1'}}])
     sample = Sample(input=[ChatMessageUser(content='hello')], target='hello', metadata={'wer_language': 'en'})
     state = TaskState(model='mock', sample=sample, completed=True)
@@ -102,7 +105,7 @@ def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
                 pass
 
             def json(self) -> dict[str, str]:
-                return {'text': 'hello'}
+                return {'text': transcript}
 
         assert url == 'https://asr.test/v1/audio/transcriptions'
         assert headers['Authorization'] == 'Bearer test-key'
@@ -112,11 +115,15 @@ def test_match_score_uses_generated_audio_path(monkeypatch: Any) -> None:
     monkeypatch.setattr('requests.Session.post', mock_post)
     score = adapter.match_score('', '', 'hello', state)
 
-    assert score.value['audio_wer'] == 0.0
-    assert score.metadata['transcription'] == 'hello'
+    assert score.value['audio_wer'] == expected_score
+    assert score.metadata['transcription'] == transcript
+    assert 'audio_wer' not in score.metadata
 
 
-def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None:
+@pytest.mark.parametrize('transcript,expected_score', [('hello', 0.0), ('', 1.0)])
+def test_audio_wer_accepts_full_transcription_endpoint(
+    monkeypatch: Any, transcript: str, expected_score: float
+) -> None:
 
     def mock_post(
         self: Any,
@@ -135,7 +142,7 @@ def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None
                 pass
 
             def json(self) -> dict[str, str]:
-                return {'text': 'hello'}
+                return {'text': transcript}
 
         assert url == 'https://asr.test/v1/audio/transcriptions'
         return Response()
@@ -144,8 +151,76 @@ def test_audio_wer_accepts_full_transcription_endpoint(monkeypatch: Any) -> None
     metric = AudioWER(api_base='https://asr.test/v1/audio/transcriptions', api_key='test-key')
     score = metric('data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8'), 'hello')
 
-    assert score == 0.0
-    assert metric.transcriptions == ['hello']
+    assert score == expected_score
+    assert metric.transcriptions == [transcript]
+
+
+@pytest.mark.parametrize(
+    'payload,expected',
+    [
+        pytest.param({'text': 'hello', 'transcription': 'other'}, 'hello', id='primary-text'),
+        pytest.param({'text': '', 'transcription': 'other'}, '', id='empty-primary-text'),
+        pytest.param({'text': '', 'result': {'text': 'other'}}, '', id='empty-primary-before-nested'),
+        pytest.param({'transcription': 'hello'}, 'hello', id='missing-primary'),
+        pytest.param({'text': None, 'transcription': 'hello'}, 'hello', id='null-primary'),
+        pytest.param({'transcription': ''}, '', id='empty-fallback'),
+        pytest.param({'text': None, 'transcription': ''}, '', id='null-primary-empty-fallback'),
+        pytest.param({'transcription': '', 'result': {'text': 'other'}}, '', id='empty-fallback-before-nested'),
+        pytest.param({'result': {'text': 'hello'}}, 'hello', id='nested-fallback'),
+        pytest.param({'text': None, 'transcription': None, 'result': {'text': 'hello'}}, 'hello', id='both-null'),
+        pytest.param({'result': {'text': ''}}, '', id='empty-nested-fallback'),
+    ],
+)
+def test_audio_wer_transcription_field_precedence(monkeypatch: Any, payload: dict[str, Any], expected: str) -> None:
+    response = requests.Response()
+    response.status_code = 200
+    response._content = json.dumps(payload).encode('utf-8')
+    monkeypatch.setattr('requests.Session.post', lambda *args, **kwargs: response)
+    metric = AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='transcriptions')
+    audio = 'data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8')
+
+    assert metric._transcribe(audio) == expected
+
+
+@pytest.mark.parametrize(
+    'payload',
+    [{}, {'text': None}, {'text': None, 'transcription': None}, {'result': {}}, {'result': {'text': None}}],
+)
+def test_audio_wer_missing_transcription_still_raises(monkeypatch: Any, payload: dict[str, Any]) -> None:
+    response = requests.Response()
+    response.status_code = 200
+    response._content = json.dumps(payload).encode('utf-8')
+    monkeypatch.setattr('requests.Session.post', lambda *args, **kwargs: response)
+    metric = AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='transcriptions')
+    audio = 'data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8')
+
+    with pytest.raises(ValueError, match='No transcription text found'):
+        metric._transcribe(audio)
+
+
+@pytest.mark.parametrize('payload', [None, [], 'hello'])
+def test_audio_wer_non_object_response_still_raises(monkeypatch: Any, payload: Any) -> None:
+    response = requests.Response()
+    response.status_code = 200
+    response._content = json.dumps(payload).encode('utf-8')
+    monkeypatch.setattr('requests.Session.post', lambda *args, **kwargs: response)
+    metric = AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='transcriptions')
+    audio = 'data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8')
+
+    with pytest.raises(ValueError, match='Unexpected response payload format'):
+        metric._transcribe(audio)
+
+
+def test_audio_wer_http_error_is_not_an_empty_transcription(monkeypatch: Any) -> None:
+    response = requests.Response()
+    response.status_code = 503
+    response._content = b'{"text": ""}'
+    monkeypatch.setattr('requests.Session.post', lambda *args, **kwargs: response)
+    metric = AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='transcriptions')
+    audio = 'data:audio/wav;base64,' + base64.b64encode(b'audio').decode('utf-8')
+
+    with pytest.raises(requests.HTTPError):
+        metric._transcribe(audio)
 
 
 def test_audio_wer_supports_responses_protocol(monkeypatch: Any) -> None:
