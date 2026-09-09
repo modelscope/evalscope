@@ -51,6 +51,17 @@ const DESCENDING_FIRST: Record<SortKey, boolean> = {
   lastRun: true,
 }
 
+/**
+ * Rows rendered up front, and added per click of "show more".
+ *
+ * A row here is one model x benchmark x metric combination, not a run, so a modest fleet of models
+ * and benchmarks already produces more rows than a browser should mount as table DOM on first paint.
+ * The cap keeps the initial render cheap without hiding data behind a second fetch -- everything is
+ * already in `rows`, this only staggers how much of it becomes DOM at once.
+ */
+const INITIAL_ROW_LIMIT = 100
+const ROW_LIMIT_STEP = 100
+
 /** Field columns stay on one line and clip within the responsive widths defined by the colgroup. */
 const FIELD_COLUMN = 'overflow-hidden whitespace-nowrap'
 
@@ -141,6 +152,18 @@ export default function AggregatedResults({
 
   const sorted = [...rows].sort((a, b) => (sort.descending ? -1 : 1) * compareBy(sort.key, a, b))
 
+  // A fresh row set (new filter, search or root) starts back at the cap rather than carrying over
+  // however far a previous, unrelated result set had been expanded to. Reset during render rather
+  // than in an effect, so the first paint of a new `rows` identity never mounts the stale overflow.
+  const [rowLimit, setRowLimit] = useState(INITIAL_ROW_LIMIT)
+  const [rowsForLimit, setRowsForLimit] = useState(rows)
+  if (rows !== rowsForLimit) {
+    setRowsForLimit(rows)
+    setRowLimit(INITIAL_ROW_LIMIT)
+  }
+  const visible = sorted.slice(0, rowLimit)
+  const hiddenCount = sorted.length - visible.length
+
   const toggleSort = (key: SortKey) => {
     const next =
       sort.key === key
@@ -210,7 +233,7 @@ export default function AggregatedResults({
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
-          {sorted.map((row) => {
+          {visible.map((row) => {
             const key = cellKey(row.cell)
             const isOpen = expanded === key
             const { cell, stats } = row
@@ -312,6 +335,18 @@ export default function AggregatedResults({
           })}
         </tbody>
       </table>
+
+      {hiddenCount > 0 && (
+        <div className="border-t border-[var(--border)] px-4 py-2.5 text-center">
+          <button
+            type="button"
+            onClick={() => setRowLimit((limit) => limit + ROW_LIMIT_STEP)}
+            className="type-body-xs font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-dark)]"
+          >
+            {t('dashboard.showMoreRows', { n: Math.min(hiddenCount, ROW_LIMIT_STEP), total: sorted.length })}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

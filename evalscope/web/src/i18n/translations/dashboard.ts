@@ -56,6 +56,7 @@ export const en: Dict = {
   outOfRangeHint:
     'Some runs recorded values outside this metric declared range, so they are shown as recorded '
     + 'and not converted. The benchmark most likely changed the scale it reports.',
+  showMoreRows: 'Show ${n} more (of ${total})',
 
   // Shared
   noReportsHint: 'Enter an output directory and click Scan to discover reports',
@@ -110,6 +111,7 @@ export const zh: Dict = {
   statRuns: '次数',
   singleRunHint: '只跑过一次，暂无可对比的历史。',
   outOfRangeHint: '部分运行记录的数值超出了该指标声明的量程，因此按原样显示、不做换算。通常是该 benchmark 改变了上报的刻度。',
+  showMoreRows: '显示更多 ${n} 行（共 ${total} 行）',
 
   noReportsHint: '输入输出目录路径并点击扫描来发现报告',
   welcomeTitle: '欢迎使用 EvalScope',
