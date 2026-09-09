@@ -2,6 +2,7 @@
 # Copyright 2023-present the HuggingFace Inc. team.
 
 import importlib
+import importlib.util
 import os
 from itertools import chain
 from types import ModuleType
@@ -61,12 +62,32 @@ def check_import(
     missing_packages = []
 
     for i, mod_name in enumerate(module_names):
+        # Split discovery from execution: only a requested module that is truly
+        # undiscoverable enters the missing-module path. Once the module is
+        # confirmed to exist, import_module() runs outside any handler so that
+        # import-time failures (ImportError raised by the module body, a missing
+        # internal dependency, RuntimeError, ...) propagate with their original
+        # traceback instead of being rewritten as '<module> not found'.
         try:
-            importlib.import_module(mod_name)
-        except ImportError:
+            spec = importlib.util.find_spec(mod_name)
+        except ModuleNotFoundError as exc:
+            # find_spec() raises ModuleNotFoundError when a dotted name's parent
+            # is absent (or the parent is not a package). This is only the
+            # 'missing requested module' case when the absent module is the
+            # requested module itself or one of its parents; a broken parent
+            # failing on its own internal dependency must propagate untouched.
+            if exc.name is None or mod_name == exc.name or mod_name.startswith(exc.name + '.'):
+                missing_modules.append(mod_name)
+                if i < len(packages) and packages[i]:
+                    missing_packages.append(packages[i])
+                continue
+            raise
+        if spec is None:
             missing_modules.append(mod_name)
             if i < len(packages) and packages[i]:
                 missing_packages.append(packages[i])
+            continue
+        importlib.import_module(mod_name)
 
     if missing_modules:
         if len(missing_modules) == 1:
