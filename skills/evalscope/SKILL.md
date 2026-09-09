@@ -3,7 +3,7 @@ name: evalscope
 description: >-
   LLM evaluation & inference performance testing via the evalscope CLI.
   Translates natural language requests into evalscope commands for:
-  (1) Model accuracy evaluation — runs 160+ benchmarks against local
+  (1) Model accuracy evaluation — runs registered benchmarks against local
   checkpoints or API endpoints (OpenAI-compatible, Anthropic, LiteLLM);
   (2) Performance stress testing — TTFT, TPOT, throughput, latency under
   configurable concurrency; (3) RAG evaluation — RAGAS quality metrics,
@@ -28,16 +28,24 @@ Read only the relevant reference file for the matched workflow — don't preload
 | Benchmark Discovery | list / find / what benchmarks | (below) |
 | Troubleshooting | errors / failures / debug | [troubleshooting.md](troubleshooting.md) |
 
-## Prerequisites
+## Install EvalScope and the Project Skill
+
+Install the EvalScope CLI in the environment that will run evaluations:
 
 ```bash
 evalscope --version            # verify installation
 pip install evalscope           # basic
-pip install 'evalscope[all]'   # all backends (perf, rag, service, aigc)
 pip install 'evalscope[perf]'  # perf only
 pip install 'evalscope[rag]'   # RAG only (RAGAS, MTEB, CLIP)
 pip install 'evalscope[service]' # Web dashboard
 ```
+
+For a coding agent, install or copy this repository's
+[`skills/evalscope`](https://github.com/modelscope/evalscope/tree/main/skills/evalscope)
+directory into the agent's configured skill-discovery path. Use that agent's
+official skill installer or setup guide rather than assuming a universal local
+path. Before handing off an evaluation task, confirm that the agent can read
+this `SKILL.md` and the relevant reference file.
 
 ## Decision Tree
 
@@ -53,7 +61,9 @@ pip install 'evalscope[service]' # Web dashboard
   - Image editing → `--eval-type image_editing`
 - User wants **performance test** (throughput / latency / QPS / 压测)
   - → `evalscope perf` workflow
-  - API types: `openai` (default), `local`, `local_vllm`, `dashscope`, `embedding`, `rerank`, `custom`
+  - API types: `openai` (default), `openai_responses` / `responses`,
+    `openai_embedding` / `embedding`, `openai_rerank` / `rerank`, `local`,
+    or `local_vllm`
 - User wants **RAG evaluation** (RAG / embedding quality / retrieval)
   - → `evalscope eval --eval-backend RAGEval` with tool config
 - User wants **visualization** (view / compare / dashboard)
@@ -76,7 +86,7 @@ evalscope eval --model qwen-plus --datasets gsm8k arc \
 evalscope eval --model claude-3-5-sonnet --eval-type anthropic_api --datasets mmlu --api-key sk-ant-xxx
 ```
 
-Key parameters: `--datasets`, `--limit`, `--generation-config`, `--dataset-args`, `--eval-backend`, `--judge-strategy`. For full parameter list → [eval-reference.md](eval-reference.md).
+Key parameters: `--datasets`, `--limit`, `--generation-config`, `--dataset-args`, `--eval-backend`, `--judge`. For full parameter list → [eval-reference.md](eval-reference.md).
 
 Output: `outputs/<timestamp>/reports/*.json` (scores), `report.html` (summary).
 
@@ -150,7 +160,7 @@ For code-execution benchmarks (HumanEval, MBPP, etc.) with Docker isolation:
 ```bash
 evalscope eval --model qwen-plus --datasets humaneval \
   --api-url http://localhost:8000/v1/chat/completions \
-  --sandbox '{"enabled": true, "type": "docker"}'
+  --sandbox '{"enabled": true, "engine": "docker"}'
 ```
 
 Requires Docker daemon running. See `evalscope eval --help` for `--sandbox` schema.
