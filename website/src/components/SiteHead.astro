@@ -1,0 +1,41 @@
+---
+import { Font } from 'astro:assets';
+
+interface Props {
+  title: string;
+  description: string;
+  locale: 'en' | 'zh';
+  path: string;
+}
+const { title, description, locale, path } = Astro.props;
+const withBase = (value: string) => `${import.meta.env.BASE_URL.replace(/\/$/, '')}${value}`;
+const canonical = new URL(withBase(path), Astro.site).toString();
+const umamiId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID;
+---
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content={description} />
+  <meta name="theme-color" content="#F7F5EF" />
+  <link rel="canonical" href={canonical} />
+  <link
+    rel="alternate"
+    hreflang="en"
+    href={new URL(withBase(locale === 'en' ? path : path.replace(/^\/zh/, '') || '/'), Astro.site)}
+  />
+  <link
+    rel="alternate"
+    hreflang="zh"
+    href={new URL(withBase(locale === 'zh' ? path : `/zh${path === '/' ? '/' : path}`), Astro.site)}
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:site_name" content="EvalScope" />
+  <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
+  <title>{title}</title>
+  <Font cssVariable="--font-inter" preload />
+  {umamiId && <script is:inline async src="https://cloud.umami.is/script.js" data-website-id={umamiId} />}
+</head>

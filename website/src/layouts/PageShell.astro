@@ -1,0 +1,22 @@
+---
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import SiteHead from '../components/SiteHead.astro';
+import type { Locale, PageSlug } from '../types';
+
+interface Props {
+  title: string;
+  description: string;
+  locale: Locale;
+  path: string;
+  page?: PageSlug;
+}
+const { title, description, locale, path, page } = Astro.props;
+---
+
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <SiteHead title={title} description={description} locale={locale} path={path} />
+  <body><Header locale={locale} page={page} /><main id="main"><slot /></main><Footer locale={locale} /></body>
+</html>

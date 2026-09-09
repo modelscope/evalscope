@@ -1,0 +1,11 @@
+---
+import type { ClaimStatus } from '../types';
+const { status, locale = 'en' } = Astro.props as { status: ClaimStatus; locale?: 'en' | 'zh' };
+const labels = {
+  today: ['Available Today', '当前可用'],
+  exploring: ['Exploring', '探索中'],
+  external: ['External Research', '外部研究'],
+};
+---
+
+<span class={`claim ${status}`}>{labels[status][locale === 'zh' ? 1 : 0]}</span>

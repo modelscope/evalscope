@@ -1,0 +1,151 @@
+---
+import { Icon } from 'astro-icon/components';
+import { getBenchmarkCatalog } from '../lib/benchmarks';
+import type { Locale } from '../types';
+const { locale } = Astro.props as { locale: Locale };
+const catalog = getBenchmarkCatalog();
+const categories = ['All', 'LLM', 'VLM', 'Agent', 'AIGC'];
+const tags = ['Reasoning', 'Coding', 'Math', 'MultiModal', 'FunctionCalling', 'LongContext'];
+const labels =
+  locale === 'zh'
+    ? { search: '搜索评测集、能力或指标', more: '显示更多', shown: '已显示', total: '个评测集' }
+    : {
+        search: 'Search benchmarks, capabilities, or metrics',
+        more: 'Show more',
+        shown: 'Showing',
+        total: 'benchmarks',
+      };
+---
+
+<section class="catalog" data-catalog data-total={catalog.length}>
+  <div class="catalog-controls">
+    <input class="catalog-search" type="search" placeholder={labels.search} aria-label={labels.search} data-search />
+    <div class="filter-row" aria-label="Category filters">
+      {
+        categories.map((category) => (
+          <button
+            class="filter"
+            type="button"
+            data-category={category}
+            aria-pressed={category === 'All' ? 'true' : 'false'}
+          >
+            {category}
+          </button>
+        ))
+      }
+    </div>
+    <div class="filter-row" aria-label="Tag filters">
+      {
+        tags.map((tag) => (
+          <button class="filter" type="button" data-tag={tag} aria-pressed="false">
+            {tag}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+  <p class="eyebrow" data-result-count>
+    {labels.shown}
+    {Math.min(24, catalog.length)} / {catalog.length}
+    {labels.total}
+  </p>
+  <div class="catalog-list">
+    {
+      catalog.map((item, index) => (
+        <a
+          class="catalog-item"
+          href={`https://evalscope.readthedocs.io/${locale === 'zh' ? 'zh-cn' : 'en'}/latest/benchmarks/${item.slug}.html`}
+          target="_blank"
+          rel="noreferrer"
+          data-item
+          data-index={index}
+          data-category={item.category}
+          data-tags={item.tags.join('|')}
+          data-search={`${item.name} ${item.slug} ${item.category} ${item.metrics.join(' ')} ${item.taskType} ${item.modalities} ${item.tags.join(' ')}`.toLowerCase()}
+          hidden={index >= 24}
+        >
+          <>
+            <strong>{item.name}</strong>
+            <span>
+              {item.category} · {item.taskType}
+            </span>
+            <span>{item.metrics.slice(0, 2).join(', ') || 'Metrics'}</span>
+            <Icon name="tabler:arrow-up-right" />
+          </>
+        </a>
+      ))
+    }
+  </div>
+  <button class="button alt catalog-more" type="button" data-more>{labels.more}</button>
+</section>
+<script>
+  const root = document.querySelector<HTMLElement>('[data-catalog]');
+  if (root) {
+    const params = new URLSearchParams(location.search);
+    let category = params.get('category') ?? 'All';
+    const tags = new Set((params.get('tags') ?? '').split(',').filter(Boolean));
+    let term = params.get('q') ?? '';
+    let shown = 24;
+    const items = [...root.querySelectorAll<HTMLElement>('[data-item]')];
+    const search = root.querySelector<HTMLInputElement>('[data-search]');
+    if (search) search.value = term;
+    const update = () => {
+      const matches = items.filter((item) => {
+        const itemTags = new Set((item.dataset.tags ?? '').split('|').filter(Boolean));
+        return (
+          (category === 'All' || item.dataset.category === category) &&
+          [...tags].every((tag) => itemTags.has(tag)) &&
+          (item.dataset.search ?? '').includes(term.toLowerCase())
+        );
+      });
+      items.forEach((item) => {
+        item.hidden = !matches.includes(item) || matches.indexOf(item) >= shown;
+      });
+      const count = root.querySelector('[data-result-count]');
+      if (count) count.textContent = `Showing ${Math.min(shown, matches.length)} / ${matches.length} benchmarks`;
+      const more = root.querySelector<HTMLButtonElement>('[data-more]');
+      if (more) more.hidden = shown >= matches.length;
+      const next = new URLSearchParams();
+      if (term) next.set('q', term);
+      if (category !== 'All') next.set('category', category);
+      if (tags.size) next.set('tags', [...tags].join(','));
+      history.replaceState(null, '', `${location.pathname}${next.size ? `?${next}` : ''}`);
+    };
+    root.querySelectorAll<HTMLButtonElement>('[data-category]').forEach((button) =>
+      button.addEventListener('click', () => {
+        category = button.dataset.category ?? 'All';
+        shown = 24;
+        root
+          .querySelectorAll('[data-category]')
+          .forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        update();
+      })
+    );
+    root.querySelectorAll<HTMLButtonElement>('[data-tag]').forEach((button) => {
+      if (tags.has(button.dataset.tag ?? '')) button.setAttribute('aria-pressed', 'true');
+      button.addEventListener('click', () => {
+        const tag = button.dataset.tag ?? '';
+        if (tags.has(tag)) tags.delete(tag);
+        else tags.add(tag);
+        button.setAttribute('aria-pressed', String(tags.has(tag)));
+        shown = 24;
+        update();
+      });
+    });
+    search?.addEventListener('input', () => {
+      term = search.value;
+      shown = 24;
+      update();
+    });
+    root.querySelector<HTMLButtonElement>('[data-more]')?.addEventListener('click', () => {
+      shown += 24;
+      update();
+    });
+    root
+      .querySelectorAll('[data-category]')
+      .forEach((button) =>
+        button.setAttribute('aria-pressed', String(button.getAttribute('data-category') === category))
+      );
+    update();
+  }
+</script>

@@ -1,0 +1,45 @@
+---
+import { Icon } from 'astro-icon/components';
+interface Props {
+  title: string;
+  prompt: string;
+}
+const { title, prompt } = Astro.props;
+---
+
+<article class="panel prompt-card">
+  <h3>{title}</h3><pre>{prompt}</pre><button class="button alt" type="button" data-copy={prompt}
+    ><Icon name="tabler:copy" />Copy prompt</button
+  >
+</article>
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(button.dataset.copy ?? '');
+      button.textContent = 'Copied';
+      window.setTimeout(() => {
+        button.textContent = 'Copy prompt';
+      }, 1400);
+    });
+  });
+</script>
+<style>
+  .prompt-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .prompt-card h3 {
+    margin: 0;
+  }
+  pre {
+    flex: 1;
+    margin: 0;
+    white-space: pre-wrap;
+    color: var(--muted);
+    font: 12px/1.55 var(--mono);
+  }
+  .prompt-card .button {
+    align-self: flex-start;
+  }
+</style>

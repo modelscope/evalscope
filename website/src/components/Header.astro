@@ -1,0 +1,192 @@
+---
+import { Icon } from 'astro-icon/components';
+import logo from '../assets/brand/evalscope-logo.png';
+import { copy, docsUrl, localizePath, otherLocalePath, productLinks } from '../data/site';
+import type { Locale, PageSlug } from '../types';
+
+interface Props {
+  locale: Locale;
+  page?: PageSlug;
+}
+const { locale, page } = Astro.props;
+const text = copy[locale];
+const currentPath = page ? (`/${page}` as const) : '/';
+---
+
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href={localizePath('/', locale)} aria-label="EvalScope home"
+      ><img src={logo.src} alt="EvalScope" /><span>EvalScope</span></a
+    >
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <details class="product-menu">
+        <summary>{text.product}<Icon name="tabler:chevron-down" /></summary>
+        <div class="product-popover">
+          {
+            productLinks.map((item) => (
+              <a href={localizePath(`/${item.slug}`, locale)} class:list={{ active: page === item.slug }}>
+                {locale === 'zh' ? item.zh : item.en}
+              </a>
+            ))
+          }
+        </div>
+      </details>
+      <a class:list={{ active: page === 'benchmarks' }} href={localizePath('/benchmarks', locale)}>{text.benchmarks}</a>
+      <a class:list={{ active: page === 'research' }} href={localizePath('/research', locale)}>{text.research}</a>
+      <a href={docsUrl(locale)} target="_blank" rel="noreferrer">{text.docs}<Icon name="tabler:arrow-up-right" /></a>
+      <a href="https://github.com/modelscope/evalscope" target="_blank" rel="noreferrer"
+        >{text.github}<Icon name="tabler:brand-github" /></a
+      >
+    </nav>
+    <div class="header-actions">
+      <a class="language" href={otherLocalePath(currentPath, locale)} aria-label="Switch language"
+        >{locale === 'zh' ? 'EN' : '中文'}</a
+      >
+      <a class="header-cta" href={localizePath('/get-started', locale)}>{text.ai}<Icon name="tabler:sparkles" /></a>
+      <button class="menu-button" type="button" aria-label="Open menu" aria-expanded="false" data-menu-toggle
+        ><Icon name="tabler:menu-2" /></button
+      >
+    </div>
+  </div>
+  <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-menu hidden>
+    {
+      productLinks.map((item) => (
+        <a href={localizePath(`/${item.slug}`, locale)}>{locale === 'zh' ? item.zh : item.en}</a>
+      ))
+    }
+    <a href={localizePath('/benchmarks', locale)}>{text.benchmarks}</a><a href={localizePath('/research', locale)}
+      >{text.research}</a
+    ><a href={docsUrl(locale)}>{text.docs}</a>
+  </nav>
+</header>
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = document.querySelector<HTMLElement>('[data-mobile-menu]');
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    if (menu) menu.hidden = open;
+  });
+</script>
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid var(--rule);
+    background: color-mix(in srgb, var(--paper), transparent 4%);
+    backdrop-filter: blur(12px);
+  }
+  .header-inner {
+    display: flex;
+    min-height: 68px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .brand,
+  .desktop-nav,
+  .header-actions,
+  .desktop-nav a,
+  .product-menu summary,
+  .header-cta {
+    display: flex;
+    align-items: center;
+  }
+  .brand {
+    gap: 9px;
+    font-size: 19px;
+    font-weight: 850;
+    letter-spacing: -0.05em;
+  }
+  .brand img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+  .desktop-nav {
+    gap: 21px;
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .desktop-nav a,
+  .product-menu summary {
+    gap: 4px;
+    cursor: pointer;
+  }
+  .desktop-nav a.active {
+    color: var(--blue);
+  }
+  .product-menu {
+    position: relative;
+  }
+  .product-menu summary {
+    list-style: none;
+  }
+  .product-menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .product-popover {
+    position: absolute;
+    top: 27px;
+    left: -14px;
+    display: grid;
+    min-width: 180px;
+    padding: 8px;
+    border: 1px solid var(--ink);
+    background: #fff;
+    box-shadow: 6px 6px 0 var(--gold);
+  }
+  .product-popover a {
+    padding: 9px;
+  }
+  .header-actions {
+    gap: 12px;
+  }
+  .language {
+    color: var(--muted);
+    font: 12px var(--mono);
+  }
+  .header-cta {
+    gap: 6px;
+    padding: 10px 12px;
+    background: var(--ink);
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .menu-button {
+    display: none;
+    border: 0;
+    background: transparent;
+    font-size: 23px;
+  }
+  .mobile-nav {
+    display: none;
+  }
+  @media (max-width: 960px) {
+    .desktop-nav {
+      display: none;
+    }
+    .menu-button {
+      display: inline-flex;
+    }
+    .mobile-nav:not([hidden]) {
+      display: grid;
+      padding: 14px max(20px, calc((100% - 1180px) / 2));
+      border-top: 1px solid var(--rule);
+      background: #fff;
+    }
+    .mobile-nav a {
+      padding: 10px 0;
+      font-weight: 700;
+    }
+  }
+  @media (max-width: 510px) {
+    .header-cta {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,27 @@
+---
+import PageView from '../../components/PageView.astro';
+import PageShell from '../../layouts/PageShell.astro';
+import { pageSlugs, type PageSlug } from '../../types';
+
+export function getStaticPaths() {
+  return pageSlugs.map((page) => ({ params: { page } }));
+}
+const page = Astro.params.page as PageSlug;
+const titles: Record<PageSlug, string> = {
+  evaluation: '模型评测',
+  agent: 'Agent 与 Harness',
+  performance: '性能压测',
+  benchmarks: '评测集',
+  visualization: '可视化',
+  research: '研究',
+  'get-started': '开始使用',
+};
+---
+
+<PageShell
+  title={`${titles[page]} — EvalScope`}
+  description={`EvalScope ${titles[page]}。`}
+  locale="zh"
+  path={`/zh/${page}`}
+  page={page}><PageView locale="zh" page={page} /></PageShell
+>

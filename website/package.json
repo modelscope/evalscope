@@ -1,0 +1,52 @@
+{
+  "name": "evalscope-website",
+  "version": "0.1.0",
+  "description": "EvalScope GitHub Pages website.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "npm run check:astro && npm run check:eslint && npm run check:prettier",
+    "check:astro": "astro check",
+    "check:eslint": "eslint .",
+    "check:prettier": "prettier --check .",
+    "test:content": "node scripts/verify-content.mjs",
+    "verify": "npm run check && npm run test:content && npm run build",
+    "fix": "eslint --fix . && prettier -w ."
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.3.1",
+    "astro-icon": "^1.1.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@eslint/js": "^10.0.1",
+    "@iconify-json/tabler": "^1.2.38",
+    "@tailwindcss/vite": "^4.3.3",
+    "@typescript-eslint/eslint-plugin": "^8.66.0",
+    "@typescript-eslint/parser": "^8.66.0",
+    "astro-eslint-parser": "^3.0.0",
+    "eslint": "^10.8.1",
+    "eslint-plugin-astro": "^3.1.0",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-astro": "^0.14.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.66.0"
+  },
+  "overrides": {
+    "yaml": ">=2.8.3",
+    "postcss": {
+      "nanoid": "^3.3.18"
+    },
+    "deepmerge-ts": ">=8.0.2",
+    "fast-uri": ">=3.1.6"
+  }
+}
