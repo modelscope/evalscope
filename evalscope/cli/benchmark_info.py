@@ -38,17 +38,12 @@ Usage:
 """
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from argparse import Namespace
+from typing import Any, Dict, List, Optional, Union
 
-from evalscope.cli.base import CLICommand
+from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
+from evalscope.cli.base import ArgumentParserWithSubParsers, CLICommand
 from evalscope.utils.logger import get_logger
-
-if TYPE_CHECKING:
-    from argparse import Namespace
-
-    from evalscope.api.benchmark import BenchmarkMeta, DataAdapter
-    from evalscope.cli.base import ArgumentParserWithSubParsers
-
 
 logger = get_logger()
 
@@ -79,11 +74,11 @@ class BenchmarkInfoCMD(CLICommand):
 
     name = 'benchmark-info'
 
-    def __init__(self, args: 'Namespace'):
+    def __init__(self, args: Namespace):
         self.args = args
 
     @staticmethod
-    def define_args(parsers: 'ArgumentParserWithSubParsers'):
+    def define_args(parsers: ArgumentParserWithSubParsers) -> None:
         parser = parsers.add_parser(
             BenchmarkInfoCMD.name,
             help='Display benchmark information and manage documentation',
@@ -314,7 +309,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         generate_docs()
 
-    def _display_info(self, adapter: 'DataAdapter'):
+    def _display_info(self, adapter: DataAdapter) -> None:
         """Display benchmark information."""
         from evalscope.utils.doc_utils.generate_dataset_md import get_adapter_category
 
@@ -328,7 +323,7 @@ class BenchmarkInfoCMD(CLICommand):
         else:
             self._display_text(meta, category)
 
-    def _display_text(self, meta: 'BenchmarkMeta', category: Optional[str] = None):
+    def _display_text(self, meta: BenchmarkMeta, category: Optional[str] = None) -> None:
         """Display info in text format."""
         print(f'\n{"=" * 60}')
         print(f'Benchmark: {meta.pretty_name or meta.name}')
@@ -400,7 +395,7 @@ class BenchmarkInfoCMD(CLICommand):
 
         print()
 
-    def _display_json(self, adapter: 'DataAdapter', category: Optional[str] = None):
+    def _display_json(self, adapter: DataAdapter, category: Optional[str] = None) -> None:
         """Display info in JSON format."""
         from evalscope.utils.doc_utils import load_benchmark_data
 
@@ -439,7 +434,7 @@ class BenchmarkInfoCMD(CLICommand):
         }
         print(json.dumps(data, indent=2, ensure_ascii=False))
 
-    def _display_markdown(self, adapter: 'DataAdapter'):
+    def _display_markdown(self, adapter: DataAdapter) -> None:
         """Display info in markdown format."""
         from evalscope.utils.doc_utils import load_benchmark_data
 

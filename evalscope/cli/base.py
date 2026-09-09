@@ -1,14 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Protocol
-
-if TYPE_CHECKING:
-    from argparse import ArgumentParser
+from argparse import ArgumentParser
+from typing import Any, Protocol
 
 
 class ArgumentParserWithSubParsers(Protocol):
-    def add_parser(self, name, **kwargs) -> 'ArgumentParser': ...
+    def add_parser(self, name: str, **kwargs: Any) -> ArgumentParser: ...
 
 
 class CLICommand(ABC):
@@ -19,7 +17,7 @@ class CLICommand(ABC):
 
     @staticmethod
     @abstractmethod
-    def define_args(parsers: 'ArgumentParserWithSubParsers'):
+    def define_args(parsers: ArgumentParserWithSubParsers) -> None:
         raise NotImplementedError()
 
     @abstractmethod
