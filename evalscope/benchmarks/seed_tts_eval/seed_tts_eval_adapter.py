@@ -30,6 +30,7 @@ PROMPT_TEMPLATE = (
 @register_benchmark(
     BenchmarkMeta(
         name='seed_tts_eval',
+        evaluation_version='v1.1',
         pretty_name='Seed-TTS-Eval',
         dataset_id='evalscope/Seed-TTS-Eval',
         tags=[Tags.AUDIO, Tags.TEXT_TO_SPEECH],
