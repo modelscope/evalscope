@@ -303,9 +303,11 @@ make docs-generate
 
 ### Verify your benchmark
 
+Replace `my_benchmark` with your registered benchmark name and configure its dataset before running the command below. The mock model checks the evaluation pipeline; its scores do not measure model quality.
+
 ```bash
-# Check it's registered
-evalscope eval --benchmarks my_benchmark --model dummy --limit 5
+# Run a smoke evaluation with the mock model (no model download or API key required)
+evalscope eval --datasets my_benchmark --model dummy --eval-type mock_llm --limit 5
 
 # Run via service
 evalscope service
