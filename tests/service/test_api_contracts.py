@@ -365,6 +365,11 @@ def test_prediction_contract_supports_messages_trace_and_missing_optional_fields
                     'type': 'model_generate',
                     'payload': {'nullable': None},
                 }],
+                'total_usage': {
+                    'input_tokens': 384,
+                    'output_tokens': 223,
+                    'total_tokens': 32768,
+                },
             },
         }]
     })
@@ -373,6 +378,7 @@ def test_prediction_contract_supports_messages_trace_and_missing_optional_fields
     assert row.normalized_score is None
     assert row.messages[1].perf_metrics is None
     assert row.agent_trace.events[0].payload['nullable'] is None
+    assert row.agent_trace.total_usage.total_tokens == 32768
 
 
 def test_dynamic_dataframe_nan_serializes_as_json_null() -> None:

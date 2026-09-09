@@ -222,11 +222,23 @@ class AgentTraceEvent(ApiResponseModel):
     payload: Dict[str, Any]
 
 
+class TraceUsage(ApiResponseModel):
+    """Mirrors `evalscope.api.model.model_output.ModelUsage`'s shape for the response contract."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    input_tokens_cache_write: Optional[int] = None
+    input_tokens_cache_read: Optional[int] = None
+    reasoning_tokens: Optional[int] = None
+
+
 class AgentTrace(ApiResponseModel):
     strategy: Optional[str] = None
     environment: Optional[str] = None
     max_steps: int
     events: List[AgentTraceEvent]
+    total_usage: Optional[TraceUsage] = None
 
 
 class JudgeAttempt(ApiResponseModel):

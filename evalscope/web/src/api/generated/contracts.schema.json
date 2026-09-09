@@ -33,6 +33,17 @@
             }
           ],
           "default": null
+        },
+        "total_usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TraceUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -2355,6 +2366,58 @@
       "required": [
         "message"
       ],
+      "type": "object"
+    },
+    "TraceUsage": {
+      "additionalProperties": false,
+      "description": "Mirrors `evalscope.api.model.model_output.ModelUsage`'s shape for the response contract.",
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "input_tokens_cache_read": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "input_tokens_cache_write": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_tokens": {
+          "default": 0,
+          "type": "integer"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_tokens": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
       "type": "object"
     },
     "UsageSummary": {
