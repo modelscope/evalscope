@@ -4,7 +4,7 @@
 
 - Approved visual direction: `/Users/yunlin/.codex/generated_images/01a084e3-705f-72e3-97d2-a1fc101393cc/exec-7378f081-96a9-430f-9950-d7fcdbe001bf.png`
 - Local prototype: `http://127.0.0.1:4321/evalscope/`
-- Browser inspection: Codex in-app browser, 2026-09-09, on Home, Evaluation, Agent & Harness, and Get Started.
+- Browser inspection: Codex in-app browser, 2026-09-09, on Home, Evaluation, Agent & Harness, Performance, Benchmarks, Visualization, Research, and Get Started.
 
 ## Checks
 
@@ -12,7 +12,12 @@
 - Header and footer use the supplied `docs/en/_static/images/evalscope_icon.png` asset plus editable `EvalScope` text; no legacy wordmark image is displayed.
 - Each evidence-led route has a distinct primary source: Evaluation uses the qwen-plus GSM8K result, Agent uses the real Details view, Performance uses Overview and Charts, Visualization uses those three distinct views, and pages without a genuine dashboard view use code or artifact evidence rather than a fabricated screenshot.
 - Replaced the malformed inline terminal blocks with the reusable `CodeSnippet` component. It preserves command line breaks, labels the snippet, uses a macOS-style toolbar and exposes a working Copy control. The local browser click completed without navigation or console-visible failure.
-- Browser review confirms the Agent loop, real evidence caption, drift-boundary labels, Evaluation modality/contract path, and four bounded Get Started prompts render in the intended information order.
+- The Home heading now has a measured four-line rhythm and its terminal layer contains only the runnable API-first command, so it is no longer hidden by the real dashboard screenshot.
+- Removed the Evaluation demo metric strip: the `qwen-plus` / GSM8K result remains confined to its real screenshot and caption rather than being presented as a product-wide claim.
+- Rebuilt the Benchmark hero as a measurement orbit: gold trajectory rings, dotted crosshair axes, blue registration nodes, and a fine-tick ruler replace the generic background grid.
+- Removed the Performance curve label collision and stripped explanatory output from the Performance and service terminal snippets; cards now show only copyable commands.
+- The Get Started hero now carries a concise Manual/API versus AI/Skill route card, eliminating the unused right-side space while keeping the detailed four-step routes below.
+- Browser review confirms the Agent loop, real evidence captions, drift-boundary labels, Evaluation modality/contract path, Benchmark registration orbit, Research claim boundary, and four bounded Get Started prompts render in the intended information order.
 - `npm run verify` passed: Astro diagnostics, ESLint, Prettier, metadata-content validation (256 records), and static build of 16 locale routes plus 404.
 - Responsive breakpoints preserve the compact mobile menu and collapse dense card/timeline layouts at 960px, 900px, and 620px. The initial 390px/768px behavior is covered by the responsive layout rules; a later visual polish pass can tune only breakpoint spacing if needed.
 

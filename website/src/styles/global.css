@@ -54,8 +54,8 @@ input {
 .display {
   max-width: 940px;
   margin: 18px 0;
-  font-size: clamp(42px, 6vw, 82px);
-  line-height: 0.98;
+  font-size: clamp(40px, 5.35vw, 72px);
+  line-height: 1;
   letter-spacing: -0.065em;
 }
 .lede {
@@ -97,7 +97,7 @@ input {
 }
 .hero {
   position: relative;
-  padding: 100px 0 74px;
+  padding: 76px 0 54px;
   background-image: linear-gradient(
     90deg,
     transparent 24px,
@@ -113,6 +113,12 @@ input {
   font: 9px/1.45 var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+body[data-page='benchmarks'] .hero {
+  background-image: none;
+}
+body[data-page='benchmarks'] .hero::before {
+  content: 'OPEN BENCHMARKS  //  REPRODUCIBLE EVALUATION  //  A MORE CAPABLE AI ECOSYSTEM';
 }
 .hero::before {
   bottom: 22px;
@@ -169,6 +175,13 @@ input {
   font: 9px var(--mono);
   letter-spacing: 0.08em;
 }
+.benchmark-ruler {
+  height: 27px;
+}
+.benchmark-ruler::before,
+.benchmark-ruler::after {
+  left: 38%;
+}
 .gold-line {
   width: 156px;
   height: 5px;
@@ -179,7 +192,7 @@ input {
 .hero-grid,
 .split {
   display: grid;
-  grid-template-columns: 1.03fr 0.97fr;
+  grid-template-columns: 1.16fr 0.84fr;
   gap: 56px;
   align-items: center;
 }
@@ -387,9 +400,6 @@ input {
   margin-bottom: 5px;
   font-size: 18px;
   letter-spacing: -0.04em;
-}
-.demo-metrics {
-  margin-top: 20px;
 }
 .instrument-strip span {
   color: var(--muted);
@@ -655,15 +665,6 @@ input {
   transform: skewY(-10deg);
   transform-origin: left center;
 }
-.load-curve::after {
-  position: absolute;
-  right: 7%;
-  top: 26px;
-  content: 'Keep testing →\A until the bottleneck is reached.';
-  white-space: pre;
-  color: #d28b11;
-  font: italic 13px/1.4 var(--mono);
-}
 .curve-point {
   position: absolute;
   z-index: 1;
@@ -714,8 +715,18 @@ input {
   border-radius: 50%;
   content: '';
 }
+.catalog-orbit::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  content: '';
+  background: repeating-linear-gradient(to bottom, #d8d5cc 0 9px, transparent 9px 18px);
+}
 .catalog-orbit strong {
   position: absolute;
+  z-index: 2;
   top: 40%;
   left: 0;
   width: 100%;
@@ -723,8 +734,9 @@ input {
   letter-spacing: -0.1em;
   text-align: center;
 }
-.catalog-orbit > span {
+.catalog-orbit > .orbit-label {
   position: absolute;
+  z-index: 2;
   top: 55%;
   left: 0;
   width: 100%;
@@ -733,8 +745,54 @@ input {
   text-align: center;
   text-transform: uppercase;
 }
+.orbit-axis {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  background: repeating-linear-gradient(to right, #d8d5cc 0 8px, transparent 8px 16px);
+}
+.orbit-axis.horizontal {
+  top: 50%;
+  right: -10%;
+  left: -10%;
+  height: 1px;
+}
+.orbit-axis.vertical {
+  top: -10%;
+  bottom: -10%;
+  left: 50%;
+  width: 1px;
+  background: repeating-linear-gradient(to bottom, #d8d5cc 0 8px, transparent 8px 16px);
+}
+.orbit-node {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.orbit-node.top {
+  top: -2px;
+  left: calc(50% - 3px);
+}
+.orbit-node.right {
+  top: calc(50% - 3px);
+  right: -2px;
+}
+.orbit-node.bottom {
+  bottom: -2px;
+  left: calc(50% - 3px);
+}
+.orbit-node.left {
+  top: calc(50% - 3px);
+  left: -2px;
+}
 .catalog-orbit i {
   position: absolute;
+  z-index: 2;
   display: block;
   width: 86px;
   height: 86px;
@@ -772,6 +830,66 @@ input {
   object-fit: cover;
   object-position: center;
 }
+.get-started-hero {
+  align-items: stretch;
+}
+.start-route-card {
+  align-self: center;
+  padding: 28px;
+  border: 1px solid var(--ink);
+  background: #fff;
+  box-shadow: 9px 9px 0 var(--gold);
+}
+.start-route-card .eyebrow {
+  margin: 0 0 20px;
+}
+.start-route {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.start-route > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font: 11px/1 var(--mono);
+}
+.start-route.connector::before {
+  position: absolute;
+  top: -13px;
+  left: 13px;
+  width: 1px;
+  height: 14px;
+  content: '';
+  background: repeating-linear-gradient(to bottom, var(--gold) 0 4px, transparent 4px 7px);
+}
+.start-route strong {
+  display: block;
+  font-size: 18px;
+  letter-spacing: -0.04em;
+}
+.start-route p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.start-route-note {
+  margin: 6px 0 0;
+  padding-top: 15px;
+  border-top: 1px solid var(--ink);
+  color: var(--blue);
+  font: 10px/1.45 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .skip-link {
   position: absolute;
   left: -9999px;
@@ -792,6 +910,9 @@ input {
     gap: 34px;
   }
   .hero-stack {
+    max-width: 620px;
+  }
+  .start-route-card {
     max-width: 620px;
   }
   .card-grid {

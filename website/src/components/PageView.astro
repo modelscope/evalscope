@@ -37,21 +37,13 @@ const evalCommand = `export DASHSCOPE_API_KEY='…'
 evalscope eval \\
   --model qwen-plus \\
   --datasets gsm8k \\
-  --limit 5
-
-# Real API demo snapshot · 2026-09-09
-# Accuracy 100% · Avg latency 5.188 s · 36.85 tok/s`;
+  --limit 5`;
 const serviceCommand = `pip install 'evalscope[service]'
-evalscope service --outputs ./outputs
-
-# Open a local dashboard from the run artifacts.
-# No cloud account. No model download.`;
+evalscope service --outputs ./outputs`;
 const perfCommand = `evalscope perf \\
   --model qwen-plus \\
   --number 24 \\
-  --parallel 1 2 4
-
-# API-first · use an environment variable for credentials`;
+  --parallel 1 2 4`;
 ---
 
 {
@@ -441,34 +433,6 @@ const perfCommand = `evalscope perf \\
                   </p>
                 </>
               </article>
-            </>
-          </div>
-          <div class="instrument-strip demo-metrics">
-            <>
-              <div>
-                <>
-                  <strong>qwen-plus</strong>
-                  <span>{t('API model in this snapshot', '本快照使用的 API 模型')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>GSM8K · 5</strong>
-                  <span>{t('Dataset and bounded sample count', '数据集与有界样本数')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>100%</strong>
-                  <span>{t('Accuracy in this API demo', '本 API Demo 的 Accuracy')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>5.188s · 36.85 tok/s</strong>
-                  <span>{t('Small snapshot, not a model ranking', '小规模快照，非模型排名')}</span>
-                </>
-              </div>
             </>
           </div>
         </div>
@@ -1062,7 +1026,13 @@ const perfCommand = `evalscope perf \\
             <div class="catalog-orbit">
               <>
                 <strong>{count}</strong>
-                <span>{t('benchmarks in registry', '条 registry benchmark')}</span>
+                <span class="orbit-label">{t('benchmarks in registry', '条 registry benchmark')}</span>
+                <span class="orbit-axis horizontal" aria-hidden="true" />
+                <span class="orbit-axis vertical" aria-hidden="true" />
+                <span class="orbit-node top" aria-hidden="true" />
+                <span class="orbit-node right" aria-hidden="true" />
+                <span class="orbit-node bottom" aria-hidden="true" />
+                <span class="orbit-node left" aria-hidden="true" />
                 <i class="llm">
                   143
                   <>
@@ -1097,6 +1067,7 @@ const perfCommand = `evalscope perf \\
         </div>
       </section>
       <div class="container">
+        <div class="measurement-rule benchmark-ruler" aria-hidden="true" />
         <div class="instrument-strip">
           <>
             <div>
@@ -1725,24 +1696,46 @@ const perfCommand = `evalscope perf \\
   page === 'get-started' && (
     <>
       <section class="hero">
-        <div class="container">
+        <div class="container hero-grid get-started-hero">
           <>
-            <p class="registration">
-              <>
-                <span>{t('Get started', '开始使用')}</span>
-                <span class="index">07</span>
-              </>
-            </p>
-            <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
-            <h1 class="display">
-              {t('Two safe ways to begin: manual or AI-assisted.', '两种安全的开始方式：手动或 AI 辅助。')}
-            </h1>
-            <p class="lede">
-              {t(
-                'Both routes are API-first by default: use an environment variable for your key, keep the run small, and do not download a local model.',
-                '两条路径默认均为 API-first：通过环境变量使用 key，保持小规模运行，不下载本地模型。'
-              )}
-            </p>
+            <div>
+              <p class="registration">
+                <>
+                  <span>{t('Get started', '开始使用')}</span>
+                  <span class="index">07</span>
+                </>
+              </p>
+              <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
+              <h1 class="display">
+                {t('Two safe ways to begin: manual or AI-assisted.', '两种安全的开始方式：手动或 AI 辅助。')}
+              </h1>
+              <p class="lede">
+                {t(
+                  'Both routes are API-first by default: use an environment variable for your key, keep the run small, and do not download a local model.',
+                  '两条路径默认均为 API-first：通过环境变量使用 key，保持小规模运行，不下载本地模型。'
+                )}
+              </p>
+            </div>
+            <aside class="start-route-card" aria-label={t('Two starting routes', '两条开始路径')}>
+              <p class="eyebrow">{t('CHOOSE A ROUTE', '选择路径')}</p>
+              <div class="start-route">
+                <span>01</span>
+                <div>
+                  <strong>{t('Manual / API', '手动 / API')}</strong>
+                  <p>{t('Copy one bounded command.', '复制一条有界命令。')}</p>
+                </div>
+              </div>
+              <div class="start-route connector">
+                <span>02</span>
+                <div>
+                  <strong>{t('AI / project skill', 'AI / 项目 Skill')}</strong>
+                  <p>{t('Copy a prompt; the agent reads the skill.', '复制 Prompt，由 Agent 读取 Skill。')}</p>
+                </div>
+              </div>
+              <p class="start-route-note">
+                {t('API-first · 5 samples · no local model', 'API-first · 5 样本 · 不下载本地模型')}
+              </p>
+            </aside>
           </>
         </div>
       </section>
