@@ -26,3 +26,7 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 
 .astro
+
+# The repository-level ignore rule targets generic Python build libraries.
+!src/lib/
+!src/lib/**
