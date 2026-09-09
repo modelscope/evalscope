@@ -19,5 +19,67 @@ const { title, description, locale, path, page } = Astro.props;
 <html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
   <SiteHead title={title} description={description} locale={locale} path={path} />
   <body data-page={page ?? 'home'}
-    ><Header locale={locale} page={page} /><main id="main"><slot /></main><Footer locale={locale} /></body>
+    ><Header locale={locale} page={page} /><main id="main"><slot /></main><Footer locale={locale} />
+    <script>
+      document.querySelectorAll<HTMLElement>('.hero, .section').forEach((surface) => {
+        const reset = () => {
+          surface.style.removeProperty('--measure-shift');
+          surface.style.removeProperty('--measure-ruler-shift');
+          surface.style.removeProperty('--registration-scale');
+          surface.style.removeProperty('--pointer-x');
+          surface.style.removeProperty('--pointer-y');
+          delete surface.dataset.pointerActive;
+        };
+        surface.addEventListener('pointermove', (event) => {
+          const bounds = surface.getBoundingClientRect();
+          const progress = Math.min(1, Math.max(0, (event.clientX - bounds.left) / bounds.width));
+          const vertical = Math.min(1, Math.max(0, (event.clientY - bounds.top) / bounds.height));
+          surface.style.setProperty('--measure-shift', `${(progress - 0.5) * 52}px`);
+          surface.style.setProperty('--measure-ruler-shift', `${progress * 24}px`);
+          surface.style.setProperty('--registration-scale', `${0.68 + progress * 0.32}`);
+          surface.style.setProperty('--pointer-x', `${progress * 100}%`);
+          surface.style.setProperty('--pointer-y', `${vertical * 100}%`);
+          surface.dataset.pointerActive = 'true';
+        });
+        surface.addEventListener('pointerleave', reset);
+      });
+
+      document.querySelectorAll<HTMLElement>('[data-evidence-board]').forEach((board) => {
+        const steps = [...board.querySelectorAll<HTMLButtonElement>('[data-evidence-step]')];
+        steps.forEach((step) => {
+          step.addEventListener('click', () => {
+            steps.forEach((item) => {
+              const active = item === step;
+              item.classList.toggle('active', active);
+              item.setAttribute('aria-pressed', String(active));
+            });
+            const index = board.querySelector<HTMLElement>('[data-evidence-output-index]');
+            const name = board.querySelector<HTMLElement>('[data-evidence-output-name]');
+            const context = board.querySelector<HTMLElement>('[data-evidence-output-context]');
+            if (index) index.textContent = step.dataset.evidenceIndex ?? '';
+            if (name) name.textContent = step.dataset.evidenceName ?? '';
+            if (context) context.textContent = step.dataset.evidenceContext ?? '';
+          });
+        });
+      });
+
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const chapters = [...document.querySelectorAll<HTMLElement>('.section[data-product-section] > .container')];
+        const reveal = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add('is-revealed');
+              reveal.unobserve(entry.target);
+            });
+          },
+          { rootMargin: '0px 0px -10%', threshold: 0.12 }
+        );
+        chapters.forEach((chapter) => {
+          chapter.classList.add('reveal-ready');
+          reveal.observe(chapter);
+        });
+      }
+    </script></body
+  >
 </html>

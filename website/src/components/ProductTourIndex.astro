@@ -1,0 +1,123 @@
+---
+import type { Locale } from '../types';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const items =
+  locale === 'zh'
+    ? [
+        ['overview', '概览'],
+        ['evaluation', '模型评测'],
+        ['agent', 'Agent'],
+        ['performance', '性能'],
+        ['benchmarks', '评测集'],
+        ['visualization', 'Visualization'],
+        ['get-started', '开始使用'],
+      ]
+    : [
+        ['overview', 'Overview'],
+        ['evaluation', 'Evaluate'],
+        ['agent', 'Agents'],
+        ['performance', 'Performance'],
+        ['benchmarks', 'Benchmarks'],
+        ['visualization', 'Visualization'],
+        ['get-started', 'Get started'],
+      ];
+---
+
+<nav class="product-tour-index" aria-label={locale === 'zh' ? '首页章节目录' : 'Home sections'} data-product-tour-index>
+  <span>{locale === 'zh' ? '章节' : 'Sections'}</span>
+  {
+    items.map(([id, label]) => (
+      <a href={`#${id}`} data-product-tour-link={id}>
+        {label}
+      </a>
+    ))
+  }
+</nav>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-product-tour-index]').forEach((index) => {
+    const links = [...index.querySelectorAll<HTMLAnchorElement>('[data-product-tour-link]')];
+    const sections = links
+      .map((link) => document.getElementById(link.dataset.productTourLink ?? ''))
+      .filter((section): section is HTMLElement => Boolean(section));
+    const setActive = (id: string) => {
+      links.forEach((link) => link.toggleAttribute('aria-current', link.dataset.productTourLink === id));
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActive(visible.target.id);
+      },
+      { rootMargin: '-28% 0px -58% 0px', threshold: [0.05, 0.2, 0.4] }
+    );
+    sections.forEach((section) => observer.observe(section));
+    const updateVisibility = () => {
+      index.classList.toggle('is-visible', window.scrollY > Math.min(window.innerHeight * 0.75, 560));
+    };
+    updateVisibility();
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+  });
+</script>
+
+<style>
+  .product-tour-index {
+    position: fixed;
+    top: 112px;
+    right: 18px;
+    z-index: 16;
+    display: grid;
+    gap: 5px;
+    width: 116px;
+    padding: 12px 10px;
+    border: 1px solid color-mix(in srgb, var(--rule), transparent 30%);
+    background: color-mix(in srgb, var(--paper), transparent 7%);
+    box-shadow: 4px 4px 0 color-mix(in srgb, var(--gold), transparent 55%);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(14px);
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease;
+  }
+  .product-tour-index.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  .product-tour-index > span {
+    margin-bottom: 4px;
+    color: var(--muted);
+    font: 10px/1 var(--mono);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .product-tour-index a {
+    padding: 4px 5px;
+    color: var(--muted);
+    font: 11px/1.2 var(--mono);
+  }
+  .product-tour-index a[aria-current] {
+    border-left: 2px solid var(--blue);
+    background: color-mix(in srgb, var(--blue), transparent 90%);
+    color: var(--ink);
+    font-weight: 800;
+  }
+  @media (max-width: 1180px) {
+    .product-tour-index {
+      right: 10px;
+      width: 104px;
+    }
+  }
+  @media (max-width: 900px) {
+    .product-tour-index {
+      display: none;
+    }
+  }
+</style>

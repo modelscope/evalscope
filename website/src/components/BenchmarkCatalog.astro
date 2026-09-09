@@ -44,10 +44,10 @@ const labels =
       }
     </div>
   </div>
-  <p class="eyebrow" data-result-count>
-    {labels.shown}
-    {Math.min(24, catalog.length)} / {catalog.length}
-    {labels.total}
+  <p class="catalog-result-count" data-result-count>
+    <span>{labels.shown}</span>
+    <strong data-result-value>{Math.min(24, catalog.length)}</strong>
+    <span>/ <span data-result-total>{catalog.length}</span> {labels.total}</span>
   </p>
   <div class="catalog-list">
     {
@@ -61,7 +61,7 @@ const labels =
           data-index={index}
           data-category={item.category}
           data-tags={item.tags.join('|')}
-          data-search={`${item.name} ${item.slug} ${item.category} ${item.metrics.join(' ')} ${item.taskType} ${item.modalities} ${item.tags.join(' ')}`.toLowerCase()}
+          data-search={`${item.name} ${item.slug} ${item.category} ${item.metrics.join(' ')} ${item.metricSummary} ${item.taskType} ${item.modalities} ${item.tags.join(' ')}`.toLowerCase()}
           hidden={index >= 24}
         >
           <>
@@ -69,7 +69,7 @@ const labels =
             <span>
               {item.category} · {item.taskType}
             </span>
-            <span>{item.metrics.slice(0, 2).join(', ') || 'Metrics'}</span>
+            <span>{item.metricSummary}</span>
             <Icon name="tabler:arrow-up-right" />
           </>
         </a>
@@ -101,8 +101,10 @@ const labels =
       items.forEach((item) => {
         item.hidden = !matches.includes(item) || matches.indexOf(item) >= shown;
       });
-      const count = root.querySelector('[data-result-count]');
-      if (count) count.textContent = `Showing ${Math.min(shown, matches.length)} / ${matches.length} benchmarks`;
+      const count = root.querySelector<HTMLElement>('[data-result-value]');
+      if (count) count.textContent = String(Math.min(shown, matches.length));
+      const total = root.querySelector<HTMLElement>('[data-result-total]');
+      if (total) total.textContent = String(matches.length);
       const more = root.querySelector<HTMLButtonElement>('[data-more]');
       if (more) more.hidden = shown >= matches.length;
       const next = new URLSearchParams();

@@ -1,0 +1,136 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { Locale } from '../types';
+
+const { locale } = Astro.props as { locale: Locale };
+const zh = locale === 'zh';
+const t = (en: string, cn: string) => (zh ? cn : en);
+const tasks = [
+  {
+    icon: 'tabler:chart-bar',
+    label: t('Evaluate a model', '评测模型能力'),
+    title: t('Run a bounded evaluation.', '运行有边界的评测。'),
+    detail: t(
+      'Ask the agent to use an API model, score five samples and return the evidence path.',
+      '让 Agent 使用 API 模型，评测五条样本并返回证据路径。'
+    ),
+    prompt: t(
+      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Use the endpoint configuration already supplied here and DASHSCOPE_API_KEY from the environment to run exactly five GSM8K samples. Do not download a local model or use a GPU. Return the exact command, score, output path and any limitation; if configuration is missing, say so rather than inventing a result.',
+      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。使用代码库已提供的 endpoint 配置和环境变量中的 DASHSCOPE_API_KEY，恰好运行 GSM8K 的 5 条样本。不要下载本地模型或使用 GPU。返回精确命令、分数、产物路径和任何限制；如果配置缺失，请明确说明，不要虚构结果。'
+    ),
+  },
+  {
+    icon: 'tabler:bolt',
+    label: t('Stress-test an API', '压测 API 服务'),
+    title: t('Measure a service under load.', '测量服务在负载下的表现。'),
+    detail: t(
+      'Choose a small concurrency sweep and ask for latency, TTFT, RPS and throughput evidence.',
+      '选择一个小范围并发扫描，要求返回延迟、TTFT、RPS 和吞吐证据。'
+    ),
+    prompt: t(
+      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Use the existing API endpoint configuration to run the smallest meaningful closed-loop performance sweep. Do not download a local model or use a GPU. State the model, concurrency, warmup and duration, then return RPS, latency, TTFT, throughput, artifact path and any limitation. Do not infer a result when the endpoint is unavailable.',
+      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。使用已有 API endpoint 配置运行最小但有意义的闭环性能扫描。不要下载本地模型或使用 GPU。说明模型、并发、预热和时长，然后返回 RPS、延迟、TTFT、吞吐、产物路径和任何限制。若 endpoint 不可用，不要推测结果。'
+    ),
+  },
+  {
+    icon: 'tabler:database-search',
+    label: t('Find a benchmark', '寻找评测集'),
+    title: t('Match a benchmark to the job.', '为任务匹配合适的评测集。'),
+    detail: t(
+      'Search available tasks and explain fit, metrics and runnable constraints before evaluating.',
+      '先检索可用任务，再解释适配性、指标和可运行约束。'
+    ),
+    prompt: t(
+      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Inspect the benchmark catalog or generated documentation. For reasoning, coding and multimodal needs, return the strongest candidates with task type, metric, evaluation version, runnable constraints and why each fits. Do not download or run a model, and clearly mark any catalog detail you cannot verify locally.',
+      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。检查 benchmark 目录或自动生成的文档。针对推理、代码和多模态需求，返回最佳候选及其任务类型、指标、评测版本、可运行约束和适配原因。不要下载或运行模型；任何无法在本地验证的目录细节都要明确标注。'
+    ),
+  },
+  {
+    icon: 'tabler:folders',
+    label: t('Inspect existing results', '审查既有结果'),
+    title: t('Open an evidence trail.', '打开一条证据链。'),
+    detail: t(
+      'Review reports, predictions, reviews and configs without rerunning the model.',
+      '无需重新运行模型，即可审查报告、预测、review 与配置。'
+    ),
+    prompt: t(
+      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Inspect only existing output directories. Do not call a model API, download a model, use a GPU or rerun evaluation. Identify available reports, predictions, reviews and configs; give the exact local command to open the dashboard or report; and state which expected artifacts are absent instead of treating them as present.',
+      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。只检查已有输出目录。不要调用模型 API、下载模型、使用 GPU 或重新运行评测。识别可用的报告、预测、review 和配置；给出打开本地 Dashboard 或报告的精确命令；对于缺失的预期产物，请明确说明，不要当作已经存在。'
+    ),
+  },
+];
+---
+
+<div class="job-tabs" data-job-tabs>
+  <div class="job-tab-list" role="tablist" aria-label={t('Choose a task', '选择任务')}>
+    {
+      tasks.map((task, index) => (
+        <button
+          class:list={['job-tab', { active: index === 0 }]}
+          type="button"
+          role="tab"
+          aria-selected={index === 0 ? 'true' : 'false'}
+          aria-controls={`job-panel-${index}`}
+          data-job-tab={index}
+        >
+          <Icon name={task.icon} size="20" />
+          <span>{task.label}</span>
+        </button>
+      ))
+    }
+  </div>
+  {
+    tasks.map((task, index) => (
+      <article
+        class="job-tab-panel"
+        id={`job-panel-${index}`}
+        role="tabpanel"
+        aria-hidden={index === 0 ? 'false' : 'true'}
+        hidden={index !== 0}
+        data-job-panel={index}
+      >
+        <div>
+          <p class="eyebrow">{task.label}</p>
+          <h3>{task.title}</h3>
+          <p>{task.detail}</p>
+        </div>
+        <div class="job-tab-prompt">
+          <pre>{task.prompt}</pre>
+          <button class="button alt" type="button" data-copy-task={task.prompt}>
+            {t('Copy prompt', '复制 Prompt')}
+          </button>
+        </div>
+      </article>
+    ))
+  }
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-job-tabs]').forEach((tabs) => {
+    const buttons = [...tabs.querySelectorAll<HTMLButtonElement>('[data-job-tab]')];
+    const panels = [...tabs.querySelectorAll<HTMLElement>('[data-job-panel]')];
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.jobTab;
+        buttons.forEach((item) => {
+          const active = item === button;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-selected', String(active));
+        });
+        panels.forEach((panel) => {
+          const active = panel.dataset.jobPanel === selected;
+          panel.hidden = !active;
+          panel.setAttribute('aria-hidden', String(!active));
+        });
+      });
+    });
+
+    tabs.querySelectorAll<HTMLButtonElement>('[data-copy-task]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(button.dataset.copyTask ?? '');
+        button.textContent = 'Copied';
+      });
+    });
+  });
+</script>

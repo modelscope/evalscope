@@ -226,6 +226,7 @@ class AgentTrace(ApiResponseModel):
     strategy: Optional[str] = None
     environment: Optional[str] = None
     max_steps: int
+    total_usage: Optional[Dict[str, Optional[int]]] = None
     events: List[AgentTraceEvent]
 
 

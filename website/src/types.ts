@@ -17,6 +17,7 @@ export interface BenchmarkRecord {
   slug: string;
   category: string;
   metrics: string[];
+  metricSummary: string;
   taskType: string;
   modalities: string;
   tags: string[];

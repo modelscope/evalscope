@@ -20,8 +20,10 @@ const currentPath = page ? (`/${page}` as const) : '/';
       ><img src={logo.src} alt="" /><span>EvalScope</span></a
     >
     <nav class="desktop-nav" aria-label="Primary navigation">
-      <details class="product-menu">
-        <summary>{text.product}<Icon name="tabler:chevron-down" /></summary>
+      <div class="product-menu">
+        <a class:list={['product-home', { active: !page }]} href={localizePath('/', locale)}>
+          {locale === 'zh' ? '首页' : 'Home'}<Icon name="tabler:chevron-down" />
+        </a>
         <div class="product-popover">
           {
             productLinks.map((item) => (
@@ -31,7 +33,7 @@ const currentPath = page ? (`/${page}` as const) : '/';
             ))
           }
         </div>
-      </details>
+      </div>
       <a class:list={{ active: page === 'benchmarks' }} href={localizePath('/benchmarks', locale)}>{text.benchmarks}</a>
       <a class:list={{ active: page === 'research' }} href={localizePath('/research', locale)}>{text.research}</a>
       <a href={docsUrl(locale)} target="_blank" rel="noreferrer">{text.docs}<Icon name="tabler:arrow-up-right" /></a>
@@ -50,6 +52,7 @@ const currentPath = page ? (`/${page}` as const) : '/';
     </div>
   </div>
   <nav class="mobile-nav" aria-label="Mobile navigation" data-mobile-menu hidden>
+    <a href={localizePath('/', locale)}>{locale === 'zh' ? '首页' : 'Home'}</a>
     {
       productLinks.map((item) => (
         <a href={localizePath(`/${item.slug}`, locale)}>{locale === 'zh' ? item.zh : item.en}</a>
@@ -89,7 +92,7 @@ const currentPath = page ? (`/${page}` as const) : '/';
   .desktop-nav,
   .header-actions,
   .desktop-nav a,
-  .product-menu summary,
+  .product-home,
   .header-cta {
     display: flex;
     align-items: center;
@@ -113,7 +116,7 @@ const currentPath = page ? (`/${page}` as const) : '/';
     font-weight: 700;
   }
   .desktop-nav a,
-  .product-menu summary {
+  .product-home {
     gap: 4px;
     cursor: pointer;
   }
@@ -123,22 +126,29 @@ const currentPath = page ? (`/${page}` as const) : '/';
   .product-menu {
     position: relative;
   }
-  .product-menu summary {
-    list-style: none;
-  }
-  .product-menu summary::-webkit-details-marker {
-    display: none;
-  }
   .product-popover {
     position: absolute;
-    top: 27px;
+    top: calc(100% + 8px);
     left: -14px;
-    display: grid;
+    display: none;
+    z-index: 1;
     min-width: 180px;
     padding: 8px;
     border: 1px solid var(--ink);
     background: #fff;
     box-shadow: 6px 6px 0 var(--gold);
+  }
+  .product-popover::before {
+    position: absolute;
+    top: -12px;
+    right: 0;
+    left: 0;
+    height: 12px;
+    content: '';
+  }
+  .product-menu:hover .product-popover,
+  .product-menu:focus-within .product-popover {
+    display: grid;
   }
   .product-popover a {
     padding: 9px;

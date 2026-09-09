@@ -42,4 +42,14 @@ const { title, prompt } = Astro.props;
   .prompt-card .button {
     align-self: flex-start;
   }
+  .prompt-card .button.alt {
+    border-color: var(--ink);
+    background: transparent;
+    color: var(--ink);
+  }
+  .prompt-card .button.alt:hover {
+    border-color: var(--blue);
+    background: var(--blue);
+    color: #fff;
+  }
 </style>

@@ -4,33 +4,38 @@ import { copy, docsUrl, localizePath } from '../data/site';
 import type { Locale } from '../types';
 const { locale } = Astro.props as { locale: Locale };
 const text = copy[locale];
+const footerText = locale === 'zh' ? { measure: '评测 · 测量 · 改进' } : { measure: 'Evaluate · Measure · Improve' };
 ---
 
 <footer>
-  <div class="container footer-inner">
-    <div>
+  <div class="container footer-main">
+    <div class="footer-intro">
       <a class="footer-brand" href={localizePath('/', locale)}><img src={logo.src} alt="" /><span>EvalScope</span></a><p
       >
         {text.allRights}
       </p>
     </div>
-    <div class="footer-links">
-      <a href={docsUrl(locale)}>Documentation</a><a href="https://github.com/modelscope/evalscope">GitHub</a><a
-        href={localizePath('/get-started', locale)}>{text.getStarted}</a
-      >
-    </div>
+    <nav class="footer-nav" aria-label="Footer navigation">
+      <a href={docsUrl(locale)}>Documentation</a>
+      <a href="https://github.com/modelscope/evalscope">GitHub</a>
+      <a href={localizePath('/get-started', locale)}>{text.getStarted}</a>
+    </nav>
   </div>
-  <div class="container legal">© {new Date().getFullYear()} ModelScope Community · Apache-2.0</div>
+  <div class="container footer-meta">
+    <span>© {new Date().getFullYear()} ModelScope Community</span><span>{footerText.measure}</span>
+  </div>
 </footer>
 <style>
   footer {
+    position: relative;
     border-top: 1px solid var(--rule);
-    padding: 38px 0 22px;
+    padding: 34px 0 20px;
   }
-  .footer-inner {
+  .footer-main {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 28px;
+    gap: 32px;
   }
   .footer-brand {
     display: flex;
@@ -47,24 +52,48 @@ const text = copy[locale];
     object-fit: contain;
   }
   footer p,
-  .legal {
+  .footer-meta {
+    margin: 8px 0 0;
     color: var(--muted);
     font-size: 13px;
   }
-  .footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    gap: 20px;
+  .footer-nav {
+    display: grid;
+    grid-auto-columns: max-content;
+    grid-auto-flow: column;
+    column-gap: 30px;
+    align-items: center;
+  }
+  .footer-nav a {
     font-size: 13px;
     font-weight: 700;
   }
-  .legal {
-    margin-top: 40px;
+  .footer-nav a:hover {
+    color: var(--blue);
+  }
+  .footer-meta {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin-top: 32px;
+    padding-top: 15px;
+    border-top: 1px solid var(--rule);
     font: 11px var(--mono);
+    text-transform: uppercase;
   }
   @media (max-width: 600px) {
-    .footer-inner {
+    .footer-main {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .footer-nav {
+      grid-auto-flow: row;
+      gap: 14px;
+    }
+    .footer-meta {
+      gap: 10px;
+      align-items: center;
       flex-direction: column;
     }
   }

@@ -1,7 +1,12 @@
 ---
 import { Icon } from 'astro-icon/components';
 import agentShot from '../assets/demo/agent-qwen-plus-gsm8k.png';
+import agentTraceExistingLight from '../assets/demo/agent-trace-existing-light.png';
+import dashboardExistingLight from '../assets/demo/dashboard-existing-light.png';
+import evaluationOverviewExistingLight from '../assets/demo/evaluation-overview-existing-light.png';
+import evalOverview from '../assets/demo/evaluation-qwen-plus-overview.png';
 import evalShot from '../assets/demo/evaluation-qwen-plus-gsm8k.png';
+import performanceExistingLight from '../assets/demo/performance-existing-light.png';
 import perfCharts from '../assets/demo/performance-qwen-plus-charts.png';
 import perfShot from '../assets/demo/performance-qwen-plus-overview.png';
 import researchSpiral from '../assets/illustrations/research-spiral.png';
@@ -12,7 +17,9 @@ import BenchmarkCatalog from './BenchmarkCatalog.astro';
 import ClaimBadge from './ClaimBadge.astro';
 import CodeSnippet from './CodeSnippet.astro';
 import PromptCard from './PromptCard.astro';
+import ProductTourIndex from './ProductTourIndex.astro';
 import ScreenshotFrame from './ScreenshotFrame.astro';
+import TaskTabs from './TaskTabs.astro';
 
 interface Props {
   page?: PageSlug;
@@ -24,21 +31,58 @@ const count = getBenchmarkCatalog().length;
 const t = (en: string, cn: string) => (zh ? cn : en);
 const to = (path: '/' | `/${PageSlug}`) => localizePath(path, locale);
 const prompt = t(
-  'Use the EvalScope project skill to configure and run a 5-sample GSM8K evaluation against my OpenAI-compatible API. Do not download a local model or use a GPU. Read the relevant skill reference, use my API key from an environment variable, report the score and artifact path, then show me how to open the local dashboard.',
-  '请使用 EvalScope 项目 Skill，针对我的 OpenAI-compatible API 配置并运行 GSM8K 的 5 条样本评测。不要下载本地模型，也不要使用 GPU。先阅读相关 Skill，从环境变量读取 API key，输出分数与产物路径，并说明如何打开本地 Dashboard。'
+  'You are working in an EvalScope checkout. First read AGENTS.md; if an EvalScope project skill is available, read it too. Configure a bounded API-backed evaluation: use the endpoint configuration already supplied by this checkout and read DASHSCOPE_API_KEY from the environment. Run exactly five GSM8K samples, do not download a local model or use a GPU, and preserve the outputs. Return the exact command, score, output path and any limitation. Then explain how to open the local dashboard. If endpoint configuration or artifacts are missing, say so instead of inventing a result.',
+  '你正在一个 EvalScope 代码库中工作。先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。配置一次有边界的 API 评测：使用该代码库已提供的 endpoint 配置，并从环境变量读取 DASHSCOPE_API_KEY。恰好运行 GSM8K 的 5 条样本，不下载本地模型、不使用 GPU，并保留输出产物。返回精确命令、分数、产物路径和任何限制；再说明如何打开本地 Dashboard。如果 endpoint 配置或产物缺失，请明确说明，不要虚构结果。'
 );
 const evidence = [
-  ['Dataset', t('Versioned samples', '版本化样本')],
-  ['Prediction', t('Model or API output', '模型或 API 输出')],
-  ['Review', t('Scoring evidence', '评分证据')],
-  ['Report', t('Decision artifacts', '决策产物')],
+  [
+    'Dataset',
+    t('Versioned samples', '版本化样本'),
+    t(
+      'The selected dataset and version define what the run is allowed to measure.',
+      '选定的数据集与版本定义了本次运行能够度量的范围。'
+    ),
+  ],
+  [
+    'Prediction',
+    t('Model or API output', '模型或 API 输出'),
+    t(
+      'Raw model responses remain attached to the input that produced them.',
+      '原始模型响应会与产生它们的输入保持关联。'
+    ),
+  ],
+  [
+    'Review',
+    t('Scoring evidence', '评分证据'),
+    t(
+      'A review records the scoring contract, verdict and any failure boundary.',
+      'Review 会记录评分契约、判定结果以及任何失败边界。'
+    ),
+  ],
+  [
+    'Report',
+    t('Decision artifacts', '决策产物'),
+    t(
+      'The report links summaries back to samples, configs and portable outputs.',
+      '报告将汇总结果关联回样本、配置和可携带产物。'
+    ),
+  ],
 ];
 const evalCommand = `export DASHSCOPE_API_KEY='…'
 evalscope eval \\
   --model qwen-plus \\
+  --api-key "$DASHSCOPE_API_KEY" \\
   --datasets gsm8k \\
   --limit 5`;
 const serviceCommand = `pip install 'evalscope[service]'
+evalscope service --outputs ./outputs`;
+const quickstartCommand = `pip install 'evalscope[service]'
+export DASHSCOPE_API_KEY='…'
+evalscope eval \\
+  --model qwen-plus \\
+  --api-key "$DASHSCOPE_API_KEY" \\
+  --datasets gsm8k \\
+  --limit 5
 evalscope service --outputs ./outputs`;
 const perfCommand = `evalscope perf \\
   --model qwen-plus \\
@@ -49,24 +93,13 @@ const perfCommand = `evalscope perf \\
 {
   !page && (
     <>
-      <section class="hero">
+      <section id="overview" class="hero hero--reference" data-product-section>
         <div class="container hero-grid">
           <>
-            <div>
+            <div class="hero-copy">
               <>
-                <p class="registration">
-                  <>
-                    <span>Evaluate</span>
-                    <span class="index">00</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('OPEN-SOURCE EVALUATION INFRASTRUCTURE', '开源 AI 评测基础设施')}</p>
-                <h1 class="display">
-                  {t(
-                    'From model quality to system performance — evaluate it all with EvalScope.',
-                    '从模型能力到系统性能，用 EvalScope 统一评测。'
-                  )}
-                </h1>
+                <h1 class="display">{t('Evaluate every AI system with evidence.', '用证据评测每个 AI 系统。')}</h1>
                 <div class="gold-line" />
                 <p class="lede">
                   {t(
@@ -91,18 +124,76 @@ const perfCommand = `evalscope perf \\
                     </a>
                   </>
                 </div>
+                <div class="hero-progress-copy" aria-hidden="true">
+                  <i />
+                  <span class="hero-progress-copy__ticks" />
+                  <p>
+                    TURN MODELS INTO MEASURABLE PROGRESS
+                    <br />
+                    EVALSCOPE&nbsp;&nbsp;//&nbsp;&nbsp;OPEN SOURCE&nbsp;&nbsp;//&nbsp;&nbsp;FOR A MORE CAPABLE AI
+                    ECOSYSTEM
+                  </p>
+                </div>
               </>
             </div>
             <div class="hero-stack">
               <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
               <ScreenshotFrame src={evalShot} alt="Real EvalScope qwen-plus GSM8K results" />
             </div>
+            <aside class="hero-side-reference" aria-hidden="true">
+              <i class="reference-cross reference-cross--top" />
+              <p>
+                SAME
+                <br />
+                PROMPTS
+                <br />
+                BETTER
+                <br />
+                INSIGHTS
+              </p>
+              <span class="reference-ruler" />
+              <p>
+                DATA
+                <br />
+                MODELS
+                <br />
+                PERFORMANCE
+                <br />
+                REAL PROGRESS
+              </p>
+              <i class="reference-cross reference-cross--bottom" />
+              <small>
+                EVALUATION
+                <br />
+                FOR A BRIGHTER
+                <br />
+                AI TOMORROW
+              </small>
+            </aside>
           </>
         </div>
       </section>
       <div class="container">
         <>
-          <div class="measurement-rule" />
+          <div class="hero-measurement-band" aria-hidden="true">
+            <p>
+              A CLEARER PICTURE
+              <br />
+              FOR HIGHER CAPABILITY
+            </p>
+            <i />
+            <div class="hero-measurement-band__ruler">
+              <>
+                <span>0</span>
+                <span>50</span>
+                <span>100</span>
+                <span>200</span>
+                <span>300</span>
+                <span>400</span>
+              </>
+            </div>
+            <strong>EVALSCOPE</strong>
+          </div>
           <div class="instrument-strip">
             <>
               <div>
@@ -119,7 +210,7 @@ const perfCommand = `evalscope perf \\
               </div>
               <div>
                 <>
-                  <strong>JSON · HTML · local</strong>
+                  <strong>JSON · HTML</strong>
                   <span>{t('Portable evidence artifacts', '可携带证据产物')}</span>
                 </>
               </div>
@@ -142,7 +233,12 @@ const perfCommand = `evalscope perf \\
               <>
                 <article class="card">
                   <>
-                    <Icon name="tabler:scale" size="30" />
+                    <div class="surface-mark">
+                      <>
+                        <span>01</span>
+                        <Icon name="tabler:scale" size="30" />
+                      </>
+                    </div>
                     <h3>{t('Evaluation', '模型评测')}</h3>
                     <p>
                       {t(
@@ -154,7 +250,12 @@ const perfCommand = `evalscope perf \\
                 </article>
                 <article class="card">
                   <>
-                    <Icon name="tabler:route-2" size="30" />
+                    <div class="surface-mark">
+                      <>
+                        <span>02</span>
+                        <Icon name="tabler:route-2" size="30" />
+                      </>
+                    </div>
                     <h3>{t('Agent & Harness', 'Agent 与 Harness')}</h3>
                     <p>
                       {t(
@@ -166,7 +267,12 @@ const perfCommand = `evalscope perf \\
                 </article>
                 <article class="card">
                   <>
-                    <Icon name="tabler:activity-heartbeat" size="30" />
+                    <div class="surface-mark">
+                      <>
+                        <span>03</span>
+                        <Icon name="tabler:activity-heartbeat" size="30" />
+                      </>
+                    </div>
                     <h3>{t('Performance', '性能压测')}</h3>
                     <p>
                       {t(
@@ -181,14 +287,14 @@ const perfCommand = `evalscope perf \\
           </>
         </div>
       </section>
-      <section class="section">
-        <div class="container split">
+      <section id="evaluation" class="section evidence-section" data-product-section>
+        <div class="container">
           <>
-            <div>
+            <div class="evidence-heading">
               <>
                 <p class="eyebrow">{t('EVIDENCE, NOT A SCORECARD', '证据，而非单一分数')}</p>
-                <h2 class="section-title">
-                  {t(`${count} benchmarks. One reproducible path.`, `${count} 个评测集。一条可复现路径。`)}
+                <h2 class="section-title evidence-title">
+                  {t('One reproducible path from input to decision.', '从输入到决策，一条可复现的路径。')}
                 </h2>
                 <p class="lede">
                   {t(
@@ -198,97 +304,184 @@ const perfCommand = `evalscope perf \\
                 </p>
               </>
             </div>
-            <div class="evidence-path">
-              {evidence.map(([name, detail]) => (
-                <div class="evidence-step">
-                  <strong>{name}</strong>
-                  <span>{detail}</span>
-                </div>
-              ))}
+            <div class="evidence-stage evidence-stage--compact" data-evidence-board>
+              <div class="evidence-brief">
+                <span>{t('Select a record to inspect', '选择一条记录进行审查')}</span>
+                <strong>{t('Connected evidence', '相连的证据')}</strong>
+              </div>
+              <div class="evidence-path">
+                {evidence.map(([name, detail, context], index) => (
+                  <button
+                    class:list={['evidence-step', { active: index === 0 }]}
+                    type="button"
+                    aria-pressed={index === 0 ? 'true' : 'false'}
+                    data-evidence-step
+                    data-evidence-name={name}
+                    data-evidence-detail={detail}
+                    data-evidence-context={context}
+                    data-evidence-index={String(index + 1).padStart(2, '0')}
+                  >
+                    <strong>{name}</strong>
+                    <span>{detail}</span>
+                  </button>
+                ))}
+              </div>
+              <div class="evidence-inspector" aria-live="polite">
+                <span data-evidence-output-index>01</span>
+                <strong data-evidence-output-name>Dataset</strong>
+                <p data-evidence-output-context>{evidence[0][2]}</p>
+              </div>
             </div>
           </>
         </div>
       </section>
-      <section class="section dark">
+      <section id="agent" class="section product-chapter" data-product-section>
         <div class="container split">
           <>
             <div>
-              <>
-                <p class="eyebrow">{t('USE WITH AI', '让 AI 帮你用')}</p>
-                <h2 class="section-title">
-                  {t('Give an agent a precise, safe starting point.', '给 AI Agent 一个精确、安全的起点。')}
-                </h2>
-                <p class="lede">
-                  {t(
-                    'Copy a fixed prompt. It asks your coding agent to use the project skill, work through an API, limit to five samples, and avoid local model downloads.',
-                    '复制固定 Prompt，让你的编码 Agent 使用项目 Skill、通过 API、仅运行五个样本，并避免下载本地模型。'
-                  )}
-                </p>
-              </>
+              <p class="eyebrow">{t('AGENT & HARNESS', 'AGENT 与 HARNESS')}</p>
+              <h2 class="section-title">
+                {t('Trace the work behind an agent answer.', '追踪 Agent 答案背后的执行过程。')}
+              </h2>
+              <p class="lede">
+                {t(
+                  'Keep model requests, tool calls, token use and the submitted outcome in one inspectable task record.',
+                  '将模型请求、工具调用、Token 用量和提交结果保留在同一份可审查的任务记录中。'
+                )}
+              </p>
+              <div class="tags">
+                <span class="pill">{t('Task context', '任务上下文')}</span>
+                <span class="pill">{t('Tool evidence', '工具证据')}</span>
+                <span class="pill">{t('Final outcome', '最终结果')}</span>
+              </div>
+              <div class="button-row">
+                <a class="button alt" href={to('/agent')}>
+                  {t('Open Agent details', '查看 Agent 详情')} <Icon name="tabler:arrow-right" />
+                </a>
+              </div>
             </div>
-            <PromptCard title={t('API-first evaluation prompt', 'API-first 评测 Prompt')} prompt={prompt} />
+            <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace with model requests and tool calls" />
           </>
         </div>
       </section>
-      <section class="section">
-        <div class="container two-col">
+      <section id="performance" class="section dark" data-product-section>
+        <div class="container split">
           <>
             <div>
-              <>
-                <div class="section-register">
-                  <>
-                    <div>
-                      <h2 class="section-title tight">{t('Manual quick start.', '手动快速开始。')}</h2>
-                    </div>
-                    <p>{t('Copy · paste · run', '复制 · 粘贴 · 运行')}</p>
-                  </>
-                </div>
-                <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
-              </>
+              <p class="eyebrow">{t('PERFORMANCE', '性能压测')}</p>
+              <h2 class="section-title">
+                {t('Choose capacity with evidence, not a single number.', '用证据而非单个数字做容量决策。')}
+              </h2>
+              <p class="lede">
+                {t(
+                  'Compare concurrency, latency, TTFT, throughput and success rate in one run record, then keep the charts with their configuration.',
+                  '在同一份运行记录中比较并发、延迟、TTFT、吞吐与成功率，并让图表始终与配置关联。'
+                )}
+              </p>
+              <div class="button-row">
+                <a class="button alt" href={to('/performance')}>
+                  {t('Open performance details', '查看性能细节')} <Icon name="tabler:arrow-right" />
+                </a>
+              </div>
             </div>
-            <article class="panel">
-              <>
-                <h3>{t('API-first, no local GPU required.', 'API-first，无需本地 GPU。')}</h3>
-                <p>
-                  {t(
-                    'Your key stays in the environment. The first evaluation is deliberately limited to five samples, then artifacts show exactly what ran.',
-                    'key 保持在环境变量中。首次评测有意限制为五个样本，之后产物完整展示实际运行内容。'
-                  )}
-                </p>
-                <div class="tags">
-                  <>
-                    <span class="pill">API endpoint</span>
-                    <span class="pill">5-sample smoke</span>
-                    <span class="pill">No model download</span>
-                  </>
-                </div>
-              </>
-            </article>
+            <ScreenshotFrame src={performanceExistingLight} alt="Light performance charts and run comparison" />
           </>
         </div>
       </section>
-      <section class="section">
-        <div class="container">
+      <section id="benchmarks" class="section product-chapter" data-product-section>
+        <div class="container split">
           <>
-            <ClaimBadge status="exploring" locale={locale} />
-            <h2 class="section-title">
-              {t('Evaluation that stays trustworthy as the harness evolves.', 'Harness 迭代时，评测仍应值得信任。')}
-            </h2>
-            <p class="lede">
-              {t(
-                'We are exploring frozen artifacts, independent audits and selection records for evaluator evolution. Research prototypes are not shipped product features.',
-                '我们正在探索用冻结产物、独立审计和选择记录来评估 evaluator 演进；研究原型不是已交付产品功能。'
-              )}
-            </p>
-            <div class="button-row">
-              <a class="button" href={to('/research')}>
-                {t('Read research boundaries', '阅读研究边界')}
-                <Icon name="tabler:arrow-right" />
-              </a>
+            <div>
+              <p class="eyebrow">{t('BENCHMARK CATALOG', 'BENCHMARK 目录')}</p>
+              <h2 class="section-title">
+                {t('Find the benchmark that fits the question.', '找到真正匹配问题的评测集。')}
+              </h2>
+              <p class="lede">
+                {t(
+                  'Browse task type, modality, metrics and evaluation version before you run. The catalog stays tied to generated documentation and runnable metadata.',
+                  '在运行前查看任务类型、模态、指标与评测版本；目录始终关联自动生成的文档与可运行 metadata。'
+                )}
+              </p>
+              <div class="button-row">
+                <a class="button" href={to('/benchmarks')}>
+                  {t('Browse all benchmarks', '浏览全部评测集')} <Icon name="tabler:arrow-right" />
+                </a>
+              </div>
+            </div>
+            <div class="catalog-preview" aria-label={t('Benchmark catalog overview', '评测集目录概览')}>
+              <strong>250+</strong>
+              <span>{t('benchmarks in the registry', '个评测集已收录')}</span>
+              <div>
+                <>
+                  <span>LLM</span>
+                  <span>VLM</span>
+                  <span>Agent</span>
+                  <span>AIGC</span>
+                </>
+              </div>
             </div>
           </>
         </div>
       </section>
+      <section id="visualization" class="section product-chapter" data-product-section>
+        <div class="container">
+          <p class="eyebrow">{t('EVIDENCE VIEWS', '证据视图')}</p>
+          <h2 class="section-title">{t('Follow every metric back to its evidence.', '从指标追溯到完整证据。')}</h2>
+          <div class="button-row">
+            <a class="button alt" href={to('/visualization')}>
+              {t('Open Visualization details', '查看可视化详情')} <Icon name="tabler:arrow-right" />
+            </a>
+          </div>
+          <div class="four-view-grid home-evidence-views">
+            <ScreenshotFrame src={dashboardExistingLight} alt="Light Dashboard overview" />
+            <ScreenshotFrame src={evaluationOverviewExistingLight} alt="Light evaluation overview" />
+            <ScreenshotFrame src={performanceExistingLight} alt="Light performance overview" />
+            <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace overview" />
+          </div>
+        </div>
+      </section>
+      <section id="get-started" class="section dark" data-product-section>
+        <div class="container">
+          <div class="home-get-started-intro">
+            <div>
+              <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
+              <h2 class="section-title">
+                {t('Start with an agent or one command.', '让 AI 帮你用，或一条命令开始。')}
+              </h2>
+            </div>
+            <div>
+              <p class="lede">
+                {t(
+                  'Choose a precise agent handoff or install, run and inspect a small API-backed evaluation from the command line.',
+                  '选择一份精确的 AI 交接说明，或者从命令行安装、运行并查看一次小型 API 评测。'
+                )}
+              </p>
+              <div class="button-row">
+                <a class="button alt" href={to('/get-started')}>
+                  {t('Open full getting started guide', '查看完整开始指南')} <Icon name="tabler:arrow-right" />
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="get-started-paths">
+            <div>
+              <p class="eyebrow">{t('USE WITH AI', '让 AI 帮你用')}</p>
+              <PromptCard title={t('AI evaluation handoff', '交给 AI 的评测说明')} prompt={prompt} />
+            </div>
+            <div>
+              <p class="eyebrow">{t('COMMAND LINE', '命令行')}</p>
+              <p class="quickstart-note">
+                {t(
+                  'Install, run five samples, then inspect the local dashboard.',
+                  '安装、运行五条样本，然后查看本地 Dashboard。'
+                )}
+              </p>
+              <CodeSnippet code={quickstartCommand} label="quickstart.sh" />
+            </div>
+          </div>
+        </div>
+      </section>
+      <ProductTourIndex locale={locale} />
     </>
   )
 }
@@ -301,12 +494,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Evaluation', '模型评测')}</span>
-                    <span class="index">01</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('MODEL EVALUATION', '模型评测')}</p>
                 <h1 class="display">
                   {t('Turn model output into defensible evidence.', '把模型输出转化为可辩护的证据。')}
@@ -328,12 +515,12 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <ScreenshotFrame src={evalShot} alt="qwen-plus GSM8K evaluation dashboard" />
+            <ScreenshotFrame src={evalOverview} alt="Real qwen-plus GSM8K evaluation overview" />
           </>
         </div>
       </section>
       <section class="section">
-        <div class="container">
+        <div class="container" data-evidence-board>
           <>
             <div class="section-register">
               <>
@@ -376,16 +563,30 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <h2 class="section-title" style="margin-top:64px">
+            <h2 class="section-title evidence-path-title" style="margin-top:64px">
               {t('From a dataset row to the report you share.', '从一条数据到可分享的报告。')}
             </h2>
             <div class="evidence-path">
-              {evidence.map(([name, detail]) => (
-                <div class="evidence-step">
+              {evidence.map(([name, detail, context], index) => (
+                <button
+                  class:list={['evidence-step', { active: index === 0 }]}
+                  type="button"
+                  aria-pressed={index === 0 ? 'true' : 'false'}
+                  data-evidence-step
+                  data-evidence-name={name}
+                  data-evidence-detail={detail}
+                  data-evidence-context={context}
+                  data-evidence-index={String(index + 1).padStart(2, '0')}
+                >
                   <strong>{name}</strong>
                   <span>{detail}</span>
-                </div>
+                </button>
               ))}
+            </div>
+            <div class="evidence-inspector evidence-inspector--inline" aria-live="polite">
+              <span data-evidence-output-index>01</span>
+              <strong data-evidence-output-name>Dataset</strong>
+              <p data-evidence-output-context>{evidence[0][2]}</p>
             </div>
           </>
         </div>
@@ -442,33 +643,6 @@ const perfCommand = `evalscope perf \\
           </div>
         </div>
       </section>
-      <section class="section dark">
-        <div class="container split">
-          <>
-            <div>
-              <>
-                <h2 class="section-title">
-                  {t(
-                    'Start with one API call, not one checkpoint download.',
-                    '从一次 API 调用开始，而非下载一个 checkpoint。'
-                  )}
-                </h2>
-                <p class="lede">
-                  {t(
-                    'Use the API-first recipe and keep the first run bounded to five samples.',
-                    '使用 API-first 配方，并将首次运行限制在五个样本。'
-                  )}
-                </p>
-                <a class="button" href={to('/get-started')}>
-                  {t('Get started', '开始使用')}
-                  <Icon name="tabler:arrow-right" />
-                </a>
-              </>
-            </div>
-            <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
-          </>
-        </div>
-      </section>
     </>
   )
 }
@@ -481,12 +655,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Agent & Harness', 'Agent 与 Harness')}</span>
-                    <span class="index">02</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('AGENT & HARNESS', 'AGENT 与 HARNESS')}</p>
                 <h1 class="display">
                   {t('Measure the loop, not just the last answer.', '度量完整循环，而非只看最终答案。')}
@@ -524,7 +692,7 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Every step counts', '每一步都有证据')}</p>
               </>
             </div>
-            <div class="step-timeline">
+            <div class="step-timeline six-steps">
               <>
                 <div>
                   <>
@@ -570,6 +738,21 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
+            <figure class="timeline-visual-frame agent-trace-visual">
+              <img
+                src={agentTraceExistingLight.src}
+                alt={t(
+                  'Existing EvalScope Agent trace with Python tool calls and submitted answer',
+                  '已有 EvalScope Agent 轨迹：Python 工具调用与提交答案'
+                )}
+              />
+              <figcaption>
+                {t(
+                  'Existing local Agent run · Python tool trace, submitted answer and verifiable result',
+                  '已有本地 Agent 运行 · Python 工具轨迹、提交答案与可核验结果'
+                )}
+              </figcaption>
+            </figure>
           </>
         </div>
       </section>
@@ -590,14 +773,14 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <>
-                    <div class="metric">100%</div>
-                    <div class="metric-label">{t('Outcome quality', '结果质量')}</div>
+                    <div class="metric">01</div>
+                    <div class="metric-label">{t('Outcome evidence', '结果证据')}</div>
                   </>
-                  <h3>{t('Accuracy · GSM8K', 'Accuracy · GSM8K')}</h3>
+                  <h3>{t('Inputs and outcomes', '输入与结果')}</h3>
                   <p>
                     {t(
-                      'Run EvalScope agent benchmarks and retain the request, tool and result evidence that belongs to the benchmark artifact.',
-                      '运行 EvalScope Agent benchmark，并保留属于 benchmark 产物的请求、工具和结果证据。'
+                      'Keep the task, final response and completion state together so a result can be checked in context.',
+                      '将任务、最终响应与完成状态保留在一起，让结果可以在上下文中审查。'
                     )}
                   </p>
                 </>
@@ -605,14 +788,14 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <>
-                    <div class="metric">3/3</div>
-                    <div class="metric-label">{t('Tool correctness', '工具正确性')}</div>
+                    <div class="metric">02</div>
+                    <div class="metric-label">{t('Tool evidence', '工具证据')}</div>
                   </>
-                  <h3>{t('Successful tool calls', '成功工具调用')}</h3>
+                  <h3>{t('Calls and results', '调用与返回')}</h3>
                   <p>
                     {t(
-                      'Replay compatible serving scenarios such as AgentX through the performance workflow, preserving scenario provenance and validity state.',
-                      '通过性能工作流回放如 AgentX 的兼容服务场景，保留场景溯源与有效性状态。'
+                      'Record tool inputs, outputs and failure states instead of reducing a multi-step run to a single score.',
+                      '记录工具输入、输出与失败状态，而不是把多步运行压缩成一个分数。'
                     )}
                   </p>
                 </>
@@ -620,15 +803,14 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <>
-                    <div class="metric">5</div>
-                    <div class="metric-label">{t('Trajectory efficiency', '轨迹效率')}</div>
+                    <div class="metric">03</div>
+                    <div class="metric-label">{t('Trajectory health', '轨迹健康度')}</div>
                   </>
-                  <h3>{t('Model requests · 6213 tokens', '模型请求 · 6213 tokens')}</h3>
+                  <h3>{t('Steps and recovery', '步骤与恢复')}</h3>
                   <p>
-                    <br />
                     {t(
-                      'This page intentionally uses Details evidence only. It does not represent a Dashboard trace interface.',
-                      '本页仅使用 Details 证据，不展示虚构的 Dashboard Trace 界面。'
+                      'Inspect retries, intervention signals and step count to understand how the agent reached its answer.',
+                      '审查重试、干预信号和步骤数，了解 Agent 如何得到答案。'
                     )}
                   </p>
                 </>
@@ -636,14 +818,14 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <>
-                    <div class="metric">18</div>
-                    <div class="metric-label">{t('Verified final answer', '已验证最终答案')}</div>
+                    <div class="metric">04</div>
+                    <div class="metric-label">{t('Runtime profile', '运行画像')}</div>
                   </>
-                  <h3>{t('Artifact-backed result', '产物支撑的结果')}</h3>
+                  <h3>{t('Tokens, timing and cost', 'Token、时延与成本')}</h3>
                   <p>
                     {t(
-                      'We are exploring frozen artifacts and independent audits for comparing harness revisions. This is not a shipped drift-prevention feature.',
-                      '我们正在探索用冻结产物和独立审计比较 Harness 版本；这不是已交付的漂移防护功能。'
+                      'Use runtime signals alongside correctness when choosing an agent design for a real workload.',
+                      '在为真实工作负载选择 Agent 设计时，将运行信号与正确性一起考量。'
                     )}
                   </p>
                 </>
@@ -782,12 +964,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Performance', '性能压测')}</span>
-                    <span class="index">03</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('PERFORMANCE', '性能压测')}</p>
                 <h1 class="display">
                   {t('Load tests that lead to an operational decision.', '让压测导向真实的运营决策。')}
@@ -827,6 +1003,9 @@ const perfCommand = `evalscope perf \\
             </div>
             <div class="load-curve">
               <>
+                <svg class="load-curve-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                  <polyline points="15,83 50,63 92,16" />
+                </svg>
                 <div class="curve-point p1">
                   <>
                     <b>36.35</b>
@@ -857,7 +1036,7 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Beyond a single throughput number', '不止一个吞吐数字')}</p>
               </>
             </div>
-            <div class="instrument-strip">
+            <div class="instrument-strip six-metrics">
               <>
                 <>
                   <div>
@@ -882,6 +1061,18 @@ const perfCommand = `evalscope perf \\
                     <>
                       <strong>TTFT</strong>
                       <span>{t('Time to first token', '首 token 时间')}</span>
+                    </>
+                  </div>
+                  <div>
+                    <>
+                      <strong>{t('Concurrency', '并发')}</strong>
+                      <span>{t('Sweep range', '扫描范围')}</span>
+                    </>
+                  </div>
+                  <div>
+                    <>
+                      <strong>{t('Success', '成功率')}</strong>
+                      <span>{t('Completed requests', '完成请求')}</span>
                     </>
                   </div>
                 </>
@@ -945,16 +1136,21 @@ const perfCommand = `evalscope perf \\
               <>
                 <ScreenshotFrame src={perfShot} alt="Real performance overview" />
                 <ScreenshotFrame src={perfCharts} alt="Real performance charts" />
-                <article class="panel">
+                <article class="panel performance-summary">
                   <>
-                    <div class="metric">2.08</div>
-                    <div class="metric-label">Best RPS</div>
-                    <h3>1.713s {t('lowest latency', '最低延迟')}</h3>
+                    <p class="eyebrow">{t('Decision-ready evidence', '可决策的证据')}</p>
+                    <h3>{t('Read the curve, then decide.', '先读曲线，再做决策。')}</h3>
                     <p>
-                      374.85ms TTFT · 100% {t('success', '成功率')}
-                      <br />
-                      133.22 tok/s {t('at concurrency 4', '并发 4')}
+                      {t(
+                        'A performance run should explain service behavior across load, not promote one isolated number.',
+                        '性能运行应解释服务在不同负载下的表现，而不是宣传一个孤立数字。'
+                      )}
                     </p>
+                    <ul class="performance-checklist">
+                      <li>{t('Throughput as concurrency changes', '并发变化下的吞吐')}</li>
+                      <li>{t('Latency and time to first token', '延迟与首 Token 时间')}</li>
+                      <li>{t('Success state and run artifacts', '成功状态与运行产物')}</li>
+                    </ul>
                   </>
                 </article>
               </>
@@ -998,12 +1194,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Benchmarks', '评测集')}</span>
-                    <span class="index">04</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('BENCHMARK CATALOG', 'BENCHMARK 目录')}</p>
               </>
               <h1 class="display">
@@ -1071,37 +1261,6 @@ const perfCommand = `evalscope perf \\
           </>
         </div>
       </section>
-      <div class="container">
-        <div class="measurement-rule benchmark-ruler" aria-hidden="true" />
-        <div class="instrument-strip">
-          <>
-            <div>
-              <>
-                <strong>{count}</strong>
-                <span>{t('Total benchmarks', '总评测集')}</span>
-              </>
-            </div>
-            <div>
-              <>
-                <strong>143</strong>
-                <span>LLM</span>
-              </>
-            </div>
-            <div>
-              <>
-                <strong>75</strong>
-                <span>VLM</span>
-              </>
-            </div>
-            <div>
-              <>
-                <strong>32 / 6</strong>
-                <span>Agent / AIGC</span>
-              </>
-            </div>
-          </>
-        </div>
-      </div>
       <section class="section">
         <div class="container" id="catalog">
           <div class="section-register">
@@ -1160,7 +1319,7 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Open contributions · quality first', '开放贡献 · 质量优先')}</p>
               </>
             </div>
-            <div class="step-timeline">
+            <div class="step-timeline five-steps">
               <>
                 <div>
                   <>
@@ -1199,6 +1358,21 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
+            <figure class="timeline-visual-frame contribution-visual">
+              <img
+                src={dashboardExistingLight.src}
+                alt={t(
+                  'Light EvalScope Dashboard with model, benchmark and metric history',
+                  '浅色 EvalScope Dashboard：模型、基准与指标历史'
+                )}
+              />
+              <figcaption>
+                {t(
+                  'A contribution becomes useful when model, benchmark and metric history stay inspectable.',
+                  '当模型、基准与指标历史持续可审查时，贡献才真正产生价值。'
+                )}
+              </figcaption>
+            </figure>
           </>
         </div>
       </section>
@@ -1214,12 +1388,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Visualization', '可视化')}</span>
-                    <span class="index">05</span>
-                  </>
-                </p>
                 <p class="eyebrow">{t('VISUALIZATION', '可视化')}</p>
                 <h1 class="display">{t('Inspect the evidence behind a metric.', '审查指标背后的证据。')}</h1>
                 <p class="lede">
@@ -1250,7 +1418,7 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Same reports · better stays with you', '同一报告 · 数据留在本地')}</p>
               </>
             </div>
-            <div class="step-timeline">
+            <div class="step-timeline five-steps">
               <>
                 <div>
                   <>
@@ -1345,11 +1513,12 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Real Dashboard screenshots', '真实 Dashboard 截图')}</p>
               </>
             </div>
-            <div class="evidence-screens">
+            <div class="evidence-screens evidence-screens--dossier">
               <>
-                <ScreenshotFrame src={evalShot} alt="Evaluation overview screenshot" />
-                <ScreenshotFrame src={agentShot} alt="Agent details screenshot" />
-                <ScreenshotFrame src={perfCharts} alt="Performance charts screenshot" />
+                <ScreenshotFrame src={dashboardExistingLight} alt="Light Dashboard overview and trend screenshot" />
+                <ScreenshotFrame src={performanceExistingLight} alt="Light Performance runs screenshot" />
+                <ScreenshotFrame src={evaluationOverviewExistingLight} alt="Light evaluation summary screenshot" />
+                <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace screenshot" />
               </>
             </div>
           </>
@@ -1360,7 +1529,9 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <h2 class="section-title">{t('Aggregate → sample → artifact.', '聚合 → 样本 → 产物。')}</h2>
+                <h2 class="section-title artifact-path-title">
+                  {t('Aggregate → sample → artifact.', '聚合 → 样本 → 产物。')}
+                </h2>
                 <p class="lede">
                   {t(
                     'Use the report to locate the sample, then its prediction and review. The same output folder preserves configs and raw artifacts for a local audit.',
@@ -1382,15 +1553,54 @@ const perfCommand = `evalscope perf \\
         </div>
       </section>
       <section class="section dark">
-        <div class="container">
+        <div class="container decision-board">
           <>
-            <h2 class="section-title">
-              {t('Keep the chart tied to the run that produced it.', '让图表始终关联产生它的那次运行。')}
-            </h2>
-            <a class="button" href={to('/evaluation')}>
-              {t('See the evaluation path', '查看评测路径')}
-              <Icon name="tabler:arrow-right" />
-            </a>
+            <div>
+              <p class="eyebrow">{t('LOCAL EVIDENCE, NOT A DETACHED CHART', '本地证据，而非孤立图表')}</p>
+              <h2 class="section-title">
+                {t('Keep the chart tied to the run that produced it.', '让图表始终关联产生它的那次运行。')}
+              </h2>
+              <p class="lede">
+                {t(
+                  'A report is useful when you can move from a number to its samples, config and raw artifacts without losing the thread.',
+                  '当你能从一个数字追到其样本、配置和原始产物时，报告才真正有用。'
+                )}
+              </p>
+              <a class="button" href={to('/evaluation')}>
+                {t('See the evaluation path', '查看评测路径')}
+                <Icon name="tabler:arrow-right" />
+              </a>
+            </div>
+            <div class="artifact-rack" aria-label={t('Evidence artifact structure', '证据产物结构')}>
+              <div>
+                <>
+                  <span>01</span>
+                  <strong>reports/</strong>
+                  <small>{t('Aggregate decisions', '聚合决策')}</small>
+                </>
+              </div>
+              <div>
+                <>
+                  <span>02</span>
+                  <strong>reviews/</strong>
+                  <small>{t('Sample evidence', '样本证据')}</small>
+                </>
+              </div>
+              <div>
+                <>
+                  <span>03</span>
+                  <strong>configs/</strong>
+                  <small>{t('Runnable context', '可运行上下文')}</small>
+                </>
+              </div>
+              <div>
+                <>
+                  <span>04</span>
+                  <strong>outputs/</strong>
+                  <small>{t('Raw record', '原始记录')}</small>
+                </>
+              </div>
+            </div>
           </>
         </div>
       </section>
@@ -1406,12 +1616,6 @@ const perfCommand = `evalscope perf \\
           <>
             <div>
               <>
-                <p class="registration">
-                  <>
-                    <span>{t('Research', '研究')}</span>
-                    <span class="index">06</span>
-                  </>
-                </p>
                 <ClaimBadge status="exploring" locale={locale} />
                 <h1 class="display">
                   {t(
@@ -1486,17 +1690,19 @@ const perfCommand = `evalscope perf \\
           </>
         </div>
       </section>
-      <section class="section">
-        <div class="container split">
+      <section class="section research-protocol">
+        <div class="container">
           <>
-            <div>
+            <div class="research-protocol-copy">
               <>
                 <p class="eyebrow">{t('EXPLORING A REPRODUCIBLE PROTOCOL', '探索可复现协议')}</p>
-                <h2 class="section-title">Freeze → Generate → Evaluate → Audit → Select.</h2>
+                <h2 class="section-title">
+                  {t('A reproducible path for evaluating evaluator changes.', '一条可复现的 Evaluator 变更验证路径。')}
+                </h2>
                 <p class="lede">
                   {t(
-                    'A research protocol can freeze artifacts, generate controlled variants, independently evaluate them, audit the evidence, then make a recorded selection. Guardrails include fixed datasets, preserved raw outputs, held-out checks and an explicit claim ladder.',
-                    '研究协议可以冻结产物、生成受控变体、独立评测、审计证据，最后进行有记录的选择。护栏包括固定数据集、保留原始输出、保留集检查和明确的 claim ladder。'
+                    'Start from a frozen baseline, test controlled variants, evaluate against held-out evidence, and record the decision with its artifacts. Fixed datasets, preserved raw outputs and explicit claims keep an apparent improvement reviewable.',
+                    '从冻结的基线出发，测试受控变体，以保留证据进行评测，并连同产物记录决策。固定数据集、保留原始输出和明确的结论让所谓的改进可以被复核。'
                   )}
                 </p>
               </>
@@ -1506,36 +1712,36 @@ const perfCommand = `evalscope perf \\
                 <article class="panel">
                   <>
                     <div class="index">01</div>
-                    <h3>Freeze</h3>
-                    <p>{t('Tasks, environments, artifacts.', '任务、环境、产物。')}</p>
+                    <h3>{t('Freeze a baseline', '冻结基线')}</h3>
+                    <p>{t('Tasks, environments and raw artifacts.', '任务、环境与原始产物。')}</p>
                   </>
                 </article>
                 <article class="panel">
                   <>
                     <div class="index">02</div>
-                    <h3>Generate</h3>
-                    <p>{t('Controlled variants.', '受控变体。')}</p>
+                    <h3>{t('Create variants', '构造变体')}</h3>
+                    <p>{t('One controlled change at a time.', '一次只引入一个受控变化。')}</p>
                   </>
                 </article>
                 <article class="panel">
                   <>
                     <div class="index">03</div>
-                    <h3>Evaluate</h3>
-                    <p>{t('Held-out metric runs.', '保留集指标运行。')}</p>
+                    <h3>{t('Evaluate evidence', '评测证据')}</h3>
+                    <p>{t('Held-out tasks and declared metrics.', '保留任务与已声明指标。')}</p>
                   </>
                 </article>
                 <article class="panel">
                   <>
                     <div class="index">04</div>
-                    <h3>Audit</h3>
-                    <p>{t('Independent review.', '独立审计。')}</p>
+                    <h3>{t('Audit the result', '审计结果')}</h3>
+                    <p>{t('Review evidence before the score.', '先审查证据，再看分数。')}</p>
                   </>
                 </article>
                 <article class="panel">
                   <>
                     <div class="index">05</div>
-                    <h3>Select</h3>
-                    <p>{t('Record the evidence.', '记录选择证据。')}</p>
+                    <h3>{t('Record the decision', '记录决策')}</h3>
+                    <p>{t('Keep the selection and its rationale.', '保留选择及其理由。')}</p>
                   </>
                 </article>
               </>
@@ -1672,7 +1878,7 @@ const perfCommand = `evalscope perf \\
           </>
         </div>
       </section>
-      <section class="section dark">
+      <section id="related-research" class="section dark">
         <div class="container">
           <>
             <ClaimBadge status="external" locale={locale} />
@@ -1704,169 +1910,35 @@ const perfCommand = `evalscope perf \\
         <div class="container hero-grid get-started-hero">
           <>
             <div>
-              <p class="registration">
-                <>
-                  <span>{t('Get started', '开始使用')}</span>
-                  <span class="index">07</span>
-                </>
-              </p>
               <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
-              <h1 class="display">
-                {t('Two safe ways to begin: manual or AI-assisted.', '两种安全的开始方式：手动或 AI 辅助。')}
-              </h1>
+              <h1 class="display">{t('Start with your coding agent, safely.', '让你的编码 Agent 安全地开始。')}</h1>
               <p class="lede">
                 {t(
-                  'Both routes are API-first by default: use an environment variable for your key, keep the run small, and do not download a local model.',
-                  '两条路径默认均为 API-first：通过环境变量使用 key，保持小规模运行，不下载本地模型。'
+                  'Give the agent a bounded job, keep API keys in the environment, and ask it to return inspectable evidence instead of a vague summary.',
+                  '给 Agent 一个边界清晰的任务，将 API key 留在环境变量中，并要求它返回可审查的证据，而不是模糊总结。'
                 )}
               </p>
             </div>
-            <aside class="start-route-card" aria-label={t('Two starting routes', '两条开始路径')}>
-              <p class="eyebrow">{t('CHOOSE A ROUTE', '选择路径')}</p>
+            <aside class="start-route-card" aria-label={t('AI-assisted starting path', 'AI 辅助开始路径')}>
+              <p class="eyebrow">{t('ONE ACCOUNTABLE PATH', '一条可审计路径')}</p>
               <div class="start-route">
                 <span>01</span>
                 <div>
-                  <strong>{t('Manual / API', '手动 / API')}</strong>
-                  <p>{t('Copy one bounded command.', '复制一条有界命令。')}</p>
+                  <strong>{t('Choose a bounded task', '选择一个有边界的任务')}</strong>
+                  <p>{t('Five samples or a small API sweep.', '五条样本或一个小范围 API 扫描。')}</p>
                 </div>
               </div>
               <div class="start-route connector">
                 <span>02</span>
                 <div>
-                  <strong>{t('AI / project skill', 'AI / 项目 Skill')}</strong>
-                  <p>{t('Copy a prompt; the agent reads the skill.', '复制 Prompt，由 Agent 读取 Skill。')}</p>
+                  <strong>{t('Agent reads the project skill', 'Agent 读取项目 Skill')}</strong>
+                  <p>{t('Use the existing conventions and safety limits.', '遵循已有约定与安全边界。')}</p>
                 </div>
               </div>
               <p class="start-route-note">
-                {t('API-first · 5 samples · no local model', 'API-first · 5 样本 · 不下载本地模型')}
+                {t('API-first · evidence returned · no local model', 'API-first · 返回证据 · 不下载本地模型')}
               </p>
             </aside>
-          </>
-        </div>
-      </section>
-      <section class="section">
-        <div class="container two-col">
-          <>
-            <article class="panel">
-              <>
-                <p class="eyebrow">{t('MANUAL / API', '手动 / API')}</p>
-                <h3>{t('Manual route — four steps.', '手动路径——四步。')}</h3>
-                <div class="step-timeline">
-                  <>
-                    <div>
-                      <>
-                        <b>1</b>
-                        <h3>{t('Install', '安装')}</h3>
-                        <p>pip install evalscope</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>2</b>
-                        <h3>{t('Set key', '设置 key')}</h3>
-                        <p>export API_KEY=…</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>3</b>
-                        <h3>{t('Run 5 samples', '运行 5 样本')}</h3>
-                        <p>--limit 5</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>4</b>
-                        <h3>{t('Open report', '打开报告')}</h3>
-                        <p>outputs/&lt;run&gt;/</p>
-                      </>
-                    </div>
-                  </>
-                </div>
-                <p>
-                  {t(
-                    'The key stays in your shell environment; never paste it into a config committed to git.',
-                    'key 保持在 shell 环境变量中；不要把它粘贴进会提交到 git 的配置。'
-                  )}
-                </p>
-              </>
-            </article>
-            <article class="panel">
-              <>
-                <p class="eyebrow">{t('AI AGENT ROUTE', 'AI AGENT 路径')}</p>
-                <h3>{t('One prompt, four accountable steps.', '一个 Prompt，四个可审计步骤。')}</h3>
-                <div class="step-timeline">
-                  <>
-                    <div>
-                      <>
-                        <b>1</b>
-                        <h3>{t('Copy prompt', '复制 Prompt')}</h3>
-                        <p>{t('Fixed and safe.', '固定且安全。')}</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>2</b>
-                        <h3>{t('Read skill', '读取 Skill')}</h3>
-                        <p>skills/evalscope</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>3</b>
-                        <h3>{t('Check & run', '检查并运行')}</h3>
-                        <p>API-first</p>
-                      </>
-                    </div>
-                    <div>
-                      <>
-                        <b>4</b>
-                        <h3>{t('Review', '审查')}</h3>
-                        <p>{t('Score and artifacts.', '分数与产物。')}</p>
-                      </>
-                    </div>
-                  </>
-                </div>
-                <PromptCard title={t('Copy the complete prompt', '复制完整 Prompt')} prompt={prompt} />
-              </>
-            </article>
-          </>
-        </div>
-      </section>
-      <section class="section">
-        <div class="container two-col">
-          <>
-            <div>
-              <>
-                <div class="section-register">
-                  <>
-                    <div>
-                      <h2 class="section-title tight">{t('Manual quick start.', '手动快速开始。')}</h2>
-                    </div>
-                    <p>{t('Copy · paste · run', '复制 · 粘贴 · 运行')}</p>
-                  </>
-                </div>
-                <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
-              </>
-            </div>
-            <article class="panel">
-              <>
-                <h3>{t('API-first, no local GPU required.', 'API-first，无需本地 GPU。')}</h3>
-                <p>
-                  {t(
-                    'Your key stays in the environment. The first evaluation is deliberately limited to five samples, then artifacts show exactly what ran.',
-                    'key 保持在环境变量中。首次评测有意限制为五个样本，之后产物完整展示实际运行内容。'
-                  )}
-                </p>
-                <div class="tags">
-                  <>
-                    <span class="pill">API endpoint</span>
-                    <span class="pill">5-sample smoke</span>
-                    <span class="pill">No model download</span>
-                  </>
-                </div>
-              </>
-            </article>
           </>
         </div>
       </section>
@@ -1886,111 +1958,7 @@ const perfCommand = `evalscope perf \\
                 <p>{t('Same principle · more possibilities', '同一原则 · 更多可能')}</p>
               </>
             </div>
-            <div class="action-grid">
-              <>
-                <article class="card">
-                  <>
-                    <Icon name="tabler:chart-bar" size="28" />
-                    <h3>{t('Evaluate model quality', '评测模型能力')}</h3>
-                    <p>
-                      {t(
-                        'Run a bounded benchmark on an API model and report the evidence.',
-                        '在 API 模型上运行有界 benchmark 并报告证据。'
-                      )}
-                    </p>
-                    <PromptCard title={t('Copy', '复制')} prompt={prompt} />
-                  </>
-                </article>
-                <article class="card">
-                  <>
-                    <Icon name="tabler:bolt" size="28" />
-                    <h3>{t('Stress-test an API', '压测 API')}</h3>
-                    <p>
-                      {t('Measure throughput, latency and stability under load.', '测量负载下的吞吐、延迟与稳定性。')}
-                    </p>
-                    <PromptCard
-                      title={t('Copy', '复制')}
-                      prompt={t(
-                        'Use the EvalScope project skill to run a small API-first performance test against my OpenAI-compatible endpoint. Do not download a model or use a GPU. Use 24 requests with parallel 1, 2, and 4; report RPS, latency, TTFT, throughput, success rate and artifact path.',
-                        '使用 EvalScope 项目 Skill，对我的 OpenAI-compatible endpoint 做小规模 API-first 性能测试。不要下载模型或使用 GPU。使用 24 个请求，并发 1、2、4；报告 RPS、延迟、TTFT、吞吐、成功率与产物路径。'
-                      )}
-                    />
-                  </>
-                </article>
-                <article class="card">
-                  <>
-                    <Icon name="tabler:database-search" size="28" />
-                    <h3>{t('Find a benchmark', '查找 benchmark')}</h3>
-                    <p>
-                      {t('Search available tasks before deciding what to evaluate.', '在决定评测内容前搜索可用任务。')}
-                    </p>
-                    <PromptCard
-                      title={t('Copy', '复制')}
-                      prompt={t(
-                        'Use the EvalScope project skill to find benchmarks for reasoning, coding and multimodal evaluation. Do not download a model. Return benchmark names, metrics and the smallest runnable API-first command.',
-                        '使用 EvalScope 项目 Skill 查找用于推理、代码与多模态评测的 benchmark。不要下载模型。返回 benchmark 名称、指标和最小可运行的 API-first 命令。'
-                      )}
-                    />
-                  </>
-                </article>
-                <article class="card">
-                  <>
-                    <Icon name="tabler:folders" size="28" />
-                    <h3>{t('Open and compare results', '打开并对比结果')}</h3>
-                    <p>
-                      {t(
-                        'Inspect an existing output folder without re-running a model.',
-                        '无需重跑模型即可审查已有输出目录。'
-                      )}
-                    </p>
-                    <PromptCard
-                      title={t('Copy', '复制')}
-                      prompt={t(
-                        'Use the EvalScope project skill to inspect an existing output directory and explain how to open its local report. Do not call a model API, download a model, or use a GPU. Summarize the available reports, predictions, reviews and config artifacts.',
-                        '使用 EvalScope 项目 Skill 审查已有输出目录，并说明如何打开本地报告。不要调用模型 API、下载模型或使用 GPU。总结可用的报告、预测、review 和配置产物。'
-                      )}
-                    />
-                  </>
-                </article>
-              </>
-            </div>
-          </>
-        </div>
-      </section>
-      <section class="section">
-        <div class="container two-col">
-          <>
-            <article class="panel">
-              <>
-                <h3>{t('Install matrix', '安装矩阵')}</h3>
-                <ul>
-                  <>
-                    <li>
-                      <code>pip install evalscope</code> — {t('evaluation core', '评测核心')}
-                    </li>
-                    <li>
-                      <code>pip install 'evalscope[perf]'</code> — {t('performance workloads', '性能工作负载')}
-                    </li>
-                    <li>
-                      <code>pip install 'evalscope[service]'</code> — {t('local web service', '本地 Web 服务')}
-                    </li>
-                  </>
-                </ul>
-              </>
-            </article>
-            <article class="panel">
-              <>
-                <h3>{t('Return checklist', '返回清单')}</h3>
-                <ul>
-                  <>
-                    <li>{t('Score or performance summary', '分数或性能摘要')}</li>
-                    <li>{t('Output artifact path', '输出产物路径')}</li>
-                    <li>{t('Exact bounded command', '精确的有界命令')}</li>
-                    <li>{t('No exposed keys or downloaded weights', '不暴露 key、不下载权重')}</li>
-                  </>
-                </ul>
-              </>
-            </article>
+            <TaskTabs locale={locale} />
           </>
         </div>
       </section>
