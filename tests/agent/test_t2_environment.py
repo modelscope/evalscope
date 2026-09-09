@@ -351,23 +351,40 @@ class TestEnclaveEnvironmentInterpreter:
 
         assert handle.payload['command'][-1] == "printf %s payload | ( export FOO=bar; cd /w && cat )"
 
-    def test_rendered_input_pipe_runs_in_a_real_shell(self):
-        """Render as the sandbox would, then prove the construct in an actual bash."""
+    @pytest.mark.parametrize('shell', ['bash', 'sh'])
+    def test_rendered_input_pipe_runs_in_a_real_shell(self, shell: str) -> None:
+        """Render as the sandbox would, then round-trip it through an actual shell.
+
+        ``sh`` is covered because the pipeline is POSIX syntax, not a bash
+        extension, and ``['sh', '-c']`` is a valid interpreter configuration.
+        On CI ``/bin/sh`` is dash, so this exercises a strict POSIX shell.
+        """
         from evalscope.agent.environments.enclave import _render_command
         from evalscope.agent.environments.local import LocalAgentEnvironment
 
         payload = 'multi\nline with $vars `cmd` \'quotes\' "dquotes" 100%'
         rendered = _render_command(
             ['/bin/bash', '-c', 'cat; echo "[$FOO]"'],
-            interpreter=['bash', '-c'],
+            interpreter=[shell, '-c'],
             cwd='/tmp',
             env={'FOO': 'bar'},
             stdin=payload,
         )
-        result = self._run(LocalAgentEnvironment().exec(['bash', '-c', rendered], timeout=10))
+        result = self._run(LocalAgentEnvironment().exec([shell, '-c', rendered], timeout=10))
 
         assert result.returncode == 0
         assert result.stdout == f'{payload}[bar]\n'
+
+    @pytest.mark.parametrize('interpreter', [['sh', '-c'], ['/bin/sh', '-c'], ['dash', '-c'], ['zsh', '-c']])
+    def test_input_is_rendered_for_any_posix_shell_interpreter(
+        self, monkeypatch: pytest.MonkeyPatch, interpreter: List[str]
+    ) -> None:
+        """Non-bash POSIX shells are valid interpreters and must not be refused."""
+        env, handle = self._env_with_fake_handle(monkeypatch, interpreter=interpreter)
+        self._run(env.exec(['cat'], input='piped payload'))
+
+        assert handle.payload['command'][:2] == interpreter
+        assert handle.payload['command'][-1] == "printf %s 'piped payload' | ( cat )"
 
     def test_exec_without_input_is_unchanged(self, monkeypatch: pytest.MonkeyPatch) -> None:
         env, handle = self._env_with_fake_handle(monkeypatch)
@@ -375,9 +392,12 @@ class TestEnclaveEnvironmentInterpreter:
 
         assert handle.payload['command'][-1] == 'cd /w && cat'
 
-    def test_input_is_rejected_for_a_non_shell_interpreter(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    @pytest.mark.parametrize('interpreter', [['python3', '-c'], ['node', '-e']])
+    def test_input_is_rejected_for_a_non_shell_interpreter(
+        self, monkeypatch: pytest.MonkeyPatch, interpreter: List[str]
+    ) -> None:
         """The pipe is shell syntax; refuse rather than drop the payload again."""
-        env, _ = self._env_with_fake_handle(monkeypatch, interpreter=['python3', '-c'])
+        env, _ = self._env_with_fake_handle(monkeypatch, interpreter=interpreter)
 
         with pytest.raises(NotImplementedError, match='cannot supply stdin'):
             self._run(env.exec(['print(1)'], input='payload'))
