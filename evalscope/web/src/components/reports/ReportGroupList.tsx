@@ -9,6 +9,19 @@ import ReportCard from '@/components/reports/ReportCard'
 import type { ReportGroup } from '@/api/types'
 import { formatReportRef, reportRefFromSummary } from '@/domain/report/reportRef'
 
+/**
+ * Whether at least two of the group's reports cover a common dataset - the same
+ * condition the Compare page's own table intersects on (`ComparePage.tsx`'s
+ * `common` set), so "Compare all" only appears when it can produce a
+ * non-empty result instead of an intersection of nothing.
+ */
+function hasComparableOverlap(children: ReportGroup['children']): boolean {
+  if (children.length < 2) return false
+  const datasetSets = children.map((child) => new Set(child.primary_metrics.map((m) => m.dataset_name)))
+  const overlap = datasetSets.reduce((a, b) => new Set([...a].filter((x) => b.has(x))))
+  return overlap.size > 0
+}
+
 interface GroupHeaderProps {
   group: ReportGroup
   expanded: boolean
@@ -67,7 +80,7 @@ function GroupHeader({
         {formatTimestamp(group.timestamp) || '—'}
       </span>
 
-      {group.report_count >= 2 && (
+      {hasComparableOverlap(group.children) && (
         <Button
           variant="ghost"
           size="sm"
