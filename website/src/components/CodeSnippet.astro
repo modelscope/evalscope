@@ -1,0 +1,110 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  code: string;
+  label?: string;
+}
+
+const { code, label = 'terminal' } = Astro.props;
+---
+
+<section class="code-snippet" aria-label={label}>
+  <header class="code-toolbar">
+    <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="code-label">{label}</span>
+    <button class="code-copy" type="button" data-code-copy={code} aria-label={`Copy ${label}`}>
+      <Icon name="tabler:copy" size="15" />
+      <span>Copy</span>
+    </button>
+  </header>
+  <pre><code>{code}</code></pre>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-code-copy]').forEach((button) => {
+    if (button.dataset.copyReady) return;
+    button.dataset.copyReady = 'true';
+    button.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(button.dataset.codeCopy ?? '');
+      const label = button.querySelector('span');
+      if (!label) return;
+      label.textContent = 'Copied';
+      window.setTimeout(() => {
+        label.textContent = 'Copy';
+      }, 1400);
+    });
+  });
+</script>
+
+<style>
+  .code-snippet {
+    overflow: hidden;
+    border: 1px solid #263946;
+    border-radius: 13px;
+    background: #101d27;
+    box-shadow: 9px 9px 0 color-mix(in srgb, var(--gold), transparent 25%);
+    color: #e8eef2;
+  }
+  .code-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    min-height: 42px;
+    align-items: center;
+    padding: 0 13px;
+    border-bottom: 1px solid #263946;
+    background: linear-gradient(180deg, #1c2b36, #16242e);
+  }
+  .window-controls {
+    display: flex;
+    gap: 6px;
+  }
+  .window-controls i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f5bd45;
+  }
+  .window-controls i:nth-child(2) {
+    background: #d99138;
+  }
+  .window-controls i:nth-child(3) {
+    background: #9c722b;
+  }
+  .code-label {
+    color: #aeb9c2;
+    font: 11px var(--mono);
+  }
+  .code-copy {
+    justify-self: end;
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    border: 0;
+    border-radius: 7px;
+    padding: 6px 8px;
+    background: transparent;
+    color: #dbe5eb;
+    cursor: pointer;
+    font: 11px var(--mono);
+  }
+  .code-copy:hover,
+  .code-copy:focus-visible {
+    background: #2a3d4b;
+    outline: none;
+  }
+  pre {
+    overflow: auto;
+    margin: 0;
+    padding: 18px 20px 20px;
+    color: inherit;
+    font: 13px/1.65 var(--mono);
+    white-space: pre;
+  }
+  @media (max-width: 620px) {
+    pre {
+      padding: 15px;
+      font-size: 12px;
+    }
+  }
+</style>

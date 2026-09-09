@@ -1,6 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
-import logo from '../assets/brand/evalscope-logo.png';
+import logo from '../assets/brand/evalscope-icon.png';
 import { copy, docsUrl, localizePath, otherLocalePath, productLinks } from '../data/site';
 import type { Locale, PageSlug } from '../types';
 
@@ -17,7 +17,7 @@ const currentPath = page ? (`/${page}` as const) : '/';
 <header class="site-header">
   <div class="container header-inner">
     <a class="brand" href={localizePath('/', locale)} aria-label="EvalScope home"
-      ><img src={logo.src} alt="EvalScope" /><span>EvalScope</span></a
+      ><img src={logo.src} alt="" /><span>EvalScope</span></a
     >
     <nav class="desktop-nav" aria-label="Primary navigation">
       <details class="product-menu">
@@ -95,14 +95,15 @@ const currentPath = page ? (`/${page}` as const) : '/';
     align-items: center;
   }
   .brand {
-    gap: 9px;
-    font-size: 19px;
+    gap: 8px;
+    font-size: 21px;
     font-weight: 850;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.065em;
   }
   .brand img {
-    width: 28px;
-    height: 28px;
+    display: block;
+    width: 31px;
+    height: 27px;
     object-fit: contain;
   }
   .desktop-nav {
@@ -185,6 +186,10 @@ const currentPath = page ? (`/${page}` as const) : '/';
     }
   }
   @media (max-width: 510px) {
+    .brand img {
+      width: 28px;
+      height: 25px;
+    }
     .header-cta {
       display: none;
     }

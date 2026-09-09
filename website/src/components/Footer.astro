@@ -1,5 +1,5 @@
 ---
-import logo from '../assets/brand/evalscope-logo.png';
+import logo from '../assets/brand/evalscope-icon.png';
 import { copy, docsUrl, localizePath } from '../data/site';
 import type { Locale } from '../types';
 const { locale } = Astro.props as { locale: Locale };
@@ -9,7 +9,8 @@ const text = copy[locale];
 <footer>
   <div class="container footer-inner">
     <div>
-      <a class="footer-brand" href={localizePath('/', locale)}><img src={logo.src} alt="" />EvalScope</a><p>
+      <a class="footer-brand" href={localizePath('/', locale)}><img src={logo.src} alt="" /><span>EvalScope</span></a><p
+      >
         {text.allRights}
       </p>
     </div>
@@ -33,14 +34,17 @@ const text = copy[locale];
   }
   .footer-brand {
     display: flex;
-    align-items: center;
     gap: 8px;
-    font-size: 19px;
+    align-items: center;
+    font-size: 20px;
     font-weight: 850;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.06em;
   }
   .footer-brand img {
-    width: 27px;
+    display: block;
+    width: 30px;
+    height: 27px;
+    object-fit: contain;
   }
   footer p,
   .legal {

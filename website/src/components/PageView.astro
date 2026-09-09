@@ -10,6 +10,7 @@ import { getBenchmarkCatalog } from '../lib/benchmarks';
 import type { Locale, PageSlug } from '../types';
 import BenchmarkCatalog from './BenchmarkCatalog.astro';
 import ClaimBadge from './ClaimBadge.astro';
+import CodeSnippet from './CodeSnippet.astro';
 import PromptCard from './PromptCard.astro';
 import ScreenshotFrame from './ScreenshotFrame.astro';
 
@@ -32,6 +33,25 @@ const evidence = [
   ['Review', t('Scoring evidence', '评分证据')],
   ['Report', t('Decision artifacts', '决策产物')],
 ];
+const evalCommand = `export DASHSCOPE_API_KEY='…'
+evalscope eval \\
+  --model qwen-plus \\
+  --datasets gsm8k \\
+  --limit 5
+
+# Real API demo snapshot · 2026-09-09
+# Accuracy 100% · Avg latency 5.188 s · 36.85 tok/s`;
+const serviceCommand = `pip install 'evalscope[service]'
+evalscope service --outputs ./outputs
+
+# Open a local dashboard from the run artifacts.
+# No cloud account. No model download.`;
+const perfCommand = `evalscope perf \\
+  --model qwen-plus \\
+  --number 24 \\
+  --parallel 1 2 4
+
+# API-first · use an environment variable for credentials`;
 ---
 
 {
@@ -42,6 +62,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>Evaluate</span>
+                    <span class="index">00</span>
+                  </>
+                </p>
                 <p class="eyebrow">{t('OPEN-SOURCE EVALUATION INFRASTRUCTURE', '开源 AI 评测基础设施')}</p>
                 <h1 class="display">
                   {t(
@@ -70,10 +96,46 @@ const evidence = [
                 </div>
               </>
             </div>
-            <ScreenshotFrame src={evalShot} alt="Real EvalScope qwen-plus GSM8K results" />
+            <div class="hero-stack">
+              <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
+              <ScreenshotFrame src={evalShot} alt="Real EvalScope qwen-plus GSM8K results" />
+            </div>
           </>
         </div>
       </section>
+      <div class="container">
+        <>
+          <div class="measurement-rule" />
+          <div class="instrument-strip">
+            <>
+              <div>
+                <>
+                  <strong>{count}</strong>
+                  <span>{t('Benchmarks', '评测集')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>LLM · VLM · AIGC</strong>
+                  <span>{t('Evaluation layers', '评测层')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>JSON · HTML · local</strong>
+                  <span>{t('Portable evidence artifacts', '可携带证据产物')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>Apache-2.0</strong>
+                  <span>{t('Open source license', '开源许可')}</span>
+                </>
+              </div>
+            </>
+          </div>
+        </>
+      </div>
       <section class="section">
         <div class="container">
           <>
@@ -172,6 +234,43 @@ const evidence = [
         </div>
       </section>
       <section class="section">
+        <div class="container two-col">
+          <>
+            <div>
+              <>
+                <div class="section-register">
+                  <>
+                    <div>
+                      <h2 class="section-title tight">{t('Manual quick start.', '手动快速开始。')}</h2>
+                    </div>
+                    <p>{t('Copy · paste · run', '复制 · 粘贴 · 运行')}</p>
+                  </>
+                </div>
+                <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
+              </>
+            </div>
+            <article class="panel">
+              <>
+                <h3>{t('API-first, no local GPU required.', 'API-first，无需本地 GPU。')}</h3>
+                <p>
+                  {t(
+                    'Your key stays in the environment. The first evaluation is deliberately limited to five samples, then artifacts show exactly what ran.',
+                    'key 保持在环境变量中。首次评测有意限制为五个样本，之后产物完整展示实际运行内容。'
+                  )}
+                </p>
+                <div class="tags">
+                  <>
+                    <span class="pill">API endpoint</span>
+                    <span class="pill">5-sample smoke</span>
+                    <span class="pill">No model download</span>
+                  </>
+                </div>
+              </>
+            </article>
+          </>
+        </div>
+      </section>
+      <section class="section">
         <div class="container">
           <>
             <ClaimBadge status="exploring" locale={locale} />
@@ -205,6 +304,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>{t('Evaluation', '模型评测')}</span>
+                    <span class="index">01</span>
+                  </>
+                </p>
                 <p class="eyebrow">{t('MODEL EVALUATION', '模型评测')}</p>
                 <h1 class="display">
                   {t('Turn model output into defensible evidence.', '把模型输出转化为可辩护的证据。')}
@@ -233,8 +338,48 @@ const evidence = [
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('TRACEABLE BY DESIGN', '可追溯设计')}</p>
-            <h2 class="section-title">
+            <div class="section-register">
+              <>
+                <div>
+                  <>
+                    <p class="eyebrow">{t('BROAD MODEL COVERAGE', '广泛模型覆盖')}</p>
+                    <h2 class="section-title tight">
+                      {t('One interface for every evaluation layer.', '一个接口覆盖每个评测层。')}
+                    </h2>
+                  </>
+                </div>
+                <p>{t('Models · tasks · datasets · metrics', '模型 · 任务 · 数据集 · 指标')}</p>
+              </>
+            </div>
+            <div class="instrument-strip">
+              <>
+                <div>
+                  <>
+                    <strong>LLM</strong>
+                    <span>{t('Language models and custom benchmarks', '语言模型与自定义 benchmark')}</span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>VLM</strong>
+                    <span>{t('Vision-language and multimodal tasks', '视觉语言与多模态任务')}</span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>AIGC</strong>
+                    <span>{t('Text-to-image and image editing', '文生图与图像编辑')}</span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>RAG</strong>
+                    <span>{t('Retrieval and generation quality', '检索与生成质量')}</span>
+                  </>
+                </div>
+              </>
+            </div>
+            <h2 class="section-title" style="margin-top:64px">
               {t('From a dataset row to the report you share.', '从一条数据到可分享的报告。')}
             </h2>
             <div class="evidence-path">
@@ -249,57 +394,83 @@ const evidence = [
         </div>
       </section>
       <section class="section">
-        <div class="container two-col">
-          <>
-            <article class="panel">
-              <>
-                <ClaimBadge status="today" locale={locale} />
-                <h3>{t('Versioned semantics', '语义版本化')}</h3>
-                <p>
-                  {t(
-                    'Benchmark metadata publishes evaluation versions, so prompt, mapping, data or scoring changes can be visible.',
-                    'Benchmark metadata 发布评测版本，使 prompt、映射、数据或评分变化可见。'
-                  )}
-                </p>
-              </>
-            </article>
-            <article class="panel">
-              <>
-                <ClaimBadge status="today" locale={locale} />
-                <h3>{t('Judge contracts', 'Judge 契约')}</h3>
-                <p>
-                  {t(
-                    'Structured judge outputs fail closed when invalid; malformed replies do not quietly become scores.',
-                    '结构化 Judge 输出在无效时 fail closed；格式错误的回复不会悄悄转成分数。'
-                  )}
-                </p>
-              </>
-            </article>
-            <article class="panel">
-              <>
-                <ClaimBadge status="today" locale={locale} />
-                <h3>{t('Portable artifacts', '可携带产物')}</h3>
-                <p>
-                  {t(
-                    'Predictions, reviews, reports and configs remain together for local inspection and dashboard drill-down.',
-                    '预测、review、报告和配置一同保留，支持本地审查和 Dashboard 下钻。'
-                  )}
-                </p>
-              </>
-            </article>
-            <article class="panel">
-              <>
-                <h3>{t('Real demo context', '真实 Demo 上下文')}</h3>
-                <p>
-                  <br />
-                  {t(
-                    'Accuracy 100% · 5.188s average latency · 36.85 tok/s. A small API snapshot, not a general model ranking.',
-                    'Accuracy 100% · 平均延迟 5.188s · 36.85 tok/s。小规模 API 快照，不代表普适模型排名。'
-                  )}
-                </p>
-              </>
-            </article>
-          </>
+        <div class="container">
+          <div class="section-register">
+            <>
+              <div>
+                <h2 class="section-title tight">{t('Evaluation that survives scrutiny.', '经得起审查的评测。')}</h2>
+              </div>
+              <p>{t('Transparent · reproducible · extensible', '透明 · 可复现 · 可扩展')}</p>
+            </>
+          </div>
+          <div class="card-grid">
+            <>
+              <article class="card">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Versioned semantics', '语义版本化')}</h3>
+                  <p>
+                    {t(
+                      'Benchmark metadata publishes evaluation versions, so prompt, mapping, data or scoring changes can be visible.',
+                      'Benchmark metadata 发布评测版本，使 prompt、映射、数据或评分变化可见。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="card">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Judge contracts', 'Judge 契约')}</h3>
+                  <p>
+                    {t(
+                      'Structured judge outputs fail closed when invalid; malformed replies do not quietly become scores.',
+                      '结构化 Judge 输出在无效时 fail closed；格式错误的回复不会悄悄转成分数。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="card">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Portable artifacts', '可携带产物')}</h3>
+                  <p>
+                    {t(
+                      'Predictions, reviews, reports and configs remain together for local inspection and dashboard drill-down.',
+                      '预测、review、报告和配置一同保留，支持本地审查和 Dashboard 下钻。'
+                    )}
+                  </p>
+                </>
+              </article>
+            </>
+          </div>
+          <div class="instrument-strip demo-metrics">
+            <>
+              <div>
+                <>
+                  <strong>qwen-plus</strong>
+                  <span>{t('API model in this snapshot', '本快照使用的 API 模型')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>GSM8K · 5</strong>
+                  <span>{t('Dataset and bounded sample count', '数据集与有界样本数')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>100%</strong>
+                  <span>{t('Accuracy in this API demo', '本 API Demo 的 Accuracy')}</span>
+                </>
+              </div>
+              <div>
+                <>
+                  <strong>5.188s · 36.85 tok/s</strong>
+                  <span>{t('Small snapshot, not a model ranking', '小规模快照，非模型排名')}</span>
+                </>
+              </div>
+            </>
+          </div>
         </div>
       </section>
       <section class="section dark">
@@ -325,7 +496,7 @@ const evidence = [
                 </a>
               </>
             </div>
-            <pre class="terminal">evalscope eval --model qwen-plus --datasets gsm8k --limit 5</pre>
+            <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
           </>
         </div>
       </section>
@@ -341,6 +512,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>{t('Agent & Harness', 'Agent 与 Harness')}</span>
+                    <span class="index">02</span>
+                  </>
+                </p>
                 <p class="eyebrow">{t('AGENT & HARNESS', 'AGENT 与 HARNESS')}</p>
                 <h1 class="display">
                   {t('Measure the loop, not just the last answer.', '度量完整循环，而非只看最终答案。')}
@@ -367,31 +544,59 @@ const evidence = [
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('MEASURED AGENT LOOP', '可度量 AGENT 循环')}</p>
-            <div class="evidence-path">
+            <div class="section-register">
               <>
-                <div class="evidence-step">
+                <div>
                   <>
-                    <strong>Request</strong>
-                    <span>{t('Task and context', '任务与上下文')}</span>
+                    <p class="eyebrow">{t('MEASURE · TRACE · IMPROVE', '测量 · 追踪 · 改进')}</p>
+                    <h2 class="section-title tight">{t('A measured agent loop.', '可度量的 Agent 循环。')}</h2>
                   </>
                 </div>
-                <div class="evidence-step">
+                <p>{t('Every step counts', '每一步都有证据')}</p>
+              </>
+            </div>
+            <div class="step-timeline">
+              <>
+                <div>
                   <>
-                    <strong>Reason</strong>
-                    <span>{t('Model requests', '模型请求')}</span>
+                    <b>1</b>
+                    <h3>Prompt</h3>
+                    <p>{t('Task and context', '任务与上下文')}</p>
                   </>
                 </div>
-                <div class="evidence-step">
+                <div>
                   <>
-                    <strong>Act</strong>
-                    <span>{t('Tool call evidence', '工具调用证据')}</span>
+                    <b>2</b>
+                    <h3>Model</h3>
+                    <p>qwen-plus</p>
                   </>
                 </div>
-                <div class="evidence-step">
+                <div>
                   <>
-                    <strong>Verify</strong>
-                    <span>{t('Outcome and review', '结果与 review')}</span>
+                    <b>3</b>
+                    <h3>Tool call</h3>
+                    <p>python_exec</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>4</b>
+                    <h3>Tool result</h3>
+                    <p>{t('Evidence returned', '返回执行证据')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>5</b>
+                    <h3>Nudge</h3>
+                    <p>{t('Model continues', '模型继续')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>6</b>
+                    <h3>Submit</h3>
+                    <p>{t('Final answer: 18', '最终答案：18')}</p>
                   </>
                 </div>
               </>
@@ -400,56 +605,188 @@ const evidence = [
         </div>
       </section>
       <section class="section">
+        <div class="container">
+          <div class="section-register">
+            <>
+              <div>
+                <h2 class="section-title tight">
+                  {t('Key measurements for agent evaluation.', 'Agent 评测的关键度量。')}
+                </h2>
+              </div>
+              <p>{t('Multi-dimensional evidence', '多维证据')}</p>
+            </>
+          </div>
+          <div class="metric-grid">
+            <>
+              <article class="panel">
+                <>
+                  <>
+                    <div class="metric">100%</div>
+                    <div class="metric-label">{t('Outcome quality', '结果质量')}</div>
+                  </>
+                  <h3>{t('Accuracy · GSM8K', 'Accuracy · GSM8K')}</h3>
+                  <p>
+                    {t(
+                      'Run EvalScope agent benchmarks and retain the request, tool and result evidence that belongs to the benchmark artifact.',
+                      '运行 EvalScope Agent benchmark，并保留属于 benchmark 产物的请求、工具和结果证据。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <>
+                    <div class="metric">3/3</div>
+                    <div class="metric-label">{t('Tool correctness', '工具正确性')}</div>
+                  </>
+                  <h3>{t('Successful tool calls', '成功工具调用')}</h3>
+                  <p>
+                    {t(
+                      'Replay compatible serving scenarios such as AgentX through the performance workflow, preserving scenario provenance and validity state.',
+                      '通过性能工作流回放如 AgentX 的兼容服务场景，保留场景溯源与有效性状态。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <>
+                    <div class="metric">5</div>
+                    <div class="metric-label">{t('Trajectory efficiency', '轨迹效率')}</div>
+                  </>
+                  <h3>{t('Model requests · 6213 tokens', '模型请求 · 6213 tokens')}</h3>
+                  <p>
+                    <br />
+                    {t(
+                      'This page intentionally uses Details evidence only. It does not represent a Dashboard trace interface.',
+                      '本页仅使用 Details 证据，不展示虚构的 Dashboard Trace 界面。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <>
+                    <div class="metric">18</div>
+                    <div class="metric-label">{t('Verified final answer', '已验证最终答案')}</div>
+                  </>
+                  <h3>{t('Artifact-backed result', '产物支撑的结果')}</h3>
+                  <p>
+                    {t(
+                      'We are exploring frozen artifacts and independent audits for comparing harness revisions. This is not a shipped drift-prevention feature.',
+                      '我们正在探索用冻结产物和独立审计比较 Harness 版本；这不是已交付的漂移防护功能。'
+                    )}
+                  </p>
+                </>
+              </article>
+            </>
+          </div>
+        </div>
+      </section>
+      <section class="section">
         <div class="container two-col">
           <>
             <article class="panel">
               <>
                 <ClaimBadge status="today" locale={locale} />
-                <h3>{t('Native path', '原生路径')}</h3>
+                <h3>{t('Native AgentLoop', '原生 AgentLoop')}</h3>
                 <p>
                   {t(
-                    'Run EvalScope agent benchmarks and retain the request, tool and result evidence that belongs to the benchmark artifact.',
-                    '运行 EvalScope Agent benchmark，并保留属于 benchmark 产物的请求、工具和结果证据。'
+                    'Use EvalScope’s native loop evaluation with configurable tools, environments and step limits.',
+                    '使用 EvalScope 原生循环评测，支持可配置工具、环境和步骤限制。'
                   )}
                 </p>
+                <div class="tags">
+                  <>
+                    <span class="pill">function_calling</span>
+                    <span class="pill">react</span>
+                    <span class="pill">tool use</span>
+                  </>
+                </div>
               </>
             </article>
             <article class="panel">
               <>
                 <ClaimBadge status="today" locale={locale} />
-                <h3>{t('External path', '外部路径')}</h3>
+                <h3>{t('External Agent Bridge', '外部 Agent Bridge')}</h3>
                 <p>
                   {t(
-                    'Replay compatible serving scenarios such as AgentX through the performance workflow, preserving scenario provenance and validity state.',
-                    '通过性能工作流回放如 AgentX 的兼容服务场景，保留场景溯源与有效性状态。'
+                    'Bridge external harnesses and preserve their scenario provenance, trajectory artifacts and validity state.',
+                    '桥接外部 Harness，保留场景溯源、轨迹产物与有效性状态。'
                   )}
                 </p>
+                <div class="tags">
+                  <>
+                    <span class="pill">AgentX</span>
+                    <span class="pill">AIPerf</span>
+                    <span class="pill">replay</span>
+                  </>
+                </div>
               </>
             </article>
-            <article class="panel">
+          </>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container split">
+          <>
+            <div>
               <>
-                <h3>{t('Real event snapshot', '真实事件快照')}</h3>
-                <p>
-                  <br />
+                <p class="eyebrow">{t('AGENT BENCHMARKS & DRIFT', 'AGENT BENCHMARK 与漂移')}</p>
+                <h2 class="section-title">
+                  {t('Keep an evolving harness tied to its evidence.', '让演进中的 Harness 始终锚定证据。')}
+                </h2>
+                <p class="lede">
                   {t(
-                    'This page intentionally uses Details evidence only. It does not represent a Dashboard trace interface.',
-                    '本页仅使用 Details 证据，不展示虚构的 Dashboard Trace 界面。'
+                    'Benchmark tasks make agent behavior comparable today. Freezing artifacts, auditing judges and testing held-out tasks are an exploring research protocol — not a shipped drift-prevention claim.',
+                    'Benchmark 任务今天即可让 Agent 行为具备可比性。冻结产物、审计 Judge、检查保留任务属于探索中的研究协议，而非已交付的漂移防护承诺。'
                   )}
                 </p>
+                <div class="tags">
+                  <>
+                    <span class="pill">SWE-bench</span>
+                    <span class="pill">GAIA</span>
+                    <span class="pill">AgentBench</span>
+                    <ClaimBadge status="exploring" locale={locale} />
+                  </>
+                </div>
               </>
-            </article>
-            <article class="panel">
-              <>
-                <ClaimBadge status="exploring" locale={locale} />
-                <h3>{t('Drift-aware harness evolution', '感知漂移的 Harness 演进')}</h3>
-                <p>
-                  {t(
-                    'We are exploring frozen artifacts and independent audits for comparing harness revisions. This is not a shipped drift-prevention feature.',
-                    '我们正在探索用冻结产物和独立审计比较 Harness 版本；这不是已交付的漂移防护功能。'
-                  )}
-                </p>
-              </>
-            </article>
+            </div>
+            <div class="guardrail-stack">
+              <article class="panel">
+                <>
+                  <span class="guardrail-index">01</span>
+                  <h3>{t('Freeze the run', '冻结运行')}</h3>
+                  <p>
+                    {t(
+                      'Keep task, environment, requests and raw artifacts together.',
+                      '将任务、环境、请求与原始产物一同保留。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <span class="guardrail-index">02</span>
+                  <h3>{t('Audit the judge', '审计 Judge')}</h3>
+                  <p>
+                    {t('Separate a scoring-contract change from a behavior change.', '区分评分契约变化与行为变化。')}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <span class="guardrail-index">03</span>
+                  <h3>{t('Check selection', '检查选择')}</h3>
+                  <p>
+                    {t(
+                      'Use held-out evidence before claiming an improved harness.',
+                      '在声称 Harness 改进前使用保留证据。'
+                    )}
+                  </p>
+                </>
+              </article>
+            </div>
           </>
         </div>
       </section>
@@ -476,6 +813,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>{t('Performance', '性能压测')}</span>
+                    <span class="index">03</span>
+                  </>
+                </p>
                 <p class="eyebrow">{t('PERFORMANCE', '性能压测')}</p>
                 <h1 class="display">
                   {t('Load tests that lead to an operational decision.', '让压测导向真实的运营决策。')}
@@ -502,34 +845,77 @@ const evidence = [
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('REAL API SNAPSHOT', '真实 API 快照')}</p>
-            <h2 class="section-title">{t('One small run, six decision metrics.', '一次小规模运行，六项决策指标。')}</h2>
-            <div class="card-grid">
+            <div class="section-register">
               <>
-                <article class="card">
+                <div>
                   <>
-                    <div class="metric">2.08</div>
-                    <div class="metric-label">Best RPS</div>
-                    <h3>24 {t('requests', '个请求')}</h3>
-                    <p>1536 {t('output tokens', '输出 token')} · 20.24s</p>
+                    <p class="eyebrow">{t('LOAD CURVE', '负载曲线')}</p>
+                    <h2 class="section-title tight">{t('Throughput rises with concurrency.', '吞吐随并发而提升。')}</h2>
                   </>
-                </article>
-                <article class="card">
+                </div>
+                <p>{t('Keep testing until the bottleneck is reached', '持续测试直至出现瓶颈')}</p>
+              </>
+            </div>
+            <div class="load-curve">
+              <>
+                <div class="curve-point p1">
                   <>
-                    <div class="metric">1.713s</div>
-                    <div class="metric-label">{t('lowest latency', '最低延迟')}</div>
-                    <h3>133.22 tok/s</h3>
-                    <p>{t('at concurrency 4', '并发 4')}</p>
+                    <b>36.35</b>
+                    <span>1</span>
                   </>
-                </article>
-                <article class="card">
+                </div>
+                <div class="curve-point p2">
                   <>
-                    <div class="metric">100%</div>
-                    <div class="metric-label">{t('success rate', '成功率')}</div>
-                    <h3>374.85ms TTFT</h3>
-                    <p>{t('at concurrency 4', '并发 4')}</p>
+                    <b>68.87</b>
+                    <span>2</span>
                   </>
-                </article>
+                </div>
+                <div class="curve-point p3">
+                  <>
+                    <b>133.22</b>
+                    <span>4</span>
+                  </>
+                </div>
+              </>
+            </div>
+            <div class="section-register" style="margin-top:44px">
+              <>
+                <div>
+                  <h2 class="section-title tight">
+                    {t('Six metrics. A complete performance picture.', '六项指标，一幅完整性能图景。')}
+                  </h2>
+                </div>
+                <p>{t('Beyond a single throughput number', '不止一个吞吐数字')}</p>
+              </>
+            </div>
+            <div class="instrument-strip">
+              <>
+                <>
+                  <div>
+                    <>
+                      <strong>RPS</strong>
+                      <span>{t('Requests per second', '每秒请求数')}</span>
+                    </>
+                  </div>
+                  <div>
+                    <>
+                      <strong>tok/s</strong>
+                      <span>{t('Output throughput', '输出吞吐')}</span>
+                    </>
+                  </div>
+                  <div>
+                    <>
+                      <strong>Latency</strong>
+                      <span>{t('Average / P99', '平均 / P99')}</span>
+                    </>
+                  </div>
+                  <div>
+                    <>
+                      <strong>TTFT</strong>
+                      <span>{t('Time to first token', '首 token 时间')}</span>
+                    </>
+                  </div>
+                </>
               </>
             </div>
           </>
@@ -575,6 +961,38 @@ const evidence = [
           </>
         </div>
       </section>
+      <section class="section">
+        <div class="container">
+          <>
+            <div class="section-register">
+              <>
+                <div>
+                  <h2 class="section-title tight">{t('Real results from real runs.', '真实运行的真实结果。')}</h2>
+                </div>
+                <p>{t('Same data · better insights', '同一数据 · 更好洞察')}</p>
+              </>
+            </div>
+            <div class="evidence-screens">
+              <>
+                <ScreenshotFrame src={perfShot} alt="Real performance overview" />
+                <ScreenshotFrame src={perfCharts} alt="Real performance charts" />
+                <article class="panel">
+                  <>
+                    <div class="metric">2.08</div>
+                    <div class="metric-label">Best RPS</div>
+                    <h3>1.713s {t('lowest latency', '最低延迟')}</h3>
+                    <p>
+                      374.85ms TTFT · 100% {t('success', '成功率')}
+                      <br />
+                      133.22 tok/s {t('at concurrency 4', '并发 4')}
+                    </p>
+                  </>
+                </article>
+              </>
+            </div>
+          </>
+        </div>
+      </section>
       <section class="section dark">
         <div class="container split">
           <>
@@ -595,7 +1013,7 @@ const evidence = [
                 </a>
               </>
             </div>
-            <pre class="terminal">evalscope perf --model qwen-plus --number 24 --parallel 1 2 4</pre>
+            <CodeSnippet code={perfCommand} label="run-performance.sh" />
           </>
         </div>
       </section>
@@ -607,30 +1025,117 @@ const evidence = [
   page === 'benchmarks' && (
     <>
       <section class="hero">
-        <div class="container">
+        <div class="container hero-grid">
           <>
-            <p class="eyebrow">{t('BENCHMARK CATALOG', 'BENCHMARK 目录')}</p>
-            <h1 class="display">{t('Find the evidence surface your system needs.', '找到你的系统需要的证据表面。')}</h1>
-            <p class="lede">
-              {t(
-                `${count} benchmark metadata records are read from the current EvalScope branch at build time. Sync main into website when the catalog needs a reviewed refresh.`,
-                `${count} 条 benchmark metadata 在构建时从当前 EvalScope 分支读取。需要更新目录时，人工将 main 合并进 website。`
-              )}
-            </p>
-            <div class="tags">
+            <div>
               <>
-                <span class="pill">LLM</span>
-                <span class="pill">VLM</span>
-                <span class="pill">Agent</span>
-                <span class="pill">AIGC</span>
-                <span class="pill">Build-time metadata</span>
+                <p class="registration">
+                  <>
+                    <span>{t('Benchmarks', '评测集')}</span>
+                    <span class="index">04</span>
+                  </>
+                </p>
+                <p class="eyebrow">{t('BENCHMARK CATALOG', 'BENCHMARK 目录')}</p>
+              </>
+              <h1 class="display">
+                {t('Find benchmark fit, not benchmark fame.', '寻找合适的 benchmark，而非追逐名气。')}
+              </h1>
+              <p class="lede">
+                {t(
+                  'Search a living registry across reasoning, coding, multimodal, agents and generative media. Inspect tasks, metrics, versions and runnable examples before you evaluate.',
+                  '搜索覆盖推理、代码、多模态、Agent 和生成式媒体的动态目录。在评测前检查任务、指标、版本与可运行示例。'
+                )}
+              </p>
+              <div class="button-row">
+                <>
+                  <a class="button" href="#catalog">
+                    {t('Explore the catalog', '浏览目录')}
+                    <Icon name="tabler:arrow-right" />
+                  </a>
+                  <a class="button alt" href={to('/get-started')}>
+                    {t('Add a benchmark', '新增 benchmark')}
+                    <Icon name="tabler:plus" />
+                  </a>
+                </>
+              </div>
+            </div>
+            <div class="catalog-orbit">
+              <>
+                <strong>{count}</strong>
+                <span>{t('benchmarks in registry', '条 registry benchmark')}</span>
+                <i class="llm">
+                  143
+                  <>
+                    <br />
+                    <small>LLM</small>
+                  </>
+                </i>
+                <i class="vlm">
+                  75
+                  <>
+                    <br />
+                    <small>VLM</small>
+                  </>
+                </i>
+                <i class="agent">
+                  32
+                  <>
+                    <br />
+                    <small>Agent</small>
+                  </>
+                </i>
+                <i class="aigc">
+                  6
+                  <>
+                    <br />
+                    <small>AIGC</small>
+                  </>
+                </i>
               </>
             </div>
           </>
         </div>
       </section>
+      <div class="container">
+        <div class="instrument-strip">
+          <>
+            <div>
+              <>
+                <strong>{count}</strong>
+                <span>{t('Total benchmarks', '总评测集')}</span>
+              </>
+            </div>
+            <div>
+              <>
+                <strong>143</strong>
+                <span>LLM</span>
+              </>
+            </div>
+            <div>
+              <>
+                <strong>75</strong>
+                <span>VLM</span>
+              </>
+            </div>
+            <div>
+              <>
+                <strong>32 / 6</strong>
+                <span>Agent / AIGC</span>
+              </>
+            </div>
+          </>
+        </div>
+      </div>
       <section class="section">
-        <div class="container">
+        <div class="container" id="catalog">
+          <div class="section-register">
+            <>
+              <div>
+                <h2 class="section-title tight">{t('Search the benchmark catalog.', '搜索 benchmark 目录。')}</h2>
+              </div>
+              <p>{t('Find · filter · compare · evaluate', '检索 · 筛选 · 对比 · 评测')}</p>
+            </>
+          </div>
           <BenchmarkCatalog locale={locale} />
         </div>
       </section>
@@ -666,6 +1171,61 @@ const evidence = [
           </>
         </div>
       </section>
+      <section class="section">
+        <div class="container">
+          <>
+            <div class="section-register">
+              <>
+                <div>
+                  <h2 class="section-title tight">
+                    {t('Built to grow without losing trust.', '持续扩展，也不丢失可信度。')}
+                  </h2>
+                </div>
+                <p>{t('Open contributions · quality first', '开放贡献 · 质量优先')}</p>
+              </>
+            </div>
+            <div class="step-timeline">
+              <>
+                <div>
+                  <>
+                    <b>1</b>
+                    <h3>Adapter</h3>
+                    <p>{t('Implement a standard interface.', '实现标准接口。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>2</b>
+                    <h3>Smoke test</h3>
+                    <p>{t('Verify a narrow runnable path.', '验证小范围可运行路径。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>3</b>
+                    <h3>Metadata</h3>
+                    <p>{t('Declare version and metrics.', '声明版本与指标。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>4</b>
+                    <h3>Docs</h3>
+                    <p>{t('Generate bilingual details.', '生成双语详情。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>5</b>
+                    <h3>Catalog</h3>
+                    <p>{t('Make it discoverable.', '使其可发现。')}</p>
+                  </>
+                </div>
+              </>
+            </div>
+          </>
+        </div>
+      </section>
     </>
   )
 }
@@ -678,6 +1238,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>{t('Visualization', '可视化')}</span>
+                    <span class="index">05</span>
+                  </>
+                </p>
                 <p class="eyebrow">{t('VISUALIZATION', '可视化')}</p>
                 <h1 class="display">{t('Inspect the evidence behind a metric.', '审查指标背后的证据。')}</h1>
                 <p class="lede">
@@ -695,8 +1261,62 @@ const evidence = [
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('FOUR EVIDENCE VIEWS', '四种证据视图')}</p>
-            <div class="card-grid">
+            <div class="section-register">
+              <>
+                <div>
+                  <>
+                    <p class="eyebrow">{t('FROM OUTPUTS TO INSIGHTS', '从输出到洞察')}</p>
+                    <h2 class="section-title tight">
+                      {t('One local dashboard, one evidence trail.', '一个本地 Dashboard，一条证据链。')}
+                    </h2>
+                  </>
+                </div>
+                <p>{t('Same reports · better stays with you', '同一报告 · 数据留在本地')}</p>
+              </>
+            </div>
+            <div class="step-timeline">
+              <>
+                <div>
+                  <>
+                    <b>1</b>
+                    <h3>{t('Outputs directory', '输出目录')}</h3>
+                    <p>outputs/</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>2</b>
+                    <h3>{t('Scan runs', '扫描运行')}</h3>
+                    <p>{t('Discover evaluations.', '发现评测。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>3</b>
+                    <h3>{t('Compare', '对比')}</h3>
+                    <p>{t('Contrast results.', '对比结果。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>4</b>
+                    <h3>{t('Inspect samples', '审查样本')}</h3>
+                    <p>{t('Open reviews.', '打开 review。')}</p>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <b>5</b>
+                    <h3>{t('Share report', '分享报告')}</h3>
+                    <p>HTML / JSON</p>
+                  </>
+                </div>
+              </>
+            </div>
+            <p class="eyebrow" style="margin-top:56px">
+              {t('FOUR EVIDENCE VIEWS', '四种证据视图')}
+            </p>
+            <div class="card-grid four-view-grid">
               <>
                 <article class="card">
                   <>
@@ -721,6 +1341,39 @@ const evidence = [
                     <p>{t('Load curves, latency, TTFT and throughput charts.', '负载曲线、延迟、TTFT 与吞吐图表。')}</p>
                   </>
                 </article>
+                <article class="card">
+                  <>
+                    <Icon name="tabler:folder-code" size="30" />
+                    <h3>{t('Run artifacts', '运行产物')}</h3>
+                    <p>
+                      {t(
+                        'Configuration, raw outputs and shareable HTML reports.',
+                        '配置、原始输出与可分享的 HTML 报告。'
+                      )}
+                    </p>
+                  </>
+                </article>
+              </>
+            </div>
+          </>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
+          <>
+            <div class="section-register">
+              <>
+                <div>
+                  <h2 class="section-title tight">{t('Four views, one evidence trail.', '四个视图，一条证据链。')}</h2>
+                </div>
+                <p>{t('Real Dashboard screenshots', '真实 Dashboard 截图')}</p>
+              </>
+            </div>
+            <div class="evidence-screens">
+              <>
+                <ScreenshotFrame src={evalShot} alt="Evaluation overview screenshot" />
+                <ScreenshotFrame src={agentShot} alt="Agent details screenshot" />
+                <ScreenshotFrame src={perfCharts} alt="Performance charts screenshot" />
               </>
             </div>
           </>
@@ -748,7 +1401,7 @@ const evidence = [
                 </div>
               </>
             </div>
-            <pre class="terminal">evalscope service --outputs ./outputs</pre>
+            <CodeSnippet code={serviceCommand} label="open-local-dashboard.sh" />
           </>
         </div>
       </section>
@@ -777,6 +1430,12 @@ const evidence = [
           <>
             <div>
               <>
+                <p class="registration">
+                  <>
+                    <span>{t('Research', '研究')}</span>
+                    <span class="index">06</span>
+                  </>
+                </p>
                 <ClaimBadge status="exploring" locale={locale} />
                 <h1 class="display">
                   {t(
@@ -866,64 +1525,174 @@ const evidence = [
                 </p>
               </>
             </div>
-            <div class="evidence-path">
+            <div class="workflow-cards">
               <>
-                <div class="evidence-step">
+                <article class="panel">
                   <>
-                    <strong>Freeze</strong>
-                    <span>{t('Artifacts', '产物')}</span>
+                    <div class="index">01</div>
+                    <h3>Freeze</h3>
+                    <p>{t('Tasks, environments, artifacts.', '任务、环境、产物。')}</p>
                   </>
-                </div>
-                <div class="evidence-step">
+                </article>
+                <article class="panel">
                   <>
-                    <strong>Generate</strong>
-                    <span>{t('Variants', '变体')}</span>
+                    <div class="index">02</div>
+                    <h3>Generate</h3>
+                    <p>{t('Controlled variants.', '受控变体。')}</p>
                   </>
-                </div>
-                <div class="evidence-step">
+                </article>
+                <article class="panel">
                   <>
-                    <strong>Audit</strong>
-                    <span>{t('Independent checks', '独立检查')}</span>
+                    <div class="index">03</div>
+                    <h3>Evaluate</h3>
+                    <p>{t('Held-out metric runs.', '保留集指标运行。')}</p>
                   </>
-                </div>
-                <div class="evidence-step">
+                </article>
+                <article class="panel">
                   <>
-                    <strong>Select</strong>
-                    <span>{t('Recorded choice', '记录选择')}</span>
+                    <div class="index">04</div>
+                    <h3>Audit</h3>
+                    <p>{t('Independent review.', '独立审计。')}</p>
                   </>
-                </div>
+                </article>
+                <article class="panel">
+                  <>
+                    <div class="index">05</div>
+                    <h3>Select</h3>
+                    <p>{t('Record the evidence.', '记录选择证据。')}</p>
+                  </>
+                </article>
               </>
             </div>
           </>
         </div>
       </section>
       <section class="section">
-        <div class="container two-col">
+        <div class="container">
+          <div class="section-register">
+            <>
+              <div>
+                <h2 class="section-title tight">
+                  {t('What EvalScope already provides today.', 'EvalScope 今天已提供的能力。')}
+                </h2>
+              </div>
+              <p>{t('Shipped primitives for research', '研究可复用的已交付能力')}</p>
+            </>
+          </div>
+          <div class="workflow-cards">
+            <>
+              <article class="panel">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Available Today', '当前可用')}</h3>
+                  <p>
+                    {t(
+                      'Versioned benchmark metadata, structured judge contracts, output artifacts, local reports and API-first evaluation workflows.',
+                      '版本化 benchmark metadata、结构化 Judge 契约、输出产物、本地报告与 API-first 评测工作流。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <ClaimBadge status="exploring" locale={locale} />
+                  <h3>{t('Exploring', '探索中')}</h3>
+                  <p>
+                    {t(
+                      'Self-evolving harness evaluation, evaluator drift guardrails and selection-regret protocols. These are research directions, not product claims.',
+                      '自我演进 Harness 的评测、Evaluator 漂移护栏与选择遗憾协议。这些是研究方向，不是产品承诺。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('AgentTrace evidence', 'AgentTrace 证据')}</h3>
+                  <p>
+                    {t(
+                      'Preserve requests, tool calls and outcomes alongside the task result.',
+                      '将请求、工具调用和结果与任务结果一同保留。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Benchmark matrix', 'Benchmark 矩阵')}</h3>
+                  <p>
+                    {t(
+                      'Browse benchmark metadata and evaluation versions across modalities.',
+                      '跨模态浏览 benchmark metadata 与评测版本。'
+                    )}
+                  </p>
+                </>
+              </article>
+              <article class="panel">
+                <>
+                  <ClaimBadge status="today" locale={locale} />
+                  <h3>{t('Reproducible outputs', '可复现输出')}</h3>
+                  <p>
+                    {t(
+                      'Reports, predictions, reviews and configs remain linked.',
+                      '报告、预测、review 与配置保持关联。'
+                    )}
+                  </p>
+                </>
+              </article>
+            </>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container">
           <>
-            <article class="panel">
+            <div class="section-register">
               <>
-                <ClaimBadge status="today" locale={locale} />
-                <h3>{t('Available Today', '当前可用')}</h3>
-                <p>
-                  {t(
-                    'Versioned benchmark metadata, structured judge contracts, output artifacts, local reports and API-first evaluation workflows.',
-                    '版本化 benchmark metadata、结构化 Judge 契约、输出产物、本地报告与 API-first 评测工作流。'
-                  )}
-                </p>
+                <div>
+                  <h2 class="section-title tight">{t('A claim ladder.', 'Claim 阶梯。')}</h2>
+                </div>
+                <p>{t('Clear labels build trust', '清晰标签建立信任')}</p>
               </>
-            </article>
-            <article class="panel">
+            </div>
+            <div class="instrument-strip">
               <>
-                <ClaimBadge status="exploring" locale={locale} />
-                <h3>{t('Exploring', '探索中')}</h3>
-                <p>
-                  {t(
-                    'Self-evolving harness evaluation, evaluator drift guardrails and selection-regret protocols. These are research directions, not product claims.',
-                    '自我演进 Harness 的评测、Evaluator 漂移护栏与选择遗憾协议。这些是研究方向，不是产品承诺。'
-                  )}
-                </p>
+                <div>
+                  <>
+                    <strong>01</strong>
+                    <span>
+                      <ClaimBadge status="today" locale={locale} />{' '}
+                      {t('Implemented, tested and available.', '已实现、测试并可用。')}
+                    </span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>02</strong>
+                    <span>
+                      <ClaimBadge status="external" locale={locale} />{' '}
+                      {t('Demonstrated external research.', '已展示的外部研究。')}
+                    </span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>03</strong>
+                    <span>
+                      <ClaimBadge status="exploring" locale={locale} />{' '}
+                      {t('Research hypothesis, not shipped.', '研究假设，尚未交付。')}
+                    </span>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <strong>Audit</strong>
+                    <span>{t('Never blur the boundary.', '不模糊能力边界。')}</span>
+                  </>
+                </div>
               </>
-            </article>
+            </div>
           </>
         </div>
       </section>
@@ -958,6 +1727,12 @@ const evidence = [
       <section class="hero">
         <div class="container">
           <>
+            <p class="registration">
+              <>
+                <span>{t('Get started', '开始使用')}</span>
+                <span class="index">07</span>
+              </>
+            </p>
             <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
             <h1 class="display">
               {t('Two safe ways to begin: manual or AI-assisted.', '两种安全的开始方式：手动或 AI 辅助。')}
@@ -977,11 +1752,39 @@ const evidence = [
             <article class="panel">
               <>
                 <p class="eyebrow">{t('MANUAL / API', '手动 / API')}</p>
-                <h3>{t('Run five samples', '运行五个样本')}</h3>
-                <pre class="terminal">
-                  pip install evalscope · export DASHSCOPE_API_KEY='…' · evalscope eval --model qwen-plus --datasets
-                  gsm8k --limit 5
-                </pre>
+                <h3>{t('Manual route — four steps.', '手动路径——四步。')}</h3>
+                <div class="step-timeline">
+                  <>
+                    <div>
+                      <>
+                        <b>1</b>
+                        <h3>{t('Install', '安装')}</h3>
+                        <p>pip install evalscope</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>2</b>
+                        <h3>{t('Set key', '设置 key')}</h3>
+                        <p>export API_KEY=…</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>3</b>
+                        <h3>{t('Run 5 samples', '运行 5 样本')}</h3>
+                        <p>--limit 5</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>4</b>
+                        <h3>{t('Open report', '打开报告')}</h3>
+                        <p>outputs/&lt;run&gt;/</p>
+                      </>
+                    </div>
+                  </>
+                </div>
                 <p>
                   {t(
                     'The key stays in your shell environment; never paste it into a config committed to git.',
@@ -990,27 +1793,167 @@ const evidence = [
                 </p>
               </>
             </article>
-            <PromptCard title={t('AI-assisted route', 'AI 辅助路径')} prompt={prompt} />
+            <article class="panel">
+              <>
+                <p class="eyebrow">{t('AI AGENT ROUTE', 'AI AGENT 路径')}</p>
+                <h3>{t('One prompt, four accountable steps.', '一个 Prompt，四个可审计步骤。')}</h3>
+                <div class="step-timeline">
+                  <>
+                    <div>
+                      <>
+                        <b>1</b>
+                        <h3>{t('Copy prompt', '复制 Prompt')}</h3>
+                        <p>{t('Fixed and safe.', '固定且安全。')}</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>2</b>
+                        <h3>{t('Read skill', '读取 Skill')}</h3>
+                        <p>skills/evalscope</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>3</b>
+                        <h3>{t('Check & run', '检查并运行')}</h3>
+                        <p>API-first</p>
+                      </>
+                    </div>
+                    <div>
+                      <>
+                        <b>4</b>
+                        <h3>{t('Review', '审查')}</h3>
+                        <p>{t('Score and artifacts.', '分数与产物。')}</p>
+                      </>
+                    </div>
+                  </>
+                </div>
+                <PromptCard title={t('Copy the complete prompt', '复制完整 Prompt')} prompt={prompt} />
+              </>
+            </article>
+          </>
+        </div>
+      </section>
+      <section class="section">
+        <div class="container two-col">
+          <>
+            <div>
+              <>
+                <div class="section-register">
+                  <>
+                    <div>
+                      <h2 class="section-title tight">{t('Manual quick start.', '手动快速开始。')}</h2>
+                    </div>
+                    <p>{t('Copy · paste · run', '复制 · 粘贴 · 运行')}</p>
+                  </>
+                </div>
+                <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
+              </>
+            </div>
+            <article class="panel">
+              <>
+                <h3>{t('API-first, no local GPU required.', 'API-first，无需本地 GPU。')}</h3>
+                <p>
+                  {t(
+                    'Your key stays in the environment. The first evaluation is deliberately limited to five samples, then artifacts show exactly what ran.',
+                    'key 保持在环境变量中。首次评测有意限制为五个样本，之后产物完整展示实际运行内容。'
+                  )}
+                </p>
+                <div class="tags">
+                  <>
+                    <span class="pill">API endpoint</span>
+                    <span class="pill">5-sample smoke</span>
+                    <span class="pill">No model download</span>
+                  </>
+                </div>
+              </>
+            </article>
           </>
         </div>
       </section>
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('FOUR FIXED PROMPTS', '四个固定 PROMPT')}</p>
-            <h2 class="section-title">
-              {t('Give your coding agent a bounded job.', '给编码 Agent 一个边界清晰的任务。')}
-            </h2>
-            <div class="two-col">
+            <div class="section-register">
               <>
-                <PromptCard title={t('Evaluate an API', '评测 API')} prompt={prompt} />
-                <PromptCard
-                  title={t('Load test an API', '压测 API')}
-                  prompt={t(
-                    'Use the EvalScope project skill to run a small API-first performance test against my OpenAI-compatible endpoint. Do not download a model or use a GPU. Use 24 requests with parallel 1, 2, and 4; report RPS, latency, TTFT, throughput, success rate and artifact path.',
-                    '使用 EvalScope 项目 Skill，对我的 OpenAI-compatible endpoint 做小规模 API-first 性能测试。不要下载模型或使用 GPU。使用 24 个请求，并发 1、2、4；报告 RPS、延迟、TTFT、吞吐、成功率与产物路径。'
-                  )}
-                />
+                <div>
+                  <>
+                    <p class="eyebrow">{t('CHOOSE YOUR TASK', '选择你的任务')}</p>
+                    <h2 class="section-title tight">
+                      {t('Give your coding agent a bounded job.', '给编码 Agent 一个边界清晰的任务。')}
+                    </h2>
+                  </>
+                </div>
+                <p>{t('Same principle · more possibilities', '同一原则 · 更多可能')}</p>
+              </>
+            </div>
+            <div class="action-grid">
+              <>
+                <article class="card">
+                  <>
+                    <Icon name="tabler:chart-bar" size="28" />
+                    <h3>{t('Evaluate model quality', '评测模型能力')}</h3>
+                    <p>
+                      {t(
+                        'Run a bounded benchmark on an API model and report the evidence.',
+                        '在 API 模型上运行有界 benchmark 并报告证据。'
+                      )}
+                    </p>
+                    <PromptCard title={t('Copy', '复制')} prompt={prompt} />
+                  </>
+                </article>
+                <article class="card">
+                  <>
+                    <Icon name="tabler:bolt" size="28" />
+                    <h3>{t('Stress-test an API', '压测 API')}</h3>
+                    <p>
+                      {t('Measure throughput, latency and stability under load.', '测量负载下的吞吐、延迟与稳定性。')}
+                    </p>
+                    <PromptCard
+                      title={t('Copy', '复制')}
+                      prompt={t(
+                        'Use the EvalScope project skill to run a small API-first performance test against my OpenAI-compatible endpoint. Do not download a model or use a GPU. Use 24 requests with parallel 1, 2, and 4; report RPS, latency, TTFT, throughput, success rate and artifact path.',
+                        '使用 EvalScope 项目 Skill，对我的 OpenAI-compatible endpoint 做小规模 API-first 性能测试。不要下载模型或使用 GPU。使用 24 个请求，并发 1、2、4；报告 RPS、延迟、TTFT、吞吐、成功率与产物路径。'
+                      )}
+                    />
+                  </>
+                </article>
+                <article class="card">
+                  <>
+                    <Icon name="tabler:database-search" size="28" />
+                    <h3>{t('Find a benchmark', '查找 benchmark')}</h3>
+                    <p>
+                      {t('Search available tasks before deciding what to evaluate.', '在决定评测内容前搜索可用任务。')}
+                    </p>
+                    <PromptCard
+                      title={t('Copy', '复制')}
+                      prompt={t(
+                        'Use the EvalScope project skill to find benchmarks for reasoning, coding and multimodal evaluation. Do not download a model. Return benchmark names, metrics and the smallest runnable API-first command.',
+                        '使用 EvalScope 项目 Skill 查找用于推理、代码与多模态评测的 benchmark。不要下载模型。返回 benchmark 名称、指标和最小可运行的 API-first 命令。'
+                      )}
+                    />
+                  </>
+                </article>
+                <article class="card">
+                  <>
+                    <Icon name="tabler:folders" size="28" />
+                    <h3>{t('Open and compare results', '打开并对比结果')}</h3>
+                    <p>
+                      {t(
+                        'Inspect an existing output folder without re-running a model.',
+                        '无需重跑模型即可审查已有输出目录。'
+                      )}
+                    </p>
+                    <PromptCard
+                      title={t('Copy', '复制')}
+                      prompt={t(
+                        'Use the EvalScope project skill to inspect an existing output directory and explain how to open its local report. Do not call a model API, download a model, or use a GPU. Summarize the available reports, predictions, reviews and config artifacts.',
+                        '使用 EvalScope 项目 Skill 审查已有输出目录，并说明如何打开本地报告。不要调用模型 API、下载模型或使用 GPU。总结可用的报告、预测、review 和配置产物。'
+                      )}
+                    />
+                  </>
+                </article>
               </>
             </div>
           </>
