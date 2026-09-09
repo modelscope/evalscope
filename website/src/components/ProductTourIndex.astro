@@ -30,6 +30,10 @@ const items =
 
 <nav class="product-tour-index" aria-label={locale === 'zh' ? '首页章节目录' : 'Home sections'} data-product-tour-index>
   <span>{locale === 'zh' ? '章节' : 'Sections'}</span>
+  <div class="product-tour-index__progress" aria-hidden="true">
+    <b data-product-tour-position>01 / {String(items.length).padStart(2, '0')}</b>
+    <i><em></em></i>
+  </div>
   {
     items.map(([id, label]) => (
       <a href={`#${id}`} data-product-tour-link={id}>
@@ -46,7 +50,13 @@ const items =
       .map((link) => document.getElementById(link.dataset.productTourLink ?? ''))
       .filter((section): section is HTMLElement => Boolean(section));
     const setActive = (id: string) => {
+      const activeIndex = links.findIndex((link) => link.dataset.productTourLink === id);
       links.forEach((link) => link.toggleAttribute('aria-current', link.dataset.productTourLink === id));
+      if (activeIndex < 0) return;
+      index.style.setProperty('--tour-progress', `${activeIndex / Math.max(links.length - 1, 1)}`);
+      const position = index.querySelector<HTMLElement>('[data-product-tour-position]');
+      if (position)
+        position.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(links.length).padStart(2, '0')}`;
     };
     const observer = new IntersectionObserver(
       (entries) => {
@@ -68,6 +78,7 @@ const items =
 
 <style>
   .product-tour-index {
+    --tour-progress: 0;
     position: fixed;
     top: 112px;
     right: 18px;
@@ -98,7 +109,33 @@ const items =
     letter-spacing: 0.13em;
     text-transform: uppercase;
   }
+  .product-tour-index__progress {
+    display: grid;
+    gap: 5px;
+    margin: 0 5px 5px;
+  }
+  .product-tour-index__progress b {
+    color: var(--blue);
+    font: 9px/1 var(--mono);
+    letter-spacing: 0.1em;
+  }
+  .product-tour-index__progress i {
+    display: block;
+    height: 2px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--ink), transparent 85%);
+  }
+  .product-tour-index__progress em {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--blue);
+    transform: scaleX(var(--tour-progress));
+    transform-origin: left center;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
   .product-tour-index a {
+    position: relative;
     padding: 4px 5px;
     color: var(--muted);
     font: 11px/1.2 var(--mono);
@@ -108,6 +145,17 @@ const items =
     background: color-mix(in srgb, var(--blue), transparent 90%);
     color: var(--ink);
     font-weight: 800;
+  }
+  .product-tour-index a[aria-current]::after {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--blue);
+    content: '';
+    transform: translateY(-50%);
   }
   @media (max-width: 1180px) {
     .product-tour-index {

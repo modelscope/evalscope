@@ -18,6 +18,7 @@ import ClaimBadge from './ClaimBadge.astro';
 import CodeSnippet from './CodeSnippet.astro';
 import PromptCard from './PromptCard.astro';
 import ProductTourIndex from './ProductTourIndex.astro';
+import QuickstartPanel from './QuickstartPanel.astro';
 import ScreenshotFrame from './ScreenshotFrame.astro';
 import TaskTabs from './TaskTabs.astro';
 
@@ -31,8 +32,8 @@ const count = getBenchmarkCatalog().length;
 const t = (en: string, cn: string) => (zh ? cn : en);
 const to = (path: '/' | `/${PageSlug}`) => localizePath(path, locale);
 const prompt = t(
-  'You are working in an EvalScope checkout. First read AGENTS.md; if an EvalScope project skill is available, read it too. Configure a bounded API-backed evaluation: use the endpoint configuration already supplied by this checkout and read DASHSCOPE_API_KEY from the environment. Run exactly five GSM8K samples, do not download a local model or use a GPU, and preserve the outputs. Return the exact command, score, output path and any limitation. Then explain how to open the local dashboard. If endpoint configuration or artifacts are missing, say so instead of inventing a result.',
-  '你正在一个 EvalScope 代码库中工作。先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。配置一次有边界的 API 评测：使用该代码库已提供的 endpoint 配置，并从环境变量读取 DASHSCOPE_API_KEY。恰好运行 GSM8K 的 5 条样本，不下载本地模型、不使用 GPU，并保留输出产物。返回精确命令、分数、产物路径和任何限制；再说明如何打开本地 Dashboard。如果 endpoint 配置或产物缺失，请明确说明，不要虚构结果。'
+  'Use EvalScope to run a small API-backed GSM8K evaluation. Follow the repository instructions, use the configured API endpoint and read DASHSCOPE_API_KEY from the environment. Run exactly five samples; do not download a model or use a GPU. Preserve the outputs, return the exact command, score and output path, then explain how to open the local dashboard. If a prerequisite is missing, state it clearly.',
+  '请使用 EvalScope 运行一次小型 API 驱动的 GSM8K 评测。遵循代码库中的说明，使用已配置的 API 端点，并从环境变量读取 DASHSCOPE_API_KEY。恰好运行五条样本；不要下载模型或使用 GPU。保留输出产物，返回精确命令、分数和产物路径，再说明如何打开本地 Dashboard。如果缺少前置条件，请明确说明。'
 );
 const evidence = [
   [
@@ -99,7 +100,9 @@ const perfCommand = `evalscope perf \\
             <div class="hero-copy">
               <>
                 <p class="eyebrow">{t('OPEN-SOURCE EVALUATION INFRASTRUCTURE', '开源 AI 评测基础设施')}</p>
-                <h1 class="display">{t('Evaluate every AI system with evidence.', '用证据评测每个 AI 系统。')}</h1>
+                <h1 class="display">
+                  {t('Evaluate every AI system — with evidence you can inspect.', '评测每个 AI 系统，证据全程可查。')}
+                </h1>
                 <div class="gold-line" />
                 <p class="lede">
                   {t(
@@ -136,8 +139,8 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <div class="hero-stack">
-              <CodeSnippet code={evalCommand} label="run-evaluation.sh" />
+            <div class="hero-stack stage-card" data-stage-card>
+              <CodeSnippet code={evalCommand} label="run-evaluation.sh" locale={locale} />
               <ScreenshotFrame src={evalShot} alt="Real EvalScope qwen-plus GSM8K results" />
             </div>
             <aside class="hero-side-reference" aria-hidden="true">
@@ -174,55 +177,25 @@ const perfCommand = `evalscope perf \\
         </div>
       </section>
       <div class="container">
-        <>
-          <div class="hero-measurement-band" aria-hidden="true">
-            <p>
-              A CLEARER PICTURE
-              <br />
-              FOR HIGHER CAPABILITY
-            </p>
-            <i />
-            <div class="hero-measurement-band__ruler">
-              <>
-                <span>0</span>
-                <span>50</span>
-                <span>100</span>
-                <span>200</span>
-                <span>300</span>
-                <span>400</span>
-              </>
-            </div>
-            <strong>EVALSCOPE</strong>
-          </div>
-          <div class="instrument-strip">
+        <div class="hero-measurement-band" aria-hidden="true">
+          <p>
+            A CLEARER PICTURE
+            <br />
+            FOR HIGHER CAPABILITY
+          </p>
+          <i />
+          <div class="hero-measurement-band__ruler">
             <>
-              <div>
-                <>
-                  <strong>{count}</strong>
-                  <span>{t('Benchmarks', '评测集')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>LLM · VLM · AIGC</strong>
-                  <span>{t('Evaluation layers', '评测层')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>JSON · HTML</strong>
-                  <span>{t('Portable evidence artifacts', '可携带证据产物')}</span>
-                </>
-              </div>
-              <div>
-                <>
-                  <strong>Apache-2.0</strong>
-                  <span>{t('Open source license', '开源许可')}</span>
-                </>
-              </div>
+              <span>0</span>
+              <span>50</span>
+              <span>100</span>
+              <span>200</span>
+              <span>300</span>
+              <span>400</span>
             </>
           </div>
-        </>
+          <strong>EVALSCOPE</strong>
+        </div>
       </div>
       <section class="section">
         <div class="container">
@@ -236,7 +209,9 @@ const perfCommand = `evalscope perf \\
                     <div class="surface-mark">
                       <>
                         <span>01</span>
-                        <Icon name="tabler:scale" size="30" />
+                        <span class="surface-mark__icon">
+                          <Icon name="tabler:scale" size="20" />
+                        </span>
                       </>
                     </div>
                     <h3>{t('Evaluation', '模型评测')}</h3>
@@ -253,7 +228,9 @@ const perfCommand = `evalscope perf \\
                     <div class="surface-mark">
                       <>
                         <span>02</span>
-                        <Icon name="tabler:route-2" size="30" />
+                        <span class="surface-mark__icon">
+                          <Icon name="tabler:route-2" size="20" />
+                        </span>
                       </>
                     </div>
                     <h3>{t('Agent & Harness', 'Agent 与 Harness')}</h3>
@@ -270,7 +247,9 @@ const perfCommand = `evalscope perf \\
                     <div class="surface-mark">
                       <>
                         <span>03</span>
-                        <Icon name="tabler:activity-heartbeat" size="30" />
+                        <span class="surface-mark__icon">
+                          <Icon name="tabler:activity-heartbeat" size="20" />
+                        </span>
                       </>
                     </div>
                     <h3>{t('Performance', '性能压测')}</h3>
@@ -304,7 +283,7 @@ const perfCommand = `evalscope perf \\
                 </p>
               </>
             </div>
-            <div class="evidence-stage evidence-stage--compact" data-evidence-board>
+            <div class="evidence-stage evidence-stage--compact stage-card" data-evidence-board data-stage-card>
               <div class="evidence-brief">
                 <span>{t('Select a record to inspect', '选择一条记录进行审查')}</span>
                 <strong>{t('Connected evidence', '相连的证据')}</strong>
@@ -360,7 +339,12 @@ const perfCommand = `evalscope perf \\
                 </a>
               </div>
             </div>
-            <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace with model requests and tool calls" />
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame
+                src={agentTraceExistingLight}
+                alt="Light Agent Trace with model requests and tool calls"
+              />
+            </div>
           </>
         </div>
       </section>
@@ -384,7 +368,9 @@ const perfCommand = `evalscope perf \\
                 </a>
               </div>
             </div>
-            <ScreenshotFrame src={performanceExistingLight} alt="Light performance charts and run comparison" />
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame src={performanceExistingLight} alt="Light performance charts and run comparison" />
+            </div>
           </>
         </div>
       </section>
@@ -408,7 +394,11 @@ const perfCommand = `evalscope perf \\
                 </a>
               </div>
             </div>
-            <div class="catalog-preview" aria-label={t('Benchmark catalog overview', '评测集目录概览')}>
+            <div
+              class="catalog-preview stage-card"
+              data-stage-card
+              aria-label={t('Benchmark catalog overview', '评测集目录概览')}
+            >
               <strong>250+</strong>
               <span>{t('benchmarks in the registry', '个评测集已收录')}</span>
               <div>
@@ -433,50 +423,58 @@ const perfCommand = `evalscope perf \\
             </a>
           </div>
           <div class="four-view-grid home-evidence-views">
-            <ScreenshotFrame src={dashboardExistingLight} alt="Light Dashboard overview" />
-            <ScreenshotFrame src={evaluationOverviewExistingLight} alt="Light evaluation overview" />
-            <ScreenshotFrame src={performanceExistingLight} alt="Light performance overview" />
-            <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace overview" />
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame src={dashboardExistingLight} alt="Light Dashboard overview" />
+            </div>
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame src={evaluationOverviewExistingLight} alt="Light evaluation overview" />
+            </div>
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame src={performanceExistingLight} alt="Light performance overview" />
+            </div>
+            <div class="stage-card" data-stage-card>
+              <ScreenshotFrame src={agentTraceExistingLight} alt="Light Agent Trace overview" />
+            </div>
           </div>
         </div>
       </section>
       <section id="get-started" class="section dark" data-product-section>
         <div class="container">
           <div class="home-get-started-intro">
-            <div>
+            <div data-stage-card>
               <p class="eyebrow">{t('GET STARTED', '开始使用')}</p>
               <h2 class="section-title">
                 {t('Start with an agent or one command.', '让 AI 帮你用，或一条命令开始。')}
               </h2>
-            </div>
-            <div>
               <p class="lede">
                 {t(
-                  'Choose a precise agent handoff or install, run and inspect a small API-backed evaluation from the command line.',
-                  '选择一份精确的 AI 交接说明，或者从命令行安装、运行并查看一次小型 API 评测。'
+                  'Start a small API-backed evaluation with a coding agent or from the terminal. Both paths keep the same evidence.',
+                  '通过 AI 编程助手或终端启动一次小型 API 评测；两条路径都会保留同一套证据。'
+                )}
+              </p>
+            </div>
+            <div data-stage-card>
+              <p class="get-started-guide-copy">
+                {t(
+                  'Need endpoint setup, task prompts or troubleshooting? Continue with the complete guide.',
+                  '需要 API 端点配置、任务提示词或排错说明？请继续阅读完整指南。'
                 )}
               </p>
               <div class="button-row">
                 <a class="button alt" href={to('/get-started')}>
-                  {t('Open full getting started guide', '查看完整开始指南')} <Icon name="tabler:arrow-right" />
+                  {t('Open getting started guide', '查看开始使用指南')} <Icon name="tabler:arrow-right" />
                 </a>
               </div>
             </div>
           </div>
           <div class="get-started-paths">
-            <div>
+            <div class="stage-card" data-stage-card>
               <p class="eyebrow">{t('USE WITH AI', '让 AI 帮你用')}</p>
-              <PromptCard title={t('AI evaluation handoff', '交给 AI 的评测说明')} prompt={prompt} />
+              <PromptCard title={t('AI evaluation handoff', '交给 AI 的评测说明')} prompt={prompt} locale={locale} />
             </div>
-            <div>
+            <div class="stage-card command-path" data-stage-card>
               <p class="eyebrow">{t('COMMAND LINE', '命令行')}</p>
-              <p class="quickstart-note">
-                {t(
-                  'Install, run five samples, then inspect the local dashboard.',
-                  '安装、运行五条样本，然后查看本地 Dashboard。'
-                )}
-              </p>
-              <CodeSnippet code={quickstartCommand} label="quickstart.sh" />
+              <QuickstartPanel code={quickstartCommand} locale={locale} />
             </div>
           </div>
         </div>
@@ -697,7 +695,7 @@ const perfCommand = `evalscope perf \\
                 <div>
                   <>
                     <b>1</b>
-                    <h3>Prompt</h3>
+                    <h3>{t('Prompt', '提示词')}</h3>
                     <p>{t('Task and context', '任务与上下文')}</p>
                   </>
                 </div>
@@ -1178,7 +1176,7 @@ const perfCommand = `evalscope perf \\
                 </a>
               </>
             </div>
-            <CodeSnippet code={perfCommand} label="run-performance.sh" />
+            <CodeSnippet code={perfCommand} label="run-performance.sh" locale={locale} />
           </>
         </div>
       </section>
@@ -1283,7 +1281,7 @@ const perfCommand = `evalscope perf \\
                 <p>
                   {t(
                     'Each catalog entry routes to generated documentation and carries task type, modality and metrics. Missing metadata causes the site check to fail.',
-                    '每条目录项链接到生成的文档，包含任务类型、模态和指标。缺少 metadata 文件会使网站检查失败。'
+                    '每条目录项链接到生成的文档，包含任务类型、模态和指标。缺少元数据文件会使网站检查失败。'
                   )}
                 </p>
               </>
@@ -1294,11 +1292,11 @@ const perfCommand = `evalscope perf \\
                 <p>
                   {t(
                     'Add an adapter, declare BenchmarkMeta, run its narrow smoke test, then generate docs. Ask an AI agent to follow the project skill for the surrounding workflow.',
-                    '新增 adapter，声明 BenchmarkMeta，运行小范围 smoke test，再生成文档。可让 AI Agent 按项目 Skill 执行周边流程。'
+                    '新增适配器，声明 BenchmarkMeta，运行小范围冒烟测试，再生成文档。也可以让 AI 编程助手按项目 Skill 完成周边流程。'
                   )}
                 </p>
                 <a class="button alt" href={to('/get-started')}>
-                  {t('Copy a prompt', '复制 Prompt')}
+                  {t('Open getting started guide', '查看开始使用指南')}
                   <Icon name="tabler:arrow-right" />
                 </a>
               </>
@@ -1548,7 +1546,7 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <CodeSnippet code={serviceCommand} label="open-local-dashboard.sh" />
+            <CodeSnippet code={serviceCommand} label="open-local-dashboard.sh" locale={locale} />
           </>
         </div>
       </section>
@@ -1962,6 +1960,21 @@ const perfCommand = `evalscope perf \\
           </>
         </div>
       </section>
+      <section class="section dark">
+        <div class="container split">
+          <div>
+            <p class="eyebrow">{t('COMMAND LINE', '命令行')}</p>
+            <h2 class="section-title">{t('Run a small evaluation from the terminal.', '从终端运行一次小型评测。')}</h2>
+            <p class="lede">
+              {t(
+                'Install the service tools, run five API-backed samples, then open the saved outputs locally.',
+                '安装服务工具，运行五条 API 样本，然后在本地打开已保存的产物。'
+              )}
+            </p>
+          </div>
+          <QuickstartPanel code={quickstartCommand} locale={locale} />
+        </div>
+      </section>
       <section class="section">
         <div class="container">
           <>
@@ -1973,13 +1986,13 @@ const perfCommand = `evalscope perf \\
                     <summary>
                       {t(
                         'My API endpoint is OpenAI-compatible but not DashScope.',
-                        '我的 API endpoint 兼容 OpenAI，但不是 DashScope。'
+                        '我的 API 端点兼容 OpenAI，但不是 DashScope。'
                       )}
                     </summary>
                     <p>
                       {t(
                         'Keep the API-first route; replace the URL, model name and environment variable with the values provided by your service.',
-                        '保留 API-first 路径；把 URL、模型名和环境变量替换为服务商提供的值。'
+                        '继续使用 API 路径；把 URL、模型名和环境变量替换为服务商提供的值。'
                       )}
                     </p>
                   </>

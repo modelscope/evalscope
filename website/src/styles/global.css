@@ -506,6 +506,13 @@ input {
 .product-chapter .visual-frame {
   align-self: center;
 }
+.stage-card {
+  position: relative;
+  isolation: isolate;
+}
+.home-evidence-views .stage-card {
+  min-width: 0;
+}
 .catalog-preview {
   display: grid;
   place-items: center;
@@ -564,19 +571,23 @@ input {
 }
 .home-get-started-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.76fr);
-  gap: 64px;
-  align-items: end;
-  margin-bottom: 34px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 42px;
+  align-items: start;
+  margin-bottom: 30px;
 }
 .home-get-started-intro .section-title {
   margin: 10px 0 0;
 }
 .home-get-started-intro .lede {
-  margin: 0 0 22px;
+  margin: 18px 0 0;
 }
-.home-get-started-intro .button-row {
-  margin: 0;
+.get-started-guide-copy {
+  max-width: 34ch;
+  margin: 12px 0 22px;
+  color: #b9c1c8;
+  font-size: 18px;
+  line-height: 1.45;
 }
 .get-started-paths {
   display: grid;
@@ -593,15 +604,6 @@ input {
 .get-started-paths .prompt-card {
   margin: 0;
 }
-.get-started-paths .code-snippet {
-  height: 100%;
-}
-.quickstart-note {
-  margin: 0;
-  color: #b9c1c8;
-  font-size: 14px;
-  line-height: 1.45;
-}
 .action-grid {
   display: grid;
   border: 1px solid var(--ink);
@@ -614,20 +616,23 @@ input {
   background: #fff;
 }
 .surface-mark {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  color: var(--ink);
-}
-.surface-mark::before {
-  width: 18px;
-  height: 1px;
-  content: '';
-  background: var(--gold);
+  display: inline-grid;
+  grid-template-columns: 32px 40px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
 }
 .surface-mark span {
-  color: var(--blue);
-  font: 9px/1 var(--mono);
+  display: grid;
+  place-items: center;
+  background: var(--blue);
+  color: #fff;
+  font: 10px/1 var(--mono);
+}
+.surface-mark .surface-mark__icon {
+  border-left: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
 }
 .card:last-child {
   border-right: 0;
@@ -1473,6 +1478,31 @@ input {
   }
   .section[data-product-section] > .container.reveal-ready.is-revealed {
     animation: reveal-up 0.62s ease-out both;
+  }
+  body[data-page='home'] [data-stage-card] {
+    --stage-tilt-x: 0deg;
+    --stage-tilt-y: 0deg;
+    transform: perspective(1100px) translate3d(0, 0, 0) rotateX(var(--stage-tilt-x)) rotateY(var(--stage-tilt-y));
+    transform-style: preserve-3d;
+    transition:
+      transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.28s ease;
+    will-change: transform;
+  }
+  body[data-page='home'] [data-product-section][data-stage-active] [data-stage-card] {
+    transform: perspective(1100px) translate3d(0, -6px, 0) rotateX(var(--stage-tilt-x)) rotateY(var(--stage-tilt-y));
+  }
+  body[data-page='home'] [data-stage-card][data-card-pointer-active] {
+    filter: saturate(1.04) contrast(1.015);
+  }
+  body[data-page='home'] #visualization[data-stage-active] .stage-card:nth-of-type(2) {
+    transition-delay: 0.05s;
+  }
+  body[data-page='home'] #visualization[data-stage-active] .stage-card:nth-of-type(3) {
+    transition-delay: 0.1s;
+  }
+  body[data-page='home'] #visualization[data-stage-active] .stage-card:nth-of-type(4) {
+    transition-delay: 0.15s;
   }
 }
 .get-started-hero {

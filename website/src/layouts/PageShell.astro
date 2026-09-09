@@ -79,6 +79,44 @@ const { title, description, locale, path, page } = Astro.props;
           chapter.classList.add('reveal-ready');
           reveal.observe(chapter);
         });
+
+        const stages = [...document.querySelectorAll<HTMLElement>('[data-product-section]')];
+        const stageVisibility = new Map<HTMLElement, number>();
+        const setActiveStage = () => {
+          const active = [...stageVisibility.entries()]
+            .filter(([, ratio]) => ratio > 0)
+            .sort(([, first], [, second]) => second - first)[0]?.[0];
+          stages.forEach((stage) => stage.toggleAttribute('data-stage-active', stage === active));
+        };
+        const stageObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              const stage = entry.target as HTMLElement;
+              stageVisibility.set(stage, entry.isIntersecting ? entry.intersectionRatio : 0);
+            });
+            setActiveStage();
+          },
+          { rootMargin: '-20% 0px -44% 0px', threshold: [0.08, 0.3, 0.6] }
+        );
+        stages.forEach((stage) => stageObserver.observe(stage));
+
+        document.querySelectorAll<HTMLElement>('[data-stage-card]').forEach((card) => {
+          const resetCard = () => {
+            card.style.removeProperty('--stage-tilt-x');
+            card.style.removeProperty('--stage-tilt-y');
+            card.removeAttribute('data-card-pointer-active');
+          };
+          card.addEventListener('pointermove', (event) => {
+            if (!card.closest<HTMLElement>('[data-stage-active]')) return;
+            const bounds = card.getBoundingClientRect();
+            const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+            const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+            card.style.setProperty('--stage-tilt-x', `${y * -2.4}deg`);
+            card.style.setProperty('--stage-tilt-y', `${x * 2.4}deg`);
+            card.dataset.cardPointerActive = 'true';
+          });
+          card.addEventListener('pointerleave', resetCard);
+        });
       }
     </script></body
   >

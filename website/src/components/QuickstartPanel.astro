@@ -1,0 +1,85 @@
+---
+import CodeSnippet from './CodeSnippet.astro';
+import type { Locale } from '../types';
+
+interface Props {
+  code: string;
+  locale: Locale;
+}
+
+const { code, locale } = Astro.props;
+const zh = locale === 'zh';
+const steps = zh
+  ? [
+      ['01', '安装服务工具', '提供 CLI 与本地 Dashboard。'],
+      ['02', '运行五条样本', '通过环境变量中的 API key 调用远端模型。'],
+      ['03', '检查产物', '从 ./outputs 打开报告、预测与配置。'],
+    ]
+  : [
+      ['01', 'Install service tools', 'Adds the CLI and local dashboard.'],
+      ['02', 'Run five samples', 'Uses the API key from your environment.'],
+      ['03', 'Inspect artifacts', 'Opens reports, predictions and configs from ./outputs.'],
+    ];
+---
+
+<div class="quickstart-panel">
+  <div class="quickstart-annotations" aria-label={zh ? '命令步骤说明' : 'Command steps'}>
+    {
+      steps.map(([index, title, detail]) => (
+        <div>
+          <span>{index}</span>
+          <p>
+            <>
+              <strong>{title}</strong>
+              <small>{detail}</small>
+            </>
+          </p>
+        </div>
+      ))
+    }
+  </div>
+  <CodeSnippet code={code} label="quickstart.sh" locale={locale} />
+</div>
+
+<style>
+  .quickstart-panel {
+    display: grid;
+    gap: 14px;
+  }
+  .quickstart-annotations {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .quickstart-annotations > div {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    padding-left: 9px;
+    border-left: 1px solid color-mix(in srgb, var(--gold), transparent 32%);
+  }
+  .quickstart-annotations span {
+    color: var(--gold);
+    font: 10px/1.4 var(--mono);
+  }
+  .quickstart-annotations p {
+    display: grid;
+    gap: 3px;
+    margin: 0;
+  }
+  .quickstart-annotations strong {
+    color: #edf3f6;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+  .quickstart-annotations small {
+    color: #b9c1c8;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  @media (max-width: 620px) {
+    .quickstart-annotations {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

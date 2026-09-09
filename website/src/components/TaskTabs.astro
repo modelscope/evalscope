@@ -15,8 +15,8 @@ const tasks = [
       '让 Agent 使用 API 模型，评测五条样本并返回证据路径。'
     ),
     prompt: t(
-      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Use the endpoint configuration already supplied here and DASHSCOPE_API_KEY from the environment to run exactly five GSM8K samples. Do not download a local model or use a GPU. Return the exact command, score, output path and any limitation; if configuration is missing, say so rather than inventing a result.',
-      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。使用代码库已提供的 endpoint 配置和环境变量中的 DASHSCOPE_API_KEY，恰好运行 GSM8K 的 5 条样本。不要下载本地模型或使用 GPU。返回精确命令、分数、产物路径和任何限制；如果配置缺失，请明确说明，不要虚构结果。'
+      'Use EvalScope to run exactly five GSM8K samples against the configured API endpoint. Read DASHSCOPE_API_KEY from the environment, do not download a model or use a GPU, and preserve the outputs. Return the exact command, score, output path and any limitation. If configuration is missing, say so clearly.',
+      '请使用 EvalScope 对已配置的 API 端点恰好运行五条 GSM8K 样本。从环境变量读取 DASHSCOPE_API_KEY，不下载模型、不使用 GPU，并保留输出。返回精确命令、分数、产物路径和任何限制；如配置缺失，请明确说明。'
     ),
   },
   {
@@ -28,8 +28,8 @@ const tasks = [
       '选择一个小范围并发扫描，要求返回延迟、TTFT、RPS 和吞吐证据。'
     ),
     prompt: t(
-      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Use the existing API endpoint configuration to run the smallest meaningful closed-loop performance sweep. Do not download a local model or use a GPU. State the model, concurrency, warmup and duration, then return RPS, latency, TTFT, throughput, artifact path and any limitation. Do not infer a result when the endpoint is unavailable.',
-      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。使用已有 API endpoint 配置运行最小但有意义的闭环性能扫描。不要下载本地模型或使用 GPU。说明模型、并发、预热和时长，然后返回 RPS、延迟、TTFT、吞吐、产物路径和任何限制。若 endpoint 不可用，不要推测结果。'
+      'Use EvalScope to run a small closed-loop performance sweep against the configured API endpoint. Do not download a model or use a GPU. State the model, concurrency, warmup and duration, then return RPS, latency, TTFT, throughput, artifact path and any limitation. If the endpoint is unavailable, say so instead of inferring a result.',
+      '请使用 EvalScope 对已配置的 API 端点运行一次小范围闭环性能扫描。不要下载模型或使用 GPU。说明模型、并发、预热和时长，然后返回 RPS、延迟、TTFT、吞吐、产物路径和任何限制。若端点不可用，请明确说明，不要推测结果。'
     ),
   },
   {
@@ -41,8 +41,8 @@ const tasks = [
       '先检索可用任务，再解释适配性、指标和可运行约束。'
     ),
     prompt: t(
-      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Inspect the benchmark catalog or generated documentation. For reasoning, coding and multimodal needs, return the strongest candidates with task type, metric, evaluation version, runnable constraints and why each fits. Do not download or run a model, and clearly mark any catalog detail you cannot verify locally.',
-      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。检查 benchmark 目录或自动生成的文档。针对推理、代码和多模态需求，返回最佳候选及其任务类型、指标、评测版本、可运行约束和适配原因。不要下载或运行模型；任何无法在本地验证的目录细节都要明确标注。'
+      'Inspect the local benchmark catalog and generated documentation. For reasoning, coding and multimodal needs, recommend candidates with task type, metric, evaluation version, runnable constraints and why each fits. Do not download or run a model. Mark any detail you cannot verify locally.',
+      '请检查本地 benchmark 目录和自动生成的文档。针对推理、代码和多模态需求，推荐候选评测集，并说明任务类型、指标、评测版本、可运行约束和适配原因。不要下载或运行模型；无法在本地验证的细节请明确标注。'
     ),
   },
   {
@@ -54,8 +54,8 @@ const tasks = [
       '无需重新运行模型，即可审查报告、预测、review 与配置。'
     ),
     prompt: t(
-      'In this EvalScope checkout, first read AGENTS.md; if an EvalScope project skill is available, read it too. Inspect only existing output directories. Do not call a model API, download a model, use a GPU or rerun evaluation. Identify available reports, predictions, reviews and configs; give the exact local command to open the dashboard or report; and state which expected artifacts are absent instead of treating them as present.',
-      '在这个 EvalScope 代码库中，先阅读 AGENTS.md；如果有可用的 EvalScope 项目 Skill，也要阅读。只检查已有输出目录。不要调用模型 API、下载模型、使用 GPU 或重新运行评测。识别可用的报告、预测、review 和配置；给出打开本地 Dashboard 或报告的精确命令；对于缺失的预期产物，请明确说明，不要当作已经存在。'
+      'Inspect existing output directories only. Do not call a model API, download a model, use a GPU or rerun evaluation. Identify available reports, predictions, reviews and configs; give the exact local command to open the dashboard or report; and name any expected artifact that is absent.',
+      '只检查已有输出目录。不要调用模型 API、下载模型、使用 GPU 或重新运行评测。识别可用的报告、预测、review 和配置；给出打开本地 Dashboard 或报告的精确命令，并列出缺失的预期产物。'
     ),
   },
 ];
@@ -96,8 +96,14 @@ const tasks = [
         </div>
         <div class="job-tab-prompt">
           <pre>{task.prompt}</pre>
-          <button class="button alt" type="button" data-copy-task={task.prompt}>
-            {t('Copy prompt', '复制 Prompt')}
+          <button
+            class="button alt"
+            type="button"
+            data-copy-task={task.prompt}
+            data-copy-label={t('Copy prompt', '复制提示词')}
+            data-copied-label={t('Copied', '已复制')}
+          >
+            {t('Copy prompt', '复制提示词')}
           </button>
         </div>
       </article>
@@ -129,7 +135,10 @@ const tasks = [
     tabs.querySelectorAll<HTMLButtonElement>('[data-copy-task]').forEach((button) => {
       button.addEventListener('click', async () => {
         await navigator.clipboard.writeText(button.dataset.copyTask ?? '');
-        button.textContent = 'Copied';
+        button.textContent = button.dataset.copiedLabel ?? 'Copied';
+        window.setTimeout(() => {
+          button.textContent = button.dataset.copyLabel ?? 'Copy prompt';
+        }, 1400);
       });
     });
   });

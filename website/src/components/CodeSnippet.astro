@@ -1,21 +1,32 @@
 ---
 import { Icon } from 'astro-icon/components';
+import type { Locale } from '../types';
 
 interface Props {
   code: string;
   label?: string;
+  locale?: Locale;
 }
 
-const { code, label = 'terminal' } = Astro.props;
+const { code, label = 'terminal', locale = 'en' } = Astro.props;
+const copyLabel = locale === 'zh' ? '复制' : 'Copy';
+const copiedLabel = locale === 'zh' ? '已复制' : 'Copied';
 ---
 
 <section class="code-snippet" aria-label={label}>
   <header class="code-toolbar">
     <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
     <span class="code-label">{label}</span>
-    <button class="code-copy" type="button" data-code-copy={code} aria-label={`Copy ${label}`}>
+    <button
+      class="code-copy"
+      type="button"
+      data-code-copy={code}
+      data-copy-label={copyLabel}
+      data-copied-label={copiedLabel}
+      aria-label={`${copyLabel} ${label}`}
+    >
       <Icon name="tabler:copy" size="15" />
-      <span>Copy</span>
+      <span>{copyLabel}</span>
     </button>
   </header>
   <pre><code>{code}</code></pre>
@@ -29,9 +40,9 @@ const { code, label = 'terminal' } = Astro.props;
       await navigator.clipboard.writeText(button.dataset.codeCopy ?? '');
       const label = button.querySelector('span');
       if (!label) return;
-      label.textContent = 'Copied';
+      label.textContent = button.dataset.copiedLabel ?? 'Copied';
       window.setTimeout(() => {
-        label.textContent = 'Copy';
+        label.textContent = button.dataset.copyLabel ?? 'Copy';
       }, 1400);
     });
   });

@@ -1,24 +1,34 @@
 ---
 import { Icon } from 'astro-icon/components';
+import type { Locale } from '../types';
 interface Props {
   title: string;
   prompt: string;
+  locale?: Locale;
 }
-const { title, prompt } = Astro.props;
+const { title, prompt, locale = 'en' } = Astro.props;
+const copyLabel = locale === 'zh' ? '复制提示词' : 'Copy prompt';
+const copiedLabel = locale === 'zh' ? '已复制' : 'Copied';
 ---
 
 <article class="panel prompt-card">
-  <h3>{title}</h3><pre>{prompt}</pre><button class="button alt" type="button" data-copy={prompt}
-    ><Icon name="tabler:copy" />Copy prompt</button
+  <h3>{title}</h3><pre>{prompt}</pre><button
+    class="button alt"
+    type="button"
+    data-copy={prompt}
+    data-copy-label={copyLabel}
+    data-copied-label={copiedLabel}><Icon name="tabler:copy" /><span>{copyLabel}</span></button
   >
 </article>
 <script>
   document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
     button.addEventListener('click', async () => {
       await navigator.clipboard.writeText(button.dataset.copy ?? '');
-      button.textContent = 'Copied';
+      const label = button.querySelector('span');
+      if (!label) return;
+      label.textContent = button.dataset.copiedLabel ?? 'Copied';
       window.setTimeout(() => {
-        button.textContent = 'Copy prompt';
+        label.textContent = button.dataset.copyLabel ?? 'Copy prompt';
       }, 1400);
     });
   });
