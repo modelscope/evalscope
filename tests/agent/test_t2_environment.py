@@ -525,6 +525,35 @@ class TestLocalEnvironmentExec:
         assert 'err' in result.stderr
         assert result.returncode != 0
 
+    def test_exec_does_not_inherit_the_evaluator_stdin(self):
+        """A sandboxed command must not be able to read the evaluator's stdin.
+
+        Without an explicit stdin the child inherits fd 0 from the evalscope
+        process. Attached to a terminal that means a model-generated command
+        which reads stdin blocks on the operator's keyboard until the tool
+        timeout, and can consume what they type; #1685 is that shape of
+        failure inside a sandbox.
+        """
+        read_fd, write_fd = os.pipe()
+        os.write(write_fd, b'EVALUATOR STDIN\n')
+        os.close(write_fd)
+        saved_stdin = os.dup(0)
+        try:
+            os.dup2(read_fd, 0)
+            result = self._run(self._env().exec(['bash', '-c', 'cat']))
+        finally:
+            os.dup2(saved_stdin, 0)
+            os.close(saved_stdin)
+            os.close(read_fd)
+
+        assert result.returncode == 0
+        assert result.stdout == '', f'the command read the evaluator stdin: {result.stdout!r}'
+
+    def test_exec_still_pipes_explicit_input(self):
+        env = self._env()
+        result = self._run(env.exec(['bash', '-c', 'cat'], input='piped payload'))
+        assert result.stdout == 'piped payload'
+
     def test_exec_timeout(self):
         env = self._env()
         result = self._run(env.exec(['sleep', '10'], timeout=0.3))
