@@ -3,7 +3,7 @@
 import glob
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from tabulate import tabulate
