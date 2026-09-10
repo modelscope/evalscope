@@ -531,8 +531,11 @@ export interface PredictionRow {
 export interface AgentTrace {
   environment?: string | null;
   events: AgentTraceEvent[];
+  framework?: string | null;
   max_steps: number;
   strategy?: string | null;
+  total_usage?: TraceUsage | null;
+  trial_id?: string | null;
 }
 export interface AgentTraceEvent {
   latency_ms?: number | null;
@@ -546,6 +549,17 @@ export interface AgentTraceEvent {
     [k: string]: number;
   } | null;
   type: EventType;
+}
+/**
+ * Mirrors `evalscope.api.model.model_output.ModelUsage`'s shape for the response contract.
+ */
+export interface TraceUsage {
+  input_tokens?: number;
+  input_tokens_cache_read?: number | null;
+  input_tokens_cache_write?: number | null;
+  output_tokens?: number;
+  reasoning_tokens?: number | null;
+  total_tokens?: number;
 }
 /**
  * Score fields rendered by the Web UI; metadata remains benchmark-defined.
