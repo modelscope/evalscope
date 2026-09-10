@@ -23,6 +23,17 @@ function fieldFromDescription(description: string, field: string): string {
   return match?.[1]?.trim() ?? '';
 }
 
+function overviewFromDescription(description: string): string {
+  const overview = description.match(/## Overview\s*\n+([\s\S]*?)(?=\n## |$)/i)?.[1] ?? '';
+  const plain = overview
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain.length <= 260) return plain;
+  return `${plain.slice(0, 257).trimEnd()}…`;
+}
+
 function metricNames(value: unknown): string[] {
   if (typeof value === 'string') return [value];
   if (Array.isArray(value)) return value.flatMap(metricNames);
@@ -99,6 +110,7 @@ export function getBenchmarkCatalog(): BenchmarkRecord[] {
       metricSummary: describeMetrics(metrics, allTags),
       taskType: text(meta.task_type) || fieldFromDescription(description, 'Task Type') || 'General evaluation',
       modalities: text(meta.modalities) || 'Text',
+      summary: overviewFromDescription(description),
       tags: allTags,
     };
   });

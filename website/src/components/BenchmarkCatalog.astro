@@ -8,12 +8,19 @@ const categories = ['All', 'LLM', 'VLM', 'Agent', 'AIGC'];
 const tags = ['Reasoning', 'Coding', 'Math', 'MultiModal', 'FunctionCalling', 'LongContext'];
 const labels =
   locale === 'zh'
-    ? { search: '搜索评测集、能力或指标', more: '显示更多', shown: '已显示', total: '个评测集' }
+    ? {
+        search: '搜索评测集、能力或指标',
+        more: '显示更多',
+        shown: '已显示',
+        total: '个评测集',
+        documentation: '查看文档',
+      }
     : {
         search: 'Search benchmarks, capabilities, or metrics',
         more: 'Show more',
         shown: 'Showing',
         total: 'benchmarks',
+        documentation: 'Open documentation',
       };
 ---
 
@@ -52,27 +59,34 @@ const labels =
   <div class="catalog-list">
     {
       catalog.map((item, index) => (
-        <a
+        <details
           class="catalog-item"
-          href={`https://evalscope.readthedocs.io/${locale === 'zh' ? 'zh-cn' : 'en'}/latest/benchmarks/${item.slug}.html`}
-          target="_blank"
-          rel="noreferrer"
           data-item
           data-index={index}
           data-category={item.category}
           data-tags={item.tags.join('|')}
-          data-search={`${item.name} ${item.slug} ${item.category} ${item.metrics.join(' ')} ${item.metricSummary} ${item.taskType} ${item.modalities} ${item.tags.join(' ')}`.toLowerCase()}
+          data-search={`${item.name} ${item.slug} ${item.category} ${item.metrics.join(' ')} ${item.metricSummary} ${item.taskType} ${item.modalities} ${item.summary} ${item.tags.join(' ')}`.toLowerCase()}
           hidden={index >= 24}
         >
-          <>
+          <summary>
             <strong>{item.name}</strong>
-            <span>
+            <span class="catalog-item__task">
               {item.category} · {item.taskType}
             </span>
-            <span>{item.metricSummary}</span>
-            <Icon name="tabler:arrow-up-right" />
-          </>
-        </a>
+            <span class="catalog-item__metric">{item.metricSummary}</span>
+            <Icon name="tabler:chevron-down" />
+          </summary>
+          <div class="catalog-item__detail">
+            <p>{item.summary || item.taskType}</p>
+            <a
+              href={`https://evalscope.readthedocs.io/${locale === 'zh' ? 'zh-cn' : 'en'}/latest/benchmarks/${item.slug}.html`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {labels.documentation} <Icon name="tabler:arrow-up-right" />
+            </a>
+          </div>
+        </details>
       ))
     }
   </div>

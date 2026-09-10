@@ -20,5 +20,6 @@ export interface BenchmarkRecord {
   metricSummary: string;
   taskType: string;
   modalities: string;
+  summary: string;
   tags: string[];
 }

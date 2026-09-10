@@ -14,11 +14,13 @@
 - The header Home menu opens the full product routes; Benchmarks, Research and Use with AI always use their standalone routes.
 - The Home hero pairs one runnable API-first evaluation command with a real GSM8K result frame. Its quiet measurement band is retained, while the redundant four-cell summary strip is removed.
 - The three product-surface cards use a single combined sequence-and-icon mark instead of separate number and icon ornaments.
-- Get Started offers two equivalent paths: a copyable AI handoff and an annotated command-line quickstart. The same quickstart panel is available on the standalone guide.
+- Get Started begins with a copyable, English Skill-installation prompt for an AI coding agent, then offers task-specific prompts and an annotated command-line quickstart. The same quickstart panel is available on the standalone guide.
+- Home Agent and Performance chapters reserve a wider evidence column on desktop so their report captures remain readable at a glance.
+- Benchmark rows use native disclosure: users can expand an official Overview in place and choose the documentation link only when they need the full record.
 
 ## Copy and localization
 
-- English and Chinese communicate the same bounded, API-first workflow: use existing endpoint configuration, run five GSM8K samples, preserve artifacts and report missing prerequisites plainly.
+- English and Chinese communicate the same bounded, API-first workflow: use existing endpoint configuration, run five GSM8K samples, preserve artifacts and report missing prerequisites plainly. Every prompt copied to an AI stays in English for reliable agent execution.
 - Chinese copy uses `API 端点`, `提示词`, `AI 编程助手` and `元数据` consistently; environment variable names, commands and product APIs remain unchanged.
 - Copy controls are localized and restore their original label after the success state in both locales.
 
@@ -27,6 +29,7 @@
 - The Home directory updates its active chapter while scrolling and retains anchor navigation.
 - Evidence stages remain focusable, expose their active state and update the live inspector.
 - Motion is low-amplitude: active evidence cards lift slightly and respond to pointer position. All reveal, stage and pointer effects are disabled under `prefers-reduced-motion`.
+- Every page hero restores the same low-contrast blue pointer glow. It follows the cursor beneath content and remains disabled under `prefers-reduced-motion`.
 - Shared `CodeSnippet`, `PromptCard` and `QuickstartPanel` components provide consistent copy controls and command treatment.
 
 ## Browser review

@@ -1,15 +1,17 @@
 ---
 import { Icon } from 'astro-icon/components';
-import agentShot from '../assets/demo/agent-qwen-plus-gsm8k.png';
 import agentTraceExistingLight from '../assets/demo/agent-trace-existing-light.png';
 import dashboardExistingLight from '../assets/demo/dashboard-existing-light.png';
 import evaluationOverviewExistingLight from '../assets/demo/evaluation-overview-existing-light.png';
-import evalOverview from '../assets/demo/evaluation-qwen-plus-overview.png';
 import evalShot from '../assets/demo/evaluation-qwen-plus-gsm8k.png';
 import performanceExistingLight from '../assets/demo/performance-existing-light.png';
 import perfCharts from '../assets/demo/performance-qwen-plus-charts.png';
 import perfShot from '../assets/demo/performance-qwen-plus-overview.png';
+import agentTraceHero from '../assets/illustrations/agent-trace-hero.png';
+import evaluationEvidenceHero from '../assets/illustrations/evaluation-evidence-hero.png';
+import performanceDecisionHero from '../assets/illustrations/performance-decision-hero.png';
 import researchSpiral from '../assets/illustrations/research-spiral.png';
+import visualizationEvidenceHero from '../assets/illustrations/visualization-evidence-hero.png';
 import { localizePath } from '../data/site';
 import { getBenchmarkCatalog } from '../lib/benchmarks';
 import type { Locale, PageSlug } from '../types';
@@ -31,10 +33,13 @@ const zh = locale === 'zh';
 const count = getBenchmarkCatalog().length;
 const t = (en: string, cn: string) => (zh ? cn : en);
 const to = (path: '/' | `/${PageSlug}`) => localizePath(path, locale);
-const prompt = t(
-  'Use EvalScope to run a small API-backed GSM8K evaluation. Follow the repository instructions, use the configured API endpoint and read DASHSCOPE_API_KEY from the environment. Run exactly five samples; do not download a model or use a GPU. Preserve the outputs, return the exact command, score and output path, then explain how to open the local dashboard. If a prerequisite is missing, state it clearly.',
-  '请使用 EvalScope 运行一次小型 API 驱动的 GSM8K 评测。遵循代码库中的说明，使用已配置的 API 端点，并从环境变量读取 DASHSCOPE_API_KEY。恰好运行五条样本；不要下载模型或使用 GPU。保留输出产物，返回精确命令、分数和产物路径，再说明如何打开本地 Dashboard。如果缺少前置条件，请明确说明。'
-);
+const skillUrl = 'https://github.com/modelscope/evalscope/tree/main/skills/evalscope';
+const docsFaqUrl = zh
+  ? 'https://evalscope.readthedocs.io/zh-cn/latest/get_started/faq.html'
+  : 'https://evalscope.readthedocs.io/en/latest/get_started/faq.html';
+const skillInstallPrompt = `Install the EvalScope project skill from ${skillUrl}. Read it after installation, then tell me what you need from me before using EvalScope.`;
+const prompt =
+  'Use the EvalScope project skill to evaluate qwen-plus on five GSM8K samples. Ask me for the model or endpoint configuration you need before running it, then report the results and where the outputs were saved.';
 const evidence = [
   [
     'Dataset',
@@ -462,7 +467,7 @@ const perfCommand = `evalscope perf \\
               </p>
               <div class="button-row">
                 <a class="button alt" href={to('/get-started')}>
-                  {t('Open getting started guide', '查看开始使用指南')} <Icon name="tabler:arrow-right" />
+                  {t('Open full setup guide', '打开完整使用指南')} <Icon name="tabler:arrow-right" />
                 </a>
               </div>
             </div>
@@ -513,7 +518,15 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <ScreenshotFrame src={evalOverview} alt="Real qwen-plus GSM8K evaluation overview" />
+            <figure class="visual-frame hero-illustration-frame">
+              <img
+                class="hero-illustration"
+                src={evaluationEvidenceHero.src}
+                width={evaluationEvidenceHero.width}
+                height={evaluationEvidenceHero.height}
+                alt={t('Abstract evaluation evidence path', '抽象的评测证据路径')}
+              />
+            </figure>
           </>
         </div>
       </section>
@@ -672,7 +685,15 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <ScreenshotFrame src={agentShot} alt="Real EvalScope Agent Details screenshot" />
+            <figure class="visual-frame hero-illustration-frame">
+              <img
+                class="hero-illustration"
+                src={agentTraceHero.src}
+                width={agentTraceHero.width}
+                height={agentTraceHero.height}
+                alt={t('Abstract agent trace loop', '抽象的 Agent 轨迹闭环')}
+              />
+            </figure>
           </>
         </div>
       </section>
@@ -981,7 +1002,15 @@ const perfCommand = `evalscope perf \\
                 </div>
               </>
             </div>
-            <ScreenshotFrame src={perfShot} alt="Real EvalScope qwen-plus performance overview" />
+            <figure class="visual-frame hero-illustration-frame">
+              <img
+                class="hero-illustration"
+                src={performanceDecisionHero.src}
+                width={performanceDecisionHero.width}
+                height={performanceDecisionHero.height}
+                alt={t('Abstract performance decision path', '抽象的性能决策路径')}
+              />
+            </figure>
           </>
         </div>
       </section>
@@ -1296,7 +1325,7 @@ const perfCommand = `evalscope perf \\
                   )}
                 </p>
                 <a class="button alt" href={to('/get-started')}>
-                  {t('Open getting started guide', '查看开始使用指南')}
+                  {t('Open full setup guide', '打开完整使用指南')}
                   <Icon name="tabler:arrow-right" />
                 </a>
               </>
@@ -1396,7 +1425,15 @@ const perfCommand = `evalscope perf \\
                 </p>
               </>
             </div>
-            <ScreenshotFrame src={evalShot} alt="Evaluation results dashboard" />
+            <figure class="visual-frame hero-illustration-frame">
+              <img
+                class="hero-illustration"
+                src={visualizationEvidenceHero.src}
+                width={visualizationEvidenceHero.width}
+                height={visualizationEvidenceHero.height}
+                alt={t('Abstract visualization evidence path', '抽象的可视化证据路径')}
+              />
+            </figure>
           </>
         </div>
       </section>
@@ -1912,29 +1949,41 @@ const perfCommand = `evalscope perf \\
               <h1 class="display">{t('Start with your coding agent, safely.', '让你的编码 Agent 安全地开始。')}</h1>
               <p class="lede">
                 {t(
-                  'Give the agent a bounded job, keep API keys in the environment, and ask it to return inspectable evidence instead of a vague summary.',
-                  '给 Agent 一个边界清晰的任务，将 API key 留在环境变量中，并要求它返回可审查的证据，而不是模糊总结。'
+                  'Install the EvalScope project skill, then describe the task you want to complete. Your agent will clarify the model, endpoint, and other context it needs before running it.',
+                  '安装 EvalScope 项目 Skill 后，直接描述你希望完成的任务。Agent 会在运行前确认所需的模型、端点和其他上下文。'
                 )}
               </p>
+              <PromptCard
+                title={t('Ask your agent to install the Skill', '让 Agent 安装 Skill')}
+                prompt={skillInstallPrompt}
+                locale={locale}
+              />
             </div>
             <aside class="start-route-card" aria-label={t('AI-assisted starting path', 'AI 辅助开始路径')}>
               <p class="eyebrow">{t('ONE ACCOUNTABLE PATH', '一条可审计路径')}</p>
               <div class="start-route">
                 <span>01</span>
                 <div>
-                  <strong>{t('Choose a bounded task', '选择一个有边界的任务')}</strong>
-                  <p>{t('Five samples or a small API sweep.', '五条样本或一个小范围 API 扫描。')}</p>
+                  <strong>{t('Install the EvalScope project skill', '安装 EvalScope 项目 Skill')}</strong>
+                  <p>{t('Copy the installation prompt to your agent.', '复制安装提示词，让 Agent 完成安装。')}</p>
                 </div>
               </div>
               <div class="start-route connector">
                 <span>02</span>
                 <div>
+                  <strong>{t('Choose a bounded task', '选择一个有边界的任务')}</strong>
+                  <p>{t('Start with a question your agent can clarify.', '从一个 Agent 可以澄清的任务开始。')}</p>
+                </div>
+              </div>
+              <div class="start-route connector">
+                <span>03</span>
+                <div>
                   <strong>{t('Agent reads the project skill', 'Agent 读取项目 Skill')}</strong>
-                  <p>{t('Use the existing conventions and safety limits.', '遵循已有约定与安全边界。')}</p>
+                  <p>{t('It follows the project conventions as it proceeds.', '它会在执行过程中遵循项目约定。')}</p>
                 </div>
               </div>
               <p class="start-route-note">
-                {t('API-first · evidence returned · no local model', 'API-first · 返回证据 · 不下载本地模型')}
+                {t('SKILL INSTALLED · TASK CHOSEN · RESULTS EXPLAINED', '安装 SKILL · 选择任务 · 解释结果')}
               </p>
             </aside>
           </>
@@ -2020,6 +2069,11 @@ const perfCommand = `evalscope perf \\
                   </>
                 </details>
               </>
+            </div>
+            <div class="button-row">
+              <a class="button alt" href={docsFaqUrl} target="_blank" rel="noreferrer">
+                {t('Open documentation FAQ', '打开文档 FAQ')} <Icon name="tabler:arrow-up-right" />
+              </a>
             </div>
           </>
         </div>

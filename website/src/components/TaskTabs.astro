@@ -11,13 +11,11 @@ const tasks = [
     label: t('Evaluate a model', '评测模型能力'),
     title: t('Run a bounded evaluation.', '运行有边界的评测。'),
     detail: t(
-      'Ask the agent to use an API model, score five samples and return the evidence path.',
-      '让 Agent 使用 API 模型，评测五条样本并返回证据路径。'
+      'Choose the model and evaluation context with the agent, then review the saved results.',
+      '与 Agent 确认模型和评测上下文，再查看已保存的结果。'
     ),
-    prompt: t(
-      'Use EvalScope to run exactly five GSM8K samples against the configured API endpoint. Read DASHSCOPE_API_KEY from the environment, do not download a model or use a GPU, and preserve the outputs. Return the exact command, score, output path and any limitation. If configuration is missing, say so clearly.',
-      '请使用 EvalScope 对已配置的 API 端点恰好运行五条 GSM8K 样本。从环境变量读取 DASHSCOPE_API_KEY，不下载模型、不使用 GPU，并保留输出。返回精确命令、分数、产物路径和任何限制；如配置缺失，请明确说明。'
-    ),
+    prompt:
+      'Use the EvalScope project skill to evaluate qwen-plus on five GSM8K samples. Ask me for the model or endpoint configuration you need before running it, then report the results and where the outputs were saved.',
   },
   {
     icon: 'tabler:bolt',
@@ -27,10 +25,8 @@ const tasks = [
       'Choose a small concurrency sweep and ask for latency, TTFT, RPS and throughput evidence.',
       '选择一个小范围并发扫描，要求返回延迟、TTFT、RPS 和吞吐证据。'
     ),
-    prompt: t(
-      'Use EvalScope to run a small closed-loop performance sweep against the configured API endpoint. Do not download a model or use a GPU. State the model, concurrency, warmup and duration, then return RPS, latency, TTFT, throughput, artifact path and any limitation. If the endpoint is unavailable, say so instead of inferring a result.',
-      '请使用 EvalScope 对已配置的 API 端点运行一次小范围闭环性能扫描。不要下载模型或使用 GPU。说明模型、并发、预热和时长，然后返回 RPS、延迟、TTFT、吞吐、产物路径和任何限制。若端点不可用，请明确说明，不要推测结果。'
-    ),
+    prompt:
+      'Use the EvalScope project skill to run a small performance test. Ask me for the endpoint, model, and traffic settings you need, then report the key performance results and where the outputs were saved.',
   },
   {
     icon: 'tabler:database-search',
@@ -40,10 +36,8 @@ const tasks = [
       'Search available tasks and explain fit, metrics and runnable constraints before evaluating.',
       '先检索可用任务，再解释适配性、指标和可运行约束。'
     ),
-    prompt: t(
-      'Inspect the local benchmark catalog and generated documentation. For reasoning, coding and multimodal needs, recommend candidates with task type, metric, evaluation version, runnable constraints and why each fits. Do not download or run a model. Mark any detail you cannot verify locally.',
-      '请检查本地 benchmark 目录和自动生成的文档。针对推理、代码和多模态需求，推荐候选评测集，并说明任务类型、指标、评测版本、可运行约束和适配原因。不要下载或运行模型；无法在本地验证的细节请明确标注。'
-    ),
+    prompt:
+      'Use the EvalScope project skill to help me choose benchmarks. Ask what capability, modality, and constraints I need to evaluate, then recommend suitable benchmarks and explain why.',
   },
   {
     icon: 'tabler:folders',
@@ -53,10 +47,8 @@ const tasks = [
       'Review reports, predictions, reviews and configs without rerunning the model.',
       '无需重新运行模型，即可审查报告、预测、review 与配置。'
     ),
-    prompt: t(
-      'Inspect existing output directories only. Do not call a model API, download a model, use a GPU or rerun evaluation. Identify available reports, predictions, reviews and configs; give the exact local command to open the dashboard or report; and name any expected artifact that is absent.',
-      '只检查已有输出目录。不要调用模型 API、下载模型、使用 GPU 或重新运行评测。识别可用的报告、预测、review 和配置；给出打开本地 Dashboard 或报告的精确命令，并列出缺失的预期产物。'
-    ),
+    prompt:
+      'Use the EvalScope project skill to inspect my existing evaluation outputs. Ask where the output directory is if needed, then summarize the available reports and explain how to open them.',
   },
 ];
 ---
