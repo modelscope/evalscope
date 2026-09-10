@@ -58,7 +58,7 @@ input {
   scroll-margin-top: 82px;
 }
 @media (min-width: 901px) {
-  .section[data-product-section] > .container {
+  body[data-page='home'] .section > .container {
     width: min(1060px, calc(100% - 180px));
     margin-left: max(20px, calc((100% - 1180px) / 2));
     margin-right: auto;
@@ -710,6 +710,9 @@ input {
 .evidence-heading .lede {
   max-width: 720px;
   margin-bottom: 0;
+}
+.evidence-section {
+  padding-bottom: 48px;
 }
 .evidence-title,
 .evidence-path-title {

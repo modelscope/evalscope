@@ -45,3 +45,46 @@
 - `git diff --check`
 
 Current result: reviewed and ready to commit after the final verification refresh.
+
+---
+
+## Architecture diagram native implementation QA
+
+**Comparison target**
+
+- Source visual truth: `website/src/assets/illustrations/architecture-paper-drafts/architecture-paper-draft-final-backends-bottom-right.png` (1672 × 941 px).
+- Implementation: `http://127.0.0.1:4321/evalscope/#evaluation`, rendered in the Codex in-app browser at a 1250 × 1050 px desktop capture. The component keeps a 970 px minimum board width and scrolls horizontally on narrower screens; no density normalization was required for this desktop review.
+- State: Home → Evaluate chapter, default light theme. The latest browser capture shows the complete three-column board, both lower workflows, their rightward output arrows, and the optional-backends note.
+- Evidence: source image was opened locally; the browser-rendered implementation was captured in the same review session. Focused comparison covered the board title, three primary columns, lower workflow rows, and lower-right annotation. A persistent Codex overlay obscures a small lower center area of the desktop capture, but does not cover the inspected labels or the diagram bounds.
+
+**Findings**
+
+- No actionable P0/P1/P2 differences remain. The implementation intentionally translates the selected raster design into semantic HTML cards and Tabler icons so its labels remain selectable, localizable, and accessible rather than trying to reproduce raster art pixel-for-pixel.
+- [P3] The native core-flow labels are necessarily more compact than the source illustration, but the post-fix desktop capture keeps every card inside the core panel and avoids clipped content or an unnecessary horizontal scrollbar.
+
+**Required fidelity surfaces**
+
+- Fonts and typography: the existing EvalScope display and mono treatments are retained; the board title, panel labels and small workflow copy remain legible without truncation in the inspected desktop state.
+- Spacing and layout rhythm: the paper frame, three primary columns, two lower workflow rows and right-aligned optional-backend note are preserved. The #3 artifacts panel spans all three diagram rows; this tightens the core region and gives both lower workflows a direct visual destination. The redundant board title is removed in favor of a compact lower-left caption.
+- Colors and visual tokens: paper, ink, blue, green and gold derive from the site tokens; blue marks native evaluation, green marks inputs, and the quiet neutral artifacts panel avoids over-emphasizing optional backends.
+- Image quality and asset fidelity: no raster UI or handmade SVG was substituted. The diagram uses the existing Tabler icon library for semantic symbols; the selected source illustration remains retained as visual provenance, not as the page UI.
+- Copy and content: the diagram uses `Model`, not “Lazy Model”; it includes the previously missing Agent & Harness and Serving Performance paths, and places OpenCompass, VLMEvalKit and RAG Eval only as a lower-right optional-backends annotation.
+
+**Implementation checklist**
+
+- [x] Replace the Home Evaluate inspector with a native semantic architecture diagram.
+- [x] Keep the full native evaluation path and inspectable artifact destinations visible.
+- [x] Add Agent & Harness and Serving Performance flows before their report destinations.
+- [x] Keep external backends visually secondary in the lower-right corner.
+- [x] Render and inspect the Home Evaluate state in a real browser.
+
+**Comparison history**
+
+- Initial native render: browser comments identified [P1] a compressed core flow with excess vertical whitespace, and [P1] Agent/Serving arrows that did not visibly terminate at the artifacts destination.
+- Fix: widened the central column while retaining a 970 px board floor, reduced the top-row panel height, made #3 span all diagram rows, and replaced diagonal endpoint marks with horizontal arrows that extend into the #3 boundary. Optional backends moved into the lower portion of #3.
+- Post-fix evidence: the latest Codex in-app-browser desktop capture shows the entire core flow within its panel and both lower-row arrows pointing directly into the spanning Inspectable Artifacts panel.
+- Follow-up fix: removed the repeated board heading after browser review and placed `Fig. 01 · EvalScope Architecture` as the lower-left caption. The final browser capture confirms the diagram now begins directly with the three-column architecture.
+- Layout refinement: browser review identified [P2] disproportionate lower whitespace in the native-evaluation panel, a mismatched left baseline between the overview and Evaluate headings, and excessive space before the Agent chapter. Removed the fixed panel height, centered the core flow inside its available grid track, compacted the input cards, aligned the Evaluate heading with the overview baseline on desktop, and reduced the Evaluate bottom padding from 92 px to 48 px. The browser review confirms the shorter board and tighter chapter transition without clipped flow content.
+- Content-rail correction: a full Home audit found two competing desktop container rules: generic sections used a 1180 px centered rail while product chapters used a 1060 px rail with independent exceptions. Home sections now share one 1060 px desktop content rail, left-aligned at `max(20px, (viewport - 1180px) / 2)` to reserve the right-side chapter directory. The local Evaluate heading offset was removed, so Overview, Evaluate, Agent, Performance, Benchmarks, Visualization and Get Started use the same title baseline.
+
+final result: passed

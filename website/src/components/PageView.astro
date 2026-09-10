@@ -15,6 +15,7 @@ import visualizationEvidenceHero from '../assets/illustrations/visualization-evi
 import { localizePath } from '../data/site';
 import { getBenchmarkCatalog } from '../lib/benchmarks';
 import type { Locale, PageSlug } from '../types';
+import ArchitectureDiagram from './ArchitectureDiagram.astro';
 import BenchmarkCatalog from './BenchmarkCatalog.astro';
 import ClaimBadge from './ClaimBadge.astro';
 import CodeSnippet from './CodeSnippet.astro';
@@ -288,33 +289,8 @@ const perfCommand = `evalscope perf \\
                 </p>
               </>
             </div>
-            <div class="evidence-stage evidence-stage--compact stage-card" data-evidence-board data-stage-card>
-              <div class="evidence-brief">
-                <span>{t('Select a record to inspect', '选择一条记录进行审查')}</span>
-                <strong>{t('Connected evidence', '相连的证据')}</strong>
-              </div>
-              <div class="evidence-path">
-                {evidence.map(([name, detail, context], index) => (
-                  <button
-                    class:list={['evidence-step', { active: index === 0 }]}
-                    type="button"
-                    aria-pressed={index === 0 ? 'true' : 'false'}
-                    data-evidence-step
-                    data-evidence-name={name}
-                    data-evidence-detail={detail}
-                    data-evidence-context={context}
-                    data-evidence-index={String(index + 1).padStart(2, '0')}
-                  >
-                    <strong>{name}</strong>
-                    <span>{detail}</span>
-                  </button>
-                ))}
-              </div>
-              <div class="evidence-inspector" aria-live="polite">
-                <span data-evidence-output-index>01</span>
-                <strong data-evidence-output-name>Dataset</strong>
-                <p data-evidence-output-context>{evidence[0][2]}</p>
-              </div>
+            <div class="stage-card architecture-stage" data-stage-card>
+              <ArchitectureDiagram locale={locale} />
             </div>
           </>
         </div>

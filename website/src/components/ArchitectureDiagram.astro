@@ -1,0 +1,494 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { Locale } from '../types';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const zh = locale === 'zh';
+const t = (en: string, cn: string) => (zh ? cn : en);
+
+const inputs = [
+  ['tabler:file-settings', t('TaskConfig', 'TaskConfig')],
+  ['tabler:api', t('Model APIs', 'API 模型')],
+  ['tabler:device-laptop', t('Local Models', '本地模型')],
+  ['tabler:database', t('Benchmarks', '评测集')],
+  ['tabler:file-plus', t('Custom Data', '自定义数据')],
+];
+
+const artifacts = [
+  ['tabler:file-text', t('Logs', '日志')],
+  ['tabler:settings', t('Configs', '配置')],
+  ['tabler:file-description', t('Predictions', '预测')],
+  ['tabler:message-circle', t('Reviews', '审查')],
+  ['tabler:chart-bar', t('Reports', '报告')],
+  ['tabler:device-desktop-analytics', t('Dashboard', '仪表盘')],
+];
+
+const agentFlow = [
+  ['tabler:route-2', t('Agent Loop', 'Agent 循环')],
+  ['tabler:tool', t('Tools & Environment', '工具与环境')],
+  ['tabler:timeline-event', t('Trace & Outcome', '轨迹与结果')],
+  ['tabler:scale', t('Review / Judge', '审查 / 裁判')],
+];
+
+const perfFlow = [
+  ['tabler:stack-2', t('Workload', '工作负载')],
+  ['tabler:plug-connected', t('Endpoint', '服务端点')],
+  ['tabler:player-play', t('Load Runner', '压测执行器')],
+  ['tabler:chart-line', t('TTFT · RPS · Throughput', 'TTFT · RPS · 吞吐')],
+];
+---
+
+<div
+  class="architecture-viewport"
+  tabindex="0"
+  aria-label={t('EvalScope system architecture diagram', 'EvalScope 系统架构图')}
+>
+  <figure class="architecture-board">
+    <figcaption class="sr-only">
+      {
+        t(
+          'EvalScope architecture from inputs through native evaluation, agent and serving workflows, to inspectable artifacts.',
+          'EvalScope 从输入到原生评测、Agent 和性能工作流，再到可审查产物的架构。'
+        )
+      }
+    </figcaption>
+
+    <div class="architecture-layout">
+      <section class="architecture-panel architecture-panel--inputs" aria-labelledby="architecture-inputs-title">
+        <div class="architecture-panel-heading">
+          <span>1</span>
+          <h4 id="architecture-inputs-title">{t('Inputs & Config', '输入与配置')}</h4>
+        </div>
+        <div class="architecture-input-list">
+          {
+            inputs.map(([icon, label]) => (
+              <div class="architecture-card architecture-card--input">
+                <Icon name={icon} size="20" aria-hidden="true" />
+                <span>{label}</span>
+              </div>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="architecture-panel architecture-panel--core" aria-labelledby="architecture-core-title">
+        <div class="architecture-panel-heading">
+          <span>2</span>
+          <h4 id="architecture-core-title">{t('Native Evaluation', '原生评测')}</h4>
+        </div>
+        <div class="architecture-core-flow">
+          <div class="architecture-card architecture-card--core">
+            <Icon name="tabler:database" size="22" aria-hidden="true" />
+            <span>{t('Registry', '注册表')}</span>
+          </div>
+          <Icon class="architecture-arrow" name="tabler:arrow-right" size="18" aria-hidden="true" />
+          <div class="architecture-branch">
+            <div class="architecture-card architecture-card--core">
+              <Icon name="tabler:file-settings" size="18" aria-hidden="true" />
+              <span>{t('Data Adapter', '数据适配器')}</span>
+            </div>
+            <div class="architecture-card architecture-card--core">
+              <Icon name="tabler:box" size="18" aria-hidden="true" />
+              <span>{t('Model', '模型')}</span>
+            </div>
+          </div>
+          <Icon class="architecture-arrow" name="tabler:arrow-right" size="18" aria-hidden="true" />
+          <div class="architecture-card architecture-card--evaluator">
+            <Icon name="tabler:chart-bar" size="22" aria-hidden="true" />
+            <span>{t('Evaluator', '评测器')}</span>
+          </div>
+          <Icon class="architecture-arrow" name="tabler:arrow-right" size="18" aria-hidden="true" />
+          <div class="architecture-card architecture-card--core">
+            <Icon name="tabler:file-description" size="19" aria-hidden="true" />
+            <span>{t('Prediction', '预测')}</span>
+          </div>
+          <Icon class="architecture-arrow" name="tabler:arrow-right" size="18" aria-hidden="true" />
+          <div class="architecture-card architecture-card--core">
+            <Icon name="tabler:scale" size="19" aria-hidden="true" />
+            <span>{t('Review / Judge', '审查 / 裁判')}</span>
+          </div>
+          <Icon class="architecture-arrow" name="tabler:arrow-right" size="18" aria-hidden="true" />
+          <div class="architecture-card architecture-card--core architecture-card--metric">
+            <Icon name="tabler:chart-histogram" size="19" aria-hidden="true" />
+            <span>{t('Metrics & Aggregation', '指标与聚合')}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="architecture-panel architecture-panel--artifacts" aria-labelledby="architecture-artifacts-title">
+        <div class="architecture-panel-heading">
+          <span>3</span>
+          <h4 id="architecture-artifacts-title">{t('Inspectable Artifacts', '可审查产物')}</h4>
+        </div>
+        <div class="architecture-artifact-list">
+          {
+            artifacts.map(([icon, label]) => (
+              <div class="architecture-card architecture-card--artifact">
+                <Icon name={icon} size="19" aria-hidden="true" />
+                <span>{label}</span>
+              </div>
+            ))
+          }
+        </div>
+        <aside class="architecture-optional" aria-label={t('Optional backends', '可选后端')}>
+          <Icon name="tabler:cloud" size="18" aria-hidden="true" />
+          <span
+            >{
+              t(
+                'Optional backends: OpenCompass · VLMEvalKit · RAG Eval',
+                '可选后端：OpenCompass · VLMEvalKit · RAG Eval'
+              )
+            }</span
+          >
+        </aside>
+      </section>
+
+      <section class="architecture-workflow architecture-workflow--agent" aria-labelledby="architecture-agent-title">
+        <div class="architecture-workflow-heading">
+          <Icon name="tabler:robot" size="24" aria-hidden="true" />
+          <h4 id="architecture-agent-title">{t('Agent & Harness', 'Agent 与 Harness')}</h4>
+        </div>
+        <div class="architecture-workflow-flow">
+          {
+            agentFlow.map(([icon, label], index) => (
+              <>
+                {index > 0 && (
+                  <Icon class="architecture-arrow" name="tabler:arrow-right" size="17" aria-hidden="true" />
+                )}
+                <div class="architecture-card architecture-card--workflow">
+                  <Icon name={icon} size="18" aria-hidden="true" />
+                  <span>{label}</span>
+                </div>
+              </>
+            ))
+          }
+        </div>
+        <Icon class="architecture-workflow-output" name="tabler:arrow-right" size="24" aria-hidden="true" />
+      </section>
+
+      <section
+        class="architecture-workflow architecture-workflow--performance"
+        aria-labelledby="architecture-performance-title"
+      >
+        <div class="architecture-workflow-heading">
+          <Icon name="tabler:gauge" size="24" aria-hidden="true" />
+          <h4 id="architecture-performance-title">{t('Serving Performance', '服务性能')}</h4>
+        </div>
+        <div class="architecture-workflow-flow">
+          {
+            perfFlow.map(([icon, label], index) => (
+              <>
+                {index > 0 && (
+                  <Icon class="architecture-arrow" name="tabler:arrow-right" size="17" aria-hidden="true" />
+                )}
+                <div class="architecture-card architecture-card--workflow">
+                  <Icon name={icon} size="18" aria-hidden="true" />
+                  <span>{label}</span>
+                </div>
+              </>
+            ))
+          }
+        </div>
+        <Icon class="architecture-workflow-output" name="tabler:arrow-right" size="24" aria-hidden="true" />
+      </section>
+    </div>
+
+    <p class="architecture-caption">
+      <span>{t('Fig. 01', '图 01')}</span>
+      <span>{t('EvalScope Architecture', 'EvalScope 架构')}</span>
+    </p>
+  </figure>
+</div>
+
+<style>
+  .architecture-viewport {
+    overflow-x: auto;
+    padding: 1px;
+    scrollbar-color: #a6adb3 transparent;
+  }
+
+  .architecture-board {
+    min-width: 970px;
+    margin: 0;
+    padding: 28px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .architecture-layout {
+    display: grid;
+    grid-template-columns: minmax(155px, 0.82fr) minmax(550px, 3.05fr) minmax(210px, 1.1fr);
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .architecture-panel,
+  .architecture-workflow {
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+
+  .architecture-panel {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .architecture-panel--inputs {
+    border-color: color-mix(in srgb, var(--green), transparent 25%);
+    background: color-mix(in srgb, var(--green), transparent 94%);
+  }
+
+  .architecture-panel--core {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-color: color-mix(in srgb, var(--blue), transparent 20%);
+    background: color-mix(in srgb, var(--blue), transparent 94%);
+  }
+
+  .architecture-panel--artifacts {
+    display: grid;
+    grid-column: 3;
+    grid-row: 1 / span 3;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    border-color: #aeb2b5;
+    background: color-mix(in srgb, var(--ink), transparent 97%);
+  }
+
+  .architecture-panel-heading,
+  .architecture-workflow-heading {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .architecture-panel-heading {
+    margin-bottom: 10px;
+  }
+
+  .architecture-panel-heading > span {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    font: 700 18px/1 var(--mono);
+  }
+
+  .architecture-panel--inputs .architecture-panel-heading > span {
+    background: var(--green);
+  }
+
+  .architecture-panel--core .architecture-panel-heading > span {
+    background: var(--blue);
+  }
+
+  .architecture-panel--artifacts .architecture-panel-heading > span {
+    background: #69717a;
+  }
+
+  .architecture-panel-heading h4,
+  .architecture-workflow-heading h4 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+  }
+
+  .architecture-input-list,
+  .architecture-artifact-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .architecture-card {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    border: 1px solid #aeb5bc;
+    border-radius: 8px;
+    background: #fffefb;
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .architecture-card span {
+    overflow-wrap: anywhere;
+    font-size: 11px;
+    font-weight: 760;
+    line-height: 1.16;
+  }
+
+  .architecture-card :global(svg) {
+    flex: 0 0 auto;
+  }
+
+  .architecture-card--input,
+  .architecture-card--artifact {
+    min-height: 36px;
+    justify-content: flex-start;
+    padding: 7px 9px;
+  }
+
+  .architecture-card--input {
+    min-height: 32px;
+    padding: 5px 8px;
+  }
+
+  .architecture-core-flow {
+    display: flex;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .architecture-card--core,
+  .architecture-card--evaluator {
+    flex-direction: column;
+    min-width: 64px;
+    min-height: 76px;
+    padding: 7px 5px;
+  }
+
+  .architecture-card--evaluator {
+    border-color: var(--blue);
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .architecture-card--metric {
+    min-width: 78px;
+  }
+
+  .architecture-branch {
+    display: grid;
+    gap: 8px;
+  }
+
+  .architecture-branch .architecture-card {
+    width: 86px;
+    min-height: 52px;
+    flex-direction: row;
+    padding: 6px;
+  }
+
+  :global(.architecture-arrow) {
+    flex: 0 0 auto;
+    margin: 0 1px;
+    color: var(--gold);
+  }
+
+  .architecture-workflow {
+    position: relative;
+    display: grid;
+    grid-column: 1 / 3;
+    grid-template-columns: 180px minmax(0, 1fr) 24px;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 12px;
+  }
+
+  .architecture-workflow--agent {
+    border-color: color-mix(in srgb, var(--blue), transparent 45%);
+    background: color-mix(in srgb, var(--blue), transparent 97%);
+  }
+
+  .architecture-workflow--performance {
+    border-color: color-mix(in srgb, var(--gold), transparent 32%);
+    background: color-mix(in srgb, var(--gold), transparent 96%);
+  }
+
+  .architecture-workflow-heading {
+    padding-right: 12px;
+    border-right: 1px solid var(--rule);
+  }
+
+  .architecture-workflow-heading h4 {
+    font-size: 13px;
+  }
+
+  .architecture-workflow-flow {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .architecture-card--workflow {
+    flex: 1 1 0;
+    min-height: 42px;
+    padding: 5px 7px;
+  }
+
+  .architecture-card--workflow span {
+    font-size: 10px;
+  }
+
+  :global(.architecture-workflow-output) {
+    align-self: center;
+    color: var(--gold);
+    transform: translateX(16px);
+  }
+
+  .architecture-optional {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    margin-top: 10px;
+    padding: 8px 9px;
+    border: 1px dashed color-mix(in srgb, var(--blue), transparent 15%);
+    border-radius: 8px;
+    color: #40566e;
+    font-size: 8.5px;
+    line-height: 1.25;
+  }
+
+  .architecture-optional :global(svg) {
+    flex: 0 0 auto;
+    color: var(--ink);
+  }
+
+  .architecture-caption {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    margin: 12px 0 0;
+    color: #56606a;
+    font: 600 10px/1.2 var(--mono);
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  .architecture-caption span:first-child {
+    color: var(--blue);
+  }
+
+  @media (max-width: 760px) {
+    .architecture-viewport {
+      margin-right: -20px;
+      margin-left: -20px;
+      padding: 0 20px 12px;
+    }
+
+    .architecture-board {
+      padding: 20px;
+    }
+  }
+</style>
