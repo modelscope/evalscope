@@ -1660,8 +1660,8 @@ const perfCommand = `evalscope perf \\
                 </h1>
                 <p class="lede">
                   {t(
-                    'EvalScope ships evaluation infrastructure today. This page separates that concrete capability from research questions about evolving harnesses and evaluators.',
-                    'EvalScope 今天交付评测基础设施。本页将已交付能力与关于 Harness、Evaluator 演进的研究问题严格区分。'
+                    'EvalScope keeps evaluation inputs, reviews, and outputs connected. This page explores how to tell a real evaluator improvement from a change in data, prompts, or scoring.',
+                    'EvalScope 会保留评测输入、评审和结果之间的关联。本页进一步探索：当 Evaluator 更新后，怎样确认它真的更好，而不只是数据、提示词或评分规则变了。'
                   )}
                 </p>
               </>
@@ -1681,13 +1681,15 @@ const perfCommand = `evalscope perf \\
       <section class="section">
         <div class="container">
           <>
-            <p class="eyebrow">{t('THREE FRONTIER QUESTIONS', '三个前沿问题')}</p>
+            <p class="eyebrow">
+              {t('THREE QUESTIONS EVERY EVALUATOR CHANGE SHOULD ANSWER', '每次 Evaluator 变更都该回答的三个问题')}
+            </p>
             <div class="card-grid">
               <>
                 <article class="card">
                   <>
                     <span class="claim exploring">01</span>
-                    <h3>{t('What changed?', '变化了什么？')}</h3>
+                    <h3>{t('What actually changed?', '到底变了什么？')}</h3>
                     <p>
                       {t(
                         'Separate task behavior from prompt, rubric, data and scoring-scale changes.',
@@ -1711,11 +1713,11 @@ const perfCommand = `evalscope perf \\
                 <article class="card">
                   <>
                     <span class="claim exploring">03</span>
-                    <h3>{t('Would selection hold?', '选择是否稳健？')}</h3>
+                    <h3>{t('Would the choice still hold?', '这次选择还可靠吗？')}</h3>
                     <p>
                       {t(
-                        'Measure selection regret when a harness update changes the ranking or recommendation.',
-                        '当 Harness 更新改变排名或推荐时，度量选择遗憾。'
+                        'Measure the consequence when an update changes a ranking or recommendation.',
+                        '若更新改变了排名或推荐，量化这次变化带来的选择代价。'
                       )}
                     </p>
                   </>
@@ -1730,14 +1732,14 @@ const perfCommand = `evalscope perf \\
           <>
             <div class="research-protocol-copy">
               <>
-                <p class="eyebrow">{t('EXPLORING A REPRODUCIBLE PROTOCOL', '探索可复现协议')}</p>
+                <p class="eyebrow">{t('A REPRODUCIBLE VALIDATION PATH', '一条可复现的验证路径')}</p>
                 <h2 class="section-title">
-                  {t('A reproducible path for evaluating evaluator changes.', '一条可复现的 Evaluator 变更验证路径。')}
+                  {t('How to validate an evaluator change.', '如何验证一次 Evaluator 变更。')}
                 </h2>
                 <p class="lede">
                   {t(
-                    'Start from a frozen baseline, test controlled variants, evaluate against held-out evidence, and record the decision with its artifacts. Fixed datasets, preserved raw outputs and explicit claims keep an apparent improvement reviewable.',
-                    '从冻结的基线出发，测试受控变体，以保留证据进行评测，并连同产物记录决策。固定数据集、保留原始输出和明确的结论让所谓的改进可以被复核。'
+                    'Freeze a baseline, introduce one controlled change, test it on held-out tasks, inspect the evidence, and record the decision with its artifacts. Preserved raw outputs and explicit claims keep any apparent improvement reviewable.',
+                    '冻结基线、一次只引入一个受控变化、在保留任务上验证、审查证据，并连同产物记录决策。保留原始输出和明确结论，才能让每一次看似改进都可被复核。'
                   )}
                 </p>
               </>
@@ -1761,15 +1763,15 @@ const perfCommand = `evalscope perf \\
                 <article class="panel">
                   <>
                     <div class="index">03</div>
-                    <h3>{t('Evaluate evidence', '评测证据')}</h3>
+                    <h3>{t('Test held-out tasks', '验证保留任务')}</h3>
                     <p>{t('Held-out tasks and declared metrics.', '保留任务与已声明指标。')}</p>
                   </>
                 </article>
                 <article class="panel">
                   <>
                     <div class="index">04</div>
-                    <h3>{t('Audit the result', '审计结果')}</h3>
-                    <p>{t('Review evidence before the score.', '先审查证据，再看分数。')}</p>
+                    <h3>{t('Inspect the evidence', '审查证据')}</h3>
+                    <p>{t('Review evidence before accepting a score.', '先审查证据，再接受分数。')}</p>
                   </>
                 </article>
                 <article class="panel">
@@ -1789,11 +1791,14 @@ const perfCommand = `evalscope perf \\
           <div class="section-register">
             <>
               <div>
-                <h2 class="section-title tight">
-                  {t('What EvalScope already provides today.', 'EvalScope 今天已提供的能力。')}
-                </h2>
+                <h2 class="section-title tight">{t('What supports this work today.', '哪些现有能力支撑这项工作。')}</h2>
               </div>
-              <p>{t('Shipped primitives for research', '研究可复用的已交付能力')}</p>
+              <p>
+                {t(
+                  'Labels separate available capabilities, external evidence, and open research directions.',
+                  '标签明确区分当前可用能力、外部研究证据与尚在探索的方向。'
+                )}
+              </p>
             </>
           </div>
           <div class="workflow-cards">
@@ -1801,7 +1806,7 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <ClaimBadge status="today" locale={locale} />
-                  <h3>{t('Available Today', '当前可用')}</h3>
+                  <h3>{t('Built into EvalScope', 'EvalScope 已具备')}</h3>
                   <p>
                     {t(
                       'Versioned benchmark metadata, structured judge contracts, output artifacts, local reports and API-first evaluation workflows.',
@@ -1813,7 +1818,7 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <ClaimBadge status="exploring" locale={locale} />
-                  <h3>{t('Exploring', '探索中')}</h3>
+                  <h3>{t('Research directions', '研究方向')}</h3>
                   <p>
                     {t(
                       'Self-evolving harness evaluation, evaluator drift guardrails and selection-regret protocols. These are research directions, not product claims.',
@@ -1825,7 +1830,7 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <ClaimBadge status="today" locale={locale} />
-                  <h3>{t('AgentTrace evidence', 'AgentTrace 证据')}</h3>
+                  <h3>{t('Traceable agent records', '可追溯的 Agent 记录')}</h3>
                   <p>
                     {t(
                       'Preserve requests, tool calls and outcomes alongside the task result.',
@@ -1837,7 +1842,7 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <ClaimBadge status="today" locale={locale} />
-                  <h3>{t('Benchmark matrix', 'Benchmark 矩阵')}</h3>
+                  <h3>{t('Versioned benchmark catalog', '版本化 Benchmark 目录')}</h3>
                   <p>
                     {t(
                       'Browse benchmark metadata and evaluation versions across modalities.',
@@ -1849,7 +1854,7 @@ const perfCommand = `evalscope perf \\
               <article class="panel">
                 <>
                   <ClaimBadge status="today" locale={locale} />
-                  <h3>{t('Reproducible outputs', '可复现输出')}</h3>
+                  <h3>{t('Linked run artifacts', '关联的运行产物')}</h3>
                   <p>
                     {t(
                       'Reports, predictions, reviews and configs remain linked.',
@@ -1862,72 +1867,24 @@ const perfCommand = `evalscope perf \\
           </div>
         </div>
       </section>
-      <section class="section">
-        <div class="container">
-          <>
-            <div class="section-register">
-              <>
-                <div>
-                  <h2 class="section-title tight">{t('A claim ladder.', 'Claim 阶梯。')}</h2>
-                </div>
-                <p>{t('Clear labels build trust', '清晰标签建立信任')}</p>
-              </>
-            </div>
-            <div class="instrument-strip">
-              <>
-                <div>
-                  <>
-                    <strong>01</strong>
-                    <span>
-                      <ClaimBadge status="today" locale={locale} />{' '}
-                      {t('Implemented, tested and available.', '已实现、测试并可用。')}
-                    </span>
-                  </>
-                </div>
-                <div>
-                  <>
-                    <strong>02</strong>
-                    <span>
-                      <ClaimBadge status="external" locale={locale} />{' '}
-                      {t('Demonstrated external research.', '已展示的外部研究。')}
-                    </span>
-                  </>
-                </div>
-                <div>
-                  <>
-                    <strong>03</strong>
-                    <span>
-                      <ClaimBadge status="exploring" locale={locale} />{' '}
-                      {t('Research hypothesis, not shipped.', '研究假设，尚未交付。')}
-                    </span>
-                  </>
-                </div>
-                <div>
-                  <>
-                    <strong>Audit</strong>
-                    <span>{t('Never blur the boundary.', '不模糊能力边界。')}</span>
-                  </>
-                </div>
-              </>
-            </div>
-          </>
-        </div>
-      </section>
       <section id="related-research" class="section dark">
         <div class="container">
           <>
             <ClaimBadge status="external" locale={locale} />
-            <h2 class="section-title">{t('Related research', '相关研究')}</h2>
+            <h2 class="section-title">{t('External research references', '外部研究参考')}</h2>
             <div class="button-row">
               <>
                 <a class="button alt" href="https://arxiv.org/abs/2609.01437">
-                  HarnessDev <Icon name="tabler:arrow-up-right" />
+                  {t('HarnessDev — harness evolution', 'HarnessDev — Harness 演进')}{' '}
+                  <Icon name="tabler:arrow-up-right" />
                 </a>
                 <a class="button alt" href="https://arxiv.org/abs/2606.13685">
-                  The Coin Flip Judge? <Icon name="tabler:arrow-up-right" />
+                  {t('The Coin Flip Judge? — judge reliability', 'The Coin Flip Judge? — Judge 可靠性')}{' '}
+                  <Icon name="tabler:arrow-up-right" />
                 </a>
                 <a class="button alt" href="https://arxiv.org/abs/2606.15474">
-                  Who Drifted? <Icon name="tabler:arrow-up-right" />
+                  {t('Who Drifted? — evaluator drift', 'Who Drifted? — Evaluator 漂移')}{' '}
+                  <Icon name="tabler:arrow-up-right" />
                 </a>
               </>
             </div>
