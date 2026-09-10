@@ -18,7 +18,7 @@
 <p>
 
 <p align="center">
-<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documentation</a>
+<a href="https://evalscope.readthedocs.io/zh-cn/latest/"> 📖  中文文档</a> &nbsp ｜ &nbsp <a href="https://evalscope.readthedocs.io/en/latest/"> 📖  English Documentation</a> &nbsp ｜ &nbsp <a href="https://modelscope.github.io/evalscope/"> 🌐  Product Website</a>
 <p>
 
 
