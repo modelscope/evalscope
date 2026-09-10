@@ -234,9 +234,11 @@ class TraceUsage(ApiResponseModel):
 
 
 class AgentTrace(ApiResponseModel):
+    framework: Optional[str] = None
     strategy: Optional[str] = None
     environment: Optional[str] = None
     max_steps: int
+    trial_id: Optional[str] = None
     events: List[AgentTraceEvent]
     total_usage: Optional[TraceUsage] = None
 

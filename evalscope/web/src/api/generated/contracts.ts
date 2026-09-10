@@ -509,9 +509,11 @@ export interface PredictionRow {
 export interface AgentTrace {
   environment?: string | null;
   events: AgentTraceEvent[];
+  framework?: string | null;
   max_steps: number;
   strategy?: string | null;
   total_usage?: TraceUsage | null;
+  trial_id?: string | null;
 }
 export interface AgentTraceEvent {
   latency_ms?: number | null;

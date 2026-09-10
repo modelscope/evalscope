@@ -110,6 +110,50 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.get_json()['predictions']), 1)
 
+    def test_predictions_returns_runtime_agent_trace_fields(self):
+        import pandas as pd
+
+        from evalscope.api.agent.trace import AgentTrace, AgentTraceEvent, EventType
+        from evalscope.api.model.model_output import ModelUsage
+
+        trace = AgentTrace(
+            framework='external-agent',
+            strategy='react',
+            max_steps=3,
+            trial_id='trial-1',
+            total_usage=ModelUsage(input_tokens=384, output_tokens=223, total_tokens=607),
+            events=[AgentTraceEvent(step=0, type=EventType.MODEL_GENERATE, payload={})],
+        )
+        frame = pd.DataFrame([{
+            'Index': '0',
+            'Input': 'question',
+            'Metadata': {},
+            'Generated': 'answer',
+            'Gold': 'answer',
+            'Pred': 'answer',
+            'Score': {},
+            'NScore': 1.0,
+            'AgentTrace': trace.model_dump(exclude_none=True),
+        }])
+        with mock.patch(
+            'evalscope.service.blueprints.reports.get_model_prediction',
+            return_value=frame,
+        ):
+            res = self.client.get(
+                '/api/v1/reports/runs/20260101_120000/models/model-a/predictions',
+                query_string={
+                    'root_path': self.tmp,
+                    'dataset_name': 'gsm8k',
+                    'subset_name': 'main',
+                },
+            )
+
+        self.assertEqual(res.status_code, 200)
+        agent_trace = res.get_json()['predictions'][0]['AgentTrace']
+        self.assertEqual(agent_trace['framework'], 'external-agent')
+        self.assertEqual(agent_trace['trial_id'], 'trial-1')
+        self.assertEqual(agent_trace['total_usage']['total_tokens'], 607)
+
     def test_report_list_sorts_by_supported_fields(self):
         items = [
             self._report_meta('z-model', dataset='a-dataset', timestamp='2026-01-01T00:00:00'),

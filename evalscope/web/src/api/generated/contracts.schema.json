@@ -20,6 +20,17 @@
           },
           "type": "array"
         },
+        "framework": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "max_steps": {
           "type": "integer"
         },
@@ -38,6 +49,17 @@
           "anyOf": [
             {
               "$ref": "#/$defs/TraceUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trial_id": {
+          "anyOf": [
+            {
+              "type": "string"
             },
             {
               "type": "null"

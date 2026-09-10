@@ -358,7 +358,9 @@ def test_prediction_contract_supports_messages_trace_and_missing_optional_fields
                 {'role': 'assistant', 'content': 'answer'},
             ],
             'AgentTrace': {
+                'framework': 'external-agent',
                 'max_steps': 1,
+                'trial_id': 'trial-1',
                 'events': [{
                     'step': 0,
                     'timestamp': 1.0,
@@ -378,6 +380,8 @@ def test_prediction_contract_supports_messages_trace_and_missing_optional_fields
     assert row.normalized_score is None
     assert row.messages[1].perf_metrics is None
     assert row.agent_trace.events[0].payload['nullable'] is None
+    assert row.agent_trace.framework == 'external-agent'
+    assert row.agent_trace.trial_id == 'trial-1'
     assert row.agent_trace.total_usage.total_tokens == 32768
 
 
