@@ -55,6 +55,7 @@ export interface WebApiContracts {
   judge_attempt: JudgeAttempt;
   judge_summary: JudgeSummary;
   list_perf_runs_response: ListPerfRunsResponse;
+  list_reports_grouped_response: ListReportsGroupedResponse;
   list_reports_response: ListReportsResponse;
   load_report_response: LoadReportResponse;
   log_response: LogResponse;
@@ -73,6 +74,7 @@ export interface WebApiContracts {
   predictions_response: PredictionsResponse;
   progress_response: ProgressResponse;
   report_data: ReportData;
+  report_group: ReportGroup;
   report_metric: ReportMetric;
   report_summary: ReportSummary;
   task_status_response: TaskStatusResponse;
@@ -300,16 +302,29 @@ export interface PerfRunSummary {
   timestamp: string;
   total_requests: number;
 }
-export interface ListReportsResponse {
+export interface ListReportsGroupedResponse {
   filters: ReportFilters;
   page: number;
   page_size: number;
-  reports: ReportSummary[];
+  reports: ReportGroup[];
   total: number;
 }
 export interface ReportFilters {
   available_datasets: string[];
   available_models: string[];
+}
+/**
+ * One row per model in a `group_by=model` listing - display-only rollup, never a merged report.
+ */
+export interface ReportGroup {
+  children: ReportSummary[];
+  dataset_count: number;
+  dataset_name: string;
+  model_name: string;
+  num_samples: number;
+  refs: string[];
+  report_count: number;
+  timestamp: string;
 }
 export interface ReportSummary {
   dataset_name: string;
@@ -334,6 +349,13 @@ export interface MetricIdentity {
     [k: string]: string | number | boolean;
   };
   name: string;
+}
+export interface ListReportsResponse {
+  filters: ReportFilters;
+  page: number;
+  page_size: number;
+  reports: ReportSummary[];
+  total: number;
 }
 export interface LoadReportResponse {
   datasets: string[];

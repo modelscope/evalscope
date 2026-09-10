@@ -151,6 +151,57 @@ class TestReportEndpoints(unittest.TestCase):
 
             self.assertEqual(res.status_code, 400)
 
+    def test_report_list_rejects_unsupported_group_by(self):
+        res = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp, 'group_by': 'dataset'})
+
+        self.assertEqual(res.status_code, 400)
+
+    def test_report_list_group_by_model_rolls_up_same_model_reports_without_merging(self):
+        items = [
+            self._report_meta('gemma', run_id='run-a', dataset='mmmlu', timestamp='2026-08-17T22:09:00'),
+            self._report_meta('gemma', run_id='run-b', dataset='hellaswag_hi', timestamp='2026-08-18T00:53:00'),
+            self._report_meta('other-model', run_id='run-c', dataset='gsm8k', timestamp='2026-08-17T10:00:00'),
+        ]
+        refs = [ReportRef(run_id=item['run_id'], model_id=item['model_id']) for item in items]
+        with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=refs), \
+                mock.patch('evalscope.service.blueprints.reports._build_report_meta', side_effect=items):
+            clear_report_meta_cache()
+            body = self.client.get(
+                '/api/v1/reports',
+                query_string={
+                    'root_path': self.tmp, 'group_by': 'model', 'sort_by': 'model', 'sort_order': 'asc'
+                },
+            ).get_json()
+
+        self.assertEqual(body['total'], 2)
+        gemma_group, other_group = body['reports']
+
+        self.assertEqual(gemma_group['model_name'], 'gemma')
+        self.assertEqual(gemma_group['report_count'], 2)
+        self.assertEqual(gemma_group['dataset_count'], 2)
+        self.assertEqual(gemma_group['dataset_name'], 'hellaswag_hi, mmmlu')
+        self.assertEqual(gemma_group['num_samples'], 2)
+        # Most recently-run child sorts first; nothing about either child is altered.
+        self.assertEqual(gemma_group['timestamp'], '2026-08-18T00:53:00')
+        self.assertEqual(set(gemma_group['refs']), {'run-a/gemma', 'run-b/gemma'})
+        self.assertEqual([c['run_id'] for c in gemma_group['children']], ['run-b', 'run-a'])
+        self.assertEqual([c['dataset_name'] for c in gemma_group['children']], ['hellaswag_hi', 'mmmlu'])
+        for child in gemma_group['children']:
+            self.assertNotIn('_datasets', child)
+
+        self.assertEqual(other_group['model_name'], 'other-model')
+        self.assertEqual(other_group['report_count'], 1)
+
+    def test_report_list_ungrouped_by_default(self):
+        item = self._report_meta('model')
+        refs = [ReportRef(run_id=item['run_id'], model_id=item['model_id'])]
+        with mock.patch('evalscope.service.blueprints.reports.scan_report_refs', return_value=refs), \
+                mock.patch('evalscope.service.blueprints.reports._build_report_meta', return_value=item):
+            clear_report_meta_cache()
+            body = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}).get_json()
+
+        self.assertNotIn('report_count', body['reports'][0])
+
     def test_report_list_response_omits_score_comparability_fields(self):
         item = self._report_meta('model')
         ref = ReportRef(run_id='20260101_120000', model_id='model')
@@ -252,9 +303,9 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(changed.status_code, 200)
 
     @staticmethod
-    def _report_meta(model_id, dataset='dataset', timestamp='2026-01-01T00:00:00'):
+    def _report_meta(model_id, dataset='dataset', timestamp='2026-01-01T00:00:00', run_id='run'):
         return {
-            'run_id': 'run',
+            'run_id': run_id,
             'model_id': model_id,
             'model_name': model_id,
             'dataset_name': dataset,

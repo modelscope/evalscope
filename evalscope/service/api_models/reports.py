@@ -158,6 +158,27 @@ class ListReportsResponse(ApiResponseModel):
     filters: ReportFilters
 
 
+class ReportGroup(ApiResponseModel):
+    """One row per model in a `group_by=model` listing - display-only rollup, never a merged report."""
+
+    model_name: str
+    dataset_name: str
+    timestamp: str
+    report_count: int
+    dataset_count: int
+    num_samples: int
+    refs: List[str]
+    children: List[ReportSummary]
+
+
+class ListReportsGroupedResponse(ApiResponseModel):
+    reports: List[ReportGroup]
+    total: int
+    page: int
+    page_size: int
+    filters: ReportFilters
+
+
 class LoadReportResponse(ApiResponseModel):
     report_list: List[ReportData]
     datasets: List[str]

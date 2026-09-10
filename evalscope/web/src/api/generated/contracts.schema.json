@@ -904,6 +904,37 @@
       ],
       "type": "object"
     },
+    "ListReportsGroupedResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/ReportFilters"
+        },
+        "page": {
+          "type": "integer"
+        },
+        "page_size": {
+          "type": "integer"
+        },
+        "reports": {
+          "items": {
+            "$ref": "#/$defs/ReportGroup"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reports",
+        "total",
+        "page",
+        "page_size",
+        "filters"
+      ],
+      "type": "object"
+    },
     "ListReportsResponse": {
       "additionalProperties": false,
       "properties": {
@@ -2134,6 +2165,53 @@
       ],
       "type": "object"
     },
+    "ReportGroup": {
+      "additionalProperties": false,
+      "description": "One row per model in a `group_by=model` listing - display-only rollup, never a merged report.",
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/$defs/ReportSummary"
+          },
+          "type": "array"
+        },
+        "dataset_count": {
+          "type": "integer"
+        },
+        "dataset_name": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "num_samples": {
+          "type": "integer"
+        },
+        "refs": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "report_count": {
+          "type": "integer"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_name",
+        "dataset_name",
+        "timestamp",
+        "report_count",
+        "dataset_count",
+        "num_samples",
+        "refs",
+        "children"
+      ],
+      "type": "object"
+    },
     "ReportMetric": {
       "additionalProperties": false,
       "properties": {
@@ -2471,6 +2549,9 @@
     "list_perf_runs_response": {
       "$ref": "#/$defs/ListPerfRunsResponse"
     },
+    "list_reports_grouped_response": {
+      "$ref": "#/$defs/ListReportsGroupedResponse"
+    },
     "list_reports_response": {
       "$ref": "#/$defs/ListReportsResponse"
     },
@@ -2525,6 +2606,9 @@
     "report_data": {
       "$ref": "#/$defs/ReportData"
     },
+    "report_group": {
+      "$ref": "#/$defs/ReportGroup"
+    },
     "report_metric": {
       "$ref": "#/$defs/ReportMetric"
     },
@@ -2553,6 +2637,8 @@
     "report_data",
     "report_summary",
     "list_reports_response",
+    "report_group",
+    "list_reports_grouped_response",
     "load_report_response",
     "percentile_stats",
     "perf_metrics",
