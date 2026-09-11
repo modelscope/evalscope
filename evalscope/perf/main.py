@@ -168,6 +168,11 @@ def run_perf_benchmark(args):
     configure_logging(args.debug, os.path.join(output_path, 'benchmark.log'))
     args.outputs_dir = output_path
 
+    if args.scenario is not None:
+        from .scenarios import run_agentx_benchmark
+
+        return run_agentx_benchmark(args, output_path)
+
     if args.sla_auto_tune:
         results = run_sla_auto_tune(args, run_one_benchmark)
         return results

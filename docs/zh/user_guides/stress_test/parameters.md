@@ -14,6 +14,7 @@
 | `--attn-implementation` | `str` | Attention实现方式<br>仅在`api=local`时有效 | `None`<br>（可选：`flash_attention_2`、`eager`、`sdpa`） |
 | `--api-key` | `str` | API密钥 | `None` |
 | `--debug` | `bool` | 是否输出调试信息 | `False` |
+| `--scenario` | `str` | 外部 workload 场景。`agentx` 运行 AIPerf AgentX MVP，也接受 AgentX JSON；见 [AgentX MVP](./agentx.md)。 | `None` |
 
 ## 网络配置
 

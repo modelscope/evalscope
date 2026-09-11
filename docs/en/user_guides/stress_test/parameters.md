@@ -14,6 +14,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |
 | `--api-key` | `str` | API key | `None` |
 | `--debug` | `bool` | Whether to output debug information | `False` |
+| `--scenario` | `str` | External workload scenario. `agentx` runs AIPerf AgentX MVP; also accepts AgentX JSON. See [AgentX MVP](./agentx.md). | `None` |
 
 ## Network Configuration
 

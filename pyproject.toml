@@ -49,6 +49,7 @@ opencompass      = {file = ["requirements/opencompass.txt"]}
 vlmeval          = {file = ["requirements/vlmeval.txt"]}
 rag              = {file = ["requirements/rag.txt"]}
 perf             = {file = ["requirements/perf.txt"]}
+agentx           = {file = ["requirements/perf.txt", "requirements/agentx.txt"]}
 app              = {file = ["requirements/app.txt"]}
 aigc             = {file = ["requirements/aigc.txt"]}
 sandbox          = {file = ["requirements/sandbox.txt"]}
