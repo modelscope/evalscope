@@ -112,8 +112,8 @@ class MMMUMultiImageDatasetArgs(BaseDatasetArgs):
     @field_validator('min_images')
     @classmethod
     def _validate_min_images(cls, v: int) -> int:
-        if not 1 <= v <= 7:
-            raise ValueError(f'min_images must be between 1 and 7, got {v}')
+        if not 2 <= v <= 7:
+            raise ValueError(f'min_images must be between 2 and 7, got {v}')
         return v
 
 
