@@ -24,7 +24,6 @@ def _image_bytes() -> bytes:
 
 
 class TestMMMUMultiImageDataset:
-
     def test_builds_one_message_with_multiple_images_in_source_order(self, monkeypatch):
         plugin = MMMUMultiImageDatasetPlugin(_args({'subset': 'Music', 'min_images': 2}))
         rows = [
@@ -83,4 +82,4 @@ class TestMMMUMultiImageDataset:
 
     def test_rejects_tokenized_prompt_mode(self):
         with pytest.raises(ValueError, match='not supported with the mmmu_multi_image dataset'):
-            MMMUMultiImageDatasetPlugin(_args(tokenize_prompt=True))
+            MMMUMultiImageDatasetPlugin(_args(tokenize_prompt=True, tokenizer_path='Qwen/Qwen2.5-0.5B-Instruct'))
