@@ -24,7 +24,7 @@ Dataset arguments:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `subset` | `str` | `Music` | MMMU subject/configuration to load |
-| `min_images` | `int` | `2` | Minimum number of images required for a row; must be between 1 and 7 |
+| `min_images` | `int` | `2` | Minimum number of images required for a row; must be between 2 and 7 |
 
 The built-in mode is intended for real multimodal traffic rather than accuracy evaluation. Use the regular `evalscope eval --datasets mmmu` path when you need MMMU benchmark scoring.
 
