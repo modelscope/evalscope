@@ -23,6 +23,7 @@ import PromptCard from './PromptCard.astro';
 import ProductTourIndex from './ProductTourIndex.astro';
 import QuickstartPanel from './QuickstartPanel.astro';
 import ScreenshotFrame from './ScreenshotFrame.astro';
+import TerminalDemo from './TerminalDemo.astro';
 import TaskTabs from './TaskTabs.astro';
 
 interface Props {
@@ -292,6 +293,7 @@ const perfCommand = `evalscope perf \\
             <div class="stage-card architecture-stage" data-stage-card>
               <ArchitectureDiagram locale={locale} />
             </div>
+            <TerminalDemo locale={locale} />
           </>
         </div>
       </section>

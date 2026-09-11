@@ -117,6 +117,17 @@ const perfFlow = [
             <span>{t('Metrics & Aggregation', '指标与聚合')}</span>
           </div>
         </div>
+        <aside class="architecture-optional" aria-label={t('Optional backends', '可选后端')}>
+          <Icon name="tabler:cloud" size="18" aria-hidden="true" />
+          <span
+            >{
+              t(
+                'Optional backends: OpenCompass · VLMEvalKit · RAG Eval',
+                '可选后端：OpenCompass · VLMEvalKit · RAG Eval'
+              )
+            }</span
+          >
+        </aside>
       </section>
 
       <section class="architecture-panel architecture-panel--artifacts" aria-labelledby="architecture-artifacts-title">
@@ -134,17 +145,6 @@ const perfFlow = [
             ))
           }
         </div>
-        <aside class="architecture-optional" aria-label={t('Optional backends', '可选后端')}>
-          <Icon name="tabler:cloud" size="18" aria-hidden="true" />
-          <span
-            >{
-              t(
-                'Optional backends: OpenCompass · VLMEvalKit · RAG Eval',
-                '可选后端：OpenCompass · VLMEvalKit · RAG Eval'
-              )
-            }</span
-          >
-        </aside>
       </section>
 
       <section class="architecture-workflow architecture-workflow--agent" aria-labelledby="architecture-agent-title">
@@ -212,7 +212,7 @@ const perfFlow = [
   }
 
   .architecture-board {
-    min-width: 970px;
+    min-width: 1000px;
     margin: 0;
     padding: 28px;
     border: 1px solid var(--rule);
@@ -253,7 +253,7 @@ const perfFlow = [
 
   .architecture-panel--core {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     border-color: color-mix(in srgb, var(--blue), transparent 20%);
     background: color-mix(in srgb, var(--blue), transparent 94%);
   }
@@ -262,7 +262,7 @@ const perfFlow = [
     display: grid;
     grid-column: 3;
     grid-row: 1 / span 3;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     border-color: #aeb2b5;
     background: color-mix(in srgb, var(--ink), transparent 97%);
   }
@@ -280,6 +280,8 @@ const perfFlow = [
 
   .architecture-panel-heading > span {
     display: grid;
+    box-sizing: border-box;
+    flex: 0 0 30px;
     width: 30px;
     height: 30px;
     place-items: center;
@@ -310,10 +312,21 @@ const perfFlow = [
     text-transform: uppercase;
   }
 
+  .architecture-panel-heading h4 {
+    min-width: 0;
+  }
+
   .architecture-input-list,
   .architecture-artifact-list {
     display: grid;
     gap: 8px;
+  }
+
+  .architecture-artifact-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    min-height: 0;
   }
 
   .architecture-card {
@@ -350,6 +363,18 @@ const perfFlow = [
   .architecture-card--input {
     min-height: 32px;
     padding: 5px 8px;
+  }
+
+  .architecture-card--artifact {
+    min-height: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+  }
+
+  .architecture-card--artifact span {
+    text-align: center;
   }
 
   .architecture-core-flow {
@@ -401,7 +426,7 @@ const perfFlow = [
     grid-column: 1 / 3;
     grid-template-columns: 180px minmax(0, 1fr) 24px;
     gap: 12px;
-    min-height: 64px;
+    min-height: 68px;
     padding: 10px 12px;
   }
 
@@ -428,31 +453,42 @@ const perfFlow = [
     display: flex;
     min-width: 0;
     align-items: center;
-    justify-content: center;
+    justify-content: stretch;
+    gap: 4px;
+  }
+
+  .architecture-workflow-flow :global(.architecture-arrow) {
+    margin: 0 2px;
   }
 
   .architecture-card--workflow {
     flex: 1 1 0;
-    min-height: 42px;
-    padding: 5px 7px;
+    min-height: 44px;
+    padding: 6px 8px;
   }
 
   .architecture-card--workflow span {
     font-size: 10px;
+    overflow-wrap: normal;
+    word-break: normal;
   }
 
   :global(.architecture-workflow-output) {
     align-self: center;
     color: var(--gold);
-    transform: translateX(16px);
+    transform: translateX(14px);
   }
 
   .architecture-optional {
     display: flex;
     gap: 7px;
     align-items: center;
-    margin-top: 10px;
-    padding: 8px 9px;
+    align-self: end;
+    justify-self: start;
+    min-width: 0;
+    width: min(230px, 52%);
+    margin-top: 12px;
+    padding: 7px 9px;
     border: 1px dashed color-mix(in srgb, var(--blue), transparent 15%);
     border-radius: 8px;
     color: #40566e;
@@ -463,6 +499,10 @@ const perfFlow = [
   .architecture-optional :global(svg) {
     flex: 0 0 auto;
     color: var(--ink);
+  }
+
+  .architecture-optional span {
+    min-width: 0;
   }
 
   .architecture-caption {
