@@ -24,7 +24,7 @@ evalscope perf \
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `subset` | `str` | `Music` | 要加载的 MMMU 学科/configuration |
-| `min_images` | `int` | `2` | 样本最少图片数，范围为 1–7 |
+| `min_images` | `int` | `2` | 样本最少图片数，范围为 2–7 |
 
 该模式用于构造真实多模态压测流量，而不是计算 MMMU 准确率。如果需要正式的 MMMU 评测得分，请使用常规的 `evalscope eval --datasets mmmu` 流程。
 
