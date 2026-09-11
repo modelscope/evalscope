@@ -1,4 +1,4 @@
-# AgentX MVP Serving Benchmark
+# AgentX Serving Benchmark
 
 AgentX measures how an inference service handles long coding-agent sessions. It reports serving performance, not model quality or task accuracy.
 
