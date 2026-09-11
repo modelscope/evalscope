@@ -304,9 +304,7 @@ def _verify_huggingface_revision(spec: Dict[str, str]) -> None:
     try:
         from huggingface_hub import HfApi
 
-        info = HfApi().dataset_info(
-            spec['huggingface_id'], revision=spec['huggingface_revision'], files_metadata=True
-        )
+        info = HfApi().dataset_info(spec['huggingface_id'], revision=spec['huggingface_revision'], files_metadata=True)
     except Exception as e:
         raise RuntimeError('Unable to verify the AgentX Hugging Face dataset revision.') from e
     if info.sha != spec['huggingface_revision']:
@@ -494,7 +492,7 @@ def _normalize_summary(
         and raw_valid is False
         and reasons == ['unsafe_override']
     )
-    submission_valid = bool(raw_valid) if dataset.source == HubType.HUGGINGFACE else mirror_revalidated
+    submission_valid = bool(raw_valid) or mirror_revalidated
     if scenario.mode == 'smoke' or status != 'completed':
         submission_valid = False
         mirror_revalidated = False

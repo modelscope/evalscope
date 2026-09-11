@@ -1,6 +1,6 @@
 # AgentX MVP 服务性能基准
 
-AgentX 是推理服务性能 workload，不是 Agent 能力或任务正确率评测。它通过 AIPerf 回放长上下文 coding-agent session tree，保留前缀复用、思考间隔和子 agent 依赖。
+AgentX 用于衡量推理服务处理长编码 Agent 会话时的性能，不评估模型能力或任务正确率。
 
 ## 安装
 
@@ -10,52 +10,62 @@ AgentX 要求 Python 3.11--3.13，并且不包含在默认 Perf extra 中：
 pip install 'evalscope[agentx]'
 ```
 
-## 运行
+## 服务前置条件
 
-简写默认使用已校验的 ModelScope 256K 镜像、固定 seed `20260707` 和 AIPerf AgentX MVP 的 1800 秒默认时长：
+默认 256K workload 需要支持流式 OpenAI Chat Completions 的服务端，并且实际上下文窗口至少为 256K tokens。32K 服务无法运行默认 trace。使用 vLLM 时，请设置 `--max-model-len 262144`，并在运行 AgentX 前通过 `/v1/models` 返回的 `max_model_len` 核验。
+
+## 快速开始
+
+建议先执行短 smoke 测试。它使用一个活跃会话，结果不能与公开成绩比较：
+
+```bash
+evalscope perf \
+  --scenario '{"name":"agentx","mode":"smoke"}' \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions \
+  --parallel 1
+```
+
+## 正式运行
+
+默认运行使用已校验的 ModelScope 256K 镜像、固定 seed 和 30 分钟时长：
 
 ```bash
 evalscope perf \
   --scenario agentx \
   --model YOUR_MODEL \
-  --tokenizer-path YOUR_HF_TOKENIZER \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions \
-  --parallel 8 16
+  --parallel 8
 ```
 
-若需要 AIPerf 上游的官方数据源状态，显式选择 Hugging Face：
+`parallel` 是同时运行的 AgentX 会话数。一个会话可能发出多个请求，因此实际请求并发可能更高。
+
+仅在需要与 AIPerf 上游结果兼容时使用 `--data-source huggingface`：
 
 ```bash
 evalscope perf --scenario agentx --data-source huggingface \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-JSON 形式只放 AgentX 专属元数据，不重复连接参数：
+## 高级配置
+
+JSON 形式仅用于选择其他 workload 变体或记录部署元数据。`full` 变体需要服务端支持更大的上下文窗口：
 
 ```bash
 evalscope perf \
-  --scenario '{"name":"agentx","variant":"full","max_context_length":1000000,"num_gpus":8,"engine":"vllm"}' \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
+  --scenario '{"name":"agentx","variant":"full","num_gpus":8,"engine":"vllm"}' \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-`parallel` 表示活跃 agent session tree 数，不是 HTTP 请求上限；子 agent fan-out 后实际在途请求可能更高。
+## 结果
 
-## 烟测与产物
+每个并发点会生成 `agentx_summary.json`，整体汇总为 `agentx_sweep_summary.json`。原始 benchmark 文件保存在相邻的 `aiperf/` 目录，便于排查问题。
 
-使用 `mode=smoke` 执行短运行；它默认四条轨迹、60 秒，结果明确不可比较：
-
-```bash
-evalscope perf \
-  --scenario '{"name":"agentx","mode":"smoke"}' \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
-  --url http://localhost:8000/v1/chat/completions --parallel 1
-```
-
-每个并发点的 AIPerf 原始文件保持不变，位于 `agentx_<variant>/parallel_<N>/aiperf/`；同目录的 `agentx_summary.json` 是 EvalScope 归一化摘要，根目录 `agentx_sweep_summary.json` 汇总 sweep。
-
-烟测、取消、失败、缩短或哈希不符的运行，`submission_valid` 一律为 false。对于逐字节校验的 ModelScope 镜像，若 AIPerf 唯一无效原因是本地镜像所需的 `unsafe_override`，EvalScope 会在归一化摘要中重新认证；AIPerf 原始有效性字段始终原样保留。
+smoke、取消、失败、缩短或哈希不符的运行，`submission_valid` 均为 false。需要可比较结果时，请使用符合要求的数据集和时长执行正式运行。
 
 ## 兼容性
 

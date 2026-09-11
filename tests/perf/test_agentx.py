@@ -69,7 +69,7 @@ class TestAgentXCommand:
             verified=True,
         )
 
-        command, env = _build_command(
+        command, _ = _build_command(
             args, args.scenario, dataset, concurrency=8, duration=1800, seed=20260707, artifacts_path=tmp_path
         )
 
@@ -132,6 +132,24 @@ class TestAgentXNormalization:
         assert summary.mirror_revalidated is True
         assert summary.derived_metrics['output_token_throughput_per_gpu'].avg == 10
         assert summary.metrics['time_to_first_token'].avg is None
+
+    def test_verified_mirror_preserves_upstream_validity(self, tmp_path):
+        summary = _normalize_summary(
+            {'metadata': {'submission_valid': True}},
+            'completed',
+            AgentXScenario(),
+            self._dataset(),
+            1,
+            1800,
+            20260707,
+            tmp_path,
+            None,
+            [],
+        )
+
+        assert summary.submission_valid is True
+        assert summary.aiperf_submission_valid is True
+        assert summary.mirror_revalidated is False
 
     def test_smoke_and_runtime_failure_are_never_valid(self, tmp_path):
         raw = {'metadata': {'submission_valid': False, 'submission_invalid_reasons': ['unsafe_override']}}

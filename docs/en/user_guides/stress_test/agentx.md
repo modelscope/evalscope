@@ -1,6 +1,6 @@
 # AgentX MVP Serving Benchmark
 
-AgentX is a serving-system workload, not an agent-quality evaluation. It replays long-context coding-agent session trees, including shared prefixes, think time, and subagent dependencies through AIPerf.
+AgentX measures how an inference service handles long coding-agent sessions. It reports serving performance, not model quality or task accuracy.
 
 ## Install
 
@@ -10,52 +10,62 @@ AgentX requires Python 3.11--3.13 and is intentionally separate from the default
 pip install 'evalscope[agentx]'
 ```
 
-## Run
+## Service prerequisites
 
-The shorthand uses the verified ModelScope 256K mirror, a fixed seed (`20260707`), and AIPerf's AgentX MVP default duration of 1800 seconds:
+The default 256K workload needs a streaming OpenAI Chat Completions endpoint with at least 256K tokens of context. A 32K service cannot run the default traces. For vLLM, set `--max-model-len 262144`, then confirm `max_model_len` in `/v1/models`.
+
+## Quick start
+
+Run a short smoke test first. It uses one active session and is not comparable with published results:
+
+```bash
+evalscope perf \
+  --scenario '{"name":"agentx","mode":"smoke"}' \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions \
+  --parallel 1
+```
+
+## Standard run
+
+The default run uses the verified ModelScope 256K mirror, a fixed seed, and a 30-minute duration:
 
 ```bash
 evalscope perf \
   --scenario agentx \
   --model YOUR_MODEL \
-  --tokenizer-path YOUR_HF_TOKENIZER \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions \
-  --parallel 8 16
+  --parallel 8
 ```
 
-Use Hugging Face explicitly when an AIPerf upstream submission-valid result is required:
+`parallel` is the number of active AgentX sessions. A session can issue more than one request, so actual request concurrency may be higher.
+
+Use `--data-source huggingface` only when you need an upstream-compatible result:
 
 ```bash
 evalscope perf --scenario agentx --data-source huggingface \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-The JSON form exposes AgentX-specific metadata without duplicating normal Perf connection settings:
+## Advanced configuration
+
+Use JSON only to select a different workload variant or record deployment metadata. The `full` variant requires a service that supports its larger context window:
 
 ```bash
 evalscope perf \
-  --scenario '{"name":"agentx","variant":"full","max_context_length":1000000,"num_gpus":8,"engine":"vllm"}' \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
+  --scenario '{"name":"agentx","variant":"full","num_gpus":8,"engine":"vllm"}' \
+  --model YOUR_MODEL --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
   --url http://localhost:8000/v1/chat/completions --parallel 8
 ```
 
-`parallel` means active agent session trees, not a cap on individual HTTP requests. Subagents can make actual in-flight request concurrency higher.
+## Results
 
-## Smoke runs and artifacts
+Each concurrency point writes an EvalScope summary in `agentx_summary.json` and a combined `agentx_sweep_summary.json`. Raw benchmark files are kept in the adjacent `aiperf/` directory for troubleshooting.
 
-Use `mode=smoke` for a short, intentionally non-comparable run. It defaults to four traces and 60 seconds:
-
-```bash
-evalscope perf \
-  --scenario '{"name":"agentx","mode":"smoke"}' \
-  --model YOUR_MODEL --tokenizer-path YOUR_HF_TOKENIZER \
-  --url http://localhost:8000/v1/chat/completions --parallel 1
-```
-
-Each point stores raw, unchanged AIPerf files under `agentx_<variant>/parallel_<N>/aiperf/`, its EvalScope summary in `agentx_summary.json`, and a root `agentx_sweep_summary.json`.
-
-`submission_valid` in the EvalScope summary is false for smoke, cancelled, failed, shortened, or hash-mismatched runs. For the byte-verified ModelScope mirror, EvalScope can revalidate a completed canonical run where AIPerf's only invalid reason is the local-mirror `unsafe_override`; the original AIPerf validity fields are always retained separately.
+Smoke, cancelled, failed, shortened, and hash-mismatched runs have `submission_valid=false`. Use a standard run with the required dataset and duration when you need a comparable result.
 
 ## Compatibility
 
