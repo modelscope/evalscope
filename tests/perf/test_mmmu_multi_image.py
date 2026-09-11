@@ -7,12 +7,13 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.mmmu_multi_image import MMMUMultiImageDatasetPlugin
 
 
-def _args(dataset_args=None) -> Arguments:
+def _args(dataset_args=None, **kwargs) -> Arguments:
     return Arguments(
         model='test-model',
         url='http://localhost:8080/v1/chat/completions',
         dataset='mmmu_multi_image',
         dataset_args=dataset_args,
+        **kwargs,
     )
 
 
@@ -58,9 +59,7 @@ class TestMMMUMultiImageDataset:
             'text': "Compare <image 1> and <image 2>.\nOptions: ['same', 'different']",
         }
         assert [part['type'] for part in message['content']] == ['text', 'image_url', 'image_url']
-        assert all(
-            part['image_url']['url'].startswith('data:image/') for part in message['content'][1:]
-        )
+        assert all(part['image_url']['url'].startswith('data:image/') for part in message['content'][1:])
 
     def test_skips_rows_below_minimum_image_count(self, monkeypatch):
         plugin = MMMUMultiImageDatasetPlugin(_args({'min_images': 2}))
@@ -79,12 +78,9 @@ class TestMMMUMultiImageDataset:
         assert list(plugin.build_messages()) == []
 
     def test_min_images_is_validated(self):
-        with pytest.raises(Exception, match='min_images must be between 1 and 7'):
-            MMMUMultiImageDatasetPlugin(_args({'min_images': 0}))
+        with pytest.raises(Exception, match='min_images must be between 2 and 7'):
+            MMMUMultiImageDatasetPlugin(_args({'min_images': 1}))
 
     def test_rejects_tokenized_prompt_mode(self):
-        args = _args()
-        args.tokenize_prompt = True
-
         with pytest.raises(ValueError, match='not supported with the mmmu_multi_image dataset'):
-            MMMUMultiImageDatasetPlugin(args)
+            MMMUMultiImageDatasetPlugin(_args(tokenize_prompt=True))
