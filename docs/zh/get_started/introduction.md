@@ -17,7 +17,7 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 - 🚀 与 [ms-swift](https://github.com/modelscope/ms-swift) 训练框架无缝集成，一键发起评测，为您的模型开发提供从训练到评估的全链路支持。
 
 ## 整体架构
-![EvalScope 架构图](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
+![EvalScope 架构图](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/structure.png)
 *EvalScope 架构图.*
 
 包括以下模块：
@@ -58,4 +58,3 @@ EvalScope 不仅仅是一个评测工具，它是您模型优化之旅的得力�
 - **OpenCompass集成**：支持OpenCompass作为评测后端，对其进行了高级封装和任务简化，您可以更轻松地提交任务进行评测。
 - **多模态评测**：Native 后端原生支持 40+ 个多模态评测集（OCRBench、MMMU、MMBench、MathVista、ChartQA、DocVQA 等），覆盖图文、视频、音频任务；同时保留 VLMEvalKit 后端作为兼容选项。
 - **全链路支持**：通过与[ms-swift](https://github.com/modelscope/ms-swift)训练框架的无缝集成，实现模型训练、模型部署、模型评测、评测报告查看的一站式开发流程，提升用户的开发效率。
-

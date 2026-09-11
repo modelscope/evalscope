@@ -339,7 +339,7 @@ EvalScope 支持通过第三方评测框架（我们称之为"后端"）发起�
 <details><summary>🏛️ 整体架构</summary>
 
 <p align="center">
-    <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/EvalScope%E6%9E%B6%E6%9E%84%E5%9B%BE.png" style="width: 70%;">
+    <img src="https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/structure.png" style="width: 70%;">
     <br>EvalScope 整体架构图.
 </p>
 
