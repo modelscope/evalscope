@@ -3,12 +3,12 @@
 
 ## 概述
 
-LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语语音，源自有声读物。它是评估自动语音识别（ASR）系统最广泛使用的基准测试之一。
+LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英文语音，源自有声读物。它是评估自动语音识别（ASR）系统最广泛使用的基准之一。
 
 ## 任务描述
 
 - **任务类型**：自动语音识别（ASR）
-- **输入**：来自有声读物的朗读英语语音录音
+- **输入**：来自有声读物的朗读英文语音录音
 - **输出**：转录文本
 - **语言**：英语
 
@@ -22,7 +22,7 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
 
 ## 评估说明
 
-- 默认配置使用 **test_clean** 划分
+- 支持的评估子集：**test_clean** 和 **test_other**
 - 主要指标：**词错误率（WER）**
 - 评估过程中应用文本归一化
 - 提示词："Please recognize the speech and only output the recognized content"
@@ -39,35 +39,42 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
 | **标签** | `Audio`, `SpeechRecognition` |
 | **指标** | `wer` |
 | **默认样本数** | 0-shot |
-| **评估划分** | `test_clean` |
+| **评估子集** | `N/A` |
 
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
-| 总样本数 | 87 |
+| 总样本数 | 177 |
 | 提示词长度（平均） | 67 字符 |
 | 提示词长度（最小/最大） | 67 / 67 字符 |
+
+**各子集统计：**
+
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
+|--------|---------|-------------|------------|------------|
+| `test_clean` | 87 | 67 | 67 | 67 |
+| `test_other` | 90 | 67 | 67 | 67 |
 
 **音频统计：**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 87 |
+| 音频文件总数 | 177 |
 | 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | wav |
 
 
 ## 样例示例
 
-**子集**: `default`
+**子集**: `test_clean`
 
 ```json
 {
   "input": [
     {
-      "id": "fd0309e6",
+      "id": "732c90a4",
       "content": [
         {
           "text": "Please recognize the speech and only output the recognized content:"
@@ -79,7 +86,7 @@ LibriSpeech 是一个大规模语料库，包含约 1,000 小时的朗读英语�
       ]
     }
   ],
-  "target": "Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.",
+  "target": "Eleven o'clock had struck it was a fine clear night they were the only persons on the road and they sauntered leisurely along to avoid paying the price of fatigue for the recreation provided for the toledans in their valley or on the banks of ... [TRUNCATED 7380 chars] ...  less surprised than they and the better to assure himself of so wonderful a fact he begged leocadia to give him some token which should make perfectly clear to him that which indeed he did not doubt since it was authenticated by his parents.",
   "id": 0,
   "group_id": 0,
   "metadata": {
@@ -122,6 +129,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['librispeech'],
+    dataset_args={
+        'librispeech': {
+            # subset_list: ['test_clean', 'test_other']  # 可选，用于指定评估特定子集
+        }
+    },
     limit=10,  # 正式评估时请删除此行
 )
 
