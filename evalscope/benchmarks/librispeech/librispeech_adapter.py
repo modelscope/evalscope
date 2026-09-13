@@ -40,13 +40,14 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
 
 ## Evaluation Notes
 
-- Default configuration uses **test_clean** split
+- Supported evaluation splits: **test_clean** and **test_other**
 - Primary metric: **Word Error Rate (WER)**
 - Text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
 - Metadata includes audio ID and duration information
 """,  # noqa: E501
-        eval_split='test_clean',
+        subset_list=['test_clean', 'test_other'],
+        evaluation_version='v1.1',
         metric_list=['wer'],
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
@@ -54,6 +55,7 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
 class LibriSpeechAdapter(AudioLanguageAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.split_as_subset = True
 
     def record_to_sample(self, record) -> Sample:
         content_list = [ContentText(text=self.prompt_template)]
