@@ -20,7 +20,7 @@ from evalscope.api.judge import (
     Placement,
     ReducedVerdict,
 )
-from evalscope.api.messages.chat_message import ChatMessageSystem, ChatMessageUser, messages_to_markdown
+from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser, messages_to_markdown
 from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
@@ -244,20 +244,40 @@ class GeneralArenaAdapter(DefaultDataAdapter):
         return reviews
 
     @staticmethod
-    def _review_input(review: ReviewResult, *, legacy_input: bool) -> str | List[Dict[str, Any]]:
+    def _review_input_messages(review: ReviewResult) -> List[ChatMessage]:
         # Native caches include generated answers and agent trajectories after the input.
         # Unmarked legacy input and assistant demonstrations must remain part of the prompt.
-        messages = review.messages
-        for position, message in enumerate(messages):
+        for position, message in enumerate(review.messages):
             if message.source == 'generate':
-                messages = messages[:position]
-                break
+                return review.messages[:position]
+        return review.messages
+
+    @classmethod
+    def _review_input(cls, review: ReviewResult, *, legacy_input: bool) -> str | List[Dict[str, Any]]:
+        messages = cls._review_input_messages(review)
         if legacy_input:
             # Legacy caches retained only rendered text, without roles or typed content.
             return messages_to_markdown(messages)
-        return [
-            message.model_dump(exclude={'id', 'source', 'metadata', 'perf_metrics', 'model'}) for message in messages
-        ]
+
+        # Rename native tool IDs consistently so call/result relationships survive comparison.
+        # IDs inside arguments or opaque provider payloads remain part of the actual input.
+        tool_ids: Dict[str, int] = {}
+
+        def normalize_tool_id(tool_id: str) -> int:
+            return tool_ids.setdefault(tool_id, len(tool_ids))
+
+        inputs = []
+        for message in messages:
+            data = message.model_dump(exclude={'id', 'source', 'metadata', 'perf_metrics', 'model'})
+            for tool_call in data.get('tool_calls') or []:
+                tool_call['id'] = normalize_tool_id(tool_call['id'])
+            reference = data.get('tool_call_id')
+            if isinstance(reference, list):
+                data['tool_call_id'] = [normalize_tool_id(tool_id) for tool_id in reference]
+            elif isinstance(reference, str):
+                data['tool_call_id'] = normalize_tool_id(reference)
+            inputs.append(data)
+        return inputs
 
     def _build_pair_wise_data(
         self, dataset_dict: Dict[tuple[str, str], Dict[str, List[Dict[str, Any]]]]
@@ -315,12 +335,13 @@ class GeneralArenaAdapter(DefaultDataAdapter):
                             'Review indices must refer to the same input in every model.'
                         )
 
+                    question = messages_to_markdown(self._review_input_messages(model_review))
                     for model_choice, baseline_choice in zip(
                         process_review_item(model_review), process_review_item(baseline_review)
                     ):
                         pairs.append(
                             {
-                                'question': model_choice['Question'],
+                                'question': question,
                                 'answer_1': model_choice['Generated'],
                                 'answer_2': baseline_choice['Generated'],
                                 'model_1': name,

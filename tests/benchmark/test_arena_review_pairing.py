@@ -11,6 +11,7 @@ from evalscope.api.evaluator import ReviewResult
 from evalscope.api.messages import (
     ChatMessageAssistant,
     ChatMessageSystem,
+    ChatMessageTool,
     ChatMessageUser,
     ContentImage,
     ContentText,
@@ -21,6 +22,7 @@ from evalscope.api.messages import (
 from evalscope.api.metric import SampleScore, Score
 from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.api.registry import get_benchmark
+from evalscope.api.tool import ToolCall, ToolFunction
 from evalscope.benchmarks.general_arena.general_arena_adapter import GeneralArenaAdapter
 from evalscope.config import TaskConfig
 from evalscope.metrics.judge.llm_judge import LLMJudge
@@ -152,6 +154,84 @@ def test_modern_generated_messages_do_not_make_matching_inputs_different(tmp_pat
     assert len(pairs) == 1
     assert pairs[0]['answer_1'] == 'Candidate response'
     assert pairs[0]['answer_2'] == 'Baseline response'
+    assert pairs[0]['question'] == 'Question 0'
+
+
+def test_arena_question_keeps_demonstrations_but_excludes_generated_trajectory(tmp_path: Path) -> None:
+    records = {}
+    prefix = [
+        ChatMessageUser(content='Example question'),
+        ChatMessageAssistant(content='Example answer'),
+        ChatMessageUser(content='Current question'),
+    ]
+    for name in ['candidate', 'baseline']:
+        record = _review(0, f'{name} final answer', modern=True)
+        trajectory = [
+            ChatMessageAssistant(content=f'{name} private reasoning', source='generate'),
+            ChatMessageTool(content=f'{name} generated tool result', tool_call_id=f'{name}-tool'),
+            ChatMessageAssistant(content=f'{name} final answer', source='generate'),
+        ]
+        record['messages'] = [message.model_dump(mode='json') for message in prefix + trajectory]
+        records[name] = record
+    dataset, _ = _adapter(tmp_path, [records['candidate']], [records['baseline']]).load()
+    sample = dataset[PAIR_SUBSET][0]
+    assert sample.input[0].content == messages_to_markdown(prefix)
+    assert sample.metadata['answer_1'] == 'candidate final answer'
+    assert sample.target == 'baseline final answer'
+
+
+def _tool_input(first_id: str, second_id: str) -> list[dict[str, Any]]:
+    messages = [
+        ChatMessageUser(content='Compare the two lookup results'),
+        ChatMessageAssistant(
+            content='',
+            tool_calls=[
+                ToolCall(id=first_id, function=ToolFunction(name='lookup', arguments={'id': 'first-record'})),
+                ToolCall(id=second_id, function=ToolFunction(name='lookup', arguments={'id': 'second-record'})),
+            ],
+        ),
+        ChatMessageTool(content='First result', function='lookup', tool_call_id=first_id),
+        ChatMessageTool(content='Second result', function='lookup', tool_call_id=second_id),
+        ChatMessageUser(content='Compare these results', tool_call_id=[first_id, second_id]),
+    ]
+    return [message.model_dump(mode='json') for message in messages]
+
+
+@pytest.mark.parametrize('baseline_ids', [('baseline-first', 'baseline-second'), ('second', 'first')])
+def test_matching_tool_conversations_ignore_call_ids_without_mutating_reviews(
+    tmp_path: Path, baseline_ids: tuple[str, str]
+) -> None:
+    candidate, baseline = _review(0, 'Candidate answer', modern=True), _review(0, 'Baseline answer', modern=True)
+    candidate['messages'] = _tool_input('first', 'second') + candidate['messages'][1:]
+    baseline['messages'] = _tool_input(*baseline_ids) + baseline['messages'][1:]
+    native = ReviewResult.from_cache_item(dict(candidate))
+    before = native.model_dump(mode='json')
+    GeneralArenaAdapter._review_input(native, legacy_input=False)
+    assert native.model_dump(mode='json') == before
+    pairs = _pairs(_adapter(tmp_path, [candidate], [baseline]))
+    assert len(pairs) == 1
+    assert pairs[0]['question'] == messages_to_markdown(native.messages[:-1])
+
+
+@pytest.mark.parametrize('difference', ['tool-link', 'user-links', 'duplicate-id', 'missing-link', 'arguments', 'internal'])
+def test_tool_id_normalization_preserves_relationships_and_payloads(tmp_path: Path, difference: str) -> None:
+    candidate, baseline = _review(0, 'Candidate answer', modern=True), _review(0, 'Baseline answer', modern=True)
+    candidate['messages'] = _tool_input('first', 'second') + candidate['messages'][1:]
+    baseline['messages'] = _tool_input('first', 'second') + baseline['messages'][1:]
+    if difference == 'tool-link':
+        baseline['messages'][2]['tool_call_id'] = 'second'
+    elif difference == 'user-links':
+        baseline['messages'][4]['tool_call_id'] = ['first', 'first']
+    elif difference == 'duplicate-id':
+        baseline['messages'][1]['tool_calls'][1]['id'] = 'first'
+    elif difference == 'missing-link':
+        baseline['messages'][2]['tool_call_id'] = None
+    elif difference == 'arguments':
+        baseline['messages'][1]['tool_calls'][0]['function']['arguments']['id'] = 'different-record'
+    else:
+        baseline['messages'][1]['tool_calls'][0]['internal'] = {'id': 'provider-payload'}
+    with pytest.raises(ValueError, match='Mismatched input prompt'):
+        _pairs(_adapter(tmp_path, [candidate], [baseline]))
 
 
 def test_legacy_input_strings_and_missing_optional_identity_are_accepted(tmp_path: Path) -> None:
