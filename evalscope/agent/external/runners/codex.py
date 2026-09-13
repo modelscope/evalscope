@@ -11,9 +11,8 @@ Responses API — the bridge's ``/openai/v1/responses`` route is the only
 endpoint codex can actually hit.
 
 The prompt is passed as the trailing positional argument (codex ``exec
-"<prompt>"``) so this runner works in both ``LocalAgentEnvironment``
-(stdin is fully supported) and ``EnclaveAgentEnvironment`` (whose
-``exec`` does not forward ``input=`` to the underlying shell executor).
+"<prompt>"``) rather than on stdin: it keeps the invocation visible in the
+run logs and independent of how each environment supplies stdin.
 """
 
 import tempfile
@@ -204,8 +203,8 @@ class CodexRunner(AgentRunner):
         cmd.append('--dangerously-bypass-approvals-and-sandbox')
         cmd.extend(['--output-last-message', _CODEX_OUTPUT_FILE])
         cmd.extend(self._extra_args)
-        # Positional prompt avoids the Enclave stdin gap (ms_enclave's
-        # shell_executor does not pipe stdin to the child process).
+        # Positional prompt keeps the invocation visible in the run logs and
+        # independent of how each environment supplies stdin.
         cmd.append(task.instruction)
 
         sample_id = (task.metadata or {}).get('sample_id')
