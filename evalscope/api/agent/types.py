@@ -8,7 +8,7 @@ import from ``evalscope.api.agent`` to participate.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -82,6 +82,18 @@ class NativeAgentConfig(BaseAgentConfig):
     means use each tool's built-in default.
     """
 
+    max_repeated_tool_calls: Optional[int] = Field(default=None)
+    """Stall the loop when the model repeats the identical call this many times.
+
+    Counts consecutive turns whose tool calls match the previous turn's by
+    name *and* arguments, so a genuine poll that advances an offset or a retry
+    counter never trips it. On reaching the threshold the turn is not executed:
+    the model is told what it is repeating and can correct itself, and a model
+    that keeps repeating ends the episode through the existing malformed-turn
+    budget instead of burning every remaining step. ``None`` (default)
+    disables the guard.
+    """
+
     validate_tool_arguments: bool = Field(default=False)
     """Reject tool calls whose arguments violate the tool's advertised JSON schema.
 
@@ -102,6 +114,13 @@ class NativeAgentConfig(BaseAgentConfig):
     :class:`MCPServer.__aenter__`, so configurations with empty
     ``mcp_servers`` (the default) do not require ``pip install mcp``.
     """
+
+    @field_validator('max_repeated_tool_calls')
+    @classmethod
+    def _validate_max_repeated_tool_calls(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v <= 1:
+            raise ValueError('max_repeated_tool_calls must be greater than 1.')
+        return v
 
     @field_validator('max_steps')
     @classmethod
@@ -226,6 +245,20 @@ class AgentContext:
     whenever the reminder wording or shape changes, which reads as "never
     nudged" and lets a stuck model burn the whole step budget.
     """
+
+    repeated_call_streak: int = 0
+    """Consecutive turns that produced exactly the same set of tool calls.
+
+    Owned by :class:`AgentLoop`, which recomputes it from each turn's parsed
+    action and resets it whenever the calls change or a turn produces none.
+    It cannot be derived from ``messages``: a strategy may synthesise the
+    calls during parsing rather than read them off the assistant message
+    (``swe_bench_backticks`` builds a ``bash`` call out of a fenced block),
+    so the message history has no tool calls to compare for those runs.
+    """
+
+    last_tool_call_signature: Optional[Tuple[Tuple[str, str], ...]] = None
+    """Signature of the previous turn's tool calls; see :attr:`repeated_call_streak`."""
 
     parse_error_nudge_count: int = 0
     """Malformed-turn nudges since the last turn that produced tool calls.

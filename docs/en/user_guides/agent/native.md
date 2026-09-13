@@ -62,6 +62,7 @@ Most-used `NativeAgentConfig` fields:
 | `max_steps` | Max iterations per sample | Math/QA `5-10`, code fixes `100+` |
 | `skills_dir` | Optional host Agent Skills directory | EvalScope makes the skills available before the agent loop starts |
 | `validate_tool_arguments` | Reject tool calls whose arguments violate the JSON schema advertised to the model; the model sees the violation as a `parsing` tool error and can retry | `False` (default); enable when the run should measure whether the model produces schema-valid calls |
+| `max_repeated_tool_calls` | Stall the loop when the model issues the identical call (same name and arguments) this many times in a row, instead of letting it burn every remaining step | `None` (default, off); `3`-`5` for long budgets such as SWE-bench |
 | `kwargs` | Strategy kwargs | Most commonly `{'system_prompt': '...'}` to steer the model |
 
 Available `strategy` values:

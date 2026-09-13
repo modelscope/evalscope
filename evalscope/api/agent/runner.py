@@ -47,6 +47,7 @@ def run_agent_loop(
     mcp_configs: Optional[List['MCPServerConfig']] = None,
     close_environment: bool = True,
     validate_tool_arguments: bool = False,
+    max_repeated_tool_calls: Optional[int] = None,
 ) -> AgentLoopResult:
     """Drive a single :class:`AgentLoop` to completion and return its result.
 
@@ -76,6 +77,9 @@ def run_agent_loop(
             tool call against the ``ToolInfo`` schema advertised to the model
             (native and MCP tools alike) and refuses to dispatch violating
             calls. See :attr:`NativeAgentConfig.validate_tool_arguments`.
+        max_repeated_tool_calls: Stall the loop once the model has issued the
+            identical call this many times in a row. See
+            :attr:`NativeAgentConfig.max_repeated_tool_calls`.
 
     Returns:
         AgentLoopResult: Completed result with ``messages``, ``trace`` and
@@ -128,6 +132,7 @@ def run_agent_loop(
                     environment=environment,
                     max_steps=max_steps,
                     trace=trace,
+                    max_repeated_tool_calls=max_repeated_tool_calls,
                 )
                 return await loop.run(ctx)
             finally:

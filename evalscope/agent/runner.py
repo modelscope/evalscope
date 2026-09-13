@@ -123,6 +123,7 @@ def run_native_agent(
         mcp_configs=list(cfg.mcp_servers) or None,
         close_environment=owns_environment,
         validate_tool_arguments=cfg.validate_tool_arguments,
+        max_repeated_tool_calls=cfg.max_repeated_tool_calls,
     )
 
     final_text = extract_final_answer(result, strategy)

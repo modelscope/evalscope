@@ -14,12 +14,14 @@ streaming generation in the future.  ``AgentAdapter._on_inference`` bridges
 it into the synchronous evaluation pipeline through ``AsyncioLoopRunner``.
 """
 
+import json
 import logging
 import time
 from typing import Any, List, Optional, Tuple
 
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.model import Model, ModelOutput, ModelUsage
+from evalscope.api.tool import ToolCall
 from evalscope.utils.logger import get_logger
 
 from .constants import LoopMessages, MetadataKeys, SubmissionSources, ToolSchemaModes, TraceSources
@@ -49,12 +51,14 @@ class AgentLoop:
         environment: Optional[AgentEnvironment] = None,
         max_steps: int = 10,
         trace: Optional[AgentTrace] = None,
+        max_repeated_tool_calls: Optional[int] = None,
     ) -> None:
         self.model = model
         self.strategy = strategy
         self.tool_executor = tool_executor
         self.environment = environment
         self.max_steps = max_steps
+        self.max_repeated_tool_calls = max_repeated_tool_calls
         self.trace = trace or AgentTrace(
             framework='native',
             strategy=getattr(strategy, 'name', None),
@@ -100,8 +104,16 @@ class AgentLoop:
 
             # ---- parse ----
             parsed = self.strategy.parse_output(output, ctx)
+            repeating = self._track_repeated_calls(parsed, ctx)
+            if repeating is not None:
+                parsed = repeating
             if parsed.error:
-                self._emit_parse_error(ctx, assistant_msg, parsed)
+                self._emit_parse_error(
+                    ctx,
+                    assistant_msg,
+                    parsed,
+                    source=(TraceSources.REPEATED_TOOL_CALLS if repeating is not None else TraceSources.PARSE),
+                )
 
             # ---- terminate from parse? ----
             if self.strategy.is_done(parsed, ctx):
@@ -180,6 +192,48 @@ class AgentLoop:
         ``output.message`` object that lives in ``ctx.messages``.
         """
         return output.message.model_copy(deep=True)
+
+    def _track_repeated_calls(self, parsed: ParsedAction, ctx: AgentContext) -> Optional[ParsedAction]:
+        """Update the identical-call streak and stall the turn once it is too long.
+
+        Returns a replacement :class:`ParsedAction` when the guard fires, else
+        ``None``. The replacement carries an ``error`` and no tool calls, so the
+        turn takes the loop's existing malformed path: the tools are not run,
+        the model is told what it keeps repeating, and a model that never
+        changes course ends the episode on the malformed-nudge budget rather
+        than on ``max_steps``. Reusing that budget is deliberate -- both mean
+        "recoverable turn that made no progress", and a third counter would let
+        either failure consume the other's retries.
+
+        The streak is not reset here after firing: the guard keeps stalling
+        every further repetition, and the loop's own reset on a genuine ACT turn
+        clears it as soon as the model changes its call.
+        """
+        if parsed.outcome is not TurnOutcome.ACT:
+            ctx.repeated_call_streak = 0
+            ctx.last_tool_call_signature = None
+            return None
+
+        signature = _tool_call_signature(parsed.tool_calls)
+        if signature == ctx.last_tool_call_signature:
+            ctx.repeated_call_streak += 1
+        else:
+            ctx.last_tool_call_signature = signature
+            ctx.repeated_call_streak = 1
+
+        if self.max_repeated_tool_calls is None or ctx.repeated_call_streak < self.max_repeated_tool_calls:
+            return None
+
+        names = ', '.join(sorted({call.function.name for call in parsed.tool_calls}))
+        self._dbg(ctx, f'repeated call guard fired: {names} x{ctx.repeated_call_streak}')
+        return ParsedAction(
+            error=(
+                f'You have issued the identical call to {names} {ctx.repeated_call_streak} times in a row '
+                f'and it is not making progress. Change the arguments, use a different tool, '
+                f'or give your final answer.'
+            ),
+            raw_text=parsed.raw_text,
+        )
 
     def _try_nudge(self, parsed: ParsedAction, ctx: AgentContext) -> bool:
         """Inject a 'please call a tool' reminder if the strategy allows it.
@@ -338,6 +392,7 @@ class AgentLoop:
         ctx: AgentContext,
         assistant_msg: ChatMessage,
         parsed: ParsedAction,
+        source: str = TraceSources.PARSE,
     ) -> None:
         self._dbg(ctx, f'parse_error: {parsed.error}')
         self.trace.add_event(
@@ -345,7 +400,7 @@ class AgentLoop:
             type=EventType.ERROR,
             message_id=assistant_msg.id,
             payload={
-                'source': TraceSources.PARSE,
+                'source': source,
                 'message': parsed.error,
             },
         )
@@ -463,6 +518,22 @@ class AgentLoop:
         """Emit a DEBUG log line with a uniform sample/step prefix."""
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'[AgentLoop] sample={ctx.sample_id} step={ctx.step} {msg}')
+
+
+def _tool_call_signature(tool_calls: List[ToolCall]) -> Tuple[Tuple[str, str], ...]:
+    """Order-independent identity of a turn's tool calls: name plus arguments.
+
+    Arguments are part of the key so a poll that advances an offset, or a retry
+    that changes a parameter, reads as progress rather than as a repeat.
+    ``default=str`` keeps the signature total for arguments a model may emit
+    that are not plain JSON.
+    """
+    return tuple(
+        sorted(
+            (call.function.name, json.dumps(call.function.arguments, sort_keys=True, default=str))
+            for call in tool_calls
+        )
+    )
 
 
 def _extract_usage(output: ModelOutput) -> Optional[dict]:
