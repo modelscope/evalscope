@@ -66,6 +66,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `simple_vqa` | [SimpleVQA](../../benchmarks/simple_vqa.md) | `MultiModal`, `QA`, `Reasoning` |
 | `slake` | [SLAKE](../../benchmarks/slake.md) | `Medical`, `MultiModal`, `QA` |
 | `surds` | [SURDS](../../benchmarks/surds.md) | `Grounding`, `MultiModal`, `QA`, `Reasoning` |
+| `thchs30` | [THCHS-30](../../benchmarks/thchs30.md) | `Audio`, `Chinese`, `SpeechRecognition` |
 | `tir_bench` | [TIR-Bench](../../benchmarks/tir_bench.md) | `MultiModal`, `QA`, `Reasoning` |
 | `torgo` | [TORGO](../../benchmarks/torgo.md) | `Audio`, `SpeechRecognition` |
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
@@ -146,6 +147,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/simple_vqa.md
 ../../benchmarks/slake.md
 ../../benchmarks/surds.md
+../../benchmarks/thchs30.md
 ../../benchmarks/tir_bench.md
 ../../benchmarks/torgo.md
 ../../benchmarks/tvbench.md
