@@ -6,6 +6,10 @@ Arena mode allows you to configure multiple candidate models and specify a basel
 
 To support arena mode, **all candidate models need to run inference on the same dataset**. The dataset can be a general QA dataset or a domain-specific one. Below is an example using a custom `general_qa` dataset. See the [documentation](../advanced_guides/custom_dataset/llm.md#question-answering-format-qa) for details on using this dataset.
 
+Use matching dataset ordering, filters, limits, and repeats for every model. Within each shared dataset/subset, arena imports require the same non-empty set of review indices and matching input prompts. Missing or extra observations, conflicting repeat identities, or different inputs at the same index raise an error before judging. Complete the missing inference/review work or rerun the models with matching settings; arena does not silently discard unmatched observations.
+
+Review files may be in any row order. Repeated generations retain their individual indices. As with cache resume, if an index occurs more than once, the last saved row is used and a warning is logged. For message-based caches, input comparison preserves roles and structured content, ignoring per-run message IDs and metrics. It stops before the first message marked `source="generate"`, preserving input demonstrations while excluding model-generated responses. Without that marker, all saved messages are treated as input. Legacy `input` caches remain supported through comparison of rendered input text; those caches cannot establish equality of message roles or structured content that was not saved.
+
 The JSONL file for the `general_qa` dataset should be in the following format. Only the `query` field is required; no additional fields are necessary. Below are two example files:
 
 - Example content of the `arena.jsonl` file:
