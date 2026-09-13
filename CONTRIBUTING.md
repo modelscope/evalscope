@@ -212,6 +212,10 @@ Brief description of what this benchmark evaluates.
 - **Task Type**: ...
 - **Input**: ...
 - **Output**: ...
+- **Domain**: ...
+
+## Key Features
+- Describe the dataset scale/source and the capabilities evaluated.
 
 ## Evaluation Notes
 - Default configuration uses **0-shot** evaluation
@@ -220,6 +224,7 @@ Brief description of what this benchmark evaluates.
 @register_benchmark(
     BenchmarkMeta(
         name='my_benchmark',           # unique identifier (snake_case)
+        evaluation_version='v1.0',      # initial evaluation semantics version
         pretty_name='MyBenchmark',      # display name
         dataset_id='org/dataset-name',  # ModelScope / HuggingFace dataset ID
         tags=[Tags.REASONING],          # category tags
@@ -256,6 +261,7 @@ class MyBenchmarkAdapter(DefaultDataAdapter):
 ```python
 BenchmarkMeta(
     name='...',              # Required: unique snake_case ID
+    evaluation_version='v1.0', # Explicit initial version for new benchmarks
     dataset_id='...',        # Required: remote dataset ID or local path
     pretty_name='...',       # Display name
     tags=[...],              # From evalscope.constants.Tags
