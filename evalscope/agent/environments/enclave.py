@@ -19,6 +19,7 @@ shared ``atexit`` hook.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import shlex
 import time
@@ -132,6 +133,13 @@ class EnclaveAgentEnvironment(AgentEnvironment):
     """
 
     name: str = 'enclave'
+
+    #: Wall-clock grace allowed beyond the requested command timeout before the
+    #: environment stops waiting on the sandbox layer itself. The sandbox owns
+    #: the deadline and returns a ``TIMEOUT`` status with whatever output the
+    #: command produced, which is the better answer; this margin only decides
+    #: how long to wait for that answer before giving up on it.
+    _TIMEOUT_GRACE_S: float = 30.0
 
     def __init__(
         self,
@@ -247,13 +255,38 @@ class EnclaveAgentEnvironment(AgentEnvironment):
         # ``None`` / ``0`` for shell_executor). Wall-time it locally so
         # ``ExecResult.duration`` always reflects real elapsed time.
         started = time.monotonic()
-        result = await handle.execute_tool(
-            'shell_executor',
-            {
-                'command': shell_argv,
-                'timeout': timeout_s,
-            },
-        )
+        deadline = timeout_s + self._TIMEOUT_GRACE_S
+        try:
+            result = await asyncio.wait_for(
+                handle.execute_tool(
+                    'shell_executor',
+                    {
+                        'command': shell_argv,
+                        'timeout': timeout_s,
+                    },
+                ),
+                timeout=deadline,
+            )
+        except asyncio.TimeoutError:
+            # The sandbox is expected to enforce ``timeout_s`` and report a
+            # TIMEOUT status; when it does not come back at all there is
+            # nothing above this call that bounds the wait, so a single stuck
+            # command would hang the whole evaluation. Give up on the sandbox
+            # instead and report the sample as timed out.
+            elapsed = time.monotonic() - started
+            logger.warning(
+                f'EnclaveAgentEnvironment: sandbox {handle.sandbox_id} did not return within {deadline:g}s '
+                f'for a command with timeout={timeout_s:g}s; abandoning the execution.'
+            )
+            return ExecResult(
+                returncode=-1,
+                timed_out=True,
+                duration=elapsed,
+                stderr=(
+                    f'[evalscope] the sandbox did not return within {deadline:g}s for a command with '
+                    f'timeout={timeout_s:g}s. The command was abandoned; its output is unavailable.'
+                ),
+            )
         elapsed = time.monotonic() - started
 
         stdout = str(result.output or '')
