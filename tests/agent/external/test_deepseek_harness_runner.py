@@ -10,7 +10,7 @@ import pytest
 from evalscope.agent.external import ExternalAgentConfig
 from evalscope.agent.external.adapter import run_external_agent
 from evalscope.agent.external.runners.base import BridgeEndpoint, ExternalAgentTask, RunnerTimeoutError
-from evalscope.agent.external.runners.deepseek_harness import DeepSeekHarnessRunner
+from evalscope.agent.external.runners.deepseek_harness import DeepSeekHarnessRunner, _supports_dsh_node
 from evalscope.api.agent import EventType
 from evalscope.api.agent.types import ExecResult
 from evalscope.api.dataset import Sample
@@ -62,8 +62,8 @@ def _run(coro: Any) -> Any:
     return AsyncioLoopRunner.run(coro)
 
 
-def _task() -> ExternalAgentTask:
-    return ExternalAgentTask(instruction='Reply with 42.', timeout=20.0, metadata={'sample_id': 'sample-1'})
+def _task(instruction: str = 'Reply with 42.') -> ExternalAgentTask:
+    return ExternalAgentTask(instruction=instruction, timeout=20.0, metadata={'sample_id': 'sample-1'})
 
 
 def _bridge() -> BridgeEndpoint:
@@ -76,6 +76,34 @@ def test_setup_requires_dsh_when_auto_install_disabled() -> None:
 
     with pytest.raises(RuntimeError, match='dsh CLI not found'):
         _run(runner.setup(env))
+
+
+def test_setup_replaces_unsupported_node_version() -> None:
+    runner = DeepSeekHarnessRunner()
+    env = FakeEnvironment(
+        [
+            ExecResult(returncode=1),
+            ExecResult(),
+            ExecResult(stdout='20.18.1'),
+            ExecResult(),
+            ExecResult(),
+            ExecResult(),
+            ExecResult(),
+        ]
+    )
+
+    _run(runner.setup(env))
+
+    assert 'apt-get install -y --no-install-recommends nodejs' in env.calls[4][0][2]
+    assert '@deepseek-ai/dsh@0.1.5-rc.2' in env.calls[5][0][2]
+
+
+@pytest.mark.parametrize(
+    ('version', 'supported'),
+    [('22.18.0', False), ('22.19.0', True), ('23.0.0', False), ('24.0.0', True), ('invalid', False)],
+)
+def test_supports_dsh_node(version: str, supported: bool) -> None:
+    assert _supports_dsh_node(version) is supported
 
 
 def test_run_writes_isolated_openai_provider_settings() -> None:
@@ -98,11 +126,21 @@ def test_run_writes_isolated_openai_provider_settings() -> None:
         'OPENAI_API_KEY': 'trial-secret',
         'DSH_PERMISSION_MODE': 'danger-full-access',
         'DSH_HOME': '/tmp/evalscope-dsh',
+        'HOME': '/tmp/evalscope-dsh',
     }
     command, timeout, command_env = env.calls[1]
-    assert command == ['dsh', '--profile', 'headless', 'Reply with 42.']
+    assert command == ['dsh', '--profile', 'headless', '--', 'Reply with 42.']
     assert timeout == 20.0
     assert command_env == settings_env
+
+
+def test_run_treats_leading_dash_as_instruction() -> None:
+    runner = DeepSeekHarnessRunner(home_override='/tmp/evalscope-dsh')
+    env = FakeEnvironment([ExecResult(), ExecResult(stdout='answer')])
+
+    _run(runner.run(_task('--help'), env, _bridge()))
+
+    assert env.calls[1][0] == ['dsh', '--profile', 'headless', '--', '--help']
 
 
 def test_run_raises_timeout_error() -> None:

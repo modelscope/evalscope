@@ -112,7 +112,7 @@ run_task(task_config)
 - **claude-code / codex / opencode CLI**:首次运行会在沙箱内自动安装 Node.js + 对应 npm 包，**仅支持 Debian/Ubuntu 系镜像**。
 - **gemini-cli**:需要 Node.js 环境，可使用预构建镜像 `evalscope-gemini-cli:latest`。
 - **hermes**:需要 Python 3.11 + uv 环境，可使用预构建镜像 `evalscope-hermes:latest`。
-- **deepseek-harness**:需要 Node.js 22+，使用 `dsh --profile headless`；推荐锁定版本的预构建镜像 `evalscope-deepseek-harness:0.1.5-rc.2`。
+- **deepseek-harness**:需要 Node.js 22.19+ 或 24+，使用 `dsh --profile headless`；推荐锁定版本的预构建镜像 `evalscope-deepseek-harness:0.1.5-rc.2`。
 
 ```{tip}
 冷启动需要下载 Node 和 npm 包，可能耗时数分钟。生产环境建议把 CLI 预装进镜像并设置 `kwargs={'auto_install': False}`，或为 Docker 挂载持久化 npm 缓存 volume。

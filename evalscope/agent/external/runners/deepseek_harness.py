@@ -16,6 +16,15 @@ from .install_helper import ensure_node_via_apt, install_task_skills
 logger = get_logger()
 
 
+def _supports_dsh_node(version: str) -> bool:
+    """Return whether ``version`` is supported by the pinned DSH release."""
+    try:
+        major, minor, *_ = (int(part) for part in version.split('.'))
+    except ValueError:
+        return False
+    return major >= 24 or (major == 22 and minor >= 19)
+
+
 @register_runner('deepseek-harness')
 class DeepSeekHarnessRunner(AgentRunner):
     """Drive ``dsh --profile headless`` for one sample."""
@@ -77,6 +86,7 @@ class DeepSeekHarnessRunner(AgentRunner):
             node_setup_url=self._node_setup_url,
             timeout_s=self._install_timeout_s,
             runner_name='DeepSeekHarnessRunner',
+            version_checker=_supports_dsh_node,
         )
         package = f'@deepseek-ai/dsh@{self._dsh_version}'
         install = await env.exec(
@@ -103,6 +113,7 @@ class DeepSeekHarnessRunner(AgentRunner):
         }
         if home_dir is not None:
             env_vars['DSH_HOME'] = home_dir
+            env_vars['HOME'] = home_dir
 
         try:
             await install_task_skills(
@@ -115,7 +126,7 @@ class DeepSeekHarnessRunner(AgentRunner):
             await self._write_settings(env, env_vars, bridge)
             cmd = ['dsh', '--profile', 'headless']
             cmd.extend(self._extra_args)
-            cmd.append(task.instruction)
+            cmd.extend(['--', task.instruction])
 
             sample_id = (task.metadata or {}).get('sample_id')
             env_name = getattr(env, 'name', type(env).__name__)

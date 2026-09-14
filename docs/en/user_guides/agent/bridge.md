@@ -113,7 +113,7 @@ run_task(task_config)
 - **claude-code / codex / opencode CLIs**: on first run EvalScope auto-installs Node.js + the matching npm package inside the sandbox. **Only Debian/Ubuntu-based images are supported.**
 - **gemini-cli**: requires Node.js; use the pre-built image `evalscope-gemini-cli:latest`.
 - **hermes**: requires Python 3.11 + uv; use the pre-built image `evalscope-hermes:latest`.
-- **deepseek-harness**: requires Node.js 22+ and runs `dsh --profile headless`; use the pinned image `evalscope-deepseek-harness:0.1.5-rc.2`.
+- **deepseek-harness**: requires Node.js 22.19+ or 24+ and runs `dsh --profile headless`; use the pinned image `evalscope-deepseek-harness:0.1.5-rc.2`.
 
 ```{tip}
 Cold starts download Node and the npm package and can take several minutes. For production, bake the CLI into the image and set `kwargs={'auto_install': False}`, or mount a persistent npm cache volume for Docker.
