@@ -44,7 +44,11 @@ async def statistic_benchmark_metric(
         ``workload_timeline`` always accumulates regardless of mode, callers
         may inspect ``n_points`` before rendering downstream tables.
     """
-    accumulator = MetricsAccumulator(concurrency=args.parallel, rate=args.rate)
+    accumulator = MetricsAccumulator(
+        concurrency=args.parallel,
+        rate=args.rate,
+        enable_pd_metrics=args.enable_pd_metrics,
+    )
     trace_acc = TraceAccumulator()
     workload_timeline = WorkloadTimeline()
     result_db_path = get_result_db_path(args)
@@ -123,11 +127,17 @@ async def statistic_benchmark_metric(
                 # default): building the message for every request would be
                 # pure per-request overhead.
                 if args.visualizer:
-                    message = accumulator.to_result().create_message(api_type=args.api)
+                    message = accumulator.to_result().create_message(
+                        api_type=args.api,
+                        enable_pd_metrics=args.enable_pd_metrics,
+                    )
                     await asyncio.to_thread(maybe_log_to_visualizer, args, message)
 
                 if int(accumulator.n_total) % args.log_every_n_query == 0:
-                    message = accumulator.to_result().create_message(api_type=args.api)
+                    message = accumulator.to_result().create_message(
+                        api_type=args.api,
+                        enable_pd_metrics=args.enable_pd_metrics,
+                    )
                     msg = json.dumps(message, ensure_ascii=False, indent=2)
                     logger.info(msg)
 

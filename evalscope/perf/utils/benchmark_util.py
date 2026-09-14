@@ -97,7 +97,7 @@ class BenchmarkData:
     """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).
     Approximates speculative decoding acceptance length L."""
 
-    def finalize(self, api_plugin) -> None:
+    def finalize(self, api_plugin, enable_pd_metrics: bool = False) -> None:
         """Parse token counts and compute all derived timing metrics.
 
         Must be called after the response is fully received.  Idempotent:
@@ -116,7 +116,7 @@ class BenchmarkData:
         if not self.inter_chunk_latency and self.chunk_times:
             self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
 
-        if self.inter_chunk_latency:
+        if enable_pd_metrics and self.inter_chunk_latency:
             self.pd_handoff_latency = self.inter_chunk_latency[0]
             steady_decode_latencies = self.inter_chunk_latency[1:]
             if steady_decode_latencies:
@@ -164,6 +164,7 @@ class MetricsAccumulator:
     # --- Test configuration ---
     concurrency: int = 0
     rate: float = 0.0
+    enable_pd_metrics: bool = False
 
     # --- Request counts ---
     n_total: int = 0
@@ -254,7 +255,7 @@ class MetricsAccumulator:
 
         if data.success:
             self.n_success += 1
-            data.finalize(api_plugin)
+            data.finalize(api_plugin, enable_pd_metrics=self.enable_pd_metrics)
 
             self.total_latency += data.query_latency
             self.total_first_chunk_latency += data.first_chunk_latency
@@ -262,14 +263,15 @@ class MetricsAccumulator:
             self.total_completion_tokens += data.completion_tokens
             self.total_time_per_output_token += data.time_per_output_token
             self.all_inter_token_latencies += data.inter_chunk_latency
-            if len(data.inter_chunk_latency) > 1:
-                self.all_steady_inter_token_latencies += data.inter_chunk_latency[1:]
-            if data.pd_handoff_latency is not None:
-                self.total_pd_handoff_latency += data.pd_handoff_latency
-                self.n_pd_handoff_latency += 1
-            if data.pd_handoff_overhead is not None:
-                self.total_pd_handoff_overhead += data.pd_handoff_overhead
-                self.n_pd_handoff_overhead += 1
+            if self.enable_pd_metrics:
+                if len(data.inter_chunk_latency) > 1:
+                    self.all_steady_inter_token_latencies += data.inter_chunk_latency[1:]
+                if data.pd_handoff_latency is not None:
+                    self.total_pd_handoff_latency += data.pd_handoff_latency
+                    self.n_pd_handoff_latency += 1
+                if data.pd_handoff_overhead is not None:
+                    self.total_pd_handoff_overhead += data.pd_handoff_overhead
+                    self.n_pd_handoff_overhead += 1
 
             if data.is_stream:
                 self.n_stream_success += 1
