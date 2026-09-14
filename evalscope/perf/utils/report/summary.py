@@ -332,7 +332,12 @@ def build_summary_items(
                 else []
             ),
             *(
-                [('Avg PD Handoff Overhead (ms)', _cell(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, s.avg_pd_handoff_overhead))]
+                [
+                    (
+                        'Avg PD Handoff Overhead (ms)',
+                        _cell(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, s.avg_pd_handoff_overhead),
+                    )
+                ]
                 if s.avg_pd_handoff_overhead is not None
                 else []
             ),
