@@ -71,6 +71,9 @@ class AgentXScenario(BaseModel):
     engine: Optional[str] = None
     engine_version: Optional[str] = None
     hardware: Optional[str] = None
+    tokenizer_trust_remote_code: bool = False
+    tokenizer_revision: Optional[str] = None
+    request_timeout_seconds: Optional[float] = Field(default=None, gt=0)
 
     @field_validator('max_context_length', 'trace_limit', 'num_gpus')
     @classmethod
@@ -362,6 +365,12 @@ def _build_command(
     ]
     if args.tokenizer_path:
         command.extend(['--tokenizer', args.tokenizer_path])
+    if scenario.tokenizer_trust_remote_code:
+        command.append('--tokenizer-trust-remote-code')
+    if scenario.tokenizer_revision:
+        command.extend(['--tokenizer-revision', scenario.tokenizer_revision])
+    if scenario.request_timeout_seconds is not None:
+        command.extend(['--request-timeout-seconds', str(scenario.request_timeout_seconds)])
     if scenario.max_context_length:
         command.extend(['--max-context-length', str(scenario.max_context_length)])
     if scenario.mode == 'smoke':

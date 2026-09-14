@@ -41,6 +41,10 @@ class TestAgentXArguments:
         assert args.scenario.trace_limit == 2
         assert args.scenario.num_gpus == 8
 
+    def test_request_timeout_must_be_positive(self) -> None:
+        with pytest.raises(ValueError, match='greater than 0'):
+            AgentXScenario(request_timeout_seconds=0)
+
     @pytest.mark.parametrize(
         'kwargs, message',
         [
@@ -57,6 +61,71 @@ class TestAgentXArguments:
 
 
 class TestAgentXCommand:
+
+    @pytest.mark.parametrize(
+        'scenario, expected',
+        [
+            ('agentx', False),
+            ('{"name":"agentx","tokenizer_trust_remote_code":false}', False),
+            ('{"name":"agentx","tokenizer_trust_remote_code":true}', True),
+        ],
+    )
+    def test_tokenizer_trust_is_opt_in(self, tmp_path: Path, scenario: str, expected: bool) -> None:
+        args = _args(scenario=scenario)
+        dataset = AgentXDatasetProvenance(
+            source=HubType.LOCAL,
+            dataset_id='test',
+            revision=None,
+            trace_file=str(tmp_path / 'traces.jsonl'),
+            sha256='digest',
+            verified=True,
+        )
+        command, _ = _build_command(
+            args, args.scenario, dataset, concurrency=1, duration=1800,
+            seed=20260707, artifacts_path=tmp_path,
+        )
+        assert args.scenario.tokenizer_trust_remote_code is expected
+        assert command.count('--tokenizer-trust-remote-code') == int(expected)
+
+    @pytest.mark.parametrize(
+        'scenario, expected_revision, expected_timeout',
+        [
+            ('agentx', None, None),
+            (
+                '{"name":"agentx","tokenizer_revision":"v1.0.0","request_timeout_seconds":90.5}',
+                'v1.0.0',
+                90.5,
+            ),
+        ],
+    )
+    def test_tokenizer_revision_and_request_timeout_are_forwarded(
+        self,
+        tmp_path: Path,
+        scenario: str,
+        expected_revision: str | None,
+        expected_timeout: float | None,
+    ) -> None:
+        args = _args(scenario=scenario)
+        dataset = AgentXDatasetProvenance(
+            source=HubType.LOCAL,
+            dataset_id='test',
+            revision=None,
+            trace_file=str(tmp_path / 'traces.jsonl'),
+            sha256='digest',
+            verified=True,
+        )
+        command, _ = _build_command(
+            args, args.scenario, dataset, concurrency=1, duration=1800, seed=20260707, artifacts_path=tmp_path
+        )
+
+        assert args.scenario.tokenizer_revision == expected_revision
+        assert args.scenario.request_timeout_seconds == expected_timeout
+        assert command.count('--tokenizer-revision') == int(expected_revision is not None)
+        assert command.count('--request-timeout-seconds') == int(expected_timeout is not None)
+        if expected_revision is not None:
+            assert command[command.index('--tokenizer-revision') + 1] == expected_revision
+        if expected_timeout is not None:
+            assert command[command.index('--request-timeout-seconds') + 1] == str(expected_timeout)
 
     def test_local_mirror_command_uses_weka_hf_and_redacts_secrets(self, tmp_path):
         args = _args(scenario='agentx', api_key='secret-token', headers={'X-API-Key': 'other-secret'})

@@ -27,6 +27,19 @@ evalscope perf \
   --parallel 1
 ```
 
+## Request timeout
+
+Set `request_timeout_seconds` in the scenario JSON to override AIPerf's per-request timeout. The value must be greater than zero; omit it to keep AIPerf's default.
+
+```bash
+evalscope perf \
+  --scenario '{"name":"agentx","mode":"smoke","request_timeout_seconds":300}' \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions \
+  --parallel 1
+```
+
 ## Standard run
 
 The default run uses the verified ModelScope 256K mirror, a fixed seed, and a 30-minute duration:
@@ -70,3 +83,16 @@ Smoke, cancelled, failed, shortened, and hash-mismatched runs have `submission_v
 ## Compatibility
 
 This integration pins `aiperf==0.12.0` and its `inferencex-agentx-mvp` scenario. It is not equivalent to the newer InferenceX AgentX v1.0 leaderboard methodology, which has different profiling and warmup rules. Do not use AgentX metrics as model or agent-task quality scores.
+
+## Custom tokenizers
+
+For tokenizers that require custom Python code, explicitly set `tokenizer_trust_remote_code` to `true` in the scenario JSON. EvalScope forwards this option to AIPerf as `--tokenizer-trust-remote-code`. It defaults to `false`; enable it only for tokenizer code you have reviewed and trust. Set `tokenizer_revision` to a HuggingFace tag or commit hash to pin the tokenizer and its remote code for reproducible runs.
+
+```bash
+evalscope perf \
+  --scenario '{"name":"agentx","mode":"smoke","tokenizer_trust_remote_code":true,"tokenizer_revision":"<commit-or-tag>"}' \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions \
+  --parallel 1
+```
