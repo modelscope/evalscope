@@ -58,6 +58,31 @@ class TestAgentXArguments:
 
 class TestAgentXCommand:
 
+    @pytest.mark.parametrize(
+        'scenario, expected',
+        [
+            ('agentx', False),
+            ('{"name":"agentx","tokenizer_trust_remote_code":false}', False),
+            ('{"name":"agentx","tokenizer_trust_remote_code":true}', True),
+        ],
+    )
+    def test_tokenizer_trust_is_opt_in(self, tmp_path: Path, scenario: str, expected: bool) -> None:
+        args = _args(scenario=scenario)
+        dataset = AgentXDatasetProvenance(
+            source=HubType.LOCAL,
+            dataset_id='test',
+            revision=None,
+            trace_file=str(tmp_path / 'traces.jsonl'),
+            sha256='digest',
+            verified=True,
+        )
+        command, _ = _build_command(
+            args, args.scenario, dataset, concurrency=1, duration=1800,
+            seed=20260707, artifacts_path=tmp_path,
+        )
+        assert args.scenario.tokenizer_trust_remote_code is expected
+        assert command.count('--tokenizer-trust-remote-code') == int(expected)
+
     def test_local_mirror_command_uses_weka_hf_and_redacts_secrets(self, tmp_path):
         args = _args(scenario='agentx', api_key='secret-token', headers={'X-API-Key': 'other-secret'})
         dataset = AgentXDatasetProvenance(

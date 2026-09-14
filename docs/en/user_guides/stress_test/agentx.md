@@ -70,3 +70,16 @@ Smoke, cancelled, failed, shortened, and hash-mismatched runs have `submission_v
 ## Compatibility
 
 This integration pins `aiperf==0.12.0` and its `inferencex-agentx-mvp` scenario. It is not equivalent to the newer InferenceX AgentX v1.0 leaderboard methodology, which has different profiling and warmup rules. Do not use AgentX metrics as model or agent-task quality scores.
+
+## Custom tokenizers
+
+For tokenizers that require custom Python code, explicitly set `tokenizer_trust_remote_code` to `true` in the scenario JSON. EvalScope forwards this option to AIPerf as `--tokenizer-trust-remote-code`. It defaults to `false`; enable it only for tokenizer code you have reviewed and trust.
+
+```bash
+evalscope perf \
+  --scenario '{"name":"agentx","mode":"smoke","tokenizer_trust_remote_code":true}' \
+  --model YOUR_MODEL \
+  --tokenizer-path YOUR_TOKENIZER_PATH_OR_ID \
+  --url http://localhost:8000/v1/chat/completions \
+  --parallel 1
+```
