@@ -1,0 +1,18 @@
+# Pre-built image for DeepSeek Harness agent evaluation.
+#
+# Build:
+#   docker build -f evalscope/agent/external/dockerfiles/Dockerfile.deepseek-harness \
+#       -t evalscope-deepseek-harness:0.1.5-rc.2 .
+#
+# The runner injects the bridge endpoint and short-lived trial token at runtime.
+
+FROM node:22-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        bash ca-certificates git ripgrep && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g --no-fund --no-audit @deepseek-ai/dsh@0.1.5-rc.2 && \
+    dsh --help >/dev/null
+
+WORKDIR /workspace

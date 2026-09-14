@@ -211,6 +211,56 @@ def test_openai_chat_completion_tool_calls_json():
     assert parsed_args == {'q': 'cats', 'limit': 3}
 
 
+def test_openai_chat_completion_dsh_request_shape():
+    """DSH-style Chat Completions history and token cap complete without a new route."""
+
+    async def _go():
+        proxy = await ModelProxyServer.get_or_start()
+        model = _build_model(_text_output('done'))
+        async with proxy.trial_session(model=model, framework='deepseek-harness') as session:
+            url = f'{proxy.base_url}/openai/v1/chat/completions'
+
+            def _request():
+                return _post_json(
+                    url,
+                    {
+                        'model': 'mock-openai',
+                        'max_completion_tokens': 64,
+                        'messages': [
+                            {'role': 'system', 'content': 'Use tools when needed.'},
+                            {'role': 'user', 'content': 'Look up the answer.'},
+                            {
+                                'role': 'assistant',
+                                'content': None,
+                                'tool_calls': [
+                                    {
+                                        'id': 'call-1',
+                                        'type': 'function',
+                                        'function': {'name': 'lookup', 'arguments': '{"q":"answer"}'},
+                                    }
+                                ],
+                            },
+                            {'role': 'tool', 'tool_call_id': 'call-1', 'content': '42'},
+                        ],
+                        'tools': [
+                            {
+                                'type': 'function',
+                                'function': {
+                                    'name': 'lookup',
+                                    'parameters': {'type': 'object', 'properties': {'q': {'type': 'string'}}},
+                                },
+                            }
+                        ],
+                    },
+                    session.token,
+                )
+
+            return await asyncio.get_running_loop().run_in_executor(None, _request)
+
+    body = AsyncioLoopRunner.run(_go())
+    assert body['choices'][0]['message']['content'] == 'done'
+
+
 def test_openai_chat_completion_streaming_text_round_trip():
     """SSE stream reassembles to original text via content deltas."""
     expected = 'streamed answer: 42 ' * 4

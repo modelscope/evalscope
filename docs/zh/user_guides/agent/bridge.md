@@ -1,6 +1,6 @@
 # 外部 Agent Bridge 模式
 
-让 EvalScope 直接评测 Claude Code、Codex、OpenCode、Gemini CLI、Hermes 等成品 Agent CLI。你在 `TaskConfig` 里指定一个评测模型，EvalScope 会在 CLI 与后端模型之间做**协议翻译**(claude-code 发 Anthropic Messages、codex/opencode 发 OpenAI Responses、gemini-cli 发 Gemini generateContent、hermes 发 OpenAI Chat Completions，后端模型只需支持 OpenAI Chat Completions 即可)，同时把交互过程录制成 `AgentTrace` 用于 [可视化回放](index.md#trace-可视化)。CLI 本身不需要任何改造。
+让 EvalScope 直接评测 Claude Code、Codex、OpenCode、Gemini CLI、Hermes、DeepSeek Harness 等成品 Agent CLI。你在 `TaskConfig` 里指定一个评测模型，EvalScope 会在 CLI 与后端模型之间做**协议翻译**(claude-code 发 Anthropic Messages、codex/opencode 发 OpenAI Responses、gemini-cli 发 Gemini generateContent、hermes 和 DeepSeek Harness 发 OpenAI Chat Completions，后端模型只需支持 OpenAI Chat Completions 即可)，同时把交互过程录制成 `AgentTrace` 用于 [可视化回放](index.md#trace-可视化)。CLI 本身不需要任何改造。
 
 > 想给 GSM8K / AIME 等常规 benchmark 套上模型自带的多轮工具调用循环，请参见 [内置 AgentLoop 模式](native.md)。
 
@@ -51,6 +51,7 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode)(`opencode run`) | OpenAI Responses | 自动注册模型配置 |
 | `gemini-cli` | Google [Gemini CLI](https://github.com/google-gemini/gemini-cli)(`gemini`) | Gemini generateContent | 无头非交互模式 |
 | `hermes` | Nous Research [Hermes Agent](https://github.com/NousResearch/hermes-agent)(`hermes chat`) | OpenAI Chat Completions | 通过 custom provider 接入 |
+| `deepseek-harness` | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)(`dsh --profile headless`) | OpenAI Chat Completions | 通过隔离 custom provider 接入；版本已锁定 |
 | `mock` | 内置 Python 脚本 | Anthropic Messages | 冒烟测试用，无外部依赖 |
 
 想接入 aider、continue 等其他 CLI?见 [进阶:自定义 Runner](#custom-runner)。
@@ -61,7 +62,7 @@ EvalScope 会在本地子进程里准备 Claude Code(必要时自动 `npm instal
 
 | 字段 | 说明 | 推荐值 |
 |------|------|--------|
-| `framework` | 选哪个 CLI | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
+| `framework` | 选哪个 CLI | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` / `deepseek-harness` |
 | `environment` | 运行位置 | `local`（开发）/ `docker`（生产） |
 | `environment_extra` | 环境构造参数 | Docker 镜像、超时、挂载等环境专属设置 |
 | `timeout` | 单样本壁钟超时(秒) | 数学题 120，代码修复 1800+ |
@@ -111,6 +112,7 @@ run_task(task_config)
 - **claude-code / codex / opencode CLI**:首次运行会在沙箱内自动安装 Node.js + 对应 npm 包，**仅支持 Debian/Ubuntu 系镜像**。
 - **gemini-cli**:需要 Node.js 环境，可使用预构建镜像 `evalscope-gemini-cli:latest`。
 - **hermes**:需要 Python 3.11 + uv 环境，可使用预构建镜像 `evalscope-hermes:latest`。
+- **deepseek-harness**:需要 Node.js 22+，使用 `dsh --profile headless`；推荐锁定版本的预构建镜像 `evalscope-deepseek-harness:0.1.5-rc.2`。
 
 ```{tip}
 冷启动需要下载 Node 和 npm 包，可能耗时数分钟。生产环境建议把 CLI 预装进镜像并设置 `kwargs={'auto_install': False}`，或为 Docker 挂载持久化 npm 缓存 volume。
@@ -146,6 +148,12 @@ git clone https://github.com/NousResearch/hermes-agent.git \
     evalscope/agent/external/dockerfiles/hermes-agent-src
 docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
              -t evalscope-hermes:latest .
+
+# DeepSeek Harness
+# 版本固定，升级前请重新运行本地 E2E 测试
+# 可同时额外标记为 evalscope-deepseek-harness:latest
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.deepseek-harness \
+             -t evalscope-deepseek-harness:0.1.5-rc.2 .
 ```
 
 ### 使用镜像
@@ -189,9 +197,32 @@ run_task(task_config)
 | `opencode` | `evalscope-opencode:latest` |
 | `gemini-cli` | `evalscope-gemini-cli:latest` |
 | `hermes` | `evalscope-hermes:latest` |
+| `deepseek-harness` | `evalscope-deepseek-harness:0.1.5-rc.2` |
+
+### DeepSeek Harness 示例
+
+```python
+agent_config=ExternalAgentConfig(
+    framework='deepseek-harness',
+    environment='docker',
+    environment_extra={
+        'sandbox_config': {
+            'image': 'evalscope-deepseek-harness:0.1.5-rc.2',
+            'network_enabled': True,
+        },
+    },
+    kwargs={
+        'model_name': 'qwen-plus',
+        'auto_install': False,
+        'permission_mode': 'danger-full-access',
+    },
+)
+```
+
+runner 会在隔离的 `DSH_HOME` 内配置 `evalscope-bridge` provider，并把 `OPENAI_API_KEY` 设为 bridge 的短期 token。`baseURL` 必须是 `{bridge}/openai/v1`，协议必须是 `openai-completions`。默认 `permission_mode='danger-full-access'` 让无头批处理自动通过工具权限；代码任务应使用 Docker 或 benchmark 提供的隔离环境。
 
 ```{note}
-- Dockerfile 内已配置国内镜像源(阿里云 apt/pip/npm)，国内网络环境下可直接构建。
+- 部分 Dockerfile 内已配置国内镜像源(阿里云 apt/pip/npm)；DeepSeek Harness 镜像使用 npm 官方源，以确保获取锁定的预览版。
 - 如需自定义基础镜像或安装额外依赖，可在对应 Dockerfile 上进行修改。
 - `network_enabled: True` 允许容器访问网络(部分 CLI 运行时需要)。
 ```
@@ -205,6 +236,7 @@ run_task(task_config)
 - **opencode**:runner 会自动写 `~/.config/opencode/opencode.json` 注册模型;如果 Trace 为空，检查 `home_override` 是否指向了一个已有配置覆盖了 bridge 端点。
 - **gemini-cli**:需要 `--non-interactive` 模式;如果容器内 `gemini` 命令找不到，确认已使用预构建镜像或设置 `auto_install=True`。
 - **hermes**:runner 通过 `config.yaml` 注入 `provider: custom` + bridge URL;若 Trace 为空，检查 Hermes 版本是否 ≥ v0.17。
+- **deepseek-harness**:确认没有以 `home_override` 覆盖隔离的 `DSH_HOME`；若 Trace 为空，检查 custom provider 的 `baseURL` 是 `{bridge}/openai/v1`、`api` 是 `openai-completions`。runner 已设置 `supportsDeveloperRole: false`，因为当前 bridge 接收 `system` 而非 `developer` 消息。DSH 是预览版，升级锁定版本后必须重新运行 E2E 测试。
 - **Docker 场景**:macOS / Windows 的 Docker Desktop 原生提供 `host.docker.internal`;Linux 由 EvalScope 自动注入，通常无需手动配置。
 
 **自动安装失败 / npm 包拉不下来**
@@ -224,6 +256,6 @@ run_task(task_config)
 要接入其他第三方 Agent CLI，需要实现 `AgentRunner` 协议并通过 `@register_runner` 注册。请参考已有实现:
 
 - 协议定义:[runners/base.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/base.py)
-- 官方实现:[claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py)、[codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py)、[opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py)、[gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py)、[hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py)
+- 官方实现:[claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py)、[codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py)、[opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py)、[gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py)、[hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py)、[deepseek_harness.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/deepseek_harness.py)
 
 注册后即可在 `ExternalAgentConfig(framework='<your-name>')` 中使用。
