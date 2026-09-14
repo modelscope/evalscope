@@ -248,6 +248,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
     ),
     'quality.bleu.ratio': ('bleu',),
     'quality.cer.ratio': ('cer',),
+    'quality.per.ratio': ('per',),
     'quality.cider.unbounded': ('cider',),
     'quality.coverage.ratio': ('coverage_score', 'required_coverage'),
     'quality.error_rate.ratio': (

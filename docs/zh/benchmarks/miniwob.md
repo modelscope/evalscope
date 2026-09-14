@@ -19,7 +19,7 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 - 设置 `repeats=5` 可启用五回合评估计划。
 - 每个回合默认最多允许 10 次模型/工具交互。
 - 模型必须支持图像输入和函数调用。
-- 安装与示例请参阅 [MiniWoB 使用指南](../third_party/miniwob.html)。
+- 安装与使用示例请参阅 [MiniWoB 使用指南](https://evalscope.readthedocs.io/zh-cn/latest/third_party/miniwob.html)。
 
 ## 属性
 
@@ -30,7 +30,7 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 | **论文** | N/A |
 | **标签** | `Agent`, `FunctionCalling`, `MultiModal`, `MultiTurn` |
 | **指标** | `success_rate`, `error_rate` |
-| **默认提示方式** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估划分** | `test` |
 
 
@@ -50,7 +50,7 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 {
   "input": [
     {
-      "id": "4b7219db",
+      "id": "d41be60d",
       "content": "The task goal and browser observation are supplied when the episode is reset."
     }
   ],
@@ -88,7 +88,7 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 }
 ```
 
-*注：部分内容因显示需要已被截断。*
+*注：部分内容因显示原因已被截断。*
 
 ## 提示模板
 

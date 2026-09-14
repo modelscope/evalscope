@@ -127,6 +127,7 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
     'quality.wer.ratio': _percent('quality.wer.ratio', 'WER', MetricDirection.LOWER_IS_BETTER),
     'quality.cer.ratio': _percent('quality.cer.ratio', 'CER', MetricDirection.LOWER_IS_BETTER),
     'quality.mer.ratio': _percent('quality.mer.ratio', 'MER', MetricDirection.LOWER_IS_BETTER),
+    'quality.per.ratio': _percent('quality.per.ratio', 'PER', MetricDirection.LOWER_IS_BETTER),
     #: Share of failed or hallucinated outcomes: a graded result, unlike the diagnostic
     #: parse-status shares, so it keeps a direction.
     'quality.error_rate.ratio': _percent(
