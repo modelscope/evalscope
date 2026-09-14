@@ -1,6 +1,6 @@
 # External Agent Bridge Mode
 
-Evaluate off-the-shelf agent CLIs such as Claude Code, Codex, OpenCode, Gemini CLI, or Hermes directly through EvalScope. You point `TaskConfig` at an evaluation model, and EvalScope sits between the CLI and the backend model as a **protocol translator** (claude-code speaks Anthropic Messages, codex/opencode speak OpenAI Responses, gemini-cli speaks Gemini generateContent, hermes speaks OpenAI Chat Completions, while the backend only needs to support OpenAI Chat Completions). The whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
+Evaluate off-the-shelf agent CLIs such as Claude Code, Codex, OpenCode, Gemini CLI, Hermes, or DeepSeek Harness directly through EvalScope. You point `TaskConfig` at an evaluation model, and EvalScope sits between the CLI and the backend model as a **protocol translator** (claude-code speaks Anthropic Messages, codex/opencode speak OpenAI Responses, gemini-cli speaks Gemini generateContent, and hermes/DeepSeek Harness speak OpenAI Chat Completions, while the backend only needs to support OpenAI Chat Completions). The whole interaction is recorded as an `AgentTrace` for [replay in the UI](index.md#trace-visualization). The CLI itself is untouched.
 
 > To wrap GSM8K / AIME and other regular benchmarks in the model's own multi-turn tool-use loop, see [Native AgentLoop Mode](native.md).
 
@@ -51,6 +51,7 @@ EvalScope prepares Claude Code in a local subprocess (auto `npm install` if need
 | `opencode` | [OpenCode](https://github.com/opencode-ai/opencode) (`opencode run`) | OpenAI Responses | Auto-registers model config |
 | `gemini-cli` | Google [Gemini CLI](https://github.com/google-gemini/gemini-cli) (`gemini`) | Gemini generateContent | Headless non-interactive mode |
 | `hermes` | Nous Research [Hermes Agent](https://github.com/NousResearch/hermes-agent) (`hermes chat`) | OpenAI Chat Completions | Via custom provider config |
+| `deepseek-harness` | [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh --profile headless`) | OpenAI Chat Completions | Isolated custom provider; pinned version |
 | `mock` | bundled Python script | Anthropic Messages | Smoke-test runner; no external dependency |
 
 Want to plug in aider, continue, or another CLI? See [Advanced: custom runners](#custom-runner).
@@ -61,7 +62,7 @@ Most-used `ExternalAgentConfig` fields:
 
 | Field | Description | Recommended |
 |-------|-------------|-------------|
-| `framework` | Which CLI to drive | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` |
+| `framework` | Which CLI to drive | `claude-code` / `codex` / `opencode` / `gemini-cli` / `hermes` / `deepseek-harness` |
 | `environment` | Where to run | `local` (dev) / `docker` (production) |
 | `environment_extra` | Environment constructor options | Docker image, timeout, mounts, and other environment-specific settings |
 | `timeout` | Per-sample wall-clock budget in seconds | 120 for math, 1800+ for code fixes |
@@ -112,6 +113,7 @@ run_task(task_config)
 - **claude-code / codex / opencode CLIs**: on first run EvalScope auto-installs Node.js + the matching npm package inside the sandbox. **Only Debian/Ubuntu-based images are supported.**
 - **gemini-cli**: requires Node.js; use the pre-built image `evalscope-gemini-cli:latest`.
 - **hermes**: requires Python 3.11 + uv; use the pre-built image `evalscope-hermes:latest`.
+- **deepseek-harness**: requires Node.js 22.19+ or 24+ and runs `dsh --profile headless`; use the pinned image `evalscope-deepseek-harness:0.1.5-rc.2`.
 
 ```{tip}
 Cold starts download Node and the npm package and can take several minutes. For production, bake the CLI into the image and set `kwargs={'auto_install': False}`, or mount a persistent npm cache volume for Docker.
@@ -147,6 +149,11 @@ git clone https://github.com/NousResearch/hermes-agent.git \
     evalscope/agent/external/dockerfiles/hermes-agent-src
 docker build -f evalscope/agent/external/dockerfiles/Dockerfile.hermes \
              -t evalscope-hermes:latest .
+
+# DeepSeek Harness
+# Re-run the local E2E test before upgrading the pinned version.
+docker build -f evalscope/agent/external/dockerfiles/Dockerfile.deepseek-harness \
+             -t evalscope-deepseek-harness:0.1.5-rc.2 .
 ```
 
 ### Using images
@@ -190,9 +197,32 @@ For other CLIs, just swap `framework` and `image`:
 | `opencode` | `evalscope-opencode:latest` |
 | `gemini-cli` | `evalscope-gemini-cli:latest` |
 | `hermes` | `evalscope-hermes:latest` |
+| `deepseek-harness` | `evalscope-deepseek-harness:0.1.5-rc.2` |
+
+### DeepSeek Harness example
+
+```python
+agent_config=ExternalAgentConfig(
+    framework='deepseek-harness',
+    environment='docker',
+    environment_extra={
+        'sandbox_config': {
+            'image': 'evalscope-deepseek-harness:0.1.5-rc.2',
+            'network_enabled': True,
+        },
+    },
+    kwargs={
+        'model_name': 'qwen-plus',
+        'auto_install': False,
+        'permission_mode': 'danger-full-access',
+    },
+)
+```
+
+The runner creates an isolated `DSH_HOME` with an `evalscope-bridge` provider and injects the bridge's short-lived token through `OPENAI_API_KEY`. Its `baseURL` must be `{bridge}/openai/v1` and its protocol must be `openai-completions`. The default `permission_mode='danger-full-access'` auto-approves tools for headless batch runs; use Docker or a benchmark-provided isolated environment for coding tasks.
 
 ```{note}
-- The Dockerfiles include Chinese mirror sources (Aliyun apt/pip/npm) for faster builds in mainland China.
+- Some Dockerfiles include Chinese mirror sources (Aliyun apt/pip/npm); the DeepSeek Harness image uses the npm registry to obtain its pinned preview version.
 - Customize the base image or add extra dependencies by editing the corresponding Dockerfile.
 - `network_enabled: True` allows the container to access the network (some CLIs require it at runtime).
 ```
@@ -206,6 +236,7 @@ For other CLIs, just swap `framework` and `image`:
 - **opencode**: the runner auto-writes `~/.config/opencode/opencode.json` to register the model; if the trace is empty, check whether `home_override` points to a directory with an existing config that overrides the bridge endpoint.
 - **gemini-cli**: requires `--non-interactive` mode; if the `gemini` command is not found in the container, confirm you are using the pre-built image or have `auto_install=True`.
 - **hermes**: the runner injects `provider: custom` + bridge URL via `config.yaml`; if the trace is empty, verify Hermes version ≥ v0.17.
+- **deepseek-harness**: do not override the isolated `DSH_HOME` unless necessary. If the trace is empty, verify the custom provider uses `{bridge}/openai/v1` with `api: openai-completions`. The runner sets `supportsDeveloperRole: false` because the current bridge accepts `system`, not `developer`, messages. DSH is a developer preview; rerun E2E tests after every version upgrade.
 - **Docker scenarios**: Docker Desktop on macOS / Windows provides `host.docker.internal` natively; on Linux EvalScope injects it automatically. Usually no manual setup needed.
 
 **Auto-install fails / npm package can't be pulled**
@@ -225,6 +256,6 @@ For other CLIs, just swap `framework` and `image`:
 To plug in a third-party agent CLI, implement the `AgentRunner` protocol and register it with `@register_runner`. Reference the existing implementations:
 
 - Protocol: [runners/base.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/base.py)
-- Official runners: [claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py), [codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py), [opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py), [gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py), [hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py)
+- Official runners: [claude_code.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/claude_code.py), [codex.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/codex.py), [opencode.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/opencode.py), [gemini_cli.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/gemini_cli.py), [hermes.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/hermes.py), [deepseek_harness.py](https://github.com/modelscope/evalscope/blob/main/evalscope/agent/external/runners/deepseek_harness.py)
 
 Once registered it becomes available as `ExternalAgentConfig(framework='<your-name>')`.
