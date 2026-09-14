@@ -22,7 +22,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
 ## Evaluation Notes
 
 - Default configuration evaluates the `test` split only; no few-shot examples are used
-- Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count
+- Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count; report counts remain utterance counts
 - The model must output only IPA phone tokens separated by spaces; timestamps are metadata for downstream analysis, not model targets
 - Audio is passed as WAV data through EvalScope's standard audio message format
 
@@ -66,7 +66,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
 {
   "input": [
     {
-      "id": "d637cc6d",
+      "id": "307a05d8",
       "content": [
         {
           "text": "Transcribe the audio as IPA phone tokens. Output only tokens separated by single spaces."

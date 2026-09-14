@@ -1,15 +1,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
-from evalscope.api.metric import Score
+from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
 from evalscope.metrics.audio import PER
 from evalscope.utils.io_utils import bytes_to_base64
 
@@ -42,7 +41,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
 ## Evaluation Notes
 
 - Default configuration evaluates the `test` split only; no few-shot examples are used
-- Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count
+- Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count; report counts remain utterance counts
 - The model must output only IPA phone tokens separated by spaces; timestamps are metadata for downstream analysis, not model targets
 - Audio is passed as WAV data through EvalScope's standard audio message format
 """,
@@ -95,10 +94,44 @@ class THCHS30Adapter(AudioLanguageAdapter):
     ) -> Score:
         """Score one utterance and preserve its phone count for corpus-level PER."""
         reference_phone_count = len(reference.split())
+        per = PER()(filtered_prediction, reference)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
-            value={'per': PER()(filtered_prediction, reference)},
+            value={'per': per},
+            metadata={
+                'per_phone_errors': round(per * reference_phone_count),
+                'per_reference_phones': reference_phone_count,
+            },
         )
-        score.metadata[METRIC_WEIGHTS_KEY] = {'per': reference_phone_count}
         return score
+
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Pool phone errors while retaining the number of evaluated utterances."""
+        phone_errors = 0
+        reference_phones = 0
+        ids = []
+        for sample_score in sample_scores:
+            if 'per' not in sample_score.score.value:
+                continue
+            metadata = sample_score.score.metadata or {}
+            phone_errors += int(metadata.get('per_phone_errors', 0))
+            reference_phones += int(metadata.get('per_reference_phones', 0))
+            ids.append(sample_score.sample_id)
+
+        if not ids:
+            return []
+
+        return [
+            AggScore(
+                score=phone_errors / reference_phones if reference_phones else 0.0,
+                metric_name='per',
+                aggregation='weighted_mean',
+                num=len(ids),
+                ids=ids,
+                metadata={
+                    'phone_errors': phone_errors,
+                    'reference_phones': reference_phones,
+                },
+            )
+        ]

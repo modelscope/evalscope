@@ -71,5 +71,9 @@ def test_thchs30_aggregates_per_over_all_reference_phones() -> None:
     aggregate = adapter.aggregate_scores(scores)[0]
 
     assert aggregate.aggregation == 'weighted_mean'
-    assert aggregate.num == 101
+    assert aggregate.num == 2
     assert aggregate.score == pytest.approx(1 / 101)
+    assert aggregate.metadata == {
+        'phone_errors': 1,
+        'reference_phones': 101,
+    }
