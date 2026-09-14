@@ -59,6 +59,9 @@ class BenchmarkSummary(BaseModel):
     avg_ttft: float = Field(0.0, alias=Metrics.AVERAGE_TIME_TO_FIRST_TOKEN)
     avg_tpot: float = Field(0.0, alias=Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN)
     avg_itl: float = Field(0.0, alias=Metrics.AVERAGE_INTER_TOKEN_LATENCY)
+    avg_steady_itl: Optional[float] = Field(None, alias=Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY)
+    avg_pd_handoff_latency: Optional[float] = Field(None, alias=Metrics.AVERAGE_PD_HANDOFF_LATENCY)
+    avg_pd_handoff_overhead: Optional[float] = Field(None, alias=Metrics.AVERAGE_PD_HANDOFF_OVERHEAD)
     avg_output_tokens: float = Field(0.0, alias=Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST)
 
     # --- Embedding / Rerank-specific ---
@@ -148,6 +151,27 @@ class BenchmarkSummary(BaseModel):
             )
         if self.avg_itl:
             rows.append((Metrics.AVERAGE_INTER_TOKEN_LATENCY, _fmt(Metrics.AVERAGE_INTER_TOKEN_LATENCY, self.avg_itl)))
+        if self.avg_steady_itl is not None:
+            rows.append(
+                (
+                    Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY,
+                    _fmt(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, self.avg_steady_itl),
+                )
+            )
+        if self.avg_pd_handoff_latency is not None:
+            rows.append(
+                (
+                    Metrics.AVERAGE_PD_HANDOFF_LATENCY,
+                    _fmt(Metrics.AVERAGE_PD_HANDOFF_LATENCY, self.avg_pd_handoff_latency),
+                )
+            )
+        if self.avg_pd_handoff_overhead is not None:
+            rows.append(
+                (
+                    Metrics.AVERAGE_PD_HANDOFF_OVERHEAD,
+                    _fmt(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, self.avg_pd_handoff_overhead),
+                )
+            )
 
         # ── Tokens ──
         rows.append(('── Tokens ──', ''))
@@ -249,6 +273,9 @@ class PercentileRow(BaseModel):
     latency: Optional[float] = Field(None, alias=PercentileMetrics.LATENCY)
     ttft: Optional[float] = Field(None, alias=PercentileMetrics.TTFT)
     itl: Optional[float] = Field(None, alias=PercentileMetrics.ITL)
+    steady_itl: Optional[float] = Field(None, alias=PercentileMetrics.STEADY_ITL)
+    pd_handoff_latency: Optional[float] = Field(None, alias=PercentileMetrics.PD_HANDOFF_LATENCY)
+    pd_handoff_overhead: Optional[float] = Field(None, alias=PercentileMetrics.PD_HANDOFF_OVERHEAD)
     tpot: Optional[float] = Field(None, alias=PercentileMetrics.TPOT)
     input_tokens: Optional[float] = Field(None, alias=PercentileMetrics.INPUT_TOKENS)
     output_tokens: Optional[float] = Field(None, alias=PercentileMetrics.OUTPUT_TOKENS)

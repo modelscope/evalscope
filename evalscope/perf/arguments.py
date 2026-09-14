@@ -114,6 +114,15 @@ class Arguments(BaseArgument):
     never drains in between, so use at least ``--parallel`` there.
     """
 
+    enable_pd_metrics: bool = False
+    """Enable PD-disaggregation handoff metrics in perf summaries.
+
+    When enabled for streaming generation, EvalScope reports the first inter-output
+    chunk interval as a P-D handoff latency proxy and estimates the extra handoff
+    overhead against steady decode intervals. Disabled by default so standard
+    non-PD benchmarks keep the usual TTFT/TPOT/ITL metric set.
+    """
+
     @property
     def warmup_count(self) -> int:
         """Resolved number of warmup requests/conversations.
@@ -770,6 +779,12 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
                         help='Number or ratio of warmup requests. '
                              '>=1: absolute count. 0<value<1: ratio of --number. '
                              '0: disabled. Default: 0')
+    parser.add_argument(
+        '--enable-pd-metrics',
+        action='store_true',
+        default=False,
+        help='Enable PD-disaggregation handoff metrics based on streaming inter-output chunk latencies.',
+    )
     parser.add_argument('--open-loop', action='store_true', default=False,
                         help='Enable open-loop rate mode: dispatch requests at the scheduled rate without '
                              'semaphore backpressure. Use with --rate (list) and matching --number (list).')  # noqa: E501

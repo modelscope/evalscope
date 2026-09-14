@@ -427,6 +427,9 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
 
         has_ttft = any(s.avg_ttft for s, _, _, _ in entries)
         has_tpot = any(s.avg_tpot for s, _, _, _ in entries)
+        has_steady_itl = any(s.avg_steady_itl is not None for s, _, _, _ in entries)
+        has_pd_handoff_latency = any(s.avg_pd_handoff_latency is not None for s, _, _, _ in entries)
+        has_pd_handoff_overhead = any(s.avg_pd_handoff_overhead is not None for s, _, _, _ in entries)
         has_output = any(s.avg_output_tokens for s, _, _, _ in entries)
         has_turns = any(s.avg_turns is not None and s.avg_turns > 0 for s, _, _, _ in entries)
         has_cache = any(s.avg_cached_percent is not None and s.avg_cached_percent >= 0 for s, _, _, _ in entries)
@@ -501,6 +504,24 @@ class LLMSummaryRenderer(BaseSummaryRenderer):
                 _add(PercentileMetrics.TTFT, summary.avg_ttft, 'ttft')
             if has_tpot:
                 _add(PercentileMetrics.TPOT, summary.avg_tpot, 'tpot')
+            if has_steady_itl:
+                _add(
+                    PercentileMetrics.STEADY_ITL,
+                    summary.avg_steady_itl,
+                    'steady_itl',
+                )
+            if has_pd_handoff_latency:
+                _add(
+                    PercentileMetrics.PD_HANDOFF_LATENCY,
+                    summary.avg_pd_handoff_latency,
+                    'pd_handoff_latency',
+                )
+            if has_pd_handoff_overhead:
+                _add(
+                    PercentileMetrics.PD_HANDOFF_OVERHEAD,
+                    summary.avg_pd_handoff_overhead,
+                    'pd_handoff_overhead',
+                )
             _add('Input Tokens', summary.avg_input_tokens, 'input_tokens', PercentileMetrics.INPUT_TOKENS)
             if has_output:
                 _add('Output Tokens', summary.avg_output_tokens, 'output_tokens', PercentileMetrics.OUTPUT_TOKENS)
