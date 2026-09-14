@@ -4,9 +4,13 @@ from typing import Any, Dict
 
 from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
+from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+from evalscope.metrics.audio import PER
 from evalscope.utils.io_utils import bytes_to_base64
 
 
@@ -38,7 +42,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
 ## Evaluation Notes
 
 - Default configuration evaluates the `test` split only; no few-shot examples are used
-- Primary metric: Phone Error Rate (PER), computed as phone-token edit distance divided by reference phone count
+- Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count
 - The model must output only IPA phone tokens separated by spaces; timestamps are metadata for downstream analysis, not model targets
 - Audio is passed as WAV data through EvalScope's standard audio message format
 """,
@@ -46,6 +50,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
         eval_split='test',
         few_shot_mode='disabled',
         metric_list=['per'],
+        aggregation='weighted_mean',
         prompt_template='Transcribe the audio as IPA phone tokens. Output only tokens separated by single spaces.',
         evaluation_version='v1.0',
     )
@@ -80,3 +85,20 @@ class THCHS30Adapter(AudioLanguageAdapter):
             target=' '.join(record['phones']),
             metadata={key: record[key] for key in metadata_keys if key in record},
         )
+
+    def match_score(
+        self,
+        original_prediction: str,
+        filtered_prediction: str,
+        reference: str,
+        task_state: TaskState,
+    ) -> Score:
+        """Score one utterance and preserve its phone count for corpus-level PER."""
+        reference_phone_count = len(reference.split())
+        score = Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+            value={'per': PER()(filtered_prediction, reference)},
+        )
+        score.metadata[METRIC_WEIGHTS_KEY] = {'per': reference_phone_count}
+        return score

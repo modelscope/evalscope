@@ -3,7 +3,7 @@
 
 ## 概述
 
-MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务，例如点击按钮、填写表单、滚动页面以及拖拽元素。
+MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务，例如点击按钮、填写表单、滚动页面以及拖拽元素等。
 
 ## 任务描述
 
@@ -17,9 +17,9 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 
 - 默认运行对每个任务评估一个确定性回合（episode）。
 - 设置 `repeats=5` 可启用五回合评估计划。
-- 每个回合默认最多允许 10 次模型/工具交互。
+- 每个回合默认最多允许 10 次模型/工具调用。
 - 模型必须支持图像输入和函数调用。
-- 安装与示例请参阅 [MiniWoB 使用指南](../third_party/miniwob.html)。
+- 安装与示例请参阅 {doc}`MiniWoB 使用指南 <../third_party/miniwob>`。
 
 ## 属性
 
@@ -50,7 +50,7 @@ MiniWoB 用于评估多模态智能体是否能够完成简短的浏览器任务
 {
   "input": [
     {
-      "id": "4b7219db",
+      "id": "2ff92201",
       "content": "The task goal and browser observation are supplied when the episode is reset."
     }
   ],
