@@ -35,6 +35,12 @@ _GENERATION_METRIC_COLUMNS = [
     ('p99_ttft', 'P99 TTFT(ms)', PercentileMetrics.TTFT),
     ('avg_tpot', 'Avg TPOT(ms)', Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN),
     ('p99_tpot', 'P99 TPOT(ms)', PercentileMetrics.TPOT),
+    ('avg_steady_itl', 'Avg Steady ITL(ms)', Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY),
+    ('p99_steady_itl', 'P99 Steady ITL(ms)', PercentileMetrics.STEADY_ITL),
+    ('avg_pd_handoff_latency', 'Avg PD Handoff(ms)', Metrics.AVERAGE_PD_HANDOFF_LATENCY),
+    ('p99_pd_handoff_latency', 'P99 PD Handoff(ms)', PercentileMetrics.PD_HANDOFF_LATENCY),
+    ('avg_pd_handoff_overhead', 'Avg PD Overhead(ms)', Metrics.AVERAGE_PD_HANDOFF_OVERHEAD),
+    ('p99_pd_handoff_overhead', 'P99 PD Overhead(ms)', PercentileMetrics.PD_HANDOFF_OVERHEAD),
     ('output_token_throughput', 'Gen. tok/s', Metrics.OUTPUT_TOKEN_THROUGHPUT),
 ]
 _SUCCESS_COLUMN = ('success_rate', 'Success Rate', 'success_rate')
@@ -114,6 +120,12 @@ def _summary_values(run: Any, is_embedding_flag: bool) -> Dict[str, float]:
                 'p99_ttft': run.get_p99('ttft'),
                 'avg_tpot': summary.avg_tpot,
                 'p99_tpot': run.get_p99('tpot'),
+                'avg_steady_itl': summary.avg_steady_itl,
+                'p99_steady_itl': run.get_p99('steady_itl'),
+                'avg_pd_handoff_latency': summary.avg_pd_handoff_latency,
+                'p99_pd_handoff_latency': run.get_p99('pd_handoff_latency'),
+                'avg_pd_handoff_overhead': summary.avg_pd_handoff_overhead,
+                'p99_pd_handoff_overhead': run.get_p99('pd_handoff_overhead'),
                 'output_token_throughput': summary.output_token_throughput,
             }
         )
@@ -142,6 +154,12 @@ def _summary_sample_counts(run: Any, request_counts: Optional[Dict[str, int]] = 
         'p99_ttft': generation_successful,
         'avg_tpot': generation_successful,
         'p99_tpot': generation_successful,
+        'avg_steady_itl': generation_successful,
+        'p99_steady_itl': generation_successful,
+        'avg_pd_handoff_latency': generation_successful,
+        'p99_pd_handoff_latency': generation_successful,
+        'avg_pd_handoff_overhead': generation_successful,
+        'p99_pd_handoff_overhead': generation_successful,
         'output_token_throughput': successful,
         'success_rate': total,
     }
@@ -154,6 +172,12 @@ def build_summary_table(
 ) -> tuple:
     """Build a structured, unformatted cross-run summary table."""
     specs = _summary_specs(is_embedding_flag)
+    if not is_embedding_flag and not any(r.summary.avg_pd_handoff_latency is not None for r in runs):
+        specs = [spec for spec in specs if spec[0] not in ('avg_pd_handoff_latency', 'p99_pd_handoff_latency')]
+    if not is_embedding_flag and not any(r.summary.avg_pd_handoff_overhead is not None for r in runs):
+        specs = [spec for spec in specs if spec[0] not in ('avg_pd_handoff_overhead', 'p99_pd_handoff_overhead')]
+    if not is_embedding_flag and not any(r.summary.avg_steady_itl is not None for r in runs):
+        specs = [spec for spec in specs if spec[0] not in ('avg_steady_itl', 'p99_steady_itl')]
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
     columns: List[Dict[str, Any]] = [
@@ -297,6 +321,26 @@ def build_summary_items(
             ('Avg TTFT (ms)', _cell(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, s.avg_ttft)),
             ('Avg TPOT (ms)', _cell(Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN, s.avg_tpot)),
             ('Avg ITL (ms)', _cell(Metrics.AVERAGE_INTER_TOKEN_LATENCY, s.avg_itl)),
+            *(
+                [('Avg Steady ITL (ms)', _cell(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, s.avg_steady_itl))]
+                if s.avg_steady_itl is not None
+                else []
+            ),
+            *(
+                [('Avg PD Handoff Latency (ms)', _cell(Metrics.AVERAGE_PD_HANDOFF_LATENCY, s.avg_pd_handoff_latency))]
+                if s.avg_pd_handoff_latency is not None
+                else []
+            ),
+            *(
+                [
+                    (
+                        'Avg PD Handoff Overhead (ms)',
+                        _cell(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, s.avg_pd_handoff_overhead),
+                    )
+                ]
+                if s.avg_pd_handoff_overhead is not None
+                else []
+            ),
             ('Avg Input Tokens', _cell(Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST, s.avg_input_tokens)),
             ('Avg Output Tokens', _cell(Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST, s.avg_output_tokens)),
         ]

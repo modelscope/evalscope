@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import sqlite3
+from statistics import median
 from typing import Dict, List, Optional, Tuple
 
 from tabulate import tabulate
@@ -170,7 +171,11 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
     return results
 
 
-def get_percentile_results(result_db_path: str, api_type: str = None) -> PercentileResult:
+def get_percentile_results(
+    result_db_path: str,
+    api_type: str = None,
+    enable_pd_metrics: bool = False,
+) -> PercentileResult:
     """
     Compute and return quantiles for various metrics from the database results.
 
@@ -221,10 +226,20 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
         # Prepare data for each metric.
         # ITL over all rows: non-stream rows carry empty ITL, so no bucketing needed.
         inter_token_latencies_all = []
+        steady_inter_token_latencies_all = [] if enable_pd_metrics else None
+        pd_handoff_latencies = [] if enable_pd_metrics else None
+        pd_handoff_overheads = [] if enable_pd_metrics else None
         for row in rows:
             try:
                 itl = json.loads(row[col_indices[DatabaseColumns.INTER_TOKEN_LATENCIES]]) or []
                 inter_token_latencies_all.extend(itl)
+                if enable_pd_metrics:
+                    if len(itl) > 1:
+                        steady_inter_token_latencies_all.extend(itl[1:])
+                    if itl:
+                        pd_handoff_latencies.append(itl[0])
+                    if len(itl) > 1:
+                        pd_handoff_overheads.append(max(0.0, itl[0] - median(itl[1:])))
             except (json.JSONDecodeError, TypeError) as e:
                 logger.error(f'Error parsing inter token latencies: {e}')
 
@@ -266,6 +281,12 @@ def get_percentile_results(result_db_path: str, api_type: str = None) -> Percent
                 for row in rows
             ],
         }
+        if steady_inter_token_latencies_all:
+            metrics[PercentileMetrics.STEADY_ITL] = [v * 1000 for v in steady_inter_token_latencies_all]
+        if pd_handoff_latencies:
+            metrics[PercentileMetrics.PD_HANDOFF_LATENCY] = [v * 1000 for v in pd_handoff_latencies]
+        if pd_handoff_overheads:
+            metrics[PercentileMetrics.PD_HANDOFF_OVERHEAD] = [v * 1000 for v in pd_handoff_overheads]
 
     # Calculate percentiles for each metric and build transposed dict.
     # Percentile 0 maps to the sorted minimum, surfaced as the 'min' row so
@@ -291,7 +312,7 @@ def summary_result(
     write_json_file(args.to_dict(), os.path.join(result_path, 'benchmark_args.json'))
 
     # Build BenchmarkSummary from the legacy create_message dict
-    raw_metrics_dict = metrics.create_message(api_type=args.api)
+    raw_metrics_dict = metrics.create_message(api_type=args.api, enable_pd_metrics=args.enable_pd_metrics)
     summary = BenchmarkSummary.from_dict(raw_metrics_dict)
     write_json_file(summary.to_dict(), os.path.join(result_path, 'benchmark_summary.json'))
 
@@ -299,7 +320,11 @@ def summary_result(
     logger.info('\nBenchmarking summary:\n' + summary.to_table())
 
     # Get percentile results
-    percentile_result = get_percentile_results(result_db_path, api_type=args.api)
+    percentile_result = get_percentile_results(
+        result_db_path,
+        api_type=args.api,
+        enable_pd_metrics=args.enable_pd_metrics,
+    )
     if percentile_result.rows:
         write_json_file(percentile_result.to_list(), os.path.join(result_path, 'benchmark_percentile.json'))
         # Print percentile results in a table (transposed: rows=metrics, cols=percentiles)

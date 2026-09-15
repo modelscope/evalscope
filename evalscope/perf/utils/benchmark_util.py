@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from statistics import median
 from typing import Any, List, Optional
 
 from evalscope.perf.utils.perf_constants import Metrics
@@ -45,6 +46,8 @@ class BenchmarkData:
     first_chunk_latency: float = 0.0
     time_per_output_token: float = 0.0
     inter_chunk_latency: List[float] = field(default_factory=list)
+    pd_handoff_latency: Optional[float] = None
+    pd_handoff_overhead: Optional[float] = None
     max_gpu_memory_cost = 0  # class-level default; updated by update_gpu_usage
 
     # --- Response content ---
@@ -94,7 +97,7 @@ class BenchmarkData:
     """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).
     Approximates speculative decoding acceptance length L."""
 
-    def finalize(self, api_plugin) -> None:
+    def finalize(self, api_plugin, enable_pd_metrics: bool = False) -> None:
         """Parse token counts and compute all derived timing metrics.
 
         Must be called after the response is fully received.  Idempotent:
@@ -112,6 +115,12 @@ class BenchmarkData:
         # Derive inter-chunk latencies from chunk timestamps when not already set
         if not self.inter_chunk_latency and self.chunk_times:
             self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
+
+        if enable_pd_metrics and self.inter_chunk_latency:
+            self.pd_handoff_latency = self.inter_chunk_latency[0]
+            steady_decode_latencies = self.inter_chunk_latency[1:]
+            if steady_decode_latencies:
+                self.pd_handoff_overhead = max(0.0, self.pd_handoff_latency - median(steady_decode_latencies))
 
         # Compute average decoded tokens per iteration for speculative decoding estimation
         # Formula: L = (tokens - 1) / (chunks - 1)
@@ -155,6 +164,7 @@ class MetricsAccumulator:
     # --- Test configuration ---
     concurrency: int = 0
     rate: float = 0.0
+    enable_pd_metrics: bool = False
 
     # --- Request counts ---
     n_total: int = 0
@@ -170,7 +180,12 @@ class MetricsAccumulator:
     total_prompt_tokens: int = 0
     total_completion_tokens: int = 0
     total_time_per_output_token: float = 0.0
+    total_pd_handoff_latency: float = 0.0
+    total_pd_handoff_overhead: float = 0.0
+    n_pd_handoff_latency: int = 0
+    n_pd_handoff_overhead: int = 0
     all_inter_token_latencies: List[float] = field(default_factory=list)
+    all_steady_inter_token_latencies: List[float] = field(default_factory=list)
 
     # --- Stream-only cumulative sums (stream requests only) ---
     # ITL is intentionally *not* bucketed here: non-stream requests contribute an
@@ -240,7 +255,7 @@ class MetricsAccumulator:
 
         if data.success:
             self.n_success += 1
-            data.finalize(api_plugin)
+            data.finalize(api_plugin, enable_pd_metrics=self.enable_pd_metrics)
 
             self.total_latency += data.query_latency
             self.total_first_chunk_latency += data.first_chunk_latency
@@ -248,6 +263,15 @@ class MetricsAccumulator:
             self.total_completion_tokens += data.completion_tokens
             self.total_time_per_output_token += data.time_per_output_token
             self.all_inter_token_latencies += data.inter_chunk_latency
+            if self.enable_pd_metrics:
+                if len(data.inter_chunk_latency) > 1:
+                    self.all_steady_inter_token_latencies += data.inter_chunk_latency[1:]
+                if data.pd_handoff_latency is not None:
+                    self.total_pd_handoff_latency += data.pd_handoff_latency
+                    self.n_pd_handoff_latency += 1
+                if data.pd_handoff_overhead is not None:
+                    self.total_pd_handoff_overhead += data.pd_handoff_overhead
+                    self.n_pd_handoff_overhead += 1
 
             if data.is_stream:
                 self.n_stream_success += 1
@@ -334,6 +358,21 @@ class MetricsAccumulator:
                 if self.all_inter_token_latencies
                 else 0.0
             )
+            avg_steady_inter_token_latency = (
+                sum(self.all_steady_inter_token_latencies) / len(self.all_steady_inter_token_latencies)
+                if self.all_steady_inter_token_latencies
+                else -1
+            )
+            avg_pd_handoff_latency = (
+                _safe_div(self.total_pd_handoff_latency, self.n_pd_handoff_latency)
+                if self.n_pd_handoff_latency > 0
+                else -1
+            )
+            avg_pd_handoff_overhead = (
+                _safe_div(self.total_pd_handoff_overhead, self.n_pd_handoff_overhead)
+                if self.n_pd_handoff_overhead > 0
+                else -1
+            )
             qps = _safe_div(n, t)
             # Deliberately population-wide: only used by embedding/rerank APIs
             avg_input_token_throughput = _safe_div(self.total_prompt_tokens, self.total_first_chunk_latency)
@@ -372,6 +411,8 @@ class MetricsAccumulator:
             )
             avg_latency = avg_first_chunk_latency = avg_prompt_tokens = avg_completion_tokens = -1
             avg_time_per_output_token = avg_inter_token_latency = qps = -1
+            avg_steady_inter_token_latency = -1
+            avg_pd_handoff_latency = avg_pd_handoff_overhead = -1
             avg_input_token_throughput = avg_output_token_throughput = avg_total_token_throughput = -1
             avg_turns_per_request = avg_cached_percent = avg_decoded_tokens_per_iter = -1
             avg_first_turn_ttft = avg_subsequent_turn_ttft = -1
@@ -391,6 +432,9 @@ class MetricsAccumulator:
             avg_completion_tokens=avg_completion_tokens,
             avg_time_per_output_token=avg_time_per_output_token,
             avg_inter_token_latency=avg_inter_token_latency,
+            avg_steady_inter_token_latency=avg_steady_inter_token_latency,
+            avg_pd_handoff_latency=avg_pd_handoff_latency,
+            avg_pd_handoff_overhead=avg_pd_handoff_overhead,
             qps=qps,
             avg_input_token_throughput=avg_input_token_throughput,
             avg_output_token_throughput=avg_output_token_throughput,
@@ -433,6 +477,9 @@ class BenchmarkMetrics:
     avg_first_chunk_latency: float = -1
     avg_time_per_output_token: float = -1
     avg_inter_token_latency: float = -1
+    avg_steady_inter_token_latency: float = -1
+    avg_pd_handoff_latency: float = -1
+    avg_pd_handoff_overhead: float = -1
 
     # --- Throughput ---
     qps: float = -1
@@ -459,18 +506,19 @@ class BenchmarkMetrics:
     # Serialization
     # -----------------------------------------------------------------------
 
-    def create_message(self, ndigits: int = 4, api_type: str = None) -> dict:
+    def create_message(self, ndigits: int = 4, api_type: str = None, enable_pd_metrics: bool = False) -> dict:
         """Build a metrics dictionary suitable for logging or JSON export.
 
         Args:
             ndigits: Decimal places for rounding float values.
             api_type: API name string; selects LLM vs Embedding field set.
+            enable_pd_metrics: Include PD-disaggregation handoff metrics when available.
         """
         base = self._build_common_fields(ndigits)
         specific = (
             self._build_embedding_fields(ndigits)
             if Metrics.is_embedding_or_rerank(api_type)
-            else self._build_llm_fields(ndigits)
+            else self._build_llm_fields(ndigits, enable_pd_metrics)
         )
         multiturn = self._build_multiturn_fields(ndigits)
         speculative = self._build_speculative_decoding_fields(ndigits)
@@ -492,9 +540,9 @@ class BenchmarkMetrics:
             Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST: round(self.avg_prompt_tokens, r),
         }
 
-    def _build_llm_fields(self, r: int) -> dict:
+    def _build_llm_fields(self, r: int, enable_pd_metrics: bool = False) -> dict:
         """Additional fields for LLM text-generation APIs."""
-        return {
+        fields = {
             Metrics.OUTPUT_TOKEN_THROUGHPUT: round(self.avg_output_token_throughput, r),
             Metrics.TOTAL_TOKEN_THROUGHPUT: round(self.avg_total_token_throughput, r),
             Metrics.AVERAGE_TIME_TO_FIRST_TOKEN: round(self.avg_first_chunk_latency * 1000, 2),
@@ -502,6 +550,23 @@ class BenchmarkMetrics:
             Metrics.AVERAGE_INTER_TOKEN_LATENCY: round(self.avg_inter_token_latency * 1000, 2),
             Metrics.AVERAGE_OUTPUT_TOKENS_PER_REQUEST: round(self.avg_completion_tokens, r),
         }
+        if enable_pd_metrics:
+            fields.update(self._build_pd_handoff_fields())
+        return fields
+
+    def _build_pd_handoff_fields(self) -> dict:
+        """Conditionally include PD handoff metrics for streaming runs with enough chunks."""
+        result = {}
+        if self.avg_steady_inter_token_latency >= 0:
+            result[Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY] = round(
+                self.avg_steady_inter_token_latency * 1000,
+                2,
+            )
+        if self.avg_pd_handoff_latency >= 0:
+            result[Metrics.AVERAGE_PD_HANDOFF_LATENCY] = round(self.avg_pd_handoff_latency * 1000, 2)
+        if self.avg_pd_handoff_overhead >= 0:
+            result[Metrics.AVERAGE_PD_HANDOFF_OVERHEAD] = round(self.avg_pd_handoff_overhead * 1000, 2)
+        return result
 
     def _build_embedding_fields(self, r: int) -> dict:
         """Additional fields for Embedding / Rerank APIs."""

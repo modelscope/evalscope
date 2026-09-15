@@ -12,6 +12,7 @@ import unittest
 
 from evalscope.perf.utils.benchmark_util import BenchmarkData, MetricsAccumulator, is_stream_body
 from evalscope.perf.utils.db_util import create_result_table, get_percentile_results, insert_benchmark_data
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 
 def _make(**kwargs):
@@ -119,6 +120,124 @@ class TestAccumulatorBucketing(unittest.TestCase):
         # finalize derives TPOT = (latency - fcl) / (completion_tokens - 1)
         self.assertAlmostEqual(result.avg_time_per_output_token, (2.0 - 1.5) / 49)
         self.assertEqual(result.avg_inter_token_latency, 0.0)
+
+
+class TestPdMetrics(unittest.TestCase):
+
+    def setUp(self):
+        self.plugin = _DummyPlugin(10, 4)
+
+    def _make_db(self, items):
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        for item in items:
+            insert_benchmark_data(cur, item)
+        con.commit()
+        con.close()
+        return db
+
+    def test_multi_interval_stream_summary_and_percentiles(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        first = _make(itl=[0.30, 0.10, 0.20], completion_tokens=4)
+        second = _make(itl=[0.50, 0.20, 0.40], completion_tokens=4)
+        for data in (first, second):
+            acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertAlmostEqual(result.avg_steady_inter_token_latency, 0.225)
+        self.assertAlmostEqual(result.avg_pd_handoff_latency, 0.4)
+        self.assertAlmostEqual(result.avg_pd_handoff_overhead, 0.175)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertEqual(message[Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY], 225.0)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_LATENCY], 400.0)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_OVERHEAD], 175.0)
+
+        db = self._make_db((first, second))
+        try:
+            rows = get_percentile_results(db, api_type='openai', enable_pd_metrics=True).to_list()
+            p50 = next(row for row in rows if row['Percentiles'] == '50%')
+            p99 = next(row for row in rows if row['Percentiles'] == '99%')
+            self.assertEqual(p50[PercentileMetrics.STEADY_ITL], 200.0)
+            self.assertEqual(p99[PercentileMetrics.STEADY_ITL], 400.0)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_LATENCY], 300.0)
+            self.assertEqual(p99[PercentileMetrics.PD_HANDOFF_LATENCY], 500.0)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_OVERHEAD], 150.0)
+            self.assertEqual(p99[PercentileMetrics.PD_HANDOFF_OVERHEAD], 200.0)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
+
+    def test_single_interval_stream_only_has_handoff_latency(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        data = _make(itl=[0.30], completion_tokens=2)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertEqual(result.avg_steady_inter_token_latency, -1)
+        self.assertAlmostEqual(result.avg_pd_handoff_latency, 0.30)
+        self.assertEqual(result.avg_pd_handoff_overhead, -1)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertEqual(message[Metrics.AVERAGE_PD_HANDOFF_LATENCY], 300.0)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+
+        db = self._make_db((data,))
+        try:
+            p50 = next(
+                row for row in get_percentile_results(db, api_type='openai', enable_pd_metrics=True).to_list()
+                if row['Percentiles'] == '50%'
+            )
+            self.assertNotIn(PercentileMetrics.STEADY_ITL, p50)
+            self.assertEqual(p50[PercentileMetrics.PD_HANDOFF_LATENCY], 300.0)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_OVERHEAD, p50)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
+
+    def test_non_stream_or_empty_interval_requests_have_no_pd_metrics(self):
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        data = _make(itl=[], is_stream=False, completion_tokens=4)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        self.assertEqual(result.avg_steady_inter_token_latency, -1)
+        self.assertEqual(result.avg_pd_handoff_latency, -1)
+        self.assertEqual(result.avg_pd_handoff_overhead, -1)
+
+        message = result.create_message(api_type='openai', enable_pd_metrics=True)
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+
+    def test_disabled_mode_preserves_summary_and_percentile_contract(self):
+        acc = MetricsAccumulator()
+        data = _make(itl=[0.30, 0.10, 0.20], completion_tokens=4)
+        acc.update(data, self.plugin)
+
+        result = acc.to_result()
+        message = result.create_message(api_type='openai')
+        self.assertNotIn(Metrics.AVERAGE_STEADY_INTER_TOKEN_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_LATENCY, message)
+        self.assertNotIn(Metrics.AVERAGE_PD_HANDOFF_OVERHEAD, message)
+        self.assertIsNone(data.pd_handoff_latency)
+        self.assertIsNone(data.pd_handoff_overhead)
+
+        db = self._make_db((data,))
+        try:
+            p50 = next(
+                row for row in get_percentile_results(db, api_type='openai').to_list()
+                if row['Percentiles'] == '50%'
+            )
+            self.assertNotIn(PercentileMetrics.STEADY_ITL, p50)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_LATENCY, p50)
+            self.assertNotIn(PercentileMetrics.PD_HANDOFF_OVERHEAD, p50)
+        finally:
+            if os.path.exists(db):
+                os.unlink(db)
 
 
 class TestPercentileBucketing(unittest.TestCase):
