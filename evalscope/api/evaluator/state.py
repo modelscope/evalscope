@@ -276,21 +276,14 @@ class TaskState:
         self._completed = completed
 
     @property
-    def target(self) -> Union[str, List[str]]:
-        """The scoring target for this `Sample`.
-
-        Returns the full list of accepted alternatives when the sample has more
-        than one (e.g. answer aliases), so multi-reference metrics such as
-        `Accuracy(allow_inclusion=True)` can match against each alternative
-        individually. `Target.text` joins every alternative into one string with
-        no separator, which previously collapsed multi-alias targets (e.g.
-        trivia_qa) into a single unmatchable blob and made every sample score as
-        incorrect regardless of the prediction. Single-target samples - the
-        common case - are unaffected and still return a plain string.
-        """
-        if len(self._target) > 1:
-            return list(self._target)
+    def target(self) -> str:
+        """The scoring target for this `Sample`."""
         return self._target.text
+
+    @property
+    def target_values(self) -> List[str]:
+        """Accepted target answers for multi-reference scoring."""
+        return list(self._target)
 
     @target.setter
     def target(self, text: str) -> None:

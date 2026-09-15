@@ -1,7 +1,7 @@
 import copy
 import os
 import uuid
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -431,9 +431,8 @@ class ReviewResult(BaseModel):
     index: int
     """Index of the sample that was reviewed."""
 
-    target: Optional[Union[str, List[str]]] = None
-    """Expected/target answer for the sample, if available. A list when the
-    sample accepts more than one alias (see TaskState.target)."""
+    target: Optional[str] = None
+    """Expected/target answer for the sample, if available."""
 
     messages: List[ChatMessage] = Field(default_factory=list)
     """Full chat message history exchanged during evaluation."""
