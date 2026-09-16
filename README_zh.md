@@ -76,6 +76,7 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ## 🎉 内容更新
 
+- 🔥 **[2026.09.16] v1.12.0** 新增 AgentX 性能测试场景与 DeepSeek Harness 集成；扩展 THCHS-30、LibriSpeech 语音评测，并优化 Agent 执行、指标语义和 Dashboard 报告能力。
 - 🔥 **[2026.08.24] v1.11.0** 引入可发布的评测版本标识，保障基准结果可复现；优化评测报告语义与不完整运行处理，并增强多模态媒体加载和任务配置校验。
 - 🔥 **[2026.08.13]** 评测报告升级：统一指标语义，并改善 Agent Trace 步骤分组与工具调用/结果关联的可靠性。
 - 🔥 **[2026.08.10]** 新增 **AutomationBench**、**JobBench**、**MiniWoB**、**OmniDocBench-v1.6**、**PerceptionBench**、**ScreenSpot-Pro**、**PLawBench**、**PMC-VQA**、**HiPhO**、**LogicVista** 和 **CC-OCR-V2** 基准。
