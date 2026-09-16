@@ -1795,7 +1795,17 @@
           "type": "string"
         },
         "Gold": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ]
         },
         "Index": {
           "type": "string"

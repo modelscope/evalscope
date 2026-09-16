@@ -9,14 +9,11 @@ from evalscope.api.model import ModelOutput
 
 
 class Target(Sequence[str]):
-    """Target for scoring against the current TaskState.
-
-    Target is a sequence of one or more strings. Use the
-    `text` property to access the value as a single string.
-    """
+    """Normalized set of accepted answers for a sample."""
 
     def __init__(self, target: Union[str, List[str]]) -> None:
-        self.target = target if isinstance(target, list) else [target]
+        raw_values = [target] if isinstance(target, str) else target
+        self._values = tuple(dict.fromkeys(value.strip() for value in raw_values if value.strip()))
 
     @overload
     def __getitem__(self, index: int) -> str: ...
@@ -25,14 +22,35 @@ class Target(Sequence[str]):
     def __getitem__(self, index: slice) -> Sequence[str]: ...
 
     def __getitem__(self, index: Union[int, slice]) -> Union[str, Sequence[str]]:
-        return self.target[index]
+        return self._values[index]
 
     def __len__(self) -> int:
-        return len(self.target)
+        return len(self._values)
+
+    @property
+    def values(self) -> tuple[str, ...]:
+        """Accepted answers in stable order."""
+        return self._values
+
+    def single(self) -> str:
+        """Return the only accepted answer."""
+        if len(self) != 1:
+            raise ValueError(f'Metric requires one reference answer, received {len(self)}.')
+        return self._values[0]
+
+    @property
+    def display(self) -> str:
+        """Render all accepted answers for text-only consumers."""
+        return '\n'.join(self._values)
 
     @property
     def text(self) -> str:
-        return ''.join(self.target)
+        """Legacy text representation of the target."""
+        return self.display
+
+    def compact(self) -> str:
+        """Concatenate answer labels for multiple-choice scoring."""
+        return ''.join(self._values)
 
 
 @dataclass
@@ -276,14 +294,24 @@ class TaskState:
         self._completed = completed
 
     @property
+    def target_reference(self) -> Target:
+        """Canonical accepted-answer set for scoring."""
+        return self._target
+
+    @property
     def target(self) -> str:
-        """The scoring target for this `Sample`."""
-        return self._target.text
+        """Text rendering of all accepted answers."""
+        return self._target.display
+
+    @property
+    def target_values(self) -> List[str]:
+        """Accepted target answers for multi-reference scoring."""
+        return list(self._target)
 
     @target.setter
-    def target(self, text: str) -> None:
-        """Set the target for review purposes."""
-        self._target = Target(text)
+    def target(self, value: Union[str, List[str]]) -> None:
+        """Set accepted answers for review purposes."""
+        self._target = Target(value)
 
     @property
     def agent_trace(self) -> Optional[AgentTrace]:

@@ -666,7 +666,7 @@ class DefaultDataAdapter(DataAdapter):
                 metric_func = metric_cls(**metric_args)
                 metric_score = metric_func(
                     prediction=filtered_prediction,
-                    reference=reference,
+                    reference=metric_func.prepare_reference(task_state.target_reference),
                 )
                 score.value[metric_name] = metric_score
             except Exception as e:

@@ -149,7 +149,7 @@ def format_example(
         str: Formatted example string.
     """
     choices_text = answer_options(choices)
-    return f'{question}\n{choices_text}\nANSWER: {answer.text}'
+    return f'{question}\n{choices_text}\nANSWER: {answer.compact()}'
 
 
 # The answer marker itself.  Locating markers separately from the label keeps a greedy label

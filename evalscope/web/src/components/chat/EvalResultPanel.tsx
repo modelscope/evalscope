@@ -60,7 +60,7 @@ export function CollapsibleJson({
 
 export interface EvalResultPanelProps {
   pred: string
-  gold: string
+  gold: string | string[]
   /** ``null`` when the sample has no usable score. */
   nScore: number | null
   /** Mirrors ``ScoreStatus``; explains why a score is unavailable. */
@@ -142,7 +142,17 @@ export function EvalResultPanel({
             {t('prediction.expectedAnswer')}
           </div>
           <div className="type-body-sm text-[var(--text)]">
-            <MarkdownRenderer content={gold} />
+            {Array.isArray(gold) ? (
+              <ul className="list-disc space-y-1 pl-4">
+                {gold.map((answer, index) => (
+                  <li key={`${index}-${answer}`}>
+                    <MarkdownRenderer content={answer} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <MarkdownRenderer content={gold} />
+            )}
           </div>
         </div>
 
