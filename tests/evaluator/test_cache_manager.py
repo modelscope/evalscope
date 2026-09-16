@@ -9,7 +9,7 @@ import pytest
 
 from evalscope.api.dataset import MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.evaluator.cache import CacheManager, ModelResult
+from evalscope.api.evaluator.cache import CacheManager, ModelResult, ReviewResult
 from evalscope.utils.io_utils import OutputsStructure
 
 
@@ -32,6 +32,16 @@ def _review_row(sample_id: int, value: float) -> Dict[str, Any]:
             },
         },
     }
+
+
+def test_review_result_migrates_legacy_target_to_alternatives() -> None:
+    legacy = ReviewResult.from_cache_item(_review_row(0, 1.0))
+    current = ReviewResult.from_cache_item({**_review_row(1, 1.0), 'target': ['A', 'B']})
+
+    assert legacy.target == ['answer']
+    assert current.target == ['A', 'B']
+    with pytest.raises(ValueError, match='must not be an empty list'):
+        ReviewResult.from_cache_item({**_review_row(2, 1.0), 'target': []})
 
 
 def _make_manager(tmp_path: Path) -> CacheManager:

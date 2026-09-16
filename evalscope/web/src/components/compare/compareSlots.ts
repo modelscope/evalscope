@@ -9,7 +9,7 @@ import type { PredictionRow } from '@/api/types'
 export interface MergedPrediction {
   Index: string
   Input: string
-  Gold: string
+  Gold: string | string[]
   /** Keyed by report reference; a sample is only shown when every report answered it. */
   models: Record<string, PredictionRow>
 }

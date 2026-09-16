@@ -418,12 +418,15 @@ def _build_prediction_row(
     extracted_prediction = score.extracted_prediction
     main_value = score.main_value
 
+    target = review_result.target
+    gold = target[0] if target and len(target) == 1 else target or '*No Gold Provided*'
+
     return {
         'Index': str(review_result.index),
         'Input': review_result.messages_markdown.replace('\n', '\n\n'),  # for markdown
         'Metadata': sample_score.sample_metadata,
         'Generated': prediction or '',  # Ensure no None value
-        'Gold': review_result.target or '*No Gold Provided*',
+        'Gold': gold,
         'Pred': (extracted_prediction if extracted_prediction != prediction else '*Same as Generated*')
         or '',  # Ensure no None value
         'Score': score.model_dump(exclude_none=True),

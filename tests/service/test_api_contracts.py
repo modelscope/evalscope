@@ -327,6 +327,23 @@ def test_v1_report_migrates_before_response_validation() -> None:
     assert response.report_list[0].judge_summary is None
 
 
+def test_prediction_contract_preserves_multiple_gold_answers() -> None:
+    response = PredictionsResponse.model_validate({
+        'predictions': [{
+            'Index': 'sample-1',
+            'Input': 'question',
+            'Metadata': {},
+            'Generated': 'answer',
+            'Gold': ['answer', 'alias'],
+            'Pred': '*Same as Generated*',
+            'Score': {},
+            'NScore': 1.0,
+        }]
+    })
+
+    assert response.predictions[0].gold == ['answer', 'alias']
+
+
 def test_prediction_contract_supports_messages_trace_and_missing_optional_fields() -> None:
     response = PredictionsResponse.model_validate({
         'predictions': [{
@@ -422,7 +439,7 @@ def test_frontend_json_endpoints_are_registered_with_generated_models() -> None:
     frontend_models = set()
     for _, frontend_path, _ in CONTRACT_REGISTRY:
         frontend = (ROOT / frontend_path).read_text(encoding='utf-8')
-        frontend_models.update(re.findall(r'api(?:Post|Delete)?Validated<(\w+)>', frontend))
+        frontend_models.update(re.findall(r'api(?:Post|Delete)?Validated<(\w+)(?:\s*\|[^>]*)?>', frontend))
 
     registered_models = {model_name for model_name, _, _ in CONTRACT_REGISTRY}
     assert frontend_models == registered_models

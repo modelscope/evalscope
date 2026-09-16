@@ -3,7 +3,7 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from evalscope.api.agent import AgentTrace
 from evalscope.api.dataset import Dataset
@@ -431,8 +431,8 @@ class ReviewResult(BaseModel):
     index: int
     """Index of the sample that was reviewed."""
 
-    target: Optional[str] = None
-    """Expected/target answer for the sample, if available."""
+    target: Optional[List[str]] = None
+    """Accepted target answers for the sample, if available."""
 
     messages: List[ChatMessage] = Field(default_factory=list)
     """Full chat message history exchanged during evaluation."""
@@ -446,14 +446,16 @@ class ReviewResult(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def _migrate_legacy_input(cls, data: Any) -> Any:
-        """Migrate legacy ``input: str`` / ``trajectory`` into the new shape.
-
-        Older review caches stored only a rendered input string and an unused
-        ``trajectory`` field.  We keep load-compat by synthesizing a user
-        message and silently dropping the legacy trajectory payload.
-        """
+        """Migrate legacy review cache rows into the structured contract."""
         if not isinstance(data, dict):
             return data
+        data = dict(data)
+        target = data.get('target')
+        if isinstance(target, str):
+            target = target.strip()
+            data['target'] = [target] if target else None
+        elif isinstance(target, list):
+            data['target'] = list(dict.fromkeys(value.strip() for value in target if value.strip()))
         legacy_input = data.pop('input', None)
         if legacy_input and not data.get('messages'):
             data['messages'] = [
@@ -467,6 +469,13 @@ class ReviewResult(BaseModel):
         # validation).
         data.pop('trajectory', None)
         return data
+
+    @field_validator('target')
+    @classmethod
+    def _validate_target(cls, target: Optional[List[str]]) -> Optional[List[str]]:
+        if target is not None and not target:
+            raise ValueError('ReviewResult.target must not be an empty list.')
+        return target
 
     @classmethod
     def from_cache_item(cls, data: Any) -> 'ReviewResult':
@@ -503,7 +512,7 @@ class ReviewResult(BaseModel):
 
         return cls(
             index=state.sample_id,
-            target=state.target,
+            target=list(state.target_reference.values) or None,
             messages=state.messages,
             agent_trace=state.agent_trace,
             sample_score=sample_score,
@@ -527,7 +536,7 @@ class ReviewResult(BaseModel):
         """
         output = [
             f'Review Result for Sample {self.index}:',
-            f'Target: {self.target}',
+            f'Target: {self.target or []}',
             f'Score: {self.sample_score.model_dump_json(indent=2)}',
         ]
         return '\n'.join(output)

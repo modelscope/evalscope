@@ -110,6 +110,35 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.get_json()['predictions']), 1)
 
+    def test_predictions_returns_multiple_gold_answers(self):
+        import pandas as pd
+
+        frame = pd.DataFrame([{
+            'Index': '0',
+            'Input': 'question',
+            'Metadata': {},
+            'Generated': 'answer',
+            'Gold': ['answer', 'alias'],
+            'Pred': 'answer',
+            'Score': {},
+            'NScore': 1.0,
+        }])
+        with mock.patch(
+            'evalscope.service.blueprints.reports.get_model_prediction',
+            return_value=frame,
+        ):
+            res = self.client.get(
+                '/api/v1/reports/runs/20260101_120000/models/model-a/predictions',
+                query_string={
+                    'root_path': self.tmp,
+                    'dataset_name': 'gsm8k',
+                    'subset_name': 'main',
+                },
+            )
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.get_json()['predictions'][0]['Gold'], ['answer', 'alias'])
+
     def test_predictions_returns_runtime_agent_trace_fields(self):
         import pandas as pd
 

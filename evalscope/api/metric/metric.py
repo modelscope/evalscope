@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable, List, Union
+from typing import TYPE_CHECKING, Callable, Iterable, List, Union
 
 from evalscope.utils import get_logger
 from evalscope.utils.function_utils import thread_safe
 
 logger = get_logger()
+
+if TYPE_CHECKING:
+    from evalscope.api.evaluator import Target
 
 
 class Metric(ABC):
@@ -18,13 +21,15 @@ class Metric(ABC):
         """
 
     @abstractmethod
-    def apply(self, predictions: List[str], references: List[str]) -> List[float]:
+    def apply(self, predictions: List[str], references: List[str | List[str]]) -> List[float]:
         pass
 
-    def __call__(self, prediction: str, reference: str) -> float:
-        """
-        Allows the metric to be called like a function.
-        """
+    def prepare_reference(self, target: 'Target') -> str:
+        """Select a reference representation supported by this metric."""
+        return target.single()
+
+    def __call__(self, prediction: str, reference: str | List[str]) -> float:
+        """Allows the metric to be called like a function."""
         return self.apply([prediction], [reference])[0]
 
 

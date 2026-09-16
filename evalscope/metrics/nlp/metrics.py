@@ -1,11 +1,14 @@
 import json
 import os
-from typing import List
+from typing import TYPE_CHECKING, List
 
 from evalscope.api.metric import Metric, SingletonMetric
 from evalscope.api.registry import register_metric
 from evalscope.metrics.utils.functions import normalize_text
 from evalscope.utils.import_utils import check_import
+
+if TYPE_CHECKING:
+    from evalscope.api.evaluator import Target
 
 # ##################
 # NLP Metrics ######
@@ -28,6 +31,12 @@ class Accuracy(ExactMatch):
     def __init__(self, allow_inclusion: bool = False, numeric: bool = False) -> None:
         self.allow_inclusion = allow_inclusion
         self.numeric = numeric
+
+    def prepare_reference(self, target: 'Target') -> str | list[str]:
+        """Preserve alternatives only when inclusion scoring is enabled."""
+        if self.allow_inclusion:
+            return list(target.values)
+        return super().prepare_reference(target)
 
     def apply(self, predictions: list[str], references: list[str | list[str]]) -> list[float]:
         """Match complete answers; inclusion treats a string reference as one alternative."""
@@ -75,6 +84,10 @@ class MathAcc(Metric):
 
 @register_metric(name='multi_choice_acc')
 class MultiChoiceAcc(Metric):
+    def prepare_reference(self, target: 'Target') -> str:
+        """Combine multiple choice labels into one answer set."""
+        return target.compact()
+
     def apply(self, predictions, references):
         """
         Calculate accuracy for multiple-choice questions.

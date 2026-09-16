@@ -153,10 +153,10 @@ class CLBenchAdapter(DefaultDataAdapter):
         def request(case, placement, completed_cases, judge_context) -> JudgeRequest:
             from .utils import build_rubrics_text
 
-            target = judge_context.task_state.target
+            target = list(judge_context.task_state.target_reference.values)
             prompt = (
                 GRADING_TEMPLATE.format(
-                    rubrics=build_rubrics_text(target if isinstance(target, list) else [target]),
+                    rubrics=build_rubrics_text(target),
                     response=judge_context.filtered_prediction,
                 )
                 + case.output_contract.instruction()

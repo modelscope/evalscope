@@ -517,7 +517,7 @@ export interface PerfRunsListResponse {
 export interface PredictionRow {
   AgentTrace?: AgentTrace | null;
   Generated: string;
-  Gold: string;
+  Gold: string | string[];
   Index: string;
   Input: string;
   Messages?: ChatMessage[] | null;
