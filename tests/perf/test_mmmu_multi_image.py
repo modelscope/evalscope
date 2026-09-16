@@ -1,3 +1,4 @@
+import base64
 from io import BytesIO
 
 import pytest
@@ -17,9 +18,9 @@ def _args(dataset_args=None, **kwargs) -> Arguments:
     )
 
 
-def _image_bytes() -> bytes:
+def _image_bytes(mode: str = 'RGB') -> bytes:
     buffer = BytesIO()
-    Image.new('RGB', (2, 2), 'white').save(buffer, format='PNG')
+    Image.new(mode, (2, 2), 'white').save(buffer, format='PNG')
     return buffer.getvalue()
 
 
@@ -59,6 +60,40 @@ class TestMMMUMultiImageDataset:
         }
         assert [part['type'] for part in message['content']] == ['text', 'image_url', 'image_url']
         assert all(part['image_url']['url'].startswith('data:image/') for part in message['content'][1:])
+
+    def test_encodes_alpha_bearing_images_end_to_end(self, monkeypatch):
+        # Regression for Yunnglin's blocking review: real AI-ModelScope/MMMU
+        # Music validation rows contain RGBA images, and the JPEG default of
+        # PIL_to_base64 cannot write alpha-bearing modes. The first MMMU row
+        # must produce its request instead of raising mid-iteration.
+        plugin = MMMUMultiImageDatasetPlugin(_args({'subset': 'Music', 'min_images': 2}))
+        rows = [
+            {
+                'question': 'Which image matches the score?',
+                'options': "['A', 'B']",
+                'image_1': Image.new('RGBA', (4, 4), (255, 0, 0, 128)),
+                'image_2': Image.new('LA', (4, 4), (120, 200)),
+                'image_3': {'bytes': _image_bytes('RGBA')},
+                'image_4': Image.new('P', (4, 4)),
+                'image_5': Image.new('RGB', (4, 4), 'blue'),
+            }
+        ]
+        monkeypatch.setattr(plugin, 'load_hub_dataset', lambda **_: rows)
+
+        requests = list(plugin.build_messages())
+
+        assert len(requests) == 1
+        message = requests[0][0]
+        image_parts = [part for part in message['content'] if part['type'] == 'image_url']
+        # Image order and count are preserved.
+        assert len(image_parts) == 5
+        for part in image_parts:
+            url = part['image_url']['url']
+            # The data-URL MIME must match the encoded bytes.
+            assert url.startswith('data:image/jpeg;base64,')
+            payload = url.split(',', 1)[1]
+            # The declared JPEG MIME is backed by real JPEG bytes.
+            assert Image.open(BytesIO(base64.b64decode(payload))).format == 'JPEG'
 
     def test_skips_rows_below_minimum_image_count(self, monkeypatch):
         plugin = MMMUMultiImageDatasetPlugin(_args({'min_images': 2}))
