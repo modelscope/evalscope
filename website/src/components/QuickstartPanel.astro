@@ -12,12 +12,12 @@ const zh = locale === 'zh';
 const steps = zh
   ? [
       ['01', '安装服务工具', '提供 CLI 与本地 Dashboard。'],
-      ['02', '运行五条样本', '通过环境变量中的 API key 调用远端模型。'],
+      ['02', '运行五条样本', '使用服务商提供的端点与 API key 调用远端模型。'],
       ['03', '检查产物', '从 ./outputs 打开报告、预测与配置。'],
     ]
   : [
       ['01', 'Install service tools', 'Adds the CLI and local dashboard.'],
-      ['02', 'Run five samples', 'Uses the API key from your environment.'],
+      ['02', 'Run five samples', 'Uses the endpoint and API key supplied by your provider.'],
       ['03', 'Inspect artifacts', 'Opens reports, predictions and configs from ./outputs.'],
     ];
 ---

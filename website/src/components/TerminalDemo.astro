@@ -12,6 +12,94 @@ const zh = locale === 'zh';
 const t = (en: string, cn: string) => (zh ? cn : en);
 const copyLabel = t('Copy command', '复制命令');
 const copiedLabel = t('Copied', '已复制');
+const tableLabels = new Set([
+  'Model',
+  'Dataset',
+  'Metric',
+  'Subset',
+  'Num',
+  'Score',
+  'Accuracy',
+  'Basic Information',
+  'Performance Test Summary Report',
+  'Performance Overview',
+  'Per-Request Metrics',
+  'Workload Throughput',
+  'Test Dataset',
+  'API Type',
+  'Total Generated',
+  'Avg Output Rate',
+  'Total Test Time',
+  'Output Path',
+  'Conc.',
+  'Rate',
+  'RPS',
+  'Gen/s',
+  'Success',
+  'avg',
+  'p50',
+  'p99',
+  'max',
+  'Overall',
+  'Last 30s',
+  'Steady (drop 20%)',
+  'Avg Lat',
+  'Avg TTFT',
+  'Avg TPOT',
+  'Avg Thpt',
+  'Avg In',
+  'Avg Out',
+  'Latency (s)',
+  'TTFT (ms)',
+  'TPOT (ms)',
+  'Input Tokens',
+  'Output Tokens',
+  'Cache Hit (%)',
+  'Decode toks/s',
+  'Decoded Tok/Iter',
+  'Spec. Accept Rate',
+  'Total Prompt tok/s',
+  'New Prompt tok/s',
+  'Cached Prompt tok/s',
+  'Completion tok/s',
+]);
+const terminalTokenPattern =
+  /https?:\/\/[^\s"']+|outputs\/[^\s"']+|\$?[A-Z][A-Z0-9_]*_API_KEY|--[a-z][a-z-]*|\b(?:INFO|WARNING|ERROR)\b|qwen-plus|\b(?:true|false|openai_api|openai)\b|(?:Performance Test Summary Report|Basic Information|Performance Overview|Per-Request Metrics|Workload Throughput|Test Dataset|API Type|Total Generated|Avg Output Rate|Total Test Time|Output Path|Steady \(drop 20%\)|Last 30s|Avg Lat|Avg TTFT|Avg TPOT|Avg Thpt|Avg In|Avg Out|Latency \(s\)|TTFT \(ms\)|TPOT \(ms\)|Input Tokens|Output Tokens|Cache Hit \(%\)|Decode toks\/s|Decoded Tok\/Iter|Spec\. Accept Rate|Total Prompt tok\/s|New Prompt tok\/s|Cached Prompt tok\/s|Completion tok\/s|Model|Dataset|Metric|Subset|Num|Score|Accuracy|Conc\.|Rate|RPS|Gen\/s|Success|Overall|avg|p50|p99|max)|\d+(?:\.\d+)?(?:%|\s(?:ms|s|tok\/s|tokens))?|[┌┬┐├┼┤└┴┘┏┳┓┡╇┩┗┻┛│┃─━═]+/g;
+
+const escapeHtml = (value: string) =>
+  value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+
+const terminalTokenTone = (token: string, table: boolean) => {
+  if (/^[┌┬┐├┼┤└┴┘┏┳┓┡╇┩┗┻┛│┃─━═]+$/.test(token) || (table && /^-+$/.test(token))) return 'border';
+  if (token.startsWith('http')) return 'link';
+  if (token.startsWith('outputs/')) return 'path';
+  if (token.includes('API_KEY')) return 'secret';
+  if (token.startsWith('--')) return 'option';
+  if (token === 'INFO') return 'info';
+  if (token === 'WARNING') return 'warning';
+  if (token === 'ERROR') return 'error';
+  if (token === 'qwen-plus') return 'model';
+  if (token === 'true' || token === 'false' || token === 'openai_api' || token === 'openai') return 'value';
+  if (token.endsWith('%')) return 'score';
+  if (table && tableLabels.has(token)) return 'header';
+  if (table && /^\d/.test(token)) return 'metric';
+  return 'plain';
+};
+
+const formatTerminalText = (text: string, table = false) => {
+  let html = '';
+  let index = 0;
+
+  for (const match of text.matchAll(terminalTokenPattern)) {
+    const token = match[0];
+    const start = match.index ?? index;
+    html += escapeHtml(text.slice(index, start));
+    html += `<span class="terminal-demo__token is-${terminalTokenTone(token, table)}">${escapeHtml(token)}</span>`;
+    index = start + token.length;
+  }
+
+  return html + escapeHtml(text.slice(index));
+};
 ---
 
 <section id="recorded-runs" class="terminal-demo" data-terminal-demo aria-labelledby="terminal-demo-title">
@@ -64,7 +152,9 @@ const copiedLabel = t('Copied', '已复制');
                 <i />
               </>
             </span>
-            <span class="terminal-demo__label">{scene.label} · qwen-plus</span>
+            <span class="terminal-demo__label">
+              {scene.label} · {t('recorded qwen-plus / OpenAI-compatible', '已录制 qwen-plus / OpenAI-compatible')}
+            </span>
             <button
               class="terminal-demo__copy"
               type="button"
@@ -87,16 +177,15 @@ const copiedLabel = t('Copied', '已复制');
                 <pre
                   class:list={['terminal-demo__table', `is-${line.tone}`, { 'is-visible': index === 0 }]}
                   data-terminal-line={lineIndex}
-                  set:text={line.text}
+                  set:html={formatTerminalText(line.text, true)}
                 />
               ) : (
                 <p
                   class:list={['terminal-demo__line', `is-${line.tone}`, { 'is-visible': index === 0 }]}
                   data-terminal-line={lineIndex}
                   data-terminal-progress={line.progress ? JSON.stringify(line.progress) : undefined}
-                >
-                  {line.text}
-                </p>
+                  set:html={formatTerminalText(line.text)}
+                />
               )
             )}
           </div>
@@ -404,9 +493,46 @@ const copiedLabel = t('Copied', '已复制');
     color: #a9d89d;
   }
 
+  .terminal-demo__line.is-warning,
+  .terminal-demo__table.is-warning {
+    color: #c3cdd4;
+  }
+
+  .terminal-demo__line.is-progress,
+  .terminal-demo__table.is-progress {
+    color: #c3cdd4;
+  }
+
   .terminal-demo__line.is-path,
   .terminal-demo__table.is-path {
+    color: #c3cdd4;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-border) {
+    color: #708492;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-header),
+  .terminal-demo__screen :global(.terminal-demo__token.is-info),
+  .terminal-demo__screen :global(.terminal-demo__token.is-option) {
+    color: #83b8ff;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-model) {
+    color: #a9d89d;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-score) {
+    color: #9edc92;
+    font-weight: 700;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-warning) {
     color: #f0c567;
+  }
+
+  .terminal-demo__screen :global(.terminal-demo__token.is-error) {
+    color: #ed8a82;
   }
 
   .terminal-demo__footer {
@@ -426,7 +552,7 @@ const copiedLabel = t('Copied', '已复制');
   }
 
   .terminal-demo__footer code {
-    color: #f0c567;
+    color: #aeb9c2;
     overflow-wrap: anywhere;
   }
 

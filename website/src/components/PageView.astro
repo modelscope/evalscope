@@ -41,7 +41,7 @@ const docsFaqUrl = zh
   : 'https://evalscope.readthedocs.io/en/latest/get_started/faq.html';
 const skillInstallPrompt = `Install the EvalScope project skill from ${skillUrl}. Read it after installation, then tell me what you need from me before using EvalScope.`;
 const prompt =
-  'Use the EvalScope project skill to evaluate qwen-plus on five GSM8K samples. Ask me for the model or endpoint configuration you need before running it, then report the results and where the outputs were saved.';
+  'Use the EvalScope project skill to evaluate a model served through an OpenAI-compatible API on five GSM8K samples. Ask me for the model name, endpoint, and credentials configuration you need before running it, then report the results and where the outputs were saved.';
 const evidence = [
   [
     'Dataset',
@@ -76,26 +76,26 @@ const evidence = [
     ),
   ],
 ];
-const evalCommand = `export DASHSCOPE_API_KEY='…'
-evalscope eval \\
-  --model qwen-plus \\
-  --api-key "$DASHSCOPE_API_KEY" \\
-  --datasets gsm8k \\
-  --limit 5`;
+const evalCommand = `evalscope eval \\
+  --model your-model --eval-type openai_api \\
+  --api-url https://api.example.com/v1 \\
+  --api-key "$MODEL_API_KEY" \\
+  --datasets gsm8k --limit 5`;
 const serviceCommand = `pip install 'evalscope[service]'
 evalscope service --outputs ./outputs`;
 const quickstartCommand = `pip install 'evalscope[service]'
-export DASHSCOPE_API_KEY='…'
+export MODEL_API_KEY='…'
 evalscope eval \\
-  --model qwen-plus \\
-  --api-key "$DASHSCOPE_API_KEY" \\
-  --datasets gsm8k \\
-  --limit 5
+  --model your-model --eval-type openai_api \\
+  --api-url https://api.example.com/v1 \\
+  --api-key "$MODEL_API_KEY" \\
+  --datasets gsm8k --limit 5
 evalscope service --outputs ./outputs`;
 const perfCommand = `evalscope perf \\
-  --model qwen-plus \\
-  --number 24 \\
-  --parallel 1 2 4`;
+  --model your-model --api openai \\
+  --url https://api.example.com/v1 \\
+  --api-key "$MODEL_API_KEY" \\
+  --number 24 --parallel 1 2 4`;
 ---
 
 {
@@ -147,7 +147,7 @@ const perfCommand = `evalscope perf \\
               </>
             </div>
             <div class="hero-stack stage-card" data-stage-card>
-              <CodeSnippet code={evalCommand} label="run-evaluation.sh" locale={locale} />
+              <CodeSnippet code={evalCommand} label="openai-compatible-eval.sh" locale={locale} />
               <ScreenshotFrame src={evalShot} alt="Real EvalScope qwen-plus GSM8K results" />
             </div>
             <aside class="hero-side-reference" aria-hidden="true">
@@ -1183,7 +1183,7 @@ const perfCommand = `evalscope perf \\
                 </a>
               </>
             </div>
-            <CodeSnippet code={perfCommand} label="run-performance.sh" locale={locale} />
+            <CodeSnippet code={perfCommand} label="openai-compatible-perf.sh" locale={locale} />
           </>
         </div>
       </section>
@@ -1951,8 +1951,8 @@ const perfCommand = `evalscope perf \\
             <h2 class="section-title">{t('Run a small evaluation from the terminal.', '从终端运行一次小型评测。')}</h2>
             <p class="lede">
               {t(
-                'Install the service tools, run five API-backed samples, then open the saved outputs locally.',
-                '安装服务工具，运行五条 API 样本，然后在本地打开已保存的产物。'
+                'Install the service tools, run five samples against an OpenAI-compatible endpoint, or select the matching eval type for another supported protocol; then open the saved outputs locally.',
+                '安装服务工具，通过兼容 OpenAI 的端点运行五条样本；如使用其他已支持协议，请选择对应的评测类型，然后在本地打开已保存的产物。'
               )}
             </p>
           </div>
@@ -1968,15 +1968,12 @@ const perfCommand = `evalscope perf \\
                 <details>
                   <>
                     <summary>
-                      {t(
-                        'My API endpoint is OpenAI-compatible but not DashScope.',
-                        '我的 API 端点兼容 OpenAI，但不是 DashScope。'
-                      )}
+                      {t('My API endpoint uses the OpenAI protocol.', '我的 API 端点采用 OpenAI 协议。')}
                     </summary>
                     <p>
                       {t(
-                        'Keep the API-first route; replace the URL, model name and environment variable with the values provided by your service.',
-                        '继续使用 API 路径；把 URL、模型名和环境变量替换为服务商提供的值。'
+                        'Use the API-first route: set the URL, model name, and credential environment variable from your service. For another protocol, select its matching eval type.',
+                        '使用 API 路径：将 URL、模型名和凭据环境变量替换为服务商提供的值。若使用其他协议，请选择对应的评测类型。'
                       )}
                     </p>
                   </>

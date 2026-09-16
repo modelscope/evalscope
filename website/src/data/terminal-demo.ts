@@ -1,4 +1,4 @@
-export type TerminalTone = 'command' | 'status' | 'result' | 'path' | 'muted';
+export type TerminalTone = 'command' | 'status' | 'result' | 'path' | 'muted' | 'progress' | 'warning';
 
 export interface TerminalReplayLine {
   text: string;
@@ -135,13 +135,13 @@ export const terminalReplayScenes: TerminalReplayScene[] = [
       { text: '2026-09-11 10:32:19 - evalscope - INFO: Start loading benchmark dataset: gsm8k', tone: 'status' },
       {
         text: '2026-09-11 10:32:19 - evalscope - WARNING: gsm8k: 5 samples to evaluate (1 subset, --limit=5 per subset).',
-        tone: 'muted',
+        tone: 'warning',
       },
       { text: "2026-09-11 10:32:19 - evalscope - INFO: Subsets of gsm8k: ['main']", tone: 'status' },
       { text: '2026-09-11 10:32:19 - evalscope - INFO: Loading model for prediction...', tone: 'status' },
       {
         text: 'Running[eval]:   0%|          | 0/2 [00:00<?, ?benchmark/s]',
-        tone: 'muted',
+        tone: 'progress',
         progress: [
           'Running[eval]:   0%|          | 0/2 [00:00<?, ?benchmark/s]',
           'Running[eval]:  50%|█████     | 1/2 [00:07<00:06,  6.10s/benchmark]',
@@ -173,7 +173,7 @@ qwen-plus  GSM8K          5  3.768 s    587.2 ms    17.9 ms     49.62 tok/s     
       { text: '2026-09-11 10:32:25 - evalscope - INFO: Start loading benchmark dataset: arc', tone: 'status' },
       {
         text: '2026-09-11 10:32:25 - evalscope - WARNING: arc: 10 samples to evaluate (2 subsets, --limit=5 per subset).',
-        tone: 'muted',
+        tone: 'warning',
       },
       { text: "2026-09-11 10:32:25 - evalscope - INFO: Subsets of arc: ['ARC-Easy', 'ARC-Challenge']", tone: 'status' },
       {
@@ -244,7 +244,7 @@ qwen-plus  ARC           10  0.496 s    400.8 ms    31.8 ms     8.06 tok/s      
       { text: '  --outputs-dir outputs/website-terminal-demo', tone: 'command' },
       {
         text: '2026-09-11 10:32:41 - evalscope - WARNING: URL "https://dashscope.aliyuncs.com/compatible-mode/v1" has no endpoint path, auto-appended "/chat/completions".',
-        tone: 'muted',
+        tone: 'warning',
       },
       {
         text: '2026-09-11 10:32:41 - evalscope - INFO: Save the result to: outputs/website-terminal-demo/20260911_103241/qwen-plus',
@@ -257,7 +257,7 @@ qwen-plus  ARC           10  0.496 s    400.8 ms    31.8 ms     8.06 tok/s      
       },
       {
         text: 'Running[perf]:   0%|          | 0/3 [00:00<?, ?it/s]',
-        tone: 'muted',
+        tone: 'progress',
         progress: [
           'Running[perf]:   0%|          | 0/3 [00:00<?, ?it/s]',
           'Running[perf]:  33%|███▎      | 1/3 [01:36<02:03, 61.68s/it]',
