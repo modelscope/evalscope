@@ -18,6 +18,11 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
     dataset_id = 'AI-ModelScope/MMMU'
     max_images = 7
 
+    # Modes the shared JPEG encoder (the PIL_to_base64 default) can write.
+    # Real MMMU rows carry alpha-bearing modes such as RGBA, which is not
+    # among them, so those images are flattened to RGB before encoding.
+    JPEG_COMPATIBLE_MODES = frozenset({'L', 'RGB', 'CMYK', 'YCbCr'})
+
     def __init__(self, query_parameters: Arguments):
         if query_parameters.tokenize_prompt:
             raise ValueError(
@@ -42,6 +47,19 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
                     return image.copy()
         return None
 
+    @staticmethod
+    def _to_jpeg_compatible(image: Image.Image) -> Image.Image:
+        """Flatten alpha-bearing image modes so the JPEG encoder can write them.
+
+        ``PIL_to_base64`` defaults to JPEG, which refuses modes such as
+        ``RGBA``/``LA``/``P``; real MMMU rows carry those modes, so they are
+        converted to ``RGB`` before the existing JPEG path, matching the
+        repository's other JPEG data-URL encoders.
+        """
+        if image.mode in MMMUMultiImageDatasetPlugin.JPEG_COMPATIBLE_MODES:
+            return image
+        return image.convert('RGB')
+
     def _collect_image_urls(self, item: Dict[str, Any]) -> List[str]:
         """Collect non-empty ``image_1`` ... ``image_7`` fields in source order."""
         image_urls: List[str] = []
@@ -49,7 +67,7 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
             image = self._to_pil_image(item.get(f'image_{index}'))
             if image is None:
                 continue
-            image_urls.append(PIL_to_base64(image, add_header=True))
+            image_urls.append(PIL_to_base64(self._to_jpeg_compatible(image), add_header=True))
         return image_urls
 
     @staticmethod
