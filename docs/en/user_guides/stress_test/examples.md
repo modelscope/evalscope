@@ -122,9 +122,7 @@ evalscope perf \
 
 ### Multi-image Inputs
 
-#### Real Multi-image Data with MMMU
-
-Use `mmmu_multi_image` to build real multi-image requests from the open-source [MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) validation split. It keeps rows with at least the configured number of images and sends `image_1` through `image_7` in source order within one user message.
+**Real multi-image data with MMMU.** Use `mmmu_multi_image` to build real multi-image requests from the open-source [MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) validation split. It keeps rows with at least the configured number of images and sends `image_1` through `image_7` in source order within one user message.
 
 ```bash
 evalscope perf \
@@ -140,9 +138,7 @@ evalscope perf \
 
 The built-in mode encodes each image as a `data:image/jpeg;base64,...` URL. Use a vision-capable OpenAI-compatible service that accepts multiple `image_url` content parts and JPEG data URLs in one message. This path has been verified with DashScope `qwen-vl-plus`; compatibility with other serving backends depends on their multimodal API support.
 
-#### Custom Multi-image Data
-
-For private or constructed data, use `line_by_line`. Each non-empty line can be an OpenAI-style messages array or a complete request body. Put multiple `image_url` parts in the same user message, for example:
+**Custom multi-image data.** For private or constructed data, use `line_by_line`. Each non-empty line can be an OpenAI-style messages array or a complete request body. Put multiple `image_url` parts in the same user message, for example:
 
 ```json
 [{"role":"user","content":[{"type":"text","text":"Compare image 1 and image 2."},{"type":"image_url","image_url":{"url":"https://example.com/image-1.jpg"}},{"type":"image_url","image_url":{"url":"https://example.com/image-2.jpg"}}]}]

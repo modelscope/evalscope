@@ -122,9 +122,7 @@ evalscope perf \
 
 ### 多图输入
 
-#### 使用 MMMU 构造真实多图请求
-
-使用 `mmmu_multi_image` 从开源 [MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) validation split 构造真实多图请求。该模式仅保留图片数量不少于配置值的样本，并按照源数据顺序将 `image_1` 到 `image_7` 放入同一个 user message。
+**使用 MMMU 构造真实多图请求。** 使用 `mmmu_multi_image` 从开源 [MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) validation split 构造真实多图请求。该模式仅保留图片数量不少于配置值的样本，并按照源数据顺序将 `image_1` 到 `image_7` 放入同一个 user message。
 
 ```bash
 evalscope perf \
@@ -140,9 +138,7 @@ evalscope perf \
 
 内置模式会将每张图片编码为 `data:image/jpeg;base64,...` URL。请使用支持视觉输入的 OpenAI 兼容服务，并确保其能在单条消息中接收多个 `image_url` 内容块和 JPEG data URL。该路径已通过 DashScope `qwen-vl-plus` 验证；其他推理服务的兼容性取决于其多模态 API 支持情况。
 
-#### 使用自建多图数据
-
-对于私有或自行构造的数据，可使用 `line_by_line`。每个非空行可以是 OpenAI 风格的 messages 数组或完整请求体；只需在同一个 user message 中放入多个 `image_url` 内容块，例如：
+**使用自建多图数据。** 对于私有或自行构造的数据，可使用 `line_by_line`。每个非空行可以是 OpenAI 风格的 messages 数组或完整请求体；只需在同一个 user message 中放入多个 `image_url` 内容块，例如：
 
 ```json
 [{"role":"user","content":[{"type":"text","text":"Compare image 1 and image 2."},{"type":"image_url","image_url":{"url":"https://example.com/image-1.jpg"}},{"type":"image_url","image_url":{"url":"https://example.com/image-2.jpg"}}]}]
