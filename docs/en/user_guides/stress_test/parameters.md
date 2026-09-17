@@ -109,7 +109,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 | `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#random-multimodal-dataset) | ✗ |
-| `mmmu_multi_image` | Builds real multi-image requests from all 30 MMMU validation subjects in round-robin order; rows with fewer than two images are skipped, and `image_1` through `image_7` are encoded as JPEG data URLs in one message<br>For performance traffic, not MMMU scoring; does not accept `--dataset-args`; requires a vision-capable service that supports multiple `image_url` parts and data URLs | ✓ (MMMU-compatible `datasets` directory) |
+| `mmmu_multi_image` | Round-robins all 30 MMMU validation subjects to build real multi-image requests<br>For performance traffic only; does not accept `--dataset-args`; requires multi-image data URL support | ✓ (MMMU-compatible `datasets` directory) |
 
 **Embedding**
 

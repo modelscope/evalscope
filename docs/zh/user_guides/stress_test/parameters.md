@@ -109,7 +109,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#随机图文数据集) | ✗ |
-| `mmmu_multi_image` | 从全部 30 个 MMMU validation subject 轮转构造真实多图请求；跳过少于两张图片的样本，并将 `image_1` 到 `image_7` 编码为同一消息内的 JPEG data URL<br>用于性能流量而非 MMMU 评分；不接受 `--dataset-args`；要求服务端支持视觉输入、多个 `image_url` 内容块和 data URL | ✓（兼容 MMMU schema 的 `datasets` 目录） |
+| `mmmu_multi_image` | 轮转加载全部 30 个 MMMU validation subject，构造真实多图请求<br>仅用于性能压测；不接受 `--dataset-args`；服务端需支持多图 data URL | ✓（兼容 MMMU schema 的 `datasets` 目录） |
 
 **Embedding 类**
 
