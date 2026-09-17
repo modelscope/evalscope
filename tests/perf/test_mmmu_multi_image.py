@@ -3,6 +3,7 @@ from io import BytesIO
 
 import pytest
 from PIL import Image
+from pydantic import ValidationError
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.mmmu_multi_image import MMMUMultiImageDatasetPlugin
@@ -62,10 +63,9 @@ class TestMMMUMultiImageDataset:
         assert all(part['image_url']['url'].startswith('data:image/') for part in message['content'][1:])
 
     def test_encodes_alpha_bearing_images_end_to_end(self, monkeypatch):
-        # Regression for Yunnglin's blocking review: real AI-ModelScope/MMMU
-        # Music validation rows contain RGBA images, and the JPEG default of
-        # PIL_to_base64 cannot write alpha-bearing modes. The first MMMU row
-        # must produce its request instead of raising mid-iteration.
+        # MMMU rows can contain alpha-bearing images that the JPEG encoder
+        # cannot write directly. Request construction must convert them before
+        # encoding instead of failing mid-iteration.
         plugin = MMMUMultiImageDatasetPlugin(_args({'subset': 'Music', 'min_images': 2}))
         rows = [
             {
@@ -112,7 +112,7 @@ class TestMMMUMultiImageDataset:
         assert list(plugin.build_messages()) == []
 
     def test_min_images_is_validated(self):
-        with pytest.raises(Exception, match='min_images must be between 2 and 7'):
+        with pytest.raises(ValidationError, match='min_images must be between 2 and 7'):
             MMMUMultiImageDatasetPlugin(_args({'min_images': 1}))
 
     def test_rejects_tokenized_prompt_mode(self):

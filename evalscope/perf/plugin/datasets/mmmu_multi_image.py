@@ -19,11 +19,11 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
     max_images = 7
 
     # Modes the shared JPEG encoder (the PIL_to_base64 default) can write.
-    # Real MMMU rows carry alpha-bearing modes such as RGBA, which is not
-    # among them, so those images are flattened to RGB before encoding.
+    # Real MMMU rows also carry incompatible modes such as RGBA, so they are
+    # converted to RGB before encoding.
     JPEG_COMPATIBLE_MODES = frozenset({'L', 'RGB', 'CMYK', 'YCbCr'})
 
-    def __init__(self, query_parameters: Arguments):
+    def __init__(self, query_parameters: Arguments) -> None:
         if query_parameters.tokenize_prompt:
             raise ValueError(
                 '--tokenize-prompt is not supported with the mmmu_multi_image dataset. '
@@ -49,12 +49,11 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
 
     @staticmethod
     def _to_jpeg_compatible(image: Image.Image) -> Image.Image:
-        """Flatten alpha-bearing image modes so the JPEG encoder can write them.
+        """Convert non-JPEG-compatible image modes to RGB before encoding.
 
         ``PIL_to_base64`` defaults to JPEG, which refuses modes such as
-        ``RGBA``/``LA``/``P``; real MMMU rows carry those modes, so they are
-        converted to ``RGB`` before the existing JPEG path, matching the
-        repository's other JPEG data-URL encoders.
+        ``RGBA``/``LA``/``P``. Converting those images to ``RGB`` keeps the
+        existing JPEG data-URL encoding path usable for MMMU samples.
         """
         if image.mode in MMMUMultiImageDatasetPlugin.JPEG_COMPATIBLE_MODES:
             return image
