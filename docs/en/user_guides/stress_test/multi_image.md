@@ -28,6 +28,10 @@ Dataset arguments:
 
 The built-in mode is intended for real multimodal traffic rather than accuracy evaluation. Use the regular `evalscope eval --datasets mmmu` path when you need MMMU benchmark scoring.
 
+### Backend compatibility
+
+The built-in mode encodes each MMMU image as a `data:image/jpeg;base64,...` URL. Use a vision-capable OpenAI-compatible service that accepts multiple `image_url` content parts and JPEG data URLs in one message. This path has been verified with DashScope `qwen-vl-plus`; compatibility with other serving backends depends on their multimodal API support.
+
 ## Custom multi-image data
 
 For private or constructed datasets, use `line_by_line`. Each non-empty line can already be an OpenAI-style messages array or a complete request body. Put multiple `image_url` parts in the same user message.

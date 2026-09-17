@@ -28,6 +28,10 @@ evalscope perf \
 
 该模式用于构造真实多模态压测流量，而不是计算 MMMU 准确率。如果需要正式的 MMMU 评测得分，请使用常规的 `evalscope eval --datasets mmmu` 流程。
 
+### 服务端兼容性
+
+内置模式会将每张 MMMU 图片编码为 `data:image/jpeg;base64,...` URL。请使用支持视觉输入的 OpenAI 兼容服务，并确保其能在单条消息中接收多个 `image_url` 内容块和 JPEG data URL。该路径已通过 DashScope `qwen-vl-plus` 验证；其他推理服务的兼容性取决于其多模态 API 支持情况。
+
 ## 使用自建多图数据
 
 对于私有或自行构造的数据集，可以直接使用 `line_by_line`。每个非空行本身就可以是 OpenAI 风格的 messages 数组或完整请求体；只需在同一个 user message 中放入多个 `image_url` 内容块。
