@@ -1,4 +1,5 @@
 hypothesis==6.155.2
+import-linter
 pre-commit==4.6.0
 pytest
 pytest-cov

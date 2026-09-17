@@ -172,6 +172,7 @@ class BertScore(SingletonMetric):
         """
         check_import('torch', 'torch', raise_error=True, feature_name='BertScore Metric')
 
+        # Local import: pulls torch/transformers only when BertScore is actually used.
         from .bert_score.scorer import BERTScorer
 
         self.scorer = BERTScorer(model_id_or_path=model_id_or_path, batch_size=1024, **kwargs)

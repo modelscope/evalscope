@@ -4,9 +4,9 @@ import pytest
 from evalscope.api.metric.semantics import MetricIdentity
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.report import Category, Metric, Report, ReportRef, Subset
+from evalscope.report.data_frames import get_comparison_quality_report_df, get_quality_report_df
 from evalscope.report.visualization import plot_multi_report_radar, plot_single_report_scores
 from evalscope.service.blueprints.reports import _apply_chart_theme, _build_report_meta, _report_to_service_dict
-from evalscope.utils.data_utils import get_comparison_quality_report_df, get_quality_report_df
 
 
 def test_apply_chart_theme_uses_light_template_for_light_console() -> None:

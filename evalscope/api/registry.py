@@ -47,7 +47,7 @@ class Registry(Dict[str, T]):
 
         def decorator(obj: T) -> T:
             for n in names:
-                if n in self:
+                if self.is_registered(n):
                     raise ValueError(f"{self.kind} '{n}' is already registered.")
             if self._on_register is not None:
                 self._on_register(obj, names)
@@ -56,6 +56,14 @@ class Registry(Dict[str, T]):
             return obj
 
         return decorator
+
+    def is_registered(self, name: str) -> bool:
+        """Whether ``name`` is already present, without resolving anything.
+
+        Registration is a write path, so it must not trigger the on-demand loading
+        that :class:`LazyRegistry` performs for reads.
+        """
+        return dict.__contains__(self, name)
 
     def _suggest(self, name: str, n: int = 2) -> str:
         """Return a hint string with the closest registered names by edit distance."""
@@ -78,19 +86,116 @@ class Registry(Dict[str, T]):
         return sorted(self.keys())
 
 
+class LazyRegistry(Registry[T]):
+    """Registry that materializes entries on demand.
+
+    Discovery (which names exist) is separated from loading (executing the module
+    that registers a name), so importing the owning package does not have to
+    execute every plugin module. The owning package installs the two resolvers via
+    :meth:`set_resolvers`; until it does, this behaves exactly like
+    :class:`Registry`.
+
+    Reads that can be satisfied by a single name resolve that name only; reads that
+    need the complete catalog (``keys``/``values``/``items``/iteration/``len``)
+    load everything, so batch consumers keep seeing the full set.
+    """
+
+    def __init__(
+        self,
+        kind: str,
+        *,
+        on_register: Optional[Callable[[Any, List[str]], None]] = None,
+    ) -> None:
+        super().__init__(kind, on_register=on_register)
+        self._resolve_one: Optional[Callable[[str], bool]] = None
+        self._resolve_all: Optional[Callable[[], None]] = None
+        self._resolving = 0
+
+    def set_resolvers(
+        self,
+        resolve_one: Callable[[str], bool],
+        resolve_all: Callable[[], None],
+    ) -> None:
+        """Install the loaders.
+
+        Args:
+            resolve_one: Load whatever registers a single name; return False when the
+                name is unknown to the caller's index, so the full load is used instead.
+            resolve_all: Load every plugin module.
+        """
+        self._resolve_one = resolve_one
+        self._resolve_all = resolve_all
+
+    def _materialize(self, name: str) -> None:
+        """Resolve one name, falling back to a full load when it is not indexed."""
+        if self._resolve_one is None or self._resolving or dict.__contains__(self, name):
+            return
+        self._resolving += 1
+        try:
+            if not self._resolve_one(name) and self._resolve_all is not None:
+                self._resolve_all()
+        finally:
+            self._resolving -= 1
+
+    def _materialize_all(self) -> None:
+        """Resolve the complete catalog."""
+        if self._resolve_all is None or self._resolving:
+            return
+        self._resolving += 1
+        try:
+            self._resolve_all()
+        finally:
+            self._resolving -= 1
+
+    def __contains__(self, name: object) -> bool:
+        if isinstance(name, str):
+            self._materialize(name)
+        return dict.__contains__(self, name)
+
+    def __getitem__(self, name: str) -> T:
+        self._materialize(name)
+        return dict.__getitem__(self, name)
+
+    def get(self, name: str, default: Any = None) -> Any:
+        self._materialize(name)
+        return dict.get(self, name, default)
+
+    def keys(self):
+        self._materialize_all()
+        return dict.keys(self)
+
+    def values(self):
+        self._materialize_all()
+        return dict.values(self)
+
+    def items(self):
+        self._materialize_all()
+        return dict.items(self)
+
+    def __iter__(self):
+        self._materialize_all()
+        return dict.__iter__(self)
+
+    def __len__(self) -> int:
+        self._materialize_all()
+        return dict.__len__(self)
+
+
 # END: Registry base
 
 # BEGIN: Registry for benchmarks
 # Stores BenchmarkMeta (not the adapter class) because the adapter is attached
 # to the metadata at registration time.
-BENCHMARK_REGISTRY: Registry['BenchmarkMeta'] = Registry('Benchmark')
+# Lazy: ``evalscope.benchmarks`` installs the resolvers that import adapter modules
+# on demand, so a single-benchmark run does not execute every adapter module.
+BENCHMARK_REGISTRY: LazyRegistry['BenchmarkMeta'] = LazyRegistry('Benchmark')
 
 
 def register_benchmark(metadata: 'BenchmarkMeta'):
     """Register a benchmark with its metadata."""
 
     def register_wrapper(data_adapter: Type['DataAdapter']):
-        if metadata.name in BENCHMARK_REGISTRY:
+        if BENCHMARK_REGISTRY.is_registered(metadata.name):
             raise ValueError(f'Benchmark {metadata.name} already registered')
         metadata.data_adapter = data_adapter
         BENCHMARK_REGISTRY[metadata.name] = metadata

@@ -1,0 +1,105 @@
+# Architecture contracts, checked by `make lint-imports` (import-linter).
+#
+# Type-checking-only imports are excluded: a `TYPE_CHECKING` reference does not
+# create a runtime dependency, and treating it as one produces false positives
+# (most of this package's apparent import cycles are type-only).
+#
+# `ignore_imports` entries are an explicit, reviewable debt list, not an excuse
+# list: each one is a dependency that exists today. Adding a NEW violation makes
+# CI fail, which is the point. Remove entries as the dependencies are resolved;
+# do not add entries to silence a new one without discussion.
+
+[importlinter]
+root_package = evalscope
+include_external_packages = False
+exclude_type_checking_imports = True
+
+# Benchmarks are plugins loaded on demand via evalscope/benchmarks/_index.json.
+# Nothing in the core may import them back, otherwise touching any core module
+# drags all ~240 adapter modules (and datasets/nltk/openai) into the process.
+[importlinter:contract:core-does-not-import-benchmarks]
+name = core layers must not import benchmark adapters
+type = forbidden
+source_modules =
+    evalscope.api
+    evalscope.evaluator
+    evalscope.report
+    evalscope.metrics
+    evalscope.models
+    evalscope.perf
+forbidden_modules =
+    evalscope.benchmarks
+
+# evalscope/api/metric/semantics.py declares the intended direction: the catalog,
+# baseline table, alias manifest and resolver under evalscope.metrics.semantics
+# import the contract module, "never the other way round". The entries below are
+# the places that still go the other way.
+# evalscope.report is deliberately NOT forbidden here: building a Report is part
+# of the DataAdapter contract, so api -> report is by design.
+[importlinter:contract:api-does-not-depend-on-implementations]
+name = api must not depend on metrics / benchmarks implementations
+type = forbidden
+source_modules =
+    evalscope.api
+forbidden_modules =
+    evalscope.metrics
+    evalscope.benchmarks
+ignore_imports =
+    evalscope.api.benchmark.meta -> evalscope.metrics.semantics.legacy_identity
+    evalscope.api.benchmark.adapters.text2image_adapter -> evalscope.metrics.semantics
+    evalscope.api.benchmark.adapters.text2image_adapter -> evalscope.metrics.semantics.naming
+    evalscope.api.mixin.llm_judge_mixin -> evalscope.metrics
+    evalscope.api.mixin.llm_judge_mixin -> evalscope.metrics.semantics.naming
+    evalscope.api.metric.scorer -> evalscope.metrics.semantics.naming
+    evalscope.api.metric.metric -> evalscope.metrics.vision.t2v_metrics.constants
+
+# Perf field semantics currently live under metrics.semantics and read the perf
+# constants, which is the one edge from the eval stack into the perf subsystem.
+[importlinter:contract:metrics-does-not-depend-on-perf]
+name = metrics must not depend on perf
+type = forbidden
+source_modules =
+    evalscope.metrics
+forbidden_modules =
+    evalscope.perf
+ignore_imports =
+    evalscope.metrics.semantics.perf -> evalscope.perf.utils.perf_constants
+
+# utils is meant to be a leaf helper collection: evalscope/utils/__init__.py only
+# lazily exposes leaf modules. The entries below are modules that sit in utils but
+# depend on the top of the stack (the docs pipeline) or on api types
+# (multi_choices, whose Choices objects are constructed at runtime).
+[importlinter:contract:utils-is-a-leaf-layer]
+name = utils must not depend on api / metrics / report / config
+type = forbidden
+source_modules =
+    evalscope.utils
+forbidden_modules =
+    evalscope.api
+    evalscope.metrics
+    evalscope.report
+    evalscope.config
+ignore_imports =
+    evalscope.utils.multi_choices -> evalscope.api.evaluator
+    evalscope.utils.doc_utils.benchmark_stats -> evalscope.api.benchmark.statistics
+    evalscope.utils.doc_utils.benchmark_stats -> evalscope.api.messages
+    evalscope.utils.doc_utils.benchmark_stats -> evalscope.api.messages.chat_message
+    evalscope.utils.doc_utils.benchmark_stats -> evalscope.api.registry
+    evalscope.utils.doc_utils.benchmark_stats -> evalscope.config
+    evalscope.utils.doc_utils.generate_dataset_md -> evalscope.api.benchmark
+    evalscope.utils.doc_utils.generate_dataset_md -> evalscope.api.benchmark.adapters
+    evalscope.utils.doc_utils.generate_dataset_md -> evalscope.api.registry
+
+# The perf subsystem is independent of the eval stack. Its only current path into
+# the report layer runs through utils.multi_choices, which is covered above.
+[importlinter:contract:perf-is-independent-of-the-eval-stack]
+name = perf must not depend on benchmarks / report / evaluator
+type = forbidden
+source_modules =
+    evalscope.perf
+forbidden_modules =
+    evalscope.benchmarks
+    evalscope.report
+    evalscope.evaluator
+ignore_imports =
+    evalscope.utils.multi_choices -> evalscope.api.evaluator

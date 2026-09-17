@@ -46,8 +46,8 @@ from evalscope.benchmarks.toolathlon.toolathlon_adapter import ToolathlonAdapter
 from evalscope.config import SandboxTaskConfig, TaskConfig
 from evalscope.constants import EvalType, JudgeStrategy, OutputType
 from evalscope.models.mockllm import MockLLM
+from evalscope.report.data_frames import get_model_prediction
 from evalscope.run import run_task
-from evalscope.utils.data_utils import get_model_prediction
 from evalscope.utils.logger import get_logger
 from tests.common import TestBenchmark
 
