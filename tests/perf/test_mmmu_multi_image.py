@@ -27,7 +27,7 @@ def _image_bytes(mode: str = 'RGB') -> bytes:
 
 class TestMMMUMultiImageDataset:
     def test_builds_one_message_with_multiple_images_in_source_order(self, monkeypatch):
-        plugin = MMMUMultiImageDatasetPlugin(_args({'subset': 'Music', 'min_images': 2}))
+        plugin = MMMUMultiImageDatasetPlugin(_args())
         rows = [
             {
                 'question': 'Compare <image 1> and <image 2>.',
@@ -66,7 +66,7 @@ class TestMMMUMultiImageDataset:
         # MMMU rows can contain alpha-bearing images that the JPEG encoder
         # cannot write directly. Request construction must convert them before
         # encoding instead of failing mid-iteration.
-        plugin = MMMUMultiImageDatasetPlugin(_args({'subset': 'Music', 'min_images': 2}))
+        plugin = MMMUMultiImageDatasetPlugin(_args())
         rows = [
             {
                 'question': 'Which image matches the score?',
@@ -96,7 +96,7 @@ class TestMMMUMultiImageDataset:
             assert Image.open(BytesIO(base64.b64decode(payload))).format == 'JPEG'
 
     def test_skips_rows_below_minimum_image_count(self, monkeypatch):
-        plugin = MMMUMultiImageDatasetPlugin(_args({'min_images': 2}))
+        plugin = MMMUMultiImageDatasetPlugin(_args())
         monkeypatch.setattr(
             plugin,
             'load_hub_dataset',
@@ -111,9 +111,12 @@ class TestMMMUMultiImageDataset:
 
         assert list(plugin.build_messages()) == []
 
-    def test_min_images_is_validated(self):
-        with pytest.raises(ValidationError, match='min_images must be between 2 and 7'):
-            MMMUMultiImageDatasetPlugin(_args({'min_images': 1}))
+    def test_rejects_dataset_args(self):
+        with pytest.raises(ValidationError) as exc_info:
+            MMMUMultiImageDatasetPlugin(_args({'subset': 'Art', 'min_images': 3}))
+
+        assert 'subset' in str(exc_info.value)
+        assert 'min_images' in str(exc_info.value)
 
     def test_rejects_tokenized_prompt_mode(self):
         with pytest.raises(ValueError, match='not supported with the mmmu_multi_image dataset'):

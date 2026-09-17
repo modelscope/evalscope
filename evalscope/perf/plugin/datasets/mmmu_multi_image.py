@@ -5,7 +5,6 @@ from PIL import Image
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
-from evalscope.perf.plugin.datasets.dataset_args import MMMUMultiImageDatasetArgs
 from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.io_utils import PIL_to_base64
 
@@ -14,9 +13,10 @@ from evalscope.utils.io_utils import PIL_to_base64
 class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
     """Build real multi-image stress-test requests from the MMMU validation set."""
 
-    args_schema = MMMUMultiImageDatasetArgs
     dataset_id = 'AI-ModelScope/MMMU'
+    subset = 'Music'
     max_images = 7
+    min_images = 2
 
     # Modes the shared JPEG encoder (the PIL_to_base64 default) can write.
     # Real MMMU rows also carry incompatible modes such as RGBA, so they are
@@ -82,12 +82,12 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
         dataset = self.load_hub_dataset(
             dataset_id=self.dataset_id,
             split='validation',
-            subset=self.dataset_args.subset,
+            subset=self.subset,
         )
 
         for item in dataset:
             image_urls = self._collect_image_urls(item)
-            if len(image_urls) < self.dataset_args.min_images:
+            if len(image_urls) < self.min_images:
                 continue
 
             message = self.create_message(text=self._build_prompt(item), image_urls=image_urls)
