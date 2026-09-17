@@ -105,6 +105,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `mmlu_redux` | [MMLU-Redux](../../benchmarks/mmlu_redux.md) | `Knowledge`, `MCQ` |
 | `mmmlu` | [MMMLU](../../benchmarks/mmmlu.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `mri_mcqa` | [MRI-MCQA](../../benchmarks/mri_mcqa.md) | `Knowledge`, `MCQ`, `Medical` |
+| `mt_bench` | [MT-Bench](../../benchmarks/mt_bench.md) | `Coding`, `InstructionFollowing`, `Math`, `MultiTurn`, `QA`, `Reasoning` |
 | `multi_if` | [Multi-IF](../../benchmarks/multi_if.md) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `multi_nerd` | [MultiNERD](../../benchmarks/multi_nerd.md) | `Knowledge`, `NER` |
 | `multiple_humaneval` | [MultiPL-E HumanEval](../../benchmarks/multiple_humaneval.md) | `Coding` |
@@ -253,6 +254,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mmlu_redux.md
 ../../benchmarks/mmmlu.md
 ../../benchmarks/mri_mcqa.md
+../../benchmarks/mt_bench.md
 ../../benchmarks/multi_if.md
 ../../benchmarks/multi_nerd.md
 ../../benchmarks/multiple_humaneval.md
