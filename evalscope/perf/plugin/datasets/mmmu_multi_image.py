@@ -14,7 +14,38 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
     """Build real multi-image stress-test requests from the MMMU validation set."""
 
     dataset_id = 'AI-ModelScope/MMMU'
-    subset = 'Music'
+    subsets = (
+        'Accounting',
+        'Agriculture',
+        'Architecture_and_Engineering',
+        'Art',
+        'Art_Theory',
+        'Basic_Medical_Science',
+        'Biology',
+        'Chemistry',
+        'Clinical_Medicine',
+        'Computer_Science',
+        'Design',
+        'Diagnostics_and_Laboratory_Medicine',
+        'Economics',
+        'Electronics',
+        'Energy_and_Power',
+        'Finance',
+        'Geography',
+        'History',
+        'Literature',
+        'Manage',
+        'Marketing',
+        'Materials',
+        'Math',
+        'Mechanical_Engineering',
+        'Music',
+        'Pharmacy',
+        'Physics',
+        'Psychology',
+        'Public_Health',
+        'Sociology',
+    )
     max_images = 7
     min_images = 2
 
@@ -79,16 +110,32 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
         return prompt
 
     def build_messages(self) -> Iterator[List[Dict]]:
-        dataset = self.load_hub_dataset(
-            dataset_id=self.dataset_id,
-            split='validation',
-            subset=self.subset,
-        )
+        """Yield eligible samples from every MMMU subject in round-robin order."""
+        dataset_iterators = [
+            iter(
+                self.load_hub_dataset(
+                    dataset_id=self.dataset_id,
+                    split='validation',
+                    subset=subset,
+                )
+            )
+            for subset in self.subsets
+        ]
 
-        for item in dataset:
-            image_urls = self._collect_image_urls(item)
-            if len(image_urls) < self.min_images:
-                continue
+        while dataset_iterators:
+            active_iterators = []
+            for dataset_iterator in dataset_iterators:
+                try:
+                    item = next(dataset_iterator)
+                except StopIteration:
+                    continue
 
-            message = self.create_message(text=self._build_prompt(item), image_urls=image_urls)
-            yield [message]
+                active_iterators.append(dataset_iterator)
+                image_urls = self._collect_image_urls(item)
+                if len(image_urls) < self.min_images:
+                    continue
+
+                message = self.create_message(text=self._build_prompt(item), image_urls=image_urls)
+                yield [message]
+
+            dataset_iterators = active_iterators

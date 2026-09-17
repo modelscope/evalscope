@@ -28,6 +28,7 @@ def _image_bytes(mode: str = 'RGB') -> bytes:
 class TestMMMUMultiImageDataset:
     def test_builds_one_message_with_multiple_images_in_source_order(self, monkeypatch):
         plugin = MMMUMultiImageDatasetPlugin(_args())
+        monkeypatch.setattr(plugin, 'subsets', ('Music',))
         rows = [
             {
                 'question': 'Compare <image 1> and <image 2>.',
@@ -67,6 +68,7 @@ class TestMMMUMultiImageDataset:
         # cannot write directly. Request construction must convert them before
         # encoding instead of failing mid-iteration.
         plugin = MMMUMultiImageDatasetPlugin(_args())
+        monkeypatch.setattr(plugin, 'subsets', ('Music',))
         rows = [
             {
                 'question': 'Which image matches the score?',
@@ -97,6 +99,7 @@ class TestMMMUMultiImageDataset:
 
     def test_skips_rows_below_minimum_image_count(self, monkeypatch):
         plugin = MMMUMultiImageDatasetPlugin(_args())
+        monkeypatch.setattr(plugin, 'subsets', ('Music',))
         monkeypatch.setattr(
             plugin,
             'load_hub_dataset',
@@ -110,6 +113,61 @@ class TestMMMUMultiImageDataset:
         )
 
         assert list(plugin.build_messages()) == []
+
+    def test_interleaves_subset_samples(self, monkeypatch):
+        plugin = MMMUMultiImageDatasetPlugin(_args())
+        assert len(plugin.subsets) == 30
+        monkeypatch.setattr(plugin, 'subsets', ('Accounting', 'Music'))
+        loaded_subsets = []
+        rows_by_subset = {
+            'Accounting': [
+                {
+                    'question': 'Accounting 1',
+                    'options': '[]',
+                    'image_1': Image.new('RGB', (2, 2), 'red'),
+                    'image_2': Image.new('RGB', (2, 2), 'blue'),
+                },
+                {
+                    'question': 'Accounting 2',
+                    'options': '[]',
+                    'image_1': Image.new('RGB', (2, 2), 'red'),
+                    'image_2': Image.new('RGB', (2, 2), 'blue'),
+                },
+            ],
+            'Music': [
+                {
+                    'question': 'Music 1',
+                    'options': '[]',
+                    'image_1': Image.new('RGB', (2, 2), 'red'),
+                    'image_2': Image.new('RGB', (2, 2), 'blue'),
+                },
+                {
+                    'question': 'Music 2',
+                    'options': '[]',
+                    'image_1': Image.new('RGB', (2, 2), 'red'),
+                    'image_2': Image.new('RGB', (2, 2), 'blue'),
+                },
+            ],
+        }
+
+        def fake_load_hub_dataset(dataset_id, split='train', subset='default'):
+            loaded_subsets.append((dataset_id, split, subset))
+            return rows_by_subset[subset]
+
+        monkeypatch.setattr(plugin, 'load_hub_dataset', fake_load_hub_dataset)
+
+        messages = list(plugin.build_messages())
+
+        assert loaded_subsets == [
+            ('AI-ModelScope/MMMU', 'validation', 'Accounting'),
+            ('AI-ModelScope/MMMU', 'validation', 'Music'),
+        ]
+        assert [message[0]['content'][0]['text'] for message in messages] == [
+            'Accounting 1',
+            'Music 1',
+            'Accounting 2',
+            'Music 2',
+        ]
 
     def test_rejects_dataset_args(self):
         with pytest.raises(ValidationError) as exc_info:
