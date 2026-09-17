@@ -84,6 +84,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 | `target_input_len` / `input_len_mode` | Truncate real data to a fixed input length | [Length Control](#length-control) |
 | `prefix_file` / `prefix_role` | Long-context prefix injection for very long fixed-length inputs | [Long-context Prefix Injection](#long-context-prefix-injection) |
 | `speed` / `model_override` / `model_mapping` / `match_output_length` | Replay behaviour for production traffic | [Production Traffic Replay](#production-traffic-replay) |
+| `subset` / `min_images` | MMMU subject (default: `Music`) / minimum images per request (default: `2`, range: 2–7) | `mmmu_multi_image` |
 | Token-length arguments | Multi-turn datasets | [Multi-turn Conversation](#multi-turn-conversation) |
 
 ```{note}
@@ -98,7 +99,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 |------|-------------|----------------------|
 | `openqa` | Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope<br>Prompts are relatively short (usually <100 tokens)<br>Uses `question` field from jsonl file when `dataset_path` is specified | ✓ |
 | `longalpaca` | Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope<br>Prompts are much longer (generally >6000 tokens)<br>Uses `instruction` field from jsonl file when `dataset_path` is specified | ✓ |
-| `line_by_line` | Each line in txt file is used as a separate prompt<br>**Requires `dataset_path`** | ✓ (Required) |
+| `line_by_line` | Each line is a plain prompt, an OpenAI messages JSON array, or a complete request-body JSON object; JSON is forwarded unchanged<br>**Requires `dataset_path`** | ✓ (Required) |
 | `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#random-dataset) | ✗ |
 | `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 
@@ -109,6 +110,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 | `flickr8k` | Automatically downloads [Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview) from ModelScope<br>Builds image-text inputs; large dataset suitable for evaluating multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `kontext_bench` | Automatically downloads [Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview) from ModelScope<br>Builds image-text inputs; approximately 1,000 samples, suitable for quick evaluation of multimodal models<br>Supports `--dataset-path` pointing to a local dataset directory (offline) | ✓ (directory) |
 | `random_vl` | Randomly generates both image and text inputs<br>Based on `random`, with additional image-related parameters<br>[Usage example](./examples.md#random-multimodal-dataset) | ✗ |
+| `mmmu_multi_image` | Builds real multi-image requests from the MMMU validation split; `image_1` through `image_7` are encoded as JPEG data URLs in one message<br>For performance traffic, not MMMU scoring; requires a vision-capable service that supports multiple `image_url` parts and data URLs | ✓ (MMMU-compatible `datasets` directory) |
 
 **Embedding**
 

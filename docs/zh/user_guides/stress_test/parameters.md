@@ -84,6 +84,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `target_input_len` / `input_len_mode` | 把真实数据的输入截断到固定长度 | [长度控制](#长度控制) |
 | `prefix_file` / `prefix_role` | 长上下文前缀注入，构造超长定长输入 | [长上下文前缀注入](#长上下文前缀注入) |
 | `speed` / `model_override` / `model_mapping` / `match_output_length` | 生产流量回放的回放行为 | [生产流量回放](#生产流量回放) |
+| `subset` / `min_images` | MMMU 子集（默认：`Music`）/ 每条请求最少图片数（默认：`2`，范围：2–7） | `mmmu_multi_image` |
 | 各类 token 长度参数 | 多轮对话数据集 | [多轮对话](#多轮对话) |
 
 ```{note}
@@ -98,7 +99,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 |------|------|------------------|
 | `openqa` | 从ModelScope自动下载[OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)<br>prompt长度较短（一般<100 token）<br>指定`dataset_path`时使用jsonl文件的`question`字段 | ✓ |
 | `longalpaca` | 从ModelScope自动下载[LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)<br>prompt长度较长（一般>6000 token）<br>指定`dataset_path`时使用jsonl文件的`instruction`字段 | ✓ |
-| `line_by_line` | 逐行将txt文件的每一行作为一个prompt<br>**必需提供`dataset_path`** | ✓（必需） |
+| `line_by_line` | 每行可为纯文本 prompt、OpenAI messages JSON 数组或完整请求体 JSON 对象；JSON 按原样转发<br>**必需提供`dataset_path`** | ✓（必需） |
 | `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#随机数据集) | ✗ |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
 
@@ -109,6 +110,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `flickr8k` | 从ModelScope自动下载[Flick8k](https://www.modelscope.cn/datasets/clip-benchmark/wds_flickr8k/dataPeview)<br>构建图文输入，数据集较大，适合评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `kontext_bench` | 从ModelScope自动下载[Kontext-Bench](https://modelscope.cn/datasets/black-forest-labs/kontext-bench/dataPeview)<br>构建图文输入，约1000条数据，适合快速评测多模态模型<br>支持`--dataset-path`指向本地数据集目录（离线环境） | ✓（目录） |
 | `random_vl` | 随机生成图像和文本输入<br>在`random`基础上增加图像相关参数<br>[使用示例](./examples.md#随机图文数据集) | ✗ |
+| `mmmu_multi_image` | 从 MMMU validation split 构造真实多图请求；将 `image_1` 到 `image_7` 编码为同一消息内的 JPEG data URL<br>用于性能流量而非 MMMU 评分；要求服务端支持视觉输入、多个 `image_url` 内容块和 data URL | ✓（兼容 MMMU schema 的 `datasets` 目录） |
 
 **Embedding 类**
 
