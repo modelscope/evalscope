@@ -46,7 +46,12 @@ def _read_index() -> Dict[str, str]:
     """Read the generated name -> module index, tolerating a missing or bad file."""
     try:
         with open(_INDEX_PATH, encoding='utf-8') as f:
-            return json.load(f)
+            index = json.load(f)
+        if not isinstance(index, dict) or not all(
+            isinstance(name, str) and isinstance(module, str) for name, module in index.items()
+        ):
+            raise ValueError('expected a JSON object with string benchmark names and module paths')
+        return index
     except FileNotFoundError:
         logger.debug('Benchmark index %s not found; every lookup will load all adapters.', _INDEX_PATH)
     except (OSError, ValueError) as e:
@@ -61,28 +66,36 @@ def load_benchmark(name: str) -> bool:
     """Import only the module that registers ``name``.
 
     Returns:
-        True when the name is indexed and its module has been imported, False when the
-        index does not know the name, so the caller falls back to :func:`load_all`.
+        True only when the indexed module exists and actually registers ``name``.
+        A missing, renamed, or mismatched index entry returns False, so the registry
+        falls back to :func:`load_all` rather than reporting a valid benchmark missing.
     """
     module = _INDEX.get(name)
     if module is None:
         return False
-    importlib.import_module(module)
-    return True
+    try:
+        importlib.import_module(module)
+    except ModuleNotFoundError as e:
+        if e.name != module:
+            raise
+        logger.warning('Benchmark index maps %s to missing module %s; falling back to full discovery.', name, module)
+        return False
+    return BENCHMARK_REGISTRY.is_materialized(name)
 
 
 def load_all() -> None:
     """Import every adapter module, matching the historical eager behaviour."""
     global _loaded_all, _loading_all
-    if _loaded_all or _loading_all:
-        return
-    _loading_all = True
-    try:
-        for module in adapter_modules():
-            importlib.import_module(module)
-        _loaded_all = True
-    finally:
-        _loading_all = False
+    with BENCHMARK_REGISTRY.allow_indexed_registrations():
+        if _loaded_all or _loading_all:
+            return
+        _loading_all = True
+        try:
+            for module in adapter_modules():
+                importlib.import_module(module)
+            _loaded_all = True
+        finally:
+            _loading_all = False
 
 
 def build_index() -> Dict[str, str]:
@@ -110,4 +123,4 @@ def write_index() -> Dict[str, str]:
     return index
 
 
-BENCHMARK_REGISTRY.set_resolvers(load_benchmark, load_all)
+BENCHMARK_REGISTRY.set_resolvers(load_benchmark, load_all, _INDEX.get)

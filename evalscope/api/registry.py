@@ -1,6 +1,8 @@
 import copy
 import difflib
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, TypeVar, Union
+from contextlib import contextmanager
+from threading import RLock
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Type, TypeVar, Union
 
 if TYPE_CHECKING:
     from evalscope.agent.external.runners.base import AgentRunner
@@ -57,12 +59,18 @@ class Registry(Dict[str, T]):
 
         return decorator
 
-    def is_registered(self, name: str) -> bool:
+    def is_registered(self, name: str, registering_module: Optional[str] = None) -> bool:
         """Whether ``name`` is already present, without resolving anything.
 
-        Registration is a write path, so it must not trigger the on-demand loading
-        that :class:`LazyRegistry` performs for reads.
+        ``registering_module`` is accepted for the lazy benchmark registry, which
+        reserves indexed built-in names without loading them. Other registries only
+        look at materialized entries.
         """
+        del registering_module
+        return dict.__contains__(self, name)
+
+    def is_materialized(self, name: str) -> bool:
+        """Whether ``name`` is in the backing dictionary without resolving it."""
         return dict.__contains__(self, name)
 
     def _suggest(self, name: str, n: int = 2) -> str:
@@ -91,13 +99,16 @@ class LazyRegistry(Registry[T]):
 
     Discovery (which names exist) is separated from loading (executing the module
     that registers a name), so importing the owning package does not have to
-    execute every plugin module. The owning package installs the two resolvers via
+    execute every plugin module. The owning package installs the resolvers via
     :meth:`set_resolvers`; until it does, this behaves exactly like
     :class:`Registry`.
 
     Reads that can be satisfied by a single name resolve that name only; reads that
     need the complete catalog (``keys``/``values``/``items``/iteration/``len``)
-    load everything, so batch consumers keep seeing the full set.
+    load everything, so batch consumers keep seeing the full set. Resolution holds
+    an ``RLock`` across module import: another thread waits for the first importer
+    instead of observing a temporarily empty registry and treating a valid name as
+    unknown.
     """
 
     def __init__(
@@ -109,76 +120,109 @@ class LazyRegistry(Registry[T]):
         super().__init__(kind, on_register=on_register)
         self._resolve_one: Optional[Callable[[str], bool]] = None
         self._resolve_all: Optional[Callable[[], None]] = None
-        self._resolving = 0
+        self._indexed_module: Optional[Callable[[str], Optional[str]]] = None
+        self._lock = RLock()
+        self._allow_indexed_registrations = 0
 
     def set_resolvers(
         self,
         resolve_one: Callable[[str], bool],
         resolve_all: Callable[[], None],
+        indexed_module: Callable[[str], Optional[str]],
     ) -> None:
-        """Install the loaders.
+        """Install the loaders and the generated name-to-module lookup.
 
         Args:
             resolve_one: Load whatever registers a single name; return False when the
-                name is unknown to the caller's index, so the full load is used instead.
+                name is unknown or stale in the caller's index, so the full load is used.
             resolve_all: Load every plugin module.
+            indexed_module: Return the module expected to register a name without
+                importing it. This reserves shipped names from custom overrides.
         """
-        self._resolve_one = resolve_one
-        self._resolve_all = resolve_all
+        with self._lock:
+            self._resolve_one = resolve_one
+            self._resolve_all = resolve_all
+            self._indexed_module = indexed_module
+
+    @contextmanager
+    def allow_indexed_registrations(self) -> Iterator[None]:
+        """Allow a full discovery scan to repair a stale generated index."""
+        with self._lock:
+            self._allow_indexed_registrations += 1
+            try:
+                yield
+            finally:
+                self._allow_indexed_registrations -= 1
+
+    def is_registered(self, name: str, registering_module: Optional[str] = None) -> bool:
+        """Check materialized entries and reserve indexed built-in names.
+
+        An adapter is allowed to register a shipped name only when its own module is
+        the module recorded in the index. A full scan temporarily bypasses the index
+        reservation so it can recover from a stale mapping.
+        """
+        with self._lock:
+            if dict.__contains__(self, name):
+                return True
+            if self._allow_indexed_registrations or self._indexed_module is None:
+                return False
+            indexed_module = self._indexed_module(name)
+            return indexed_module is not None and indexed_module != registering_module
 
     def _materialize(self, name: str) -> None:
         """Resolve one name, falling back to a full load when it is not indexed."""
-        if self._resolve_one is None or self._resolving or dict.__contains__(self, name):
-            return
-        self._resolving += 1
-        try:
+        with self._lock:
+            if self._resolve_one is None or dict.__contains__(self, name):
+                return
             if not self._resolve_one(name) and self._resolve_all is not None:
                 self._resolve_all()
-        finally:
-            self._resolving -= 1
 
     def _materialize_all(self) -> None:
         """Resolve the complete catalog."""
-        if self._resolve_all is None or self._resolving:
-            return
-        self._resolving += 1
-        try:
-            self._resolve_all()
-        finally:
-            self._resolving -= 1
+        with self._lock:
+            if self._resolve_all is not None:
+                self._resolve_all()
 
     def __contains__(self, name: object) -> bool:
         if isinstance(name, str):
             self._materialize(name)
-        return dict.__contains__(self, name)
+        with self._lock:
+            return dict.__contains__(self, name)
 
     def __getitem__(self, name: str) -> T:
         self._materialize(name)
-        return dict.__getitem__(self, name)
+        with self._lock:
+            return dict.__getitem__(self, name)
 
     def get(self, name: str, default: Any = None) -> Any:
         self._materialize(name)
-        return dict.get(self, name, default)
+        with self._lock:
+            return dict.get(self, name, default)
 
     def keys(self):
         self._materialize_all()
-        return dict.keys(self)
+        with self._lock:
+            return dict.keys(self)
 
     def values(self):
         self._materialize_all()
-        return dict.values(self)
+        with self._lock:
+            return dict.values(self)
 
     def items(self):
         self._materialize_all()
-        return dict.items(self)
+        with self._lock:
+            return dict.items(self)
 
     def __iter__(self):
         self._materialize_all()
-        return dict.__iter__(self)
+        with self._lock:
+            return dict.__iter__(self)
 
     def __len__(self) -> int:
         self._materialize_all()
-        return dict.__len__(self)
+        with self._lock:
+            return dict.__len__(self)
 
 
 # END: Registry base
@@ -195,7 +239,7 @@ def register_benchmark(metadata: 'BenchmarkMeta'):
     """Register a benchmark with its metadata."""
 
     def register_wrapper(data_adapter: Type['DataAdapter']):
-        if BENCHMARK_REGISTRY.is_registered(metadata.name):
+        if BENCHMARK_REGISTRY.is_registered(metadata.name, data_adapter.__module__):
             raise ValueError(f'Benchmark {metadata.name} already registered')
         metadata.data_adapter = data_adapter
         BENCHMARK_REGISTRY[metadata.name] = metadata

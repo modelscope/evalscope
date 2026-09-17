@@ -9,12 +9,15 @@ import json
 import subprocess
 import sys
 import textwrap
-from typing import Any, Dict, List
+from pathlib import Path
+from threading import Event, Thread
+from typing import Any, Dict, List, Optional
 
 import pytest
 
+from evalscope import benchmarks as benchmark_plugins
 from evalscope.api.benchmark import BenchmarkMeta
-from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+from evalscope.api.registry import BENCHMARK_REGISTRY, LazyRegistry, get_benchmark
 from evalscope.benchmarks import _INDEX_PATH, adapter_modules, build_index
 
 # A benchmark whose name matches its module leaf.
@@ -110,7 +113,7 @@ def test_enumeration_exposes_the_whole_shipped_catalog() -> None:
 
 def test_every_registered_entry_carries_a_usable_adapter() -> None:
     for name, meta in BENCHMARK_REGISTRY.items():
-        assert meta.name == name or name in (meta.aliases or []), f'{name} -> {meta.name}'
+        assert meta.name == name, f'{name} -> {meta.name}'
         assert meta.data_adapter is not None, f'{name} has no data_adapter'
 
 
@@ -271,3 +274,95 @@ def test_an_unindexed_name_falls_back_to_loading_everything() -> None:
 
     assert measured['resolved'] is True
     assert measured['registered'] >= 250, 'fallback should have loaded the whole catalog'
+
+
+def test_invalid_index_shape_falls_back_to_an_empty_mapping(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    index_path = tmp_path / '_index.json'
+    index_path.write_text('[]', encoding='utf-8')
+    monkeypatch.setattr(benchmark_plugins, '_INDEX_PATH', str(index_path))
+
+    assert benchmark_plugins._read_index() == {}
+
+
+def test_a_mismatched_index_entry_falls_back_to_loading_everything() -> None:
+    """An existing but wrong index target must not hide a valid benchmark."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        import evalscope.benchmarks as benchmarks
+        from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
+
+        benchmarks._INDEX['gsm8k'] = benchmarks._INDEX['aime24']
+        adapter = get_benchmark('gsm8k')
+        print(json.dumps({
+            'resolved': adapter.benchmark_meta.name == 'gsm8k',
+            'registered': dict.__len__(BENCHMARK_REGISTRY),
+        }))
+        """
+    )
+
+    assert measured['resolved'] is True
+    assert measured['registered'] >= 250, 'mismatched index should have triggered a full load'
+
+
+def test_lazy_registry_serializes_concurrent_first_resolution() -> None:
+    """A second thread must wait, not observe the first resolver's partial state."""
+    registry = LazyRegistry[str]('test')
+    first_started = Event()
+    release_first = Event()
+    second_finished = Event()
+    results: List[Optional[str]] = []
+
+    def resolve_one(name: str) -> bool:
+        assert name == 'target'
+        first_started.set()
+        assert release_first.wait(timeout=5)
+        registry['target'] = 'resolved'
+        return True
+
+    def read_target(mark_done: bool = False) -> None:
+        results.append(registry.get('target'))
+        if mark_done:
+            second_finished.set()
+
+    registry.set_resolvers(resolve_one, lambda: None, lambda name: None)
+    first = Thread(target=read_target)
+    second = Thread(target=read_target, kwargs={'mark_done': True})
+    first.start()
+    assert first_started.wait(timeout=5)
+    second.start()
+    assert not second_finished.wait(timeout=0.1), 'second reader returned before first resolution completed'
+    release_first.set()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert results == ['resolved', 'resolved']
+
+
+def test_indexed_builtin_name_rejects_a_custom_registration() -> None:
+    """A custom adapter must not shadow an indexed shipped benchmark before lookup."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        from evalscope.api.benchmark import BenchmarkMeta
+        from evalscope.api.registry import register_benchmark
+
+        try:
+            @register_benchmark(BenchmarkMeta(name='gsm8k', dataset_id='custom'))
+            class CustomAdapter:
+                pass
+        except ValueError:
+            rejected = True
+        else:
+            rejected = False
+        print(json.dumps({'rejected': rejected}))
+        """
+    )
+
+    assert measured['rejected'] is True
