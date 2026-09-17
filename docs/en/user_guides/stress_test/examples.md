@@ -120,6 +120,46 @@ evalscope perf \
   --debug
 ```
 
+### Multi-image Inputs
+
+#### Real Multi-image Data with MMMU
+
+Use `mmmu_multi_image` to build real multi-image requests from the open-source [MMMU](https://modelscope.cn/datasets/AI-ModelScope/MMMU/summary) validation split. It keeps rows with at least the configured number of images and sends `image_1` through `image_7` in source order within one user message.
+
+```bash
+evalscope perf \
+  --model your-vl-model \
+  --url http://localhost:8000/v1/chat/completions \
+  --dataset mmmu_multi_image \
+  --dataset-args '{"subset":"Music","min_images":2}' \
+  --parallel 4 \
+  --number 100
+```
+
+`subset` defaults to `Music`; `min_images` defaults to `2` and must be between 2 and 7. This mode produces realistic multimodal traffic rather than MMMU accuracy scores; use `evalscope eval --datasets mmmu` for benchmark scoring.
+
+The built-in mode encodes each image as a `data:image/jpeg;base64,...` URL. Use a vision-capable OpenAI-compatible service that accepts multiple `image_url` content parts and JPEG data URLs in one message. This path has been verified with DashScope `qwen-vl-plus`; compatibility with other serving backends depends on their multimodal API support.
+
+#### Custom Multi-image Data
+
+For private or constructed data, use `line_by_line`. Each non-empty line can be an OpenAI-style messages array or a complete request body. Put multiple `image_url` parts in the same user message, for example:
+
+```json
+[{"role":"user","content":[{"type":"text","text":"Compare image 1 and image 2."},{"type":"image_url","image_url":{"url":"https://example.com/image-1.jpg"}},{"type":"image_url","image_url":{"url":"https://example.com/image-2.jpg"}}]}]
+```
+
+```bash
+evalscope perf \
+  --model your-vl-model \
+  --url http://localhost:8000/v1/chat/completions \
+  --dataset line_by_line \
+  --dataset-path multi_image.jsonl \
+  --parallel 4 \
+  --number 100
+```
+
+The model server must be able to access HTTP image URLs. You can also use API-compatible data URLs when your serving backend supports them.
+
 ### Long-context Prefix Injection
 
 To benchmark 128K/256K-scale long contexts with **real text**, the `random` dataset gives you a fixed length but only high-entropy meaningless tokens, which cannot reproduce real characteristics such as prefix-cache hit rates or MTP acceptance rates. Real instruction datasets, on the other hand, are mostly 4K-8K tokens, so setting `target_input_len` to 128K either filters everything out or leaves lengths uneven.

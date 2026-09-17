@@ -5,13 +5,12 @@ A stress testing tool for large language models that can be customized to suppor
 :maxdepth: 2
 
 quick_start.md
-agentx.md
 parameters.md
 examples.md
-multi_image.md
 multi_turn.md
 sla_auto_tune.md
 speed_benchmark.md
 vs_vllm_bench.md
+agentx.md
 custom.md
 :::
