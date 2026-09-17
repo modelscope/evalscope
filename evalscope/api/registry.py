@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 # BEGIN: Registry base
 T = TypeVar('T')
+_MISSING = object()
 
 
 class Registry(Dict[str, T]):
@@ -223,6 +224,26 @@ class LazyRegistry(Registry[T]):
         self._materialize_all()
         with self._lock:
             return dict.__len__(self)
+
+    def pop(self, name: str, default: Any = _MISSING) -> Any:
+        """Remove and return one entry, materializing it first.
+
+        ``Registry`` documents ``pop()`` as part of its dict-compatible public
+        surface. Without this override, popping a valid lazy benchmark before any
+        lookup would incorrectly raise ``KeyError`` just because its adapter module
+        had not run yet.
+        """
+        self._materialize(name)
+        with self._lock:
+            if default is _MISSING:
+                return dict.pop(self, name)
+            return dict.pop(self, name, default)
+
+    def setdefault(self, name: str, default: Optional[T] = None) -> Optional[T]:
+        """Materialize ``name`` before applying normal dict ``setdefault`` semantics."""
+        self._materialize(name)
+        with self._lock:
+            return dict.setdefault(self, name, default)
 
 
 # END: Registry base

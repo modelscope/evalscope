@@ -366,3 +366,89 @@ def test_indexed_builtin_name_rejects_a_custom_registration() -> None:
     )
 
     assert measured['rejected'] is True
+
+
+def test_pop_materializes_a_lazy_entry_before_removing_it() -> None:
+    """``pop`` is part of Registry's documented dict-compatible surface."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        from evalscope.api.registry import BENCHMARK_REGISTRY
+
+        meta = BENCHMARK_REGISTRY.pop('gsm8k')
+        print(json.dumps({
+            'name': meta.name,
+            'registered': dict.__len__(BENCHMARK_REGISTRY),
+            'present_after_pop': dict.__contains__(BENCHMARK_REGISTRY, 'gsm8k'),
+        }))
+        """
+    )
+
+    assert measured == {'name': 'gsm8k', 'registered': 0, 'present_after_pop': False}
+
+
+def test_setdefault_materializes_an_indexed_entry_before_returning_it() -> None:
+    """``setdefault`` must not let a default value shadow a lazy built-in entry."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        from evalscope.api.registry import BENCHMARK_REGISTRY
+
+        default = object()
+        meta = BENCHMARK_REGISTRY.setdefault('gsm8k', default)
+        print(json.dumps({
+            'name': meta.name,
+            'used_default': meta is default,
+            'registered': dict.__len__(BENCHMARK_REGISTRY),
+        }))
+        """
+    )
+
+    assert measured == {'name': 'gsm8k', 'used_default': False, 'registered': 1}
+
+
+def test_pop_materializes_a_lazy_entry_before_removing_it() -> None:
+    """``pop`` is part of Registry's documented dict-compatible surface."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        from evalscope.api.registry import BENCHMARK_REGISTRY
+
+        meta = BENCHMARK_REGISTRY.pop('gsm8k')
+        print(json.dumps({
+            'name': meta.name,
+            'registered': dict.__len__(BENCHMARK_REGISTRY),
+            'present_after_pop': dict.__contains__(BENCHMARK_REGISTRY, 'gsm8k'),
+        }))
+        """
+    )
+
+    assert measured == {'name': 'gsm8k', 'registered': 0, 'present_after_pop': False}
+
+
+def test_setdefault_materializes_an_indexed_entry_before_returning_it() -> None:
+    """``setdefault`` must not let a default value shadow a lazy built-in entry."""
+    measured = _probe(
+        """
+        import json
+
+        import evalscope
+        from evalscope.api.registry import BENCHMARK_REGISTRY
+
+        default = object()
+        meta = BENCHMARK_REGISTRY.setdefault('gsm8k', default)
+        print(json.dumps({
+            'name': meta.name,
+            'used_default': meta is default,
+            'registered': dict.__len__(BENCHMARK_REGISTRY),
+        }))
+        """
+    )
+
+    assert measured == {'name': 'gsm8k', 'used_default': False, 'registered': 1}
