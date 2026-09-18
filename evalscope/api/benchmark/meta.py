@@ -134,7 +134,10 @@ class BenchmarkMeta:
     """
 
     sandbox_config: Optional[Dict[str, Any]] = field(default_factory=dict)
-    """Configuration for sandboxed code execution environments. """
+    """Configuration for sandboxed code execution environments."""
+
+    judge_config: Optional[Dict[str, Any]] = None
+    """Optional Native Judge configuration shown in generated usage documentation."""
 
     max_image_bytes: Optional[Union[int, str]] = None
     """Maximum image size for vision-language benchmarks.

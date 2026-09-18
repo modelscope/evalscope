@@ -367,13 +367,23 @@ def test_mt_bench_valid_verdict_scores_both_turns() -> None:
     assert score.value == {'judge_score': 8.0, 'first_turn_judge_score': 9.0, 'second_turn_judge_score': 7.0}
 
 
-@pytest.mark.parametrize('reply', ['not JSON', '[ERROR] judge transport unavailable'])
-def test_mt_bench_invalid_judge_reply_excludes_the_sample(reply: str) -> None:
+def test_mt_bench_invalid_judge_reply_excludes_the_sample() -> None:
     adapter = make_mt_bench_adapter()
-    adapter.llm_judge = ScriptedJudge([reply])
+    adapter.llm_judge = ScriptedJudge(['not JSON'])
 
     score = adapter.calculate_metrics(make_mt_bench_state(adapter)).score
 
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}
     assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+def test_mt_bench_transport_failure_excludes_the_sample() -> None:
+    adapter = make_mt_bench_adapter()
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_mt_bench_state(adapter)).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'

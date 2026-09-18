@@ -199,6 +199,7 @@ def _format_usage_section(
     sandbox_config: Optional[Dict] = None,
     extra_params: Optional[Dict] = None,
     agent_config: Optional[Dict] = None,
+    judge_config: Optional[Dict] = None,
 ) -> str:
     """
     Format the usage section with CLI and Python examples.
@@ -209,6 +210,7 @@ def _format_usage_section(
         sandbox_config: Sandbox configuration (if any)
         extra_params: Extra parameters configuration (if any)
         agent_config: Built-in AgentLoop defaults (if this is an agent-loop benchmark)
+        judge_config: Native Judge settings required to run this benchmark
 
     Returns:
         Formatted usage section markdown string
@@ -234,6 +236,7 @@ def _format_usage_section(
     if sandbox_config:
         cli_lines.append('    --sandbox \'{"enabled": true}\' \\')
     emit_agent_config = bool(agent_config and agent_config.get('strategy') and agent_config.get('max_steps'))
+    emit_judge_config = bool(judge_config and judge_config.get('models'))
     if emit_agent_config:
         cli_agent_config = json.dumps(
             {
@@ -243,7 +246,10 @@ def _format_usage_section(
             },
             separators=(',', ':'),
         )
-        cli_lines.append(f"    --agent-config '{cli_agent_config}' \\")
+        cli_lines.append(f"    --agent-config '{cli_agent_config}' {chr(92)}")
+    if emit_judge_config:
+        cli_judge_config = json.dumps(judge_config, separators=(',', ':'))
+        cli_lines.append(f"    --judge '{cli_judge_config}' {chr(92)}")
     cli_lines.append('    --limit 10  # Remove this line for formal evaluation')
 
     # Build Python code
@@ -259,6 +265,7 @@ def _format_usage_section(
     python_use_sandbox = "    sandbox={'enabled': True},\n" if sandbox_config else ''
     python_imports = ['from evalscope import run_task', 'from evalscope.config import TaskConfig']
     python_agent_config = ''
+    python_judge_config = ''
     if emit_agent_config:
         python_imports = ['from evalscope import TaskConfig, run_task']
         python_imports.append('from evalscope.api.agent import NativeAgentConfig')
@@ -267,6 +274,8 @@ def _format_usage_section(
         max_steps={agent_config.get('max_steps')},
     ),
 """
+    if emit_judge_config:
+        python_judge_config = f'    judge={json.dumps(judge_config)},\n'
 
     python_code = f"""{chr(10).join(python_imports)}
 
@@ -275,7 +284,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['{name}'],
-{python_use_sandbox}{python_agent_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
+{python_use_sandbox}{python_agent_config}{python_judge_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)"""
@@ -515,6 +524,7 @@ def generate_readme_from_dict(
             sandbox_config=meta.get('sandbox_config'),
             extra_params=meta.get('extra_params'),
             agent_config=meta.get('agent_config'),
+            judge_config=meta.get('judge_config'),
         ),
     )
 

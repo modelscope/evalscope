@@ -130,6 +130,7 @@ RATING_CONTRACT = OutputContract(schema_model=MTBenchVerdict)
         metric_list=['judge_score', 'first_turn_judge_score', 'second_turn_judge_score'],
         primary_metric='judge_score',
         aggregation='mean',
+        judge_config={'strategy': 'llm', 'models': [{'model_id': 'gpt-4'}]},
         prompt_template=None,
         evaluation_version='v1.0',
     )

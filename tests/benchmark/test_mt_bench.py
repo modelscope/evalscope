@@ -8,6 +8,8 @@ from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.mt_bench.mt_bench_adapter import MTBenchAdapter
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
+from evalscope.utils.doc_utils.generate_dataset_md import extract_benchmark_meta
+from evalscope.utils.doc_utils.readme_generator import generate_readme_from_dict
 
 
 class TwoTurnModel:
@@ -134,3 +136,13 @@ def test_reference_guided_judge_uses_dataset_references() -> None:
     assert 'First reference' in judge.calls[0][1].text
     assert 'First reference' in judge.calls[1][1].text
     assert 'Second reference' in judge.calls[1][1].text
+
+
+def test_generated_usage_includes_required_judge_config() -> None:
+    adapter = make_adapter()
+    meta = extract_benchmark_meta(adapter.benchmark_meta, adapter.__class__)
+
+    readme = generate_readme_from_dict('mt_bench', meta)
+
+    assert "--judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"gpt-4\"}]}'" in readme
+    assert "judge={\"strategy\": \"llm\", \"models\": [{\"model_id\": \"gpt-4\"}]}," in readme

@@ -225,6 +225,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
+        'judge_config': dict(getattr(meta, 'judge_config', {})) if getattr(meta, 'judge_config', None) else {},
         'category': get_category_from_adapter_class(adapter_cls),
     }
     if serialized_primary_metric is not None:
