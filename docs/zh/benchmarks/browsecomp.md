@@ -3,7 +3,7 @@
 
 ## 概述
 
-BrowseComp 是 OpenAI 推出的一项用于评估浏览和搜索智能体的基准测试。它包含 1,266 个难以查找、以事实为导向的问题，每个问题都有简短且可验证的答案。EvalScope 从 ModelScope 加载该数据集的镜像版本（`evalscope/browse_comp`）。
+BrowseComp 是 OpenAI 推出的一项用于评估浏览与搜索智能体的基准测试。它包含 1,266 个难以查找、以事实为导向的问题，每个问题都有简短且可验证的答案。EvalScope 从 ModelScope 加载该数据集的镜像版本（`evalscope/browse_comp`）。
 
 ## 任务描述
 
@@ -16,23 +16,23 @@ BrowseComp 是 OpenAI 推出的一项用于评估浏览和搜索智能体的基�
 
 - 测试智能体的持久性、创造性搜索能力以及多跳证据收集能力
 - 使用简短答案以简化评分过程
-- 官方数据以加密 CSV 行的形式分发，并在评估时解密
+- 官方数据以加密 CSV 行形式分发，并在评估时解密
 - 被归类为智能体（Agent）基准测试，兼容 EvalScope 的智能体循环模式
 - 默认支持单轮模型评估；当提供 `TaskConfig.agent_config` 时，也支持原生或外部智能体执行
 
 ## 评估说明
 
 - 默认评估通过标准 EvalScope 数据集加载器从 ModelScope 加载 `evalscope/browse_comp`。
-- 使用 `TaskConfig.agent_config` 可启用 EvalScope 智能体循环功能（如原生工具调用或外部智能体运行器）来评估 BrowseComp。
+- 使用 `TaskConfig.agent_config` 可通过 EvalScope 智能体循环功能（如原生工具调用或外部智能体运行器）评估 BrowseComp。
 - 主要指标为 `is_correct`；同时也会报告 `is_incorrect`。
-- 默认启用 LLM 裁判；若未启用，则回退到 `JudgeStrategy.RULE`，即归一化精确匹配。
+- 默认启用 LLM 裁判；若使用 `JudgeStrategy.RULE`，则回退到归一化精确匹配。
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `browsecomp` |
-| **数据集 ID** | [evalscope/browse_comp](https://modelscope.cn/datasets/evalscope/browse_comp/summary) |
+| **数据集ID** | [evalscope/browse_comp](https://modelscope.cn/datasets/evalscope/browse_comp/summary) |
 | **论文** | [Paper](https://arxiv.org/abs/2504.12516) |
 | **标签** | `Agent`, `Knowledge`, `QA` |
 | **指标** | `is_correct`, `is_incorrect` |
@@ -74,6 +74,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets browsecomp \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -88,6 +89,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['browsecomp'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 

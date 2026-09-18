@@ -7,16 +7,16 @@ WorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉
 
 ## 任务描述
 
-- **任务类型**：视觉实体识别 / 知识问答（QA）
+- **任务类型**：视觉实体识别 / 知识问答
 - **输入**：图像 + 要求识别视觉实体的问题
-- **输出**：自由文本答案（具体实体名称）
+- **输出**：自由格式文本答案（具体实体名称）
 - **领域**：自然、建筑、文化、产品、交通、娱乐、品牌、体育
 
 ## 主要特点
 
 - 包含 3000 个 VQA 对，覆盖 8 个语义类别
 - 双语支持：英语（non-zh）和中文（zh）
-- 三个难度等级：简单、中等、困难
+- 三个难度级别：简单、中等、困难
 - 测试与推理解耦的原子级视觉知识
 - 要求精确识别实体（例如，具体品种，而非泛称“狗”）
 
@@ -25,7 +25,7 @@ WorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉
 - 默认配置采用 **0-shot** 评估
 - 在 **train** 划分上进行评估（即基准测试数据划分）
 - 主要指标：通过 LLM-as-judge 计算的 **准确率（Accuracy）**
-- 支持使用 LLM 判定语义等价性
+- 支持使用 LLM 评判语义等价性
 - 结果按类别及整体分别报告
 
 ## 属性
@@ -37,9 +37,8 @@ WorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉
 | **论文** | N/A |
 | **标签** | `Knowledge`, `MultiModal`, `QA` |
 | **指标** | `accuracy` |
-| **默认示例数** | 0-shot |
+| **默认样本数** | 0-shot |
 | **评估划分** | `train` |
-
 
 ## 数据统计
 
@@ -66,11 +65,10 @@ WorldVQA 是一个用于评估多模态大语言模型（MLLMs）原子级视觉
 
 | 指标 | 值 |
 |--------|-------|
-| 总图像数 | 3,000 |
+| 图像总数 | 3,000 |
 | 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 33x65 - 3840x3840 |
 | 格式 | gif, jpeg, png, webp |
-
 
 ## 样例示例
 
@@ -121,6 +119,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets world_vqa \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -135,6 +134,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['world_vqa'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'world_vqa': {
             # subset_list: ['Nature & Environment', 'Locations & Architecture', 'Culture, Arts & Crafts']  # 可选，用于评估特定子集

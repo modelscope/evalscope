@@ -1,29 +1,30 @@
 # GeneralArena
 
+
 ## 概述
 
-GeneralArena 是一个自定义基准测试，旨在通过竞争性场景评估大语言模型的性能。在该基准中，多个模型将在自定义任务中相互对战，以确定各自的相对优势与劣势。
+GeneralArena 是一个自定义基准测试，旨在通过竞争性场景评估大语言模型的性能。在该基准中，多个模型会在自定义任务中相互对战，以确定它们各自的优劣势。
 
 ## 任务描述
 
 - **任务类型**：模型对战竞技场评估（Model vs Model Arena Evaluation）
-- **输入**：包含多个模型回复的用户提示
+- **输入**：包含多个模型响应的用户提示
 - **输出**：成对比较判断结果和 ELO 评分
 - **重点**：模型间的对比评估
 
 ## 主要特性
 
-- 使用 LLM 作为裁判进行成对比较
-- 通过 ELO 评分计算模型排名
+- 使用 LLM-as-judge 进行成对比较
+- 通过 ELO 评分计算进行模型排名
 - 支持自定义模型对进行比较
 - 提供胜率（winrate）和排名指标
-- 可配置基线模型
+- 可配置基线模型（baseline model）
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估方式
-- 需要预先生成的模型输出结果
-- 使用 LLM 作为裁判进行质量评估
+- 默认配置使用 **0-shot** 评估
+- 需要先前评估生成的模型输出
+- 使用 LLM-as-judge 进行质量评估
 - 聚合方式：ELO 评分计算
 - 详情请参阅 [Arena 用户指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/arena.html)
 
@@ -36,9 +37,10 @@ GeneralArena 是一个自定义基准测试，旨在通过竞争性场景评估�
 | **论文** | N/A |
 | **标签** | `Arena`, `Custom` |
 | **指标** | `win_rate` |
-| **默认示例数量** | 0-shot |
+| **默认 Shots** | 0-shot |
 | **评估分割** | `test` |
 | **聚合方式** | `elo` |
+
 
 ## 数据统计
 
@@ -62,15 +64,7 @@ Then consider if the assistant's answers are helpful, relevant, and concise. Hel
 
 Then consider the creativity and novelty of the assistant's answers when needed. Finally, identify any missing important information in the assistants' answers that would be beneficial to include when responding to the user prompt.
 
-After providing your explanation, you must output only one of the following choices as your final verdict with a label:
-
-1. Assistant A is significantly better: [[A>>B]]
-2. Assistant A is slightly better: [[A>B]]
-3. Tie, relatively the same: [[A=B]]
-4. Assistant B is slightly better: [[B>A]]
-5. Assistant B is significantly better: [[B>>A]]
-
-Example output: "My final verdict is tie: [[A=B]]".
+After providing your explanation, you must state your final verdict as one of: A>>B (Assistant A is significantly better), A>B (Assistant A is slightly better), A=B (tie), B>A (Assistant B is slightly better), or B>>A (Assistant B is significantly better).
 ```
 
 **提示模板（Prompt Template）：**
@@ -104,6 +98,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets general_arena \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -118,6 +113,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['general_arena'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'general_arena': {
             # extra_params: {}  # 使用默认额外参数

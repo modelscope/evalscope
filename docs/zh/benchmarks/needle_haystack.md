@@ -12,21 +12,21 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 - **输出**：提取的目标信息（needle）
 - **领域**：长上下文理解、信息检索
 
-## 主要特性
+## 核心特性
 
 - 在不同上下文长度（1K–32K+ tokens）下测试检索能力
 - 在不同文档深度（0%–100%）下测试检索能力
-- 支持英文和中文语料库
-- 可通过配置参数生成合成样本
+- 支持英文和中文语料
+- 可生成具有可配置参数的合成样本
 - 可生成性能热力图可视化结果
 
 ## 评估说明
 
-- 默认上下文长度：**1,000 至 32,000** tokens（可配置）
-- 默认深度百分比：**0% 至 100%**（可配置）
+- 默认上下文长度：**1,000 到 32,000** tokens（可配置）
+- 默认深度百分比：**0% 到 100%**（可配置）
 - 主要指标：检索 **准确率（Accuracy）**
 - 使用 LLM judge 进行灵活的答案匹配
-- 可通过 `extra_params` 配置：needle 内容、上下文长度、深度间隔、分词器等
+- 可通过 extra_params 配置：needles、上下文长度、深度间隔、tokenizer
 - [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/needle_haystack.html)
 
 
@@ -36,7 +36,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 |----------|-------|
 | **基准测试名称** | `needle_haystack` |
 | **数据集ID** | [AI-ModelScope/Needle-in-a-Haystack-Corpus](https://modelscope.cn/datasets/AI-ModelScope/Needle-in-a-Haystack-Corpus/summary) |
-| **论文** | 无 |
+| **论文** | N/A |
 | **标签** | `LongContext`, `Retrieval` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
@@ -51,7 +51,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 | 提示词长度（平均） | 45063.55 字符 |
 | 提示词长度（最小/最大） | 1361 / 137407 字符 |
 
-**各子集统计数据：**
+**各子集统计信息：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -60,7 +60,7 @@ Needle in a Haystack 是一个专注于评估长上下文场景中信息检索�
 
 ## 样例示例
 
-**子集**：`english`
+**子集**: `english`
 
 ```json
 {
@@ -134,6 +134,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets needle_haystack \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -148,6 +149,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['needle_haystack'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'needle_haystack': {
             # subset_list: ['english', 'chinese']  # 可选，评估指定子集

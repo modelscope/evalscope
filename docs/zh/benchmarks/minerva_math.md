@@ -3,7 +3,7 @@
 
 ## 概述
 
-Minerva-Math 是一个用于评估语言模型高级数学与定量推理能力的基准测试。该基准包含 272 道具有挑战性的问题，主要来源于 MIT OpenCourseWare 课程，涵盖大学及研究生级别的 STEM 学科。
+Minerva-Math 是一个用于评估语言模型高级数学与定量推理能力的基准测试。它包含 272 道具有挑战性的问题，主要来源于 MIT OpenCourseWare 课程，涵盖大学及研究生级别的 STEM 学科。
 
 ## 任务描述
 
@@ -15,16 +15,16 @@ Minerva-Math 是一个用于评估语言模型高级数学与定量推理能力�
 ## 主要特点
 
 - 包含 272 道来自 MIT OpenCourseWare 的难题
-- 涵盖高级学科：固体化学、天文学、微分方程、狭义相对论等
-- 难度为大学及研究生级别
+- 覆盖高级学科领域：固态化学、天文学、微分方程、狭义相对论等
+- 大学及研究生级别的难度
 - 测试深层次的数学与科学推理能力
 - 问题需要多步定量推理
 
 ## 评估说明
 
-- 默认配置使用 **0-shot** 评估
+- 默认配置采用 **0-shot** 评估方式
 - 答案应使用 `\boxed{}` 格式包裹，以便正确提取
-- 使用 LLM-as-judge 对复杂答案进行评估
+- 使用 LLM-as-judge 方法对复杂答案进行评估
 - 问题可能需要特定领域的知识（如物理、化学等）
 - 旨在测试模型推理能力的上限
 
@@ -39,7 +39,6 @@ Minerva-Math 是一个用于评估语言模型高级数学与定量推理能力�
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `train` |
-
 
 ## 数据统计
 
@@ -89,6 +88,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets minerva_math \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -103,6 +103,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['minerva_math'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 

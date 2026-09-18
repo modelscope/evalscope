@@ -121,10 +121,7 @@ Resources: [Paper](https://arxiv.org/abs/2603.07980) |
 
 ## Prompt Template
 
-**Prompt Template:**
-```text
-{question}
-```
+*No prompt template defined.*
 
 ## Usage
 
@@ -136,6 +133,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets one_million_bench \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -150,6 +148,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['one_million_bench'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'one_million_bench': {
             # subset_list: ['global_economics_and_finance', 'global_healthcare_and_medicine', 'global_industry']  # optional, evaluate specific subsets

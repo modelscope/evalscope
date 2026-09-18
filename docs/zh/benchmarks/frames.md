@@ -3,30 +3,30 @@
 
 ## 概述
 
-FRAMES 是一个全面的评估数据集，旨在测试检索增强生成（Retrieval-Augmented Generation, RAG）系统的能力。它在长上下文场景中评估事实性、检索准确性和推理能力。
+FRAMES 是一个综合评估数据集，旨在测试检索增强生成（Retrieval-Augmented Generation, RAG）系统的能力。该数据集在长上下文场景下评估模型的事实性、检索准确性和推理能力。
 
 ## 任务描述
 
 - **任务类型**：RAG 评估 / 长上下文问答（Long-Context QA）
 - **输入**：维基百科上下文文档 + 问题
-- **输出**：指定格式的事实性答案
+- **输出**：按指定格式输出事实性答案
 - **领域**：事实性、检索、多跳推理
 
-## 主要特点
+## 核心特性
 
 - 测试 RAG 的核心能力：事实性、检索、推理
 - 提供源自维基百科的上下文文档
-- 问题需要综合多个来源的信息
+- 问题需综合多个来源的信息进行回答
 - 同时评估检索质量和答案生成效果
-- 支持精确匹配（exact match）和大语言模型（LLM）裁判两种评估方式
+- 支持精确匹配（exact match）和大语言模型（LLM）评判两种评估方式
 
 ## 评估说明
 
 - 默认使用 **test** 数据划分进行评估
-- 主要指标：**准确率（Accuracy）**，结合精确匹配和 LLM 裁判
-- 回答格式：`"Therefore, the answer is (answer here)"`
+- 主要指标：**Accuracy**，同时采用精确匹配和 LLM 评判
+- 回答格式："Therefore, the answer is (answer here)"
 - 精确匹配采用标准化后的答案比较
-- LLM 裁判提供灵活的语义匹配能力
+- LLM 评判提供灵活的语义匹配能力
 
 ## 属性
 
@@ -39,7 +39,6 @@ FRAMES 是一个全面的评估数据集，旨在测试检索增强生成（Retr
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估划分** | `test` |
-
 
 ## 数据统计
 
@@ -107,7 +106,7 @@ FRAMES 是一个全面的评估数据集，旨在测试检索增强生成（Retr
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注：部分内容因展示需要已被截断。*
 
 ## 提示模板
 
@@ -126,7 +125,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -134,6 +133,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets frames \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -148,6 +148,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['frames'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # 正式评估时请删除此行
 )
 
