@@ -163,6 +163,7 @@
  "mri_mcqa": "evalscope.benchmarks.mri_mcqa.mri_mcqa_adapter",
  "msr_vtt": "evalscope.benchmarks.msr_vtt.msr_vtt_adapter",
  "msvd": "evalscope.benchmarks.msvd.msvd_adapter",
+ "mt_bench": "evalscope.benchmarks.mt_bench.mt_bench_adapter",
  "multi_if": "evalscope.benchmarks.multi_if.multi_if_adapter",
  "multi_nerd": "evalscope.benchmarks.ner.multi_nerd_adapter",
  "multiple_humaneval": "evalscope.benchmarks.multipl_e.multiple_humaneval_adapter",

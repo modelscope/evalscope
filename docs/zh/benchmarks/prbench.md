@@ -8,25 +8,25 @@ PRBench（Professional Reasoning Benchmark，专业推理基准测试）评估�
 ## 任务描述
 
 - **任务类型**：基于评分标准的多轮开放式问答
-- **输入**：1 到 10 轮对话，可选择性附带参考文本
-- **输出**：助手对最后一轮用户提问的回复
-- **领域**：金融与法律领域的专业推理
+- **输入**：1 到 10 轮对话，可选附带参考文本
+- **输出**：模型对用户最后一轮提问的回复
+- **领域**：金融与法律专业推理
 
-## 核心特性
+## 主要特性
 
-- 当前版本包含 1,100 个对话和 18,692 条专家精心设计的评分标准，覆盖 13 个金融主题和 12 个法律主题；约 30% 的对话为多轮对话。
+- 当前版本包含 1,100 个对话和 18,692 条专家精心设计的评分标准，涵盖 13 个金融主题和 12 个法律主题；约 30% 的对话为多轮对话。
 - 覆盖 114 个国家及地区以及美国 47 个司法管辖区，包含专家与非专家用户场景。
-- 提供四个数据集划分：`finance`（600）、`legal`（500）、`finance_hard`（300）和 `legal_hard`（250）。其中“hard”划分包含各自完整划分中最难的样本。
-- 每个样本包含 10–30 条独立评分的标准，每条标准具有 -10 到 10（不含 0）之间的整数权重。正权重标准描述期望的属性，负权重标准描述不期望的属性。
+- 提供四个数据集划分：`finance`（600）、`legal`（500）、`finance_hard`（300）和 `legal_hard`（250）。其中“hard”划分包含对应完整划分中最困难的样本。
+- 每个样本包含 10–30 条独立评分标准，每条标准具有 -10 到 10（不含 0）之间的整数权重。正权重标准描述期望属性，负权重标准描述不期望属性。
 
 ## 评估说明
 
-- 每条评分标准均由 LLM 评判器根据官方提示独立判断是否满足。论文中使用 `o4-mini` 作为评判器；请配置 `judge.models` 并设置 `judge.strategy='auto'` 或 `'llm'`。
-- `clipped_score` 是论文报告的主要指标：每个样本的加权得分除以其正权重总和，然后对所有样本取平均值，并将结果下限裁剪至 0。
-- `normalized_score` 先减去每个样本可能的最低得分（即其负权重之和），再除以完整得分范围，最后对样本得分取平均。该指标适用于不同评分标准分布间的比较。
-- 参考文本会严格按照官方评估器的方式，直接前置到对应的用户轮次内容之前。若评判器在解析或传输过程中失败，则排除受影响的样本而非赋予分数。
+- 每条评分标准由 LLM 评判器根据官方提示独立判断是否满足。论文中使用 `o4-mini` 作为评判器；请配置 `judge.models` 并设置 `judge.strategy='auto'` 或 `'llm'`。
+- `clipped_score` 是论文报告的主要指标：每个样本的加权得分除以其总正权重，然后对所有样本取平均值，并将结果下限裁剪至 0。
+- `normalized_score` 先减去每个样本可能的最低得分（即其所有负权重之和），再除以完整得分范围，最后对样本得分取平均。该指标适用于不同评分标准分布间的比较。
+- 参考文本会严格按照官方评估器的方式前置到对应的用户轮次中。若评判器在解析或传输过程中失败，则排除受影响的样本而非赋予分数。
 - 完整的金融加法律评估每次需调用评判器 18,692 次。由于“hard”划分与完整划分存在重叠，EvalScope 会独立报告每个划分的结果，不提供 `OVERALL` 行；发布综合结果时，请选择完整划分或 hard 划分之一。
-- 相关资源：[论文](https://arxiv.org/abs/2511.11562) |
+- 资源链接：[论文](https://arxiv.org/abs/2511.11562) |
   [GitHub](https://github.com/scaleapi/PRBench) |
   [数据集](https://modelscope.cn/datasets/ScaleAI/PRBench)
 
@@ -203,6 +203,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets prbench \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # 正式评估时请删除此行
 ```
 
@@ -217,9 +218,10 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['prbench'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'prbench': {
-            # subset_list: ['finance', 'legal', 'finance_hard']  # 可选，用于评估特定子集
+            # subset_list: ['finance', 'legal', 'finance_hard']  # 可选，评估特定子集
         }
     },
     limit=10,  # 正式评估时请删除此行

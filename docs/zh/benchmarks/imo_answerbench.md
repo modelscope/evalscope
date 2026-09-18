@@ -2,29 +2,29 @@
 
 ## 概述
 
-IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题目均选自国际数学奥林匹克（IMO）备选题（Shortlists）。该基准涵盖四大数学领域，旨在评估语言模型在奥林匹克级别上的高级数学推理能力。
+IMO-AnswerBench 是一个包含 400 道难题的基准测试集，题目均选自国际数学奥林匹克（IMO）备选题（Shortlists）。该基准涵盖四大数学领域，旨在评估语言模型在奥林匹克级别上的高级数学推理能力。
 
 ## 任务描述
 
 - **任务类型**：奥林匹克数学问题求解
 - **输入**：IMO 备选题中的数学问题
-- **输出**：包含逐步推导过程及最终答案的完整解答
+- **输出**：分步解答及最终答案
 - **难度**：国际奥林匹克级别
 
 ## 主要特点
 
 - 包含 400 道来自 IMO 备选题（2005–2024 年）的问题
-- 覆盖四大领域：代数（Algebra）、组合数学（Combinatorics）、几何（Geometry）、数论（Number Theory）
+- 覆盖四大领域：代数（Algebra）、组合（Combinatorics）、几何（Geometry）、数论（Number Theory）
 - 子类别包括：运算（Operation）、不等式（Inequality）、数列（Sequence）、多项式（Polynomial）、函数方程（Functional Equation）等
 - 答案形式多样，从简单整数到复杂的 LaTeX 表达式（如区间、集合、分数等）
 - 代表当前数学问题求解基准中最高难度水平
 
-## 评测说明
+## 评估说明
 
-- 默认配置采用 **0-shot** 评测方式
-- 答案需用 `\boxed{}` 包裹，以便正确提取
+- 默认配置采用 **0-shot** 评估方式
+- 答案需用 `\boxed{}` 包裹以便正确提取
 - 对复杂答案采用基于 LLM-as-judge 的数值等价性检查
-- 结果可按类别（代数、组合、几何、数论）细分统计
+- 结果可按类别（代数、组合、几何、数论）细分
 - 许多答案涉及符号表达式，需进行数学等价性判断
 
 ## 属性
@@ -37,7 +37,7 @@ IMO-AnswerBench 是一个包含 400 道高难度问题的基准测试集，题�
 | **标签** | `Math`, `Reasoning` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评测划分** | `train` |
+| **评估划分** | `train` |
 
 ## 数据统计
 
@@ -101,7 +101,8 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets imo_answerbench \
-    --limit 10  # 正式评测时请删除此行
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
+    --limit 10  # 正式评估时请删除此行
 ```
 
 ### 使用 Python
@@ -115,12 +116,13 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['imo_answerbench'],
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'imo_answerbench': {
-            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # 可选，用于评测特定子集
+            # subset_list: ['Algebra', 'Combinatorics', 'Geometry']  # 可选，用于评估特定子集
         }
     },
-    limit=10,  # 正式评测时请删除此行
+    limit=10,  # 正式评估时请删除此行
 )
 
 run_task(task_cfg=task_cfg)

@@ -76,6 +76,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets deepsearchqa \
     --agent-config '{"mode":"native","strategy":"function_calling","max_steps":30}' \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -94,6 +95,7 @@ task_cfg = TaskConfig(
         strategy='function_calling',
         max_steps=30,
     ),
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     limit=10,  # Remove this line for formal evaluation
 )
 

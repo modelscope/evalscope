@@ -208,6 +208,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
             'strategy': adapter_cls.strategy_name,
             'max_steps': adapter_cls.max_steps_default,
         }
+    requires_judge = bool(getattr(getattr(adapter_cls, 'scoring_policy', None), 'judge_by_default', False))
     adapter_meta = {
         'pretty_name': getattr(meta, 'pretty_name', None) or meta.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
@@ -231,6 +232,8 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         adapter_meta['primary_metric'] = serialized_primary_metric
     if agent_config is not None:
         adapter_meta['agent_config'] = agent_config
+    if requires_judge:
+        adapter_meta['requires_judge'] = True
     return adapter_meta
 
 

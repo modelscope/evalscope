@@ -1,0 +1,1 @@
+"""MT-Bench benchmark adapter."""
