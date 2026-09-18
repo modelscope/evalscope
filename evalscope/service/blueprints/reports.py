@@ -21,6 +21,21 @@ from pydantic import ValidationError
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
 from evalscope.report import ReportKey, ReportRef, get_data_frame, get_report_list
+from evalscope.report.data_frames import (
+    get_acc_report_df,
+    get_compare_report_df,
+    get_comparison_quality_report_df,
+    get_model_prediction,
+    get_quality_metric_df,
+    get_quality_report_df,
+    get_report_analysis,
+    get_single_dataset_df,
+    load_multi_report_groups,
+    load_report_bundle,
+    normalize_score,
+    report_model_dir,
+    scan_report_refs,
+)
 from evalscope.report.report import Report
 from evalscope.report.visualization import (
     plot_multi_report_radar,
@@ -43,20 +58,6 @@ from evalscope.service.report_meta_cache import (
     list_etag,
     prune_report_meta_cache,
     report_ref_fingerprint,
-)
-from evalscope.utils.data_utils import (
-    get_acc_report_df,
-    get_compare_report_df,
-    get_comparison_quality_report_df,
-    get_model_prediction,
-    get_quality_metric_df,
-    get_quality_report_df,
-    get_report_analysis,
-    load_multi_report_groups,
-    load_report_bundle,
-    normalize_score,
-    report_model_dir,
-    scan_report_refs,
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
@@ -599,8 +600,6 @@ def get_dataframe(run_id: str, model_id: str) -> ResponseReturnValue:
             if not dataset_name:
                 return jsonify({'error': 'dataset_name is required for view=dataset'}), 400
             report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-            from evalscope.utils.data_utils import get_single_dataset_df
-
             df = get_single_dataset_df(report_df, dataset_name)
         else:
             df = acc_df
@@ -834,8 +833,6 @@ def get_chart(run_id: str, model_id: str, chart_type: str) -> ResponseReturnValu
                 if not dataset_name:
                     return jsonify({'error': 'dataset_name is required for dataset_scores'}), 400
                 report_df = get_data_frame(report_list=report_list, flatten_metrics=True, flatten_categories=True)
-                from evalscope.utils.data_utils import get_single_dataset_df
-
                 ds_df = get_single_dataset_df(report_df, dataset_name)
                 fig = plot_single_dataset_scores(get_quality_metric_df(report_list, ds_df))
             elif chart_type == 'scores':

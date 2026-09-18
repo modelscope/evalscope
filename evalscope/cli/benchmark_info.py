@@ -141,6 +141,12 @@ class BenchmarkInfoCMD(CLICommand):
         )
 
         parser.add_argument(
+            '--update-index',
+            action='store_true',
+            help='Regenerate evalscope/benchmarks/_index.json (benchmark name -> adapter module)',
+        )
+
+        parser.add_argument(
             '--format',
             choices=['text', 'json', 'markdown'],
             default='text',
@@ -163,6 +169,11 @@ class BenchmarkInfoCMD(CLICommand):
         from evalscope.api.registry import BENCHMARK_REGISTRY, get_benchmark
 
         os.environ['BUILD_DOC'] = '1'
+
+        # Handle --update-index flag
+        if self.args.update_index:
+            self._update_index()
+            return
 
         # Handle --list flag
         if self.args.list:
@@ -302,6 +313,18 @@ class BenchmarkInfoCMD(CLICommand):
             print(f'  Errors: {len(result["errors"])}')
             for name, error in result['errors'][:5]:
                 print(f'    - {name}: {error}')
+
+    def _update_index(self):
+        """Regenerate the benchmark name -> adapter module index.
+
+        The index is a generated artifact and must not be hand-edited: it is derived
+        from the registry, because a benchmark name is not derivable from its module
+        path (one module may register several names).
+        """
+        from evalscope.benchmarks import write_index
+
+        index = write_index()
+        print(f'Benchmark index updated: {len(index)} entries')
 
     def _generate_docs(self):
         """Generate documentation from persisted benchmark data."""

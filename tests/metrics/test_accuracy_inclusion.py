@@ -7,7 +7,7 @@ from evalscope.benchmarks.mmlu_redux.mmlu_redux_adapter import MMLUReduxAdapter
 from evalscope.benchmarks.trivia_qa.trivia_qa_adapter import TriviaQaAdapter
 from evalscope.config import TaskConfig
 from evalscope.metrics.nlp.metrics import Accuracy, MultiChoiceAcc
-from evalscope.utils.data_utils import _build_prediction_row
+from evalscope.report.data_frames import _build_prediction_row
 
 
 @pytest.mark.parametrize(

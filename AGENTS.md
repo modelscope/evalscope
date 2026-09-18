@@ -15,6 +15,7 @@ Python ≥ 3.10 (3.10 / 3.11 / 3.12). Dependencies: `requirements/framework.txt`
 
 ```bash
 make lint                                                                       # apply Ruff fixes/formatting and run all pre-commit checks
+make lint-imports                                                               # architecture contracts (import direction, see .importlinter)
 pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings        # CI smoke test
 pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s    # perf
 ```
@@ -95,6 +96,7 @@ run_task(TaskConfig(model='Qwen/Qwen2.5-0.5B-Instruct', datasets=['gsm8k'], limi
 - **Pydantic-first**: cross-module data contracts use Pydantic models. Use `TaskConfig` / `Arguments` for configuration — never raw dicts at module boundaries.
 - **Web API responses**: successful JSON responses consumed by the dashboard use models from `evalscope/service/api_models/` and `json_response()`. Regenerate frontend contracts with `cd evalscope/web && npm run contracts:generate`; never hand-edit generated artifacts or add parallel response schemas.
 - **Reuse existing patterns**: new benchmarks / models / metrics go through existing registries and adapter base classes — no parallel mechanisms.
+- **Import direction**: `.importlinter` encodes the allowed direction between packages, checked by `make lint-imports` (a local check — it is not part of CI). Its `ignore_imports` lists are an explicit debt inventory of dependencies that exist today; do not append to them to silence a new violation. Nothing in the core (`api`, `evaluator`, `report`, `metrics`, `models`, `perf`) may import `evalscope.benchmarks` — that contract has no exemptions.
 - **DRY** but don't over-abstract just to remove minor duplication.
 
 ## Tests
@@ -131,7 +133,7 @@ Use the relevant source pointers below when the task touches that area; this is 
 3. Reuse the standard dataset flow (`load_subset()` and existing `DataLoader` implementations) for shuffle, limit, repeats, filtering, conversion, and indexing. Override the full `load()` flow only when the standard loaders cannot represent the source format, and keep custom loading limited to benchmark-specific parsing or validation.
 4. Use `download_dataset_file()` or `download_dataset_snapshot()` for benchmark media and raw files; do not duplicate hub resolution, cache, path-safety, or download state inside an adapter.
 5. Decorate with `@register_benchmark(BenchmarkMeta(name=..., ...))`.
-6. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`.
+6. Auto-discovered by globbing `evalscope/benchmarks/*/**/*_adapter.py`. Adapter modules are **loaded on demand**: `evalscope/benchmarks/_index.json` maps benchmark name → adapter module so a run imports only the adapters it uses. That file is **generated, never hand-edited** — run `make docs-update-index` (also run by `docs-update` / `docs-update-stats` / `docs-pipeline`) after adding, renaming or moving a benchmark. A name missing from the index still resolves by falling back to loading every adapter, so a stale index costs time, not correctness; `tests/api/test_benchmark_registry_contract.py` fails when it is out of date (run it locally — CI does not collect `tests/api/`).
 7. Add a smoke test.
 
 ### Evaluation versioning

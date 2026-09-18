@@ -20,7 +20,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from evalscope.constants import DataCollection
 from evalscope.report import ReportRef
-from evalscope.utils.data_utils import report_model_dir
+from evalscope.report.data_frames import report_model_dir
 
 # Per-path identity: relative path, mtime (ns), ctime (ns), and size.
 Fingerprint = Tuple[Tuple[str, int, int, int], ...]

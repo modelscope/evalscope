@@ -14,7 +14,7 @@ from tqdm.auto import tqdm
 from transformers import GPT2Tokenizer, RobertaTokenizer
 from transformers import __version__ as trans_version
 
-from evalscope import __version__
+from evalscope.version import __version__
 
 __all__ = []
 
