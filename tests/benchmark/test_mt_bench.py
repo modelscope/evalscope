@@ -142,7 +142,8 @@ def test_generated_usage_includes_required_judge_config() -> None:
     adapter = make_adapter()
     meta = extract_benchmark_meta(adapter.benchmark_meta, adapter.__class__)
 
+    assert meta['requires_judge'] is True
     readme = generate_readme_from_dict('mt_bench', meta)
 
-    assert "--judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"gpt-4\"}]}'" in readme
-    assert "judge={\"strategy\": \"llm\", \"models\": [{\"model_id\": \"gpt-4\"}]}," in readme
+    assert "--judge '{\"strategy\":\"llm\",\"models\":[{\"model_id\":\"YOUR_JUDGE_MODEL\"}]}'" in readme
+    assert "judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]}," in readme

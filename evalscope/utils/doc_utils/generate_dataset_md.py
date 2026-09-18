@@ -208,6 +208,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
             'strategy': adapter_cls.strategy_name,
             'max_steps': adapter_cls.max_steps_default,
         }
+    requires_judge = bool(getattr(getattr(adapter_cls, 'scoring_policy', None), 'judge_by_default', False))
     adapter_meta = {
         'pretty_name': getattr(meta, 'pretty_name', None) or meta.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
@@ -225,13 +226,14 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         'aggregation': getattr(meta, 'aggregation', 'mean') or 'mean',
         'extra_params': dict(getattr(meta, 'extra_params', {})) if getattr(meta, 'extra_params', None) else {},
         'sandbox_config': dict(getattr(meta, 'sandbox_config', {})) if getattr(meta, 'sandbox_config', None) else {},
-        'judge_config': dict(getattr(meta, 'judge_config', {})) if getattr(meta, 'judge_config', None) else {},
         'category': get_category_from_adapter_class(adapter_cls),
     }
     if serialized_primary_metric is not None:
         adapter_meta['primary_metric'] = serialized_primary_metric
     if agent_config is not None:
         adapter_meta['agent_config'] = agent_config
+    if requires_judge:
+        adapter_meta['requires_judge'] = True
     return adapter_meta
 
 

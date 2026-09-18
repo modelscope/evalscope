@@ -79,7 +79,7 @@ LLM-as-a-judge study and uses a strong judge model to measure response quality b
 {
   "input": [
     {
-      "id": "1fa770ff",
+      "id": "52192365",
       "content": "Compose an engaging travel blog post about a recent trip to Hawaii, highlighting cultural experiences and must-see attractions."
     }
   ],
@@ -113,7 +113,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mt_bench \
-    --judge '{"strategy":"llm","models":[{"model_id":"gpt-4"}]}' \
+    --judge '{"strategy":"llm","models":[{"model_id":"YOUR_JUDGE_MODEL"}]}' \
     --limit 10  # Remove this line for formal evaluation
 ```
 
@@ -128,7 +128,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mt_bench'],
-    judge={"strategy": "llm", "models": [{"model_id": "gpt-4"}]},
+    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},
     dataset_args={
         'mt_bench': {
             # subset_list: ['writing', 'roleplay', 'reasoning']  # optional, evaluate specific subsets

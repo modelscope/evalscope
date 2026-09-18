@@ -199,7 +199,7 @@ def _format_usage_section(
     sandbox_config: Optional[Dict] = None,
     extra_params: Optional[Dict] = None,
     agent_config: Optional[Dict] = None,
-    judge_config: Optional[Dict] = None,
+    requires_judge: bool = False,
 ) -> str:
     """
     Format the usage section with CLI and Python examples.
@@ -210,7 +210,7 @@ def _format_usage_section(
         sandbox_config: Sandbox configuration (if any)
         extra_params: Extra parameters configuration (if any)
         agent_config: Built-in AgentLoop defaults (if this is an agent-loop benchmark)
-        judge_config: Native Judge settings required to run this benchmark
+        requires_judge: Whether this benchmark requires a configured Native Judge
 
     Returns:
         Formatted usage section markdown string
@@ -236,7 +236,6 @@ def _format_usage_section(
     if sandbox_config:
         cli_lines.append('    --sandbox \'{"enabled": true}\' \\')
     emit_agent_config = bool(agent_config and agent_config.get('strategy') and agent_config.get('max_steps'))
-    emit_judge_config = bool(judge_config and judge_config.get('models'))
     if emit_agent_config:
         cli_agent_config = json.dumps(
             {
@@ -246,10 +245,10 @@ def _format_usage_section(
             },
             separators=(',', ':'),
         )
-        cli_lines.append(f"    --agent-config '{cli_agent_config}' {chr(92)}")
-    if emit_judge_config:
-        cli_judge_config = json.dumps(judge_config, separators=(',', ':'))
-        cli_lines.append(f"    --judge '{cli_judge_config}' {chr(92)}")
+        cli_lines.append(f"    --agent-config '{cli_agent_config}' " + '\\')
+    if requires_judge:
+        cli_judge_config = {'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]}
+        cli_lines.append(f"    --judge '{json.dumps(cli_judge_config, separators=(',', ':'))}' " + '\\')
     cli_lines.append('    --limit 10  # Remove this line for formal evaluation')
 
     # Build Python code
@@ -274,8 +273,8 @@ def _format_usage_section(
         max_steps={agent_config.get('max_steps')},
     ),
 """
-    if emit_judge_config:
-        python_judge_config = f'    judge={json.dumps(judge_config)},\n'
+    if requires_judge:
+        python_judge_config = "    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n"
 
     python_code = f"""{chr(10).join(python_imports)}
 
@@ -524,7 +523,7 @@ def generate_readme_from_dict(
             sandbox_config=meta.get('sandbox_config'),
             extra_params=meta.get('extra_params'),
             agent_config=meta.get('agent_config'),
-            judge_config=meta.get('judge_config'),
+            requires_judge=meta.get('requires_judge', False),
         ),
     )
 
