@@ -675,6 +675,14 @@ class TestReactParseOutput(unittest.TestCase):
         self.assertEqual(parsed.final_answer, '42')
         self.assertEqual(len(parsed.tool_calls), 0)
 
+    def test_submit_interception_normalizes_numeric_zero(self):
+        submit_call = _tool_call('submit', {'answer': 0})
+        output = _make_output(text='I am confident', tool_calls=[submit_call])
+
+        parsed = self.strategy.parse_output(output, self.ctx)
+
+        self.assertEqual(parsed.final_answer, '0')
+
     def test_regular_tool_call_not_intercepted(self):
         bash_call = _tool_call('bash', {'command': 'ls'})
         output = _make_output(text='Let me check', tool_calls=[bash_call])
@@ -828,6 +836,16 @@ class TestReactExtractFinalAnswer(unittest.TestCase):
         result = self._make_result(messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '18')
 
+    def test_numeric_zero_submit_answer_is_not_replaced_by_content(self):
+        submit_call = _tool_call('submit', {'answer': 0})
+        messages = [
+            ChatMessageAssistant(content='fallback', tool_calls=[submit_call], model='test', source='generate'),
+        ]
+
+        result = self._make_result(messages)
+
+        self.assertEqual(self.strategy.extract_final_answer(result), '0')
+
     def test_submit_among_multiple_tool_calls(self):
         submit_call = _tool_call('submit', {'answer': '42'})
         other_call = _tool_call('python_exec', {'code': 'print(6*7)'})
@@ -874,6 +892,16 @@ class TestFCExtractFinalAnswer(unittest.TestCase):
         ]
         result = self._make_result(messages)
         self.assertEqual(self.strategy.extract_final_answer(result), '99')
+
+    def test_numeric_zero_submit_answer_is_not_replaced_by_content(self):
+        submit_call = _tool_call('submit', {'answer': 0})
+        messages = [
+            ChatMessageAssistant(content='fallback', tool_calls=[submit_call], model='test', source='generate'),
+        ]
+
+        result = self._make_result(messages)
+
+        self.assertEqual(self.strategy.extract_final_answer(result), '0')
 
     def test_no_submit_falls_back_to_content(self):
         messages = [
