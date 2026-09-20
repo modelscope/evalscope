@@ -163,7 +163,7 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
 _PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,/、]*)')
-_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，]*)')
+_PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9,，/、]*)')
 
 _LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
 
@@ -326,8 +326,12 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False, completio
     matched = matched.strip().rstrip('。.')
 
     if multiple_correct:
-        # Handle comma-separated or continuous letters
-        matched = matched.replace(' 和 ', '').replace(' ', '').replace('，', ',')
+        # Handle comma-separated or continuous letters. Mirror the English path: an ideographic
+        # comma or a slash between labels is a separator, so normalize them to a plain comma
+        # before splitting. Without this, a multi-select answer such as '答案：A、C' or '答案：A/C'
+        # kept only its first label and was scored as wrong.
+        matched = matched.replace(' 和 ', '').replace(' ', '')
+        matched = matched.replace('，', ',').replace('、', ',').replace('/', ',')
         answers = set(matched.split(',')) if ',' in matched else set(matched)
         return answers if answers.issubset(allowed_options) else set()
     else:
