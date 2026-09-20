@@ -1,3 +1,4 @@
+import re
 from io import BytesIO
 from typing import Any, Dict, Iterator, List, Optional
 
@@ -53,6 +54,7 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
     # Real MMMU rows also carry incompatible modes such as RGBA, so they are
     # converted to RGB before encoding.
     JPEG_COMPATIBLE_MODES = frozenset({'L', 'RGB', 'CMYK', 'YCbCr'})
+    IMAGE_PLACEHOLDER_PATTERN = re.compile(r'<image[_ ](\d+)>')
 
     def __init__(self, query_parameters: Arguments) -> None:
         if query_parameters.tokenize_prompt:
@@ -90,14 +92,14 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
             return image
         return image.convert('RGB')
 
-    def _collect_image_urls(self, item: Dict[str, Any]) -> List[str]:
-        """Collect non-empty ``image_1`` ... ``image_7`` fields in source order."""
-        image_urls: List[str] = []
+    def _collect_image_urls(self, item: Dict[str, Any]) -> Dict[int, str]:
+        """Collect non-empty ``image_1`` ... ``image_7`` fields by source index."""
+        image_urls: Dict[int, str] = {}
         for index in range(1, self.max_images + 1):
             image = self._to_pil_image(item.get(f'image_{index}'))
             if image is None:
                 continue
-            image_urls.append(PIL_to_base64(self._to_jpeg_compatible(image), add_header=True))
+            image_urls[index] = PIL_to_base64(self._to_jpeg_compatible(image), add_header=True)
         return image_urls
 
     @staticmethod
@@ -108,6 +110,30 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
         if options and options != '[]':
             prompt = f'{prompt}\nOptions: {options}'
         return prompt
+
+    def _create_message_with_placeholders(self, prompt: str, image_urls: Dict[int, str]) -> Dict[str, Any]:
+        """Replace MMMU image placeholders with ordered OpenAI image content blocks."""
+        matches = list(self.IMAGE_PLACEHOLDER_PATTERN.finditer(prompt))
+        if not matches:
+            return self.create_message(text=prompt, image_urls=list(image_urls.values()))
+
+        content: List[Dict[str, Any]] = []
+        last_end = 0
+        for match in matches:
+            text_segment = prompt[last_end : match.start()]
+            if text_segment.strip():
+                content.append({'type': 'text', 'text': text_segment})
+            image_url = image_urls.get(int(match.group(1)))
+            if image_url:
+                content.append({'type': 'image_url', 'image_url': {'url': image_url}})
+            last_end = match.end()
+
+        remaining_text = prompt[last_end:]
+        if remaining_text.strip():
+            content.append({'type': 'text', 'text': remaining_text})
+        if not content:
+            return self.create_message(text=prompt, image_urls=list(image_urls.values()))
+        return {'role': 'user', 'content': content}
 
     def build_messages(self) -> Iterator[List[Dict]]:
         """Yield eligible samples from every MMMU subject in round-robin order."""
@@ -135,7 +161,7 @@ class MMMUMultiImageDatasetPlugin(DatasetPluginBase):
                 if len(image_urls) < self.min_images:
                     continue
 
-                message = self.create_message(text=self._build_prompt(item), image_urls=image_urls)
+                message = self._create_message_with_placeholders(self._build_prompt(item), image_urls)
                 yield [message]
 
             dataset_iterators = active_iterators
