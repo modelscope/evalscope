@@ -56,12 +56,54 @@ class TestMMMUMultiImageDataset:
         assert len(requests) == 1
         message = requests[0][0]
         assert message['role'] == 'user'
-        assert message['content'][0] == {
-            'type': 'text',
-            'text': "Compare <image 1> and <image 2>.\nOptions: ['same', 'different']",
-        }
-        assert [part['type'] for part in message['content']] == ['text', 'image_url', 'image_url']
-        assert all(part['image_url']['url'].startswith('data:image/') for part in message['content'][1:])
+        assert [part['type'] for part in message['content']] == [
+            'text',
+            'image_url',
+            'text',
+            'image_url',
+            'text',
+        ]
+        assert [part['text'] for part in message['content'] if part['type'] == 'text'] == [
+            'Compare ',
+            ' and ',
+            ".\nOptions: ['same', 'different']",
+        ]
+        assert all(part['image_url']['url'].startswith('data:image/') for part in message['content'][1::2])
+
+    def test_places_images_at_mmmu_placeholder_positions(self, monkeypatch):
+        plugin = MMMUMultiImageDatasetPlugin(_args())
+        monkeypatch.setattr(plugin, 'subsets', ('Music',))
+        rows = [
+            {
+                'question': 'Compare <image 2> with <image 1> before answering.',
+                'options': '[]',
+                'image_1': Image.new('RGB', (2, 2), 'red'),
+                'image_2': Image.new('RGB', (2, 2), 'blue'),
+            }
+        ]
+        monkeypatch.setattr(
+            plugin,
+            'load_hub_dataset',
+            lambda **_: rows,
+        )
+
+        message = list(plugin.build_messages())[0][0]
+
+        assert [part['type'] for part in message['content']] == [
+            'text',
+            'image_url',
+            'text',
+            'image_url',
+            'text',
+        ]
+        assert [part['text'] for part in message['content'] if part['type'] == 'text'] == [
+            'Compare ',
+            ' with ',
+            ' before answering.',
+        ]
+        image_urls = [part['image_url']['url'] for part in message['content'] if part['type'] == 'image_url']
+        expected_urls = plugin._collect_image_urls(rows[0])
+        assert image_urls == [expected_urls[2], expected_urls[1]]
 
     def test_encodes_alpha_bearing_images_end_to_end(self, monkeypatch):
         # MMMU rows can contain alpha-bearing images that the JPEG encoder
