@@ -23,7 +23,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 
-from ._submit import parse_submit_action
+from ._submit import extract_submit_answer, parse_submit_action
 
 # ---------------------------------------------------------------------------
 # Prompt helpers
@@ -147,9 +147,9 @@ class ReactStrategy(AgentStrategy):
             if msg.role == 'assistant' and msg.tool_calls:
                 for tc in msg.tool_calls:
                     if tc.function.name == 'submit':
-                        answer = tc.function.arguments.get('answer', '')
-                        if answer:
-                            return str(answer)
+                        answer = extract_submit_answer(tc)
+                        if answer is not None:
+                            return answer
         # Fallback: text-only content of the last model output. Using
         # ``.text`` (not ``str(content)``) so multimodal/reasoning
         # content parts don't leak their Python repr into the answer.

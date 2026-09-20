@@ -17,7 +17,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import register_strategy
 from evalscope.api.tool import ToolCall, ToolCallError, ToolInfo
 
-from ._submit import parse_submit_action
+from ._submit import extract_submit_answer, parse_submit_action
 
 # Reminder used when this strategy is configured without the ``submit`` tool
 # (e.g. BrowserGym single-action mode); the default prompt would otherwise tell
@@ -137,9 +137,9 @@ class FunctionCallingStrategy(AgentStrategy):
             if msg.role == 'assistant' and msg.tool_calls:
                 for tc in msg.tool_calls:
                     if tc.function.name == 'submit':
-                        answer = tc.function.arguments.get('answer', '')
-                        if answer:
-                            return str(answer)
+                        answer = extract_submit_answer(tc)
+                        if answer is not None:
+                            return answer
         # Fallback: last model output content.
         return str(result.final_output.message.content or '')
 

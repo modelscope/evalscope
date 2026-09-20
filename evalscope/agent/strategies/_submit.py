@@ -7,6 +7,14 @@ from evalscope.api.agent import AgentContext, ParsedAction
 from evalscope.api.tool import ToolCall, validate_tool_arguments
 
 
+def extract_submit_answer(submit_call: ToolCall) -> Optional[str]:
+    """Return an explicitly supplied submit answer as prediction text."""
+    arguments = submit_call.function.arguments
+    if 'answer' not in arguments or arguments['answer'] is None or arguments['answer'] == '':
+        return None
+    return str(arguments['answer'])
+
+
 def parse_submit_action(
     tool_calls: List[ToolCall],
     raw_text: str,
@@ -28,4 +36,5 @@ def parse_submit_action(
 
     if ctx.validate_tool_arguments and validate_tool_arguments(submit_call, SUBMIT_TOOL_INFO) is not None:
         return ParsedAction(tool_calls=[submit_call], raw_text=raw_text)
-    return ParsedAction(final_answer=submit_call.function.arguments.get('answer', ''), raw_text=raw_text)
+    answer = extract_submit_answer(submit_call)
+    return ParsedAction(final_answer=answer if answer is not None else '', raw_text=raw_text)
