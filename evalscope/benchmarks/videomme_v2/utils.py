@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import zipfile
 from typing import Any, Dict, List, Optional
@@ -53,11 +54,17 @@ def archive_name(video_id: str) -> str:
 def find_archive_member(archive_path: str, video_id: str) -> str:
     expected = f'{normalize_video_id(video_id)}.mp4'
     with zipfile.ZipFile(archive_path) as zip_file:
-        matches = [
-            name
-            for name in zip_file.namelist()
-            if not name.endswith('/') and (name.endswith(f'/{expected}') or name.endswith(expected))
-        ]
+        member_names = [name for name in zip_file.namelist() if not name.endswith('/')]
+
+    # Match the expected file name exactly to avoid substring matches such as
+    # `001.mp4` accidentally resolving to `1001.mp4`.
+    matches = [
+        name
+        for name in member_names
+        if name.replace('\\', '/').endswith(f'/{expected}') or name.replace('\\', '/') == expected
+    ]
+    if not matches:
+        matches = [name for name in member_names if os.path.basename(name.replace('\\', '/')) == expected]
     if not matches:
         raise FileNotFoundError(f'Video {expected} was not found in archive {archive_path}.')
     return sorted(matches)[0]
