@@ -7,7 +7,8 @@ from evalscope.benchmarks.mvbench.utils import find_archive_member as mvbench_fi
 from evalscope.benchmarks.videomme_v2.utils import find_archive_member as videomme_find_archive_member
 
 
-def _write_zip(path: str, members: list) -> str:
+def _write_zip(path: str, members: list[str]) -> str:
+    """Create a synthetic archive fixture for archive-member matching tests."""
     with zipfile.ZipFile(path, 'w') as zip_file:
         for name in members:
             zip_file.writestr(name, b'data')
@@ -15,6 +16,7 @@ def _write_zip(path: str, members: list) -> str:
 
 
 def test_mvbench_exact_match_not_confused_by_substring(tmp_path):
+    # This synthetic fixture covers an ambiguous suffix pattern.
     # A request for `2.mp4` must not resolve to `12.mp4`, which merely shares the suffix
     # and would otherwise sort first.
     archive = _write_zip(str(tmp_path / 'star.zip'), ['star/12.mp4', 'star/2.mp4'])
@@ -45,6 +47,7 @@ def test_mvbench_missing_video_raises(tmp_path):
 
 
 def test_videomme_exact_match_not_confused_by_substring(tmp_path):
+    # This synthetic fixture covers an ambiguous suffix pattern.
     # Video id `1` normalizes to `001.mp4`; it must not resolve to `1001.mp4`.
     archive = _write_zip(str(tmp_path / '001.zip'), ['data/1001.mp4', 'data/001.mp4'])
     assert videomme_find_archive_member(archive, '1') == 'data/001.mp4'
