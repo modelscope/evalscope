@@ -389,7 +389,10 @@ class PersonNameCountChecker(Instruction):
         # Extract the named entities
         person_names = []
         for name in person_name_list:
-            if name in value:
+            # Match on word boundaries so substrings do not produce false positives
+            # (e.g. "Mia" inside "Miami" or "Leo" inside "Leonardo").
+            pattern = r'\b{}\b'.format(re.escape(name))
+            if re.search(pattern, value):
                 person_names.append(name)
         unique_person_names = set(person_names)
 
@@ -2008,7 +2011,10 @@ class KeywordsMultipleChecker(Instruction):
         for keyword, count in zip(
             [self._keyword1, self._keyword2, self._keyword3, self._keyword4, self._keyword5], [1, 2, 3, 5, 7]
         ):
-            if value.lower().count(keyword.lower()) != count:
+            # Count whole-word occurrences (case-insensitive). Use a word-boundary regex
+            # instead of str.count to avoid counting substrings (e.g. "art" inside "start").
+            pattern = r'\b{}\b'.format(re.escape(keyword))
+            if len(re.findall(pattern, value, flags=re.IGNORECASE)) != count:
                 return False
         return True
 
