@@ -213,7 +213,7 @@ def get_acc(prediction, gt, answer_type, cot=True):
                 acc = 0
         else:
             acc = 0
-            logger.error('Error: ', prediction, type(prediction))
+            logger.error('Error: %s (%s)', prediction, type(prediction))
         return acc
     except Exception:
         return 0
