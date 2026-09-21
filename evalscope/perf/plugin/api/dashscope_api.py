@@ -16,6 +16,10 @@ class DashScopeApiPlugin(ApiPluginBase):
     def __init__(self, param: Arguments):
         super().__init__(param)
 
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        """Set DashScope's nested maximum output token field in-place."""
+        request.setdefault('parameters', {})['max_tokens'] = max_tokens
+
     def build_request(self, messages: List[Dict], param: Arguments = None) -> Dict:
         """Build the openai format request based on prompt, dataset
 

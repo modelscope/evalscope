@@ -287,6 +287,7 @@ Replay behaviour is tuned via `--dataset-args`:
 | `--frequency-penalty` | `float` | frequency_penalty value | - |
 | `--logprobs` | `bool` | Whether to return logarithmic probabilities | - |
 | `--max-tokens` | `int` or `int int` | Maximum number of tokens that can be generated<br>• A single integer: fixed value, e.g. `--max-tokens 2048`<br>• Two integers: `min max`, sampled uniformly at random per request, e.g. `--max-tokens 512 2048` | `2048` |
+| `--max-turn-tokens` | `list[int]` | Multi-turn only: per-turn `max_tokens` values by zero-based index; the final value is reused for later turns and overrides `--max-tokens` | `None` |
 | `--min-tokens` | `int` | Minimum number of tokens to generate<br>Note: Not all model services support this parameter<br>For `vLLM>=0.8.1`, you need to additionally set<br>`--extra-args '{"ignore_eos": true}'`<br>In closed-loop mode, setting this equal to `--max-tokens` gives every request the same duration, so they finish together and are re-released together, showing up as a TTFT ramp that repeats every `--parallel` requests; use the `--max-tokens <min> <max>` range form to avoid it, or `--open-loop` (arrivals are decoupled from completions) | - |
 | `--n-choices` | `int` | Number of completion choices to generate | - |
 | `--seed` | `int` | Random seed | `None` |
