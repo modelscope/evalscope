@@ -204,10 +204,15 @@ class OpenaiRerankPlugin(ApiPluginBase):
                         # Extract rerank results info
                         results = payload.get('results', [])
                         if results:
-                            # Log the top result info
+                            # Log the top result info.  The score is taken verbatim from the
+                            # server and is never validated, so it may be null or non-numeric.
+                            # Formatting it must not raise: this runs inside the ``try`` whose
+                            # handler marks the whole request as failed, which would report a
+                            # successful HTTP 200 as a failed benchmark request.
                             top_result = results[0]
                             score = top_result.get('relevance_score', top_result.get('score', 0))
-                            output.generated_text = f'top_score={score:.4f}, num_results={len(results)}'
+                            score_text = f'{score:.4f}' if isinstance(score, (int, float)) else str(score)
+                            output.generated_text = f'top_score={score_text}, num_results={len(results)}'
 
                         if usage := payload.get('usage'):
                             output.prompt_tokens = usage.get('prompt_tokens') or usage.get('total_tokens', 0)
