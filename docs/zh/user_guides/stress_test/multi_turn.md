@@ -66,6 +66,7 @@
 | `--multi-turn` | `bool` | 启用多轮对话压测模式 | `False` |
 | `--min-turns` | `int` | 每个对话最少用户轮数，仅 `random_multi_turn` 使用 | `1` |
 | `--max-turns` | `int` | 每个对话最多用户轮数；`random_multi_turn` **必须设置**；ShareGPT / `custom_multi_turn` 等数据集可选，用于截断过长对话；`swe_smith` live 构建时每条对话轮次从 `[min_turns, max_turns]` 随机采样 | `None` |
+| `--max-turn-tokens` | `list[int]` | 逐轮设置 `max_tokens`；按从 0 开始的轮次下标匹配，列表用尽后复用最后一个值 | `None` |
 | `--dataset-offset` | `int` | 跳过数据集前 N 条对话，用于分片测试或避免缓存命中 | `0` |
 
 ### 通用参数的多轮语义
@@ -259,7 +260,7 @@ evalscope perf \
 **JSONL 数据集格式**（每行一条对话，为 OpenAI messages 数组）：
 
 ```json
-[{"role": "user", "content": "你好"}, {"role": "assistant", "content": "你好！有什么可以帮助你？"}, {"role": "user", "content": "帮我写一首诗"}]
+[{"role": "system", "content": "你是一个编程助手。"}, {"role": "user", "content": "你好"}, {"role": "assistant", "content": "你好！有什么可以帮助你？"}, {"role": "user", "content": "帮我写一首诗"}]
 [{"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}, {"role": "user", "content": "Tell me more about it."}]
 ```
 
@@ -267,13 +268,15 @@ evalscope perf \
 
 - 必须是一个 JSON 数组
 - 每个元素必须包含 `role` 和 `content` 字段
-- `role` 取值为 `user` 或 `assistant`
+- 可在首条 `user` 消息前放置自定义 `system` 消息；它会保留在后续每一轮的上下文中
+- `assistant` 消息用于标记轮次边界；其参考内容会在运行时替换为模型的实际输出
 - 至少包含一个 `user` 消息
 
 运行时上下文结构（第 2 轮发送时）：
 
 ```json
 [
+  {"role": "system",    "content": "你是一个编程助手。"},
   {"role": "user",      "content": "你好"},
   {"role": "assistant", "content": "<模型第 1 轮实际回复>"},
   {"role": "user",      "content": "帮我写一首诗"}
@@ -293,12 +296,15 @@ evalscope perf \
   --api openai \
   --dataset custom_multi_turn \
   --dataset-path /path/to/my_conversations.jsonl \
-  --max-tokens 512 \
+  --max-turn-tokens 150 150 1000 \
   --multi-turn \
   --max-turns 3 \
   --number 100 \
   --parallel 10
 ```
+
+此示例中，第 1、2 轮使用 `max_tokens=150`，第 3 轮使用 `max_tokens=1000`；如果对话继续，后续轮次复用
+`1000`。`--max-turn-tokens` 的优先级高于全局 `--max-tokens`，也高于轨迹重放数据中携带的逐轮限制。
 
 ### swe_smith
 

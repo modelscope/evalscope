@@ -157,8 +157,15 @@ class MultiTurnStrategy(BenchmarkStrategy):
                         f'worker={worker_id} turn={turn_idx}: build_request returned None; abandoning conversation.'
                     )
                     break
-                if turn.max_tokens is not None:
-                    request['max_tokens'] = turn.max_tokens
+                max_tokens = turn.max_tokens
+                if self.args.max_turn_tokens is not None:
+                    max_tokens = self.args.max_turn_tokens[min(turn_idx, len(self.args.max_turn_tokens) - 1)]
+                if max_tokens is not None:
+                    set_max_tokens = getattr(self.api_plugin, 'set_request_max_tokens', None)
+                    if set_max_tokens is None:
+                        request['max_tokens'] = max_tokens
+                    else:
+                        set_max_tokens(request, max_tokens)
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.

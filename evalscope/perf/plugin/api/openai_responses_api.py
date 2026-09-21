@@ -30,6 +30,10 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
         else:
             self.tokenizer = None
 
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        """Set the Responses API maximum output token field in-place."""
+        request['max_output_tokens'] = max_tokens
+
     def build_request(self, messages: Union[List[Dict], str, Dict], param: Arguments = None) -> Dict:
         param = param or self.param
         try:

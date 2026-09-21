@@ -346,6 +346,13 @@ class Arguments(BaseArgument):
     Accepts an int or a ``[min, max]`` list for uniform sampling per request.
     """
 
+    max_turn_tokens: Optional[List[int]] = None
+    """Per-turn maximum output tokens in multi-turn mode.
+
+    Values are applied by zero-based turn index. If a conversation has more
+    turns than values, the final value is reused for the remaining turns.
+    """
+
     min_tokens: Optional[int] = None
     """Minimum number of tokens in the response."""
 
@@ -430,6 +437,20 @@ class Arguments(BaseArgument):
             if v[0] < 0:
                 raise ValueError(f'--max-tokens range values must be >= 0, got {v}')
         return v
+
+    @field_validator('max_turn_tokens', mode='before')
+    @classmethod
+    def _validate_max_turn_tokens(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        values = [v] if isinstance(v, int) else v
+        if not isinstance(values, list) or not values:
+            raise ValueError('--max-turn-tokens must contain at least one integer')
+        if any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+            raise ValueError(f'--max-turn-tokens values must be integers, got {values}')
+        if any(value < 0 for value in values):
+            raise ValueError(f'--max-turn-tokens values must be >= 0, got {values}')
+        return values
 
     @field_validator('multi_turn_args', mode='before')
     @classmethod
@@ -902,6 +923,16 @@ def _add_response_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--max-tokens', type=int, nargs='+', help='The maximum number of tokens that can be generated. '
         'Accepts 1 value (fixed) or 2 values min max for uniform sampling per request.', default=2048)
+    parser.add_argument(
+        '--max-turn-tokens',
+        type=int,
+        nargs='+',
+        default=None,
+        help=(
+            'Per-turn max_tokens values for multi-turn mode. '
+            'The final value is reused when a conversation has more turns than values.'
+        ),
+    )
     parser.add_argument(
         '--min-tokens', type=int, help='The minimum number of tokens that can be generated', default=None)
     parser.add_argument('--n-choices', type=int, help='How many completion choices to generate', default=None)

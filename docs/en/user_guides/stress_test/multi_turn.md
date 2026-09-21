@@ -66,6 +66,7 @@ When the request success rate is below 100%, interrupted conversations do not co
 | `--multi-turn` | `bool` | Enable multi-turn conversation benchmark mode | `False` |
 | `--min-turns` | `int` | Minimum number of user turns per conversation; used by `random_multi_turn` only | `1` |
 | `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
+| `--max-turn-tokens` | `list[int]` | Per-turn `max_tokens` values. Values are matched by zero-based turn index; the final value is reused for later turns | `None` |
 | `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
 
 ### Multi-turn Semantics of Common Parameters
@@ -259,7 +260,7 @@ Uses a local JSONL file as a custom multi-turn conversation dataset. Each line s
 **JSONL dataset format** (one conversation per line, as an OpenAI messages array):
 
 ```json
-[{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help you?"}, {"role": "user", "content": "Write me a poem"}]
+[{"role": "system", "content": "You are a coding agent."}, {"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi! How can I help you?"}, {"role": "user", "content": "Write me a poem"}]
 [{"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}, {"role": "user", "content": "Tell me more about it."}]
 ```
 
@@ -267,13 +268,15 @@ Each line must satisfy:
 
 - Must be a JSON array.
 - Every element must have `role` and `content` fields.
-- `role` must be either `user` or `assistant`.
+- A custom `system` message may precede the first `user` message. It is retained in the context for every turn.
+- `assistant` messages mark turn boundaries; their reference content is replaced by the model's actual output at runtime.
 - Must contain at least one `user` message.
 
 Runtime context structure (when sending turn 2):
 
 ```json
 [
+  {"role": "system",    "content": "You are a coding agent."},
   {"role": "user",      "content": "Hello"},
   {"role": "assistant", "content": "<model's actual reply to turn 1>"},
   {"role": "user",      "content": "Write me a poem"}
@@ -293,12 +296,16 @@ evalscope perf \
   --api openai \
   --dataset custom_multi_turn \
   --dataset-path /path/to/my_conversations.jsonl \
-  --max-tokens 512 \
+  --max-turn-tokens 150 150 1000 \
   --multi-turn \
   --max-turns 3 \
   --number 100 \
   --parallel 10
 ```
+
+In this example turns 1 and 2 use `max_tokens=150`, while turn 3 uses `max_tokens=1000`. If the conversation
+continues past turn 3, `1000` is reused. `--max-turn-tokens` takes precedence over both the global `--max-tokens`
+value and per-turn limits embedded by trace-replay datasets.
 
 ### swe_smith
 
