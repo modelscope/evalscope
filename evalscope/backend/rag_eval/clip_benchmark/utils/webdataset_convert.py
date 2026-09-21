@@ -64,7 +64,7 @@ def convert_dataset(
     if hasattr(dataset, 'classes') and dataset.classes:
         classnames_fname = os.path.join(output_folder, 'classnames.txt')
         with open(classnames_fname, 'w') as classnames_file:
-            logger.info(*dataset.classes, sep='\n', end='\n', file=classnames_file)
+            classnames_file.write('\n'.join(str(class_name) for class_name in dataset.classes) + '\n')
         if verbose:
             logger.info("Saved class names to '%s'" % classnames_fname)
     elif verbose:
@@ -73,7 +73,7 @@ def convert_dataset(
     if hasattr(dataset, 'templates') and dataset.templates:
         templates_fname = os.path.join(output_folder, 'zeroshot_classification_templates.txt')
         with open(templates_fname, 'w') as templates_file:
-            logger.info(*dataset.templates, sep='\n', end='\n', file=templates_file)
+            templates_file.write('\n'.join(str(template) for template in dataset.templates) + '\n')
         if verbose:
             logger.info("Saved class names to '%s'" % templates_fname)
     elif verbose:
@@ -82,7 +82,7 @@ def convert_dataset(
     if multilabel:
         type_fname = os.path.join(output_folder, 'dataset_type.txt')
         with open(type_fname, 'w') as type_file:
-            logger.info('multilabel', end='\n', file=type_file)
+            type_file.write('multilabel\n')
             if verbose:
                 logger.info("Saved dataset type to '%s'" % type_fname)
     # Write to TAR files
@@ -118,7 +118,7 @@ def convert_dataset(
     # Save number of shards
     nshards_fname = os.path.join(output_folder, split, 'nshards.txt')
     with open(nshards_fname, 'w') as nshards_file:
-        logger.info(num_shards, end='\n', file=nshards_file)
+        nshards_file.write(f'{num_shards}\n')
     if verbose:
         logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
     logger.info('Final dataset size: %s', nsamples)
@@ -162,7 +162,7 @@ def convert_retrieval_dataset(
     # Save dataset type
     type_fname = os.path.join(output_folder, 'dataset_type.txt')
     with open(type_fname, 'w') as type_file:
-        logger.info('retrieval', end='\n', file=type_file)
+        type_file.write('retrieval\n')
     if verbose:
         logger.info("Saved dataset type to '%s'" % type_fname)
     # Write to TAR files
@@ -190,7 +190,7 @@ def convert_retrieval_dataset(
     # Save number of shards
     nshards_fname = os.path.join(output_folder, split, 'nshards.txt')
     with open(nshards_fname, 'w') as nshards_file:
-        logger.info(num_shards, end='\n', file=nshards_file)
+        nshards_file.write(f'{num_shards}\n')
     if verbose:
         logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
     logger.info('Final dataset size: %s', nsamples)

@@ -2,11 +2,13 @@
 import os
 import subprocess
 import unittest
+from pathlib import Path
 
 import pytest
 
 pytestmark = pytest.mark.timeout(600)
 
+from evalscope.backend.rag_eval.clip_benchmark.utils import webdataset_convert
 from evalscope.run import run_task
 from evalscope.utils.import_utils import is_module_installed
 from evalscope.utils.logger import get_logger
@@ -85,6 +87,38 @@ class TestCLIPBenchmark(unittest.TestCase):
         }
 
         run_task(task_cfg)
+
+
+def test_webdataset_converter_writes_metadata_files(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    class DummyShardWriter:
+
+        shard = 1
+
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            pass
+
+        def write(self, sample: object) -> None:
+            pass
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(webdataset_convert.torch.utils.data, 'DataLoader', lambda dataset, **_: dataset)
+    monkeypatch.setattr(webdataset_convert.webdataset, 'ShardWriter', DummyShardWriter)
+    monkeypatch.setattr(webdataset_convert, 'tqdm', lambda iterator, **_: iterator)
+
+    dataset = type('Dataset', (list,), {'classes': ['cat', 'dog'], 'templates': ['a photo of a {c}']})([(b'input', 1)])
+    webdataset_convert.convert_dataset(dataset, 'train', str(tmp_path), image_format='bin', multilabel=True)
+
+    assert (tmp_path / 'classnames.txt').read_text() == 'cat\ndog\n'
+    assert (tmp_path / 'zeroshot_classification_templates.txt').read_text() == 'a photo of a {c}\n'
+    assert (tmp_path / 'dataset_type.txt').read_text() == 'multilabel\n'
+    assert (tmp_path / 'train' / 'nshards.txt').read_text() == '1\n'
+
+    webdataset_convert.convert_retrieval_dataset([(b'input', ['caption'])], 'validation', str(tmp_path), image_format='bin')
+
+    assert (tmp_path / 'dataset_type.txt').read_text() == 'retrieval\n'
+    assert (tmp_path / 'validation' / 'nshards.txt').read_text() == '1\n'
 
 
 if __name__ == '__main__':
