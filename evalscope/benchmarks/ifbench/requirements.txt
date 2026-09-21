@@ -1,3 +1,3 @@
 emoji
 nltk>=3.9
-syllapy
+syllapy>=0.8.0

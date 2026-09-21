@@ -5,7 +5,11 @@ from evalscope.benchmarks.ifbench.ifbench_adapter import IFBenchAdapter
 from evalscope.benchmarks.ifbench.instructions import (
     CharacterCountUniqueWordsChecker,
     KeywordsMultipleChecker,
+    NGramOverlapChecker,
     PersonNameCountChecker,
+    RepeatSpanChecker,
+    SentenceAlphabetChecker,
+    WordsPositionChecker,
 )
 
 
@@ -122,3 +126,51 @@ def test_keywords_multiple_still_rejects_wrong_counts() -> None:
     )
 
     assert checker.check_following(response) is False
+
+
+def test_ngram_overlap_uses_word_trigrams() -> None:
+    reference = 'the quick brown fox jumps over the lazy dog again and again today'
+    checker = NGramOverlapChecker('ratio:overlap')
+    checker.build_description(reference_text=reference, percentage=100)
+
+    assert checker.check_following(reference) is True
+    assert checker.check_following('completely unrelated wording appears in this line') is False
+    assert checker.check_following('too short') is False
+
+
+def test_character_count_unique_words_normalizes_punctuation() -> None:
+    checker = CharacterCountUniqueWordsChecker('ratio:sentence_words')
+
+    assert checker.check_following('Foo-bar baz. Foobar quux. Riddle test.') is False
+
+
+def test_sentence_alphabet_ignores_leading_punctuation() -> None:
+    checker = SentenceAlphabetChecker('custom:sentence_alphabet')
+    checker.build_description()
+    alphabet_words = [
+        'Apple', 'Bears', 'Cats', 'Dogs', 'Eagles', 'Foxes', 'Goats', 'Hawks', 'Ibex', 'Jays', 'Kites', 'Lions',
+        'Moose', 'Newts', 'Owls', 'Pigs', 'Quail', 'Rats', 'Seals', 'Toads', 'Urial', 'Voles', 'Wolves', 'Xerus',
+        'Yaks', 'Zebras',
+    ]
+    sentences = [f'{word} appear here now.' for word in alphabet_words]
+
+    assert checker.check_following('"' + sentences[0] + ' ' + ' '.join(sentences[1:])) is True
+    assert checker.check_following(' '.join([sentences[1], sentences[0], *sentences[2:]])) is False
+
+
+def test_words_position_ignores_punctuation_and_case() -> None:
+    checker = WordsPositionChecker('words:words_position')
+    checker.build_description(keyword='vibrant')
+
+    assert checker.check_following('"The Vibrant sun set over a calm VIBRANT sea!"') is True
+
+
+def test_repeat_span_uses_word_indices() -> None:
+    checker = RepeatSpanChecker('repeat:repeat_span')
+    checker.build_description(
+        prompt_to_repeat='The walls are solid but the stones are cracked and cold.', n_start=0, n_end=7
+    )
+
+    assert checker.check_following('The walls are solid but the stones are') is True
+    assert checker.check_following('The walls are solid') is False
+    assert checker.check_following('The wall') is False
