@@ -121,7 +121,7 @@ def convert_dataset(
         logger.info(num_shards, end='\n', file=nshards_file)
     if verbose:
         logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
-    logger.info('Final dataset size:', nsamples)
+    logger.info('Final dataset size: %s', nsamples)
 
 
 def convert_retrieval_dataset(
@@ -193,7 +193,7 @@ def convert_retrieval_dataset(
         logger.info(num_shards, end='\n', file=nshards_file)
     if verbose:
         logger.info("Saved number of shards = %d to '%s'" % (num_shards, nshards_fname))
-    logger.info('Final dataset size:', nsamples)
+    logger.info('Final dataset size: %s', nsamples)
 
 
 if __name__ == '__main__':
