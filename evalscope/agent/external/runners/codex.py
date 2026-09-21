@@ -15,6 +15,7 @@ The prompt is passed as the trailing positional argument (codex ``exec
 run logs and independent of how each environment supplies stdin.
 """
 
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -168,84 +169,92 @@ class CodexRunner(AgentRunner):
             'IS_SANDBOX': '1',
         }
         home_dir = self._resolve_home()
+        # Only the default-path branch (``home_override is None``) creates a
+        # fresh tempdir we own; user-supplied paths and the inherit case must
+        # not be deleted out from under them.
+        owns_home_dir = home_dir is not None and self._home_override is None
         if home_dir is not None:
             env_vars['HOME'] = home_dir
-        await install_task_skills(
-            env,
-            task,
-            home_dir=home_dir,
-            native_install_paths=['$HOME/.agents/skills'],
-            runner_name='CodexRunner',
-        )
-
-        # Build -c overrides. Order: builtin (provider config) → user extras.
-        # codex parses these as TOML literals, so string values need shell-
-        # escaped double quotes; the list-form ``cmd`` carries them as a
-        # single argv entry, which env.exec quotes for the shell.
-        config_pairs: List[str] = [
-            'model_provider="evalscope"',
-            'model_providers.evalscope.name="EvalScope Bridge"',
-            f'model_providers.evalscope.base_url="{bridge.base_url}/openai/v1"',
-            'model_providers.evalscope.env_key="EVALSCOPE_BRIDGE_TOKEN"',
-            'model_providers.evalscope.wire_api="responses"',
-        ]
-        if self._model_name:
-            config_pairs.append(f'model="{self._model_name}"')
-        for k, v in self._extra_config.items():
-            config_pairs.append(f'{k}={v}')
-
-        cmd: List[str] = ['codex', 'exec']
-        for pair in config_pairs:
-            cmd.extend(['-c', pair])
-        cmd.extend(['--sandbox', _CODEX_SANDBOX_MODE])
-        # Always non-interactive: evalscope is a batch harness, there is no
-        # operator to answer codex's permission prompts.
-        cmd.append('--dangerously-bypass-approvals-and-sandbox')
-        cmd.extend(['--output-last-message', _CODEX_OUTPUT_FILE])
-        cmd.extend(self._extra_args)
-        # Positional prompt keeps the invocation visible in the run logs and
-        # independent of how each environment supplies stdin.
-        cmd.append(task.instruction)
-
-        sample_id = (task.metadata or {}).get('sample_id')
-        env_name = getattr(env, 'name', type(env).__name__)
-        logger.info(
-            f'codex launching: sample={sample_id} env={env_name} '
-            f'model={self._model_name or "<bridge-default>"} '
-            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
-        )
-        result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
-        logger.info(
-            f'codex exited: sample={sample_id} rc={result.returncode} '
-            f'wall={result.duration:.1f}s '
-            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
-            f'timed_out={result.timed_out}'
-        )
-        if result.timed_out:
-            raise RunnerTimeoutError(f'codex timed out after {task.timeout}s (returncode={result.returncode})')
-        if result.returncode != 0:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            raise RuntimeError(f'codex exited with code {result.returncode}: {tail_stderr}')
-
-        # codex writes the final assistant message to --output-last-message.
-        # We read via a separate exec because env.exec doesn't expose
-        # arbitrary file reads. ``|| true`` so a missing file (codex
-        # never produced a final message) yields empty rather than a
-        # spurious non-zero exit.
-        cat = await env.exec(['bash', '-c', f'cat {_CODEX_OUTPUT_FILE} 2>/dev/null || true'])
-        output = cat.stdout.strip()
-        if not output:
-            logger.warning(
-                f'codex: --output-last-message file {_CODEX_OUTPUT_FILE!r} '
-                f'empty or unreadable; final answer extraction may fail downstream'
+        try:
+            await install_task_skills(
+                env,
+                task,
+                home_dir=home_dir,
+                native_install_paths=['$HOME/.agents/skills'],
+                runner_name='CodexRunner',
             )
-        return AgentRunResult(
-            output=output,
-            metrics={
-                'wall_time': result.duration,
-                'returncode': result.returncode,
-            },
-        )
+
+            # Build -c overrides. Order: builtin (provider config) → user extras.
+            # codex parses these as TOML literals, so string values need shell-
+            # escaped double quotes; the list-form ``cmd`` carries them as a
+            # single argv entry, which env.exec quotes for the shell.
+            config_pairs: List[str] = [
+                'model_provider="evalscope"',
+                'model_providers.evalscope.name="EvalScope Bridge"',
+                f'model_providers.evalscope.base_url="{bridge.base_url}/openai/v1"',
+                'model_providers.evalscope.env_key="EVALSCOPE_BRIDGE_TOKEN"',
+                'model_providers.evalscope.wire_api="responses"',
+            ]
+            if self._model_name:
+                config_pairs.append(f'model="{self._model_name}"')
+            for k, v in self._extra_config.items():
+                config_pairs.append(f'{k}={v}')
+
+            cmd: List[str] = ['codex', 'exec']
+            for pair in config_pairs:
+                cmd.extend(['-c', pair])
+            cmd.extend(['--sandbox', _CODEX_SANDBOX_MODE])
+            # Always non-interactive: evalscope is a batch harness, there is no
+            # operator to answer codex's permission prompts.
+            cmd.append('--dangerously-bypass-approvals-and-sandbox')
+            cmd.extend(['--output-last-message', _CODEX_OUTPUT_FILE])
+            cmd.extend(self._extra_args)
+            # Positional prompt keeps the invocation visible in the run logs and
+            # independent of how each environment supplies stdin.
+            cmd.append(task.instruction)
+
+            sample_id = (task.metadata or {}).get('sample_id')
+            env_name = getattr(env, 'name', type(env).__name__)
+            logger.info(
+                f'codex launching: sample={sample_id} env={env_name} '
+                f'model={self._model_name or "<bridge-default>"} '
+                f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
+            )
+            result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
+            logger.info(
+                f'codex exited: sample={sample_id} rc={result.returncode} '
+                f'wall={result.duration:.1f}s '
+                f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+                f'timed_out={result.timed_out}'
+            )
+            if result.timed_out:
+                raise RunnerTimeoutError(f'codex timed out after {task.timeout}s (returncode={result.returncode})')
+            if result.returncode != 0:
+                tail_stderr = (result.stderr or '').strip()[-2000:]
+                raise RuntimeError(f'codex exited with code {result.returncode}: {tail_stderr}')
+
+            # codex writes the final assistant message to --output-last-message.
+            # We read via a separate exec because env.exec doesn't expose
+            # arbitrary file reads. ``|| true`` so a missing file (codex
+            # never produced a final message) yields empty rather than a
+            # spurious non-zero exit.
+            cat = await env.exec(['bash', '-c', f'cat {_CODEX_OUTPUT_FILE} 2>/dev/null || true'])
+            output = cat.stdout.strip()
+            if not output:
+                logger.warning(
+                    f'codex: --output-last-message file {_CODEX_OUTPUT_FILE!r} '
+                    f'empty or unreadable; final answer extraction may fail downstream'
+                )
+            return AgentRunResult(
+                output=output,
+                metrics={
+                    'wall_time': result.duration,
+                    'returncode': result.returncode,
+                },
+            )
+        finally:
+            if owns_home_dir and home_dir:
+                shutil.rmtree(home_dir, ignore_errors=True)
 
     def _resolve_home(self) -> Optional[str]:
         """``None`` means inherit; empty-string override also inherits; any

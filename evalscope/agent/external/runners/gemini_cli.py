@@ -17,6 +17,7 @@ The runner defaults to ``--yolo`` (auto-approve all actions) for
 batch execution.
 """
 
+import shutil
 import tempfile
 from typing import Any, Dict, List, Optional
 
@@ -145,63 +146,71 @@ class GeminiCliRunner(AgentRunner):
             'GEMINI_CLI_TRUST_WORKSPACE': 'true',
         }
         home_dir = self._resolve_home()
+        # Only the default-path branch (``home_override is None``) creates a
+        # fresh tempdir we own; user-supplied paths and the inherit case must
+        # not be deleted out from under them.
+        owns_home_dir = home_dir is not None and self._home_override is None
         if home_dir is not None:
             env_vars['HOME'] = home_dir
-        await install_task_skills(
-            env,
-            task,
-            home_dir=home_dir,
-            native_install_paths=['$HOME/.gemini/skills'],
-            runner_name='GeminiCliRunner',
-        )
+        try:
+            await install_task_skills(
+                env,
+                task,
+                home_dir=home_dir,
+                native_install_paths=['$HOME/.gemini/skills'],
+                runner_name='GeminiCliRunner',
+            )
 
-        # Build the command.
-        # gemini -p "prompt" executes non-interactively.
-        cmd: List[str] = ['gemini']
+            # Build the command.
+            # gemini -p "prompt" executes non-interactively.
+            cmd: List[str] = ['gemini']
 
-        # Model selection
-        if self._model_name:
-            cmd.extend(['-m', self._model_name])
+            # Model selection
+            if self._model_name:
+                cmd.extend(['-m', self._model_name])
 
-        # Non-interactive batch flags
-        cmd.append('--yolo')  # auto-approve all actions
+            # Non-interactive batch flags
+            cmd.append('--yolo')  # auto-approve all actions
 
-        # Output format — JSON for structured parsing
-        cmd.extend(['--output-format', 'json'])
+            # Output format — JSON for structured parsing
+            cmd.extend(['--output-format', 'json'])
 
-        # Extra user-supplied args
-        cmd.extend(self._extra_args)
+            # Extra user-supplied args
+            cmd.extend(self._extra_args)
 
-        # Prompt via -p flag (non-interactive mode)
-        cmd.extend(['-p', task.instruction])
+            # Prompt via -p flag (non-interactive mode)
+            cmd.extend(['-p', task.instruction])
 
-        sample_id = (task.metadata or {}).get('sample_id')
-        env_name = getattr(env, 'name', type(env).__name__)
-        logger.info(
-            f'gemini-cli launching: sample={sample_id} env={env_name} '
-            f'model={self._model_name or "<default>"} '
-            f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
-        )
-        result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
-        logger.info(
-            f'gemini-cli exited: sample={sample_id} rc={result.returncode} '
-            f'wall={result.duration:.1f}s '
-            f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
-            f'timed_out={result.timed_out}'
-        )
-        if result.timed_out:
-            raise RunnerTimeoutError(f'gemini-cli timed out after {task.timeout}s (returncode={result.returncode})')
-        if result.returncode != 0:
-            tail_stderr = (result.stderr or '').strip()[-2000:]
-            tail_stdout = (result.stdout or '').strip()[-2000:]
-            raise RuntimeError(f'gemini-cli exited with code {result.returncode}: {tail_stderr or tail_stdout}')
-        return AgentRunResult(
-            output=result.stdout.strip(),
-            metrics={
-                'wall_time': result.duration,
-                'returncode': result.returncode,
-            },
-        )
+            sample_id = (task.metadata or {}).get('sample_id')
+            env_name = getattr(env, 'name', type(env).__name__)
+            logger.info(
+                f'gemini-cli launching: sample={sample_id} env={env_name} '
+                f'model={self._model_name or "<default>"} '
+                f'timeout={task.timeout}s instruction_chars={len(task.instruction)}'
+            )
+            result = await env.exec(cmd, timeout=task.timeout, env=env_vars)
+            logger.info(
+                f'gemini-cli exited: sample={sample_id} rc={result.returncode} '
+                f'wall={result.duration:.1f}s '
+                f'stdout={len(result.stdout or "")}B stderr={len(result.stderr or "")}B '
+                f'timed_out={result.timed_out}'
+            )
+            if result.timed_out:
+                raise RunnerTimeoutError(f'gemini-cli timed out after {task.timeout}s (returncode={result.returncode})')
+            if result.returncode != 0:
+                tail_stderr = (result.stderr or '').strip()[-2000:]
+                tail_stdout = (result.stdout or '').strip()[-2000:]
+                raise RuntimeError(f'gemini-cli exited with code {result.returncode}: {tail_stderr or tail_stdout}')
+            return AgentRunResult(
+                output=result.stdout.strip(),
+                metrics={
+                    'wall_time': result.duration,
+                    'returncode': result.returncode,
+                },
+            )
+        finally:
+            if owns_home_dir and home_dir:
+                shutil.rmtree(home_dir, ignore_errors=True)
 
     def _resolve_home(self) -> Optional[str]:
         """Pick the HOME value for the subprocess."""
