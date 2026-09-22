@@ -415,6 +415,20 @@ class Arguments(BaseArgument):
     multi_turn_args: Optional[MultiTurnArgs] = None
     """Advanced multi-turn conversation parameters (MultiTurnArgs). Pass as JSON string via CLI."""
 
+    multi_turn_per_turn_tokens: Optional[List[Optional[int]]] = None
+    """Per-turn max_tokens override for multi-turn benchmarks.
+
+    A list of ints indexed by turn index.  Turn 0 uses element 0, turn 1 uses
+    element 1, and so on.  ``None`` entries fall back to the dataset's
+    ``Turn.max_tokens`` (if any) or the global ``--max-tokens``.  Shorter lists
+    leave later turns uncapped.  Example::
+
+        --multi-turn-per-turn-tokens "[150, 150, 150, 150, 150, 150, 150, 150, 150, 1000]"
+
+    is equivalent to capping turns 0-8 at 150 tokens and the final turn at 1000.
+    Only active in ``--multi-turn`` mode.
+    """
+
     # --- Field validators ---
 
     @field_validator('max_tokens', mode='before')
@@ -429,6 +443,25 @@ class Arguments(BaseArgument):
                 raise ValueError(f'--max-tokens range min must be <= max, got {v}')
             if v[0] < 0:
                 raise ValueError(f'--max-tokens range values must be >= 0, got {v}')
+        return v
+
+    @field_validator('multi_turn_per_turn_tokens', mode='before')
+    @classmethod
+    def _validate_multi_turn_per_turn_tokens(cls, v: Any) -> Any:
+        if v is None:
+            return v
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except Exception as e:
+                raise ValueError(f'Failed to parse --multi-turn-per-turn-tokens JSON: {e}') from e
+        if not isinstance(v, list):
+            raise ValueError(f'multi_turn_per_turn_tokens must be a list, got {type(v).__name__}')
+        for i, item in enumerate(v):
+            if item is not None and not isinstance(item, int):
+                raise ValueError(f'multi_turn_per_turn_tokens[{i}] must be int or null, got {type(item).__name__}')
+            if isinstance(item, int) and item <= 0:
+                raise ValueError(f'multi_turn_per_turn_tokens[{i}] must be > 0, got {item}')
         return v
 
     @field_validator('multi_turn_args', mode='before')
@@ -968,6 +1001,19 @@ def _add_multi_turn_arguments(parser: argparse.ArgumentParser) -> None:
             'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
             '(per-conversation turn count is sampled from [min_turns, max_turns]); '
             'use top-level --num-workers for live construction parallelism.'
+        ),
+    )
+    parser.add_argument(
+        '--multi-turn-per-turn-tokens',
+        type=str,
+        default=None,
+        dest='multi_turn_per_turn_tokens',
+        help=(
+            'Per-turn max_tokens override for multi-turn benchmarks as a JSON list. '
+            'Turn 0 uses element 0, turn 1 uses element 1, etc. '
+            'Null entries fall back to the dataset value or --max-tokens. '
+            'Example: "[150, 150, 150, 1000]" caps turns 0-2 at 150 tokens and turn 3 at 1000. '
+            'Only active in --multi-turn mode.'
         ),
     )
 

@@ -149,15 +149,20 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     interval = np.random.exponential(1.0 / self.args.rate)
                     await asyncio.sleep(interval)
 
-                # Send the turn.  Per-turn ``max_tokens`` (from trace replay)
-                # overrides the global ``--max-tokens`` when set.
+                # Send the turn.  ``max_tokens`` override priority:
+                #   1. CLI ``--multi-turn-per-turn-tokens`` (per-turn index)
+                #   2. Per-turn ``Turn.max_tokens`` (from trace replay)
+                #   3. Global ``--max-tokens`` (set by build_request)
                 request = self.api_plugin.build_request(list(context))
                 if request is None:
                     logger.error(
                         f'worker={worker_id} turn={turn_idx}: build_request returned None; abandoning conversation.'
                     )
                     break
-                if turn.max_tokens is not None:
+                cli_tokens = self.args.multi_turn_per_turn_tokens
+                if cli_tokens is not None and turn_idx < len(cli_tokens) and cli_tokens[turn_idx] is not None:
+                    request['max_tokens'] = cli_tokens[turn_idx]
+                elif turn.max_tokens is not None:
                     request['max_tokens'] = turn.max_tokens
                 benchmark_data = await self.client.post(request)
 
