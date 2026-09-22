@@ -122,8 +122,11 @@ def anthropic_chat_tool_choice(tool_choice: ToolChoice) -> ToolChoiceParam:
 
 def anthropic_image_block_param(image: str) -> ImageBlockParam:
     """Convert image path/URL to Anthropic ImageBlockParam."""
+    if is_http_url(image):
+        return ImageBlockParam(type='image', source=dict(type='url', url=image))
+
     # Resolve to data URI if needed
-    if not is_http_url(image) and not image.startswith('data:'):
+    if not image.startswith('data:'):
         image = file_as_data_uri(image)
 
     # Get media type and base64 content
