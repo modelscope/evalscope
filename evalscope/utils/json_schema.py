@@ -61,26 +61,18 @@ class JSONSchema(BaseModel):
     """Required fields for object parameters."""
 
     @model_validator(mode='before')
-    def convert_type_before_validation(cls, values):
+    def convert_type_before_validation(cls, values: Any) -> Any:
         values = deepcopy(values)
 
-        def recursive_convert_type(obj):
-            if isinstance(obj, dict):
-                # Convert 'type' field if it's a string
-                if 'type' in obj and isinstance(obj['type'], str):
-                    try:
-                        obj['type'] = python_type_to_json_type(obj['type'])
-                    except ValueError:
-                        # If conversion fails, leave it as is
-                        pass
-                # Recursively process nested structures
-                for k, v in obj.items():
-                    obj[k] = recursive_convert_type(v)
-            elif isinstance(obj, list):
-                return [recursive_convert_type(item) for item in obj]
-            return obj
-
-        return recursive_convert_type(values)
+        # Nested schema fields are validated as JSONSchema instances themselves.
+        # Recursing through arbitrary dictionaries would also rewrite literal
+        # values in defaults and enums that happen to contain a 'type' key.
+        if isinstance(values, dict) and isinstance(values.get('type'), str):
+            try:
+                values['type'] = python_type_to_json_type(values['type'])
+            except ValueError:
+                pass
+        return values
 
 
 def json_schema(t: Type[Any]) -> JSONSchema:
