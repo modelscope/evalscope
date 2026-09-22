@@ -50,8 +50,9 @@ class StreamedResponseHandler:
     """Handles streaming HTTP responses by accumulating chunks until complete
     messages are available."""
 
-    def __init__(self):
+    def __init__(self, sse_done_marker: str = '[DONE]'):
         self.buffer = ''
+        self.sse_done_marker = sse_done_marker
         # Keep decoder state across chunks to handle split multibyte sequences
         self.decoder = codecs.getincrementaldecoder('utf-8')()
 
@@ -112,7 +113,7 @@ class StreamedResponseHandler:
         normalized_buffer = self._extract_sse_payload(self.buffer)
         if normalized_buffer:
             message_content = normalized_buffer.removeprefix('data:').strip()
-            if message_content == '[DONE]':
+            if self.sse_done_marker and message_content == self.sse_done_marker:
                 messages.append(normalized_buffer)
                 self.buffer = ''
             elif message_content:
@@ -132,6 +133,7 @@ class DefaultApiPlugin(ApiPluginBase):
 
     def __init__(self, param: Arguments):
         super().__init__(param)
+        self._sse_done_marker = param.sse_done_marker
 
     async def process_request(
         self, client_session: aiohttp.ClientSession, url: str, headers: Dict, body: Dict
@@ -164,7 +166,7 @@ class DefaultApiPlugin(ApiPluginBase):
                     # Handle streaming responses (SSE)
                     if 'text/event-stream' in content_type:
                         output.is_stream = True
-                        handler = StreamedResponseHandler()
+                        handler = StreamedResponseHandler(sse_done_marker=self._sse_done_marker)
                         async for chunk_bytes in response.content.iter_any():
                             if not chunk_bytes:
                                 continue

@@ -67,6 +67,33 @@ class TestStreamedResponseHandler(unittest.TestCase):
         self.assertEqual(messages, ['data: [DONE]'])
         self.assertEqual(handler.buffer, '')
 
+    def test_custom_sse_done_marker(self) -> None:
+        handler = StreamedResponseHandler(sse_done_marker='{"finish_reason": "stop"}')
+
+        messages = handler.add_chunk(b'data: {"finish_reason": "stop"}')
+
+        self.assertEqual(messages, ['data: {"finish_reason": "stop"}'])
+        self.assertEqual(handler.buffer, '')
+
+    def test_empty_marker_ignores_done_literal(self) -> None:
+        handler = StreamedResponseHandler(sse_done_marker='')
+
+        messages = handler.add_chunk(b'data: [DONE]')
+
+        # With empty marker, [DONE] is NOT treated as a terminator.
+        # It is also not valid JSON, so it stays in the buffer waiting for
+        # more data or an explicit flush at end-of-stream.
+        self.assertEqual(messages, [])
+        self.assertEqual(handler.buffer, 'data: [DONE]')
+
+    def test_default_marker_backward_compatible(self) -> None:
+        handler = StreamedResponseHandler()
+
+        messages = handler.add_chunk(b'data: [DONE]')
+
+        self.assertEqual(messages, ['data: [DONE]'])
+        self.assertEqual(handler.buffer, '')
+
     def test_waits_for_incomplete_json_buffer(self) -> None:
         handler = StreamedResponseHandler()
 
