@@ -1,3 +1,4 @@
+import os
 import zipfile
 from typing import Any, Dict, Optional
 
@@ -48,12 +49,21 @@ def build_question(record: Dict[str, Any], start: Optional[float], end: Optional
 
 def find_archive_member(archive_path: str, subset: str, video_name: str) -> str:
     normalized_subset = subset.replace('_', '').lower()
+    normalized_video_name = video_name.replace('\\', '/').lstrip('/')
+    video_basename = os.path.basename(normalized_video_name)
     with zipfile.ZipFile(archive_path) as zip_file:
-        matches = [
-            name
-            for name in zip_file.namelist()
-            if not name.endswith('/') and (name.endswith(f'/{video_name}') or name.endswith(video_name))
-        ]
+        member_names = [name for name in zip_file.namelist() if not name.endswith('/')]
+
+    # Prefer members whose relative path matches the requested video exactly, so that
+    # e.g. requesting `1.mp4` does not accidentally match `x1.mp4` or `11.mp4`.
+    matches = [
+        name
+        for name in member_names
+        if name.replace('\\', '/').endswith(f'/{normalized_video_name}')
+        or name.replace('\\', '/') == normalized_video_name
+    ]
+    if not matches:
+        matches = [name for name in member_names if os.path.basename(name.replace('\\', '/')) == video_basename]
     if not matches:
         raise FileNotFoundError(f'Video {video_name} was not found in archive {archive_path}.')
 
