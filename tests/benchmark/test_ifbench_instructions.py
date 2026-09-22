@@ -9,6 +9,7 @@ from evalscope.benchmarks.ifbench.instructions import (
     PersonNameCountChecker,
     RepeatSpanChecker,
     SentenceAlphabetChecker,
+    StopWordPercentageChecker,
     WordsPositionChecker,
 )
 
@@ -174,3 +175,32 @@ def test_repeat_span_uses_word_indices() -> None:
     assert checker.check_following('The walls are solid but the stones are') is True
     assert checker.check_following('The walls are solid') is False
     assert checker.check_following('The wall') is False
+
+
+@pytest.mark.parametrize(
+    'response',
+    [
+        '...',
+        '!!!',
+        '---',
+        '***',
+        '😀😀😀',
+        '   ',
+    ],
+)
+def test_stop_word_percentage_handles_responses_without_words(response: str) -> None:
+    # Responses that contain no word tokens (punctuation/symbol/emoji/whitespace only)
+    # used to raise ZeroDivisionError from ``num_stopwords / num_words``. Upstream IFBench
+    # guards this by returning False, which we restore here.
+    checker = StopWordPercentageChecker('ratio:stop_words')
+    checker.build_description(percentage=50)
+
+    assert checker.check_following(response) is False
+
+
+def test_stop_word_percentage_still_scores_normal_responses() -> None:
+    checker = StopWordPercentageChecker('ratio:stop_words')
+    checker.build_description(percentage=100)
+
+    # A normal response with words should be scored without raising.
+    assert checker.check_following('The quick brown fox jumps over the lazy dog.') is True
