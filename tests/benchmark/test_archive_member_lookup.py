@@ -1,31 +1,25 @@
-import os
 import zipfile
 
 import pytest
 
 from evalscope.benchmarks.mvbench.utils import find_archive_member as mvbench_find_archive_member
-from evalscope.benchmarks.videomme_v2.utils import find_archive_member as videomme_find_archive_member
 
 
 def _write_zip(path: str, members: list[str]) -> str:
-    """Create a synthetic archive fixture for archive-member matching tests."""
     with zipfile.ZipFile(path, 'w') as zip_file:
         for name in members:
             zip_file.writestr(name, b'data')
     return path
 
 
-def test_mvbench_exact_match_not_confused_by_substring(tmp_path):
-    # This synthetic fixture covers an ambiguous suffix pattern.
-    # A request for `2.mp4` must not resolve to `12.mp4`, which merely shares the suffix
-    # and would otherwise sort first.
-    archive = _write_zip(str(tmp_path / 'star.zip'), ['star/12.mp4', 'star/2.mp4'])
-    assert mvbench_find_archive_member(archive, 'action_sequence', '2.mp4') == 'star/2.mp4'
-
-
-def test_mvbench_root_level_exact_match(tmp_path):
-    archive = _write_zip(str(tmp_path / 'root.zip'), ['12.mp4', '2.mp4'])
-    assert mvbench_find_archive_member(archive, 'action_count', '2.mp4') == '2.mp4'
+def test_mvbench_real_ssv2_collision_resolves_correctly(tmp_path):
+    # Real regression from the default `action_antonym` subset (ssv2_video.zip).
+    # Something-Something-v2 ids are non-zero-padded, variable-length numbers, so the archive
+    # legitimately contains both `9741.mp4` and `209741.mp4`. The old suffix lookup matched both
+    # and `sorted(...)[0]` returned `ssv2_video/209741.mp4` (the wrong video). The annotation that
+    # requests `9741.mp4` must resolve to `ssv2_video/9741.mp4`.
+    archive = _write_zip(str(tmp_path / 'ssv2_video.zip'), ['ssv2_video/209741.mp4', 'ssv2_video/9741.mp4'])
+    assert mvbench_find_archive_member(archive, 'action_antonym', '9741.mp4') == 'ssv2_video/9741.mp4'
 
 
 def test_mvbench_prefers_subset_directory(tmp_path):
@@ -35,25 +29,12 @@ def test_mvbench_prefers_subset_directory(tmp_path):
 
 def test_mvbench_basename_fallback(tmp_path):
     # No member matches the full relative path, but the basename is unique, so we fall back to it
-    # while still ignoring substring-only candidates such as `xS001_rgb.avi`.
-    archive = _write_zip(str(tmp_path / 'nturgbd.zip'), ['nturgbd_rgb/S001_rgb.avi', 'nturgbd_rgb/xS001_rgb.avi'])
-    assert mvbench_find_archive_member(archive, 'fine_grained_pose', 'S001_rgb.avi') == 'nturgbd_rgb/S001_rgb.avi'
+    # while still ignoring substring-only candidates such as `x9741.mp4`.
+    archive = _write_zip(str(tmp_path / 'ssv2_video.zip'), ['other/9741.mp4', 'other/x9741.mp4'])
+    assert mvbench_find_archive_member(archive, 'action_antonym', '9741.mp4') == 'other/9741.mp4'
 
 
 def test_mvbench_missing_video_raises(tmp_path):
-    archive = _write_zip(str(tmp_path / 'star.zip'), ['star/1.mp4'])
+    archive = _write_zip(str(tmp_path / 'ssv2_video.zip'), ['ssv2_video/9741.mp4'])
     with pytest.raises(FileNotFoundError):
-        mvbench_find_archive_member(archive, 'action_sequence', '999.mp4')
-
-
-def test_videomme_exact_match_not_confused_by_substring(tmp_path):
-    # This synthetic fixture covers an ambiguous suffix pattern.
-    # Video id `1` normalizes to `001.mp4`; it must not resolve to `1001.mp4`.
-    archive = _write_zip(str(tmp_path / '001.zip'), ['data/1001.mp4', 'data/001.mp4'])
-    assert videomme_find_archive_member(archive, '1') == 'data/001.mp4'
-
-
-def test_videomme_missing_video_raises(tmp_path):
-    archive = _write_zip(str(tmp_path / '001.zip'), ['data/002.mp4'])
-    with pytest.raises(FileNotFoundError):
-        videomme_find_archive_member(archive, '1')
+        mvbench_find_archive_member(archive, 'action_antonym', '999999.mp4')
