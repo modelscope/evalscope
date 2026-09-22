@@ -204,6 +204,8 @@ class StopWordPercentageChecker(Instruction):
     def check_following(self, value):
         """Checks if the response contains the expected percentage of stop words."""
         num_words = instructions_util.count_words(value)
+        if num_words == 0:
+            return False
         num_stopwords = instructions_util.count_stopwords(value)
         stopword_percentage = (num_stopwords / num_words) * 100
         return stopword_percentage <= self._percentage
