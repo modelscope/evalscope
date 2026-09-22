@@ -101,5 +101,76 @@ class TestPerfMultiTurn(PerfTestBase):
         print(result)
 
 
+class TestMultiTurnPerTurnTokens(unittest.TestCase):
+    """Unit tests for --multi-turn-per-turn-tokens CLI override."""
+
+    def test_cli_override_applied_by_turn_index(self) -> None:
+        args = Arguments(
+            model='test-model',
+            api='openai',
+            multi_turn=True,
+            number=2,
+            parallel=1,
+            max_tokens=2048,
+            multi_turn_per_turn_tokens=[150, 150, 1000],
+        )
+        self.assertEqual(args.multi_turn_per_turn_tokens, [150, 150, 1000])
+
+    def test_cli_json_string_parsed(self) -> None:
+        args = Arguments(
+            model='test-model',
+            api='openai',
+            multi_turn=True,
+            number=2,
+            parallel=1,
+            multi_turn_per_turn_tokens='[100, null, 500]',
+        )
+        self.assertEqual(args.multi_turn_per_turn_tokens, [100, None, 500])
+
+    def test_none_falls_back_to_default(self) -> None:
+        args = Arguments(
+            model='test-model',
+            api='openai',
+            multi_turn=True,
+            number=2,
+            parallel=1,
+        )
+        self.assertIsNone(args.multi_turn_per_turn_tokens)
+
+    def test_shorter_list_leaves_later_turns_uncapped(self) -> None:
+        args = Arguments(
+            model='test-model',
+            api='openai',
+            multi_turn=True,
+            number=2,
+            parallel=1,
+            multi_turn_per_turn_tokens=[100],
+        )
+        # Only turn 0 is overridden; turn 1+ falls back to Turn.max_tokens or global
+        self.assertEqual(len(args.multi_turn_per_turn_tokens), 1)
+
+    def test_invalid_type_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Arguments(
+                model='test-model',
+                api='openai',
+                multi_turn=True,
+                number=2,
+                parallel=1,
+                multi_turn_per_turn_tokens='not-a-list',
+            )
+
+    def test_negative_value_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Arguments(
+                model='test-model',
+                api='openai',
+                multi_turn=True,
+                number=2,
+                parallel=1,
+                multi_turn_per_turn_tokens=[100, -50],
+            )
+
+
 if __name__ == '__main__':
     unittest.main(buffer=False)
