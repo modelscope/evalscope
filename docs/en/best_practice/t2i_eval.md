@@ -4,11 +4,11 @@ The rapid advancement of generative models in fields like text-to-image generati
 
 To address these challenges, EvalScope offers a comprehensive solution from automated evaluation to intelligent analysis. Its core advantages include:
 
-1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion and Flux, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html).
+1. **Automated Evaluation Capability**: Supports batch inference and metric calculation for mainstream text-to-image models like Stable Diffusion, Flux and Qwen-Image, using models like MPS and HPSv2.1Score to assess image realism and text-image alignment. This replaces traditional manual annotation with scripted processes. For more supported metrics and datasets, refer to the documentation: [EvalScope Documentation](https://evalscope.readthedocs.io/en/latest/user_guides/aigc/t2i.html).
 
 2. **Intelligent Reporting and Visualization**: Utilizes large models to automatically generate multi-dimensional analysis reports, combined with interactive visualization tools like radar and bar charts, to intuitively display model performance differences across scenarios, aiding developers in quickly identifying model bottlenecks.
 
-This document uses FLUX.1-dev and HiDream-I1-Dev models as evaluation subjects on the EvalMuse dataset, providing developers with a complete practice guide from environment setup to result interpretation, leveraging EvalScope's intelligent reporting and visualization features.
+This document uses FLUX.1-dev, HiDream-I1-Dev and Qwen-Image models as evaluation subjects on the EvalMuse dataset, providing developers with a complete practice guide from environment setup to result interpretation, leveraging EvalScope's intelligent reporting and visualization features.
 
 ## Installing Dependencies
 
@@ -102,6 +102,37 @@ task_cfg = TaskConfig(
         'width': 1024,
         'num_inference_steps': 50,
         'guidance_scale': 3.5
+    },
+    analysis_report=True,
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+---
+
+To evaluate Qwen-Image, a major open-source Chinese text-to-image model, run the following code:
+
+```python
+task_cfg = TaskConfig(
+    model='Qwen/Qwen-Image',  # model id
+    model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    model_args={
+        'pipeline_cls': 'QwenImagePipeline',
+        'torch_dtype': 'torch.bfloat16',
+    },
+    datasets=[
+        'evalmuse',
+    ],
+    generation_config={
+        'height': 1024,
+        'width': 1024,
+        'num_inference_steps': 50,
+        # QwenImagePipeline uses true_cfg_scale + negative_prompt for classifier-free guidance;
+        # the guidance_scale parameter has no effect on it. The two entries below are
+        # forwarded to the pipeline through generation_config.
+        'true_cfg_scale': 4.0,
+        'negative_prompt': ' ',
     },
     analysis_report=True,
 )

@@ -4,12 +4,12 @@
 
 为了解决这些问题，EvalScope 作为一站式模型评测框架，提供了从自动化评测到智能分析的完整解决方案。其核心优势在于：
 
-1.  **自动化评测能力** ：支持Stable Diffusion、Flux等主流文生图模型的批量推理与指标计算，使用MPS\[1\]、HPSv2.1Score \[2\]等模型，评估图像真实性、文本-图像对齐度等方面的指标，通过脚本化流程来替代传统人工标注。更多支持的指标和数据集请参考文档：[https://evalscope.readthedocs.io/zh-cn/latest/user\_guides/aigc/t2i.html](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/aigc/t2i.html)
+1.  **自动化评测能力** ：支持Stable Diffusion、Flux、Qwen-Image等主流文生图模型的批量推理与指标计算，使用MPS\[1\]、HPSv2.1Score \[2\]等模型，评估图像真实性、文本-图像对齐度等方面的指标，通过脚本化流程来替代传统人工标注。更多支持的指标和数据集请参考文档：[https://evalscope.readthedocs.io/zh-cn/latest/user\_guides/aigc/t2i.html](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/aigc/t2i.html)
     
 2.  **智能报告与可视化** ：借助大模型自动生成多维度分析报告，结合雷达图、柱状图等交互式可视化工具，直观展示模型在不同场景下的性能差异，辅助开发者快速定位模型瓶颈。
     
 
-本文档以FLUX.1-dev \[3\]与HiDream-I1-Dev \[4\]两款模型为评测对象，在EvalMuse \[5\]评测数据集上，结合EvalScope的智能报告分析与可视化功能，为开发者提供从环境搭建到结果解读的完整实践指南。
+本文档以FLUX.1-dev \[3\]、HiDream-I1-Dev \[4\]与Qwen-Image三款模型为评测对象，在EvalMuse \[5\]评测数据集上，结合EvalScope的智能报告分析与可视化功能，为开发者提供从环境搭建到结果解读的完整实践指南。
 
 ## 安装依赖
 
@@ -103,6 +103,36 @@ task_cfg = TaskConfig(
         'width': 1024,
         'num_inference_steps': 50,
         'guidance_scale': 3.5
+    },
+    analysis_report=True,
+)
+
+run_task(task_cfg=task_cfg)
+```
+
+---
+
+若想测试国产开源主力文生图模型Qwen-Image，可运行如下代码：
+
+```python
+task_cfg = TaskConfig(
+    model='Qwen/Qwen-Image',  # model id
+    model_task=ModelTask.IMAGE_GENERATION,  # must be IMAGE_GENERATION
+    model_args={
+        'pipeline_cls': 'QwenImagePipeline',
+        'torch_dtype': 'torch.bfloat16',
+    },
+    datasets=[
+        'evalmuse',
+    ],
+    generation_config={
+        'height': 1024,
+        'width': 1024,
+        'num_inference_steps': 50,
+        # QwenImagePipeline 使用 true_cfg_scale + negative_prompt 做 classifier-free guidance，
+        # guidance_scale 参数对其无效；以下两项经 generation_config 透传给 Pipeline
+        'true_cfg_scale': 4.0,
+        'negative_prompt': ' ',
     },
     analysis_report=True,
 )
