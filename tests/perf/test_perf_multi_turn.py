@@ -101,5 +101,68 @@ class TestPerfMultiTurn(PerfTestBase):
         print(result)
 
 
+class TestMultiTurnSystemPromptOverride(unittest.TestCase):
+    """Unit tests for --multi-turn-system-prompt (no network needed)."""
+
+    def test_replaces_leading_system_message(self) -> None:
+        from evalscope.perf.core.strategies.multi_turn import apply_system_prompt_override
+
+        context = [
+            {'role': 'system', 'content': 'dataset prompt'},
+            {'role': 'user', 'content': 'hello'},
+        ]
+        apply_system_prompt_override(context, 'cli prompt')
+        self.assertEqual(
+            context,
+            [
+                {'role': 'system', 'content': 'cli prompt'},
+                {'role': 'user', 'content': 'hello'},
+            ],
+        )
+
+    def test_inserts_first_when_no_system_message(self) -> None:
+        from evalscope.perf.core.strategies.multi_turn import apply_system_prompt_override
+
+        context = [{'role': 'user', 'content': 'hello'}]
+        apply_system_prompt_override(context, 'cli prompt')
+        self.assertEqual(
+            context,
+            [
+                {'role': 'system', 'content': 'cli prompt'},
+                {'role': 'user', 'content': 'hello'},
+            ],
+        )
+
+    def test_empty_context_gets_system_message(self) -> None:
+        from evalscope.perf.core.strategies.multi_turn import apply_system_prompt_override
+
+        context: list = []
+        apply_system_prompt_override(context, 'cli prompt')
+        self.assertEqual(context, [{'role': 'system', 'content': 'cli prompt'}])
+
+    def test_unset_override_is_noop(self) -> None:
+        from evalscope.perf.core.strategies.multi_turn import apply_system_prompt_override
+
+        context = [{'role': 'user', 'content': 'hello'}]
+        apply_system_prompt_override(context, None)
+        apply_system_prompt_override(context, '')
+        self.assertEqual(context, [{'role': 'user', 'content': 'hello'}])
+
+    def test_arguments_accepts_system_prompt(self) -> None:
+        args = Arguments(
+            model='test-model',
+            api='openai',
+            multi_turn=True,
+            number=2,
+            parallel=1,
+            multi_turn_system_prompt='You are a tool-calling agent.',
+        )
+        self.assertEqual(args.multi_turn_system_prompt, 'You are a tool-calling agent.')
+
+    def test_arguments_defaults_to_none(self) -> None:
+        args = Arguments(model='test-model', api='openai', multi_turn=True, number=2, parallel=1)
+        self.assertIsNone(args.multi_turn_system_prompt)
+
+
 if __name__ == '__main__':
     unittest.main(buffer=False)

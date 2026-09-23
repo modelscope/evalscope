@@ -16,6 +16,24 @@ if TYPE_CHECKING:
 logger = get_logger()
 
 
+def apply_system_prompt_override(context: List[Message], system_prompt: Optional[str]) -> None:
+    """Apply the CLI system-prompt override to a fresh conversation context.
+
+    Replaces the leading system message when the dataset provides one,
+    otherwise inserts the override as the first message.  Mutates only
+    ``context`` (per-conversation copies), never shared dataset state.
+    A falsy ``system_prompt`` is a no-op so omitting the flag keeps
+    dataset prompts untouched.
+    """
+    if not system_prompt:
+        return
+    override = {'role': 'system', 'content': system_prompt}
+    if context and isinstance(context[0], dict) and context[0].get('role') == 'system':
+        context[0] = override
+    else:
+        context.insert(0, override)
+
+
 class MultiTurnStrategy(BenchmarkStrategy):
     """Multi-turn conversation benchmark strategy.
 
@@ -138,6 +156,10 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
                 # Append this turn's delta to the growing context.
                 context.extend([m.copy() for m in turn.messages])
+
+                # Apply the CLI system-prompt override once per conversation.
+                if turn_idx == 0:
+                    apply_system_prompt_override(context, self.args.multi_turn_system_prompt)
 
                 # Rate limiting: apply a Poisson inter-request sleep so
                 # multi-turn runs honour the configured arrival rate.
