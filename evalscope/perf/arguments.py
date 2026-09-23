@@ -415,6 +415,16 @@ class Arguments(BaseArgument):
     multi_turn_args: Optional[MultiTurnArgs] = None
     """Advanced multi-turn conversation parameters (MultiTurnArgs). Pass as JSON string via CLI."""
 
+    multi_turn_system_prompt: Optional[str] = None
+    """System prompt override for multi-turn benchmarks.
+
+    Replaces the leading system message when the dataset provides one,
+    otherwise inserts the override as the first message of every
+    conversation.  Applies once per conversation (turn 0), to warmup and
+    measured conversations alike, so both phases simulate the same shape.
+    Only active in ``--multi-turn`` mode.  Omit to keep dataset prompts.
+    """
+
     # --- Field validators ---
 
     @field_validator('max_tokens', mode='before')
@@ -968,6 +978,17 @@ def _add_multi_turn_arguments(parser: argparse.ArgumentParser) -> None:
             'Note: min_turns and max_turns are top-level --min-turns / --max-turns arguments '
             '(per-conversation turn count is sampled from [min_turns, max_turns]); '
             'use top-level --num-workers for live construction parallelism.'
+        ),
+    )
+    parser.add_argument(
+        '--multi-turn-system-prompt',
+        type=str,
+        default=None,
+        dest='multi_turn_system_prompt',
+        help=(
+            'System prompt override for multi-turn benchmarks. Replaces the leading '
+            'system message when the dataset provides one, otherwise inserts it first. '
+            'Applies once per conversation (turn 0). Only active in --multi-turn mode.'
         ),
     )
 
