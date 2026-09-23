@@ -369,10 +369,11 @@ def math_equal(
 
     try:  # 1. numerical equal
         if is_digit(prediction) and is_digit(reference):
+            has_percent = '%' in prediction or '%' in reference
             prediction = parse_digits(prediction)
             reference = parse_digits(reference)
             # number questions
-            if include_percentage:
+            if include_percentage and has_percent:
                 gt_result = [reference / 100, reference, reference * 100]
             else:
                 gt_result = [reference]
