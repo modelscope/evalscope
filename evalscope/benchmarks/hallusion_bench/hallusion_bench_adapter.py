@@ -114,13 +114,22 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
             groups = defaultdict(list)
             for ss in scores:
                 md = ss.sample_metadata
+                category = md.get('category')
                 subcategory = md.get('subcategory')
                 set_id = md.get('set_id')
-                group_id = md.get('figure_id') if group_type == 'figure' else md.get('question_id')
-                if subcategory is None or set_id is None or group_id is None:
+                figure_id = md.get('figure_id')
+                group_id = figure_id if group_type == 'figure' else md.get('question_id')
+                if category is None or subcategory is None or set_id is None or group_id is None:
                     # Skip incomplete records for this grouping
                     continue
-                key = f'{subcategory}_{set_id}_{group_id}'
+                # Official HallusionBench excludes VS "no-figure" records (figure_id == 0)
+                # from figure-level accuracy: they carry no figure to attribute a group to.
+                if group_type == 'figure' and str(category) == 'VS' and str(figure_id) == '0':
+                    continue
+                # The grouping key must include category. VD and VS reuse the same
+                # subcategory/set_id/figure_id/question_id numbering, so dropping category
+                # merges distinct figures/questions across categories and corrupts the metric.
+                key = f'{category}_{subcategory}_{set_id}_{group_id}'
                 groups[key].append(ss.score.main_value)
             if not groups:
                 return 0.0, 0
