@@ -99,7 +99,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
 
                 if 'text/event-stream' in content_type:
                     output.is_stream = True
-                    handler = StreamedResponseHandler()
+                    handler = StreamedResponseHandler(sse_done_marker=self._sse_done_marker)
                     stream_failed = False
                     async for chunk_bytes in response.content.iter_any():
                         if not chunk_bytes:
@@ -111,7 +111,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                             chunk = _extract_sse_data(message)
                             if not chunk:
                                 continue
-                            if chunk == '[DONE]':
+                            if self._sse_done_marker and chunk == self._sse_done_marker:
                                 continue
 
                             timestamp = time.perf_counter()

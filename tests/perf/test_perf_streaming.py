@@ -13,7 +13,7 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.plugin.api.default_api import StreamedResponseHandler
 from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
-from evalscope.perf.plugin.api.openai_responses_api import _extract_sse_data
+from evalscope.perf.plugin.api.openai_responses_api import OpenAIResponsesPlugin, _extract_sse_data
 from tests.perf.perf_test_base import LOCAL_CHAT_URL, PerfTestBase
 
 
@@ -240,6 +240,42 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(output.inter_chunk_latency), 1)
         self.assertAlmostEqual(output.inter_chunk_latency[0], 0.35)
         self.assertEqual(output.generated_text, '')
+
+
+class TestOpenAIResponsesPluginStreaming(unittest.IsolatedAsyncioTestCase):
+    """Streaming tests for the OpenAI Responses API plugin."""
+
+    async def test_custom_done_marker_skipped_during_streaming(self) -> None:
+        events = [
+            {'type': 'response.output_text.delta', 'delta': 'Hello '},
+            {'type': 'response.output_text.delta', 'delta': 'world'},
+            {'type': 'response.completed', 'response': {'usage': {'input_tokens': 5, 'output_tokens': 2}}},
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events)
+        stream += 'data: {"finish_reason": "stop"}\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenAIResponsesPlugin(
+            Arguments(model='test-model', api='openai_responses', sse_done_marker='{"finish_reason": "stop"}')
+        )
+        timestamps = [0.0, 0.1, 0.45, 0.65, 0.9]
+        with patch('evalscope.perf.plugin.api.openai_responses_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/responses', {}, {})
+
+        self.assertTrue(output.success)
+        self.assertEqual(output.generated_text, 'Hello world')
+        self.assertEqual((output.prompt_tokens, output.completion_tokens), (5, 2))
+        self.assertEqual(len(output.response_messages), len(events))
 
 
 class TestPerfStreaming(PerfTestBase):
