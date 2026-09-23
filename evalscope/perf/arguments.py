@@ -364,6 +364,14 @@ class Arguments(BaseArgument):
     stream: Optional[bool] = True
     """Whether to stream the response."""
 
+    sse_done_marker: str = '[DONE]'
+    """The SSE stream termination marker sent by the server after the last data
+    chunk. Most OpenAI-compatible APIs send ``data: [DONE]``, but some
+    non-standard providers send a different payload (e.g. ``data: {"finish_reason": "stop"}``,
+    an empty string, or nothing at all). Set this value to match the provider's
+    terminator, or set to an empty string ``""`` to treat end-of-stream as the
+    termination signal."""
+
     temperature: float = 0.0
     """Temperature setting for the response."""
 
@@ -909,6 +917,17 @@ def _add_response_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--stop', nargs='*', help='The stop tokens', default=None)
     parser.add_argument('--stop-token-ids', nargs='*', help='Set the stop token IDs', default=None)
     parser.add_argument('--stream', action=argparse.BooleanOptionalAction, help='Stream output with SSE', default=True)
+    parser.add_argument(
+        '--sse-done-marker',
+        type=str,
+        default='[DONE]',
+        help=(
+            'The SSE stream termination marker sent by the server after the last data chunk. '
+            'Most OpenAI-compatible APIs send "data: [DONE]", but some non-standard providers '
+            'send a different payload. Set to empty string "" to treat end-of-stream as the '
+            'termination signal.'
+        ),
+    )
     parser.add_argument('--temperature', type=float, help='The sample temperature', default=0.0)
     parser.add_argument('--top-p', type=float, help='Sampling top p', default=None)
     parser.add_argument('--top-k', type=int, help='Sampling top k', default=None)
