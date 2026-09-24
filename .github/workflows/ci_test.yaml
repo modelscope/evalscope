@@ -39,7 +39,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python -m pytest tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings
+          python -m pytest tests/models/test_openai_provider_finish_reason.py tests/cli/test_all.py::TestRun::test_ci_lite -v -s -p no:warnings
 
 
   perf-tests:
