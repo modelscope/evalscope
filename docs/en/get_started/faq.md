@@ -102,6 +102,10 @@ task_config = TaskConfig(
 
 ### Result Anomalies & Troubleshooting
 
+**Q: Why does an OpenAI-compatible response have `stop_reason="unknown"`?**
+
+**A:** Providers can return finish reasons outside OpenAI's standard values, such as MiMo's `repetition_truncation`. EvalScope retains the answer and maps unrecognized reasons to `unknown`, rather than treating them as a normal stop or token limit. Prediction JSONL files preserve these raw strings in `model_output.metadata.finish_reasons`, keyed by the original choice index (for example, `{"0": "repetition_truncation"}`). This applies to both streaming and non-streaming responses.
+
 **Q: How to troubleshoot obviously abnormal evaluation results (like extremely low accuracy)?**
 
 **A:** Please follow these steps:
