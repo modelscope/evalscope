@@ -1,6 +1,6 @@
 # Speed Benchmark Testing
 
-To conduct speed tests and obtain a speed benchmark report similar to the [official Qwen](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html) report, as shown below:
+To conduct speed tests and obtain a speed benchmark report similar to the [official Qwen](https://qwen.readthedocs.io/en/latest/getting_started/speed_benchmark.html) report, as shown below:
 
 ![image](./images/qwen_speed_benchmark.png)
 
