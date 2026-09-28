@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from evalscope.api.metric.exceptions import MetricUnavailableError
+from evalscope.api.metric import MetricUnavailableError
 
 
 class MathRequest(BaseModel):

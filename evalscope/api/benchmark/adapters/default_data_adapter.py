@@ -9,7 +9,7 @@ from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy, ScoreStatus
@@ -670,8 +670,6 @@ class DefaultDataAdapter(DataAdapter):
                 )
                 score.value[metric_name] = metric_score
             except Exception as e:
-                from evalscope.api.metric.exceptions import MetricUnavailableError
-
                 logger.error(f'Error calculating metric {metric}: {e}')
                 metric_failed = True
                 score.metadata[metric_name] = f'error: {str(e)}'
