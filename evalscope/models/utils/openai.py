@@ -3,6 +3,7 @@ import json
 import re
 import time
 from collections import defaultdict
+from collections.abc import AsyncIterable, Iterable
 from copy import copy
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union, cast
 
@@ -67,6 +68,12 @@ logger = get_logger()
 ReasoningFormat = Literal['think_tag', 'reasoning_field', 'none']
 
 BASE_64_DATA_REMOVED = '<base64-data-removed>'
+
+
+class _ProviderChoice(Choice):
+    """Accept provider finish reasons while retaining the SDK's other choice fields."""
+
+    finish_reason: str
 
 
 class OpenAIResponseError(OpenAIError):
@@ -643,10 +650,16 @@ def model_output_from_openai(
     completion: ChatCompletion,
     choices: list[ChatCompletionChoice],
 ) -> ModelOutput:
+    finish_reasons: Dict[str, str] = {
+        str(choice.index): choice.finish_reason
+        for choice in completion.choices
+        if choice.finish_reason is not None and as_stop_reason(choice.finish_reason) == 'unknown'
+    }
     return ModelOutput(
         id=completion.id,
         model=completion.model,
         choices=choices,
+        metadata={'finish_reasons': finish_reasons} if finish_reasons else None,
         usage=(
             ModelUsage(
                 input_tokens=completion.usage.prompt_tokens,
@@ -802,7 +815,7 @@ def _parse_content_with_internal(
 
 
 def collect_stream_response(
-    response_stream: List[ChatCompletionChunk],
+    response_stream: Iterable[ChatCompletionChunk],
     request_start: Optional[float] = None,
 ) -> Tuple[ChatCompletion, Optional[float]]:
     """Consume a streaming chat completion and aggregate chunks into a single ChatCompletion.
@@ -919,7 +932,7 @@ def collect_stream_response(
         if tool_calls_list:
             message_kwargs['tool_calls'] = tool_calls_list
 
-        choice = Choice(
+        choice = _ProviderChoice(
             finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
         )
         choices.append(choice)
@@ -939,7 +952,7 @@ def collect_stream_response(
 
 
 async def async_collect_stream_response(
-    response_stream,
+    response_stream: AsyncIterable[ChatCompletionChunk],
     request_start: Optional[float] = None,
 ) -> Tuple[ChatCompletion, Optional[float]]:
     """Async version of :func:`collect_stream_response`.
@@ -1052,7 +1065,7 @@ async def async_collect_stream_response(
         if tool_calls_list:
             message_kwargs['tool_calls'] = tool_calls_list
 
-        choice = Choice(
+        choice = _ProviderChoice(
             finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
         )
         choices.append(choice)
