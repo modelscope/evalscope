@@ -46,6 +46,7 @@ CMATH is a Chinese elementary school mathematics benchmark containing 1,698 prob
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='cmath',
         pretty_name='CMATH',
         dataset_id='evalscope/cmath',

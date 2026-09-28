@@ -37,6 +37,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='docmath',
         pretty_name='DocMath',
         tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],
@@ -63,7 +64,8 @@ DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
-- Uses LLM-as-judge for answer evaluation
+- Uses LLM-as-judge for answer evaluation; rule fallback retains relative tolerance `0.0015` and typed boolean comparison.
+- Missing or unparseable numeric predictions never become zero, and guessed scale factors are not accepted.
 - Subsets: complong_testmini, compshort_testmini, simplong_testmini, simpshort_testmini
 - Answer format: "Therefore, the answer is (answer)"
 """,  # noqa: E501
@@ -128,8 +130,16 @@ class DocMathAdapter(DefaultDataAdapter):
         )
 
         answer_type = task_state.metadata.get('answer_type', 'unknown')
-        accuracy = get_acc(prediction=filtered_prediction, gt=reference, answer_type=answer_type)
-        score.value = {'acc': accuracy}
+        from evalscope.constants import ScoreStatus
+        from evalscope.metrics.math.contracts import MathEvaluationError
+
+        try:
+            accuracy = get_acc(prediction=filtered_prediction, gt=reference, answer_type=answer_type)
+            score.value = {'acc': accuracy}
+        except MathEvaluationError as exc:
+            score.status = ScoreStatus.EXCLUDED
+            score.metadata['metric_unavailable'] = True
+            score.metadata['acc'] = f'error: {exc}'
         score.main_score_name = 'acc'
 
         return score

@@ -178,50 +178,16 @@ def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
 
 
 def judge_int(extracted_answer: str, answer: str) -> float:
-    """Score an integer answer."""
-    correctness = 0.0
-    extraction = extracted_answer.replace('Extracted answer:', '').strip()
-    extraction = re.sub(r'[A-Za-z*:\s]+', '', extraction).strip()
-    try:
-        if int(extraction) == int(answer):
-            correctness = 1.0
-    except (ValueError, TypeError):
-        pass
+    """Compare the extracted numeric answer with isolated Math-Verify."""
+    from evalscope.metrics.math.parser import compare_answers
 
-    if correctness == 0.0:
-        # Fallback: use math_equal for symbolic/numeric equivalence
-        try:
-            from evalscope.metrics.math.parser import math_equal
-
-            if math_equal(extracted_answer, str(answer)):
-                correctness = 1.0
-        except Exception:
-            pass
-
-    return correctness
+    prediction = extracted_answer.replace('Extracted answer:', '').strip()
+    return float(compare_answers(prediction, str(answer), prediction_mode='output').matched)
 
 
 def judge_float(extracted_answer: str, answer: str) -> float:
-    """Score a floating-point answer."""
-    correctness = 0.0
-    extraction = extracted_answer.replace('Extracted answer:', '').strip()
-    extraction = re.sub(r'[A-Za-z*:\s]+', '', extraction).strip()
-    try:
-        if float(extraction) == float(answer):
-            correctness = 1.0
-    except (ValueError, TypeError):
-        pass
-
-    if correctness == 0.0:
-        try:
-            from evalscope.metrics.math.parser import math_equal
-
-            if math_equal(extracted_answer, str(answer)):
-                correctness = 1.0
-        except Exception:
-            pass
-
-    return correctness
+    """Keep the public float-scoring entry point on the same numeric judge."""
+    return judge_int(extracted_answer, answer)
 
 
 # ---------------------------------------------------------------------------

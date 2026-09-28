@@ -17,7 +17,7 @@ from evalscope.api.judge import JudgeCase, JudgeContext, JudgeDefinition, JudgeR
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import ScoringPolicy, Tags
+from evalscope.constants import ScoreStatus, ScoringPolicy, Tags
 from evalscope.utils.logger import get_logger
 
 from .utils import (
@@ -117,6 +117,7 @@ range from text-only problems to diagram-based problems.
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='hipho',
         pretty_name='HiPhO',
         dataset_id='evalscope/HiPhO',
@@ -256,8 +257,13 @@ class HiPhOAdapter(VisionLanguageAdapter):
                 )
         else:
             if not [strip_boxed(a) for a in metadata['answers']]:
+                score = self._empty_score(
+                    filtered_prediction, original_prediction, task_state, 'no ground-truth answer'
+                )
+                score.status = ScoreStatus.EXCLUDED
+                score.value = {}
                 return (
-                    self._empty_score(filtered_prediction, original_prediction, task_state, 'no ground-truth answer'),
+                    score,
                     'missing_ground_truth_answer',
                 )
         task_state.target = self._format_target(metadata)
@@ -303,7 +309,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         return cases
 
     def _build_answer_cases(self, metadata: Dict[str, Any], prediction: str) -> List[JudgeCase]:
-        from evalscope.metrics.math import math_equal
+        from evalscope.metrics.math.parser import compare_answers
 
         gold_answers = [strip_boxed(a) for a in metadata['answers']]
         pred_boxed = extract_boxed_answers(prediction)
@@ -312,7 +318,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         for idx, gold in enumerate(gold_answers):
             pred = aligned[idx] if idx < len(aligned) else ''
             # Rule check first: only ambiguous cases go to the judge, mirroring the old flow.
-            if pred and math_equal(pred, gold):
+            if compare_answers(pred, gold).matched:
                 continue
             if not pred:
                 continue
@@ -383,7 +389,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         )
 
     def _reduce_answer(self, case_verdicts, metadata: Dict[str, Any], prediction: str) -> ReducedVerdict:
-        from evalscope.metrics.math import math_equal
+        from evalscope.metrics.math.parser import compare_answers
 
         gold_answers = [strip_boxed(a) for a in metadata['answers']]
         pred_boxed = extract_boxed_answers(prediction)
@@ -393,7 +399,7 @@ class HiPhOAdapter(VisionLanguageAdapter):
         lines: List[str] = []
         for idx, gold in enumerate(gold_answers):
             pred = aligned[idx] if idx < len(aligned) else ''
-            if pred and math_equal(pred, gold):
+            if compare_answers(pred, gold).matched:
                 hit = True
             else:
                 verdict = verdicts_by_case.get(f'answer:{idx}')

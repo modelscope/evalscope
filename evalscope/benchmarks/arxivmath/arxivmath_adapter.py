@@ -47,6 +47,7 @@ ArXiv-Math is a benchmark of 103 research-level mathematics problems extracted f
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='arxivmath',
         pretty_name='ArXiv-Math',
         dataset_id='evalscope/arxivmath',

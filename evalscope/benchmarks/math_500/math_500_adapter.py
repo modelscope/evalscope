@@ -13,6 +13,7 @@ logger = get_logger()
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='math_500',
         pretty_name='MATH-500',
         tags=[Tags.MATH, Tags.REASONING],

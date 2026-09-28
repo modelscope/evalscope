@@ -3,4 +3,5 @@ beautifulsoup4
 distance
 jieba
 lxml
+pylatexenc
 python-Levenshtein

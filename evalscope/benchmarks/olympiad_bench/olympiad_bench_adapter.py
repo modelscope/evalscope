@@ -71,27 +71,19 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
 - Primary metric: **Accuracy** with mathematical judging
 - Answers should be in \\boxed{} format
 - **Note**: `TP` (Theorem Proving) subsets cannot be auto-evaluated currently
-- Supports numerical precision/error thresholds for approximate answers
+- Numeric answers use the dataset's absolute error threshold(s), defaulting to `1e-8`; components match without candidate reuse.
+- No arbitrary multiplication or division by 100 is accepted for numeric answers.
 """,
         dataset_id='AI-ModelScope/OlympiadBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='train',
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class OlympiadBenchAdapter(VisionLanguageAdapter):
     MAX_IMAGES: int = 9
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        check_import(
-            module_name=['latex2sympy2_extended'],
-            extra='olympiad_bench',
-            raise_error=True,
-            feature_name=self.pretty_name,
-        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Generate prompt for a single item."""
@@ -142,48 +134,42 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
             },
         )
 
-    def extract_answer(self, prediction: str, task_state: TaskState):
-        import re
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        from evalscope.metrics.math.parser import extract_answer
 
-        if task_state.metadata['language'] == 'Chinese':
-            matches = re.findall('所以最终答案是(.*)', prediction)
-        else:
-            matches = re.findall('So the final answer is (.*)', prediction)
+        return extract_answer(prediction)
 
-        # If found matches, take the last one, otherwise return the whole text
-        if matches:
-            return matches[-1].strip()
-        return prediction
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        from evalscope.constants import ScoreStatus
+        from evalscope.metrics.math.contracts import MathEvaluationError
+        from evalscope.metrics.math.parser import compare_answers
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
-        from .utils import MathJudger
-
-        judger = MathJudger()
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-        question = task_state.metadata
-        model_answer = filtered_prediction
-        # Get precision/error threshold from reference if available
-        answer_type = question['answer_type']
+        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
+        metadata = task_state.metadata
         try:
-            if 'Tuple' in answer_type:  # 目前可机评的数据中 没有 need_human_evaluate
-                judge_result = judger.judge(model_answer, question['final_answer'][0])
-            else:
-                if question['error']:
-                    if ',' in question['error']:
-                        precisions = question['error'].split(',')
-                        precisions = [float(p) if p else 1e-8 for p in precisions]
-                        judge_result = judger.judge(model_answer, question['final_answer'][0], precisions)
-                    else:
-                        precision = float(question['error'])
-                        judge_result = judger.judge(model_answer, question['final_answer'][0], precision)
-                else:
-                    judge_result = judger.judge(model_answer, question['final_answer'][0])
-        except Exception as e:
-            logger.warning(f'Error in judging answer: {e}')
-            judge_result = False
-
-        score.value = {'acc': float(judge_result)}
+            error = metadata.get('error')
+            tolerances = (
+                [float(p) if p.strip() else 1e-8 for p in str(error).split(',')] if error is not None else [1e-8]
+            )
+            answer_type = metadata.get('answer_type', '')
+            if 'Tuple' in answer_type:
+                tolerances = [1e-8]
+            # Preserve the benchmark's official reference group; subsequent entries
+            # are alternative derivations, not additional required answers.
+            official_answers = metadata.get('final_answer') or []
+            reference = official_answers[0] if official_answers else reference
+            result = compare_answers(
+                filtered_prediction,
+                reference,
+                absolute_tolerance=tolerances,
+                multiple_answers=metadata.get('is_multiple_answer', False) or ',' in answer_type,
+            )
+            score.value = {'acc': float(result.matched)}
+            score.metadata['math_reason'] = result.reason
+        except (MathEvaluationError, ValueError) as exc:
+            score.status = ScoreStatus.EXCLUDED
+            score.metadata['metric_unavailable'] = True
+            score.metadata['acc'] = f'error: {exc}'
         return score

@@ -21,6 +21,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='hmmt26',
         pretty_name='HMMT26',
         dataset_id='evalscope/hmmt_feb_2026',

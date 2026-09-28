@@ -670,9 +670,13 @@ class DefaultDataAdapter(DataAdapter):
                 )
                 score.value[metric_name] = metric_score
             except Exception as e:
+                from evalscope.api.metric.exceptions import MetricUnavailableError
+
                 logger.error(f'Error calculating metric {metric}: {e}')
                 metric_failed = True
                 score.metadata[metric_name] = f'error: {str(e)}'
+                if isinstance(e, MetricUnavailableError):
+                    score.metadata['metric_unavailable'] = True
 
         if metric_failed:
             score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
@@ -720,7 +724,10 @@ class DefaultDataAdapter(DataAdapter):
             rule_main_available = rule_based_score.status.is_usable and (
                 rule_based_score.main_score_name is None or rule_based_score.main_score_name in rule_based_score.value
             )
-            if rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
+            if rule_based_score.metadata.get('metric_unavailable'):
+                # Invalid inputs and failed execution remain excluded before judge I/O.
+                final_score = rule_based_score
+            elif rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
                 final_score = rule_based_score
             else:
                 # A valid judge may raise the rule score; an unavailable judge preserves it.

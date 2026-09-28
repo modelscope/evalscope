@@ -4,7 +4,9 @@ from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -23,6 +25,7 @@ OPEN_TYPE = 'free_form'
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='math_vista',
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',
@@ -135,4 +138,20 @@ class MathVistaAdapter(VisionLanguageAdapter):
     def extract_answer(self, prediction: str, task_state):
         from evalscope.metrics.math.parser import extract_answer
 
+        if task_state.metadata.get('question_type') == 'multi_choice':
+            from evalscope.utils.multi_choices import parse_answers
+
+            return ''.join(sorted(parse_answers(task_state, completion=prediction)))
         return extract_answer(prediction)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Keep categorical answers on exact matching; open answers use Math-Verify."""
+        if task_state.metadata.get('question_type') == 'multi_choice':
+            return Score(
+                prediction=original_prediction,
+                extracted_prediction=filtered_prediction,
+                value={'accuracy': float(bool(filtered_prediction) and filtered_prediction == reference)},
+            )
+        return super().match_score(original_prediction, filtered_prediction, reference, task_state)
