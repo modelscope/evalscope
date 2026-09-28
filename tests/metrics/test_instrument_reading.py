@@ -10,13 +10,6 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
-from evalscope.metrics.math.runtime import shutdown_math_workers
-
-
-@pytest.fixture(scope='module', autouse=True)
-def close_workers() -> Any:
-    yield
-    shutdown_math_workers()
 
 
 def score_answer(name: str, prediction: str, target: str = '', metadata: dict[str, Any] | None = None) -> Any:
@@ -161,10 +154,10 @@ def test_measurebench_execution_failure_is_not_scored_zero(operation: str, monke
     from evalscope.metrics.math.contracts import MathEvaluationError
 
     def fail(*args: Any, **kwargs: Any) -> Any:
-        raise MathEvaluationError('Worker exceeded its deadline')
+        raise MathEvaluationError('Mathematical evaluation failed')
 
     monkeypatch.setattr(parser, operation, fail)
-    with pytest.raises(MathEvaluationError, match='deadline'):
+    with pytest.raises(MathEvaluationError, match='evaluation failed'):
         score_answer(
             'measure_bench',
             r'\boxed{\frac{3}{4}} m',

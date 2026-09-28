@@ -71,8 +71,6 @@ def test_gsm8k_old_review_is_blocked_and_predictions_can_be_rescored(tmp_path: A
     assert prediction.read_bytes() == previous
     review = json.loads((tmp_path/'run/reviews/offline/gsm8k_default.jsonl').read_text().strip())
     assert review['sample_score']['score']['value']['accuracy'] == 1
-    from evalscope.metrics.math import runtime
-    assert runtime._pool is None
 
 
 @pytest.mark.parametrize('benchmark', ['chartqa', 'measure_bench'])
@@ -125,5 +123,3 @@ def test_instrument_old_review_is_blocked_and_predictions_can_be_rescored(
     assert prediction_path.read_bytes() == previous
     review = json.loads((work / f'reviews/offline/{benchmark}_{subset}.jsonl').read_text().strip())
     assert review['sample_score']['score']['value'][metric] == 1
-    from evalscope.metrics.math import runtime
-    assert runtime._pool is None

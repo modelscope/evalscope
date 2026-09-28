@@ -24,7 +24,6 @@ from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchma
 from evalscope.evaluator.batch_reviewer import BatchReviewer
 from evalscope.evaluator.execution_tracker import ExecutionTracker
 from evalscope.evaluator.perf_collector import PerfCollector
-from evalscope.metrics.math.runtime import math_worker_session
 from evalscope.report import ExecutionSummary, Report, build_analysis_context, gen_perf_table, gen_table
 from evalscope.utils.function_utils import run_in_threads_with_progress
 from evalscope.utils.logger import get_logger
@@ -157,7 +156,6 @@ class DefaultEvaluator(Evaluator):
         self._perf_request_count = 0
         self._perf_metric_count = 0
 
-    @math_worker_session()
     def eval(self) -> Report:
         """
         Run the complete evaluation process.

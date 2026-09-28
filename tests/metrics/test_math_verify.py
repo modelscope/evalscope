@@ -13,14 +13,7 @@ from evalscope.config import TaskConfig
 from evalscope.constants import ScoreStatus
 from evalscope.metrics.math.contracts import InvalidMathReference
 from evalscope.metrics.math.parser import compare_answers, extract_answer, extract_boxed_answers, math_equal
-from evalscope.metrics.math.runtime import shutdown_math_workers
 from evalscope.metrics.nlp.metrics import Accuracy, ExactMatch, MathAcc
-
-
-@pytest.fixture(scope='module', autouse=True)
-def close_workers() -> Any:
-    yield
-    shutdown_math_workers()
 
 
 @pytest.mark.parametrize(('prediction', 'reference', 'expected'), [
@@ -229,7 +222,7 @@ def test_tir_numeric_errors_are_excluded(monkeypatch: pytest.MonkeyPatch) -> Non
     from evalscope.metrics.math.contracts import MathEvaluationError
 
     def fail(*args: object, **kwargs: object) -> None:
-        raise MathEvaluationError('worker failed')
+        raise MathEvaluationError('verification failed')
 
     monkeypatch.setattr(parser, 'compare_answers', fail)
     score = adapter('tir_bench').calculate_metrics(state('2', '2', {'task': 'math'})).score
@@ -264,7 +257,7 @@ def test_execution_failure_is_excluded_before_judge(monkeypatch: pytest.MonkeyPa
     benchmark = get_benchmark('gsm8k', TaskConfig(datasets=['gsm8k'], judge={'strategy': 'llm_recall'}))
 
     def fail(*args: object, **kwargs: object) -> None:
-        raise MathEvaluationError('execution deadline')
+        raise MathEvaluationError('verification failed')
 
     def unexpected(*args: object, **kwargs: object) -> None:
         pytest.fail('Execution failure must not request judge recall')
@@ -289,3 +282,41 @@ def test_valid_incorrect_answer_still_allows_judge_recall(monkeypatch: pytest.Mo
     score = benchmark.calculate_metrics(state(r'\boxed{2}', '1')).score
     assert requested == [True]
     assert score.main_value == 1
+
+
+def test_math_runs_in_threads_without_signal_timers_or_subprocesses(monkeypatch: pytest.MonkeyPatch) -> None:
+    import signal
+    import subprocess
+
+    from evalscope.metrics.math.parser import parse_digits
+
+    def forbidden(*args: Any, **kwargs: Any) -> None:
+        pytest.fail('Direct mathematical scoring must not create subprocesses or install signal timers')
+
+    monkeypatch.setattr(subprocess, 'Popen', forbidden)
+    monkeypatch.setattr(signal, 'signal', forbidden)
+    monkeypatch.setattr(signal, 'alarm', forbidden, raising=False)
+
+    def evaluate(_: int) -> tuple[bool, str, float | None]:
+        return math_equal('18%', '.18'), extract_answer(r'\boxed{\frac{3}{4}}'), parse_digits(r'\frac{3}{4}')
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        assert list(executor.map(evaluate, range(12))) == [(True, r'\frac{3}{4}', 0.75)] * 12
+
+
+def test_upstream_verification_errors_remain_excluded_before_judge(monkeypatch: pytest.MonkeyPatch) -> None:
+    import math_verify
+
+    benchmark = get_benchmark('gsm8k', TaskConfig(datasets=['gsm8k'], judge={'strategy': 'llm_recall'}))
+
+    def fail(*args: Any, **kwargs: Any) -> None:
+        raise RuntimeError('upstream verification failed')
+
+    def unexpected(*args: Any, **kwargs: Any) -> None:
+        pytest.fail('Failed mathematical execution must not request judge recall')
+
+    monkeypatch.setattr(math_verify, 'verify', fail)
+    monkeypatch.setattr(benchmark, 'score_with_judge_contracts', unexpected)
+    score = benchmark.calculate_metrics(state(r'\boxed{2}', '2')).score
+    assert score.status is ScoreStatus.EXCLUDED and score.value == {}
+    assert score.metadata['metric_unavailable'] is True
