@@ -203,8 +203,8 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     run_task(TaskConfig(**base))
 
     snapshot_path = tmp_path / 'configs' / 'task_config.yaml'
-    previous_fingerprint = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq'][
-        'fingerprint']
+    previous_identity = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq']
+    previous_fingerprint = previous_identity['fingerprint']
     prediction_path = tmp_path / 'predictions' / 'mock-model' / 'general_mcq_example.jsonl'
     previous_prediction = prediction_path.read_text()
 
@@ -220,7 +220,7 @@ def test_native_rerun_review_records_the_prediction_source(tmp_path) -> None:
     identity = yaml_to_dict(str(snapshot_path))['evaluation_identity']['benchmarks']['general_mcq']
     assert identity['fingerprint'] != previous_fingerprint
     assert identity['cache_source'] == {
-        'evaluation_version': 'v1.0',
+        'evaluation_version': previous_identity['evaluation_version'],
         'fingerprint': previous_fingerprint,
         'inferred_legacy': False,
         'prediction_reused': True,
