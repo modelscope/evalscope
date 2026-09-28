@@ -24,7 +24,7 @@ AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark ba
 
 - Default configuration uses **0-shot** evaluation
 - Answers should be formatted within `\boxed{}` for proper extraction
-- Uses LLM-as-judge for mathematical equivalence checking; rule grading requires an integer literal.
+- Uses LLM-as-judge for mathematical equivalence checking
 
 
 ## Properties

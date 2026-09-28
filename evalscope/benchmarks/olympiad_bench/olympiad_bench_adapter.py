@@ -71,8 +71,7 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
 - Primary metric: **Accuracy** with mathematical judging
 - Answers should be in \\boxed{} format
 - **Note**: `TP` (Theorem Proving) subsets cannot be auto-evaluated currently
-- Numeric answers use the dataset's absolute error threshold(s), defaulting to `1e-8`; components match without candidate reuse.
-- No arbitrary multiplication or division by 100 is accepted for numeric answers.
+- Supports numerical precision/error thresholds for approximate answers
 """,
         dataset_id='AI-ModelScope/OlympiadBench',
         subset_list=SUBSET_LIST,

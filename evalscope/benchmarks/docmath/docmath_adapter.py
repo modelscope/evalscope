@@ -64,8 +64,7 @@ DocMath-Eval is a comprehensive benchmark focused on numerical reasoning within 
 ## Evaluation Notes
 
 - Default configuration uses **0-shot** evaluation
-- Uses LLM-as-judge for answer evaluation; rule fallback retains relative tolerance `0.0015` and typed boolean comparison.
-- Missing or unparseable numeric predictions never become zero, and guessed scale factors are not accepted.
+- Uses LLM-as-judge for answer evaluation
 - Subsets: complong_testmini, compshort_testmini, simplong_testmini, simpshort_testmini
 - Answer format: "Therefore, the answer is (answer)"
 """,  # noqa: E501
