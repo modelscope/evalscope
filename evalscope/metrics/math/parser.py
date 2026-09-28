@@ -87,9 +87,17 @@ def extract_boxed_answers(text: str) -> list[str]:
     return execute_math(MathRequest(operation='boxed', prediction=text)).parts
 
 
-def parse_digits(num: Any) -> float | None:
+def extract_boxed_answer_text(text: str) -> str:
+    """Return the final complete boxed payload and its same-line suffix, including units.
+
+    An unfinished final box returns an empty answer instead of exposing its digits.
+    """
+    return execute_math(MathRequest(operation='boxed', prediction=text)).extracted
+
+
+def parse_digits(num: Any, *, prediction_mode: Literal['output', 'fragment'] = 'fragment') -> float | None:
     """Return an upstream-parsed real number, without a separate numeric parser."""
-    return execute_math(MathRequest(operation='number', prediction=str(num))).number
+    return execute_math(MathRequest(operation='number', prediction=str(num), prediction_mode=prediction_mode)).number
 
 
 def is_digit(num: Any) -> bool:

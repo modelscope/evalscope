@@ -16,6 +16,7 @@ AFFECTED_BENCHMARKS = (
     'aime26',
     'amc',
     'arxivmath',
+    'chartqa',
     'cmath',
     'cmmu',
     'competition_math',
@@ -32,6 +33,7 @@ AFFECTED_BENCHMARKS = (
     'math_verse',
     'math_vision',
     'math_vista',
+    'measure_bench',
     'mgsm',
     'minerva_math',
     'olympiad_bench',
@@ -69,5 +71,59 @@ def test_gsm8k_old_review_is_blocked_and_predictions_can_be_rescored(tmp_path: A
     assert prediction.read_bytes() == previous
     review = json.loads((tmp_path/'run/reviews/offline/gsm8k_default.jsonl').read_text().strip())
     assert review['sample_score']['score']['value']['accuracy'] == 1
+    from evalscope.metrics.math import runtime
+    assert runtime._pool is None
+
+
+@pytest.mark.parametrize('benchmark', ['chartqa', 'measure_bench'])
+def test_instrument_old_review_is_blocked_and_predictions_can_be_rescored(
+    benchmark: str, tmp_path: Any, monkeypatch: Any
+) -> None:
+    import io
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from PIL import Image
+
+    image = io.BytesIO()
+    Image.new('RGB', (8, 8)).save(image, format='PNG')
+    if benchmark == 'chartqa':
+        record = {'image': {'bytes': image.getvalue()}, 'question': 'Read the chart.',
+                  'answer': '0', 'type': 'human_test'}
+        subset, prediction, metric = 'human_test', 'ANSWER: 0.0', 'relaxed_acc'
+    else:
+        record = {'image': {'bytes': image.getvalue()}, 'question': 'Read the instrument.',
+                  'question_id': 'fraction-meter', 'image_type': 'ruler', 'design': 'linear',
+                  'evaluator': 'interval_matching',
+                  'evaluator_kwargs': '{"interval": [0.74, 0.76], "units": ["m"]}'}
+        subset, prediction, metric = 'real_world', r'\boxed{\frac{3}{4}} m', 'acc'
+    data = tmp_path / 'data'
+    data.mkdir()
+    pq.write_table(pa.Table.from_pylist([record]), data / 'data.parquet')
+    config_name = subset if benchmark == 'chartqa' else 'default'
+    split = 'test' if benchmark == 'chartqa' else subset
+    (data / 'README.md').write_text(
+        f'---\nconfigs:\n- config_name: {config_name}\n  data_files:\n  - split: {split}\n'
+        '    path: data.parquet\n---\n'
+    )
+    work = tmp_path / 'run'
+    base = dict(model='offline', eval_type='mock_llm', datasets=[benchmark], no_timestamp=True,
+                work_dir=str(work), judge={'strategy': 'rule'},
+                dataset_args={benchmark: {'local_path': str(data), 'subset_list': [subset]}})
+    get_benchmark(benchmark)
+    meta = BENCHMARK_REGISTRY[benchmark]
+    monkeypatch.setattr(MockLLM, 'default_output', prediction)
+    monkeypatch.setattr(meta, 'evaluation_version', 'v1.0')
+    run_task(TaskConfig(**base))
+    prediction_path = work / f'predictions/offline/{benchmark}_{subset}.jsonl'
+    previous = prediction_path.read_bytes()
+    monkeypatch.setattr(meta, 'evaluation_version', 'v1.1')
+    with pytest.raises(ValueError, match='rerun_review=True'):
+        run_task(TaskConfig(**base, use_cache=str(work)))
+    monkeypatch.setattr(MockLLM, 'generate', lambda *args, **kwargs: pytest.fail('Must reuse saved predictions'))
+    run_task(TaskConfig(**base, use_cache=str(work), rerun_review=True))
+    assert prediction_path.read_bytes() == previous
+    review = json.loads((work / f'reviews/offline/{benchmark}_{subset}.jsonl').read_text().strip())
+    assert review['sample_score']['score']['value'][metric] == 1
     from evalscope.metrics.math import runtime
     assert runtime._pool is None

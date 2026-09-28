@@ -72,6 +72,15 @@ def freeze(args: argparse.Namespace) -> None:
         prediction = f'\\boxed{{{data["target"].strip().strip("$")}}}'
         if sample['choices']:
             prediction = f'答案：{data["target"]}' if name == 'cmmu' else f'ANSWER: {data["target"]}'
+        if name == 'chartqa':
+            prediction = f'ANSWER: {data["target"]}'
+        elif name == 'measure_bench':
+            config = json.loads(sample['metadata']['evaluator_kwargs'])
+            interval = config.get('interval') or config['intervals'][0]
+            units = config.get('units', [])
+            if units and isinstance(units[0], list):
+                units = units[0]
+            prediction = f'Answer: {interval[0]} {units[0] if units else ""}'.strip()
         cases.append(
             {
                 'benchmark': name,

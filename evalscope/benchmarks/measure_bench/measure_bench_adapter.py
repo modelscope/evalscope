@@ -54,6 +54,7 @@ ANSWER_FORMAT_SUFFIX = (
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='measure_bench',
         pretty_name='MeasureBench',
         dataset_id='evalscope/MeasureBench',

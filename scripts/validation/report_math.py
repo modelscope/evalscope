@@ -114,6 +114,8 @@ def main() -> None:
             explanation = "Removed the OlympiadBench grader's unconditional 100x numeric compatibility."
         elif benchmark == 'olympiad_bench':
             explanation = 'Parse each declared answer component upstream; retain all components and their tolerances.'
+        elif benchmark == 'measure_bench' and branch in ('fraction_boxed', 'fraction_unit_outside'):
+            explanation = 'Extract the complete LaTeX fraction and preserve the instrument unit.'
         else:
             raise AssertionError(f'Unexplained adapter change: {benchmark}/{branch}')
         adapter_changes.append(
@@ -190,7 +192,8 @@ def main() -> None:
         '',
         '## 独立 adapter',
         '',
-        f'{len(new_cases)} 个真实评分上下文覆盖全部 27 个受影响基准，包括 OlympiadBench 数值/表达式/方程/区间/元组/混合多答案及分项容差、',
+        f'{len(new_cases)} 个真实评分上下文覆盖 {len({case["case"]["benchmark"] for case in new_cases})} 个基准，'
+        '包括 OlympiadBench 数值/表达式/方程/区间/元组/混合多答案及分项容差、',
         'DocMath 真实零值和倍率错误、HiPhO 官方评分细则与多答案部分得分。原生评分和聚合执行通过。',
         '其他基准复用仓库缓存的真实 target、choices 和评分 metadata；部分题干在原缓存中已截断，未做图像推理。',
         'HiPhO judge 使用离线协议 double：按官方条目返回半分或 false，验证部分得分和流程，不验证 judge 模型质量。',
@@ -207,7 +210,7 @@ def main() -> None:
         ),
         '执行检查与复现命令见 README.md；冷启动和稳态吞吐见 runtime.json。吞吐使用重复简单表达式，包含上游缓存效果，不代表长公式的评测吞吐。',
         '基础 + OlympiadBench、AIGC 在干净环境安装并通过 pip check；OmegaConf 的 LAVIS 配置加载、合并、CLI 覆盖、插值和真实处理器初始化通过。',
-        'Windows 执行机制已加入 CI 矩阵，当前机器没有 Windows 环境，尚未实测。发布前需要 CI 完成该项。',
+        '当前机器没有 Windows 环境，Windows 执行机制尚未实测。',
         '`ms-vlmeval==0.0.20` 仍声明 ANTLR 4.11.1，与此次 4.13.2 冲突；没有升级外部库，也没有通过降级/忽略检查规避。',
         '不宣称 vlmeval 或 all 安装组合兼容。',
         '',

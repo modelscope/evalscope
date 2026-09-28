@@ -54,12 +54,12 @@ def _parse(text: str, mode: str) -> tuple[list[Any], str]:
     return objects, display
 
 
-def _boxed_parts(text: str) -> list[str]:
+def _boxed_parts(text: str) -> MathResult:
     from latex2sympy2_extended.math_normalization import extract_boxed_content
 
     # Preserve complete subquestion boundaries and order before upstream normalization.
     # An unfinished outer answer must not promote an inner box to a new subquestion.
-    parts = []
+    result = MathResult()
     end = 0
     for match in re.finditer(r'\\(?:boxed|fbox)\s*\{', text):
         if match.start() < end:
@@ -72,12 +72,15 @@ def _boxed_parts(text: str) -> list[str]:
                 depth -= 1
             if depth == 0:
                 stop = index + 1
-                parts.append(extract_boxed_content(text[match.start() : stop], mode='all'))
+                result.parts.append(extract_boxed_content(text[match.start() : stop], mode='all'))
+                # Retain the final answer's same-line suffix for instrument units.
+                result.extracted = text[match.end() : stop - 1] + text[stop:].split('\n', 1)[0]
                 end = stop
                 break
         else:
+            result.extracted = ''
             break
-    return parts
+    return result
 
 
 def _verify(gold: Any, prediction: Any) -> bool:
@@ -155,7 +158,7 @@ def _integer_literal(text: str) -> bool:
 def handle_request(request: MathRequest) -> MathResult:
     """Extract and grade parsed objects, never fallback strings."""
     if request.operation == 'boxed':
-        return MathResult(parts=_boxed_parts(request.prediction))
+        return _boxed_parts(request.prediction)
     predictions, display = _parse(request.prediction, request.prediction_mode)
     result = MathResult(extracted=display, prediction_valid=bool(predictions))
     if request.operation == 'extract':
