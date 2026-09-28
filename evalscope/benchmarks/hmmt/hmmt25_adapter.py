@@ -22,6 +22,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
 # https://huggingface.co/datasets/MathArena/hmmt_feb_2025
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='hmmt25',
         pretty_name='HMMT25',
         dataset_id='evalscope/hmmt_feb_2025',

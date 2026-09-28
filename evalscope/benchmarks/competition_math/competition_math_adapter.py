@@ -33,6 +33,7 @@ Here are some examples of how to solve similar problems:
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='competition_math',
         pretty_name='Competition-MATH',
         tags=[Tags.MATH, Tags.REASONING],

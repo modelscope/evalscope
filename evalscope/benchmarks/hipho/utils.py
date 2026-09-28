@@ -122,51 +122,13 @@ def criterion_points(criterion: str) -> float:
 
 
 def extract_boxed_answers(text: str) -> List[str]:
-    """Extract the contents of every complete ``\\boxed{...}`` in order of appearance.
+    """Delegate boxed extraction upstream while preserving subquestion order."""
+    from evalscope.metrics.math.parser import extract_boxed_answers as extract
 
-    Brace matching is used so nested braces inside a boxed expression (e.g.
-    ``\\boxed{\\frac{1}{2}}``) are captured correctly. A trailing unbalanced
-    ``\\boxed{`` is ignored rather than reported as a partial answer: it means the
-    reply was truncated mid-answer, and emitting the fragment would both invent an
-    answer and shift the ordered alignment that answer-level scoring relies on.
-    """
-    answers: List[str] = []
-    idx = 0
-    needle = r'\boxed'
-    while True:
-        pos = text.find(needle, idx)
-        if pos == -1:
-            break
-        brace = text.find('{', pos)
-        if brace == -1:
-            break
-        depth = 0
-        content = []
-        i = brace
-        while i < len(text):
-            char = text[i]
-            if char == '{':
-                depth += 1
-                if depth == 1:
-                    i += 1
-                    continue
-            elif char == '}':
-                depth -= 1
-                if depth == 0:
-                    break
-            content.append(char)
-            i += 1
-        if depth != 0:
-            # Unterminated brace: the rest of the reply is truncated, so stop here.
-            break
-        answers.append(''.join(content).strip())
-        idx = i + 1
-    return answers
+    return extract(text)
 
 
 def strip_boxed(text: str) -> str:
-    """Return the inner expression of a single ``\\boxed{...}`` payload if present."""
+    """Return the last boxed payload, or an already unboxed answer."""
     boxed = extract_boxed_answers(text)
-    if boxed:
-        return boxed[-1]
-    return text.strip()
+    return boxed[-1] if boxed else text.strip()

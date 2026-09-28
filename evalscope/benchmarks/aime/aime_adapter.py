@@ -105,6 +105,7 @@ Remember to put your answer inside \\boxed{{}}."""
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='aime24',
         pretty_name='AIME-2024',
         tags=[Tags.MATH, Tags.REASONING],
@@ -156,30 +157,25 @@ class AIME24Adapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         from evalscope.metrics.math.parser import extract_answer
-        from .math_normalize import normalize_answer
 
-        extracted_pred = extract_answer(prediction)
-        filtered_pred = normalize_answer(extracted_pred)
-        return filtered_pred
+        return extract_answer(prediction)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        from .grader import grade_answer
+        from evalscope.constants import ScoreStatus
+        from evalscope.metrics.math.contracts import MathEvaluationError
+        from evalscope.metrics.math.parser import compare_answers
 
-        score = Score(
-            extracted_prediction=filtered_prediction,
-            prediction=original_prediction,
-        )
-
+        score = Score(extracted_prediction=filtered_prediction, prediction=original_prediction)
         try:
-            is_correct = grade_answer(filtered_prediction, reference)
-            accuracy_score = 1.0 if is_correct else 0.0
-            score.value['acc'] = accuracy_score
-        except Exception as e:
-            logger.error(f'Error in custom grading: {e}')
-            score.value['acc'] = 0.0
-            score.metadata['acc'] = f'grading_error: {str(e)}'
+            result = compare_answers(filtered_prediction, reference, integer_only=True)
+            score.value = {'acc': float(result.matched)}
+            score.metadata['math_reason'] = result.reason
+        except MathEvaluationError as exc:
+            score.status = ScoreStatus.EXCLUDED
+            score.metadata['metric_unavailable'] = True
+            score.metadata['acc'] = f'error: {exc}'
         return score
 
     def judge_definition(self, context: JudgeContext) -> JudgeDefinition:
@@ -207,6 +203,7 @@ class AIME24Adapter(DefaultDataAdapter):
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='aime25',
         pretty_name='AIME-2025',
         tags=[Tags.MATH, Tags.REASONING],
@@ -250,6 +247,7 @@ class AIME25Adapter(AIME24Adapter): ...
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='aime26',
         pretty_name='AIME-2026',
         tags=[Tags.MATH, Tags.REASONING],

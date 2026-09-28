@@ -38,6 +38,7 @@ LEVEL_LIST = ['low', 'medium', 'high', 'top']
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='poly_math',
         pretty_name='PolyMath',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],

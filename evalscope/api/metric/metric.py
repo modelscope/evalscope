@@ -10,6 +10,10 @@ if TYPE_CHECKING:
     from evalscope.api.evaluator import Target
 
 
+class MetricUnavailableError(RuntimeError):
+    """Invalid scoring inputs or execution failures must remain excluded from recall."""
+
+
 class Metric(ABC):
     """
     Metric classes operate on a sample level.

@@ -60,7 +60,7 @@ HMMT November 2025 (MathArena) is a challenging evaluation benchmark derived fro
         eval_split='train',  # Dataset only provides 'train' split
         metric_list=[{'acc': {'numeric': True}}],
         prompt_template=PROMPT_TEMPLATE,
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class HMMTNov25Adapter(DefaultDataAdapter):

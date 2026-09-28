@@ -1,558 +1,403 @@
-"""
-The logic in this file largely borrows from Qwen2.5-Math codebase at https://github.com/QwenLM/Qwen2.5-Math:
-"""
+"""Mathematical answer extraction and comparison delegated to Math-Verify."""
 
-# flake8: noqa
+import math
 import re
-import regex
-from latex2sympy2_extended import latex2sympy
-from math import isclose
-from sympy import N, simplify
-from sympy.parsing.latex import parse_latex
-from sympy.parsing.sympy_parser import parse_expr
-from word2number import w2n
+import warnings
+from decimal import Decimal, InvalidOperation, localcontext
+from functools import wraps
+from typing import Any, Callable, Literal, ParamSpec, TypeVar
+
+from .contracts import InvalidMathReference, MathEvaluationError, MathResult
+
+_P = ParamSpec('_P')
+_R = TypeVar('_R')
 
 
-def convert_word_number(text: str) -> str:
-    try:
-        text = str(w2n.word_to_num(text))
-    except Exception:
-        pass
-    return text
-
-
-def _fix_fracs(string):
-    substrs = string.split('\\frac')
-    new_str = substrs[0]
-    if len(substrs) > 1:
-        substrs = substrs[1:]
-        for substr in substrs:
-            new_str += '\\frac'
-            if len(substr) > 0 and substr[0] == '{':
-                new_str += substr
-            else:
-                try:
-                    assert len(substr) >= 2
-                except Exception:
-                    return string
-                a = substr[0]
-                b = substr[1]
-                if b != '{':
-                    if len(substr) > 2:
-                        post_substr = substr[2:]
-                        new_str += '{' + a + '}{' + b + '}' + post_substr
-                    else:
-                        new_str += '{' + a + '}{' + b + '}'
-                else:
-                    if len(substr) > 2:
-                        post_substr = substr[2:]
-                        new_str += '{' + a + '}' + b + post_substr
-                    else:
-                        new_str += '{' + a + '}' + b
-    string = new_str
-    return string
-
-
-def _fix_a_slash_b(string):
-    if len(string.split('/')) != 2:
-        return string
-    a = string.split('/')[0]
-    b = string.split('/')[1]
-    try:
-        if 'sqrt' not in a:
-            a = int(a)
-        if 'sqrt' not in b:
-            b = int(b)
-        assert string == '{}/{}'.format(a, b)
-        new_string = '\\frac{' + str(a) + '}{' + str(b) + '}'
-        return new_string
-    except Exception:
-        return string
-
-
-def _fix_sqrt(string):
-    _string = re.sub(r'\\sqrt(\w+)', r'\\sqrt{\1}', string)
-    return _string
-
-
-def strip_answer_string(string):
-    string = str(string).strip()
-    # linebreaks
-    string = string.replace('\n', '')
-
-    # right "."
-    string = string.rstrip('.')
-
-    # remove inverse spaces
-    # replace \\ with \
-    string = string.replace('\\!', '')
-    # string = string.replace("\\ ", "")
-    # string = string.replace("\\\\", "\\")
-
-    # matrix
-    string = re.sub(r'\\begin\{array\}\{.*?\}', r'\\begin{pmatrix}', string)
-    string = re.sub(r'\\end\{array\}', r'\\end{pmatrix}', string)
-    string = string.replace('bmatrix', 'pmatrix')
-
-    # replace tfrac and dfrac with frac
-    string = string.replace('tfrac', 'frac')
-    string = string.replace('dfrac', 'frac')
-    string = string.replace('\\neq', '\\ne').replace('\\leq', '\\le').replace('\\geq', '\\ge')
-
-    # remove \left and \right
-    string = string.replace('\\left', '')
-    string = string.replace('\\right', '')
-    string = string.replace('\\{', '{')
-    string = string.replace('\\}', '}')
-
-    # Function to replace number words with corresponding digits
-    def replace_match(match):
-        word = match.group(1).lower()
-        if convert_word_number(word) == word:
-            return match.group(0)
-        else:
-            return convert_word_number(word)
-
-    string = re.sub(r'\\text\{([a-zA-Z]+)\}', replace_match, string)
-
-    # Before removing unit, check if the unit is squared (for surface area)
-    string = re.sub(r'(cm|inches)\}\^2', r'\1}', string)
-
-    # Remove unit: miles, dollars if after is not none
-    _string = re.sub(r'\\text{.*?}$', '', string).strip()
-    if _string != '' and _string != string:
-        # print("Warning: unit not removed: '{}' -> '{}'".format(string, _string))
-        string = _string
-
-    # Remove circ (degrees)
-    string = string.replace('^{\\circ}', '')
-    string = string.replace('^\\circ', '')
-
-    # remove dollar signs
-    string = string.replace('\\$', '')
-    string = string.replace('$', '')
-    string = string.replace('\\(', '').replace('\\)', '')
-
-    # convert word number to digit
-    string = convert_word_number(string)
-
-    # replace "\\text{...}" to "..."
-    string = re.sub(r'\\text\{(.*?)\}', r'\1', string)
-    for key in ['x=', 'y=', 'z=', 'x\\in', 'y\\in', 'z\\in', 'x\\to', 'y\\to', 'z\\to']:
-        string = string.replace(key, '')
-    string = string.replace('\\emptyset', r'{}')
-    string = string.replace('(-\\infty,\\infty)', '\\mathbb{R}')
-
-    # remove percentage
-    string = string.replace('\\%', '')
-    string = string.replace('\%', '')
-    string = string.replace('%', '')
-
-    # " 0." equivalent to " ." and "{0." equivalent to "{." Alternatively, add "0" if "." is the start of the string
-    string = string.replace(' .', ' 0.')
-    string = string.replace('{.', '{0.')
-
-    # cdot
-    # string = string.replace("\\cdot", "")
-    if (
-        string.startswith('{')
-        and string.endswith('}')
-        and string.isalnum()
-        or string.startswith('(')
-        and string.endswith(')')
-        and string.isalnum()
-        or string.startswith('[')
-        and string.endswith(']')
-        and string.isalnum()
-    ):
-        string = string[1:-1]
-
-    # inf
-    string = string.replace('infinity', '\\infty')
-    if '\\infty' not in string:
-        string = string.replace('inf', '\\infty')
-    string = string.replace('+\\inity', '\\infty')
-
-    # and
-    string = string.replace('and', '')
-    string = string.replace('\\mathbf', '')
-
-    # use regex to remove \mbox{...}
-    string = re.sub(r'\\mbox{.*?}', '', string)
-
-    # quote
-    string = string.replace("'", '')
-    string = string.replace('"', '')
-
-    # i, j
-    if 'j' in string and 'i' not in string:
-        string = string.replace('j', 'i')
-
-    # replace a.000b where b is not number or b is end, with ab, use regex
-    string = re.sub(r'(\d+)\.0*([^\d])', r'\1\2', string)
-    string = re.sub(r'(\d+)\.0*$', r'\1', string)
-
-    # if empty, return empty string
-    if len(string) == 0:
-        return string
-    if string[0] == '.':
-        string = '0' + string
-
-    # to consider: get rid of e.g. "k = " or "q = " at beginning
-    if len(string.split('=')) == 2:
-        if len(string.split('=')[0]) <= 2:
-            string = string.split('=')[1]
-
-    string = _fix_sqrt(string)
-    string = string.replace(' ', '')
-
-    # \frac1b or \frac12 --> \frac{1}{b} and \frac{1}{2}, etc. Even works with \frac1{72} (but not \frac{72}1). Also does a/b --> \\frac{a}{b}
-    string = _fix_fracs(string)
-
-    # NOTE: X/Y changed to \frac{X}{Y} in dataset, but in simple cases fix in case the model output is X/Y
-    string = _fix_a_slash_b(string)
-
-    # Remove unnecessary '\' before integers
-    string = re.sub(r'\\(?=\-?\d+(\\|\)|,|\]|$))', '', string)
-
-    # Remove grade level (e.g., 12th grade) and just maintain the integer
-    string = re.sub(r'thgrade$', '', string)
-
-    # Normalize thousands-formatted numbers (e.g., 70,000 or -1,234,567.89) by removing commas
-    # This must run before the "list of integers" sorting to avoid misclassifying numbers with thousand separators.
-    if re.fullmatch(r'\s*-?\d{1,3}(?:,\d{3})+(?:\.\d+)?\s*', string):
-        string = string.replace(',', '')
-
-    # If the answer is a list of integers (without parenthesis), sort them
-    if re.fullmatch(r'(\s*-?\d+\s*,)*\s*-?\d+\s*', string):
-        # Split the string into a list of integers
+def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
+    @wraps(function)
+    def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
         try:
-            integer_list = list(map(int, string.split(',')))
-        except Exception:
-            integer_list = list(map(int, '-1,-1'.split(',')))
+            return function(*args, **kwargs)
+        except MathEvaluationError:
+            raise
+        except Exception as exc:
+            raise MathEvaluationError(f'{type(exc).__name__}: {exc}') from exc
 
-        # Sort the list in ascending order
-        sorted_list = sorted(integer_list)
-
-        # Join the sorted list back into a comma-separated string
-        string = ','.join(map(str, sorted_list))
-
-    return string
+    return wrapped
 
 
-def extract_answer(pred_str, use_last_number=True):
-    pred_str = pred_str.replace('\u043a\u0438', '')
-    if 'final answer is $' in pred_str and '$. I hope' in pred_str:
-        # minerva_math
-        tmp = pred_str.split('final answer is $', 1)[1]
-        pred = tmp.split('$. I hope', 1)[0].strip()
-    elif 'boxed' in pred_str:
-        ans = pred_str.split('boxed')[-1]
-        if len(ans) == 0:
-            return ''
-        elif ans[0] == '{':
-            stack = 1
-            a = ''
-            for c in ans[1:]:
-                if c == '{':
-                    stack += 1
-                    a += c
-                elif c == '}':
-                    stack -= 1
-                    if stack == 0:
-                        break
-                    a += c
-                else:
-                    a += c
+def _parse(text: str, mode: str) -> tuple[list[Any], str]:
+    from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse
+
+    text = text.strip()
+    if not text:
+        return [], ''
+    original = text
+    scientific_literal = re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)[eE][+-]?[0-9]+', text)
+    if scientific_literal:
+        # The pinned LaTeX parser recognizes uppercase E notation; lowercase e is Euler's constant.
+        # Canonicalize complete numeric literals without evaluating them locally.
+        text = f'${text.replace("e", "E")}$'
+    if mode == 'fragment' and not text.startswith(('$', r'\(', r'\[', r'\boxed', r'\fbox')):
+        text = f'${text}$'
+    result = parse(
+        text,
+        extraction_config=[LatexExtractionConfig(boxed_match_priority=0), ExprExtractionConfig()],
+        fallback_mode='first_match',
+        extraction_mode='first_match',
+        parsing_timeout=None,
+    )
+    objects = [item for item in result if not isinstance(item, str)]
+    display = next((item for item in result if isinstance(item, str)), '')
+    if objects and re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)e[+-]?[0-9]+', display):
+        canonical = parse(
+            f'${display.replace("e", "E")}$',
+            extraction_config=[LatexExtractionConfig()],
+            fallback_mode='first_match',
+            extraction_mode='first_match',
+            parsing_timeout=None,
+        )
+        objects = [item for item in canonical if not isinstance(item, str)]
+    if scientific_literal:
+        display = original
+    if len(objects) == 1 and '%' not in display:
+        from math_verify.grader import get_pct_val
+
+        # Expr extraction's fallback omits the percent suffix. Restore display only;
+        # the upstream object and HF comparison semantics stay untouched.
+        if get_pct_val(objects[0]) is not None:
+            display += '%'
+    return objects, display
+
+
+def _boxed_parts(text: str) -> tuple[list[str], str]:
+    from latex2sympy2_extended.math_normalization import extract_boxed_content
+
+    # Preserve complete subquestion boundaries and order before upstream normalization.
+    # An unfinished outer answer must not promote an inner box to a new subquestion.
+    parts = []
+    extracted = ''
+    end = 0
+    for match in re.finditer(r'\\(?:boxed|fbox)\s*\{', text):
+        if match.start() < end:
+            continue
+        depth = 1
+        for index in range(match.end(), len(text)):
+            if text[index] == '{':
+                depth += 1
+            elif text[index] == '}':
+                depth -= 1
+            if depth == 0:
+                stop = index + 1
+                parts.append(extract_boxed_content(text[match.start() : stop], mode='all'))
+                # Retain the final answer's same-line suffix for instrument units.
+                extracted = text[match.end() : stop - 1] + text[stop:].split('\n', 1)[0]
+                end = stop
+                break
         else:
-            a = ans.split('$')[0].strip()
-        pred = a
-    elif 'he answer is' in pred_str:
-        pred = pred_str.split('he answer is')[-1].strip()
-    elif 'final answer is' in pred_str:
-        pred = pred_str.split('final answer is')[-1].strip()
-    elif '答案是' in pred_str:
-        # Handle Chinese few-shot multiple choice problem answer extraction
-        pred = pred_str.split('答案是')[1].strip().split('\n\n')[0].strip()
-    elif 'ANSWER:' in pred_str:
-        pred = pred_str.split('ANSWER:')[-1].strip()
-    else:  # use the last number
-        if use_last_number:
-            pattern = '-?\d*\.?\d+'
-            pred = re.findall(pattern, pred_str.replace(',', ''))
-            if len(pred) >= 1:
-                pred = pred[-1]
-            else:
-                pred = ''
-        else:
-            pred = ''
-
-    # multiple line
-    # pred = pred.split("\n")[0]
-    pred = re.sub(r'\n\s*', '', pred)
-    if pred != '' and pred[0] == ':':
-        pred = pred[1:]
-    if pred != '' and pred[-1] == '.':
-        pred = pred[:-1]
-    if pred != '' and pred[-1] == '/':
-        pred = pred[:-1]
-    pred = strip_answer_string(pred)
-    return pred
+            extracted = ''
+            break
+    return parts, extracted
 
 
-def choice_answer_clean(pred: str):
-    pred = pred.strip('\n').rstrip('.').rstrip('/').strip(' ').lstrip(':')
-    # Clean the answer based on the dataset
-    tmp = re.findall(r'\b(A|B|C|D|E)\b', pred.upper())
-    if tmp:
-        pred = tmp
-    else:
-        pred = [pred.strip().strip('.')]
-    pred = pred[-1]
-    # Remove the period at the end, again!
-    pred = pred.rstrip('.').rstrip('/')
-    return pred
+def _number(objects: list[Any]) -> float | None:
+    if len(objects) != 1 or not getattr(objects[0], 'is_number', False) or not objects[0].is_real:
+        return None
+    value = float(objects[0])
+    return value if math.isfinite(value) else None
 
 
-def parse_digits(num):
-    num = regex.sub(',', '', str(num))
+def _verify(gold: Any, prediction: Any) -> bool:
+    from math_verify import verify
+
+    return verify(
+        [gold],
+        [prediction],
+        strict=True,
+        float_rounding=6,
+        numeric_precision=15,
+        allow_set_relation_comp=False,
+        timeout_seconds=None,
+        raise_on_error=True,
+    )
+
+
+def _numeric_close(gold: Any, prediction: Any, absolute: float, relative: float) -> bool:
+    # Only explicit benchmark numeric tolerance is local policy.
+    def decimal_value(value: Any) -> Decimal:
+        try:
+            return Decimal(str(value))
+        except InvalidOperation:
+            return Decimal(str(value.evalf(15)))
+
+    # Decimal thresholds retain exact dataset boundaries such as 1.01 vs 1 +/- 0.01.
+    with localcontext() as context:
+        context.prec = 50
+        pred, ref = decimal_value(prediction), decimal_value(gold)
+        threshold = max(Decimal(str(absolute)), Decimal(str(relative)) * abs(ref))
+        return abs(pred - ref) <= threshold
+
+
+def _components(objects: list[Any]) -> list[Any]:
+    from sympy import FiniteSet, Tuple
+
+    if len(objects) == 1 and isinstance(objects[0], (FiniteSet, Tuple)):
+        # The pinned upstream preserves input order for per-component tolerances.
+        return list(getattr(objects[0], '_unsorted_args', objects[0].args))
+    return objects
+
+
+def _answer_components(objects: list[Any], source: str) -> list[Any]:
+    # This is answer layout, not a mathematical parser. Parse each declared component
+    # upstream before set conversion can erase duplicates (e.g. two answers both 1).
+    from latex2sympy2_extended.math_normalization import NormalizationConfig, normalize_latex
+
+    display = normalize_latex(source, NormalizationConfig(boxed='last'))
+    depth = 0
+    start = 0
+    fragments = []
+    for index, char in enumerate(display):
+        if char in '([{':
+            depth += 1
+        elif char in ')]}':
+            depth -= 1
+        elif char == ',' and depth == 0 and (index == 0 or display[index - 1] != '\\'):
+            fragments.append(display[start:index])
+            start = index + 1
+    if not fragments:
+        return _components(objects)
+    fragments.append(display[start:])
+    parts = [_parse(fragment, 'fragment')[0] for fragment in fragments]
+    return [part[0] for part in parts] if all(len(part) == 1 for part in parts) else []
+
+
+def _integer_literal(text: str) -> bool:
     try:
-        return float(num)
-    except Exception:
-        if num.endswith('%'):
-            num = num[:-1]
-            if num.endswith('\\'):
-                num = num[:-1]
-            try:
-                return float(num) / 100
-            except Exception:
-                pass
-    return None
+        value = Decimal(text.replace(',', '').strip())
+        return value.is_finite() and value == value.to_integral_value()
+    except InvalidOperation:
+        return False
 
 
-def is_digit(num):
-    # paired with parse_digits
-    return parse_digits(num) is not None
+@_math_call
+def compare_answers(
+    prediction: str,
+    reference: str,
+    *,
+    prediction_mode: Literal['output', 'fragment'] = 'fragment',
+    absolute_tolerance: list[float] | None = None,
+    relative_tolerance: float | None = None,
+    multiple_answers: bool = False,
+    integer_only: bool = False,
+    numeric_reference: bool = False,
+    validate_reference: bool = True,
+) -> MathResult:
+    """Compare parsed mathematics with optional benchmark numeric policy."""
+    if prediction_mode not in ('output', 'fragment'):
+        raise ValueError('Prediction mode must be output or fragment')
+    if absolute_tolerance is not None:
+        absolute_tolerance = [float(value) for value in absolute_tolerance]
+        if not absolute_tolerance or any(value < 0 or not math.isfinite(value) for value in absolute_tolerance):
+            raise ValueError('Absolute tolerances must be finite and nonnegative')
+    if relative_tolerance is not None:
+        relative_tolerance = float(relative_tolerance)
+        if relative_tolerance < 0 or not math.isfinite(relative_tolerance):
+            raise ValueError('Relative tolerance must be finite and nonnegative')
+    predictions, display = _parse(prediction, prediction_mode)
+    result = MathResult(extracted=display, prediction_valid=bool(predictions))
+
+    def finish() -> MathResult:
+        if validate_reference and not result.reference_valid:
+            raise InvalidMathReference(f'Invalid mathematical reference ({result.reason}): {reference!r}')
+        return result
+
+    golds, gold_display = _parse(reference, 'fragment')
+    result.reference_valid = bool(golds)
+    if not golds:
+        result.reason = 'invalid_reference'
+        return finish()
+    if numeric_reference and (
+        len(golds) != 1 or not golds[0].is_number or not golds[0].is_real or not golds[0].is_finite
+    ):
+        result.reference_valid = False
+        result.reason = 'invalid_numeric_reference'
+        return finish()
+    if integer_only and not _integer_literal(gold_display):
+        result.reference_valid = False
+        result.reason = 'invalid_integer_reference'
+        return finish()
+    if not predictions:
+        result.reason = 'prediction_not_parsed'
+        return finish()
+    if integer_only and not _integer_literal(display):
+        result.reason = 'integer_literal_required'
+        return finish()
+    if multiple_answers:
+        golds = _answer_components(golds, reference)
+        predictions = _answer_components(predictions, prediction)
+        if not golds:
+            result.reference_valid = False
+            result.reason = 'invalid_reference'
+            return finish()
+        if len(golds) != len(predictions):
+            result.reason = 'answer_count_mismatch'
+            return finish()
+    absolute = absolute_tolerance
+    if absolute is not None and len(absolute) not in (1, len(golds)):
+        raise ValueError('Tolerance count must be one or equal to the reference answer count')
+
+    def matches(gold: Any, prediction: Any, index: int) -> bool:
+        if absolute is not None or relative_tolerance is not None:
+            from sympy import Equality
+
+            # A declared numeric component may include its variable label (Delta=...).
+            # Delegate label equivalence, then apply the component's explicit tolerance.
+            if (
+                isinstance(gold, Equality)
+                and isinstance(prediction, Equality)
+                and gold.rhs.is_number
+                and prediction.rhs.is_number
+                and _verify(gold.lhs, prediction.lhs)
+            ):
+                gold, prediction = gold.rhs, prediction.rhs
+            if (
+                getattr(gold, 'is_number', False)
+                and getattr(prediction, 'is_number', False)
+                and gold.is_real
+                and prediction.is_real
+            ):
+                return _numeric_close(
+                    gold,
+                    prediction,
+                    absolute[min(index, len(absolute) - 1)] if absolute else 0,
+                    relative_tolerance or 0,
+                )
+        return _verify(gold, prediction)
+
+    if multiple_answers:
+
+        def assign(index: int, remaining: list[Any]) -> bool:
+            if index == len(golds):
+                return True
+            return any(
+                matches(golds[index], pred, index) and assign(index + 1, remaining[:i] + remaining[i + 1 :])
+                for i, pred in enumerate(remaining)
+            )
+
+        result.matched = assign(0, predictions)
+    else:
+        result.matched = any(matches(gold, pred, i) for i, gold in enumerate(golds) for pred in predictions)
+    result.reason = 'matched' if result.matched else 'not_equivalent'
+    return finish()
 
 
-def str_to_pmatrix(input_str):
-    input_str = input_str.strip()
-    matrix_str = re.findall(r'\{.*,.*\}', input_str)
-    pmatrix_list = []
+@_math_call
+def extract_answer(pred_str: str, use_last_number: bool = True) -> str:
+    """Extract display text from full output, preserving percent signs.
 
-    for m in matrix_str:
-        m = m.strip('{}')
-        pmatrix = r'\begin{pmatrix}' + m.replace(',', '\\') + r'\end{pmatrix}'
-        pmatrix_list.append(pmatrix)
+    ``use_last_number`` is deprecated: extraction follows Math-Verify's strategy.
+    Unparsed fallback text is display-only and cannot establish mathematical equality.
+    """
+    if not use_last_number:
+        warnings.warn(
+            'use_last_number is deprecated; Math-Verify controls extraction', DeprecationWarning, stacklevel=2
+        )
+    return _parse(pred_str, 'output')[1]
 
-    return ', '.join(pmatrix_list)
+
+@_math_call
+def strip_answer_string(string: str) -> str:
+    """Return upstream-normalized display text for an already extracted math fragment."""
+    return _parse(string, 'fragment')[1]
 
 
 def math_equal(
-    prediction,
-    reference,
+    prediction: Any,
+    reference: Any,
     include_percentage: bool = True,
     is_close: bool = True,
     timeout: bool = False,
 ) -> bool:
+    """Compare using HF defaults with library signal timers disabled.
+
+    Legacy algorithm switches are deprecated and no longer alter scoring rules.
+    ``10`` and ``10%`` can match under HF's integer percentage compatibility.
     """
-    Exact match of math if and only if:
-    1. numerical equal: both can convert to float and are equal
-    2. symbolic equal: both can convert to sympy expression and are equal
+    if not include_percentage or not is_close or timeout:
+        warnings.warn(
+            'include_percentage, is_close and timeout are deprecated and do not change Math-Verify scoring',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    return compare_answers(
+        '' if prediction is None else str(prediction),
+        '' if reference is None else str(reference),
+        validate_reference=False,
+    ).matched
+
+
+@_math_call
+def extract_boxed_answers(text: str) -> list[str]:
+    """Delegate boxed boundaries upstream while retaining ordered subquestion payloads."""
+    return _boxed_parts(text)[0]
+
+
+@_math_call
+def extract_boxed_answer_text(text: str) -> str:
+    """Return the final complete boxed payload and its same-line suffix, including units.
+
+    An unfinished final box returns an empty answer instead of exposing its digits.
     """
-    if prediction is None or reference is None:
-        return False
-    if str(prediction.strip().lower()) == str(reference.strip().lower()):
-        return True
-    if reference in ['A', 'B', 'C', 'D', 'E'] and choice_answer_clean(prediction) == reference:
-        return True
-
-    try:  # 1. numerical equal
-        if is_digit(prediction) and is_digit(reference):
-            prediction = parse_digits(prediction)
-            reference = parse_digits(reference)
-            # number questions
-            if include_percentage:
-                gt_result = [reference / 100, reference, reference * 100]
-            else:
-                gt_result = [reference]
-            for item in gt_result:
-                try:
-                    if is_close:
-                        if numeric_equal(prediction, item):
-                            return True
-                    else:
-                        if item == prediction:
-                            return True
-                except Exception:
-                    continue
-            return False
-    except Exception:
-        pass
-
-    if not prediction and prediction not in [0, False]:
-        return False
-
-    # 2. symbolic equal
-    reference = str(reference).strip()
-    prediction = str(prediction).strip()
-
-    ## pmatrix (amps)
-    if 'pmatrix' in prediction and 'pmatrix' not in reference:
-        reference = str_to_pmatrix(reference)
-
-    ## deal with [], (), {}
-    pred_str, ref_str = prediction, reference
-    if (prediction.startswith('[') and prediction.endswith(']') and not reference.startswith('(')) or (
-        prediction.startswith('(') and prediction.endswith(')') and not reference.startswith('[')
-    ):
-        pred_str = pred_str.strip('[]()')
-        ref_str = ref_str.strip('[]()')
-    for s in ['{', '}', '(', ')']:
-        ref_str = ref_str.replace(s, '')
-        pred_str = pred_str.replace(s, '')
-    if pred_str.lower() == ref_str.lower():
-        return True
-
-    ## [a, b] vs. [c, d], return a==c and b==d
-    if (
-        regex.match(r'(\(|\[).+(\)|\])', prediction) is not None
-        and regex.match(r'(\(|\[).+(\)|\])', reference) is not None
-    ):
-        pred_parts = prediction[1:-1].split(',')
-        ref_parts = reference[1:-1].split(',')
-        if len(pred_parts) == len(ref_parts):
-            if all(
-                [math_equal(pred_parts[i], ref_parts[i], include_percentage, is_close) for i in range(len(pred_parts))]
-            ):
-                return True
-    if (
-        (prediction.startswith('\\begin{pmatrix}') or prediction.startswith('\\begin{bmatrix}'))
-        and (prediction.endswith('\\end{pmatrix}') or prediction.endswith('\\end{bmatrix}'))
-        and (reference.startswith('\\begin{pmatrix}') or reference.startswith('\\begin{bmatrix}'))
-        and (reference.endswith('\\end{pmatrix}') or reference.endswith('\\end{bmatrix}'))
-    ):
-        pred_lines = [
-            line.strip()
-            for line in prediction[len('\\begin{pmatrix}') : -len('\\end{pmatrix}')].split('\\\\')
-            if line.strip()
-        ]
-        ref_lines = [
-            line.strip()
-            for line in reference[len('\\begin{pmatrix}') : -len('\\end{pmatrix}')].split('\\\\')
-            if line.strip()
-        ]
-        matched = True
-        if len(pred_lines) == len(ref_lines):
-            for pred_line, ref_line in zip(pred_lines, ref_lines):
-                pred_parts = pred_line.split('&')
-                ref_parts = ref_line.split('&')
-                if len(pred_parts) == len(ref_parts):
-                    if not all(
-                        [
-                            math_equal(
-                                pred_parts[i],
-                                ref_parts[i],
-                                include_percentage,
-                                is_close,
-                            )
-                            for i in range(len(pred_parts))
-                        ]
-                    ):
-                        matched = False
-                        break
-                else:
-                    matched = False
-                if not matched:
-                    break
-        else:
-            matched = False
-        if matched:
-            return True
-
-    if prediction.count('=') == 1 and reference.count('=') == 1:
-        pred = prediction.split('=')
-        pred = f'{pred[0].strip()} - ({pred[1].strip()})'
-        ref = reference.split('=')
-        ref = f'{ref[0].strip()} - ({ref[1].strip()})'
-        if symbolic_equal(pred, ref) or symbolic_equal(f'-({pred})', ref):
-            return True
-    elif prediction.count('=') == 1 and len(prediction.split('=')[0].strip()) <= 2 and '=' not in reference:
-        if math_equal(prediction.split('=')[1], reference, include_percentage, is_close):
-            return True
-    elif reference.count('=') == 1 and len(reference.split('=')[0].strip()) <= 2 and '=' not in prediction:
-        if math_equal(prediction, reference.split('=')[1], include_percentage, is_close):
-            return True
-
-    if symbolic_equal(prediction, reference):
-        return True
-
-    return False
+    return _boxed_parts(text)[1]
 
 
-def numeric_equal(prediction: float, reference: float):
-    return isclose(reference, prediction, rel_tol=1e-4)
+@_math_call
+def parse_digits(num: Any, *, prediction_mode: Literal['output', 'fragment'] = 'fragment') -> float | None:
+    """Return an upstream-parsed real number, without a separate numeric parser."""
+    return _number(_parse(str(num), prediction_mode)[0])
 
 
-def symbolic_equal(a, b):
-
-    def _parse(s):
-        for f in [parse_latex, parse_expr, latex2sympy]:
-            try:
-                return f(s.replace('\\\\', '\\'))
-            except Exception:
-                try:
-                    return f(s)
-                except Exception:
-                    pass
-        return s
-
-    a = _parse(a)
-    b = _parse(b)
-
-    # direct equal
-    try:
-        if str(a) == str(b) or a == b:
-            return True
-    except Exception:
-        pass
-
-    # simplify equal
-    try:
-        if a.equals(b) or simplify(a - b) == 0:
-            return True
-    except Exception:
-        pass
-
-    # equation equal
-    try:
-        if (abs(a.lhs - a.rhs)).equals(abs(b.lhs - b.rhs)):
-            return True
-    except Exception:
-        pass
-
-    try:
-        if numeric_equal(float(N(a)), float(N(b))):
-            return True
-    except Exception:
-        pass
-
-    # matrix
-    try:
-        # if a and b are matrix
-        if a.shape == b.shape:
-            _a = a.applyfunc(lambda x: round(x, 3))
-            _b = b.applyfunc(lambda x: round(x, 3))
-            if _a.equals(_b):
-                return True
-    except Exception:
-        pass
-
-    return False
+def is_digit(num: Any) -> bool:
+    """Report whether Math-Verify parsed a finite real number."""
+    return parse_digits(num) is not None
 
 
-if __name__ == '__main__':
-    print(math_equal('\n\\boxed{70,\\!000}\n', '70000'))
-    print(extract_answer('The answer is \\boxed{70,\\!000}'))
-    print(strip_answer_string(extract_answer('The answer is \\boxed{70,\\!000}')))
-    print(math_equal(extract_answer('The answer is \\boxed{70,\\!000}'), '70000'))
+def numeric_equal(prediction: float, reference: float) -> bool:
+    """Delegate the legacy numeric helper to the common HF comparison."""
+    return math_equal(prediction, reference)
+
+
+def symbolic_equal(a: Any, b: Any) -> bool:
+    """Delegate the legacy symbolic helper to the common HF comparison."""
+    return math_equal(a, b)
+
+
+@_math_call
+def convert_word_number(text: str) -> str:
+    """Deprecated word-number conversion; supported numbers are parsed upstream."""
+    warnings.warn(
+        'convert_word_number is deprecated; only upstream-supported notation is parsed',
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    objects, display = _parse(text, 'fragment')
+    return display if _number(objects) is not None else text
+
+
+@_math_call
+def str_to_pmatrix(input_str: str) -> str:
+    """Deprecated matrix rewrite; render the upstream-parsed mathematics instead."""
+    warnings.warn(
+        'str_to_pmatrix is deprecated; matrix notation is handled by Math-Verify', DeprecationWarning, stacklevel=2
+    )
+    from sympy import latex
+
+    objects, display = _parse(input_str, 'fragment')
+    return latex(objects[0]) if len(objects) == 1 else display
+
+
+def choice_answer_clean(pred: str) -> str:
+    """Retain the legacy categorical text cleanup independently of math scoring."""
+    pred = pred.strip('\n').rstrip('.').rstrip('/').strip(' ').lstrip(':')
+    matches = re.findall(r'\b(A|B|C|D|E)\b', pred.upper())
+    return (matches[-1] if matches else pred.strip().strip('.')).rstrip('.').rstrip('/')

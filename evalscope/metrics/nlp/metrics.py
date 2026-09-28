@@ -50,14 +50,12 @@ class Accuracy(ExactMatch):
                 )
             return results
         elif self.numeric:
-            from evalscope.metrics.math.parser import math_equal, strip_answer_string
+            from evalscope.metrics.math.parser import compare_answers
 
-            results = []
-            for prediction, reference in zip(predictions, references):
-                ref_answer = strip_answer_string(reference)
-                results.append(float(math_equal(prediction, ref_answer)))
-
-            return results
+            return [
+                float(compare_answers(prediction, reference).matched)
+                for prediction, reference in zip(predictions, references)
+            ]
         else:
             return super().apply(predictions, references)
 
@@ -71,15 +69,12 @@ class NumericMatch(Metric):
 @register_metric(name='math_acc')
 class MathAcc(Metric):
     def apply(self, predictions, references):
-        from evalscope.metrics.math.parser import extract_answer, math_equal, strip_answer_string
+        from evalscope.metrics.math.parser import compare_answers
 
-        results = []
-        for prediction, reference in zip(predictions, references):
-            pred_answer = strip_answer_string(extract_answer(prediction))
-            ref_answer = strip_answer_string(reference)
-            results.append(float(math_equal(pred_answer, ref_answer)))
-
-        return results
+        return [
+            float(compare_answers(prediction, reference, prediction_mode='output').matched)
+            for prediction, reference in zip(predictions, references)
+        ]
 
 
 @register_metric(name='multi_choice_acc')

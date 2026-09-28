@@ -170,6 +170,9 @@ examples/api_test/
 .pr-review/
 .scratch_wl/
 
+# Local math migration evidence (datasets, replays, logs and reports)
+/validation/math_verify/
+
 # Frontend (evalscope/web)
 node_modules/
 evalscope/web/dist/

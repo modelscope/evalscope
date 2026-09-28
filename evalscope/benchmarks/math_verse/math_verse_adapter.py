@@ -3,7 +3,9 @@ from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
+from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import ScoringPolicy, Tags
 from evalscope.utils.io_utils import bytes_to_base64
@@ -27,6 +29,7 @@ SUBSET_LIST = ['Text Dominant', 'Text Lite', 'Vision Intensive', 'Vision Dominan
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='math_verse',
         pretty_name='MathVerse',
         dataset_id='evalscope/MathVerse',
@@ -128,4 +131,24 @@ class MathVerseAdapter(VisionLanguageAdapter):
     def extract_answer(self, prediction: str, task_state):
         from evalscope.metrics.math.parser import extract_answer
 
+        if task_state.metadata.get('question_type') == MULTI_CHOICE_TYPE:
+            from evalscope.metrics.math.parser import choice_answer_clean
+
+            return choice_answer_clean(prediction)
         return extract_answer(prediction)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Keep categorical answers on exact matching; open answers use Math-Verify."""
+        if task_state.metadata.get('question_type') == MULTI_CHOICE_TYPE:
+            return Score(
+                prediction=original_prediction,
+                extracted_prediction=filtered_prediction,
+                value={
+                    'accuracy': float(
+                        bool(filtered_prediction) and filtered_prediction.strip().upper() == reference.strip().upper()
+                    )
+                },
+            )
+        return super().match_score(original_prediction, filtered_prediction, reference, task_state)

@@ -9,7 +9,7 @@ from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
 from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
-from evalscope.api.metric import AggScore, SampleScore, Score
+from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy, ScoreStatus
@@ -673,6 +673,8 @@ class DefaultDataAdapter(DataAdapter):
                 logger.error(f'Error calculating metric {metric}: {e}')
                 metric_failed = True
                 score.metadata[metric_name] = f'error: {str(e)}'
+                if isinstance(e, MetricUnavailableError):
+                    score.metadata['metric_unavailable'] = True
 
         if metric_failed:
             score.status = ScoreStatus.DEGRADED if score.value else ScoreStatus.EXCLUDED
@@ -705,61 +707,76 @@ class DefaultDataAdapter(DataAdapter):
         else:
             prediction = task_state.output.completion
 
-        # Apply filtering and answer extraction
-        filtered_prediction = self.filter_prediction(prediction, task_state)
+        filtered_prediction = ''
+        try:
+            # Apply filtering and answer extraction
+            filtered_prediction = self.filter_prediction(prediction, task_state)
 
-        if self.judge_strategy == JudgeStrategy.LLM_RECALL:
-            # Step 1: Calculate standard metric scores (rule-based)
-            rule_based_score = self.match_score(
-                original_prediction=prediction,
-                filtered_prediction=filtered_prediction,
-                reference=task_state.target,
-                task_state=task_state,
-            )
-
-            rule_main_available = rule_based_score.status.is_usable and (
-                rule_based_score.main_score_name is None or rule_based_score.main_score_name in rule_based_score.value
-            )
-            if rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
-                final_score = rule_based_score
-            else:
-                # A valid judge may raise the rule score; an unavailable judge preserves it.
-                judge_score = self.score_with_judge_contracts(
+            if self.judge_strategy == JudgeStrategy.LLM_RECALL:
+                # Step 1: Calculate standard metric scores (rule-based)
+                rule_based_score = self.match_score(
                     original_prediction=prediction,
                     filtered_prediction=filtered_prediction,
                     reference=task_state.target,
                     task_state=task_state,
                 )
-                final_score = self._merge_scores(rule_based_score, judge_score)
-        else:
-            if self.use_llm_judge:
-                # Judge-default benchmarks retain their usable rule score when the judge fails.
-                judge_score = self.score_with_judge_contracts(
-                    original_prediction=prediction,
-                    filtered_prediction=filtered_prediction,
-                    reference=task_state.target,
-                    task_state=task_state,
+
+                rule_main_available = rule_based_score.status.is_usable and (
+                    rule_based_score.main_score_name is None
+                    or rule_based_score.main_score_name in rule_based_score.value
                 )
-                if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
-                    final_score = self.fallback_to_rule_score(
-                        self.match_score(
-                            original_prediction=prediction,
-                            filtered_prediction=filtered_prediction,
-                            reference=task_state.target,
-                            task_state=task_state,
-                        ),
-                        judge_score,
-                    )
+                if rule_based_score.metadata.get('metric_unavailable'):
+                    # Invalid inputs and failed execution remain excluded before judge I/O.
+                    final_score = rule_based_score
+                elif rule_main_available and float(rule_based_score.main_value or 0.0) > 0.99:
+                    final_score = rule_based_score
                 else:
-                    final_score = judge_score
+                    # A valid judge may raise the rule score; an unavailable judge preserves it.
+                    judge_score = self.score_with_judge_contracts(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+                    final_score = self._merge_scores(rule_based_score, judge_score)
             else:
-                # Use standard match score calculation without LLM judge
-                final_score = self.match_score(
-                    original_prediction=prediction,
-                    filtered_prediction=filtered_prediction,
-                    reference=task_state.target,
-                    task_state=task_state,
-                )
+                if self.use_llm_judge:
+                    # Judge-default benchmarks retain their usable rule score when the judge fails.
+                    judge_score = self.score_with_judge_contracts(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+                    if not judge_score.status.is_usable and self.scoring_policy.rule_supported:
+                        final_score = self.fallback_to_rule_score(
+                            self.match_score(
+                                original_prediction=prediction,
+                                filtered_prediction=filtered_prediction,
+                                reference=task_state.target,
+                                task_state=task_state,
+                            ),
+                            judge_score,
+                        )
+                    else:
+                        final_score = judge_score
+                else:
+                    # Use standard match score calculation without LLM judge
+                    final_score = self.match_score(
+                        original_prediction=prediction,
+                        filtered_prediction=filtered_prediction,
+                        reference=task_state.target,
+                        task_state=task_state,
+                    )
+        except MetricUnavailableError as exc:
+            logger.error(f'Scoring unavailable for sample {task_state.sample_id}: {exc}')
+            final_score = Score(
+                prediction=prediction,
+                extracted_prediction=filtered_prediction,
+                status=ScoreStatus.EXCLUDED,
+                explanation=str(exc),
+                metadata={'metric_unavailable': True, 'error': str(exc)},
+            )
 
         # Package the results into a sample score object
         sample_score = SampleScore(
