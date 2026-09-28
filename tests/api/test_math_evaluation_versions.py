@@ -73,6 +73,43 @@ def test_gsm8k_old_review_is_blocked_and_predictions_can_be_rescored(tmp_path: A
     assert review['sample_score']['score']['value']['accuracy'] == 1
 
 
+def test_math_extraction_failure_is_persisted_without_aborting_evaluation(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import math_verify
+
+    data = tmp_path / 'data'
+    data.mkdir()
+    records = [{'question': f'Fixed question {i}', 'answer': 'Reasoning. #### 1'} for i in range(2)]
+    (data / 'test.jsonl').write_text(''.join(json.dumps(record) + '\n' for record in records))
+    original_parse = math_verify.parse
+    failed = False
+
+    def parse(*args: Any, **kwargs: Any) -> Any:
+        nonlocal failed
+        if not failed:
+            failed = True
+            raise RuntimeError('parser execution failed')
+        return original_parse(*args, **kwargs)
+
+    monkeypatch.setattr(math_verify, 'parse', parse)
+    monkeypatch.setattr(MockLLM, 'default_output', r'\boxed{1}')
+    work = tmp_path / 'run'
+    run_task(TaskConfig(
+        model='offline', eval_type='mock_llm', datasets=['gsm8k'], no_timestamp=True,
+        work_dir=str(work), judge={'strategy': 'rule'}, ignore_errors=False, eval_batch_size=1,
+        dataset_args={'gsm8k': {'local_path': str(data), 'few_shot_num': 0, 'subset_list': ['default']}},
+    ))
+
+    reviews = [json.loads(line) for line in (work / 'reviews/offline/gsm8k_default.jsonl').read_text().splitlines()]
+    scores = [review['sample_score']['score'] for review in reviews]
+    assert [score['status'] for score in scores] == ['excluded', 'success']
+    assert scores[0]['value'] == {} and scores[0]['metadata']['metric_unavailable'] is True
+    assert 'parser execution failed' in scores[0]['explanation']
+    report = json.loads((work / 'reports/offline/gsm8k.json').read_text())
+    assert report['metrics'][0]['num'] == 1 and report['metrics'][0]['score'] == 1
+
+
 @pytest.mark.parametrize('benchmark', ['chartqa', 'measure_bench'])
 def test_instrument_old_review_is_blocked_and_predictions_can_be_rescored(
     benchmark: str, tmp_path: Any, monkeypatch: Any

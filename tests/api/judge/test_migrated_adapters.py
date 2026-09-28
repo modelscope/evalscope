@@ -48,6 +48,42 @@ def make_state(prediction: str, target: str) -> TaskState:
     return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
 
 
+@pytest.mark.parametrize('answers', [[], [''], [' '], [r'\frac{'], ['1', r'\frac{']])
+@pytest.mark.parametrize('prediction', ['', r'\boxed{1} \boxed{2}'])
+def test_hipho_invalid_reference_excludes_before_judge(answers: List[str], prediction: str) -> None:
+    adapter = get_benchmark('hipho', TaskConfig(datasets=['hipho'], judge={'strategy': 'llm'}))
+    judge = ScriptedJudge(['{"correct": true}'])
+    adapter.llm_judge = judge
+    task = make_state(prediction, '')
+    task.metadata = {'answers': answers, 'marking': [], 'question': 'question'}
+
+    score = adapter.calculate_metrics(task).score
+
+    assert score.status is ScoreStatus.EXCLUDED and score.value == {}
+    assert judge.calls == []
+
+
+@pytest.mark.parametrize(('prediction', 'expected', 'calls'), [
+    (r'\boxed{1} \boxed{2}', 1.0, 0),
+    (r'\boxed{1}', 0.5, 0),
+    ('', 0.0, 0),
+    (r'\boxed{1} \boxed{3}', 0.5, 1),
+])
+def test_hipho_valid_answers_keep_partial_credit_and_judge_fallback(
+    prediction: str, expected: float, calls: int,
+) -> None:
+    adapter = get_benchmark('hipho', TaskConfig(datasets=['hipho'], judge={'strategy': 'llm'}))
+    judge = ScriptedJudge(['{"correct": false}'])
+    adapter.llm_judge = judge
+    task = make_state(prediction, '')
+    task.metadata = {'answers': ['1', '2'], 'marking': [], 'question': 'question'}
+
+    score = adapter.calculate_metrics(task).score
+
+    assert score.status is ScoreStatus.SUCCESS and score.main_value == expected
+    assert len(judge.calls) == calls
+
+
 def make_one_million_state(adapter) -> TaskState:
     sample = adapter.record_to_sample(
         {

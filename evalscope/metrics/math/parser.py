@@ -134,7 +134,7 @@ def _numeric_close(gold: Any, prediction: Any, absolute: float, relative: float)
     with localcontext() as context:
         context.prec = 50
         pred, ref = decimal_value(prediction), decimal_value(gold)
-        threshold = max(Decimal(str(absolute)), Decimal(str(relative)) * max(abs(pred), abs(ref)))
+        threshold = max(Decimal(str(absolute)), Decimal(str(relative)) * abs(ref))
         return abs(pred - ref) <= threshold
 
 

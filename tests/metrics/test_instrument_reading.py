@@ -157,15 +157,17 @@ def test_measurebench_execution_failure_is_not_scored_zero(operation: str, monke
         raise MathEvaluationError('Mathematical evaluation failed')
 
     monkeypatch.setattr(parser, operation, fail)
-    with pytest.raises(MathEvaluationError, match='evaluation failed'):
-        score_answer(
-            'measure_bench',
-            r'\boxed{\frac{3}{4}} m',
-            metadata={
-                'evaluator': 'interval_matching',
-                'evaluator_kwargs': '{"interval": [0.74, 0.76], "units": ["m"]}',
-            },
-        )
+    score = score_answer(
+        'measure_bench',
+        r'\boxed{\frac{3}{4}} m',
+        metadata={
+            'evaluator': 'interval_matching',
+            'evaluator_kwargs': '{"interval": [0.74, 0.76], "units": ["m"]}',
+        },
+    )
+    assert score.status is ScoreStatus.EXCLUDED and score.value == {}
+    assert score.metadata['metric_unavailable'] is True
+    assert score.explanation == 'Mathematical evaluation failed'
 
 
 @pytest.mark.parametrize(

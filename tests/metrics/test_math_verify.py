@@ -133,6 +133,21 @@ def test_docmath_rule_path(prediction: Any, reference: Any, answer_type: Any, ex
     assert result.main_value == expected
 
 
+@pytest.mark.parametrize(('prediction', 'reference', 'expected'), [
+    ('100.15', '100', 1), ('100.1502', '100', 0),
+    ('99.85', '100', 1), ('99.8498', '100', 0),
+    ('-100.15', '-100', 1), ('-100.1502', '-100', 0),
+    ('-99.85', '-100', 1), ('-99.8498', '-100', 0),
+    ('0', '0', 1), ('0.000000001', '0', 0),
+])
+def test_docmath_tolerance_uses_the_reference_magnitude(
+    prediction: str, reference: str, expected: int,
+) -> None:
+    result = adapter('docmath').calculate_metrics(
+        state(r'\boxed{' + prediction + '}', reference, {'answer_type': 'float'})).score
+    assert result.main_value == expected
+
+
 @pytest.mark.parametrize('reference', ['', r'\frac{'])
 def test_invalid_reference_is_excluded_in_real_adapter(reference: str) -> None:
     result = adapter('gsm8k').calculate_metrics(state('0', reference)).score
@@ -320,3 +335,52 @@ def test_upstream_verification_errors_remain_excluded_before_judge(monkeypatch: 
     score = benchmark.calculate_metrics(state(r'\boxed{2}', '2')).score
     assert score.status is ScoreStatus.EXCLUDED and score.value == {}
     assert score.metadata['metric_unavailable'] is True
+
+
+@pytest.mark.parametrize('strategy', ['rule', 'llm_recall'])
+def test_extraction_execution_failure_excludes_only_the_failed_sample(
+    strategy: str, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import math_verify
+
+    benchmark = get_benchmark('gsm8k', TaskConfig(datasets=['gsm8k'], judge={'strategy': strategy}))
+    original_parse = math_verify.parse
+    failed = False
+
+    def parse(*args: Any, **kwargs: Any) -> Any:
+        nonlocal failed
+        if not failed:
+            failed = True
+            raise RuntimeError('parser execution failed')
+        return original_parse(*args, **kwargs)
+
+    def unexpected(*args: Any, **kwargs: Any) -> None:
+        pytest.fail('Failed mathematical extraction must not request judge recall')
+
+    monkeypatch.setattr(math_verify, 'parse', parse)
+    monkeypatch.setattr(benchmark, 'score_with_judge_contracts', unexpected)
+    failed_score = benchmark.calculate_metrics(state(r'\boxed{1}', '1'))
+    next_state = TaskState(
+        model='offline', sample=Sample(id=1, input='question', target='1'),
+        output=ModelOutput.from_content('offline', r'\boxed{1}'), completed=True,
+    )
+    next_score = benchmark.calculate_metrics(next_state)
+
+    assert failed_score.score.status is ScoreStatus.EXCLUDED and failed_score.score.value == {}
+    assert failed_score.score.prediction == r'\boxed{1}'
+    assert failed_score.score.metadata['metric_unavailable'] is True
+    assert 'parser execution failed' in failed_score.score.explanation
+    assert next_score.score.status is ScoreStatus.SUCCESS and next_score.score.main_value == 1
+    aggregate, = benchmark.aggregate_scores([failed_score, next_score])
+    assert aggregate.num == 1 and aggregate.score == 1 and aggregate.ids == [1]
+
+
+def test_unexpected_extraction_bug_still_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
+    benchmark = adapter('gsm8k')
+
+    def fail(*args: Any, **kwargs: Any) -> None:
+        raise ValueError('adapter bug')
+
+    monkeypatch.setattr(benchmark, 'extract_answer', fail)
+    with pytest.raises(ValueError, match='adapter bug'):
+        benchmark.calculate_metrics(state(r'\boxed{1}', '1'))

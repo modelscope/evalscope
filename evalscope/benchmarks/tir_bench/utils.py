@@ -178,7 +178,7 @@ def judge_choice(extracted_answer: str, answer: str, prompt_text: str) -> float:
 
 
 def judge_int(extracted_answer: str, answer: str) -> float:
-    """Compare the extracted numeric answer with isolated Math-Verify."""
+    """Compare the extracted numeric answer with Math-Verify."""
     from evalscope.metrics.math.parser import compare_answers
 
     prediction = extracted_answer.replace('Extracted answer:', '').strip()
