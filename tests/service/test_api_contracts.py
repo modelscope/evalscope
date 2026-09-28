@@ -36,6 +36,7 @@ from evalscope.service.api_models import (
     WebApiContracts,
 )
 from evalscope.service.responses import json_response
+from evalscope.version import __version__
 
 ROOT = Path(__file__).parents[2]
 
@@ -116,7 +117,7 @@ def client(tmp_path):
 def test_config_and_idle_task_endpoints_use_response_contracts(client, tmp_path) -> None:
     config = client.get('/api/v1/config')
     assert config.status_code == 200
-    assert config.get_json() == {'outputs_root': str(tmp_path)}
+    assert config.get_json() == {'outputs_root': str(tmp_path), 'version': __version__}
 
     for scope in ('eval', 'perf'):
         progress = client.get(f'/api/v1/{scope}/progress', query_string={'task_id': 'missing-task'})

@@ -167,6 +167,7 @@ export interface PredictionToolCall {
 }
 export interface ConfigResponse {
   outputs_root: string;
+  version: string;
 }
 export interface DataFrameResponse {
   columns: string[];

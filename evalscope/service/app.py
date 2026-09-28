@@ -8,6 +8,7 @@ from datetime import datetime
 from flask import Flask, jsonify, send_from_directory
 
 from evalscope.utils.logger import get_logger
+from evalscope.version import __version__
 
 from .api_models import ConfigResponse
 from .blueprints import bp_eval, bp_perf, bp_reports
@@ -67,6 +68,7 @@ def create_app(outputs: str = None):
             ConfigResponse,
             {
                 'outputs_root': outputs_root or _DEFAULT_ROOT,
+                'version': __version__,
             },
         )
 

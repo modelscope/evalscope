@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useLocale } from '@/contexts/LocaleContext'
+import { useAppConfig } from '@/contexts/ReportsContext'
 import LocaleToggle from './LocaleToggle'
 import ThemeToggle from './ThemeToggle'
 import { BarChart3, Gauge, FlaskConical, BookOpen, FileText, Menu, X } from 'lucide-react'
@@ -28,6 +29,7 @@ const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function TopNav() {
   const { t } = useLocale()
+  const { config } = useAppConfig()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const navItems = [
@@ -58,6 +60,14 @@ export default function TopNav() {
             <span className="font-bold text-base tracking-tight text-[var(--text)]">
               Eval<span className="text-[var(--accent)]">Scope</span>
             </span>
+            {config?.version && (
+              <span
+                title={`EvalScope version ${config.version}`}
+                className="rounded border border-[var(--border)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-muted)]"
+              >
+                v{config.version}
+              </span>
+            )}
           </div>
           {/* Desktop nav — full text, lg+ */}
           <nav className="hidden lg:flex items-center gap-0.5">
