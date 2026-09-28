@@ -31,26 +31,21 @@ class _Worker:
         )
         self.responses: queue.Queue[str | None] = queue.Queue()
         self.requests: queue.Queue[str | None] = queue.Queue()
-        self.reader = threading.Thread(target=self._read, daemon=True, name='math-verify-reader')
-        self.writer = threading.Thread(target=self._write, daemon=True, name='math-verify-writer')
-        self.reader.start()
-        self.writer.start()
+        self.io = threading.Thread(target=self._communicate, daemon=True, name='math-verify-io')
+        self.io.start()
 
-    def _write(self) -> None:
+    def _communicate(self) -> None:
+        # A leased worker handles one request at a time; one thread can cover both pipes.
         while (line := self.requests.get()) is not None:
             try:
                 self.process.stdin.write(line)
                 self.process.stdin.flush()
+                response = self.process.stdout.readline()
             except (BrokenPipeError, OSError, ValueError):
-                self.responses.put(None)
+                response = None
+            self.responses.put(response or None)
+            if not response:
                 return
-
-    def _read(self) -> None:
-        try:
-            for line in self.process.stdout:
-                self.responses.put(line)
-        finally:
-            self.responses.put(None)
 
     def execute(self, request: MathRequest, deadline: float) -> MathResult:
         try:
@@ -74,8 +69,7 @@ class _Worker:
             self.process.kill()
         self.process.wait()
         self.requests.put(None)
-        self.writer.join(timeout=1)
-        self.reader.join(timeout=1)
+        self.io.join(timeout=1)
         for stream in [self.process.stdin, self.process.stdout]:
             stream.close()
 
