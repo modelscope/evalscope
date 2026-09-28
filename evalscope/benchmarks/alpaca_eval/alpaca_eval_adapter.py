@@ -103,6 +103,7 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
         dataset_id='AI-ModelScope/alpaca_eval',
         subset_list=['alpaca_eval_gpt4_baseline'],
         metric_list=['win_rate'],
+        evaluation_version='v1.1',
         few_shot_num=0,
         train_split=None,
         eval_split='eval',
@@ -154,9 +155,12 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
 
         def reduce(case_verdicts, judge_context) -> ReducedVerdict:
             values = case_verdicts[0].placements or {'original': case_verdicts[0].value}
+            # The AlpacaEval judge picks one output and has no slight preference,
+            # so a win counts as 1 and a loss counts as 0.
             outcomes = {
                 name: PairwisePlacementOutcome(
-                    result='win' if verdict.verdict == ('m' if name == 'swapped' else 'M') else 'loss'
+                    result='win' if verdict.verdict == ('m' if name == 'swapped' else 'M') else 'loss',
+                    strength='strong',
                 )
                 for name, verdict in values.items()
             }
@@ -165,7 +169,7 @@ class AlpacaEvalAdapter(DefaultDataAdapter):
                 if len({item.result for item in outcomes.values()}) == 1
                 else 'tie'
             )
-            outcome = PairwiseOutcome(metric_name='win_rate', result=result, placements=outcomes)
+            outcome = PairwiseOutcome(metric_name='win_rate', result=result, strength='strong', placements=outcomes)
             return ReducedVerdict(value={'win_rate': outcome.score}, outcome=outcome)
 
         return JudgeDefinition.workflow(

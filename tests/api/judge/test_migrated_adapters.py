@@ -316,9 +316,22 @@ def test_position_swap_on_overrides_alpaca_eval_official_single_pass():
     score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
 
     assert score.status is ScoreStatus.SUCCESS
-    assert score.value['win_rate'] == 0.75
+    assert score.value['win_rate'] == 1.0
     assert len(score.metadata['judge_attempts']) == 2
     assert score.metadata['non_official_position_swap'] is True
+
+
+@pytest.mark.parametrize(('reply', 'expected'), [('{"verdict": "M"}', 1.0), ('{"verdict": "m"}', 0.0)])
+def test_alpaca_eval_counts_a_win_as_one_and_a_loss_as_zero(reply: str, expected: float) -> None:
+    config = TaskConfig(model='m', datasets=['alpaca_eval'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]})
+    adapter = get_benchmark('alpaca_eval', config)
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.calculate_metrics(make_state('candidate', 'baseline')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value['win_rate'] == expected
+    assert len(score.metadata['judge_attempts']) == 1
 
 
 def make_mt_bench_adapter() -> MTBenchAdapter:
