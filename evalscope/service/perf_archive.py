@@ -337,6 +337,10 @@ def build_run_detail(root: str, rel_path: str) -> dict:
     is_emb = is_embedding(api_type)
     request_counts = [RunLoader.count_request_samples(os.path.join(run_dir, run.dir_name)) for run in runs]
     summary_columns, summary_rows = build_summary_table(runs, is_emb, request_counts)
+    # Optional metrics (steady ITL, PD handoff) are None when a run did not record them;
+    # leave them out so the rows match ``PerfSummaryRow.values: Dict[str, float]``.
+    for row in summary_rows:
+        row['values'] = {key: value for key, value in row['values'].items() if value is not None}
 
     basic_info = dict(build_basic_info(first_args, runs, is_emb))
     if identity.get('provider'):

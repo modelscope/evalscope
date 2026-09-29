@@ -128,6 +128,7 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(latency['label'], 'Avg Lat.(s)')
         self.assertEqual(latency['semantics']['semantic_id'], 'perf.latency.seconds')
         self.assertIsInstance(body['summary_rows'][0]['values']['avg_latency'], (int, float))
+        self.assertNotIn('avg_pd_handoff_latency', body['summary_rows'][0]['values'])
         self.assertEqual(body['summary_rows'][0]['sample_counts']['avg_latency'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['p99_ttft'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['success_rate'], self.n_total)
@@ -136,6 +137,24 @@ class TestPerfArchive(unittest.TestCase):
         self.assertNotIn('metric_semantics', body)
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')
+
+    def test_detail_with_optional_metric_on_some_runs(self):
+        run_dir = os.path.join(self.tmp, self.svc_rel)
+        pd_run = os.path.join(run_dir, 'parallel_2_number_4')
+        shutil.copytree(os.path.join(run_dir, 'parallel_1_number_2'), pd_run)
+        _write_json(
+            os.path.join(pd_run, 'benchmark_summary.json'), {
+                'Total Requests': 4,
+                'Success Requests': 4,
+                'Avg PD Handoff Latency (ms)': 12.5,
+            }
+        )
+        res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': self.svc_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        self.assertIn('avg_pd_handoff_latency', [column['key'] for column in body['summary_columns']])
+        values = [row['values'] for row in body['summary_rows']]
+        self.assertEqual(sum('avg_pd_handoff_latency' in row for row in values), 1)
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})
