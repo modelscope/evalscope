@@ -181,7 +181,11 @@ class DefaultApiPlugin(ApiPluginBase):
 
                                 chunk = message.removeprefix('data:').strip()
 
-                                if chunk != '[DONE]':
+                                # Skip the terminator itself, never treat it as model
+                                # output.  An empty ``--sse-done-marker`` means the
+                                # provider has no terminator, so fall back to the
+                                # literal as a defensive guard.
+                                if chunk != (self._sse_done_marker or '[DONE]'):
                                     timestamp = time.perf_counter()
                                     data = json.loads(chunk)
 

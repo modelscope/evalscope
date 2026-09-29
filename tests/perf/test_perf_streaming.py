@@ -193,6 +193,80 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(output.inter_chunk_latency[0], 0.2)
         self.assertEqual(output.generated_text, 'thinking')
 
+    async def test_custom_done_marker_is_not_counted_as_output(self) -> None:
+        """A configured terminator must never be measured as model output.
+
+        The handler recognises the custom terminator and returns it, so the
+        consumer has to skip the very same value.  A JSON-shaped terminator such
+        as ``{"finish_reason": "stop"}`` otherwise parses fine and updates
+        ``most_recent_timestamp``, inflating ``query_latency`` — the metric this
+        benchmark exists to report.
+        """
+        marker = '{"finish_reason": "stop"}'
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant', 'content': ''}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'H'}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'i'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            },
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events) + f'data: {marker}\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenaiPlugin(Arguments(model='test-model', sse_done_marker=marker))
+        timestamps = [0.0, 0.1, 0.45, 0.65, 0.9, 1.0, 1.1, 1.2]
+        with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+        self.assertEqual(output.generated_text, 'Hi')
+        # The terminator must not extend the measured request window: the last
+        # real chunk arrives at 0.9, not after the terminator.
+        self.assertAlmostEqual(output.query_latency, 0.9)
+        self.assertAlmostEqual(output.first_chunk_latency, 0.45)
+        self.assertEqual(len(output.inter_chunk_latency), 1)
+        self.assertAlmostEqual(output.inter_chunk_latency[0], 0.2)
+        self.assertEqual((output.prompt_tokens, output.completion_tokens), (3, 2))
+
+    async def test_empty_done_marker_still_skips_literal_done(self) -> None:
+        """An empty marker means "no terminator", yet a literal ``[DONE]`` that
+        the handler flushed must still be skipped instead of crashing the JSON
+        parse.  Guards the ``or '[DONE]'`` fallback."""
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'Hi'}}]},
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events) + 'data: [DONE]\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenaiPlugin(Arguments(model='test-model', sse_done_marker=''))
+        with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=[0.0, 0.1, 0.45, 0.65]):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+        self.assertEqual(output.generated_text, 'Hi')
+        self.assertEqual(output.response_messages, events)
+
     async def test_structured_reasoning_contributes_to_output_timings(self) -> None:
         events = [
             {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant'}}]},
