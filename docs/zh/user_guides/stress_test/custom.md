@@ -47,6 +47,9 @@ for row in rows:
 - process_request(...) -> BenchmarkData  
   发送请求并收集响应与时延数据。若自定义 API 与 OpenAI 兼容（JSON + SSE），推荐继承 `DefaultApiPlugin` 直接复用其 HTTP 与流式处理逻辑，仅需实现 `build_request`、`parse_responses`。
 
+- set_request_max_tokens(request, max_tokens) -> None （可选）  
+  将每请求的输出上限写到你的协议所期望的位置。默认写顶层 `max_tokens`；若你的 API 将其嵌套或改名（如 DashScope 用 `parameters.max_tokens`、OpenAI Responses 用 `max_output_tokens`），则需覆写。多轮的逐轮上限经此钩子写入，覆写不正确会导致其被静默忽略。
+
 示例：继承 `DefaultApiPlugin` 最小实现（推荐）
 
 ```python

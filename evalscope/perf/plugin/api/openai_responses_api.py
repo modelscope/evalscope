@@ -217,6 +217,9 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             payload.update(param.extra_args)
         return payload
 
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        request['max_output_tokens'] = max_tokens
+
     def _count_input_tokens(self, request_str: str) -> int:
         request = json.loads(request_str)
         input_value = request.get('input', '')

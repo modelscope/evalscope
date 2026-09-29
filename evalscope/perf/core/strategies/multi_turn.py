@@ -158,7 +158,7 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     )
                     break
                 if turn.max_tokens is not None:
-                    request['max_tokens'] = turn.max_tokens
+                    self.api_plugin.set_request_max_tokens(request, turn.max_tokens)
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.

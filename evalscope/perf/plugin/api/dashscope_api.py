@@ -76,6 +76,9 @@ class DashScopeApiPlugin(ApiPluginBase):
             payload['parameters']['top_p'] = param.top_p
         return payload
 
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        request.setdefault('parameters', {})['max_tokens'] = max_tokens
+
     def parse_responses(self, responses, **kwargs) -> Dict:
         """Parser responses and return number of request and response tokens.
 

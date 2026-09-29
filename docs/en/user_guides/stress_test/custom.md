@@ -47,6 +47,9 @@ Currently, `openai` and `dashscope` are built-in and supported. To extend an API
 - process_request(...) -> BenchmarkData  
   Send the request, and gather the responses and latency data. If your custom API is compatible with OpenAI (using JSON + SSE), inheriting from `DefaultApiPlugin` is recommended. You can reuse its HTTP and streaming functionalities and only need to implement `build_request` and `parse_responses`.
 
+- set_request_max_tokens(request, max_tokens) -> None (optional)  
+  Route the per-request output cap to where your protocol expects it. Defaults to a top-level `max_tokens`; override it if your API nests or renames the cap (e.g. DashScope uses `parameters.max_tokens`, OpenAI Responses uses `max_output_tokens`). Multi-turn per-turn caps are applied through this hook, so an incorrect override leaves them silently ignored.
+
 Example: Minimum implementation by inheriting `DefaultApiPlugin` (recommended)
 
 ```python
