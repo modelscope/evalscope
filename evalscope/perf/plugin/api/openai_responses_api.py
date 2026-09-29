@@ -111,11 +111,14 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                             chunk = _extract_sse_data(message)
                             if not chunk:
                                 continue
-                            if chunk == '[DONE]':
+
+                            # Skip non-JSON payloads (stream terminators like "[DONE]"), not data chunks.
+                            try:
+                                payload = json.loads(chunk)
+                            except json.JSONDecodeError:
                                 continue
 
                             timestamp = time.perf_counter()
-                            payload = json.loads(chunk)
                             event_type = payload.get('type')
                             delta = payload.get('delta') or ''
                             if event_type in _DELTA_EVENT_TYPES and delta:
