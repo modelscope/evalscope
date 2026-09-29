@@ -9,7 +9,7 @@
 2.  **智能报告与可视化** ：借助大模型自动生成多维度分析报告，结合雷达图、柱状图等交互式可视化工具，直观展示模型在不同场景下的性能差异，辅助开发者快速定位模型瓶颈。
     
 
-本文档以FLUX.1-dev \[3\]、HiDream-I1-Dev \[4\]与Qwen-Image三款模型为评测对象，在EvalMuse \[5\]评测数据集上，结合EvalScope的智能报告分析与可视化功能，为开发者提供从环境搭建到结果解读的完整实践指南。
+本文档以FLUX.1-dev \[3\]、HiDream-I1-Dev \[4\]与Qwen-Image \[6\]三款模型为评测对象，在EvalMuse \[5\]评测数据集上，结合EvalScope的智能报告分析与可视化功能，为开发者提供从环境搭建到结果解读的完整实践指南。
 
 ## 安装依赖
 
@@ -180,3 +180,5 @@ evalscope service
 4.  Cai, Q. _et al._ HiDream-I1: A High-Efficient Image Generative Foundation Model with Sparse Diffusion Transformer. Preprint at [https://doi.org/10.48550/arXiv.2505.22705](https://doi.org/10.48550/arXiv.2505.22705)(2025).
     
 5.  Han, S. _et al._ EvalMuse-40K: A Reliable and Fine-Grained Benchmark with Comprehensive Human Annotations for Text-to-Image Generation Model Evaluation. Preprint at [https://doi.org/10.48550/arXiv.2412.18150](https://doi.org/10.48550/arXiv.2412.18150)(2024).
+    
+6.  Wu, C. _et al._ Qwen-Image Technical Report. Preprint at [https://doi.org/10.48550/arXiv.2508.02324](https://doi.org/10.48550/arXiv.2508.02324)(2025).

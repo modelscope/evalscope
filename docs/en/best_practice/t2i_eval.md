@@ -180,3 +180,5 @@ The automated evaluation provided by the EvalScope framework objectively achieve
 4.  Cai, Q. _et al._ HiDream-I1: A High-Efficient Image Generative Foundation Model with Sparse Diffusion Transformer. Preprint at [https://doi.org/10.48550/arXiv.2505.22705](https://doi.org/10.48550/arXiv.2505.22705)(2025).
     
 5.  Han, S. _et al._ EvalMuse-40K: A Reliable and Fine-Grained Benchmark with Comprehensive Human Annotations for Text-to-Image Generation Model Evaluation. Preprint at [https://doi.org/10.48550/arXiv.2412.18150](https://doi.org/10.48550/arXiv.2412.18150)(2024).
+    
+6.  Wu, C. _et al._ Qwen-Image Technical Report. Preprint at [https://doi.org/10.48550/arXiv.2508.02324](https://doi.org/10.48550/arXiv.2508.02324)(2025).
