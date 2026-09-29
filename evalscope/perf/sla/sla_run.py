@@ -55,21 +55,22 @@ def get_metric_values(results: Dict[str, Any]) -> Dict[str, float]:
     else:
         percentiles = PercentileResult()
 
+    # TTFT and TPOT are reported in milliseconds, but SLA thresholds are in seconds, like latency.
     values = {
         'avg_latency': summary.avg_latency,
-        'avg_ttft': summary.avg_ttft,
-        'avg_tpot': summary.avg_tpot,
+        'avg_ttft': summary.avg_ttft / 1000,
+        'avg_tpot': summary.avg_tpot / 1000,
         'rps': summary.request_throughput,
         'tps': summary.output_token_throughput,
     }
 
     values['p99_latency'] = percentiles.get_p99('latency')
-    values['p99_ttft'] = percentiles.get_p99('ttft')
-    values['p99_tpot'] = percentiles.get_p99('tpot')
-    values['p50_ttft'] = percentiles.get_p('50%', 'ttft')
-    values['p90_ttft'] = percentiles.get_p('90%', 'ttft')
-    values['p50_tpot'] = percentiles.get_p('50%', 'tpot')
-    values['p90_tpot'] = percentiles.get_p('90%', 'tpot')
+    values['p99_ttft'] = percentiles.get_p99('ttft') / 1000
+    values['p99_tpot'] = percentiles.get_p99('tpot') / 1000
+    values['p50_ttft'] = percentiles.get_p('50%', 'ttft') / 1000
+    values['p90_ttft'] = percentiles.get_p('90%', 'ttft') / 1000
+    values['p50_tpot'] = percentiles.get_p('50%', 'tpot') / 1000
+    values['p90_tpot'] = percentiles.get_p('90%', 'tpot') / 1000
 
     return values
 
