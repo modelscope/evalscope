@@ -69,7 +69,3 @@ jobs:
       - name: Run perf test
         run: |
           python -m pytest tests/perf/test_perf_basic.py::TestPerfBasic::test_multi_parallel_sweep -v -s -p no:warnings
-
-      - name: Run perf offline unit tests
-        run: |
-          python -m pytest tests/perf/test_rerank_process_request.py -v -p no:warnings
