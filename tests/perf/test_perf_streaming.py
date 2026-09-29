@@ -13,7 +13,7 @@ from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.plugin.api.default_api import StreamedResponseHandler
 from evalscope.perf.plugin.api.openai_api import OpenaiPlugin
-from evalscope.perf.plugin.api.openai_responses_api import _extract_sse_data
+from evalscope.perf.plugin.api.openai_responses_api import OpenAIResponsesPlugin, _extract_sse_data
 from tests.perf.perf_test_base import LOCAL_CHAT_URL, PerfTestBase
 
 
@@ -59,13 +59,20 @@ class TestStreamedResponseHandler(unittest.TestCase):
         self.assertEqual(messages, ['data: {"choices": []}'])
         self.assertEqual(handler.buffer, '')
 
-    def test_flushes_leftover_done_starting_with_metadata(self) -> None:
+    def test_does_not_emit_leftover_sentinel_as_a_message(self) -> None:
+        """A non-JSON sentinel is never returned as a message.
+
+        The consumer cannot use it, and forwarding it is what used to make
+        ``json.loads`` raise. The leftover content stays in the buffer because
+        a truncated JSON payload arriving mid-stream looks identical and must
+        keep waiting for the rest; the handler is per-request and discarded
+        once the stream ends, so nothing reads it afterwards.
+        """
         handler = StreamedResponseHandler()
 
         messages = handler.add_chunk(b'event: done\ndata: [DONE]')
 
-        self.assertEqual(messages, ['data: [DONE]'])
-        self.assertEqual(handler.buffer, '')
+        self.assertEqual(messages, [])
 
     def test_waits_for_incomplete_json_buffer(self) -> None:
         handler = StreamedResponseHandler()
@@ -91,6 +98,93 @@ class TestStreamedResponseHandler(unittest.TestCase):
 
 
 class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
+
+    @staticmethod
+    def _sse_response(stream: str) -> MagicMock:
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+        return client_session
+
+    async def test_non_json_terminators_do_not_fail_the_request(self) -> None:
+        """A provider may end an SSE stream with any non-JSON payload.
+
+        #974 reported a provider that does not send ``data: [DONE]``, which
+        crashed the benchmark with a JSONDecodeError and marked the request
+        failed. The end of a stream is the connection closing, so the parser
+        must treat an unparseable payload as the terminator rather than as
+        model output. Every case below must report ``success``.
+        """
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant', 'content': ''}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'Hi'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            },
+        ]
+        body = ''.join(f'data: {json.dumps(event)}\n\n' for event in events)
+
+        terminators = [
+            'data: [DONE]\n\n',
+            'data: [END]\n\n',
+            'data: DONE\n\n',
+            'data: [done]\n\n',
+            'data: [DONE]',
+            'data: [END]',
+            'data: DONE',
+            'data: \n\n',
+            '',
+        ]
+
+        for terminator in terminators:
+            with self.subTest(terminator=terminator):
+                client_session = self._sse_response(body + terminator)
+                plugin = OpenaiPlugin(Arguments(model='test-model'))
+                output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+                self.assertTrue(output.success, f'failed for terminator {terminator!r}')
+                self.assertEqual(output.generated_text, 'Hi')
+                self.assertEqual(output.response_messages, events)
+                self.assertEqual((output.prompt_tokens, output.completion_tokens), (3, 2))
+
+    async def test_terminator_does_not_extend_the_measured_window(self) -> None:
+        """A terminator is not model output, so it must not update the
+        newest-read timestamp and inflate ``query_latency``."""
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant', 'content': ''}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'H'}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'i'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            },
+        ]
+        body = ''.join(f'data: {json.dumps(event)}\n\n' for event in events)
+
+        for terminator in ('data: [END]\n\n', 'data: {"finish_reason": "stop"}\n\n', 'data: DONE\n\n'):
+            with self.subTest(terminator=terminator):
+                client_session = self._sse_response(body + terminator)
+                plugin = OpenaiPlugin(Arguments(model='test-model'))
+                timestamps = [0.0, 0.1, 0.45, 0.65, 0.9, 1.0, 1.1, 1.2]
+                with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=timestamps):
+                    output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+                self.assertTrue(output.success)
+                # The last real chunk arrives at 0.9, not after the terminator.
+                self.assertAlmostEqual(output.query_latency, 0.9)
+                self.assertAlmostEqual(output.first_chunk_latency, 0.45)
+                self.assertEqual(len(output.inter_chunk_latency), 1)
+                self.assertNotIn({'finish_reason': 'stop'}, output.response_messages)
 
     async def test_metadata_only_chunks_do_not_affect_output_timings(self) -> None:
         events = [
@@ -213,6 +307,47 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(output.inter_chunk_latency), 1)
         self.assertAlmostEqual(output.inter_chunk_latency[0], 0.35)
         self.assertEqual(output.generated_text, '')
+
+
+class TestOpenAIResponsesStreaming(unittest.IsolatedAsyncioTestCase):
+    """End-to-end streaming coverage for the Responses API plugin."""
+
+    @staticmethod
+    def _sse_response(stream: str) -> MagicMock:
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+        return client_session
+
+    async def test_non_json_terminators_do_not_fail_the_request(self) -> None:
+        """The Responses loop must treat an unparseable payload as the
+        end-of-stream marker, matching the chat/completions plugin."""
+        events = [
+            {'type': 'response.output_text.delta', 'delta': 'Hello'},
+            {'type': 'response.output_text.delta', 'delta': ' world'},
+            {
+                'type': 'response.completed',
+                'response': {'usage': {'input_tokens': 5, 'output_tokens': 2}},
+            },
+        ]
+        body = ''.join(f'data: {json.dumps(event)}\n\n' for event in events)
+
+        for terminator in ('data: [DONE]\n\n', 'data: [END]\n\n', 'data: DONE\n\n', 'data: [END]', 'data: \n\n', ''):
+            with self.subTest(terminator=terminator):
+                client_session = self._sse_response(body + terminator)
+                plugin = OpenAIResponsesPlugin(Arguments(model='test-model', api='openai_responses'))
+                output = await plugin.process_request(client_session, 'http://localhost/v1/responses', {}, {})
+
+                self.assertTrue(output.success, f'failed for terminator {terminator!r}')
+                self.assertEqual(output.generated_text, 'Hello world')
+                self.assertEqual((output.prompt_tokens, output.completion_tokens), (5, 2))
 
 
 class TestPerfStreaming(PerfTestBase):

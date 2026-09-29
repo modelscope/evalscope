@@ -112,10 +112,7 @@ class StreamedResponseHandler:
         normalized_buffer = self._extract_sse_payload(self.buffer)
         if normalized_buffer:
             message_content = normalized_buffer.removeprefix('data:').strip()
-            if message_content == '[DONE]':
-                messages.append(normalized_buffer)
-                self.buffer = ''
-            elif message_content:
+            if message_content:
                 try:
                     json.loads(message_content)
                     messages.append(normalized_buffer)
@@ -123,6 +120,11 @@ class StreamedResponseHandler:
                 except json.JSONDecodeError:
                     # Incomplete JSON, wait for more chunks.
                     pass
+            else:
+                # An empty 'data:' payload is a complete message (SSE permits it),
+                # and the server is done sending — clear the buffer so nothing
+                # lingers past the end of the stream.
+                self.buffer = ''
 
         return messages
 
@@ -179,41 +181,65 @@ class DefaultApiPlugin(ApiPluginBase):
 
                                 chunk = message.removeprefix('data:').strip()
 
-                                if chunk != '[DONE]':
-                                    timestamp = time.perf_counter()
+                                # The end of an SSE stream is the connection
+                                # closing, not an application-level sentinel, so
+                                # there is no literal to match.  Providers end a
+                                # stream with 'data: [DONE]', 'data: [END]',
+                                # 'data: DONE', a JSON body carrying only
+                                # 'finish_reason', an empty 'data:', or nothing at
+                                # all.  Deciding by shape rather than by string
+                                # comparison covers all of them without
+                                # configuration:
+                                #   - a payload that isn't valid JSON is a sentinel
+                                #   - a JSON array or scalar is a sentinel
+                                #   - an object with neither 'choices' nor
+                                #     'usage' carries no model output, so treating
+                                #     it as the terminator keeps it out of the
+                                #     latency measurement
+                                try:
                                     data = json.loads(chunk)
+                                except json.JSONDecodeError:
+                                    continue
 
-                                    if choices := data.get('choices'):
-                                        if data.get('object') == 'text_completion':
-                                            content = choices[0].get('text') or ''
-                                            has_output = bool(content)
+                                if not isinstance(data, dict):
+                                    continue
+
+                                if not data.get('choices') and 'usage' not in data:
+                                    continue
+
+                                timestamp = time.perf_counter()
+
+                                if choices := data.get('choices'):
+                                    if data.get('object') == 'text_completion':
+                                        content = choices[0].get('text') or ''
+                                        has_output = bool(content)
+                                    else:
+                                        delta = choices[0].get('delta', {})
+                                        content, has_output = _parse_chat_delta(delta)
+                                    if has_output:
+                                        # First token
+                                        if last_output_timestamp is None:
+                                            output.first_chunk_latency = timestamp - st
+
+                                        # Decoding phase
                                         else:
-                                            delta = choices[0].get('delta', {})
-                                            content, has_output = _parse_chat_delta(delta)
-                                        if has_output:
-                                            # First token
-                                            if last_output_timestamp is None:
-                                                output.first_chunk_latency = timestamp - st
+                                            output.inter_chunk_latency.append(timestamp - last_output_timestamp)
 
-                                            # Decoding phase
-                                            else:
-                                                output.inter_chunk_latency.append(timestamp - last_output_timestamp)
+                                        last_output_timestamp = timestamp
 
-                                            last_output_timestamp = timestamp
+                                    generated_text += content
+                                    output.response_messages.append(data)
+                                if usage := data.get('usage'):
+                                    output.prompt_tokens = usage.get('prompt_tokens')
+                                    output.completion_tokens = usage.get('completion_tokens')
+                                    # Extract real cached tokens from prompt_tokens_details
+                                    _details = usage.get('prompt_tokens_details')
+                                    if _details and isinstance(_details, dict):
+                                        _cached = _details.get('cached_tokens')
+                                        if _cached is not None:
+                                            output.real_cached_tokens = _cached
 
-                                        generated_text += content
-                                        output.response_messages.append(data)
-                                    if usage := data.get('usage'):
-                                        output.prompt_tokens = usage.get('prompt_tokens')
-                                        output.completion_tokens = usage.get('completion_tokens')
-                                        # Extract real cached tokens from prompt_tokens_details
-                                        _details = usage.get('prompt_tokens_details')
-                                        if _details and isinstance(_details, dict):
-                                            _cached = _details.get('cached_tokens')
-                                            if _cached is not None:
-                                                output.real_cached_tokens = _cached
-
-                                    most_recent_timestamp = timestamp
+                                most_recent_timestamp = timestamp
 
                         output.generated_text = generated_text
                         output.success = True

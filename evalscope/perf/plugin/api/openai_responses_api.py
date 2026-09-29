@@ -111,11 +111,21 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                             chunk = _extract_sse_data(message)
                             if not chunk:
                                 continue
-                            if chunk == '[DONE]':
+
+                            # See the note in DefaultApiPlugin: decide by shape,
+                            # not by comparing against a sentinel literal.  A
+                            # payload that isn't valid JSON is a terminator, and
+                            # so is a JSON object without a recognised event type.
+                            try:
+                                payload = json.loads(chunk)
+                            except json.JSONDecodeError:
+                                continue
+                            if not isinstance(payload, dict):
+                                continue
+                            if not payload.get('type'):
                                 continue
 
                             timestamp = time.perf_counter()
-                            payload = json.loads(chunk)
                             event_type = payload.get('type')
                             delta = payload.get('delta') or ''
                             if event_type in _DELTA_EVENT_TYPES and delta:
