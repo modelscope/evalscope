@@ -137,6 +137,20 @@ def test_parse_answers_zh_multiple_correct_slash_and_ideographic_comma() -> None
     assert parse_answers_zh(_make_state('推理过程\n答案：A，C'), multiple_correct=True) == {'A', 'C'}
 
 
+def test_parse_answers_zh_multiple_correct_space_separated() -> None:
+    """A space between labels ('A, C', 'A C') does not end a Chinese multi-select answer.
+
+    The English plain-label pattern already allows spaces; the Chinese one stopped at the
+    first space, so '答案：A, C' was read as 'A' and a correct answer was scored as wrong.
+    """
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, B, D'), multiple_correct=True) == {'A', 'B', 'D'}
+    # Prose after the labels still ends the answer.
+    assert parse_answers_zh(_make_state('推理过程\n答案：A, C 是正确的'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers_zh(_make_state('推理过程\n答案：B because C is wrong')) == {'B'}
+
+
 def test_parse_answers_ignores_bracketed_prose() -> None:
     """Only label-shaped bracket contents may be read as an answer."""
     assert parse_answers(_make_state('ANSWER: (see the diagram above)')).isdisjoint(set('ABCD'))
