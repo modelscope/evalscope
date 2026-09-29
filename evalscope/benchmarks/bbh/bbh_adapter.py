@@ -107,6 +107,7 @@ BBH (BIG-Bench Hard) is a subset of 23 challenging tasks from the BIG-Bench benc
         train_split=None,
         eval_split='test',
         metric_list=['acc'],
+        evaluation_version='v1.1',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
     )
@@ -121,13 +122,15 @@ class BBHAdapter(DefaultDataAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         input = record['input']
-        target = record['target'].replace('(', '').replace(')', '').strip()  # Clean up the target answer
+        target = record['target'].strip()
 
         # Determine task type based on subset name
         task_type = None
         subset_name = self.current_subset_name
         if subset_name in MULTIPLE_CHOICE_LIST:
             task_type = MULTIPLE_CHOICE
+            # '(A)' -> 'A'. Free-form targets keep their brackets: in dyck_languages they are the answer.
+            target = target.replace('(', '').replace(')', '').strip()
         elif subset_name in FREE_FORM_LIST:
             task_type = FREE_FORM
 
