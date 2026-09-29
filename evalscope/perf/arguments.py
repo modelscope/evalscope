@@ -429,6 +429,16 @@ class Arguments(BaseArgument):
     Only active in ``--multi-turn`` mode.
     """
 
+    multi_turn_system_prompt: Optional[str] = None
+    """System prompt override for multi-turn benchmarks.
+
+    Replaces the leading system message when the dataset provides one,
+    otherwise inserts the override as the first message of every
+    conversation.  Applies once per conversation (turn 0), to warmup and
+    measured conversations alike, so both phases simulate the same shape.
+    Only active in ``--multi-turn`` mode.  Omit to keep dataset prompts.
+    """
+
     # --- Field validators ---
 
     @field_validator('max_tokens', mode='before')
@@ -1014,6 +1024,17 @@ def _add_multi_turn_arguments(parser: argparse.ArgumentParser) -> None:
             'Null entries fall back to the dataset value or --max-tokens. '
             'Example: "[150, 150, 150, 1000]" caps turns 0-2 at 150 tokens and turn 3 at 1000. '
             'Only active in --multi-turn mode.'
+        ),
+    )
+    parser.add_argument(
+        '--multi-turn-system-prompt',
+        type=str,
+        default=None,
+        dest='multi_turn_system_prompt',
+        help=(
+            'System prompt override for multi-turn benchmarks. Replaces the leading '
+            'system message when the dataset provides one, otherwise inserts it first. '
+            'Applies once per conversation (turn 0). Only active in --multi-turn mode.'
         ),
     )
 
