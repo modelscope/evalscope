@@ -485,10 +485,14 @@
       "properties": {
         "outputs_root": {
           "type": "string"
+        },
+        "version": {
+          "type": "string"
         }
       },
       "required": [
-        "outputs_root"
+        "outputs_root",
+        "version"
       ],
       "type": "object"
     },

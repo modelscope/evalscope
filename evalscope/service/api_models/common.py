@@ -11,6 +11,7 @@ class ApiResponseModel(BaseModel):
 
 class ConfigResponse(ApiResponseModel):
     outputs_root: str
+    version: str
 
 
 class DataFrameResponse(ApiResponseModel):
