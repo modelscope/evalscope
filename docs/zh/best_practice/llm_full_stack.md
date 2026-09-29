@@ -256,7 +256,7 @@ pip install flash-attn --no-build-isolation
 
 #### 编写训练脚本
 
-参考：[模型训练命令行参数](https://swift.readthedocs.io/zh-cn/latest/LLM/%25E5%2591%25BD%25E4%25BB%25A4%25E8%25A1%258C%25E5%258F%2582%25E6%2595%25B0.html)
+参考：[模型训练命令行参数](https://swift.readthedocs.io/zh-cn/latest/Instruction/Command-line-parameters.html)
 
 ```{note}
 需要注意的参数有：
@@ -341,7 +341,7 @@ EvalScope是一个LLM/VLM评测框架，预置了多个常用测试基准，实�
 
 #### 评测脚本
 
-参考：[模型评测支持的参数](https://swift.readthedocs.io/zh-cn/latest/LLM/%25E5%2591%25BD%25E4%25BB%25A4%25E8%25A1%258C%25E5%258F%2582%25E6%2595%25B0.html#infer-merge-lora)
+参考：[模型评测支持的参数](https://swift.readthedocs.io/zh-cn/latest/Instruction/Command-line-parameters.html)
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift eval \
     --ckpt_dir output/qwen2-7b-instruct/v1-20240819-150005/checkpoint-371 \

@@ -1,6 +1,6 @@
 # 速度基准测试
 
-若想进行速度测试（模型在单个请求下的标准速度），得到类似[Qwen官方](https://qwen.readthedocs.io/en/latest/benchmark/speed_benchmark.html)报告的速度基准，如下所示：
+若想进行速度测试（模型在单个请求下的标准速度），得到类似[Qwen官方](https://qwen.readthedocs.io/en/latest/getting_started/speed_benchmark.html)报告的速度基准，如下所示：
 
 ![image](./images/qwen_speed_benchmark.png)
 

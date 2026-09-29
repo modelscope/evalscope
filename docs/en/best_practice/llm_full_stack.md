@@ -231,7 +231,7 @@ SWIFT supports training (pre-training, fine-tuning, alignment), inference, evalu
 pip install flash-attn --no-build-isolation
 ```
 #### Write Training Script
-Refer to: [Model Training Command-Line Parameters](https://swift.readthedocs.io/en/latest/LLM/command_line_parameters.html)
+Refer to: [Model Training Command-Line Parameters](https://swift.readthedocs.io/en/latest/Instruction/Command-line-parameters.html)
 
 ```{note}
 Key parameters to pay attention to:
@@ -307,7 +307,7 @@ Currently supports `general_qa` and `ceval` two pattern
 
 #### Evaluation Script
 
-Refer to [Evaluation supported parameters](https://swift.readthedocs.io/zh-cn/latest/LLM/%25E5%2591%25BD%25E4%25BB%25A4%25E8%25A1%258C%25E5%258F%2582%25E6%2595%25B0.html#infer-merge-lora)
+Refer to [Evaluation supported parameters](https://swift.readthedocs.io/zh-cn/latest/Instruction/Command-line-parameters.html)
 ```shell
 CUDA_VISIBLE_DEVICES=0 swift eval \
     --ckpt_dir output/qwen2-7b-instruct/v1-20240819-150005/checkpoint-371 \

@@ -304,7 +304,7 @@ task_cfg_dict = TaskConfig(
 
 
 ### (可选) 部署裁判员模型
-部署本地语言模型作为评判 / 选择提取器，同样使用ms-swift部署模型服务，具体可参考：[ms-swift LLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/LLM/VLLM%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F%E4%B8%8E%E9%83%A8%E7%BD%B2.html)
+部署本地语言模型作为评判 / 选择提取器，同样使用ms-swift部署模型服务，具体可参考：[ms-swift LLM 部署指南](https://swift.readthedocs.io/zh-cn/latest/Instruction/Inference-and-deployment.html)
 。
 ````{note}
 在未部署裁判员模型时，将使用后处理+精确匹配进行评判；且**必须配置裁判员模型环境变量才能正确调用模型**。
