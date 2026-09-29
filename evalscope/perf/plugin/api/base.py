@@ -69,6 +69,10 @@ class ApiPluginBase:
         """
         raise NotImplementedError
 
+    def set_request_max_tokens(self, request: Dict, max_tokens: int) -> None:
+        """Set the per-request output token cap where this protocol expects it."""
+        request['max_tokens'] = max_tokens
+
     @abstractmethod
     def parse_responses(self, responses: List[Dict], request: str = None, **kwargs: Any) -> Tuple[int, int]:
         """Parser responses and return number of request and response tokens.
