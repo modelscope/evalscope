@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import Badge from '@/components/ui/Badge'
 import { useLocale } from '@/contexts/LocaleContext'
 import { useAppConfig } from '@/contexts/ReportsContext'
 import LocaleToggle from './LocaleToggle'
@@ -61,12 +62,9 @@ export default function TopNav() {
               Eval<span className="text-[var(--accent)]">Scope</span>
             </span>
             {config?.version && (
-              <span
-                title={`EvalScope version ${config.version}`}
-                className="rounded border border-[var(--border)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[10px] leading-none text-[var(--text-muted)]"
-              >
+              <Badge title={`EvalScope version ${config.version}`}>
                 v{config.version}
-              </span>
+              </Badge>
             )}
           </div>
           {/* Desktop nav — full text, lg+ */}
