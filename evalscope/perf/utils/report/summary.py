@@ -44,6 +44,13 @@ _GENERATION_METRIC_COLUMNS = [
     ('output_token_throughput', 'Gen. tok/s', Metrics.OUTPUT_TOKEN_THROUGHPUT),
 ]
 _SUCCESS_COLUMN = ('success_rate', 'Success Rate', 'success_rate')
+# Optional generation metrics a run reports only when measured: summary attribute
+# -> the (avg, p99) column keys it owns.
+_OPTIONAL_SUMMARY_COLUMNS = {
+    'avg_pd_handoff_latency': ('avg_pd_handoff_latency', 'p99_pd_handoff_latency'),
+    'avg_pd_handoff_overhead': ('avg_pd_handoff_overhead', 'p99_pd_handoff_overhead'),
+    'avg_steady_itl': ('avg_steady_itl', 'p99_steady_itl'),
+}
 
 
 def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
@@ -172,12 +179,10 @@ def build_summary_table(
 ) -> tuple:
     """Build a structured, unformatted cross-run summary table."""
     specs = _summary_specs(is_embedding_flag)
-    if not is_embedding_flag and not any(r.summary.avg_pd_handoff_latency is not None for r in runs):
-        specs = [spec for spec in specs if spec[0] not in ('avg_pd_handoff_latency', 'p99_pd_handoff_latency')]
-    if not is_embedding_flag and not any(r.summary.avg_pd_handoff_overhead is not None for r in runs):
-        specs = [spec for spec in specs if spec[0] not in ('avg_pd_handoff_overhead', 'p99_pd_handoff_overhead')]
-    if not is_embedding_flag and not any(r.summary.avg_steady_itl is not None for r in runs):
-        specs = [spec for spec in specs if spec[0] not in ('avg_steady_itl', 'p99_steady_itl')]
+    if not is_embedding_flag:
+        for attr, keys in _OPTIONAL_SUMMARY_COLUMNS.items():
+            if not all(getattr(r.summary, attr) is not None for r in runs):
+                specs = [spec for spec in specs if spec[0] not in keys]
 
     semantics = resolve_perf_semantics(field_key for _, _, field_key in specs if field_key is not None)
     columns: List[Dict[str, Any]] = [
@@ -188,13 +193,19 @@ def build_summary_table(
         }
         for key, label, field_key in specs
     ]
-    rows = [
-        {
-            'values': _summary_values(run, is_embedding_flag),
-            'sample_counts': _summary_sample_counts(run, request_counts[index] if request_counts else None),
-        }
-        for index, run in enumerate(runs)
-    ]
+    # Columns are the single source of truth: project each row onto the surviving
+    # keys so row keys match columns and no unmeasured metric leaks a None value.
+    kept_keys = {key for key, _, _ in specs}
+    rows = []
+    for index, run in enumerate(runs):
+        values = _summary_values(run, is_embedding_flag)
+        counts = _summary_sample_counts(run, request_counts[index] if request_counts else None)
+        rows.append(
+            {
+                'values': {key: value for key, value in values.items() if key in kept_keys},
+                'sample_counts': {key: count for key, count in counts.items() if key in kept_keys},
+            }
+        )
     return columns, rows
 
 

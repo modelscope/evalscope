@@ -25,9 +25,16 @@ def _write_json(path: str, obj: object) -> None:
         json.dump(obj, f)
 
 
-def _make_run(run_dir: str, *, with_html: bool, with_tokens: bool = True) -> None:
+def _make_run(
+    run_dir: str,
+    *,
+    with_html: bool,
+    with_tokens: bool = True,
+    with_pd: bool = False,
+    sub_name: str = 'parallel_1_number_2',
+) -> None:
     """Create a minimal perf-run directory with one parallel_* sub-run."""
-    sub = os.path.join(run_dir, 'parallel_1_number_2')
+    sub = os.path.join(run_dir, sub_name)
     summary = {
         'Total Requests': 2,
         'Success Requests': 2,
@@ -36,6 +43,12 @@ def _make_run(run_dir: str, *, with_html: bool, with_tokens: bool = True) -> Non
         summary.update({
             'Avg Input Tokens': 10000.0,
             'Avg Output Tokens': 300.0,
+        })
+    if with_pd:
+        summary.update({
+            'Avg Steady ITL (ms)': 12.0,
+            'Avg PD Handoff Latency (ms)': 30.0,
+            'Avg PD Handoff Overhead (ms)': 5.0,
         })
     _write_json(os.path.join(sub, 'benchmark_summary.json'), summary)
     _write_json(os.path.join(sub, 'benchmark_percentile.json'), [])
@@ -131,11 +144,47 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(body['summary_rows'][0]['sample_counts']['avg_latency'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['p99_ttft'], self.n_success)
         self.assertEqual(body['summary_rows'][0]['sample_counts']['success_rate'], self.n_total)
+        # Row values mirror the pruned columns exactly and never carry None for
+        # metrics this non-PD run did not measure.
+        values = body['summary_rows'][0]['values']
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertEqual(set(values), column_keys)
+        self.assertNotIn(None, list(values.values()))
+        self.assertNotIn('avg_pd_handoff_latency', values)
+        self.assertNotIn('avg_steady_itl', values)
         self.assertEqual(body['total_requests'], 2)
         self.assertNotIn('summary_sample_counts', body)
         self.assertNotIn('metric_semantics', body)
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')
+
+    def test_detail_includes_pd_metrics_when_measured(self):
+        pd_rel = os.path.join('20260103_120000', 'pd-model')
+        _make_run(os.path.join(self.tmp, pd_rel), with_html=False, with_pd=True)
+        res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': pd_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertIn('avg_pd_handoff_latency', column_keys)
+        values = body['summary_rows'][0]['values']
+        self.assertEqual(values['avg_pd_handoff_latency'], 30.0)
+        self.assertNotIn(None, list(values.values()))
+
+    def test_detail_prunes_pd_column_when_partially_measured(self):
+        # Mixed sweep: one run measured PD handoff, another did not. The column is
+        # dropped for the whole table so no row leaks a None the float contract rejects.
+        mixed_rel = os.path.join('20260104_120000', 'mixed-model')
+        mixed_dir = os.path.join(self.tmp, mixed_rel)
+        _make_run(mixed_dir, with_html=False, with_pd=True, sub_name='parallel_1_number_2')
+        _make_run(mixed_dir, with_html=False, with_pd=False, sub_name='parallel_2_number_4')
+        res = self.client.get('/api/v1/perf/detail', query_string={'root_path': self.tmp, 'path': mixed_rel})
+        self.assertEqual(res.status_code, 200)
+        body = res.get_json()
+        column_keys = {column['key'] for column in body['summary_columns']}
+        self.assertNotIn('avg_pd_handoff_latency', column_keys)
+        for row in body['summary_rows']:
+            self.assertEqual(set(row['values']), column_keys)
+            self.assertNotIn(None, list(row['values'].values()))
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})
