@@ -60,6 +60,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
         aggregation='mean',
         eval_split='image',
         prompt_template='{question}\nPlease answer YES or NO without an explanation.',
+        evaluation_version='v1.1',
     )
 )
 class HallusionBenchAdapter(VisionLanguageAdapter):
