@@ -1,14 +1,22 @@
+import math
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
-from evalscope.metrics.semantics import format_perf_value, get_semantics_resolver
+from evalscope.metrics.semantics import get_semantics_resolver
 
 #: Seconds per unit, for the time units an SLA threshold may carry.
 _TIME_UNIT_SECONDS = {'s': 1.0, 'ms': 0.001}
 
 _THRESHOLD_RE = re.compile(r'^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([A-Za-z/%]*)$')
+
+
+def format_sla_operand(value: float, field_key: str) -> str:
+    """Render an SLA operand without hiding differences used by the comparison."""
+    unit = get_semantics_resolver().resolve_perf_field(field_key).semantics.raw_unit
+    number = str(value).removesuffix('.0')
+    return f'{number} {unit}' if unit else number
 
 
 def _scale_to_raw_unit(suffix: str, raw_unit: str, value_str: str) -> float:
@@ -31,6 +39,8 @@ def _resolve_target(text: str, field_key: Optional[str], value_str: str) -> Tupl
         raise ValueError(f'Invalid target value in SLA param: {value_str}')
 
     number = float(match.group(1))
+    if not math.isfinite(number):
+        raise ValueError(f'Invalid target value in SLA param: {value_str}')
     suffix = match.group(2)
     if field_key is None:
         if suffix:
@@ -40,7 +50,9 @@ def _resolve_target(text: str, field_key: Optional[str], value_str: str) -> Tupl
     raw_unit = get_semantics_resolver().resolve_perf_field(field_key).semantics.raw_unit or ''
     if suffix and suffix != raw_unit:
         number *= _scale_to_raw_unit(suffix, raw_unit, value_str)
-    return number, format_perf_value(number, field_key)
+        if not math.isfinite(number):
+            raise ValueError(f'Invalid target value in SLA param: {value_str}')
+    return number, format_sla_operand(number, field_key)
 
 
 @dataclass

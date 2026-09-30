@@ -14,7 +14,7 @@ from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
 from evalscope.utils.logger import get_logger
 
-from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion
+from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion, format_sla_operand
 
 logger = get_logger()
 
@@ -136,7 +136,7 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
 
             passed = criterion.validate(val)
             status = 'PASSED' if passed else 'FAILED'
-            actual = _format_sla_value(metric, val)
+            actual = format_sla_operand(val, SLA_METRIC_FIELDS[metric])
             logger.info(
                 f'{prefix}SLA Rule {i + 1} Check: {metric} = {actual} | Expect {criterion.format_cond("")} | {status}'
             )

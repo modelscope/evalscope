@@ -92,6 +92,23 @@ class TestSLAMetricUnits(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_sla_params('[{"rps": ">=5ms"}]')
 
+    def test_check_log_preserves_comparison_precision(self):
+        results = _results(ttft_ms=40.0, tpot_ms=40.004)
+        criteria = parse_sla_params('[{"avg_tpot": "<=40.003ms"}]')
+
+        with patch('evalscope.perf.sla.sla_run.logger.info') as log_info:
+            self.assertFalse(check_sla(results, criteria))
+
+        self.assertIn(
+            'avg_tpot = 40.004 ms | Expect <= 40.003 ms | FAILED',
+            log_info.call_args_list[0].args[0],
+        )
+
+    def test_nonfinite_threshold_is_rejected(self):
+        for value in ('<=1e309ms', '<=1e308s'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parse_sla_params([{'avg_tpot': value}])
+
     def test_unknown_metric_is_rejected(self):
         with self.assertRaises(ValueError):
             parse_sla_params('[{"avg_ttf": "<=2s"}]')
