@@ -187,7 +187,7 @@ class Arguments(BaseArgument):
     """Variable to tune: 'parallel' or 'rate'."""
 
     sla_params: Optional[List[Dict[str, Any]]] = None
-    """SLA constraints in JSON format."""
+    """SLA constraints in JSON format; use 's' or 'ms' for latency, or the report unit if bare."""
 
     sla_num_runs: int = 3
     """Number of runs to average for each configuration in SLA auto-tuning."""
@@ -802,7 +802,12 @@ def _add_performance_arguments(parser: argparse.ArgumentParser) -> None:
 def _add_sla_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--sla-auto-tune', action='store_true', default=False, help='Enable SLA auto-tuning')
     parser.add_argument('--sla-variable', type=str, default='parallel', choices=['parallel', 'rate'], help='The variable to tune, can be parallel or rate')  # noqa: E501
-    parser.add_argument('--sla-params', type=json.loads, default=None, help='SLA constraints in JSON format')
+    parser.add_argument(
+        '--sla-params',
+        type=json.loads,
+        default=None,
+        help="SLA constraints in JSON format; use 's' or 'ms' for latency (bare values use report units)",
+    )
     parser.add_argument('--sla-num-runs', type=int, default=3, help='Number of runs to average for each configuration in SLA auto-tuning')  # noqa: E501
     parser.add_argument('--sla-upper-bound', type=int, default=65536, help='Upper bound of the tuned SLA variable search range')  # noqa: E501
     parser.add_argument('--sla-lower-bound', type=int, default=1, help='Lower bound of the tuned SLA variable search range')  # noqa: E501
