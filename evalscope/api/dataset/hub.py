@@ -66,6 +66,31 @@ def _resolve_data_source(data_id_or_path: str, data_source: Optional[str]) -> st
     return data_source or HubType.MODELSCOPE
 
 
+def _try_modelscope_cached_snapshot(
+    data_id_or_path: str,
+    revision: Optional[str] = None,
+) -> Optional[str]:
+    """Resolve a ModelScope snapshot offline using the SDK's cache configuration."""
+    download_kwargs = dict(repo_id=data_id_or_path, repo_type='dataset', local_files_only=True)
+    if revision:
+        download_kwargs['revision'] = revision
+    try:
+        from modelscope import snapshot_download
+
+        snapshot_path = snapshot_download(**download_kwargs)
+    except Exception as exc:
+        logger.debug(f'No reusable ModelScope snapshot for {data_id_or_path}: {exc}')
+        return None
+    if not os.path.isdir(snapshot_path):
+        return None
+    # Legacy caches are unversioned; their offline API cannot verify a requested revision.
+    if revision and not os.path.normpath(snapshot_path).endswith(os.path.join(os.sep, 'snapshots', revision)):
+        logger.debug(f'Skipping ModelScope cache with an unverified revision: {snapshot_path}')
+        return None
+    logger.info(f'Using cached ModelScope dataset {data_id_or_path} from {snapshot_path}')
+    return snapshot_path
+
+
 def load_dataset_from_hub(
     data_id_or_path: str,
     split: str,
@@ -79,14 +104,20 @@ def load_dataset_from_hub(
     """Load a dataset split from ModelScope, Hugging Face, or a local dataset path."""
     import datasets
     from datasets import DownloadMode as HFDownloadMode
-    from modelscope import MsDataset
-    from modelscope.utils.constant import DownloadMode as MSDownloadMode
 
     data_source = _resolve_data_source(data_id_or_path, data_source)
     hf_download_mode = None if not force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
-    ms_download_mode = None if not force_redownload else MSDownloadMode.FORCE_REDOWNLOAD
+    cached_snapshot = None
+    if data_source == HubType.MODELSCOPE and not force_redownload:
+        cached_snapshot = _try_modelscope_cached_snapshot(data_id_or_path, revision=version)
+        if cached_snapshot:
+            data_id_or_path = cached_snapshot
+            data_source = HubType.LOCAL
 
     if data_source == HubType.MODELSCOPE:
+        from modelscope import MsDataset
+        from modelscope.utils.constant import DownloadMode as MSDownloadMode
+
         load_kwargs = dict(
             dataset_name=data_id_or_path,
             split=split,
@@ -96,8 +127,8 @@ def load_dataset_from_hub(
         )
         if version:
             load_kwargs['version'] = version
-        if ms_download_mode:
-            load_kwargs['download_mode'] = ms_download_mode
+        if force_redownload:
+            load_kwargs['download_mode'] = MSDownloadMode.FORCE_REDOWNLOAD
         dataset = MsDataset.load(**load_kwargs)
         if not isinstance(dataset, datasets.Dataset):
             dataset = dataset.to_hf_dataset()
@@ -106,7 +137,7 @@ def load_dataset_from_hub(
     if data_source in [HubType.HUGGINGFACE, HubType.LOCAL]:
         # Hugging Face datasets may fail on local mirrors that contain a stale dataset_infos.json.
         dataset_infos_path = os.path.join(data_id_or_path, 'dataset_infos.json')
-        if os.path.exists(dataset_infos_path):
+        if cached_snapshot is None and os.path.exists(dataset_infos_path):
             logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
             os.remove(dataset_infos_path)
 

@@ -92,6 +92,25 @@
 | `--repeats` | `int` | 重复推理一个样例多次 | `1` |
 | `--dataset-args` | `str` | 数据集配置参数（JSON字符串），详见下表 | `{}` |
 
+### 复用 ModelScope 本地数据集
+
+Native 后端使用 ModelScope 数据源时，未指定 `dataset_id` 会使用基准内置的仓库 ID。
+若没有命中 EvalScope 已处理的数据缓存，加载器会先通过 ModelScope SDK 离线查询已下载的仓库快照；
+快照命中后直接加载本地文件，未命中时继续从远端加载。
+
+在下载和评测启动前设置相同的 `MODELSCOPE_CACHE`，即可复用该目录中的数据集，无需拼接快照路径：
+
+```bash
+export MODELSCOPE_CACHE=/mnt/workspace/.cache/modelscope
+modelscope download --dataset AI-ModelScope/gsm8k
+evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
+```
+
+缓存目录结构由所安装的 ModelScope SDK 解析，支持其识别的新旧布局。
+显式提供本地 `dataset_id` 时仍优先使用该路径。
+设置 `force_redownload: true` 会跳过本地快照探测；设置 `dataset_revision` 时仅复用能够确认版本匹配的快照，
+不复用无法确认版本的旧式缓存。快照中的文件仍须满足基准的数据格式、子集和切分要求。
+
 ### dataset-args 配置项
 
 `--dataset-args` 为JSON字符串，每个数据集可配置以下参数：
