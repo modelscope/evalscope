@@ -1,5 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-"""Unit tests for SLA checks.
+"""Unit tests for SLA metric units.
 
 TTFT and TPOT are reported in milliseconds, while SLA thresholds are given in
 seconds (docs/en/user_guides/stress_test/sla_auto_tune.md).
