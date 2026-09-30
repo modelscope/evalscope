@@ -5,8 +5,11 @@ A threshold either carries its own unit or is read in the unit the perf reports 
 copied off a report without conversion.
 """
 import unittest
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
-from evalscope.perf.sla.sla_run import SLA_METRIC_FIELDS, check_sla, get_metric_values, parse_sla_params
+from evalscope.perf.arguments import Arguments
+from evalscope.perf.sla.sla_run import SLA_METRIC_FIELDS, SLAAutoTuner, check_sla, get_metric_values, parse_sla_params
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 
 
@@ -59,6 +62,31 @@ class TestSLAMetricUnits(unittest.TestCase):
         self.assertTrue(check_sla(results, parse_sla_params('[{"avg_ttft": "<=2s", "avg_tpot": "<=50ms"}]')))
         self.assertTrue(check_sla(results, parse_sla_params('[{"p99_ttft": "<50ms"}]')))
         self.assertFalse(check_sla(results, parse_sla_params('[{"p99_ttft": "<10ms"}]')))
+
+    def test_auto_tuner_requires_explicit_seconds(self):
+        def run_stub(_args: Arguments, _output_path: str) -> dict:
+            return {'run': _results(ttft_ms=40.0, tpot_ms=20.0)}
+
+        cases = (
+            ([{'avg_ttft': '<=2', 'avg_tpot': '<=0.05'}], 'None'),
+            ([{'avg_ttft': '<=2s', 'avg_tpot': '<=50ms'}], 8),
+        )
+        for sla_params, expected in cases:
+            with self.subTest(sla_params=sla_params), TemporaryDirectory() as output_dir:
+                args = Arguments(
+                    model='mock',
+                    outputs_dir=output_dir,
+                    sla_auto_tune=True,
+                    sla_params=sla_params,
+                    parallel=1,
+                    sla_upper_bound=8,
+                    sla_num_runs=1,
+                )
+                tuner = SLAAutoTuner(args, run_stub)
+                with patch('evalscope.perf.sla.sla_run.print_summary'):
+                    tuner.tune()
+
+                self.assertEqual(tuner.sla_results_table[0]['Max Satisfied'], expected)
 
     def test_unit_of_another_dimension_is_rejected(self):
         with self.assertRaises(ValueError):

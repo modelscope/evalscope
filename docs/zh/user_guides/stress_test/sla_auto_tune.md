@@ -37,6 +37,8 @@ SLA (Service Level Agreement) 自动调优功能允许用户定义服务质量�
 
 > **注意**：延迟类阈值支持 `s` 或 `ms` 单位后缀，例如 `{"avg_ttft": "<=2s"}`、`{"avg_tpot": "<=50ms"}`。不带后缀的数字按该指标在报表中的单位解释（`Avg TTFT (ms)` 为毫秒，`Avg Latency (s)` 为秒），因此可以直接照抄报表数值。每次校验都会在日志中回显解析后的单位，例如 `avg_ttft = 40 ms | Expect <= 2000 ms | PASSED`。
 
+如果沿用旧示例 `{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}`，且原意是以**秒**为单位，请补上后缀：`{"avg_ttft": "<=2s", "avg_tpot": "<=0.05s"}`。不带后缀时，这些 TTFT/TPOT 阈值会按毫秒解释。旧示例中的 `p99_ttft <0.05` 同理，应写成 `<0.05s` 或 `<50ms`。
+
 (sla-params-逻辑说明)=
 ## `--sla-params` 逻辑说明
 

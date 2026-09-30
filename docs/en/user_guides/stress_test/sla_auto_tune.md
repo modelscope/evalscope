@@ -37,6 +37,8 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 
 > **Note**: Latency thresholds accept an `s` or `ms` suffix, e.g. `{"avg_ttft": "<=2s"}` or `{"avg_tpot": "<=50ms"}`. A bare number is read in the unit the reports use for that metric (`Avg TTFT (ms)` is milliseconds, `Avg Latency (s)` is seconds), so a value can be copied off a report as-is. Every check logs the unit it resolved, e.g. `avg_ttft = 40 ms | Expect <= 2000 ms | PASSED`.
 
+If you copied an earlier example such as `{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}` intending **seconds**, add the unit suffixes: `{"avg_ttft": "<=2s", "avg_tpot": "<=0.05s"}`. Without suffixes, those TTFT/TPOT thresholds are read as milliseconds. The same applies to earlier `p99_ttft` examples such as `<0.05`: write `<0.05s` or `<50ms`.
+
 (sla-params-logic)=
 ## `--sla-params` Logic
 
