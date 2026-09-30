@@ -293,6 +293,29 @@ class TestPercentileBucketing(unittest.TestCase):
         max_row = next(r for r in rows if r['Percentiles'] == 'max')
         self.assertLessEqual(min_row['TPOT (ms)'], max_row['TPOT (ms)'])
 
+    def test_decode_throughput_percentiles_skip_replies_without_decode(self):
+        # A one-token reply has TPOT 0 and no decode speed; it used to enter the
+        # Decode (tok/s) column as NaN, which sort() can't order.
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        tpots = [0.02, 0.0, 0.01, 0.04, 0.03, 0.025]
+        for tpot in tpots:
+            bd = _make(tpot=tpot, completion_tokens=1 if tpot == 0.0 else 50, is_stream=True)
+            insert_benchmark_data(cur, bd)
+        con.commit()
+        con.close()
+        try:
+            rows = get_percentile_results(db, api_type='openai').to_list()
+            decode = {r['Percentiles']: r[PercentileMetrics.DECODE_THROUGHPUT] for r in rows}
+            # Decode speeds of the five replies that have one: 25, 33.33, 40, 50 and 100 tok/s.
+            self.assertEqual(decode['min'], 25.0)
+            self.assertEqual(decode['50%'], 40.0)
+            self.assertEqual(decode['max'], 100.0)
+        finally:
+            os.unlink(db)
+
     def test_pure_non_stream_percentiles_fall_back_to_all_rows(self):
         # Pure non-stream run: no stream rows, so streaming metrics fall back to
         # all rows (backward compatible) instead of producing NaN.
