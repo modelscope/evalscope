@@ -169,11 +169,6 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
 
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
-                timestamp = time.perf_counter()
-                output.completed_time = timestamp
-                output.query_latency = timestamp - st
-                output.first_chunk_latency = output.query_latency
-
                 if response.status == 200:
                     try:
                         payload = await response.json()
@@ -209,6 +204,11 @@ class OpenaiEmbeddingPlugin(ApiPluginBase):
                         except Exception:
                             output.error = response.reason or ''
                     output.success = False
+
+                timestamp = time.perf_counter()
+                output.completed_time = timestamp
+                output.query_latency = timestamp - st
+                output.first_chunk_latency = output.query_latency
 
         except Exception:
             output.success = False
