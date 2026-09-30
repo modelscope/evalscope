@@ -188,7 +188,7 @@ ollama serve
 
 **创建模型配置文件 `Modelfile`**
 
-[支持的模型格式](https://github.com/ollama/ollama/blob/main/docs/import.md)
+[支持的模型格式](https://github.com/ollama/ollama/blob/main/docs/import.mdx)
 ```text
 # 模型路径
 FROM models/Meta-Llama-3-8B-Instruct
