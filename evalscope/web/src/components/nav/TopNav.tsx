@@ -62,7 +62,7 @@ export default function TopNav() {
               Eval<span className="text-[var(--accent)]">Scope</span>
             </span>
             {config?.version && (
-              <Badge title={`EvalScope version ${config.version}`}>
+              <Badge title={t('common.evalScopeVersion', { version: config.version })}>
                 v{config.version}
               </Badge>
             )}
