@@ -26,14 +26,16 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 
 | Metric Category | Metric Name | Description | Supported Operators |
 |----------|----------|------|------------|
-| **Latency** | `avg_latency` | Average request latency | `<=`, `<`, `min` |
-| | `p99_latency` | 99th percentile request latency | `<=`, `<`, `min` |
-| | `avg_ttft` | Average time to first token | `<=`, `<`, `min` |
-| | `p99_ttft` | 99th percentile time to first token | `<=`, `<`, `min` |
-| | `avg_tpot` | Average time per output token | `<=`, `<`, `min` |
-| | `p99_tpot` | 99th percentile time per output token | `<=`, `<`, `min` |
+| **Latency** | `avg_latency` | Average request latency (s) | `<=`, `<`, `min` |
+| | `p99_latency` | 99th percentile request latency (s) | `<=`, `<`, `min` |
+| | `avg_ttft` | Average time to first token (s) | `<=`, `<`, `min` |
+| | `p99_ttft` | 99th percentile time to first token (s) | `<=`, `<`, `min` |
+| | `avg_tpot` | Average time per output token (s) | `<=`, `<`, `min` |
+| | `p99_tpot` | 99th percentile time per output token (s) | `<=`, `<`, `min` |
 | **Throughput** | `rps` | Requests per second | `>=`, `>`, `max` |
 | | `tps` | Tokens per second | `>=`, `>`, `max` |
+
+> **Note**: Latency thresholds are in **seconds**. Perf reports display TTFT/TPOT in milliseconds (`Avg TTFT (ms)`), so divide those values by 1000 when writing `--sla-params`.
 
 (sla-params-logic)=
 ## `--sla-params` Logic

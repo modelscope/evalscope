@@ -26,14 +26,16 @@ SLA (Service Level Agreement) 自动调优功能允许用户定义服务质量�
 
 | 指标类别 | 指标名称 | 说明 | 支持操作符 |
 |----------|----------|------|------------|
-| **延迟类** | `avg_latency` | 平均请求延迟 | `<=`, `<`, `min` |
-| | `p99_latency` | 99% 分位请求延迟 | `<=`, `<`, `min` |
-| | `avg_ttft` | 平均首字延迟 (Time To First Token) | `<=`, `<`, `min` |
-| | `p99_ttft` | 99% 分位首字延迟 | `<=`, `<`, `min` |
-| | `avg_tpot` | 平均单字生成延迟 (Time Per Output Token) | `<=`, `<`, `min` |
-| | `p99_tpot` | 99% 分位单字生成延迟 | `<=`, `<`, `min` |
+| **延迟类** | `avg_latency` | 平均请求延迟 (s) | `<=`, `<`, `min` |
+| | `p99_latency` | 99% 分位请求延迟 (s) | `<=`, `<`, `min` |
+| | `avg_ttft` | 平均首字延迟 (Time To First Token, s) | `<=`, `<`, `min` |
+| | `p99_ttft` | 99% 分位首字延迟 (s) | `<=`, `<`, `min` |
+| | `avg_tpot` | 平均单字生成延迟 (Time Per Output Token, s) | `<=`, `<`, `min` |
+| | `p99_tpot` | 99% 分位单字生成延迟 (s) | `<=`, `<`, `min` |
 | **吞吐类** | `rps` | 请求吞吐量 (Requests Per Second) | `>=`, `>`, `max` |
 | | `tps` | Token 吞吐量 (Tokens Per Second) | `>=`, `>`, `max` |
+
+> **注意**：延迟类阈值单位均为**秒**。压测报告中 TTFT/TPOT 以毫秒展示（`Avg TTFT (ms)`），编写 `--sla-params` 时需除以 1000。
 
 (sla-params-逻辑说明)=
 ## `--sla-params` 逻辑说明
