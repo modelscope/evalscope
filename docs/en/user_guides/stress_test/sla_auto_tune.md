@@ -26,16 +26,16 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 
 | Metric Category | Metric Name | Description | Supported Operators |
 |----------|----------|------|------------|
-| **Latency** | `avg_latency` | Average request latency (s) | `<=`, `<`, `min` |
-| | `p99_latency` | 99th percentile request latency (s) | `<=`, `<`, `min` |
-| | `avg_ttft` | Average time to first token (s) | `<=`, `<`, `min` |
-| | `p99_ttft` | 99th percentile time to first token (s) | `<=`, `<`, `min` |
-| | `avg_tpot` | Average time per output token (s) | `<=`, `<`, `min` |
-| | `p99_tpot` | 99th percentile time per output token (s) | `<=`, `<`, `min` |
+| **Latency** | `avg_latency` | Average request latency | `<=`, `<`, `min` |
+| | `p99_latency` | 99th percentile request latency | `<=`, `<`, `min` |
+| | `avg_ttft` | Average time to first token | `<=`, `<`, `min` |
+| | `p99_ttft` | 99th percentile time to first token | `<=`, `<`, `min` |
+| | `avg_tpot` | Average time per output token | `<=`, `<`, `min` |
+| | `p99_tpot` | 99th percentile time per output token | `<=`, `<`, `min` |
 | **Throughput** | `rps` | Requests per second | `>=`, `>`, `max` |
 | | `tps` | Tokens per second | `>=`, `>`, `max` |
 
-> **Note**: Latency thresholds are in **seconds**. Perf reports display TTFT/TPOT in milliseconds (`Avg TTFT (ms)`), so divide those values by 1000 when writing `--sla-params`.
+> **Note**: Latency thresholds accept an `s` or `ms` suffix, e.g. `{"avg_ttft": "<=2s"}` or `{"avg_tpot": "<=50ms"}`. A bare number is read in the unit the reports use for that metric (`Avg TTFT (ms)` is milliseconds, `Avg Latency (s)` is seconds), so a value can be copied off a report as-is. Every check logs the unit it resolved, e.g. `avg_ttft = 40 ms | Expect <= 2000 ms | PASSED`.
 
 (sla-params-logic)=
 ## `--sla-params` Logic
@@ -52,29 +52,29 @@ The overall semantics are: `(Group1 ConditionA AND Group1 ConditionB) OR (Group2
 Write multiple metrics in the **same object** to indicate they must **all** be satisfied:
 
 ```bash
---sla-params '[{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]'
+--sla-params '[{"avg_ttft": "<=2s", "avg_tpot": "<=50ms"}]'
 ```
 
-Meaning: Find the maximum concurrency satisfying **`avg_ttft <= 2s` AND `avg_tpot <= 0.05s`**. Only when both metrics are met does that concurrency level pass.
+Meaning: Find the maximum concurrency satisfying **`avg_ttft <= 2s` AND `avg_tpot <= 50ms`**. Only when both metrics are met does that concurrency level pass.
 
 ### OR Example: Independently Evaluate Multiple TTFT Thresholds
 
 Write each metric in a **different object** so each group of conditions is evaluated **independently**:
 
 ```bash
---sla-params '[{"p99_ttft": "<0.05"}, {"p99_ttft": "<0.01"}]'
+--sla-params '[{"p99_ttft": "<50ms"}, {"p99_ttft": "<10ms"}]'
 ```
 
-Meaning: Find the maximum request rate satisfying **`p99_ttft < 0.05s`** and satisfying **`p99_ttft < 0.01s`** separately, each outputting results independently.
+Meaning: Find the maximum request rate satisfying **`p99_ttft < 50ms`** and satisfying **`p99_ttft < 10ms`** separately, each outputting results independently.
 
 ### AND + OR Combined Example
 
 ```bash
---sla-params '[{"avg_ttft": "<=1", "avg_tpot": "<=0.05"}, {"p99_latency": "<=5"}]'
+--sla-params '[{"avg_ttft": "<=1s", "avg_tpot": "<=50ms"}, {"p99_latency": "<=5s"}]'
 ```
 
 Meaning:
-- **Group 1**: `avg_ttft <= 1s` **AND** `avg_tpot <= 0.05s` (both satisfied simultaneously)
+- **Group 1**: `avg_ttft <= 1s` **AND** `avg_tpot <= 50ms` (both satisfied simultaneously)
 - **Group 2**: `p99_latency <= 5s`
 - Each group independently completes a binary search and outputs its maximum concurrency value separately.
 
@@ -119,7 +119,7 @@ evalscope perf \
  --max-prompt-length 1024 \
  --sla-auto-tune \
  --sla-variable parallel \
- --sla-params '[{"p99_latency": "<=2"}]' \
+ --sla-params '[{"p99_latency": "<=2s"}]' \
  --parallel 2 \
  --sla-upper-bound 64
 ```
@@ -139,7 +139,7 @@ evalscope perf \
 +--------------------+------------+-----------------+-----------+
 | Criteria           | Variable   |   Max Satisfied | Note      |
 +====================+============+=================+===========+
-| p99_latency <= 2.0 | parallel   |               5 | Satisfied |
+| p99_latency <= 2 s | parallel   |               5 | Satisfied |
 +--------------------+------------+-----------------+-----------+
 ```
 
@@ -177,14 +177,14 @@ Example output:
 │   512 │    - │  ... │ 7.76 │ 7941.28 │  100.0% │
 └───────┴──────┴──────┴──────┴─────────┴─────────┘
 2025-12-18 15:06:49 - evalscope - INFO: SLA Auto-tune Summary:
-+------------+------------+-----------------+---------------------+
-| Criteria   | Variable   |   Max Satisfied | Note                |
-+============+============+=================+=====================+
-| tps -> max | parallel   |             384 | Best tps: 8057.1438 |
-+------------+------------+-----------------+---------------------+
++------------+------------+-----------------+-------------------------+
+| Criteria   | Variable   |   Max Satisfied | Note                    |
++============+============+=================+=========================+
+| tps -> max | parallel   |             384 | Best tps: 8057.14 tok/s |
++------------+------------+-----------------+-------------------------+
 ```
 
-### 3. Find Maximum Request Rate Meeting TTFT < 0.05s and TTFT < 0.01s in Specific Range
+### 3. Find Maximum Request Rate Meeting TTFT < 50ms and TTFT < 10ms in Specific Range
 
 ```bash
 evalscope perf \
@@ -199,7 +199,7 @@ evalscope perf \
  --max-prompt-length 512 \
  --sla-auto-tune \
  --sla-variable rate \
- --sla-params '[{"p99_ttft": "<0.05"}, {"p99_ttft": "<0.01"}]' \
+ --sla-params '[{"p99_ttft": "<50ms"}, {"p99_ttft": "<10ms"}]' \
  --rate 2 \
  --sla-num-runs 1 \
  --sla-fixed-parallel 40 \
@@ -221,11 +221,11 @@ Example output:
 │   40 │   20 │ ... │ 11.81 │ 2435.94 │  100.0% │
 └──────┴──────┴─────┴───────┴─────────┴─────────┘
 2025-12-18 16:19:48 - evalscope - INFO: SLA Auto-tune Summary:
-+-----------------+------------+-----------------+----------------------------+
-| Criteria        | Variable   | Max Satisfied   | Note                       |
-+=================+============+=================+============================+
-| p99_ttft < 0.05 | rate       | 19              | Satisfied                  |
-+-----------------+------------+-----------------+----------------------------+
-| p99_ttft < 0.01 | rate       | None            | Failed at lower bound (10) |
-+-----------------+------------+-----------------+----------------------------+
++------------------+------------+-----------------+----------------------------+
+| Criteria         | Variable   | Max Satisfied   | Note                       |
++==================+============+=================+============================+
+| p99_ttft < 50 ms | rate       | 19              | Satisfied                  |
++------------------+------------+-----------------+----------------------------+
+| p99_ttft < 10 ms | rate       | None            | Failed at lower bound (10) |
++------------------+------------+-----------------+----------------------------+
 ```

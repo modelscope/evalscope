@@ -58,7 +58,7 @@
 |------|------|------|--------|
 | `--sla-auto-tune` | `bool` | 是否启用SLA自动调优模式 | `False` |
 | `--sla-variable` | `str` | 自动调优的变量<br>可选：`parallel`（并发数）、`rate`（请求速率） | `parallel` |
-| `--sla-params` | `str` | SLA约束条件<br>JSON字符串<br>支持指标：`avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>支持操作符：`<=`, `<`, `min` (延时类); `>=`, `>`, `max` (吞吐类)<br>单位：延时类阈值为秒（报告中 TTFT/TPOT 以毫秒展示）；`rps` 为 req/s，`tps` 为 tok/s<br>示例：`'[{"p99_latency": "<=2"}]'` | `None` |
+| `--sla-params` | `str` | SLA约束条件<br>JSON字符串<br>支持指标：`avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>支持操作符：`<=`, `<`, `min` (延时类); `>=`, `>`, `max` (吞吐类)<br>单位：延时类阈值支持 `s` / `ms` 后缀；不带后缀时按该指标在报表中的单位解释<br>示例：`'[{"p99_latency": "<=2s"}]'` | `None` |
 | `--sla-upper-bound` | `int` | 被调优变量的搜索上界 | `65536` |
 | `--sla-lower-bound` | `int` | 被调优变量的搜索下界 | `1` |
 | `--sla-fixed-parallel` | `int` | 在 `--sla-variable=rate` 时使用的固定并发数；未设置时默认回退到 `--sla-upper-bound` 以兼容旧行为 | `None` |
