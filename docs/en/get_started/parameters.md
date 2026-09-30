@@ -92,6 +92,26 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `--repeats` | `int` | Number of times to repeat inference on the same sample | `1` |
 | `--dataset-args` | `str` | Dataset configuration parameters (JSON string), see table below | `{}` |
 
+### Reusing local ModelScope datasets
+
+For the Native backend with the ModelScope source, omitting `dataset_id` uses the benchmark's built-in repository ID.
+If no processed EvalScope dataset cache is available, the loader first asks the ModelScope SDK for a downloaded snapshot
+without accessing the network. A cache hit loads the local files; a cache miss continues with remote loading.
+
+Set the same `MODELSCOPE_CACHE` before starting both the download and evaluation to reuse the dataset without constructing
+a snapshot path:
+
+```bash
+export MODELSCOPE_CACHE=/mnt/workspace/.cache/modelscope
+modelscope download --dataset AI-ModelScope/gsm8k
+evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
+```
+
+The installed ModelScope SDK resolves the cache layout, including supported legacy layouts.
+An explicit local `dataset_id` takes precedence. Setting `force_redownload: true` skips the offline snapshot probe.
+With `dataset_revision`, only snapshots with a verified matching revision are reused; unversioned legacy caches are skipped.
+The cached files must still satisfy the benchmark's data format, subset, and split requirements.
+
 ### dataset-args Configuration Options
 
 `--dataset-args` is a JSON string; each dataset can be configured with the following parameters:
