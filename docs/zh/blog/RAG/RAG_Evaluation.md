@@ -16,9 +16,9 @@
 
 ### 2. **LangChain**
 
-* [多模态(图文)RAG教程](https://github.com/langchain-ai/langchain/blob/master/cookbook/Multi_modal_RAG.ipynb)
+* [多模态(图文)RAG教程](https://github.com/langchain-ai/langchain/blob/v0.3/cookbook/Multi_modal_RAG.ipynb)
 
-* [半结构化(图文表)多模态RAG教程](https://github.com/langchain-ai/langchain/blob/master/cookbook/Semi_structured_and_multi_modal_RAG.ipynb)
+* [半结构化(图文表)多模态RAG教程](https://github.com/langchain-ai/langchain/blob/v0.3/cookbook/Semi_structured_and_multi_modal_RAG.ipynb)
 
 * Multi-modal RAG
 ![Multi-modal RAG](images/MM_RAG_LangChain_1.png)

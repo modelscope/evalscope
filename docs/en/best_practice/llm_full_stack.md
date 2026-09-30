@@ -96,17 +96,17 @@ Data-Juicer is a one-stop multi-modal data processing system designed to provide
 
 ### Usage Process
 #### 1. Write YAML Configuration File
-The [operators](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md) in Data-Juicer are divided into the following 5 types:
+The [operators](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md) in Data-Juicer are divided into the following 5 types:
 
 |  Type  |  Count  |  Description  |
 | --- | --- | --- |
-|  [Formatter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#formatter)  |  7  |  Discover, load, and normalize raw data  |
-|  [Mapper](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#mapper)  |  43  |  Edit and transform data samples  |
-|  [Filter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#filter)  |  41  |  Filter out low-quality samples  |
-|  [Deduplicator](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#deduplicator)  |  5  |  Identify and remove duplicate samples  |
-|  [Selector](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#selector)  |  4  |  Select high-quality samples based on sorting  |
+|  [Formatter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#formatter)  |  7  |  Discover, load, and normalize raw data  |
+|  [Mapper](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#mapper)  |  43  |  Edit and transform data samples  |
+|  [Filter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#filter)  |  41  |  Filter out low-quality samples  |
+|  [Deduplicator](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#deduplicator)  |  5  |  Identify and remove duplicate samples  |
+|  [Selector](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#selector)  |  4  |  Select high-quality samples based on sorting  |
 
-Modify the [configuration file for all operators](https://github.com/modelscope/data-juicer/blob/main/configs/config_all.yaml) as a base to write the following configuration file:
+Modify the [configuration file for all operators](https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml) as a base to write the following configuration file:
 
 ```yaml
 # global parameters
