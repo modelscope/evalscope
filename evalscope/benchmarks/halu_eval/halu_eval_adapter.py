@@ -1,9 +1,11 @@
 # flake8: noqa: E501
 
-from typing import Any, Dict, List
+import re
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
@@ -51,6 +53,24 @@ HaluEval is a large collection of generated and human-annotated hallucinated sam
 
 logger = get_logger()
 
+# Verdicts are whole words written as the prompt requests ("Yes"/"No") or in capitals, so that words such as
+# "not", "note" or "know" and lowercase prose like "there is no evidence" are not read as a verdict.
+_YES_PATTERN = re.compile(r'\b(?:Yes|YES)\b')
+_NO_PATTERN = re.compile(r'\b(?:No|NO)\b')
+
+
+def extract_verdict(prediction: str) -> Optional[str]:
+    """Return 'YES' or 'NO' when the reply contains exactly one verdict, otherwise None.
+
+    Mirrors the official HaluEval evaluator (RUCAIBox/HaluEval ``evaluation/evaluate.py``), which counts a reply
+    containing both verdicts or neither of them as incorrect.
+    """
+    has_yes = _YES_PATTERN.search(prediction) is not None
+    has_no = _NO_PATTERN.search(prediction) is not None
+    if has_yes == has_no:
+        return None
+    return 'YES' if has_yes else 'NO'
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -66,6 +86,7 @@ logger = get_logger()
         few_shot_num=0,
         eval_split='data',
         prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class HaluEvalAdapter(DefaultDataAdapter):
@@ -103,14 +124,16 @@ class HaluEvalAdapter(DefaultDataAdapter):
             },
         )
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        verdict = extract_verdict(filtered_prediction)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
-        score.value = {'acc': result}
+        # A reply with both verdicts or neither is incorrect, as in the official evaluator
+        score.value = {'acc': 1 if verdict == reference.strip().upper() else 0}
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
