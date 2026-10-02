@@ -420,12 +420,13 @@ run_task(task_cfg=task_cfg)
 方法一：使用预置数据集（[evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/dataPeview)）
 
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],  # 工具调用格式固定为 'general_fc'
     # 如需显式指定，可加入 dataset_args={"general_fc": {"dataset_id": "evalscope/GeneralFunctionCall-Test"}}
 )
@@ -450,12 +451,13 @@ fc/
 
 运行示例：
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],
     dataset_args={
         'general_fc': {
