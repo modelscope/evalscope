@@ -424,12 +424,13 @@ Field descriptions:
 Method 1: Using preset dataset ([evalscope/GeneralFunctionCall-Test](https://modelscope.cn/datasets/evalscope/GeneralFunctionCall-Test/dataPeview))
 
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],  # Function calling format is fixed as 'general_fc'
     # To explicitly specify, add dataset_args={"general_fc": {"dataset_id": "evalscope/GeneralFunctionCall-Test"}}
 )
@@ -454,12 +455,13 @@ Simple example (example.jsonl, 3 lines):
 
 Execution example:
 ```python
+import os
 from evalscope import TaskConfig, run_task
 
 task_cfg = TaskConfig(
     model='qwen-plus',
     api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
-    api_key=env.get('DASHSCOPE_API_KEY'),
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
     datasets=['general_fc'],
     dataset_args={
         'general_fc': {
