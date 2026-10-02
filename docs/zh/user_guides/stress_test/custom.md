@@ -5,7 +5,6 @@
 
 ```python
 import base64
-import json
 import pickle
 import sqlite3
 
@@ -24,12 +23,13 @@ print(f'len(rows): {len(rows)}')
 
 for row in rows:
     row_dict = dict(zip(columns, row))
-    # 解码request
-    row_dict['request'] = pickle.loads(base64.b64decode(row_dict['request']))
+    # request 保存为 JSON 文本，只有 response_messages 需要解码。
     # 解码response_messages
     row_dict['response_messages'] = pickle.loads(base64.b64decode(row_dict['response_messages']))
+    response = row_dict['response_messages'][0] if row_dict['response_messages'] else None
+    response_id = response.get('id') if isinstance(response, dict) else None
     print(
-        f"request_id: {json.loads(row_dict['response_messages'][0])['id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"  # noqa: E501
+        f"request_id: {response_id or row_dict['request_id']}, first_chunk_latency: {row_dict['first_chunk_latency']}"
     )
     # 如果只想看一个可以break
     # break
