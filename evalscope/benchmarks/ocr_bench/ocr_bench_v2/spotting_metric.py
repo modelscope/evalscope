@@ -159,12 +159,12 @@ def spotting_evaluation(prediction_list, img_metas):
     if len(res_submit_list) == 0 or len(res_gt_list) == 0:
         return 0
 
-    with open(os.path.join(submit_path, 'res_img_0.txt'), 'w') as f:
+    with open(os.path.join(submit_path, 'res_img_0.txt'), 'w', encoding='utf-8') as f:
         for item in res_submit_list[:-1]:
             f.write(item + '\n')
         f.write(res_submit_list[-1])
 
-    with open(os.path.join(gt_path, 'gt_img_0.txt'), 'w') as f:
+    with open(os.path.join(gt_path, 'gt_img_0.txt'), 'w', encoding='utf-8') as f:
         for item in res_gt_list[:-1]:
             f.write(item + '\n')
         f.write(res_gt_list[-1])
