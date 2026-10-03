@@ -12,8 +12,7 @@ Public API
 from __future__ import annotations
 
 import os
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from evalscope.constants import DEFAULT_LANGUAGE, PLOTLY_CDN_URL
 from evalscope.utils.io_utils import current_time

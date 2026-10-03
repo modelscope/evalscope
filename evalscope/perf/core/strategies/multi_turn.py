@@ -1,12 +1,12 @@
 import asyncio
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.core.strategies.base import BenchmarkStrategy
-from evalscope.perf.plugin.datasets.base import Conversation, Message, Turn
+from evalscope.perf.plugin.datasets.base import Conversation, Message
 from evalscope.utils.logger import get_logger
 
 if TYPE_CHECKING:
