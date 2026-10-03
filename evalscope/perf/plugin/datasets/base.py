@@ -1,7 +1,7 @@
 import json
 import os
 from abc import abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from evalscope.api.dataset.hub import download_dataset_file, load_dataset_from_hub

@@ -23,14 +23,14 @@ This plugin supports two data-source modes:
 
 import json
 import multiprocessing
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _get_range_upper
-from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Message, Messages, Turn
+from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Messages, Turn
 from evalscope.perf.plugin.datasets.dataset_args import MultiTurnDatasetArgs
 from evalscope.perf.plugin.datasets.utils import tokenize_chat_messages, truncate_text_to_token_len
 from evalscope.perf.plugin.registry import register_dataset

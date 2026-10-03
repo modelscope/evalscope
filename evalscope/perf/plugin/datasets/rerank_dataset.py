@@ -5,7 +5,7 @@ This plugin provides datasets suitable for rerank model performance testing.
 
 import json
 import os
-from typing import Dict, Iterator, List
+from typing import Dict, Iterator
 
 import numpy as np
 
