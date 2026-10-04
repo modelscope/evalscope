@@ -1,5 +1,6 @@
 """Tests for dataset loader cache isolation, media handling, and limits."""
 
+import csv
 import json
 import math
 from pathlib import Path
@@ -11,7 +12,7 @@ from datasets import Dataset as HFDataset
 from datasets import DatasetInfo, Features, Value, Video
 from datasets.table import InMemoryTable
 
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import FieldSpec, Sample
 from evalscope.api.dataset.hub import DatasetHub
 from evalscope.api.dataset.loader import DictDataLoader, LocalDataLoader, RemoteDataLoader
 from evalscope.constants import HubType
@@ -202,3 +203,66 @@ def test_direct_loaders_preserve_valid_limit_semantics(
     assert len(loader.load()) == expected
     assert len(loader.load()) == expected
     assert loader.limit == limit
+
+
+@pytest.mark.parametrize('metadata_fields', [None, []])
+def test_dict_loader_defaults_to_independent_empty_metadata(metadata_fields: Optional[List[str]]) -> None:
+    records = [{'input': 'First question', 'target': 'A'}, {'input': 'Second question', 'target': 'B'}]
+    loader = DictDataLoader(dict_list=records, sample_fields=FieldSpec(metadata=metadata_fields))
+
+    dataset = loader.load()
+
+    assert [(sample.input, sample.target, sample.metadata) for sample in dataset] == [
+        ('First question', 'A', {}),
+        ('Second question', 'B', {}),
+    ]
+    assert dataset[0].metadata is not dataset[1].metadata
+    dataset[0].metadata['source'] = 'first'
+    assert dataset[1].metadata == {}
+    assert loader.load()[0].metadata == {}
+
+
+@pytest.mark.parametrize('extension', ['csv', 'jsonl'])
+def test_local_loader_defaults_to_empty_metadata(tmp_path: Path, extension: str) -> None:
+    record = {'input': 'Which city is the capital of France?', 'target': 'Paris'}
+    path = tmp_path / f'questions.{extension}'
+    if extension == 'csv':
+        with path.open('w', newline='', encoding='utf-8') as stream:
+            writer = csv.DictWriter(stream, fieldnames=['input', 'target'])
+            writer.writeheader()
+            writer.writerow(record)
+    else:
+        path.write_text(json.dumps(record) + '\n', encoding='utf-8')
+
+    dataset = LocalDataLoader(data_id_or_path=str(path), split='test').load()
+
+    assert len(dataset) == 1
+    assert dataset[0].input == record['input']
+    assert dataset[0].target == record['target']
+    assert dataset[0].metadata == {}
+
+
+@pytest.mark.parametrize('as_json', [False, True])
+@pytest.mark.parametrize('metadata', [{}, {'source': 'fixture', 'nested': {'rank': 0}}])
+def test_dict_loader_preserves_explicit_metadata(metadata: Dict[str, Any], as_json: bool) -> None:
+    record = {'input': 'Question', 'metadata': json.dumps(metadata) if as_json else metadata}
+
+    dataset = DictDataLoader(dict_list=[record]).load()
+
+    assert dataset[0].metadata == metadata
+
+
+def test_dict_loader_preserves_selected_metadata_fields() -> None:
+    record = {'input': 'Question', 'source': 'fixture', 'rank': 0, 'metadata': {'ignored': True}}
+
+    dataset = DictDataLoader(
+        dict_list=[record], sample_fields=FieldSpec(metadata=['source', 'rank', 'missing'])
+    ).load()
+
+    assert dataset[0].metadata == {'source': 'fixture', 'rank': 0, 'missing': None}
+
+
+@pytest.mark.parametrize('metadata', [None, [], 42, 'null', '[]', '{invalid'])
+def test_dict_loader_rejects_invalid_metadata(metadata: Any) -> None:
+    with pytest.raises(ValueError):
+        DictDataLoader(dict_list=[{'input': 'Question', 'metadata': metadata}]).load()
