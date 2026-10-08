@@ -133,7 +133,6 @@ class OpenaiRerankPlugin(ApiPluginBase):
                 return prompt_tokens, 0
 
             # Cohere's meta.billed_units.search_units counts searches, not tokens.
-            # Without token usage, estimate from the request instead.
             if self.tokenizer and request:
                 try:
                     req_data = json.loads(request)
