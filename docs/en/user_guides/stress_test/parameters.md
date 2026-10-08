@@ -58,7 +58,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 |------|------|------|--------|
 | `--sla-auto-tune` | `bool` | Whether to enable SLA auto-tuning mode | `False` |
 | `--sla-variable` | `str` | Variable for auto-tuning<br>Options: `parallel` (concurrency), `rate` (request rate) | `parallel` |
-| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Units: latency thresholds accept an `s` or `ms` suffix; a bare number is read in the unit the reports use for that metric<br>Example: `'[{"p99_latency": "<=2s"}]'` | `None` |
+| `--sla-params` | `str` | SLA constraint conditions<br>JSON string<br>Supported metrics: `avg_latency`, `p99_latency`, `avg_ttft`, `p99_ttft`, `avg_tpot`, `p99_tpot`, `rps`, `tps`<br>Supported operators: `<=`, `<`, `min` (for latency metrics); `>=`, `>`, `max` (for throughput metrics)<br>Latency units: `s` or `ms`; without a suffix, `latency` uses seconds and `ttft`/`tpot` use milliseconds<br>Example: `'[{"p99_latency": "<=2s"}]'` | `None` |
 | `--sla-upper-bound` | `int` | Upper bound of the tuned SLA variable search range | `65536` |
 | `--sla-lower-bound` | `int` | Lower bound of the tuned SLA variable search range | `1` |
 | `--sla-fixed-parallel` | `int` | Fixed parallel workers used when `--sla-variable=rate`; defaults to `--sla-upper-bound` for backward compatibility | `None` |
