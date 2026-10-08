@@ -215,6 +215,10 @@ class DefaultApiPlugin(ApiPluginBase):
                                             output.inter_chunk_latency.append(timestamp - last_output_timestamp)
 
                                         last_output_timestamp = timestamp
+                                    if last_output_timestamp is not None:
+                                        # An empty delta after the first output is still a decode step
+                                        # (a partial multi-byte token, the EOS step).
+                                        output.n_decode_chunks += 1
 
                                     generated_text += content
                                     output.response_messages.append(data)
