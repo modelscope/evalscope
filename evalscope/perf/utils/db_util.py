@@ -295,6 +295,9 @@ def get_percentile_results(
     all_percentiles = [0] + percentiles + [100]
     transposed: Dict[str, list] = {PercentileMetrics.PERCENTILES: percentile_labels}
     for metric_name, data in metrics.items():
+        # NaN marks a sample with no value (e.g. Decode (tok/s) for a reply with no decode phase).
+        # Leave it out: sort() can't order NaN, which would scramble every percentile of the column.
+        data = [v for v in data if not (isinstance(v, float) and math.isnan(v))]
         metric_percentiles = calculate_percentiles(data, all_percentiles)
         transposed[metric_name] = [metric_percentiles[p] for p in all_percentiles]
 
