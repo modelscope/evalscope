@@ -31,6 +31,10 @@ class TestCalculatePercentiles:
     def test_percentile_hundred_or_more_is_max(self):
         assert calculate_percentiles([3.0, 1.0, 2.0], [100, 150]) == {100: 3.0, 150: 3.0}
 
+    def test_sub_ten_millisecond_latencies_keep_their_value(self):
+        # Latency is reported in seconds; two decimals turned 4 ms into 0.0.
+        assert calculate_percentiles([0.004, 0.012, 0.031, 0.044], [0, 50, 99]) == {0: 0.004, 50: 0.012, 99: 0.044}
+
     def test_empty_data_returns_nan(self):
         result = calculate_percentiles([], [0, 50, 100])
         assert all(math.isnan(v) for v in result.values())

@@ -165,7 +165,7 @@ def calculate_percentiles(data: List[float], percentiles: List[int]) -> Dict[int
                 # ceil(p/100 * n) (1-based), i.e. index ceil(p/100 * n) - 1.
                 idx = max(0, math.ceil(n_success_queries * percentile / 100) - 1)
                 value = data[idx]
-            results[percentile] = round(value, 2) if value is not None else float('nan')
+            results[percentile] = round(value, 4) if value is not None else float('nan')
         except IndexError:
             results[percentile] = float('nan')
     return results
