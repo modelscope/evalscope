@@ -74,21 +74,25 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
         tool_choice: ToolChoice,
         config: GenerateConfig,
     ) -> ModelOutput:
+        """Generate a response, retrying the entire request if its stream is interrupted."""
         request, tools, config = self._build_request(input, tools, tool_choice, config)
 
         try:
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            response = retry_call(
-                self.client.responses.create,
+            def _create_and_collect() -> Tuple[Response, Optional[float]]:
+                raw_response = self.client.responses.create(**request)
+                if self._is_response_object(raw_response):
+                    return raw_response, None
+                return collect_response_stream(raw_response, request_start=t_start)
+
+            response, ttft = retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
-                **request,
             )
-            if not self._is_response_object(response):
-                response, ttft = collect_response_stream(response, request_start=t_start)
 
             total_time = time.monotonic() - t_start
             return self._build_output(response, tools, total_time, ttft)
@@ -106,21 +110,25 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
         tool_choice: ToolChoice,
         config: GenerateConfig,
     ) -> ModelOutput:
+        """Generate asynchronously with stream consumption inside the retry boundary."""
         request, tools, config = self._build_request(input, tools, tool_choice, config)
 
         try:
             t_start = time.monotonic()
             ttft: Optional[float] = None
 
-            response = await async_retry_call(
-                self.async_client.responses.create,
+            async def _create_and_collect() -> Tuple[Response, Optional[float]]:
+                raw_response = await self.async_client.responses.create(**request)
+                if self._is_response_object(raw_response):
+                    return raw_response, None
+                return await async_collect_response_stream(raw_response, request_start=t_start)
+
+            response, ttft = await async_retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=NON_RETRYABLE_OPENAI_ERRORS,
-                **request,
             )
-            if not self._is_response_object(response):
-                response, ttft = await async_collect_response_stream(response, request_start=t_start)
 
             total_time = time.monotonic() - t_start
             return self._build_output(response, tools, total_time, ttft)
