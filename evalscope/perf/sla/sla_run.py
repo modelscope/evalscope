@@ -6,15 +6,39 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from tabulate import tabulate
 
+from evalscope.metrics.semantics import format_perf_value
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.utils.db_util import average_results
+from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
 from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.rich_display import print_summary
 from evalscope.utils.logger import get_logger
 
-from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion
+from .sla_criterion import SLACriterionBase, SLAMax, SLAMin, create_criterion, format_sla_operand
 
 logger = get_logger()
+
+#: SLA metric name -> perf contract field key, which is the authority for that metric's unit.
+SLA_METRIC_FIELDS: Dict[str, str] = {
+    'avg_latency': Metrics.AVERAGE_LATENCY,
+    'avg_ttft': Metrics.AVERAGE_TIME_TO_FIRST_TOKEN,
+    'avg_tpot': Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN,
+    'rps': Metrics.REQUEST_THROUGHPUT,
+    'tps': Metrics.OUTPUT_TOKEN_THROUGHPUT,
+    'p99_latency': PercentileMetrics.LATENCY,
+    'p99_ttft': PercentileMetrics.TTFT,
+    'p90_ttft': PercentileMetrics.TTFT,
+    'p50_ttft': PercentileMetrics.TTFT,
+    'p99_tpot': PercentileMetrics.TPOT,
+    'p90_tpot': PercentileMetrics.TPOT,
+    'p50_tpot': PercentileMetrics.TPOT,
+}
+
+
+def _format_sla_value(metric: str, value: float) -> str:
+    """Render an SLA metric value in the unit its perf contract declares."""
+    field_key = SLA_METRIC_FIELDS.get(metric)
+    return format_perf_value(value, field_key) if field_key else f'{value:.4f}'
 
 
 def parse_sla_params(
@@ -37,7 +61,12 @@ def parse_sla_params(
     for record in records:
         if not isinstance(record, dict):
             continue
-        criteria = {k: create_criterion(v) for k, v in record.items()}
+        criteria = {}
+        for name, value in record.items():
+            field_key = SLA_METRIC_FIELDS.get(name)
+            if field_key is None:
+                raise ValueError(f"Unknown SLA metric '{name}'; supported: {', '.join(sorted(SLA_METRIC_FIELDS))}")
+            criteria[name] = create_criterion(value, field_key)
         parsed_sla.append(criteria)
     return parsed_sla
 
@@ -55,6 +84,7 @@ def get_metric_values(results: Dict[str, Any]) -> Dict[str, float]:
     else:
         percentiles = PercentileResult()
 
+    # Values keep the unit the perf contract declares; thresholds are normalized to it.
     values = {
         'avg_latency': summary.avg_latency,
         'avg_ttft': summary.avg_ttft,
@@ -106,8 +136,9 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
 
             passed = criterion.validate(val)
             status = 'PASSED' if passed else 'FAILED'
+            actual = format_sla_operand(val, SLA_METRIC_FIELDS[metric])
             logger.info(
-                f'{prefix}SLA Rule {i + 1} Check: {metric} = {val:.4f} | Expect {criterion.format_cond("")} | {status}'
+                f'{prefix}SLA Rule {i + 1} Check: {metric} = {actual} | Expect {criterion.format_cond("")} | {status}'
             )
             if not passed:
                 group_passed = False
@@ -144,8 +175,8 @@ class SLAAutoTuner:
         # - Each group in the list runs its own binary search and produces its own result row.
         #
         # Examples:
-        #   AND: [{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]          → single group, both required
-        #   OR:  [{"avg_ttft": "<=2"}, {"avg_tpot": "<=0.05"}]         → two independent searches
+        #   AND: [{"avg_ttft": "<=2s", "avg_tpot": "<=50ms"}]         → single group, both required
+        #   OR:  [{"avg_ttft": "<=2s"}, {"avg_tpot": "<=50ms"}]       → two independent searches
         #
         # Special case: a single-group single-metric max/min triggers optimization mode.
         current_val = self.args.parallel if self.sla_variable == 'parallel' else self.args.rate
@@ -266,7 +297,8 @@ class SLAAutoTuner:
 
             res = self._get_result(next_sla)
             next_val = get_metric_values(res).get(opt_metric, 0)
-            logger.info(f'Optimization step: {self.sla_variable}={next_sla}, {opt_metric}={next_val}')
+            next_text = _format_sla_value(opt_metric, next_val)
+            logger.info(f'Optimization step: {self.sla_variable}={next_sla}, {opt_metric}={next_text}')
 
             improved = (next_val > best_metric_val) if opt_mode == 'max' else (next_val < best_metric_val)
 
@@ -291,7 +323,8 @@ class SLAAutoTuner:
                 mid = (left + right) // 2
                 res = self._get_result(mid)
                 val = get_metric_values(res).get(opt_metric, 0)
-                logger.info(f'Binary search checking: {self.sla_variable}={mid}, {opt_metric}={val}')
+                val_text = _format_sla_value(opt_metric, val)
+                logger.info(f'Binary search checking: {self.sla_variable}={mid}, {opt_metric}={val_text}')
 
                 improved = (val > best_metric_val) if opt_mode == 'max' else (val < best_metric_val)
 
@@ -307,7 +340,7 @@ class SLAAutoTuner:
                 'Criteria': f'{opt_metric} -> {opt_mode}',
                 'Variable': self.sla_variable,
                 'Max Satisfied': best_sla_val,
-                'Note': f'Best {opt_metric}: {best_metric_val:.4f}',
+                'Note': f'Best {opt_metric}: {_format_sla_value(opt_metric, best_metric_val)}',
             }
         )
 
