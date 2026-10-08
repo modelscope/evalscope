@@ -275,6 +275,25 @@ class SLAAutoTuner:
         self.results_cache[val] = avg_result
         return avg_result
 
+    @staticmethod
+    def _optimization_value(res: Dict[str, Any], opt_metric: str) -> Optional[float]:
+        """The metric to optimize, or None when the run fails the 100% success gate.
+
+        A run whose requests all failed reports -1 placeholders (-1000 ms TTFT), which
+        would otherwise win in 'min' mode.
+        """
+        if not check_sla(res, []):
+            return None
+        return get_metric_values(res).get(opt_metric, 0)
+
+    @staticmethod
+    def _improves(val: Optional[float], best: Optional[float], opt_mode: str) -> bool:
+        if val is None:
+            return False
+        if best is None:
+            return True
+        return val > best if opt_mode == 'max' else val < best
+
     def _tune_optimization(self, start_val: int, opt_metric: str, opt_mode: str):
         logger.info(f'Optimization mode: {opt_mode} for {opt_metric}')
 
@@ -283,7 +302,7 @@ class SLAAutoTuner:
 
         # Initial run
         res = self._get_result(curr)
-        best_metric_val = get_metric_values(res).get(opt_metric, 0)
+        best_metric_val = self._optimization_value(res, opt_metric)
 
         lower_bound = curr
         upper_bound = None
@@ -302,11 +321,11 @@ class SLAAutoTuner:
                 break
 
             res = self._get_result(next_sla)
-            next_val = get_metric_values(res).get(opt_metric, 0)
-            next_text = _format_sla_value(opt_metric, next_val)
+            next_val = self._optimization_value(res, opt_metric)
+            next_text = 'failed requests' if next_val is None else _format_sla_value(opt_metric, next_val)
             logger.info(f'Optimization step: {self.sla_variable}={next_sla}, {opt_metric}={next_text}')
 
-            improved = (next_val > best_metric_val) if opt_mode == 'max' else (next_val < best_metric_val)
+            improved = self._improves(next_val, best_metric_val, opt_mode)
 
             if improved:
                 best_metric_val = next_val
@@ -328,11 +347,11 @@ class SLAAutoTuner:
             while left < right - 1:
                 mid = (left + right) // 2
                 res = self._get_result(mid)
-                val = get_metric_values(res).get(opt_metric, 0)
-                val_text = _format_sla_value(opt_metric, val)
+                val = self._optimization_value(res, opt_metric)
+                val_text = 'failed requests' if val is None else _format_sla_value(opt_metric, val)
                 logger.info(f'Binary search checking: {self.sla_variable}={mid}, {opt_metric}={val_text}')
 
-                improved = (val > best_metric_val) if opt_mode == 'max' else (val < best_metric_val)
+                improved = self._improves(val, best_metric_val, opt_mode)
 
                 if improved:
                     best_metric_val = val
@@ -345,8 +364,12 @@ class SLAAutoTuner:
             {
                 'Criteria': f'{opt_metric} -> {opt_mode}',
                 'Variable': self.sla_variable,
-                'Max Satisfied': best_sla_val,
-                'Note': f'Best {opt_metric}: {_format_sla_value(opt_metric, best_metric_val)}',
+                'Max Satisfied': best_sla_val if best_metric_val is not None else 'None',
+                'Note': (
+                    f'Best {opt_metric}: {_format_sla_value(opt_metric, best_metric_val)}'
+                    if best_metric_val is not None
+                    else 'No run passed the 100% success gate'
+                ),
             }
         )
 
