@@ -78,6 +78,20 @@ class TestAccumulatorBucketing(unittest.TestCase):
         # Generic latency averaged over all success (n=4)
         self.assertAlmostEqual(result.avg_latency, (1.0 + 1.0 + 1.5 + 1.6) / 4)
 
+    def test_one_token_replies_do_not_lower_avg_tpot(self):
+        # A one-token reply has no decode phase, so its TPOT stays 0 and must not
+        # count toward the streamed TPOT average.
+        acc = MetricsAccumulator()
+        for d in (
+            _make(fcl=0.3, latency=1.0, is_stream=True),
+            _make(fcl=0.3, latency=1.0, is_stream=True),
+            _make(fcl=0.3, latency=0.3, completion_tokens=1, itl=[], is_stream=True),
+        ):
+            acc.update(d, self.plugin)
+        result = acc.to_result()
+
+        self.assertAlmostEqual(result.avg_time_per_output_token, (1.0 - 0.3) / 49)
+
     def test_counts_include_failures(self):
         acc = MetricsAccumulator()
         acc.update(_make(is_stream=True), self.plugin)
@@ -313,6 +327,25 @@ class TestPercentileBucketing(unittest.TestCase):
             self.assertEqual(decode['min'], 25.0)
             self.assertEqual(decode['50%'], 40.0)
             self.assertEqual(decode['max'], 100.0)
+        finally:
+            os.unlink(db)
+
+    def test_tpot_percentiles_skip_replies_without_decode(self):
+        # Same rows as Decode (tok/s): a one-token reply has no TPOT, not a TPOT of 0.
+        db = tempfile.mktemp(suffix='.db')
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        create_result_table(cur)
+        for tpot in [0.02, 0.0, 0.01, 0.04, 0.03, 0.025]:
+            bd = _make(tpot=tpot, completion_tokens=1 if tpot == 0.0 else 50, is_stream=True)
+            insert_benchmark_data(cur, bd)
+        con.commit()
+        con.close()
+        try:
+            rows = get_percentile_results(db, api_type='openai').to_list()
+            tpot = {r['Percentiles']: r['TPOT (ms)'] for r in rows}
+            self.assertEqual(tpot['min'], 10.0)
+            self.assertEqual(tpot['max'], 40.0)
         finally:
             os.unlink(db)
 

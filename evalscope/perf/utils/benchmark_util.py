@@ -196,6 +196,7 @@ class MetricsAccumulator:
     n_non_stream_total: int = 0
     total_first_chunk_latency_stream: float = 0.0
     total_time_per_output_token_stream: float = 0.0
+    n_stream_tpot: int = 0  # streamed replies with a decode phase (> 1 token)
 
     # --- Multi-turn cumulative sums ---
     total_input_turns: int = 0
@@ -276,7 +277,10 @@ class MetricsAccumulator:
             if data.is_stream:
                 self.n_stream_success += 1
                 self.total_first_chunk_latency_stream += data.first_chunk_latency
-                self.total_time_per_output_token_stream += data.time_per_output_token
+                # A one-token reply has no decode phase, so no TPOT to average.
+                if data.completion_tokens and data.completion_tokens > 1:
+                    self.total_time_per_output_token_stream += data.time_per_output_token
+                    self.n_stream_tpot += 1
 
             # Multi-turn specific
             if data.input_num_turns > 0:
@@ -347,7 +351,9 @@ class MetricsAccumulator:
             # fall back to the all-request computation so their values are unchanged.
             if self.n_stream_success > 0:
                 avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency_stream, self.n_stream_success)
-                avg_time_per_output_token = _safe_div(self.total_time_per_output_token_stream, self.n_stream_success)
+                avg_time_per_output_token = _safe_div(
+                    self.total_time_per_output_token_stream, self.n_stream_tpot, default=0.0
+                )
             else:
                 avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency, n)
                 avg_time_per_output_token = _safe_div(self.total_time_per_output_token, n)
