@@ -89,6 +89,17 @@ def _make_db(sub_dir: str, *, n_success: int, n_failed: int) -> None:
         conn.close()
 
 
+# Avg and p99 columns of the optional generation metrics (PD handoff, steady ITL).
+_OPTIONAL_KEYS = (
+    'avg_pd_handoff_latency',
+    'p99_pd_handoff_latency',
+    'avg_pd_handoff_overhead',
+    'p99_pd_handoff_overhead',
+    'avg_steady_itl',
+    'p99_steady_itl',
+)
+
+
 class TestPerfArchive(unittest.TestCase):
 
     def setUp(self):
@@ -114,6 +125,16 @@ class TestPerfArchive(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _assert_optional_columns_pruned(self, body):
+        # The p99 siblings matter most: a missing percentile row reads back as 0.0,
+        # not None, so a p99 column left behind would look like a real measurement.
+        column_keys = {column['key'] for column in body['summary_columns']}
+        for key in _OPTIONAL_KEYS:
+            self.assertNotIn(key, column_keys)
+            for row in body['summary_rows']:
+                self.assertNotIn(key, row['values'])
+                self.assertNotIn(key, row['sample_counts'])
 
     def test_list_finds_both_layouts(self):
         res = self.client.get('/api/v1/perf/list', query_string={'root_path': self.tmp})
@@ -150,8 +171,7 @@ class TestPerfArchive(unittest.TestCase):
         column_keys = {column['key'] for column in body['summary_columns']}
         self.assertEqual(set(values), column_keys)
         self.assertNotIn(None, list(values.values()))
-        self.assertNotIn('avg_pd_handoff_latency', values)
-        self.assertNotIn('avg_steady_itl', values)
+        self._assert_optional_columns_pruned(body)
         self.assertEqual(body['total_requests'], 2)
         self.assertNotIn('summary_sample_counts', body)
         self.assertNotIn('metric_semantics', body)
@@ -185,6 +205,7 @@ class TestPerfArchive(unittest.TestCase):
         for row in body['summary_rows']:
             self.assertEqual(set(row['values']), column_keys)
             self.assertNotIn(None, list(row['values'].values()))
+        self._assert_optional_columns_pruned(body)
 
     def test_history_report_serves_existing_html(self):
         res = self.client.get('/api/v1/perf/history/report', query_string={'root_path': self.tmp, 'path': self.cli_rel})
