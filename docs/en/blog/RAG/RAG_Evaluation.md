@@ -12,9 +12,9 @@
 > introduces how to evaluate multimodal retrieval-augmented generation (RAG) systems, focusing on how to use the evaluation tools in the llama-index library to assess the retriever and generator. It demonstrates how to load data, build an index, set up the RAG system, and conduct retrieval and generation evaluations using the American Sign Language (ASL) alphabet images and text descriptions as a case study.
 
 ### 2. **LangChain**
-* [Multimodal (Image-Text) RAG Tutorial](https://github.com/langchain-ai/langchain/blob/master/cookbook/Multi_modal_RAG.ipynb) 
+* [Multimodal (Image-Text) RAG Tutorial](https://github.com/langchain-ai/langchain/blob/v0.3/cookbook/Multi_modal_RAG.ipynb) 
 
-* [Semi-structured (Image-Text-Table) Multimodal RAG Tutorial](https://github.com/langchain-ai/langchain/blob/master/cookbook/Semi_structured_and_multi_modal_RAG.ipynb) 
+* [Semi-structured (Image-Text-Table) Multimodal RAG Tutorial](https://github.com/langchain-ai/langchain/blob/v0.3/cookbook/Semi_structured_and_multi_modal_RAG.ipynb) 
 
 * Multi-modal RAG
 ![Multi-modal RAG](images/MM_RAG_LangChain_1.png)

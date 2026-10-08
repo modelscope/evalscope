@@ -8,7 +8,7 @@ This tutorial involves the installation and use of the following frameworks:
 1.  [Modelscope](https://github.com/modelscope/modelscope)  
     Provides capabilities for model and dataset downloads.
         
-2.  [Data-Juicer](https://github.com/modelscope/data-juicer)  
+2.  [Data-Juicer](https://github.com/datajuicer/data-juicer)  
     Provides dataset processing capabilities.
         
 3.  [MS-Swift](https://github.com/modelscope/ms-swift)  
@@ -92,21 +92,21 @@ df.to_json("data/zhihu.jsonl", orient="records", lines=True, force_ascii=False)
 
 ## 3. Data Cleaning with Data-Juicer
 ### Introduction
-Data-Juicer is a one-stop multi-modal data processing system designed to provide higher quality, richer, and more "digestible" data for large language models (LLMs). It is designed to be user-friendly, offering comprehensive documentation, easy-to-follow getting started guides, and demonstration configurations, while allowing for easy addition or removal of operators from existing configurations. [Detailed Introduction](https://github.com/modelscope/data-juicer/blob/main/README_ZH.md)
+Data-Juicer is a one-stop multi-modal data processing system designed to provide higher quality, richer, and more "digestible" data for large language models (LLMs). It is designed to be user-friendly, offering comprehensive documentation, easy-to-follow getting started guides, and demonstration configurations, while allowing for easy addition or removal of operators from existing configurations. [Detailed Introduction](https://github.com/datajuicer/data-juicer/blob/main/README.md)
 
 ### Usage Process
 #### 1. Write YAML Configuration File
-The [operators](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md) in Data-Juicer are divided into the following 5 types:
+The [operators](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md) in Data-Juicer are divided into the following 5 types:
 
 |  Type  |  Count  |  Description  |
 | --- | --- | --- |
-|  [Formatter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#formatter)  |  7  |  Discover, load, and normalize raw data  |
-|  [Mapper](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#mapper)  |  43  |  Edit and transform data samples  |
-|  [Filter](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#filter)  |  41  |  Filter out low-quality samples  |
-|  [Deduplicator](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#deduplicator)  |  5  |  Identify and remove duplicate samples  |
-|  [Selector](https://github.com/modelscope/data-juicer/blob/main/docs/Operators_ZH.md#selector)  |  4  |  Select high-quality samples based on sorting  |
+|  [Formatter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#formatter)  |  7  |  Discover, load, and normalize raw data  |
+|  [Mapper](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#mapper)  |  43  |  Edit and transform data samples  |
+|  [Filter](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#filter)  |  41  |  Filter out low-quality samples  |
+|  [Deduplicator](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#deduplicator)  |  5  |  Identify and remove duplicate samples  |
+|  [Selector](https://github.com/datajuicer/data-juicer/blob/main/docs/Operators.md#selector)  |  4  |  Select high-quality samples based on sorting  |
 
-Modify the [configuration file for all operators](https://github.com/modelscope/data-juicer/blob/main/configs/config_all.yaml) as a base to write the following configuration file:
+Modify the [configuration file for all operators](https://github.com/datajuicer/data-juicer/blob/main/data_juicer/config/config_all.yaml) as a base to write the following configuration file:
 
 ```yaml
 # global parameters
