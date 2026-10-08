@@ -6,6 +6,7 @@ from tabulate import tabulate
 
 from evalscope.metrics.semantics import resolve_perf_semantics
 from evalscope.perf.arguments import Arguments as PerfArguments
+from evalscope.perf.sla.sla_run import SLAResult, format_sla_tables
 from evalscope.perf.utils.benchmark_util import Metrics
 from evalscope.perf.utils.rich_display import EmbeddingResultAnalyzer, LLMResultAnalyzer
 from evalscope.service.api_models import (
@@ -50,6 +51,8 @@ def _build_perf_table(result, api_type: str = None) -> str:
 
     Returns an empty string when no valid results are found.
     """
+    if isinstance(result, SLAResult):
+        return format_sla_tables(result)
     try:
         is_emb = Metrics.is_embedding_or_rerank(api_type)
         analyzer = EmbeddingResultAnalyzer() if is_emb else LLMResultAnalyzer()

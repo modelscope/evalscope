@@ -1,10 +1,10 @@
 # SLA Auto-Tuning
 
-The SLA (Service Level Agreement) auto-tuning feature allows users to define service quality metrics (such as latency and throughput), and the tool will automatically adjust request pressure (concurrency or request rate) to find the maximum pressure value that the service can sustain while meeting these metrics.
+SLA (Service Level Agreement) auto-tuning tests request pressure (concurrency or request rate) against service quality metrics. It reports the best tested value for each constraint group or optimization objective.
 
 ## Features
 
-- **Automatic Detection**: Uses binary search algorithm to automatically find the maximum concurrency (`parallel`) or request rate (`rate`) that satisfies SLA constraints.
+- **Automatic Detection**: Uses exponential bracketing and binary search to locate a qualifying concurrency (`parallel`) or request rate (`rate`).
 - **Multi-Metric Support**: Supports end-to-end latency (Latency), time to first token (TTFT), time per output token (TPOT), as well as request throughput (RPS) and token throughput (TPS).
 - **Flexible Constraints**: Supports setting upper limits (e.g., `p99_latency <= 2s`) or finding extremes (e.g., `tps: max`).
 - **Stable Results**: Each test point runs multiple times by default and takes the average to reduce network fluctuation interference.
@@ -36,6 +36,8 @@ The SLA (Service Level Agreement) auto-tuning feature allows users to define ser
 | | `tps` | Tokens per second | `>=`, `>`, `max` |
 
 > **Note**: Latency thresholds accept an `s` or `ms` suffix, e.g. `{"avg_ttft": "<=2s"}` or `{"avg_tpot": "<=50ms"}`. A bare number is read in the unit the reports use for that metric (`Avg TTFT (ms)` is milliseconds, `Avg Latency (s)` is seconds), so a value can be copied off a report as-is. Every check logs the unit it resolved, e.g. `avg_ttft = 40 ms | Expect <= 2000 ms | PASSED`.
+
+Embedding and rerank APIs support only `avg_latency`, `p99_latency`, and `rps` in SLA mode. Other metric/API combinations fail before benchmarking. A metric missing or non-finite in any repeated run makes that tested pressure ineligible; a real numeric zero remains valid.
 
 If you copied an earlier example such as `{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}` intending **seconds**, add the unit suffixes: `{"avg_ttft": "<=2s", "avg_tpot": "<=0.05s"}`. Without suffixes, those TTFT/TPOT thresholds are read as milliseconds. The same applies to earlier `p99_ttft` examples such as `<0.05`: write `<0.05s` or `<50ms`.
 
@@ -90,21 +92,45 @@ When the array has **only one object with only one metric**, and the operator is
 
 Meaning: Find the concurrency corresponding to maximum TPS (token throughput).
 
+`max` and `min` cannot be combined with thresholds or another group. Empty groups are also rejected.
+
 ## Workflow
 
 1. **Baseline Test**: Start testing with the user-specified initial `parallel` or `rate` (recommended to set a small value, such as 1 or 2).
 2. **Boundary Detection**:
    - If current metrics meet SLA, double the pressure until SLA is first violated or `--sla-upper-bound` is reached.
    - If initial metrics violate SLA, halve the pressure to find a lower bound that satisfies conditions.
-3. **Binary Search**: Perform binary search within the determined boundary window to precisely lock in the maximum pressure value that "just doesn't violate" SLA.
-4. **Result Confirmation**: Each test point runs `--sla-num-runs` times (default 3), taking the average for judgment.
-5. **Report Output**: After testing, output a summary of the tuning process and final results.
+3. **Binary Search**: Constraint mode searches the pass/fail boundary. Extremum mode compares adjacent values to locate a peak inside the bracket; if the initial value is ineligible, it first searches below that value.
+4. **Run Validation**: Each pressure is tested `--sla-num-runs` times (default 3). Every run must have successful requests and every requested metric; metric values are then averaged. Success counts are summed exactly across runs.
+5. **Report Output**: The result contains tested pressure points and one final selection per group.
 
 > **Note**: If the request success rate during testing is below 100%, that test point will be considered failed (violating SLA).
 >
 > When `--sla-variable=rate`, use `--sla-fixed-parallel` to explicitly control the fixed concurrency. If not set, the implementation falls back to `--sla-upper-bound` for backward compatibility.
 
+The search assumes SLA satisfaction decreases monotonically as pressure rises, or a single peak for `max`/`min` within a valid low-pressure prefix. Non-monotonic or multi-peak behavior can be missed. Selections are labelled **best observed**, not guaranteed global optima. A high `--sla-upper-bound` can still be expensive: at the default bound of 65536, the default multiplier requests 131072 responses per run at that point, repeated three times by default. Set a practical upper bound for the service under test.
+
+## Result Contract
+
+The Python return value and `sla_summary.json` keep the existing pressure-keyed dictionary shape. No version field or top-level metadata is added. Each `parallel_N` (or `rate_N`) maps to a result containing `metrics` and `percentiles`, so existing pressure-keyed readers continue to work.
+
+```json
+{
+  "parallel_2": {
+    "metrics": {"Total Requests": 12, "Success Requests": 12},
+    "percentiles": {"Percentiles": ["99%"]}
+  }
+}
+```
+
+The returned Python dictionary has `probes` and `selections` attributes for execution-order details and the final choice for each criterion group. These attributes are neither written to JSON nor added as dictionary keys. The service `result` field also keeps the existing shape; its `table` field displays the selections.
+
+Console and service tables display the exact `succeeded_requests/total_requests` count. A pressure with failed requests or a missing metric is marked `FAILED`, even if a rounded percentage would appear to be 100%.
+`valid` means all requested metrics were present across all groups. Groups are still evaluated independently: a missing metric in one group does not prevent another group from selecting the same pressure when its own metrics are present.
+
 ## Usage Examples
+
+The log excerpts below show representative probe rows; an actual run may test additional pressure values.
 
 ### 1. Find Maximum Concurrency Meeting P99 Latency <= 2s
 
@@ -127,22 +153,28 @@ evalscope perf \
 ```
 
 ```text
-                Performance Overview
-┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-┃Conc. ┃ Rate ┃ Num ┃  RPS ┃   Gen/s ┃ Success ┃
-┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
-│    2 │    - │  20 │ 2.19 │  640.20 │  100.0% │
-│    4 │    - │  20 │ 7.18 │ 1013.67 │  100.0% │
-│    5 │    - │  20 │ 6.39 │ 1210.93 │  100.0% │
-│    6 │    - │  20 │ 3.86 │ 1095.79 │  100.0% │
-│    8 │    - │  20 │ 4.03 │ 1615.33 │  100.0% │
-└──────┴──────┴─────┴──────┴─────────┴─────────┘
-2025-12-18 16:32:39 - evalscope - INFO: SLA Auto-tune Summary:
-+--------------------+------------+-----------------+-----------+
-| Criteria           | Variable   |   Max Satisfied | Note      |
-+====================+============+=================+===========+
-| p99_latency <= 2 s | parallel   |               5 | Satisfied |
-+--------------------+------------+-----------------+-----------+
+SLA Auto-tune Summary:
+Probes:
+┌────────────┬───────────────────┬──────────────┬──────────┬──────────┐
+│   Pressure │ Succeeded/Total   │ Run status   │ Groups   │ Reason   │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│          2 │ 12/12             │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│          4 │ 24/24             │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│          5 │ 30/30             │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│          6 │ 36/36             │ VALID        │ 1:FAIL   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│          8 │ 48/48             │ VALID        │ 1:FAIL   │ -        │
+└────────────┴───────────────────┴──────────────┴──────────┴──────────┘
+
+Selections:
+┌──────────────────┬────────────┬───────────────┬───────────────────────────────────────────┐
+│ Criteria         │   Selected │ Status        │ Reason                                    │
+├──────────────────┼────────────┼───────────────┼───────────────────────────────────────────┤
+│ p99_latency <=2s │          5 │ best_observed │ Satisfied at the selected tested pressure │
+└──────────────────┴────────────┴───────────────┴───────────────────────────────────────────┘
 ```
 
 ### 2. Find Concurrency with Maximum TPS
@@ -166,24 +198,30 @@ evalscope perf \
 
 Example output:
 ```text
-                  Performance Overview
-┏━━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-┃ Conc. ┃ Rate ┃  Num ┃  RPS ┃   Gen/s ┃ Success ┃
-┡━━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
-│    32 │    - │  ... │ 5.68 │ 5813.67 │  100.0% │
-│    64 │    - │  ... │ 5.76 │ 5902.57 │  100.0% │
-│   128 │    - │  ... │ 6.96 │ 7124.25 │  100.0% │
-│   256 │    - │  ... │ 7.81 │ 8000.89 │  100.0% │
-│   384 │    - │  ... │ 7.87 │ 8057.14 │  100.0% │
-│   ... │    - │  ... │  ... │     ... │  100.0% │
-│   512 │    - │  ... │ 7.76 │ 7941.28 │  100.0% │
-└───────┴──────┴──────┴──────┴─────────┴─────────┘
-2025-12-18 15:06:49 - evalscope - INFO: SLA Auto-tune Summary:
-+------------+------------+-----------------+-------------------------+
-| Criteria   | Variable   |   Max Satisfied | Note                    |
-+============+============+=================+=========================+
-| tps -> max | parallel   |             384 | Best tps: 8057.14 tok/s |
-+------------+------------+-----------------+-------------------------+
+SLA Auto-tune Summary:
+Probes:
+┌────────────┬───────────────────┬──────────────┬──────────┬──────────┐
+│   Pressure │ Succeeded/Total   │ Run status   │ Groups   │ Reason   │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│         32 │ 192/192           │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│         64 │ 384/384           │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│        128 │ 768/768           │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│        256 │ 1536/1536         │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│        384 │ 2304/2304         │ VALID        │ 1:PASS   │ -        │
+├────────────┼───────────────────┼──────────────┼──────────┼──────────┤
+│        512 │ 3072/3072         │ VALID        │ 1:PASS   │ -        │
+└────────────┴───────────────────┴──────────────┴──────────┴──────────┘
+
+Selections:
+┌────────────┬────────────┬───────────────┬──────────────────────────────────┐
+│ Criteria   │   Selected │ Status        │ Reason                           │
+├────────────┼────────────┼───────────────┼──────────────────────────────────┤
+│ tps max    │        384 │ best_observed │ Best observed tps: 8057.14 tok/s │
+└────────────┴────────────┴───────────────┴──────────────────────────────────┘
 ```
 
 ### 3. Find Maximum Request Rate Meeting TTFT < 50ms and TTFT < 10ms in Specific Range
@@ -211,23 +249,30 @@ evalscope perf \
 
 Example output:
 ```text
-              Performance Overview
-┏━━━━━━┳━━━━━━┳━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-┃Conc. ┃ Rate ┃ Num ┃   RPS ┃   Gen/s ┃ Success ┃
-┡━━━━━━╇━━━━━━╇━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
-│   40 │   10 │ ... │  5.16 │  948.33 │  100.0% │
-│   40 │   15 │ ... │  9.78 │ 2249.29 │  100.0% │
-│   40 │   17 │ ... │  8.17 │ 1530.79 │  100.0% │
-│   40 │   18 │ ... │ 10.30 │ 2466.09 │  100.0% │
-│   40 │   19 │ ... │ 12.83 │ 2296.22 │  100.0% │
-│   40 │   20 │ ... │ 11.81 │ 2435.94 │  100.0% │
-└──────┴──────┴─────┴───────┴─────────┴─────────┘
-2025-12-18 16:19:48 - evalscope - INFO: SLA Auto-tune Summary:
-+------------------+------------+-----------------+----------------------------+
-| Criteria         | Variable   | Max Satisfied   | Note                       |
-+==================+============+=================+============================+
-| p99_ttft < 50 ms | rate       | 19              | Satisfied                  |
-+------------------+------------+-----------------+----------------------------+
-| p99_ttft < 10 ms | rate       | None            | Failed at lower bound (10) |
-+------------------+------------+-----------------+----------------------------+
+SLA Auto-tune Summary:
+Probes:
+┌────────────┬───────────────────┬──────────────┬────────────────┬──────────┐
+│   Pressure │ Succeeded/Total   │ Run status   │ Groups         │ Reason   │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         10 │ 20/20             │ VALID        │ 1:PASS, 2:FAIL │ -        │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         15 │ 30/30             │ VALID        │ 1:PASS, 2:FAIL │ -        │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         17 │ 34/34             │ VALID        │ 1:PASS, 2:FAIL │ -        │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         18 │ 36/36             │ VALID        │ 1:PASS, 2:FAIL │ -        │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         19 │ 38/38             │ VALID        │ 1:PASS, 2:FAIL │ -        │
+├────────────┼───────────────────┼──────────────┼────────────────┼──────────┤
+│         20 │ 40/40             │ VALID        │ 1:FAIL, 2:FAIL │ -        │
+└────────────┴───────────────────┴──────────────┴────────────────┴──────────┘
+
+Selections:
+┌────────────────┬────────────┬───────────────┬───────────────────────────────────────────┐
+│ Criteria       │ Selected   │ Status        │ Reason                                    │
+├────────────────┼────────────┼───────────────┼───────────────────────────────────────────┤
+│ p99_ttft <50ms │ 19         │ best_observed │ Satisfied at the selected tested pressure │
+├────────────────┼────────────┼───────────────┼───────────────────────────────────────────┤
+│ p99_ttft <10ms │ None       │ none          │ Failed at lower bound (10)                │
+└────────────────┴────────────┴───────────────┴───────────────────────────────────────────┘
 ```

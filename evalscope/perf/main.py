@@ -152,7 +152,9 @@ def run_perf_benchmark(args):
         args: Arguments object, dict, or Namespace
 
     Returns:
-        Dict with benchmark results in format {parallel_x_number_x: {metrics: ..., percentiles: ...}}
+        SLA mode returns pressure-keyed benchmark results with tuning details
+        available as Python attributes. Other modes return benchmark results in
+        the format {parallel_x_number_x: {metrics: ..., percentiles: ...}}.
     """
     # Check if args is a dictionary or Namespace
     if isinstance(args, dict):
