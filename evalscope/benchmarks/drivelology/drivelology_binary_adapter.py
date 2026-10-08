@@ -4,10 +4,12 @@ from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.yes_no import extract_verdict
 
 DESCRIPTION = """
 ## Overview
@@ -112,6 +114,7 @@ Here are some examples of how to solve similar problems:
         eval_split='test',
         prompt_template='{question}',
         few_shot_prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
@@ -134,14 +137,16 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
             },
         )
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        verdict = extract_verdict(filtered_prediction, allow_lowercase_exact=True)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
-        score.value = {'acc': result}
+        # Credit only an exact whole-word verdict match; both verdicts or neither scores 0
+        score.value = {'acc': 1 if verdict == reference.strip().upper() else 0}
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -150,26 +155,23 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
         """
 
         def compute_metrics(scores: List[SampleScore]):
-            tp = fp = tn = fn = 0
+            tp = fp = fn = 0
             yes_count = 0
             total_count = len(scores)
 
             for ss in scores:
                 gt = ss.sample_metadata['answer'].strip().upper()
-                # Get prediction based on score
-                pred = gt if ss.score.main_value == 1 else ('NO' if gt == 'YES' else 'YES')
+                pred = extract_verdict(ss.score.extracted_prediction or '', allow_lowercase_exact=True)
                 if pred == 'YES':
                     yes_count += 1
                 if pred == 'YES' and gt == 'YES':
                     tp += 1
                 elif pred == 'YES' and gt == 'NO':
                     fp += 1
-                elif pred == 'NO' and gt == 'NO':
-                    tn += 1
-                elif pred == 'NO' and gt == 'YES':
+                elif gt == 'YES':
                     fn += 1
 
-            accuracy = (tp + tn) / total_count if total_count > 0 else 0.0
+            accuracy = sum(ss.score.main_value for ss in scores) / total_count if total_count > 0 else 0.0
             precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
