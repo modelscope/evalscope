@@ -8,7 +8,7 @@ This tutorial involves the installation and use of the following frameworks:
 1.  [Modelscope](https://github.com/modelscope/modelscope)  
     Provides capabilities for model and dataset downloads.
         
-2.  [Data-Juicer](https://github.com/modelscope/data-juicer)  
+2.  [Data-Juicer](https://github.com/datajuicer/data-juicer)  
     Provides dataset processing capabilities.
         
 3.  [MS-Swift](https://github.com/modelscope/ms-swift)  
@@ -92,7 +92,7 @@ df.to_json("data/zhihu.jsonl", orient="records", lines=True, force_ascii=False)
 
 ## 3. Data Cleaning with Data-Juicer
 ### Introduction
-Data-Juicer is a one-stop multi-modal data processing system designed to provide higher quality, richer, and more "digestible" data for large language models (LLMs). It is designed to be user-friendly, offering comprehensive documentation, easy-to-follow getting started guides, and demonstration configurations, while allowing for easy addition or removal of operators from existing configurations. [Detailed Introduction](https://github.com/modelscope/data-juicer/blob/main/README_ZH.md)
+Data-Juicer is a one-stop multi-modal data processing system designed to provide higher quality, richer, and more "digestible" data for large language models (LLMs). It is designed to be user-friendly, offering comprehensive documentation, easy-to-follow getting started guides, and demonstration configurations, while allowing for easy addition or removal of operators from existing configurations. [Detailed Introduction](https://github.com/datajuicer/data-juicer/blob/main/README_ZH.md)
 
 ### Usage Process
 #### 1. Write YAML Configuration File

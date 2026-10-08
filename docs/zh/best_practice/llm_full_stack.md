@@ -12,7 +12,7 @@
 1.  [modelscope](https://github.com/modelscope/modelscope)
     提供模型、数据集下载能力
         
-2.  [data-juicer](https://github.com/modelscope/data-juicer)
+2.  [data-juicer](https://github.com/datajuicer/data-juicer)
     提供数据集处理能力
         
 3.  [ms-swift](https://github.com/modelscope/ms-swift)
@@ -104,7 +104,7 @@ df.to_json("data/zhihu.jsonl", orient="records", lines=True, force_ascii=False)
 ## 3. 使用data-juicer进行数据清洗
 
 ### 介绍
-Data-Juicer 是一个一站式多模态数据处理系统，旨在为大语言模型 (LLM) 提供更高质量、更丰富、更易“消化”的数据。设计简单易用，提供全面的文档、简易入门指南和演示配置，并且可以轻松地添加/删除现有配置中的算子。[详细介绍](https://github.com/modelscope/data-juicer/blob/main/README_ZH.md)
+Data-Juicer 是一个一站式多模态数据处理系统，旨在为大语言模型 (LLM) 提供更高质量、更丰富、更易“消化”的数据。设计简单易用，提供全面的文档、简易入门指南和演示配置，并且可以轻松地添加/删除现有配置中的算子。[详细介绍](https://github.com/datajuicer/data-juicer/blob/main/README_ZH.md)
 
 ### 使用流程
 
