@@ -38,3 +38,16 @@ def test_single_verdict_is_extracted(prediction: str, expected: str) -> None:
 )
 def test_ambiguous_or_absent_verdict_returns_none(prediction: str) -> None:
     assert extract_verdict(prediction) is None
+
+
+@pytest.mark.parametrize(
+    ('prediction', 'expected'),
+    [('yes', 'YES'), ('no', 'NO'), ('yes.', 'YES'), ('no!', 'NO')],
+)
+def test_standalone_lowercase_verdict_is_optional(prediction: str, expected: str) -> None:
+    assert extract_verdict(prediction, allow_lowercase_exact=True) == expected
+    assert extract_verdict(prediction) is None
+
+
+def test_lowercase_prose_is_not_a_verdict() -> None:
+    assert extract_verdict('there is no evidence', allow_lowercase_exact=True) is None

@@ -87,7 +87,7 @@ class PopeAdapter(VisionLanguageAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        verdict = extract_verdict(filtered_prediction)
+        verdict = extract_verdict(filtered_prediction, allow_lowercase_exact=True)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
@@ -102,26 +102,23 @@ class PopeAdapter(VisionLanguageAdapter):
         """
 
         def compute_metrics(scores: List[SampleScore]):
-            tp = fp = tn = fn = 0
+            tp = fp = fn = 0
             yes_count = 0
             total_count = len(scores)
 
             for ss in scores:
                 gt = ss.sample_metadata['answer'].strip().upper()
-                # Get prediction based on score
-                pred = gt if ss.score.main_value == 1 else ('NO' if gt == 'YES' else 'YES')
+                pred = extract_verdict(ss.score.extracted_prediction or '', allow_lowercase_exact=True)
                 if pred == 'YES':
                     yes_count += 1
                 if pred == 'YES' and gt == 'YES':
                     tp += 1
                 elif pred == 'YES' and gt == 'NO':
                     fp += 1
-                elif pred == 'NO' and gt == 'NO':
-                    tn += 1
-                elif pred == 'NO' and gt == 'YES':
+                elif gt == 'YES':
                     fn += 1
 
-            accuracy = (tp + tn) / total_count if total_count > 0 else 0.0
+            accuracy = sum(ss.score.main_value for ss in scores) / total_count if total_count > 0 else 0.0
             precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0

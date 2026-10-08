@@ -95,7 +95,7 @@ class HallusionBenchAdapter(VisionLanguageAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        verdict = extract_verdict(filtered_prediction)
+        verdict = extract_verdict(filtered_prediction, allow_lowercase_exact=True)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
