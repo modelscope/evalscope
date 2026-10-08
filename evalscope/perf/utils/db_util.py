@@ -249,8 +249,13 @@ def get_percentile_results(
                 row[col_indices[DatabaseColumns.FIRST_CHUNK_LATENCY]] * 1000 for row in streaming_rows
             ],
             PercentileMetrics.ITL: [v * 1000 for v in inter_token_latencies_all],
+            # Streamed replies without a decode phase (one token) have no TPOT; they
+            # are left out like in Decode throughput. Pure non-stream runs keep 0.
             PercentileMetrics.TPOT: [
-                row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] * 1000 for row in streaming_rows
+                row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] * 1000
+                if row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]] > 0 or not stream_rows
+                else float('nan')
+                for row in streaming_rows
             ],
             PercentileMetrics.DECODE_THROUGHPUT: [
                 (1.0 / row[col_indices[DatabaseColumns.TIME_PER_OUTPUT_TOKEN]])
