@@ -11,6 +11,7 @@ class SLAProbe(BaseModel):
     total_requests: int
     succeeded_requests: int
     success_rate: float
+    request_gate_passed: bool
     valid: bool
     reasons: List[str] = Field(default_factory=list)
     metric_values: Dict[str, float] = Field(default_factory=dict)

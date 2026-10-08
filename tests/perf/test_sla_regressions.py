@@ -81,6 +81,19 @@ def test_one_missing_run_fails_the_pressure_point_and_keeps_exact_counts() -> No
     assert '11/12' in format_sla_tables(result)
 
 
+@pytest.mark.parametrize('criterion', [{'tps': 'max'}, {'avg_latency': '<=1s'}])
+def test_missing_request_counts_cannot_pass_on_other_runs_counts(criterion) -> None:
+    missing_counts = _result(0.04)
+    del missing_counts['metrics'][Metrics.TOTAL_REQUESTS]
+    attempts = iter((_result(0.04), missing_counts))
+    result = _tune({1: lambda: next(attempts)}, [criterion], runs=2)
+    probe = result.probes[0]
+    assert (probe.succeeded_requests, probe.total_requests) == (4, 4)
+    assert not probe.request_gate_passed
+    assert not probe.valid
+    assert result.selections[0].selected_value is None
+
+
 def test_optimization_searches_below_a_failed_start() -> None:
     values = {n: _result(40.0 if n == 1 else 50.0, succeeded=4 if n <= 2 else 0) for n in range(1, 9)}
     result = _tune(values, [{'tps': 'max'}], start=4)
@@ -101,6 +114,24 @@ def test_optimization_can_search_left_of_a_valid_start() -> None:
     values = (1, 5, 4, 3, 2, 1)
     result = _tune({n: _result(values[n - 1]) for n in range(1, 7)}, [{'tps': 'max'}], start=4)
     assert result.selections[0].selected_value == 2
+
+
+def test_optimization_follows_a_plateau_to_a_later_peak() -> None:
+    values = (1, 1, 1, 2, 3)
+    result = _tune({n: _result(value) for n, value in enumerate(values, 1)}, [{'tps': 'max'}], start=2)
+    assert result.selections[0].selected_value == 5
+
+
+def test_optimization_checks_a_skipped_interval_between_equal_scores() -> None:
+    values = (1, 2, 3, 10) + (9,) * 16
+    result = _tune({n: _result(value) for n, value in enumerate(values, 1)}, [{'tps': 'max'}])
+    assert result.selections[0].selected_value == 4
+
+
+def test_optimization_checks_both_sides_of_a_binary_search_tie() -> None:
+    values = (1, 2) + (3,) * 11 + (10, 9, 5, 2)
+    result = _tune({n: _result(value) for n, value in enumerate(values, 1)}, [{'tps': 'max'}])
+    assert result.selections[0].selected_value == 14
 
 
 def test_minimum_search_finds_an_interior_value() -> None:

@@ -22,6 +22,7 @@ def test_sla_invoke_preserves_legacy_result_and_exact_count_table(tmp_path) -> N
                 total_requests=24,
                 succeeded_requests=23,
                 success_rate=23 / 24 * 100,
+                request_gate_passed=False,
                 valid=False,
                 reasons=['run 3: 7/8 requests succeeded'],
             )

@@ -108,7 +108,7 @@ Meaning: Find the concurrency corresponding to maximum TPS (token throughput).
 >
 > When `--sla-variable=rate`, use `--sla-fixed-parallel` to explicitly control the fixed concurrency. If not set, the implementation falls back to `--sla-upper-bound` for backward compatibility.
 
-The search assumes SLA satisfaction decreases monotonically as pressure rises, or a single peak for `max`/`min` within a valid low-pressure prefix. Non-monotonic or multi-peak behavior can be missed. Selections are labelled **best observed**, not guaranteed global optima. A high `--sla-upper-bound` can still be expensive: at the default bound of 65536, the default multiplier requests 131072 responses per run at that point, repeated three times by default. Set a practical upper bound for the service under test.
+The search assumes SLA satisfaction decreases monotonically as pressure rises, or a single peak for `max`/`min` within a valid low-pressure prefix. Non-monotonic or multi-peak behavior can be missed. Selections are labelled **best observed**, not guaranteed global optima. Equal adjacent optimization scores are probed across the flat region to establish a direction; a long flat region can require testing many pressure values. A high `--sla-upper-bound` can still be expensive: at the default bound of 65536, the default multiplier requests 131072 responses per run at that point, repeated three times by default. Set a practical upper bound for the service under test.
 
 ## Result Contract
 

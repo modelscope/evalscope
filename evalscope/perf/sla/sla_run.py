@@ -308,6 +308,7 @@ class SLAAutoTuner:
         run_results = []
         total_requests = 0
         succeeded_requests = 0
+        request_gate_passed = True
         count_sums = {field: 0 for field in _COUNT_FIELDS}
         reasons = []
         run_values = []
@@ -347,6 +348,7 @@ class SLAAutoTuner:
             total_requests += total
             succeeded_requests += succeeded
             if not total or succeeded != total:
+                request_gate_passed = False
                 reasons.append(f'run {i + 1}: {succeeded}/{total} requests succeeded')
             values = get_metric_values(run_result)
             run_values.append(values)
@@ -378,6 +380,7 @@ class SLAAutoTuner:
             total_requests=total_requests,
             succeeded_requests=succeeded_requests,
             success_rate=succeeded_requests / total_requests * 100 if total_requests else 0.0,
+            request_gate_passed=request_gate_passed,
             valid=not reasons,
             reasons=reasons,
             metric_values=metric_values,
@@ -388,13 +391,13 @@ class SLAAutoTuner:
     def _optimization_value(self, val: int, opt_metric: str) -> Optional[float]:
         """Exclude failed runs and missing metrics from the optimization objective."""
         probe = self._get_probe(val)
-        if probe.total_requests == 0 or probe.succeeded_requests != probe.total_requests:
+        if not probe.request_gate_passed:
             return None
         return probe.metric_values.get(opt_metric)
 
     @staticmethod
     def _group_passes(probe: SLAProbe, criteria: Dict[str, SLACriterionBase]) -> bool:
-        if probe.total_requests == 0 or probe.succeeded_requests != probe.total_requests:
+        if not probe.request_gate_passed:
             return False
         return all(
             metric in probe.metric_values and criterion.validate(probe.metric_values[metric])
@@ -404,7 +407,7 @@ class SLAAutoTuner:
     def _check_probe(self, val: int, criteria: List[Dict[str, SLACriterionBase]]) -> bool:
         probe = self._get_probe(val)
         selector = f'{self.sla_variable}={val}'
-        if probe.total_requests == 0 or probe.succeeded_requests != probe.total_requests:
+        if not probe.request_gate_passed:
             logger.warning(f'[{selector}] SLA Check: {"; ".join(probe.reasons)} | FAILED')
             return False
         return _check_criteria(probe.metric_values, criteria, f'[{selector}] ')
@@ -452,12 +455,21 @@ class SLAAutoTuner:
                 direction = -1
             elif self._improves(right_score, start_score, opt_mode):
                 direction = 1
-            elif left_score == start_score and left_score is not None:
-                direction = -1
-            elif right_score == start_score and right_score is not None:
-                direction = 1
             else:
                 direction = 0
+                # Equal adjacent values reveal no slope. Walk both sides of
+                # the plateau before choosing a search direction.
+                plateau_left, plateau_right = start_val, start_val
+                while plateau_left > self.lower_bound and score(plateau_left - 1) == start_score:
+                    plateau_left -= 1
+                while plateau_right < self.upper_bound and score(plateau_right + 1) == start_score:
+                    plateau_right += 1
+                if plateau_left > self.lower_bound and self._improves(score(plateau_left - 1), start_score, opt_mode):
+                    direction = -1
+                elif plateau_right < self.upper_bound and self._improves(
+                    score(plateau_right + 1), start_score, opt_mode
+                ):
+                    direction = 1
 
             if direction:
                 previous = start_val
@@ -467,7 +479,17 @@ class SLAAutoTuner:
                 while self.lower_bound <= current + direction * step <= self.upper_bound:
                     candidate = current + direction * step
                     candidate_score = score(candidate)
-                    if not_worse(candidate_score, score(current)):
+                    current_score = score(current)
+                    if candidate_score == current_score and candidate_score is not None:
+                        # A skipped interval may contain a narrow peak even if
+                        # its endpoints have the same rounded score.
+                        start, end = sorted((previous, candidate))
+                        if any(
+                            self._improves(score(value), candidate_score, opt_mode) for value in range(start + 1, end)
+                        ):
+                            bracket = (start, end)
+                            break
+                    if not_worse(candidate_score, current_score):
                         previous = current
                         current = candidate
                         bracket = tuple(sorted((previous, current)))
@@ -496,7 +518,22 @@ class SLAAutoTuner:
                     else:
                         left = mid + 1
                 elif next_score is None or not_worse(current_score, next_score):
-                    right = mid
+                    if next_score == current_score:
+                        plateau_left, plateau_right = mid, mid + 1
+                        while plateau_left > left and score(plateau_left - 1) == current_score:
+                            plateau_left -= 1
+                        while plateau_right < right and score(plateau_right + 1) == current_score:
+                            plateau_right += 1
+                        if plateau_left > left and self._improves(score(plateau_left - 1), current_score, opt_mode):
+                            right = plateau_left - 1
+                        elif plateau_right < right and self._improves(
+                            score(plateau_right + 1), current_score, opt_mode
+                        ):
+                            left = plateau_right + 1
+                        else:
+                            left = right = plateau_left
+                    else:
+                        right = mid
                 else:
                     left = mid + 1
 
