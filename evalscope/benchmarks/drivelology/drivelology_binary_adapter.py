@@ -4,10 +4,12 @@ from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
+from evalscope.utils.yes_no import extract_verdict
 
 DESCRIPTION = """
 ## Overview
@@ -112,6 +114,7 @@ Here are some examples of how to solve similar problems:
         eval_split='test',
         prompt_template='{question}',
         few_shot_prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
@@ -134,14 +137,16 @@ class DrivelologyBinaryClassificationAdapter(DefaultDataAdapter):
             },
         )
 
-    def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        verdict = extract_verdict(filtered_prediction)
         score = Score(
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if reference in filtered_prediction.strip().upper() else 0
-        score.value = {'acc': result}
+        # Credit only an exact whole-word verdict match; both verdicts or neither scores 0
+        score.value = {'acc': 1 if verdict == reference.strip().upper() else 0}
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:

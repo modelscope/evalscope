@@ -1,7 +1,6 @@
 # flake8: noqa: E501
 
-import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -16,6 +15,7 @@ from evalscope.benchmarks.halu_eval.halu_eval_instructions import (
 )
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.yes_no import extract_verdict
 
 DESCRIPTION = """
 ## Overview
@@ -52,24 +52,6 @@ HaluEval is a large collection of generated and human-annotated hallucinated sam
 """
 
 logger = get_logger()
-
-# Verdicts are whole words written as the prompt requests ("Yes"/"No") or in capitals, so that words such as
-# "not", "note" or "know" and lowercase prose like "there is no evidence" are not read as a verdict.
-_YES_PATTERN = re.compile(r'\b(?:Yes|YES)\b')
-_NO_PATTERN = re.compile(r'\b(?:No|NO)\b')
-
-
-def extract_verdict(prediction: str) -> Optional[str]:
-    """Return 'YES' or 'NO' when the reply contains exactly one verdict, otherwise None.
-
-    Mirrors the official HaluEval evaluator (RUCAIBox/HaluEval ``evaluation/evaluate.py``), which counts a reply
-    containing both verdicts or neither of them as incorrect.
-    """
-    has_yes = _YES_PATTERN.search(prediction) is not None
-    has_no = _NO_PATTERN.search(prediction) is not None
-    if has_yes == has_no:
-        return None
-    return 'YES' if has_yes else 'NO'
 
 
 @register_benchmark(
