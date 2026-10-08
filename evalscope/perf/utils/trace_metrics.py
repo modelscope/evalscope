@@ -28,8 +28,10 @@ Metric definitions (per trace):
   ``completion_tokens > 1`` and ``latency > ttft``.  Matches ``trie``'s
   per-trace aggregation.
 * ``Cache Hit Rate (%)``: ``sum(cached_tokens) / sum(prompt_tokens)`` over
-  turns with ``prompt_tokens > 0``.
-* ``Eligible Cache Hit Rate (%)``: ``sum(cached_tokens) / sum(eligible)``
+  turns that reported a cached-token count (``cached_tokens is not None``),
+  mirroring ``MetricsAccumulator``. Turns whose server response carried no
+  cache information are excluded from both sides of the ratio.
+* ``Eligible Cache Hit Rate (%)``: ``sum(reported cached_tokens) / sum(eligible)``
   where ``eligible_i = prev_prompt_tokens + prev_completion_tokens``
   (turn 1 contributes 0 to both numerator and denominator).  Reflects the
   fraction of theoretically-cacheable tokens the server actually reused.
@@ -65,6 +67,10 @@ class _TraceTurn:
     prompt_tokens: int
     completion_tokens: int
     cached_tokens: int
+    # False when the server response carried no cache information for this turn
+    # (``BenchmarkData.cached_tokens`` stayed None after ``finalize()``), so the
+    # turn must not be charged against the cache-hit-ratio denominator.
+    cache_reported: bool
     eligible_prompt_tokens: int
 
 
@@ -104,10 +110,16 @@ class _TraceState:
 
     @property
     def cache_hit_rate(self) -> float:
-        total_prompt = sum(t.prompt_tokens for t in self.turns)
+        # Mirror ``MetricsAccumulator``: a turn that never reported a cached-token
+        # count is excluded from *both* sides of the ratio. Charging its
+        # ``prompt_tokens`` to the denominator while contributing 0 to the
+        # numerator silently deflates the rate for any gateway that omits
+        # ``usage.prompt_tokens_details.cached_tokens``.
+        reported = [t for t in self.turns if t.cache_reported]
+        total_prompt = sum(t.prompt_tokens for t in reported)
         if total_prompt <= 0:
             return 0.0
-        total_cached = sum(t.cached_tokens for t in self.turns)
+        total_cached = sum(t.cached_tokens for t in reported)
         return total_cached / total_prompt * 100.0
 
     @property
@@ -116,7 +128,8 @@ class _TraceState:
         if not eligible_turns:
             return 0.0
         total_eligible = sum(t.eligible_prompt_tokens for t in eligible_turns)
-        total_cached = sum(t.cached_tokens for t in eligible_turns)
+        # Only cache tokens the server actually reported can count as reused.
+        total_cached = sum(t.cached_tokens for t in eligible_turns if t.cache_reported)
         if total_eligible <= 0:
             return 0.0
         return total_cached / total_eligible * 100.0
@@ -158,6 +171,10 @@ class TraceAccumulator:
                 prompt_tokens=data.prompt_tokens or 0,
                 completion_tokens=data.completion_tokens or 0,
                 cached_tokens=data.cached_tokens or 0,
+                # ``BenchmarkData.finalize`` fills ``cached_tokens`` only from the
+                # server-reported ``real_cached_tokens``; a still-None value means
+                # this turn carried no cache information at all, not a zero-hit turn.
+                cache_reported=data.cached_tokens is not None,
                 eligible_prompt_tokens=eligible,
             )
         )
