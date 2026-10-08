@@ -400,6 +400,8 @@ class AceBenchAdapter(AgentAdapter):
             reported = [subset for subset in group_subsets.values() if subset.num > 0]
             if overall is not None:
                 reported.append(overall)
+            for subset in reported:
+                subset.is_aggregate = True
             if reported:
                 metric.categories.append(Category(name='-', subsets=reported))
 
