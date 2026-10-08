@@ -3,6 +3,8 @@ import time
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple, Union
 
+import aiohttp
+
 from evalscope.models.utils.openai_responses import (
     normalize_responses_input,
     response_text_from_dict,
@@ -70,7 +72,10 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
             output_tokens += len(self.tokenizer.encode(''.join(choice_contents), add_special_tokens=False))
         return input_tokens, output_tokens
 
-    async def process_request(self, client_session, url: str, headers: Dict, body: Dict) -> BenchmarkData:
+    async def process_request(
+        self, client_session: aiohttp.ClientSession, url: str, headers: Dict, body: Dict
+    ) -> BenchmarkData:
+        """Collect response metrics, preserving protocol errors as failed requests."""
         headers = {'Content-Type': 'application/json', **headers}
         data = json.dumps(body, ensure_ascii=False)
 
@@ -136,7 +141,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                                     self._set_cached_tokens(output, response_payload.get('usage', {}))
                                 if not generated_text:
                                     generated_text = response_text_from_dict(response_payload)
-                            elif event_type == 'response.failed':
+                            elif event_type in ('response.failed', 'error'):
                                 stream_failed = True
                                 output.error = json.dumps(payload.get('response', payload), ensure_ascii=False)
 
@@ -161,6 +166,8 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 output.first_chunk_latency = output.query_latency
 
                 if isinstance(payload, dict):
+                    if payload.get('status') == 'failed':
+                        output.error = json.dumps(payload, ensure_ascii=False)
                     output.generated_text = response_text_from_dict(payload)
                     usage = response_usage_from_dict(payload)
                     if usage is not None:
@@ -170,7 +177,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 else:
                     output.generated_text = str(payload)
                     output.response_messages.append(payload)
-                output.success = True
+                output.success = output.error is None
                 return output
         except Exception:
             import sys
