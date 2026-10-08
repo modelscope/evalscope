@@ -132,14 +132,8 @@ class OpenaiRerankPlugin(ApiPluginBase):
                 prompt_tokens = usage.get('prompt_tokens', 0) or usage.get('total_tokens', 0)
                 return prompt_tokens, 0
 
-            # Some rerank APIs include token info in meta
-            if 'meta' in last_response:
-                meta = last_response['meta']
-                if 'billed_units' in meta:
-                    tokens = meta['billed_units'].get('search_units', 0)
-                    return tokens, 0
-
-            # Fallback: estimate tokens from request
+            # Cohere's meta.billed_units.search_units counts searches, not tokens.
+            # Without token usage, estimate from the request instead.
             if self.tokenizer and request:
                 try:
                     req_data = json.loads(request)
