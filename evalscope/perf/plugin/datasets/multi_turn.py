@@ -31,7 +31,7 @@ Example (share_gpt_*_multi_turn):
 
 import json
 import os
-from typing import Any, Dict, Iterator, List
+from typing import Dict, Iterator, List
 
 import numpy as np
 

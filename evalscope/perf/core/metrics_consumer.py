@@ -7,7 +7,7 @@ from tqdm import tqdm as tqdm_std
 
 from evalscope.constants import HEARTBEAT_INTERVAL_SEC
 from evalscope.perf.arguments import Arguments
-from evalscope.perf.core.http_client import AioHttpClient, test_connection
+from evalscope.perf.core.http_client import test_connection
 from evalscope.perf.utils.benchmark_util import Metrics, MetricsAccumulator
 from evalscope.perf.utils.db_util import create_result_table, get_result_db_path, insert_benchmark_data
 from evalscope.perf.utils.handler import exception_handler
