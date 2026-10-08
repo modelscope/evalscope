@@ -35,6 +35,17 @@ def _parse_chat_delta(delta: Any) -> tuple[str, bool]:
     # Structured reasoning must only affect timing: providers disagree on whether
     # these values are incremental or cumulative, so appending them would corrupt
     # generated_text. Encrypted payloads and type-only records are metadata.
+    # Tool calls are output as well; like structured reasoning they only affect
+    # timing, since their argument fragments are not text the model returned.
+    tool_calls = delta.get('tool_calls')
+    if isinstance(tool_calls, list):
+        for call in tool_calls:
+            function = call.get('function') if isinstance(call, dict) else None
+            if isinstance(function, dict) and any(
+                isinstance(function.get(key), str) and function[key] for key in ('name', 'arguments')
+            ):
+                return '', True
+
     reasoning_details = delta.get('reasoning_details')
     if isinstance(reasoning_details, list):
         for detail in reasoning_details:

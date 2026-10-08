@@ -214,6 +214,44 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(output.inter_chunk_latency[0], 0.35)
         self.assertEqual(output.generated_text, '')
 
+    async def test_tool_calls_contribute_to_output_timings(self) -> None:
+        call_start = {'index': 0, 'id': 'call_1', 'type': 'function', 'function': {'name': 'get_weather'}}
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant'}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'tool_calls': [call_start]}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {'tool_calls': [{'index': 0, 'function': {'arguments': '{"city": "Paris"}'}}]}}],
+            },
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {}, 'finish_reason': 'tool_calls'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            },
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events) + 'data: [DONE]\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenaiPlugin(Arguments(model='test-model'))
+        timestamps = [0.0, 0.1, 0.45, 0.65, 0.9]
+        with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+
+        self.assertAlmostEqual(output.first_chunk_latency, 0.45)
+        self.assertEqual(len(output.inter_chunk_latency), 1)
+        self.assertAlmostEqual(output.inter_chunk_latency[0], 0.2)
+        self.assertEqual(output.generated_text, '')
+
     async def test_non_json_terminator_is_skipped(self) -> None:
         events = [
             {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': 'H'}}]},
