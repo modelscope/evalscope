@@ -175,8 +175,8 @@ class SLAAutoTuner:
         # - Each group in the list runs its own binary search and produces its own result row.
         #
         # Examples:
-        #   AND: [{"avg_ttft": "<=2", "avg_tpot": "<=0.05"}]          → single group, both required
-        #   OR:  [{"avg_ttft": "<=2"}, {"avg_tpot": "<=0.05"}]         → two independent searches
+        #   AND: [{"avg_ttft": "<=2s", "avg_tpot": "<=50ms"}]         → single group, both required
+        #   OR:  [{"avg_ttft": "<=2s"}, {"avg_tpot": "<=50ms"}]       → two independent searches
         #
         # Special case: a single-group single-metric max/min triggers optimization mode.
         current_val = self.args.parallel if self.sla_variable == 'parallel' else self.args.rate
