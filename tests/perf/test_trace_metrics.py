@@ -1,8 +1,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """Unit tests for TraceAccumulator + TraceLevelSummary (P3)."""
 import unittest
+from typing import Optional
 
-from evalscope.perf.utils.benchmark_util import BenchmarkData
+from evalscope.perf.utils.benchmark_util import BenchmarkData, MetricsAccumulator
 from evalscope.perf.utils.trace_metrics import TraceAccumulator, TraceLevelSummary
 
 
@@ -14,7 +15,7 @@ def _turn(
     ttft: float,
     prompt_tokens: int,
     completion_tokens: int,
-    cached_tokens: int = 0,
+    cached_tokens: Optional[int] = 0,
     success: bool = True,
     is_warmup: bool = False,
 ) -> BenchmarkData:
@@ -98,6 +99,74 @@ class TestTraceDerivedMetrics(unittest.TestCase):
         # numerator counts only turns with eligible > 0: 130 + 200 = 330
         # denominator: 151 + 221 = 372
         self.assertAlmostEqual(state.eligible_cache_hit_rate, 330 / 372 * 100.0)
+
+
+class TestTraceCacheReportedTurns(unittest.TestCase):
+    """A turn whose server response said nothing about caching must not be
+    charged against the cache-hit-ratio denominator.
+
+    ``BenchmarkData.cached_tokens`` is ``None`` until the server reports
+    ``usage.prompt_tokens_details.cached_tokens`` (see
+    ``BenchmarkData.finalize``), and ``MetricsAccumulator`` already skips such
+    turns on both sides of its ratio. ``TraceAccumulator`` must agree with it.
+    """
+
+    def _trace_with_an_unreported_turn(self):
+        acc = TraceAccumulator()
+        # Turn 1: the server reported no cache information at all.
+        acc.feed(_turn(trace_id='t', start=0.0, completed=2.0, ttft=0.5,
+                       prompt_tokens=100, completion_tokens=51, cached_tokens=None))
+        # Turn 2: cache reported, 130 reused.
+        acc.feed(_turn(trace_id='t', start=3.0, completed=4.5, ttft=0.3,
+                       prompt_tokens=200, completion_tokens=21, cached_tokens=130))
+        # Turn 3: cache reported, 200 reused.
+        acc.feed(_turn(trace_id='t', start=5.0, completed=7.0, ttft=0.4,
+                       prompt_tokens=400, completion_tokens=31, cached_tokens=200))
+        return acc
+
+    def test_unreported_turn_is_excluded_from_both_sides(self):
+        state = self._trace_with_an_unreported_turn()._traces['t']
+        # Reported turns only: (0 + 130 + 200) / (200 + 400) = 55.0.
+        # Counting turn 1's 100 prompt tokens instead gives 330/700 = 47.14.
+        self.assertAlmostEqual(state.cache_hit_rate, 330 / 600 * 100.0, places=6)
+        self.assertNotAlmostEqual(state.cache_hit_rate, 330 / 700 * 100.0, places=3)
+
+    def test_eligible_rate_ignores_unreported_cache_tokens(self):
+        state = self._trace_with_an_unreported_turn()._traces['t']
+        # Eligible turns are 2 and 3 (turn 1 has no preceding context); only the
+        # two turns that reported a cache count, so the numerator is 130 + 200.
+        self.assertAlmostEqual(state.eligible_cache_hit_rate, 330 / 372 * 100.0, places=6)
+
+    def test_trace_and_metrics_accumulators_agree(self):
+        turns = [
+            _turn(trace_id='t', start=0.0, completed=2.0, ttft=0.5,
+                  prompt_tokens=100, completion_tokens=51, cached_tokens=None),
+            _turn(trace_id='t', start=3.0, completed=4.5, ttft=0.3,
+                  prompt_tokens=200, completion_tokens=21, cached_tokens=130),
+            _turn(trace_id='t', start=5.0, completed=7.0, ttft=0.4,
+                  prompt_tokens=400, completion_tokens=31, cached_tokens=200),
+        ]
+        trace = TraceAccumulator()
+        metrics = MetricsAccumulator()
+        for d in turns:
+            trace.feed(d)
+            metrics.update(d, None)
+
+        trace_rate = trace._traces['t'].cache_hit_rate
+        metrics_rate = metrics.to_result().avg_cached_percent
+        self.assertAlmostEqual(trace_rate, metrics_rate, places=6)
+        self.assertAlmostEqual(trace_rate, 55.0, places=6)
+
+    def test_all_turns_reported_keeps_the_original_result(self):
+        # Nothing changes when every turn reports a cache count, including zero.
+        acc = TraceAccumulator()
+        acc.feed(_turn(trace_id='t', start=0.0, completed=2.0, ttft=0.5,
+                       prompt_tokens=100, completion_tokens=51, cached_tokens=0))
+        acc.feed(_turn(trace_id='t', start=3.0, completed=4.5, ttft=0.3,
+                       prompt_tokens=200, completion_tokens=21, cached_tokens=130))
+        acc.feed(_turn(trace_id='t', start=5.0, completed=7.0, ttft=0.4,
+                       prompt_tokens=400, completion_tokens=31, cached_tokens=200))
+        self.assertAlmostEqual(acc._traces['t'].cache_hit_rate, 330 / 700 * 100.0, places=6)
 
 
 class TestTraceLevelSummaryAggregation(unittest.TestCase):
