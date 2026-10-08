@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import os
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Union
@@ -544,6 +545,7 @@ class Arguments(BaseArgument):
 
         # Validate sweep params (number/parallel/rate consistency)
         self._validate_sweep_params()
+        self._validate_sla_settings()
 
         # Fold deprecated --multi-turn-args into --dataset-args (pure dict merge).
         # NOTE: dataset_args is kept as a raw dict here; validation against the
@@ -573,6 +575,25 @@ class Arguments(BaseArgument):
                 self.num_workers = coerced
 
         return self
+
+    def _validate_sla_settings(self) -> None:
+        """Reject SLA settings that cannot describe a meaningful search."""
+        if not self.sla_auto_tune:
+            return
+        if self.sla_variable not in ('parallel', 'rate'):
+            raise ValueError('--sla-variable must be parallel or rate')
+        if not self.sla_params:
+            raise ValueError('--sla-params requires at least one non-empty criterion group')
+        if self.sla_num_runs < 1:
+            raise ValueError('--sla-num-runs must be >= 1')
+        if self.sla_lower_bound < 1 or self.sla_upper_bound < self.sla_lower_bound:
+            raise ValueError('--sla-lower-bound and --sla-upper-bound must satisfy 1 <= lower <= upper')
+        if self.sla_fixed_parallel is not None and self.sla_fixed_parallel < 1:
+            raise ValueError('--sla-fixed-parallel must be >= 1')
+        if self.sla_number_multiplier is not None and (
+            not math.isfinite(self.sla_number_multiplier) or self.sla_number_multiplier <= 0
+        ):
+            raise ValueError('--sla-number-multiplier must be finite and > 0')
 
     def _normalize_legacy_dataset_args(self) -> None:
         """Fold the deprecated ``--multi-turn-args`` into ``--dataset-args``.

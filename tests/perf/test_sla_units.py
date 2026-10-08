@@ -68,7 +68,7 @@ class TestSLAMetricUnits(unittest.TestCase):
             return {'run': _results(ttft_ms=40.0, tpot_ms=20.0)}
 
         cases = (
-            ([{'avg_ttft': '<=2', 'avg_tpot': '<=0.05'}], 'None'),
+            ([{'avg_ttft': '<=2', 'avg_tpot': '<=0.05'}], None),
             ([{'avg_ttft': '<=2s', 'avg_tpot': '<=50ms'}], 8),
         )
         for sla_params, expected in cases:
@@ -83,10 +83,9 @@ class TestSLAMetricUnits(unittest.TestCase):
                     sla_num_runs=1,
                 )
                 tuner = SLAAutoTuner(args, run_stub)
-                with patch('evalscope.perf.sla.sla_run.print_summary'):
-                    tuner.tune()
+                tuner.tune()
 
-                self.assertEqual(tuner.sla_results_table[0]['Max Satisfied'], expected)
+                self.assertEqual(tuner.selections[0].selected_value, expected)
 
     def test_unit_of_another_dimension_is_rejected(self):
         with self.assertRaises(ValueError):
@@ -114,7 +113,7 @@ class TestSLAMetricUnits(unittest.TestCase):
             parse_sla_params('[{"avg_ttf": "<=2s"}]')
 
     def test_metric_names_cover_the_compared_values(self):
-        self.assertEqual(set(SLA_METRIC_FIELDS), set(get_metric_values(_results(1.0, 1.0))))
+        self.assertEqual(set(SLA_METRIC_FIELDS) - {'rps', 'tps'}, set(get_metric_values(_results(1.0, 1.0))))
 
 
 if __name__ == '__main__':

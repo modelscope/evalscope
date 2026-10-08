@@ -6,7 +6,6 @@ as the best value.
 """
 import unittest
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.sla.sla_run import SLAAutoTuner
@@ -38,9 +37,8 @@ def _tune(run_stub) -> dict:
             sla_num_runs=1,
         )
         tuner = SLAAutoTuner(args, run_stub)
-        with patch('evalscope.perf.sla.sla_run.print_summary'):
-            tuner.tune()
-    return tuner.sla_results_table[0]
+        tuner.tune()
+    return tuner.selections[0]
 
 
 class TestSLAOptimization(unittest.TestCase):
@@ -54,15 +52,15 @@ class TestSLAOptimization(unittest.TestCase):
             return {'run': _results(False, -1000.0)}
 
         row = _tune(run_stub)
-        self.assertEqual(row['Max Satisfied'], 2)
-        self.assertIn('40', row['Note'])
+        self.assertEqual(row.selected_value, 2)
+        self.assertIn('40', row.reason)
 
     def test_no_successful_run_reports_none(self):
 
         def run_stub(_args: Arguments, _output_path: str) -> dict:
             return {'run': _results(False, -1000.0)}
 
-        self.assertEqual(_tune(run_stub)['Max Satisfied'], 'None')
+        self.assertIsNone(_tune(run_stub).selected_value)
 
 
 if __name__ == '__main__':
