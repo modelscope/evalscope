@@ -16,7 +16,7 @@ def record_to_sample_fn(
 
         def record_to_sample(record: dict) -> Sample:
             # collect metadata if specified
-            metadata: Optional[Dict[str, Any]] = None
+            metadata: Dict[str, Any] = {}
             if sample_fields.metadata:
                 if isinstance(sample_fields.metadata, list):
                     metadata = {}
