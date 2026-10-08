@@ -111,10 +111,16 @@ def check_sla(results: Dict[str, Any], sla_criteria: List[Dict[str, SLACriterion
     # Coerce to typed object
     summary = raw_metrics if isinstance(raw_metrics, BenchmarkSummary) else BenchmarkSummary.from_dict(raw_metrics)
 
-    # 1. Check Success Rate (Must be 100%)
-    success_rate = summary.success_rate
+    # 1. Check Success Rate (Must be 100%). Compare the raw counts: averaged
+    # runs give fractional counts, which BenchmarkSummary rounds to integers and
+    # success_rate rounds to one decimal, so a failed request could read as 100%.
+    succeed, total = summary.succeed_requests, summary.total_requests
+    if isinstance(raw_metrics, dict):
+        succeed = raw_metrics.get(Metrics.SUCCEED_REQUESTS, succeed)
+        total = raw_metrics.get(Metrics.TOTAL_REQUESTS, total)
 
-    if success_rate < 100.0:
+    if not total or succeed < total:
+        success_rate = succeed / total * 100 if total else 0.0
         logger.warning(f'{prefix}SLA Check: Success Rate = {success_rate:.2f}% | Expect 100% | FAILED')
         return False
 
