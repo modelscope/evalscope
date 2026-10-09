@@ -72,10 +72,10 @@ The five new benchmarks default to ModelScope. ContractNLI uses the `contractnli
 
 ## Results and reproducibility
 
-Prediction JSONL files retain labels, probabilities and provider confidence in `model_output.choice_result`. The complete request, response and request hash are stored in `model_output.metadata`. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization.
+Prediction JSONL files retain labels, probabilities and provider confidence in `model_output.choice_result`. The complete request and response are stored in `model_output.metadata`. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization.
 
-Configurations and reports record the Choice protocol and actual shot count. Execution statistics distinguish successes, failures and incomplete runs. Invalid responses terminate a run by default; with `ignore_errors=True`, failed samples are excluded and their coverage is reported.
+Configurations and reports record the Choice protocol and configured shot count. Execution statistics distinguish successes, failures and incomplete runs. Invalid responses terminate a run by default; with `ignore_errors=True`, failed samples are excluded and their coverage is reported.
 
-Pin model and dataset versions, splits, demonstrations and instructions for comparisons. Prediction caches require matching requests; `rerun_review=True` refuses changed requests. A model alias cannot guarantee an unchanged remote model version.
+Pin model and dataset versions, splits, demonstrations and instructions for comparisons. Cache reuse and `rerun_review` follow EvalScope's existing rules; the saved original request records the actual model input when predictions are reused. A model alias cannot guarantee an unchanged remote model version.
 
 References: [TypeSafe API](https://docs.typesafe.ai/api), [public Jev evaluation code](https://github.com/AppliedMachineLearning-Lab/jev-benchmarking). Scores obtained with different splits, shots, reasoning settings or aggregation metrics are not directly comparable.

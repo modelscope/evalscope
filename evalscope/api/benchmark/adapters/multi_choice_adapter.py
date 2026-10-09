@@ -84,7 +84,6 @@ class MultiChoiceAdapter(DefaultDataAdapter):
                 sample.choice_request = self.build_choice_request(sample, subset)
                 sample.metadata['choice_protocol'] = CHOICE_PROTOCOL_VERSION
                 sample.metadata['choice_few_shot_num'] = self.few_shot_num
-                sample.metadata['choice_request_hash'] = sample.choice_request.fingerprint
                 sample.input = [
                     ChatMessageUser(
                         content=json.dumps(

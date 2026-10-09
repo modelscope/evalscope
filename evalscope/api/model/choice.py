@@ -1,7 +1,5 @@
 """Structured requests and answers for single-choice decision models."""
 
-import hashlib
-import json
 import math
 from typing import Dict, Literal, Optional
 
@@ -37,13 +35,6 @@ class ChoiceRequest(BaseModel):
     def to_payload(self, model: str) -> dict:
         """Render the provider's System One wire format."""
         return {'model': model, 'state': self.state, 'questions': {'answer': self.question.model_dump()}}
-
-    @property
-    def fingerprint(self) -> str:
-        """Hash the exact state, instructions and ordered options for cache reuse."""
-        content = {'protocol': CHOICE_PROTOCOL_VERSION, 'request': self.model_dump(mode='json')}
-        encoded = json.dumps(content, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
-        return f'sha256:{hashlib.sha256(encoded).hexdigest()}'
 
 
 class ChoiceResult(BaseModel):

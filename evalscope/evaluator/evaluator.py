@@ -139,7 +139,6 @@ class DefaultEvaluator(Evaluator):
             outputs=outputs,
             model_name=self.model_name,
             benchmark_name=self.benchmark_name,
-            rerun_review=task_config.rerun_review,
         )
 
         # Initialize batch reviewer for benchmarks that use batch scoring

@@ -32,7 +32,6 @@ class CacheManager:
         outputs: OutputsStructure,
         model_name: str,
         benchmark_name: str,
-        rerun_review: bool = False,
     ):
         """
         Initialize the cache manager.
@@ -45,7 +44,6 @@ class CacheManager:
         self.outputs = outputs
         self.model_name = model_name
         self.benchmark_name = benchmark_name
-        self.rerun_review = rerun_review
         self._writers: Dict[str, JsonlWriter] = {}
         self._review_reruns: Dict[str, str] = {}
 
@@ -108,7 +106,7 @@ class CacheManager:
                 continue
             # Convert to task state for further processing
             try:
-                cached_state = cached_model_result.to_task_state(dataset=dataset, rerun_review=self.rerun_review)
+                cached_state = cached_model_result.to_task_state(dataset=dataset)
             except ValidationError as e:
                 logger.warning(f'Skipping invalid prediction cache row in {cache_file}: {e}')
                 continue
@@ -185,11 +183,6 @@ class CacheManager:
 
         cached_by_sample_id = {}
         valid_sample_ids = {state.sample_id for state in task_states}
-        choice_hashes = {
-            state.sample_id: state._sample.choice_request.fingerprint
-            for state in task_states
-            if state._sample.choice_request is not None
-        }
         orphan_rows = 0
         duplicate_rows = 0
         cache_items = jsonl_to_list(cache_file, skip_invalid=True)
@@ -203,10 +196,6 @@ class CacheManager:
                 logger.warning(f'Skipping invalid review cache row in {cache_file}: {e}')
                 continue
             sample_score = cached_review_result.to_sample_score()
-            if sample_score.sample_id in choice_hashes:
-                saved_hash = (sample_score.sample_metadata or {}).get('choice_request_hash')
-                if saved_hash != choice_hashes[sample_score.sample_id]:
-                    continue
             if sample_score.sample_id not in valid_sample_ids:
                 orphan_rows += 1
                 continue
@@ -386,7 +375,7 @@ class ModelResult(BaseModel):
             metadata=task_state.metadata if save_metadata else {},
         )
 
-    def to_task_state(self, dataset: Dataset, rerun_review: bool = False) -> Optional[TaskState]:
+    def to_task_state(self, dataset: Dataset) -> TaskState:
         """
         Restore a TaskState from cached ModelResult.
 
@@ -403,23 +392,6 @@ class ModelResult(BaseModel):
             sample = dataset[self.index]
         except IndexError:
             logger.warning(f'Sample index {self.index} not found in dataset during cache restoration.')
-            return None
-
-        if sample.choice_request is not None:
-            saved_hash = (self.model_output.metadata or {}).get('choice_request_hash') if self.model_output else None
-            if saved_hash != sample.choice_request.fingerprint or self.model_output.choice_result is None:
-                if rerun_review:
-                    raise ValueError('Cannot rerun_review: the cached Choice request differs from the current sample.')
-                return None
-            try:
-                self.model_output.choice_result.validate_request(sample.choice_request)
-            except ValueError:
-                if rerun_review:
-                    raise ValueError('Cannot rerun_review: cached Choice options do not match the current request.')
-                return None
-        elif self.model_output is not None and self.model_output.choice_result is not None:
-            if rerun_review:
-                raise ValueError('Cannot rerun_review a Choice prediction as a generation prediction.')
             return None
 
         # update metadata if exists

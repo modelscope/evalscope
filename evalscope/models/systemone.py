@@ -105,7 +105,6 @@ class SystemOneAPI(ModelAPI):
         output.time = time.monotonic() - started
         output.metadata = {
             'choice_request': payload,
-            'choice_request_hash': request.fingerprint,
             'choice_response': raw,
         }
         return output

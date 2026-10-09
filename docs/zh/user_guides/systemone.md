@@ -72,10 +72,10 @@ run_task(TaskConfig(
 
 ## 结果与复现
 
-预测 JSONL 中的 `model_output.choice_result` 保存标签、概率与厂商置信度；`model_output.metadata` 保存完整请求、响应和请求哈希。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。
+预测 JSONL 中的 `model_output.choice_result` 保存标签、概率与厂商置信度；`model_output.metadata` 保存完整请求和响应。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。
 
-配置和报告记录 Choice 协议与实际 shots；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
+配置和报告记录 Choice 协议与 few-shot 配置；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
 
-固定模型版本、数据版本、split、示例数量和任务指令后再比较成绩。普通缓存只复用请求一致的预测；`rerun_review=True` 遇到请求变化会拒绝复用。模型别名不能保证远端模型版本稳定。
+固定模型版本、数据版本、split、示例数量和任务指令后再比较成绩。缓存复用和 `rerun_review` 沿用 EvalScope 现有规则；复用预测时，实际模型输入以保存的原始请求为准。模型别名不能保证远端模型版本稳定。
 
 参考：[TypeSafe API](https://docs.typesafe.ai/api)、[公开 Jev 评测代码](https://github.com/AppliedMachineLearning-Lab/jev-benchmarking)。不同 split、shots、推理模式或汇总指标的榜单分数不能直接对照。

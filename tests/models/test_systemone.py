@@ -1,6 +1,5 @@
 """Offline contract, transport and native-pipeline tests for System One Choice."""
 
-import copy
 import json
 from pathlib import Path
 from typing import Any
@@ -10,14 +9,11 @@ import pytest
 
 from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
-from evalscope.api.evaluator import TaskState
-from evalscope.api.evaluator.cache import CacheManager, ModelResult
 from evalscope.api.model import ChoiceQuestion, ChoiceRequest, ChoiceResult, GenerateConfig, ModelOutput
 from evalscope.api.model.model import ModelCache, get_model_with_task_config
 from evalscope.api.registry import get_benchmark
 from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchmark_identity
 from evalscope.models.systemone import SystemOneAPI
-from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.multi_choices import answer_character
 
 
@@ -242,28 +238,7 @@ def test_unsupported_benchmark_rejected_before_loading() -> None:
         get_benchmark('gsm8k', config).validate_choice_config()
 
 
-def test_choice_cache_matches_before_restoring_metadata(tmp_path: Path) -> None:
-    sample = Sample(id=0, input='Q', choices=['x', 'y'], target='A', choice_request=request())
-    output = ModelOutput.from_content('test', 'A')
-    output.choice_result = ChoiceResult(choice='A', probabilities={'A': 1, 'B': 0})
-    output.metadata = {'choice_request_hash': request().fingerprint}
-    result = ModelResult.from_task_state(TaskState('test', sample, output=output))
-    current = copy.deepcopy(sample)
-    dataset = MemoryDataset([current])
-    assert result.to_task_state(dataset).output.choice_result.choice == 'A'
-    current.choice_request.question.criteria = {'A': 'changed', 'B': 'x'}
-    current.metadata = {'fresh': True}
-    assert result.to_task_state(dataset) is None
-    assert current.metadata == {'fresh': True}
-    with pytest.raises(ValueError, match='rerun_review'):
-        result.to_task_state(dataset, rerun_review=True)
-    manager = CacheManager(OutputsStructure(str(tmp_path), is_make=True), 'test', 'test')
-    manager.save_prediction_cache('default', TaskState('test', sample, output=output))
-    manager.close()
-    assert manager.filter_prediction_cache('default', dataset)[0] == []
-
-
-def test_choice_fingerprint_and_existing_generation_identity() -> None:
+def test_choice_settings_use_existing_evaluation_identity() -> None:
     config = TaskConfig(model='test', eval_type='systemone_api')
     adapter = get_benchmark('general_mcq', config)
     spec = ResolvedBenchmarkSpec.from_meta(adapter.benchmark_meta, config)
@@ -273,9 +248,6 @@ def test_choice_fingerprint_and_existing_generation_identity() -> None:
     config.eval_type = 'mock_llm'
     generation = ResolvedBenchmarkSpec.from_meta(adapter.benchmark_meta, config)
     assert 'choice_protocol_version' not in generation.fingerprint_dict()
-    changed = request().model_copy(deep=True)
-    changed.question.criteria = dict(reversed(list(changed.question.criteria.items())))
-    assert changed.fingerprint != request().fingerprint
 
 
 def test_rounded_large_distribution_is_retained() -> None:
