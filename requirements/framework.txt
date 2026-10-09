@@ -3,6 +3,7 @@ colorlog
 docstring_parser
 dotenv
 editdistance
+filelock
 filetype
 jieba
 jinja2

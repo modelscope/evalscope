@@ -3,13 +3,18 @@
 import inspect
 import os
 import re
+from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Sequence, Union
 
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+if TYPE_CHECKING:
+    from datasets import Dataset as HFDataset
+    from datasets import IterableDataset as HFIterableDataset
 
 
 @dataclass(frozen=True)
@@ -23,7 +28,15 @@ class DatasetHub:
     force_redownload: bool = False
     cache_dir: Optional[str] = None
 
-    def load(self, split: str, subset: str = 'default', **kwargs):
+    def load(
+        self,
+        split: str,
+        subset: str = 'default',
+        *,
+        _snapshot_cache_dir: Optional[Callable[[], str]] = None,
+        **kwargs: Any,
+    ) -> 'Union[HFDataset, HFIterableDataset]':
+        """Load a split, optionally using caller-owned storage for cached snapshot parsing."""
         return load_dataset_from_hub(
             data_id_or_path=self.data_id_or_path,
             split=split,
@@ -32,6 +45,7 @@ class DatasetHub:
             version=self.revision,
             trust_remote=self.trust_remote,
             force_redownload=self.force_redownload,
+            _snapshot_cache_dir=_snapshot_cache_dir,
             **kwargs,
         )
 
@@ -117,7 +131,10 @@ def _validate_cached_shards(data_files: Mapping[str, Sequence[str]]) -> None:
                 )
 
 
-def _prepare_cached_dataset_kwargs(load_kwargs: Mapping[str, Any]) -> dict[str, Any]:
+def _prepare_cached_dataset_kwargs(
+    load_kwargs: Mapping[str, Any],
+    snapshot_cache_dir: Optional[Callable[[], str]] = None,
+) -> dict[str, Any]:
     """Resolve snapshot files for validation and a distinct Hugging Face cache identity."""
     import datasets
 
@@ -141,6 +158,25 @@ def _prepare_cached_dataset_kwargs(load_kwargs: Mapping[str, Any]) -> dict[str, 
         _validate_cached_shards(builder.config.data_files)
     # Absolute files and their metadata distinguish snapshots in the HF cache key.
     prepared_kwargs['data_files'] = builder.config.data_files
+    # Script loaders may create resources inside their builder output directory.
+    # Only standard file builders use temporary Arrow storage; explicit cache settings remain authoritative.
+    if (
+        snapshot_cache_dir is not None
+        and load_kwargs.get('cache_dir') is None
+        and type(builder).__module__.startswith('datasets.packaged_modules.')
+    ):
+        prepared_kwargs['cache_dir'] = snapshot_cache_dir()
+        download_config = deepcopy(load_kwargs.get('download_config')) or datasets.DownloadConfig(
+            num_proc=load_kwargs.get('num_proc'),
+            token=load_kwargs.get('token'),
+            storage_options=load_kwargs.get('storage_options') or {},
+            use_etag=False,
+        )
+        # Downloaded/extracted resources can be referenced by plain string columns.
+        # Keep their original persistent location; only prepared Arrow files are temporary.
+        if download_config.cache_dir is None:
+            download_config.cache_dir = str(datasets.config.DOWNLOADED_DATASETS_PATH)
+        prepared_kwargs['download_config'] = download_config
     return prepared_kwargs
 
 
@@ -164,8 +200,9 @@ def load_dataset_from_hub(
     version: Optional[str] = None,
     trust_remote: bool = True,
     force_redownload: bool = False,
-    **kwargs,
-):
+    _snapshot_cache_dir: Optional[Callable[[], str]] = None,
+    **kwargs: Any,
+) -> 'Union[HFDataset, HFIterableDataset]':
     """Load a dataset split from ModelScope, Hugging Face, or a local dataset path."""
     import datasets
     from datasets import DownloadMode as HFDownloadMode
@@ -196,7 +233,7 @@ def load_dataset_from_hub(
             load_kwargs['trust_remote_code'] = trust_remote
         try:
             if cached_snapshot:
-                load_kwargs = _prepare_cached_dataset_kwargs(load_kwargs)
+                load_kwargs = _prepare_cached_dataset_kwargs(load_kwargs, _snapshot_cache_dir)
             return datasets.load_dataset(**load_kwargs)
         except (FileNotFoundError, ValueError) as exc:
             if not cached_snapshot or not _is_missing_cached_data(exc):

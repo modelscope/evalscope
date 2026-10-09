@@ -117,6 +117,13 @@ Numbered shards must include every index declared by their filenames; missing sh
 Explicit `data_files` selections are preserved. Offline lookup cannot infer missing files in arbitrary wildcard sets,
 so pre-download a complete dataset snapshot.
 
+For standard file-based snapshots, Native loading shares a temporary Hugging Face parsing directory across test and
+few-shot splits, then removes it after loading. The ModelScope raw snapshot and the processed EvalScope split caches
+remain; a third permanent Arrow copy is not created. Dataset caches are saved and validated before publication, and
+failed forced refreshes preserve the previous cache. Conversion still temporarily needs both Arrow copies.
+Downloaded/extracted resources retain their persistent download cache so stored file paths remain usable.
+An explicitly configured Hugging Face `cache_dir` and script-based loaders retain their existing cache behavior.
+
 ### dataset-args Configuration Options
 
 `--dataset-args` is a JSON string; each dataset can be configured with the following parameters:

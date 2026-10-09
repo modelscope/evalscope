@@ -7,6 +7,7 @@ from typing_extensions import override
 
 from evalscope.api.agent import AgentLoopResult
 from evalscope.api.dataset import DataLoader, Dataset, DatasetDict, LocalDataLoader, RemoteDataLoader, Sample
+from evalscope.api.dataset.loader import dataset_loading_session
 from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
@@ -83,18 +84,15 @@ class DefaultDataAdapter(DataAdapter):
             # Load dataset from remote source (e.g., ModelScope, Huggingface)
             return self.load_from_remote()
 
-    def load_from_remote(self):
+    def load_from_remote(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
         """Load dataset from remote source and prepare few-shot examples if needed."""
-        test_dataset = None
-        fewshot_dataset = None
-        # Load dataset from remote source
-        test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
-        test_dataset = self.load_subsets(test_load_func)
-
-        # Load few-shot examples if few-shot prompting is enabled
-        if self._should_load_fewshot():
-            fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
-            fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
+        with dataset_loading_session():
+            test_load_func = partial(self.load_subset, data_loader=RemoteDataLoader)
+            test_dataset = self.load_subsets(test_load_func)
+            fewshot_dataset = None
+            if self._should_load_fewshot():
+                fewshot_load_func = partial(self.load_fewshot_subset, data_loader=RemoteDataLoader)
+                fewshot_dataset = self.load_subsets(fewshot_load_func, is_fewshot=True)
         return test_dataset, fewshot_dataset
 
     def load_from_disk(self, use_local_loader: bool = False):

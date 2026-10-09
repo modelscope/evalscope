@@ -114,6 +114,12 @@ evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
 带有分片编号和总数的文件须包含全部编号，缺少分片时回退到 ModelScope 加载；显式指定的 `data_files` 保持原有选择。
 离线查询无法推断任意通配符集合中尚未下载的文件，因此请预先下载完整的数据集快照。
 
+对于标准文件格式的快照，Native 加载在 test 和 few-shot 切分之间共享 Hugging Face 临时解析目录，
+数据加载完成后清理该目录。长期保留 ModelScope 原始快照和 EvalScope 已处理的切分缓存，
+不再新增第三份永久 Arrow 数据。切分缓存先保存、验证再发布；强制刷新失败时保留旧缓存。
+转换期间仍会短暂同时存在两份 Arrow。下载、解压的资源保留其持久化下载缓存，避免已保存的文件路径失效。
+显式配置的 Hugging Face `cache_dir` 和脚本型加载器保持原有缓存行为。
+
 ### dataset-args 配置项
 
 `--dataset-args` 为JSON字符串，每个数据集可配置以下参数：

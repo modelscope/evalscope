@@ -9,7 +9,7 @@ import string
 import unicodedata
 from datetime import datetime
 from io import BytesIO
-from typing import IO, Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import IO, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import filetype
 import jsonlines as jsonl
@@ -151,7 +151,9 @@ def undecode_media(
     dataset: 'Dataset',
     media_type: List[Literal['image', 'audio', 'video']],
     batch_size: Optional[int] = None,
+    cache_file_name_factory: Optional[Callable[[], str]] = None,
 ) -> 'Dataset':
+    """Disable media decoding, optionally using caller-owned temporary conversion storage."""
     from datasets.features import Audio, Image, Sequence, Video
 
     if not isinstance(dataset, Dataset):
@@ -183,7 +185,11 @@ def undecode_media(
         return dataset
 
     # if there are updates, do casting
-    dataset = dataset.cast(features, batch_size=batch_size or DATASET_TRANSFORM_BATCH_SIZE)
+    dataset = dataset.cast(
+        features,
+        batch_size=batch_size or DATASET_TRANSFORM_BATCH_SIZE,
+        cache_file_name=cache_file_name_factory() if cache_file_name_factory is not None else None,
+    )
     return dataset
 
 
