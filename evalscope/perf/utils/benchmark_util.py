@@ -93,6 +93,8 @@ class BenchmarkData:
     """True when this request is a warmup request, excluded from final metrics."""
 
     # --- Speculative decoding specific ---
+    n_decode_chunks: int = 0
+    """Streamed chunks from the first output on, including ones whose delta is empty."""
     decoded_tokens_per_iter: float = 0.0
     """Average decoded tokens per iteration: (completion_tokens - 1) / (n_chunks - 1).
     Approximates speculative decoding acceptance length L."""
@@ -124,9 +126,11 @@ class BenchmarkData:
 
         # Compute average decoded tokens per iteration for speculative decoding estimation
         # Formula: L = (tokens - 1) / (chunks - 1)
-        # n_chunks is inferred from inter_chunk_latency: N chunks produce N-1 inter-chunk intervals,
-        # so n_chunks = len(inter_chunk_latency) + 1.  Falls back to chunk_times when available.
-        if self.chunk_times:
+        # n_chunks comes from the plugin's decode-chunk count, which includes empty deltas that
+        # inter_chunk_latency leaves out; otherwise from chunk_times, or len(inter_chunk_latency) + 1.
+        if self.n_decode_chunks:
+            n_chunks = self.n_decode_chunks
+        elif self.chunk_times:
             n_chunks = len(self.chunk_times)
         elif self.inter_chunk_latency:
             n_chunks = len(self.inter_chunk_latency) + 1

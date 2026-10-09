@@ -214,6 +214,42 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(output.inter_chunk_latency[0], 0.35)
         self.assertEqual(output.generated_text, '')
 
+    async def test_empty_deltas_count_as_decode_steps(self) -> None:
+        # One token per chunk, no speculation; two steps decode to an empty delta.
+        events = [
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'role': 'assistant', 'content': ''}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': '重要'}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': ''}}]},
+            {'object': 'chat.completion.chunk', 'choices': [{'delta': {'content': '的'}}]},
+            {
+                'object': 'chat.completion.chunk',
+                'choices': [{'delta': {'content': ''}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 4},
+            },
+        ]
+        stream = ''.join(f'data: {json.dumps(event, ensure_ascii=False)}\n\n' for event in events) + 'data: [DONE]\n\n'
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenaiPlugin(Arguments(model='test-model'))
+        timestamps = [0.0, 0.1, 0.45, 0.65, 0.85, 1.05]
+        with patch('evalscope.perf.plugin.api.default_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/chat/completions', {}, {})
+        output.finalize(plugin)
+
+        self.assertEqual(len(output.inter_chunk_latency), 1)
+        self.assertAlmostEqual(output.inter_chunk_latency[0], 0.4)
+        self.assertAlmostEqual(output.decoded_tokens_per_iter, 1.0)
+
     async def test_tool_calls_contribute_to_output_timings(self) -> None:
         call_start = {'index': 0, 'id': 'call_1', 'type': 'function', 'function': {'name': 'get_weather'}}
         events = [
