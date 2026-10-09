@@ -58,6 +58,23 @@ def test_parse_answers_multiple_correct_slash_and_ideographic_comma() -> None:
     assert parse_answers(_make_state('reasoning\nANSWER: (A/B)'), multiple_correct=True) == {'A', 'B'}
 
 
+def test_parse_answers_multiple_correct_full_width_comma() -> None:
+    """A full-width comma between labels separates them in the unbracketed form too.
+
+    Regression test: the bracketed pattern and the Chinese parser already read ``，`` as a
+    separator, and the splitting below normalizes it to a plain comma, but the plain-label
+    pattern stopped at it. 'ANSWER: A，C' therefore kept only its first label and a correct
+    multi-select answer was scored as wrong.
+    """
+    assert parse_answers(_make_state('reasoning\nANSWER: A，C'), multiple_correct=True) == {'A', 'C'}
+    assert parse_answers(_make_state('reasoning\nANSWER: A，B，D'), multiple_correct=True) == {'A', 'B', 'D'}
+    assert parse_answers(_make_state('reasoning\nANSWER: A， B'), multiple_correct=True) == {'A', 'B'}
+    # A full-width comma now scores exactly like its ASCII spelling.
+    assert parse_answers(_make_state('reasoning\nANSWER: A，C')) == parse_answers(
+        _make_state('reasoning\nANSWER: A,C')
+    )
+
+
 def test_parse_answers_connector_joins_labels_only() -> None:
     """A connector is stepped over only when another label follows it.
 
