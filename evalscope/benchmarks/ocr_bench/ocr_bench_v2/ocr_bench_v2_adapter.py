@@ -86,6 +86,7 @@ OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comp
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class OCRBenchV2Adapter(VisionLanguageAdapter):
@@ -148,7 +149,7 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
         Finalize the report generation process. Calculate the overall score.
         """
         # Lazy import to avoid changing top-level imports
-        from evalscope.report import Category, weighted_average_from_subsets
+        from evalscope.report import Category, unweighted_average_from_subsets, weighted_average_from_subsets
 
         for metric in report.metrics:
             # Collect all subsets in a dictionary for easy access
@@ -186,20 +187,21 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
                 'knowledge_reasoning_cn': ['reasoning VQA cn', 'text translation cn'],
             }
 
-            # Compute per-category scores (unweighted average of member subsets)
+            # Compute per-category scores (sample-weighted: a category pools its subsets' samples)
             for cat_name, sub_names in en_categories.items():
                 subset_dict[cat_name] = weighted_average_from_subsets(sub_names, subset_dict)
             for cat_name, sub_names in cn_categories.items():
                 subset_dict[cat_name] = weighted_average_from_subsets(sub_names, subset_dict)
 
-            # Compute EN (average of EN category scores) and CN (average of CN category scores)
+            # EN and CN weight their categories equally, and OVERALL is (EN + CN) / 2, as in
+            # utils.ocrbench_v2_aggregate_accuracy
             en_cat_names = list(en_categories.keys())
             cn_cat_names = list(cn_categories.keys())
-            subset_dict['EN'] = weighted_average_from_subsets(en_cat_names, subset_dict)
-            subset_dict['CN'] = weighted_average_from_subsets(cn_cat_names, subset_dict)
+            subset_dict['EN'] = unweighted_average_from_subsets(en_cat_names, subset_dict)
+            subset_dict['CN'] = unweighted_average_from_subsets(cn_cat_names, subset_dict)
 
             # Compute OVERALL (average of EN and CN)
-            subset_dict['OVERALL'] = weighted_average_from_subsets(['EN', 'CN'], subset_dict)
+            subset_dict['OVERALL'] = unweighted_average_from_subsets(['EN', 'CN'], subset_dict)
 
             # Prepare and append a dummy category to show all computed aggregates
             all_computed = en_cat_names + cn_cat_names + ['EN', 'CN', 'OVERALL']
