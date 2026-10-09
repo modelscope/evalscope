@@ -335,6 +335,32 @@ def test_modelscope_complete_snapshots_do_not_share_arrow_data(
     assert first.cache_files == first_again.cache_files
 
 
+def test_modelscope_cached_loading_preserves_loader_and_builder_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot = tmp_path / 'snapshot'
+    snapshot.mkdir()
+    (snapshot / 'test.jsonl').write_text(
+        json.dumps({'records': [{'text': 'cached'}]}) + '\n', encoding='utf-8',
+    )
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        pytest.fail('The complete snapshot must support both loader and builder options')
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+    dataset = load_dataset_from_hub(
+        'owner/data', split='test', cache_dir=str(tmp_path / 'hf-cache'),
+        keep_in_memory=True, num_proc=1, save_infos=False, verification_mode='no_checks',
+        field='records', writer_batch_size=1,
+    )
+
+    assert dataset['text'] == ['cached']
+    assert dataset.cache_files == []
+
+
 def test_modelscope_explicit_data_files_preserve_partial_shard_selection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

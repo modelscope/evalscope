@@ -4,7 +4,7 @@ import inspect
 import os
 import re
 from dataclasses import dataclass
-from typing import List, Mapping, Optional, Sequence, Union
+from typing import Any, List, Mapping, Optional, Sequence, Union
 
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
@@ -117,6 +117,45 @@ def _validate_cached_shards(data_files: Mapping[str, Sequence[str]]) -> None:
                 )
 
 
+def _prepare_cached_dataset_kwargs(load_kwargs: Mapping[str, Any]) -> dict[str, Any]:
+    """Resolve snapshot files for validation and a distinct Hugging Face cache identity."""
+    import datasets
+
+    # Include legacy load options so older datasets versions do not forward them to the builder.
+    load_only_options = {
+        'split',
+        'streaming',
+        'num_proc',
+        'keep_in_memory',
+        'save_infos',
+        'verification_mode',
+        'ignore_verifications',
+        'task',
+    }
+    builder_kwargs = {key: value for key, value in load_kwargs.items() if key not in load_only_options}
+    builder = datasets.load_dataset_builder(**builder_kwargs)
+    prepared_kwargs = dict(load_kwargs)
+    if not builder.config.data_files:
+        return prepared_kwargs
+    if load_kwargs.get('data_files') is None:
+        _validate_cached_shards(builder.config.data_files)
+    # Absolute files and their metadata distinguish snapshots in the HF cache key.
+    prepared_kwargs['data_files'] = builder.config.data_files
+    return prepared_kwargs
+
+
+def _is_missing_cached_data(exc: Exception) -> bool:
+    if isinstance(exc, FileNotFoundError):
+        return True
+    if not isinstance(exc, ValueError):
+        return False
+    # datasets exposes missing splits through ValueError messages.
+    message = str(exc)
+    return (message.startswith('Unknown split "') and '. Should be one of ' in message) or (
+        message.startswith('Bad split: ') and '. Available splits: ' in message
+    )
+
+
 def load_dataset_from_hub(
     data_id_or_path: str,
     split: str,
@@ -157,27 +196,10 @@ def load_dataset_from_hub(
             load_kwargs['trust_remote_code'] = trust_remote
         try:
             if cached_snapshot:
-                builder_parameters = inspect.signature(datasets.load_dataset_builder).parameters
-                loader_parameters = inspect.signature(datasets.load_dataset).parameters
-                builder = datasets.load_dataset_builder(
-                    **{
-                        key: value
-                        for key, value in load_kwargs.items()
-                        if key in builder_parameters or key not in loader_parameters
-                    }
-                )
-                if builder.config.data_files:
-                    if kwargs.get('data_files') is None:
-                        _validate_cached_shards(builder.config.data_files)
-                    # Absolute files and their metadata distinguish snapshots in the HF cache key.
-                    load_kwargs['data_files'] = builder.config.data_files
+                load_kwargs = _prepare_cached_dataset_kwargs(load_kwargs)
             return datasets.load_dataset(**load_kwargs)
         except (FileNotFoundError, ValueError) as exc:
-            # datasets reports missing splits as ValueError rather than a dedicated exception.
-            missing_split = (str(exc).startswith('Unknown split "') and '. Should be one of ' in str(exc)) or (
-                str(exc).startswith('Bad split: ') and '. Available splits: ' in str(exc)
-            )
-            if not cached_snapshot or not (isinstance(exc, FileNotFoundError) or missing_split):
+            if not cached_snapshot or not _is_missing_cached_data(exc):
                 raise
             logger.info(
                 f'Cached ModelScope dataset {data_id_or_path} cannot provide subset {subset}, split {split}: '
