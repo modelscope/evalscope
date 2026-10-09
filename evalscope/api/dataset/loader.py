@@ -1,11 +1,19 @@
 import copy
+import errno
 import json
 import os
 import random
 import shutil
 from abc import ABC, abstractmethod
+from contextlib import ExitStack, contextmanager
+from contextvars import ContextVar
+from functools import partial
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING, Callable, Dict, Iterator, List, Optional, Union
+from uuid import uuid4
+
+from filelock import FileLock
 
 from evalscope.api.dataset.utils import record_to_sample_fn
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, HubType
@@ -21,10 +29,99 @@ from evalscope.utils.io_utils import (
 )
 
 from .dataset import Dataset, FieldSpec, MemoryDataset, Sample, resolve_dataset_limit, validate_dataset_limit
-from .hub import DatasetHub
+from .hub import DatasetHub, _resolve_data_source
 from .utils import data_to_samples, shuffle_choices_if_requested
 
 logger = get_logger()
+
+if TYPE_CHECKING:
+    from datasets import Dataset as HFDataset
+
+
+class _DatasetLoadingSession:
+    """Own temporary Arrow files for one benchmark, allocating directories only when needed."""
+
+    def __init__(self, stack: ExitStack) -> None:
+        self.stack = stack
+        self.directories: Dict[str, str] = {}
+
+    def snapshot_cache_dir(self, cache_root: str) -> str:
+        if cache_root not in self.directories:
+            os.makedirs(cache_root, exist_ok=True)
+            self.directories[cache_root] = self.stack.enter_context(
+                TemporaryDirectory(prefix='.hf-staging-', dir=cache_root)
+            )
+        return self.directories[cache_root]
+
+    def media_cache_file(self, cache_root: str) -> str:
+        return os.path.join(self.snapshot_cache_dir(cache_root), f'media-{uuid4().hex}.arrow')
+
+
+_loading_session: ContextVar[Optional[_DatasetLoadingSession]] = ContextVar('dataset_loading_session', default=None)
+
+
+@contextmanager
+def dataset_loading_session() -> Iterator[_DatasetLoadingSession]:
+    """Share Arrow storage across splits; the outermost session removes it, including on errors."""
+    existing = _loading_session.get()
+    if existing is not None:
+        yield existing
+        return
+    with ExitStack() as stack:
+        session = _DatasetLoadingSession(stack)
+        token = _loading_session.set(session)
+        try:
+            yield session
+        finally:
+            _loading_session.reset(token)
+
+
+def _remove_dataset_cache(path: str) -> None:
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    elif os.path.exists(path):
+        os.unlink(path)
+
+
+def _recover_dataset_cache(cache_dir: str) -> None:
+    """Recover an interrupted publication while holding the split lock."""
+    import datasets
+
+    backup = f'{cache_dir}.previous'
+    if os.path.exists(backup):
+        if os.path.exists(cache_dir):
+            # A committed cache must be readable before its previous generation is discarded.
+            with datasets.load_from_disk(cache_dir):
+                pass
+            _remove_dataset_cache(backup)
+        else:
+            os.replace(backup, cache_dir)
+            logger.info(f'Restored dataset cache after interrupted publication: {cache_dir}')
+    _remove_dataset_cache(f'{cache_dir}.incomplete')
+
+
+def _publish_dataset_cache(dataset: 'HFDataset', cache_dir: str) -> None:
+    """Save, validate, then replace a split under its lock; retain the old data on failure."""
+    import datasets
+
+    prepared = f'{cache_dir}.incomplete'
+    backup = f'{cache_dir}.previous'
+    try:
+        dataset.save_to_disk(prepared)
+        with datasets.load_from_disk(prepared) as saved:
+            if saved.num_rows != dataset.num_rows or saved.features != dataset.features:
+                raise ValueError(f'Saved dataset does not match its source: {cache_dir}')
+        if os.path.exists(cache_dir):
+            os.replace(cache_dir, backup)
+        os.replace(prepared, cache_dir)
+    except BaseException:
+        if os.path.exists(backup) and not os.path.exists(cache_dir):
+            os.replace(backup, cache_dir)
+        raise
+    else:
+        _remove_dataset_cache(backup)
+    finally:
+        _remove_dataset_cache(prepared)
 
 
 def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
@@ -48,7 +145,7 @@ def _dataset_cache_hash(
     kwargs: Dict,
 ) -> str:
     """Build a stable hash from every input that determines a remote dataset."""
-    effective_data_source = _resolve_effective_data_source(data_id_or_path, data_source)
+    effective_data_source = _resolve_data_source(data_id_or_path, data_source)
     payload = {
         'data_id_or_path': data_id_or_path,
         'split': split,
@@ -59,13 +156,6 @@ def _dataset_cache_hash(
     }
     serialized = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str)
     return gen_hash(serialized)
-
-
-def _resolve_effective_data_source(data_id_or_path: str, data_source: Optional[str]) -> str:
-    """Resolve the source using the same local-path precedence as DatasetHub."""
-    if data_source == HubType.LOCAL or os.path.exists(data_id_or_path):
-        return HubType.LOCAL
-    return data_source or HubType.MODELSCOPE
 
 
 class DataLoader(ABC):
@@ -125,52 +215,103 @@ class RemoteDataLoader(DataLoader):
     """
 
     def load(self) -> Dataset:
-        import datasets
-        from datasets.features import Audio, Image
+        """Load local data directly, or reuse and update a locked processed split cache."""
+        source = _resolve_data_source(self.data_id_or_path, self.data_source)
+        hub = DatasetHub(
+            data_id_or_path=self.data_id_or_path,
+            data_source=source,
+            revision=self.version,
+            trust_remote=self.trust_remote,
+            force_redownload=self.force_redownload,
+        )
+        if source == HubType.LOCAL:
+            with hub.load(split=self.split, subset=self.subset, **self.kwargs) as dataset:
+                return self._to_memory_dataset(dataset)
 
-        path = self.data_id_or_path
-        effective_data_source = _resolve_effective_data_source(path, self.data_source)
-        # resolve data_to_sample function
-        data_to_sample = record_to_sample_fn(self.sample_fields)
-        # generate a unique cache dir for this dataset
+        cache_dir = self._dataset_cache_dir()
+        os.makedirs(os.path.dirname(cache_dir), exist_ok=True)
+        # Readers hold the same lock through conversion so refresh cannot remove their mapped files.
+        with dataset_loading_session() as session:
+            try:
+                lock = FileLock(f'{cache_dir}.lock').acquire()
+            except OSError as exc:
+                return self._load_read_only_cache(cache_dir, exc)
+            with lock:
+                return self._load_cached_split(hub, session, cache_dir)
+
+    def _dataset_cache_dir(self) -> str:
+        cache_root = os.path.join(self.dataset_dir or DEFAULT_EVALSCOPE_CACHE_DIR, 'datasets')
         dataset_hash = _dataset_cache_hash(
-            path,
+            self.data_id_or_path,
             self.split,
             self.subset,
             self.version,
             self.data_source,
             self.kwargs,
         )
-        if self.dataset_dir:
-            datasets_cache_dir = os.path.join(self.dataset_dir, 'datasets')
-        else:
-            datasets_cache_dir = os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, 'datasets')
-        dataset_cache_dir = os.path.join(datasets_cache_dir, f'{safe_filename(path)}-{dataset_hash}')
-        # force re-download: remove local cache if requested
-        if self.force_redownload and os.path.exists(dataset_cache_dir):
-            logger.info(f'Force redownload enabled. Removing cached dataset at: {dataset_cache_dir}')
-            shutil.rmtree(dataset_cache_dir, ignore_errors=True)
+        return os.path.join(cache_root, f'{safe_filename(self.data_id_or_path)}-{dataset_hash}')
 
-        if os.path.exists(dataset_cache_dir):
-            dataset = datasets.load_from_disk(dataset_cache_dir)
-        else:
-            logger.info(
-                f'Loading dataset {path} from {effective_data_source} > subset: {self.subset} > split: {self.split} ...'
-            )
-            dataset = DatasetHub(
-                data_id_or_path=path,
-                data_source=effective_data_source,
-                revision=self.version,
-                trust_remote=self.trust_remote,
-                force_redownload=self.force_redownload,
-            ).load(split=self.split, subset=self.subset, **self.kwargs)
+    def _load_read_only_cache(self, cache_dir: str, lock_error: OSError) -> MemoryDataset:
+        """Allow prebuilt read-only caches when the filesystem prevents creating their lock."""
+        import datasets
 
-            # Only save to disk if not loading from local path
-            if effective_data_source != HubType.LOCAL:
-                dataset.save_to_disk(dataset_cache_dir)
+        if (
+            self.force_redownload
+            or lock_error.errno not in {errno.EACCES, errno.EPERM, errno.EROFS}
+            or os.access(os.path.dirname(cache_dir), os.W_OK)
+        ):
+            raise lock_error
+        read_path = cache_dir if os.path.isdir(cache_dir) else f'{cache_dir}.previous'
+        if not os.path.isdir(read_path):
+            raise lock_error
+        with datasets.load_from_disk(read_path) as dataset:
+            return self._to_memory_dataset(dataset)
+
+    def _load_cached_split(
+        self,
+        hub: DatasetHub,
+        session: _DatasetLoadingSession,
+        cache_dir: str,
+    ) -> MemoryDataset:
+        import datasets
+
+        cache_root = os.path.dirname(cache_dir)
+        media_cache_file = partial(session.media_cache_file, cache_root)
+        _recover_dataset_cache(cache_dir)
+        if os.path.exists(cache_dir) and not self.force_redownload:
+            try:
+                dataset = datasets.load_from_disk(cache_dir)
+            except FileNotFoundError:
+                logger.info(f'Incomplete dataset cache at {cache_dir}; rebuilding it.')
+            else:
+                with dataset:
+                    return self._to_memory_dataset(dataset, media_cache_file)
+        logger.info(
+            f'Loading dataset {self.data_id_or_path} from {hub.data_source} '
+            f'> subset: {self.subset} > split: {self.split} ...'
+        )
+        with hub.load(
+            split=self.split,
+            subset=self.subset,
+            _snapshot_cache_dir=partial(session.snapshot_cache_dir, cache_root),
+            **self.kwargs,
+        ) as dataset:
+            _publish_dataset_cache(dataset, cache_dir)
+        with datasets.load_from_disk(cache_dir) as dataset:
+            return self._to_memory_dataset(dataset, media_cache_file)
+
+    def _to_memory_dataset(
+        self,
+        dataset: 'HFDataset',
+        media_cache_file: Optional[Callable[[], str]] = None,
+    ) -> MemoryDataset:
+        data_to_sample = record_to_sample_fn(self.sample_fields)
+        path = self.data_id_or_path
 
         # Disable auto-decoding for media columns to keep their raw bytes representation.
-        dataset = undecode_media(dataset, media_type=['image', 'audio', 'video'])
+        dataset = undecode_media(
+            dataset, media_type=['image', 'audio', 'video'], cache_file_name_factory=media_cache_file
+        )
 
         # shuffle if requested
         if self.shuffle:
@@ -215,7 +356,6 @@ class LocalDataLoader(DataLoader):
     """
 
     def load(self):
-
         path = self.data_id_or_path
         data_to_sample = record_to_sample_fn(self.sample_fields)
         dataset = []
