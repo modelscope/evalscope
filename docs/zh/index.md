@@ -24,7 +24,6 @@
 get_started/introduction.md
 get_started/installation.md
 get_started/basic_usage.md
-get_started/systemone.md
 get_started/visualization.md
 get_started/parameters.md
 get_started/supported_dataset/index.md
@@ -37,6 +36,7 @@ get_started/faq.md
 user_guides/backend/index.md
 user_guides/stress_test/index.md
 user_guides/aigc/index.md
+user_guides/systemone.md
 user_guides/arena.md
 user_guides/sandbox.md
 user_guides/agent/index.md

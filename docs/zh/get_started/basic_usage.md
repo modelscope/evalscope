@@ -121,6 +121,8 @@ evalscope service
 
 EvalScope 支持评测兼容 OpenAI API 格式的模型服务。只需指定服务地址、API Key，并将 `eval-type` 设置为 `openai_api`。
 
+System One 决策模型服务使用 `--eval-type systemone_api`，详见 [System One Choice 决策模型评测](../user_guides/systemone.md)。
+
 **示例1：直接评测 OpenAI API 兼容的云端服务（推荐入门方式，无需 GPU）**
 
 支持任意 OpenAI API 兼容的模型服务，只需配置 `$OPENAI_API_BASE_URL` 与 `$OPENAI_API_KEY` 即可：
