@@ -3,6 +3,8 @@
 import errno
 import json
 import os
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
@@ -131,7 +133,7 @@ def test_failed_force_refresh_keeps_the_previous_cache(
         original_load = datasets.load_from_disk
 
         def fail_validation(path: str, **kwargs: Any) -> HFDataset:
-            if Path(path).name == 'prepared':
+            if str(path).endswith('.incomplete'):
                 fail()
             return original_load(path, **kwargs)
 
@@ -140,7 +142,7 @@ def test_failed_force_refresh_keeps_the_previous_cache(
         original_replace = os.replace
 
         def fail_publication(source: str, destination: str) -> None:
-            if Path(source).name == 'prepared':
+            if str(source).endswith('.incomplete'):
                 fail()
             original_replace(source, destination)
 
@@ -183,7 +185,7 @@ def test_failed_publication_and_rollback_do_not_delete_the_old_data(
     original_replace = os.replace
 
     def fail_publish_and_restore(source: str, destination: str) -> None:
-        if Path(source).name == 'prepared' or '-previous-' in Path(source).name:
+        if str(source).endswith(('.incomplete', '.previous')):
             raise OSError('Filesystem cannot publish or restore')
         original_replace(source, destination)
 
@@ -191,7 +193,86 @@ def test_failed_publication_and_rollback_do_not_delete_the_old_data(
     with pytest.raises(OSError, match='cannot publish or restore'):
         _make_loader(tmp_path, force_redownload=True).load()
     backup = _only_cache(tmp_path)
-    assert '-previous-' in backup.name
+    assert backup.name.endswith('.previous')
+    with datasets.load_from_disk(backup) as previous:
+        assert previous['text'] == ['old']
+    monkeypatch.setattr(loader.os, 'replace', original_replace)
+
+    def forbid_hub(*args: Any, **kwargs: Any) -> Any:
+        pytest.fail('A recovered previous cache must not access the hub')
+
+    monkeypatch.setattr(DatasetHub, 'load', forbid_hub)
+    assert _make_loader(tmp_path).load()[0].input == 'old'
+    assert not backup.exists()
+
+
+@pytest.mark.parametrize('phase', ['prepare', 'backup', 'publish'])
+def test_process_exit_during_publication_recovers_without_the_hub(
+    phase: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_records(monkeypatch)
+    _make_loader(tmp_path).load()
+    canonical = _only_cache(tmp_path)
+    worktree = Path(__file__).resolve().parents[2]
+    child = '''
+import os
+import sys
+from pathlib import Path
+from typing import Any
+from unittest.mock import patch
+sys.path.insert(0, sys.argv[2])
+import datasets
+from evalscope.api.dataset import Sample, loader
+from evalscope.api.dataset.hub import DatasetHub
+original_replace = os.replace
+original_save = datasets.Dataset.save_to_disk
+def exit_after_prepare(self: datasets.Dataset, *args: Any, **kwargs: Any) -> Any:
+    result = original_save(self, *args, **kwargs)
+    if sys.argv[3] == 'prepare':
+        os._exit(86)
+    return result
+def exit_at_publication(source: str, destination: str) -> None:
+    original_replace(source, destination)
+    name = Path(destination).name
+    is_backup = '-previous-' in name or name.endswith('.previous')
+    is_canonical = str(destination) == sys.argv[4]
+    if (sys.argv[3] == 'backup' and is_backup) or (sys.argv[3] == 'publish' and is_canonical):
+        os._exit(86)
+loader.os.replace = exit_at_publication
+datasets.Dataset.save_to_disk = exit_after_prepare
+with patch.object(DatasetHub, 'load', lambda *args, **kwargs: datasets.Dataset.from_dict({'text': ['new']})):
+    loader.RemoteDataLoader(
+        data_id_or_path='owner/data', split='test', dataset_dir=sys.argv[1], force_redownload=True,
+        sample_fields=lambda record: Sample(input=record['text']),
+    ).load()
+'''
+    process = subprocess.run(
+        [sys.executable, '-c', child, str(tmp_path), str(worktree), phase, str(canonical)],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert process.returncode == 86, process.stderr
+
+    def forbid_hub(*args: Any, **kwargs: Any) -> Any:
+        pytest.fail('Restart must recover the previous cache or use the committed cache without the hub')
+
+    monkeypatch.setattr(DatasetHub, 'load', forbid_hub)
+    assert _make_loader(tmp_path).load()[0].input == ('new' if phase == 'publish' else 'old')
+    assert _only_cache(tmp_path) == canonical
+
+
+def test_recovery_keeps_backup_if_published_cache_is_corrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_records(monkeypatch)
+    _make_loader(tmp_path).load()
+    canonical = _only_cache(tmp_path)
+    backup = Path(f'{canonical}.previous')
+    os.replace(canonical, backup)
+    HFDataset.from_dict({'text': ['new']}).save_to_disk(canonical)
+    (canonical / 'state.json').write_text('invalid json', encoding='utf-8')
+
+    with pytest.raises(json.JSONDecodeError):
+        _make_loader(tmp_path).load()
     with datasets.load_from_disk(backup) as previous:
         assert previous['text'] == ['old']
 
@@ -257,11 +338,15 @@ def test_session_cleans_up_on_error_and_restores_nested_context(tmp_path: Path) 
 
 
 @pytest.mark.parametrize('error_number', [errno.EACCES, errno.EROFS])
+@pytest.mark.parametrize('previous_only', [False, True])
 def test_read_only_processed_cache_still_loads(
-    error_number: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    error_number: int, previous_only: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _install_records(monkeypatch)
     _make_loader(tmp_path).load()
+    if previous_only:
+        canonical = _only_cache(tmp_path)
+        os.replace(canonical, f'{canonical}.previous')
 
     def cannot_lock(*args: Any, **kwargs: Any) -> Any:
         raise OSError(error_number, 'Read-only cache')

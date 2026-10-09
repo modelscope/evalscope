@@ -123,6 +123,11 @@ remain; a third permanent Arrow copy is not created. Dataset caches are saved an
 failed forced refreshes preserve the previous cache. Conversion still temporarily needs both Arrow copies.
 Downloaded/extracted resources retain their persistent download cache so stored file paths remain usable.
 An explicitly configured Hugging Face `cache_dir` and script-based loaders retain their existing cache behavior.
+ModelScope-specific controls (such as `target` and `use_streaming`) and an explicit SDK `download_mode` keep the
+original SDK loading path, including its network requirements. They are not forwarded to a local HF builder.
+If publication is interrupted, the next load checks the split's backup under its lock: it restores the previous cache
+if the new cache was not published, or validates the published cache before removing the backup. Unfinished split
+write directories are cleaned up during recovery; the processed dataset format and cache keys remain unchanged.
 
 ### dataset-args Configuration Options
 

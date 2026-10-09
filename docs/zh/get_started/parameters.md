@@ -119,6 +119,11 @@ evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
 不再新增第三份永久 Arrow 数据。切分缓存先保存、验证再发布；强制刷新失败时保留旧缓存。
 转换期间仍会短暂同时存在两份 Arrow。下载、解压的资源保留其持久化下载缓存，避免已保存的文件路径失效。
 显式配置的 Hugging Face `cache_dir` 和脚本型加载器保持原有缓存行为。
+`target`、`use_streaming` 等 ModelScope 专用参数，以及显式提供的 SDK `download_mode`，
+继续使用原 SDK 加载路径及其网络依赖，不会转交给本地 HF builder。
+发布过程中断后，下次加载在持有切分锁时检查备份：若新缓存尚未发布则恢复旧缓存；
+若新缓存已经发布则先验证其可读性，再清理备份。恢复时同时清理该切分未完成的写入目录，
+已处理数据的缓存格式和缓存键保持不变。
 
 ### dataset-args 配置项
 

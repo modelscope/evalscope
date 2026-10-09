@@ -210,7 +210,19 @@ def load_dataset_from_hub(
     data_source = _resolve_data_source(data_id_or_path, data_source)
     hf_download_mode = None if not force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
     cached_snapshot = None
-    if data_source == HubType.MODELSCOPE and not force_redownload:
+    # Preserve SDK controls that do not have equivalent local Hugging Face semantics.
+    modelscope_options = {
+        'namespace',
+        'target',
+        'hub',
+        'use_streaming',
+        'stream_batch_size',
+        'custom_cfg',
+        'dataset_info_only',
+        'download_mode',
+        'engine',
+    }
+    if data_source == HubType.MODELSCOPE and not force_redownload and not modelscope_options.intersection(kwargs):
         cached_snapshot = _try_modelscope_cached_snapshot(data_id_or_path, revision=version)
 
     if data_source in [HubType.HUGGINGFACE, HubType.LOCAL] or cached_snapshot:

@@ -90,6 +90,37 @@ def test_modelscope_force_redownload_skips_snapshot_probe(monkeypatch: pytest.Mo
     assert calls['download_mode'] == 'force_redownload'
 
 
+@pytest.mark.parametrize(
+    'options',
+    [
+        {'use_streaming': False},
+        {'target': 'text'},
+        {'download_mode': 'reuse_dataset_if_exists'},
+        {'download_mode': 'force_redownload'},
+    ],
+)
+def test_modelscope_specific_options_keep_sdk_loading(
+    options: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_snapshot(tmp_path / 'snapshot')
+    calls = []
+
+    def forbid_probe(**kwargs: Any) -> str:
+        pytest.fail('ModelScope controls must retain the SDK loader even when a snapshot exists')
+
+    def sdk_load(**kwargs: Any) -> HFDataset:
+        calls.append(kwargs)
+        return HFDataset.from_dict({'text': ['sdk']})
+
+    _install_modelscope_loaders(monkeypatch, forbid_probe, sdk_load)
+    with load_dataset_from_hub('owner/data', split='test', subset='main', version='v2', **options) as dataset:
+        assert dataset['text'] == ['sdk']
+    assert calls == [{
+        'dataset_name': 'owner/data', 'split': 'test', 'subset_name': 'main',
+        'version': 'v2', 'trust_remote_code': True, **options,
+    }]
+
+
 @pytest.mark.parametrize('source', [HubType.LOCAL, HubType.MODELSCOPE])
 def test_explicit_local_dataset_skips_modelscope_cache(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str,

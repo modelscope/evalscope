@@ -73,33 +73,54 @@ def dataset_loading_session() -> Iterator[_DatasetLoadingSession]:
             _loading_session.reset(token)
 
 
-def _publish_dataset_cache(dataset: 'HFDataset', cache_dir: str) -> None:
-    """Publish a validated split while keeping the previous cache on write failure."""
+def _remove_dataset_cache(path: str) -> None:
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    elif os.path.exists(path):
+        os.unlink(path)
+
+
+def _recover_dataset_cache(cache_dir: str) -> None:
+    """Recover an interrupted publication while holding the split lock."""
     import datasets
 
-    parent = os.path.dirname(cache_dir)
-    # Keep the backup outside the temporary write directory so even a failed rollback cannot delete it.
-    backup = os.path.join(parent, f'.{os.path.basename(cache_dir)}-previous-{uuid4().hex}')
-    with TemporaryDirectory(prefix='.dataset-write-', dir=parent) as write_root:
-        prepared = os.path.join(write_root, 'prepared')
+    backup = f'{cache_dir}.previous'
+    if os.path.exists(backup):
+        if os.path.exists(cache_dir):
+            # A committed cache must be readable before its previous generation is discarded.
+            with datasets.load_from_disk(cache_dir):
+                pass
+            _remove_dataset_cache(backup)
+        else:
+            os.replace(backup, cache_dir)
+            logger.info(f'Restored dataset cache after interrupted publication: {cache_dir}')
+    _remove_dataset_cache(f'{cache_dir}.incomplete')
+
+
+def _publish_dataset_cache(dataset: 'HFDataset', cache_dir: str) -> None:
+    """Publish a validated split while holding the split lock."""
+    import datasets
+
+    prepared = f'{cache_dir}.incomplete'
+    backup = f'{cache_dir}.previous'
+    try:
         dataset.save_to_disk(prepared)
         with datasets.load_from_disk(prepared) as saved:
             if saved.num_rows != dataset.num_rows or saved.features != dataset.features:
                 raise ValueError(f'Saved dataset does not match its source: {cache_dir}')
         had_previous = os.path.exists(cache_dir)
-        if had_previous:
-            os.replace(cache_dir, backup)
         try:
+            if had_previous:
+                os.replace(cache_dir, backup)
             os.replace(prepared, cache_dir)
         except BaseException:
-            if had_previous:
+            if os.path.exists(backup) and not os.path.exists(cache_dir):
                 os.replace(backup, cache_dir)
             raise
         if had_previous:
-            if os.path.isdir(backup):
-                shutil.rmtree(backup)
-            else:
-                os.unlink(backup)
+            _remove_dataset_cache(backup)
+    finally:
+        _remove_dataset_cache(prepared)
 
 
 def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
@@ -236,14 +257,17 @@ class RemoteDataLoader(DataLoader):
                 lock = FileLock(f'{dataset_cache_dir}.lock').acquire()
             except OSError as exc:
                 # Prebuilt read-only caches remain usable; they cannot be refreshed by this process.
+                read_only_cache = dataset_cache_dir
+                if not os.path.isdir(read_only_cache):
+                    read_only_cache = f'{dataset_cache_dir}.previous'
                 if (
                     exc.errno not in {errno.EACCES, errno.EPERM, errno.EROFS}
                     or os.access(datasets_cache_dir, os.W_OK)
                     or self.force_redownload
-                    or not os.path.isdir(dataset_cache_dir)
+                    or not os.path.isdir(read_only_cache)
                 ):
                     raise
-                with datasets.load_from_disk(dataset_cache_dir) as dataset:
+                with datasets.load_from_disk(read_only_cache) as dataset:
                     return self._to_memory_dataset(dataset)
             with lock:
                 return self._load_cached_split(hub, session, dataset_cache_dir)
@@ -259,6 +283,7 @@ class RemoteDataLoader(DataLoader):
         def media_cache_file() -> str:
             return session.media_cache_file(os.path.dirname(cache_dir))
 
+        _recover_dataset_cache(cache_dir)
         if os.path.exists(cache_dir) and not self.force_redownload:
             try:
                 dataset = datasets.load_from_disk(cache_dir)
