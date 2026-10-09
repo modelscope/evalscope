@@ -8,6 +8,11 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+
+class MissingTokenUsageError(ValueError):
+    """Token usage cannot be obtained from either the response or a tokenizer."""
+
+
 # ===========================================================================
 # Layer 1: Single-request data container
 # ===========================================================================
@@ -259,9 +264,16 @@ class MetricsAccumulator:
             self.n_non_stream_total += 1
 
         if data.success:
-            self.n_success += 1
-            data.finalize(api_plugin, enable_pd_metrics=self.enable_pd_metrics)
+            try:
+                data.finalize(api_plugin, enable_pd_metrics=self.enable_pd_metrics)
+            except MissingTokenUsageError as exc:
+                # Preserve unknown tokens instead of treating this as a zero-token success.
+                data.success = False
+                data.error = f'Unable to finalize request metrics: {exc}'
+                logger.warning(data.error)
 
+        if data.success:
+            self.n_success += 1
             self.total_latency += data.query_latency
             self.total_first_chunk_latency += data.first_chunk_latency
             self.total_prompt_tokens += data.prompt_tokens

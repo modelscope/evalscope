@@ -15,7 +15,7 @@ from evalscope.perf.multi_turn_args import _sample_int_or_range
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin, StreamedResponseHandler
 from evalscope.perf.plugin.datasets.utils import load_tokenizer
 from evalscope.perf.plugin.registry import register_api
-from evalscope.perf.utils.benchmark_util import BenchmarkData, is_stream_body
+from evalscope.perf.utils.benchmark_util import BenchmarkData, MissingTokenUsageError, is_stream_body
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -61,7 +61,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                 return usage
 
         if self.tokenizer is None:
-            raise ValueError(
+            raise MissingTokenUsageError(
                 'Error: Unable to retrieve usage information from OpenAI Responses API response and no tokenizer was '
                 'specified. Please ensure the API returns usage or set --tokenizer-path.'
             )
