@@ -154,7 +154,7 @@ To view all configurable options, please refer to: [Complete Parameter Descripti
 
 EvalScope supports evaluating model services compatible with OpenAI API format. Simply specify the service address, API Key, and set `eval-type` to `openai_api`.
 
-For System One decision models, use `--eval-type systemone_api`. See [Evaluating System One Choice Models](../user_guides/systemone.md).
+For System One decision models, use `--eval-type systemone_api`. See [System One Evaluation](../user_guides/systemone.md).
 
 **1. Start Model Service**
 

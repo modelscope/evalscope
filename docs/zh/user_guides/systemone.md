@@ -1,4 +1,4 @@
-# System One Choice 决策模型评测
+# System One 评测
 
 使用 `eval_type='systemone_api'` 评测只返回选择结果的文本决策模型。EvalScope 将原始题目、上下文、示例和完整选项转换为 System One 请求，再以返回标签计算准确率。
 

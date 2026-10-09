@@ -1,4 +1,4 @@
-# Evaluating System One Choice Models
+# System One Evaluation
 
 Use `eval_type='systemone_api'` for text decision models that return a selected option. EvalScope converts raw questions, context, demonstrations and complete candidate lists into System One requests, then computes accuracy from the returned labels.
 
