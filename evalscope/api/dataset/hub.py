@@ -2,8 +2,9 @@
 
 import inspect
 import os
+import re
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import List, Mapping, Optional, Sequence, Union
 
 from evalscope.constants import HubType
 from evalscope.utils.logger import get_logger
@@ -91,6 +92,31 @@ def _try_modelscope_cached_snapshot(
     return snapshot_path
 
 
+def _validate_cached_shards(data_files: Mapping[str, Sequence[str]]) -> None:
+    """Check completeness when numbered filenames declare a shard count."""
+    for files in data_files.values():
+        groups: dict[tuple[str, str, str], tuple[int, set[int]]] = {}
+        for path in files:
+            match = re.fullmatch(r'(.+)-(\d+)-of-(\d+)(\..+)', os.path.basename(path))
+            if match is None:
+                continue
+            prefix, index_text, count_text, suffix = match.groups()
+            index, count = int(index_text), int(count_text)
+            if count < 1 or index >= count:
+                raise ValueError(f'Invalid numbered shard: {path}')
+            key = (os.path.dirname(path), prefix, suffix)
+            expected, indices = groups.setdefault(key, (count, set()))
+            if expected != count or index in indices:
+                raise ValueError(f'Inconsistent numbered shards: {path}')
+            indices.add(index)
+        for (directory, prefix, suffix), (count, indices) in groups.items():
+            if len(indices) != count:
+                raise FileNotFoundError(
+                    f'Incomplete cached shards for {os.path.join(directory, prefix)}*{suffix}: '
+                    f'found {len(indices)} of {count}.'
+                )
+
+
 def load_dataset_from_hub(
     data_id_or_path: str,
     split: str,
@@ -130,6 +156,21 @@ def load_dataset_from_hub(
         if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
             load_kwargs['trust_remote_code'] = trust_remote
         try:
+            if cached_snapshot:
+                builder_parameters = inspect.signature(datasets.load_dataset_builder).parameters
+                loader_parameters = inspect.signature(datasets.load_dataset).parameters
+                builder = datasets.load_dataset_builder(
+                    **{
+                        key: value
+                        for key, value in load_kwargs.items()
+                        if key in builder_parameters or key not in loader_parameters
+                    }
+                )
+                if builder.config.data_files:
+                    if kwargs.get('data_files') is None:
+                        _validate_cached_shards(builder.config.data_files)
+                    # Absolute files and their metadata distinguish snapshots in the HF cache key.
+                    load_kwargs['data_files'] = builder.config.data_files
             return datasets.load_dataset(**load_kwargs)
         except (FileNotFoundError, ValueError) as exc:
             # datasets reports missing splits as ValueError rather than a dedicated exception.

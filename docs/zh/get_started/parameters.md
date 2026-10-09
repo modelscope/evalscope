@@ -111,6 +111,8 @@ evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
 显式提供本地 `dataset_id` 时仍优先使用该路径。
 设置 `force_redownload: true` 会跳过本地快照探测；设置 `dataset_revision` 时仅复用能够确认版本匹配的快照，
 不复用无法确认版本的旧式缓存。快照中的文件仍须满足基准的数据格式、子集和切分要求。
+带有分片编号和总数的文件须包含全部编号，缺少分片时回退到 ModelScope 加载；显式指定的 `data_files` 保持原有选择。
+离线查询无法推断任意通配符集合中尚未下载的文件，因此请预先下载完整的数据集快照。
 
 ### dataset-args 配置项
 

@@ -113,6 +113,9 @@ The installed ModelScope SDK resolves the cache layout, including supported lega
 An explicit local `dataset_id` takes precedence. Setting `force_redownload: true` skips the offline snapshot probe.
 With `dataset_revision`, only snapshots with a verified matching revision are reused; unversioned legacy caches are skipped.
 The cached files must still satisfy the benchmark's data format, subset, and split requirements.
+Numbered shards must include every index declared by their filenames; missing shards fall back to the ModelScope loader.
+Explicit `data_files` selections are preserved. Offline lookup cannot infer missing files in arbitrary wildcard sets,
+so pre-download a complete dataset snapshot.
 
 ### dataset-args Configuration Options
 

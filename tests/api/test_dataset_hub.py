@@ -265,6 +265,124 @@ def test_huggingface_load_does_not_probe_modelscope_cache(monkeypatch: pytest.Mo
     assert calls['path'] == 'owner/data'
 
 
+@pytest.mark.parametrize('streaming', [False, True])
+@pytest.mark.parametrize('indices', [(0,), (1,), (0, 2), (0, 1, 2)])
+def test_modelscope_cached_numbered_shards_preserve_the_complete_split(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, indices: tuple[int, ...], streaming: bool,
+) -> None:
+    snapshot = tmp_path / 'snapshots' / 'master'
+    snapshot.mkdir(parents=True)
+    (snapshot / 'README.md').write_text(
+        '---\nconfigs:\n- config_name: default\n  data_files:\n'
+        '  - split: test\n    path: test-*.jsonl\n---\n', encoding='utf-8',
+    )
+    for index in indices:
+        (snapshot / f'test-{index:05d}-of-00003.jsonl').write_text(
+            json.dumps({'text': f'row-{index}'}) + '\n', encoding='utf-8',
+        )
+    remote_calls = []
+    cache_dir = str(tmp_path / 'hf-cache')
+    requested_split = 'test' if streaming else 'test[:3]'
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        remote_calls.append(kwargs)
+        assert kwargs == {
+            'dataset_name': 'owner/data', 'split': requested_split, 'subset_name': None,
+            'trust_remote_code': True, 'cache_dir': cache_dir, 'streaming': streaming,
+        }
+        return HFDataset.from_dict({'text': ['row-0', 'row-1', 'row-2']})
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+    dataset = load_dataset_from_hub('owner/data', split=requested_split, cache_dir=cache_dir, streaming=streaming)
+
+    assert [row['text'] for row in dataset] == ['row-0', 'row-1', 'row-2']
+    assert len(remote_calls) == (0 if len(indices) == 3 else 1)
+
+
+def test_modelscope_complete_snapshots_do_not_share_arrow_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshots = {}
+    for name in ['first', 'second']:
+        snapshot = tmp_path / name / 'snapshots' / 'master'
+        _write_snapshot(snapshot)
+        (snapshot / 'test.jsonl').write_text(json.dumps({'text': name}) + '\n', encoding='utf-8')
+        (snapshot / 'README.md').write_text(
+            '---\nconfigs:\n- config_name: default\n  data_files:\n'
+            '  - split: test\n    path: test.jsonl\n---\n', encoding='utf-8',
+        )
+        snapshots[f'owner/{name}'] = str(snapshot)
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return snapshots[kwargs['repo_id']]
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        pytest.fail('Both complete snapshots must load locally')
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+    cache_dir = str(tmp_path / 'shared-hf-cache')
+    first = load_dataset_from_hub('owner/first', split='test', cache_dir=cache_dir)
+    second = load_dataset_from_hub('owner/second', split='test', cache_dir=cache_dir)
+    first_again = load_dataset_from_hub('owner/first', split='test', cache_dir=cache_dir)
+
+    assert first['text'] == ['first']
+    assert second['text'] == ['second']
+    assert first_again['text'] == ['first']
+    assert first.cache_files != second.cache_files
+    assert first.cache_files == first_again.cache_files
+
+
+def test_modelscope_explicit_data_files_preserve_partial_shard_selection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot = tmp_path / 'snapshot'
+    snapshot.mkdir()
+    selected_file = snapshot / 'test-00000-of-00002.jsonl'
+    selected_file.write_text('{"text": "selected"}\n', encoding='utf-8')
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        pytest.fail('An explicit file selection must not require the other shards')
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+    dataset = load_dataset_from_hub(
+        'owner/data', split='test', data_files={'test': str(selected_file)}, cache_dir=str(tmp_path / 'hf-cache'),
+    )
+
+    assert dataset['text'] == ['selected']
+
+
+@pytest.mark.parametrize('filenames', [
+    ['test-00000-of-00000.jsonl'],
+    ['test-00002-of-00002.jsonl'],
+    ['test-00000-of-00002.jsonl', 'test-00001-of-00003.jsonl'],
+    ['test-0-of-2.jsonl', 'test-00000-of-00002.jsonl'],
+])
+def test_modelscope_invalid_numbered_shards_do_not_hide_data_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, filenames: list[str],
+) -> None:
+    snapshot = tmp_path / 'snapshot'
+    snapshot.mkdir()
+    for filename in filenames:
+        (snapshot / filename).write_text('{"text": "cached"}\n', encoding='utf-8')
+
+    def cached_snapshot(**kwargs: Any) -> str:
+        return str(snapshot)
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        pytest.fail('Invalid shard numbering must not be treated as missing data')
+
+    _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
+
+    with pytest.raises(ValueError, match='numbered shard'):
+        load_dataset_from_hub('owner/data', split='test', cache_dir=str(tmp_path / 'hf-cache'))
+
+
 def test_modelscope_partial_cache_does_not_skip_requested_snapshot_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -294,8 +412,9 @@ def test_modelscope_partial_cache_does_not_skip_requested_snapshot_files(
 
 
 @pytest.mark.parametrize('cache_layout', ['snapshot', 'legacy'])
+@pytest.mark.parametrize('missing_shard', [False, True])
 def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cache_layout: str,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cache_layout: str, missing_shard: bool,
 ) -> None:
     pytest.importorskip('modelscope_hub')
     import httpx
@@ -313,11 +432,14 @@ def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
         snapshot = cache_root / 'datasets' / 'AI-ModelScope' / 'gsm8k'
     snapshot.mkdir(parents=True)
     records = '\n'.join(json.dumps({'question': 'What is 1+1?', 'answer': '1+1=2 #### 2'}) for _ in range(4))
-    (snapshot / 'test.jsonl').write_text(records + '\n', encoding='utf-8')
+    test_file = 'test-00000-of-00002.jsonl' if missing_shard else 'test.jsonl'
+    test_records = records.splitlines()[0] if missing_shard else records
+    (snapshot / test_file).write_text(test_records + '\n', encoding='utf-8')
     (snapshot / 'train.jsonl').write_text(records + '\n', encoding='utf-8')
+    test_pattern = 'test-*.jsonl' if missing_shard else 'test.jsonl'
     (snapshot / 'README.md').write_text(
         '---\nconfigs:\n- config_name: main\n  data_files:\n'
-        '  - split: train\n    path: train.jsonl\n  - split: test\n    path: test.jsonl\n---\n',
+        f'  - split: train\n    path: train.jsonl\n  - split: test\n    path: {test_pattern}\n---\n',
         encoding='utf-8',
     )
     monkeypatch.setenv('MODELSCOPE_CACHE', str(cache_root))
@@ -326,19 +448,32 @@ def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
     def forbid_network(*args: Any, **kwargs: Any) -> Any:
         pytest.fail('Loading a pre-downloaded Native dataset must not access the network')
 
+    remote_calls = []
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        remote_calls.append(kwargs)
+        assert missing_shard
+        assert kwargs['split'] in ['test', 'train']
+        assert kwargs == {
+            'dataset_name': 'AI-ModelScope/gsm8k', 'split': kwargs['split'], 'subset_name': 'main',
+            'trust_remote_code': True,
+        }
+        return HFDataset.from_list([json.loads(record) for record in records.splitlines()])
+
     monkeypatch.setattr(requests.sessions.Session, 'request', forbid_network)
     monkeypatch.setattr(httpx.Client, 'request', forbid_network)
-    _install_modelscope_loaders(monkeypatch, snapshot_download, forbid_network)
-    config = TaskConfig(datasets=['gsm8k'], limit=1, dataset_dir=str(tmp_path / 'evalscope'))
+    _install_modelscope_loaders(monkeypatch, snapshot_download, remote_load)
+    config = TaskConfig(datasets=['gsm8k'], limit=None if missing_shard else 1, dataset_dir=str(tmp_path / 'evalscope'))
     benchmark = get_benchmark('gsm8k', config)
 
     dataset = benchmark.load_dataset()
 
     assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
     assert list(dataset.keys()) == ['main']
-    assert len(dataset['main']) == 1
+    assert len(dataset['main']) == (4 if missing_shard else 1)
     assert dataset['main'][0].target == '2'
     assert len(benchmark.fewshot_dataset['main']) == 4
+    assert len(remote_calls) == (2 if missing_shard else 0)
 
 
 def test_download_snapshot_resolves_existing_local_path(tmp_path) -> None:
