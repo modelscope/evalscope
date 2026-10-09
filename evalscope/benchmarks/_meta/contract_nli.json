@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "pretty_name": "ContractNLI (classification)",
+    "dataset_id": "tasksource/contract-nli",
+    "dataset_hub": "huggingface",
+    "paper_url": null,
+    "tags": [
+      "MCQ"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "contractnli_b"
+    ],
+    "description": "\n## Overview\n\nDocument-level natural language inference on complete non-disclosure agreements.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Full contract and hypothesis\n- **Output**: Entailment, contradiction or not mentioned\n- **Domain**: Legal document understanding\n\n## Key Features\n\n- Public dataset: `tasksource/contract-nli` on Hugging Face\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated. Contract and hypothesis hashes identify related samples.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 2091,
+    "subset_stats": [
+      {
+        "name": "contractnli_b",
+        "sample_count": 2091,
+        "prompt_length_mean": 11719.39,
+        "prompt_length_min": 1701,
+        "prompt_length_max": 42345,
+        "prompt_length_std": 7245.19,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 11719.39,
+      "min": 1701,
+      "max": 42345,
+      "std": 7245.19
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-10-09T16:03:20.514244"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "499ba6f1",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nContract:\nNON-DISCLOSURE AGREEMENT\nRequired under JEA's ... [TRUNCATED 16664 chars] ... body Disclosing Party's Confidential Information.\n\nA) Contradiction: the contract contradicts the hypothesis.\nB) Entailment: the contract supports the hypothesis.\nC) Not mentioned: the contract neither supports nor contradicts the hypothesis."
+        }
+      ],
+      "choices": [
+        "Contradiction: the contract contradicts the hypothesis.",
+        "Entailment: the contract supports the hypothesis.",
+        "Not mentioned: the contract neither supports nor contradicts the hypothesis."
+      ],
+      "target": "C",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "contract_id": "944f3cc63d215fdeb4182cbeb0d4b6ed3f3a5dcc51fe0680c879e709cabc0502",
+        "hypothesis_id": "e1ce8a23b0a81e1223e43ac59ff5c4eae4389b816b2b08c8803b5c02c1f94eca"
+      }
+    },
+    "subset": "contractnli_b",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# ContractNLI (classification)\n\n\n## Overview\n\nDocument-level natural language inference on complete non-disclosure agreements.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Full contract and hypothesis\n- **Output**: Entailment, contradiction or not mentioned\n- **Domain**: Legal document understanding\n\n## Key Features\n\n- Public dataset: `tasksource/contract-nli` on Hugging Face\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated. Contract and hypothesis hashes identify related samples.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `contract_nli` |\n| **Dataset ID** | [tasksource/contract-nli](https://huggingface.co/datasets/tasksource/contract-nli) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,091 |\n| Prompt Length (Mean) | 11719.39 chars |\n| Prompt Length (Min/Max) | 1701 / 42345 chars |\n\n## Sample Example\n\n**Subset**: `contractnli_b`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"499ba6f1\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\\n\\nContract:\\nNON-DISCLOSURE AGREEMENT\\nRequired under JEA's ... [TRUNCATED 16664 chars] ... body Disclosing Party's Confidential Information.\\n\\nA) Contradiction: the contract contradicts the hypothesis.\\nB) Entailment: the contract supports the hypothesis.\\nC) Not mentioned: the contract neither supports nor contradicts the hypothesis.\"\n    }\n  ],\n  \"choices\": [\n    \"Contradiction: the contract contradicts the hypothesis.\",\n    \"Entailment: the contract supports the hypothesis.\",\n    \"Not mentioned: the contract neither supports nor contradicts the hypothesis.\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"contract_id\": \"944f3cc63d215fdeb4182cbeb0d4b6ed3f3a5dcc51fe0680c879e709cabc0502\",\n    \"hypothesis_id\": \"e1ce8a23b0a81e1223e43ac59ff5c4eae4389b816b2b08c8803b5c02c1f94eca\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets contract_nli \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['contract_nli'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# ContractNLI (classification)\n\n\n## Overview\n\n对完整的保密协议（NDA）进行文档级自然语言推理。\n\n## Task Description\n\n- **任务类型**：单选分类\n- **输入**：完整合同文本及假设语句\n- **输出**：蕴含（Entailment）、矛盾（Contradiction）或未提及（Not mentioned）\n- **领域**：法律文档理解\n\n## Key Features\n\n- 公开数据集：Hugging Face 上的 `tasksource/contract-nli`\n- 保留原始标签和完整的任务上下文\n- 支持聊天生成模型和文本 System One Choice 模型\n\n## Evaluation Notes\n\n- 使用完整文档的 contractnli_b 数据镜像（仅含数据）。每个合同-假设对构成一个样本。仅报告分类准确率；不评估证据抽取和官方 F1 指标。合同与假设的哈希值用于标识相关样本。\n- 默认采用 0-shot 设置；若存在训练集，可配置训练示例\n- 系统提示将转换为选择题任务指令，不使用原生的聊天角色层级结构\n- 评估语义版本：v1.0\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `contract_nli` |\n| **Dataset ID** | [tasksource/contract-nli](https://huggingface.co/datasets/tasksource/contract-nli) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,091 |\n| Prompt Length (Mean) | 11719.39 chars |\n| Prompt Length (Min/Max) | 1701 / 42345 chars |\n\n## Sample Example\n\n**Subset**: `contractnli_b`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"499ba6f1\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\\n\\nContract:\\nNON-DISCLOSURE AGREEMENT\\nRequired under JEA's ... [TRUNCATED 16664 chars] ... body Disclosing Party's Confidential Information.\\n\\nA) Contradiction: the contract contradicts the hypothesis.\\nB) Entailment: the contract supports the hypothesis.\\nC) Not mentioned: the contract neither supports nor contradicts the hypothesis.\"\n    }\n  ],\n  \"choices\": [\n    \"Contradiction: the contract contradicts the hypothesis.\",\n    \"Entailment: the contract supports the hypothesis.\",\n    \"Not mentioned: the contract neither supports nor contradicts the hypothesis.\"\n  ],\n  \"target\": \"C\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"contract_id\": \"944f3cc63d215fdeb4182cbeb0d4b6ed3f3a5dcc51fe0680c879e709cabc0502\",\n    \"hypothesis_id\": \"e1ce8a23b0a81e1223e43ac59ff5c4eae4389b816b2b08c8803b5c02c1f94eca\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets contract_nli \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['contract_nli'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "9357752a99126cdccec1ff26c1c15056",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-09T16:03:20.612958",
+  "translation_updated_at": "2026-10-09T16:03:22"
+}

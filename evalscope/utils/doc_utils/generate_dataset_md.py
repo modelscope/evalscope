@@ -212,6 +212,7 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
     adapter_meta = {
         'pretty_name': getattr(meta, 'pretty_name', None) or meta.name,
         'dataset_id': getattr(meta, 'dataset_id', ''),
+        'dataset_hub': getattr(meta, 'dataset_hub', None),
         'paper_url': getattr(meta, 'paper_url', None),
         'tags': list(getattr(meta, 'tags', [])) if getattr(meta, 'tags', None) else [],
         'metrics': list(getattr(meta, 'metric_list', [])) if getattr(meta, 'metric_list', None) else [],

@@ -49,13 +49,15 @@ README_TEMPLATE = """# {pretty_name}
 """
 
 
-def _format_dataset_link(dataset_id: str) -> str:
+def _format_dataset_link(dataset_id: str, dataset_hub: Optional[str] = None) -> str:
     """Format dataset ID as a clickable link."""
     if not dataset_id:
         return 'N/A'
     if dataset_id.startswith(('http://', 'https://')):
         return f'[{os.path.basename(dataset_id)}]({dataset_id})'
     elif '/' in dataset_id:
+        if dataset_hub == 'huggingface':
+            return f'[{dataset_id}](https://huggingface.co/datasets/{dataset_id})'
         # ModelScope format: org/name
         return f'[{dataset_id}](https://modelscope.cn/datasets/{dataset_id}/summary)'
     return f'`{dataset_id}`'
@@ -498,7 +500,7 @@ def generate_readme_from_dict(
         pretty_name=meta.get('pretty_name') or name,
         description=meta.get('description') or '*No description available.*',
         name=name,
-        dataset_id_link=_format_dataset_link(meta.get('dataset_id', '')),
+        dataset_id_link=_format_dataset_link(meta.get('dataset_id', ''), meta.get('dataset_hub')),
         paper_link=_format_link(meta.get('paper_url'), 'Paper'),
         tags=_format_tags(meta.get('tags', [])),
         metrics=_format_metrics(meta.get('metrics', [])),

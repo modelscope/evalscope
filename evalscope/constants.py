@@ -79,6 +79,7 @@ class EvalType:
     TEXT2SPEECH = 'text2speech'  # text-to-speech service
     IMAGE_EDITING = 'image_editing'  # image editing service
     OPENAI_API = 'openai_api'
+    SYSTEMONE_API = 'systemone_api'
     OPENAI_RESPONSES_API = 'openai_responses_api'
     ANTHROPIC_API = 'anthropic_api'
     LITELLM = 'litellm'

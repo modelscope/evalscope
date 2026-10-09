@@ -83,6 +83,23 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """Convert the benchmark metadata to a dictionary."""
         return self._benchmark_meta.to_string_dict()
 
+    def validate_choice_config(self) -> None:
+        """Reject unsupported decision evaluations before dataset or model I/O."""
+        if not self._benchmark_meta.supports_choice:
+            raise ValueError(f'Benchmark {self.name!r} has no audited text Choice conversion.')
+        if self._task_config.agent_config is not None:
+            raise ValueError('System One Choice evaluation does not support agent_config.')
+        if self._task_config.judge.models or self._task_config.judge.strategy not in ('auto', 'rule'):
+            raise ValueError('System One Choice evaluation uses deterministic scoring, without an LLM judge.')
+        overrides = self._task_config.dataset_args.get(self.name, {})
+        incompatible = {'prompt_template', 'few_shot_prompt_template', 'filters', 'query_template'} & overrides.keys()
+        if incompatible:
+            raise ValueError(
+                f'System One cannot use {", ".join(sorted(incompatible))}; configure choice_instructions instead.'
+            )
+        if self.filters:
+            raise ValueError('System One Choice evaluation does not support output filters.')
+
     @property
     def benchmark_meta(self) -> 'BenchmarkMeta':
         """Return the resolved benchmark metadata used by this adapter."""
@@ -163,14 +180,17 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         Return the dataset hub type for the benchmark.
         """
-        return self._task_config.dataset_hub
+        return self._benchmark_meta.dataset_hub or self._task_config.dataset_hub
 
     @dataset_hub.setter
     def dataset_hub(self, value: str):
         """
         Set the dataset hub type for the benchmark.
         """
-        self._task_config.dataset_hub = value
+        if self._benchmark_meta.dataset_hub is not None:
+            self._benchmark_meta.dataset_hub = value
+        else:
+            self._task_config.dataset_hub = value
 
     @property
     def dataset_revision(self) -> Optional[str]:

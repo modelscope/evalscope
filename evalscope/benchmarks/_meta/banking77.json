@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "pretty_name": "BANKING77",
+    "dataset_id": "mteb/banking77",
+    "dataset_hub": "huggingface",
+    "paper_url": null,
+    "tags": [
+      "MCQ"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nFine-grained banking support intent classification with the complete 77-class taxonomy.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Banking support message\n- **Output**: One of 77 banking intents\n- **Domain**: Customer support\n\n## Key Features\n\n- Public dataset: `mteb/banking77` on Hugging Face\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Reports accuracy, not macro-F1. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3076,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3076,
+        "prompt_length_mean": 2354.28,
+        "prompt_length_min": 2313,
+        "prompt_length_max": 2668,
+        "prompt_length_std": 34.66,
+        "target_length_mean": 1.55
+      }
+    ],
+    "prompt_length": {
+      "mean": 2354.28,
+      "min": 2313,
+      "max": 2668,
+      "std": 34.66
+    },
+    "target_length_mean": 1.55,
+    "computed_at": "2026-10-09T16:03:19.451144"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "627e7aaf",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\n44) verify my identity\n45) verify source of funds\n46) verify top up\n47) virtual card not working\n48) visa or mastercard\n49) why verify identity\n50) wrong amount of cash received\n51) wrong exchange rate for cash withdrawal"
+        }
+      ],
+      "choices": [
+        "activate my card",
+        "age limit",
+        "apple pay or google pay",
+        "atm support",
+        "automatic top up",
+        "balance not updated after bank transfer",
+        "balance not updated after cheque or cash deposit",
+        "beneficiary not allowed",
+        "cancel transfer",
+        "card about to expire",
+        "... [TRUNCATED 67 more items] ..."
+      ],
+      "target": "L",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BANKING77\n\n\n## Overview\n\nFine-grained banking support intent classification with the complete 77-class taxonomy.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Banking support message\n- **Output**: One of 77 banking intents\n- **Domain**: Customer support\n\n## Key Features\n\n- Public dataset: `mteb/banking77` on Hugging Face\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Reports accuracy, not macro-F1. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `banking77` |\n| **Dataset ID** | [mteb/banking77](https://huggingface.co/datasets/mteb/banking77) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,076 |\n| Prompt Length (Mean) | 2354.28 chars |\n| Prompt Length (Min/Max) | 2313 / 2668 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"627e7aaf\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\\n44) verify my identity\\n45) verify source of funds\\n46) verify top up\\n47) virtual card not working\\n48) visa or mastercard\\n49) why verify identity\\n50) wrong amount of cash received\\n51) wrong exchange rate for cash withdrawal\"\n    }\n  ],\n  \"choices\": [\n    \"activate my card\",\n    \"age limit\",\n    \"apple pay or google pay\",\n    \"atm support\",\n    \"automatic top up\",\n    \"balance not updated after bank transfer\",\n    \"balance not updated after cheque or cash deposit\",\n    \"beneficiary not allowed\",\n    \"cancel transfer\",\n    \"card about to expire\",\n    \"... [TRUNCATED 67 more items] ...\"\n  ],\n  \"target\": \"L\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets banking77 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['banking77'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BANKING77\n\n\n## 概述\n\n使用完整的 77 类分类体系进行细粒度的银行客服意图分类。\n\n## 任务描述\n\n- **任务类型**：单选分类\n- **输入**：银行客服消息\n- **输出**：77 种银行意图之一\n- **领域**：客户服务\n\n## 主要特性\n\n- 公开数据集：Hugging Face 上的 `mteb/banking77`\n- 保留原始标签和完整的任务上下文\n- 支持聊天生成模型和文本 System One Choice 模型\n\n## 评估说明\n\n- 报告准确率（accuracy），而非 macro-F1。每个样本均可从全部 77 个意图中选择；不进行候选剪枝，也不添加“超出范围”（out-of-scope）意图。\n- 默认为 0-shot 设置；若存在训练集，可配置训练示例\n- 系统提示将转换为选择题任务指令，不采用原生的聊天角色层级结构\n- 评估语义版本：v1.0\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `banking77` |\n| **数据集ID** | [mteb/banking77](https://huggingface.co/datasets/mteb/banking77) |\n| **论文** | N/A |\n| **标签** | `MCQ` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估集** | `test` |\n| **训练集** | `train` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,076 |\n| 提示词长度（平均） | 2354.28 字符 |\n| 提示词长度（最小/最大） | 2313 / 2668 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"627e7aaf\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\\n44) verify my identity\\n45) verify source of funds\\n46) verify top up\\n47) virtual card not working\\n48) visa or mastercard\\n49) why verify identity\\n50) wrong amount of cash received\\n51) wrong exchange rate for cash withdrawal\"\n    }\n  ],\n  \"choices\": [\n    \"activate my card\",\n    \"age limit\",\n    \"apple pay or google pay\",\n    \"atm support\",\n    \"automatic top up\",\n    \"balance not updated after bank transfer\",\n    \"balance not updated after cheque or cash deposit\",\n    \"beneficiary not allowed\",\n    \"cancel transfer\",\n    \"card about to expire\",\n    \"... [TRUNCATED 67 more items] ...\"\n  ],\n  \"target\": \"L\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*注：部分内容因展示需要已被截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets banking77 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['banking77'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "200572db259dbb3f32c122d17cf69d70",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-09T16:03:19.945950",
+  "translation_updated_at": "2026-10-09T16:03:22"
+}

@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 from pydantic import BaseModel, Field
 
 from evalscope.api.messages import ChatMessage, messages_to_markdown
+from evalscope.api.model.choice import ChoiceRequest
 from evalscope.api.tool import ToolInfo
 
 _LIMIT_ERROR = 'Limit must be a non-negative integer or a finite float between 0 and 1.'
@@ -46,6 +47,9 @@ class Sample(BaseModel):
 
     choices: Optional[List[str]] = None
     """List of available answer choices (used only for multiple-choice evals)."""
+
+    choice_request: Optional[ChoiceRequest] = None
+    """Prepared structured decision request, when using a Choice model."""
 
     target: Union[str, List[str]] = ''
     """Ideal target output. May be a literal value or narrative text to be used by a model grader."""

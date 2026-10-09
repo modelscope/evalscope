@@ -87,6 +87,7 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
 @register_benchmark(
     BenchmarkMeta(
         name='ceval',
+        supports_choice=True,
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
         description="""
@@ -145,6 +146,10 @@ class CEVALAdapter(MultiChoiceAdapter):
             target=record['answer'],
             metadata={'id': record.get('id', ''), 'explanation': record.get('explanation', ''), 'subject': subset},
         )
+
+    def choice_context(self, sample: Sample) -> Dict[str, Any]:
+        """Preserve the Chinese subject name without exposing test explanations."""
+        return {'subject': SUBJECT_MAPPING[sample.metadata['subject']][1]}
 
     def sample_to_fewshot(self, sample: Sample) -> str:
         q_str = f"""问题：{sample.input}"""

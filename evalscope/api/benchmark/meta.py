@@ -27,6 +27,9 @@ class BenchmarkMeta:
     dataset_id: str
     """ Dataset id on modelscope or path to local dataset."""
 
+    dataset_hub: Optional[str] = None
+    """Optional per-benchmark hub, taking precedence over the task's default hub."""
+
     data_adapter: Optional[Type['DataAdapter']] = None
     """ Data adapter class for the benchmark."""
 
@@ -65,6 +68,12 @@ class BenchmarkMeta:
 
     system_prompt: Optional[str] = None
     """ System prompt to use for the benchmark."""
+
+    supports_choice: bool = False
+    """Whether the adapter has an audited text single-choice conversion."""
+
+    choice_instructions: Optional[str] = None
+    """Task instructions for structured Choice evaluation."""
 
     query_template: Optional[str] = None
     """ Query template to use for the benchmark."""
@@ -322,7 +331,7 @@ class BenchmarkMeta:
         """Update instance with provided arguments, maintaining backward compatibility."""
         args = copy.deepcopy(args)
 
-        protected_fields = {'evaluation_version', 'few_shot_mode', 'allowed_few_shot_nums'}
+        protected_fields = {'evaluation_version', 'few_shot_mode', 'allowed_few_shot_nums', 'supports_choice'}
         overridden_fields = protected_fields & args.keys()
         if overridden_fields:
             fields = ', '.join(sorted(overridden_fields))

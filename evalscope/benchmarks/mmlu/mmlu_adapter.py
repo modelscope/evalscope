@@ -73,6 +73,7 @@ SUBJECT_MAPPING = {
 @register_benchmark(
     BenchmarkMeta(
         name='mmlu',
+        supports_choice=True,
         pretty_name='MMLU',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description="""
