@@ -96,7 +96,9 @@ The `--generation-config` parameter supports the following options (comma-separa
 
 For the Native backend with the ModelScope source, omitting `dataset_id` uses the benchmark's built-in repository ID.
 If no processed EvalScope dataset cache is available, the loader first asks the ModelScope SDK for a downloaded snapshot
-without accessing the network. A cache hit loads the local files; a cache miss continues with remote loading.
+without accessing the network. A cache hit attempts local loading; a cache miss or missing data files/splits falls back
+to the ModelScope loader. Malformed existing data still raises an error rather than being treated as a cache miss.
+An explicit local path never falls back to remote loading.
 
 Set the same `MODELSCOPE_CACHE` before starting both the download and evaluation to reuse the dataset without constructing
 a snapshot path:

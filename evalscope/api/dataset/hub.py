@@ -110,9 +110,38 @@ def load_dataset_from_hub(
     cached_snapshot = None
     if data_source == HubType.MODELSCOPE and not force_redownload:
         cached_snapshot = _try_modelscope_cached_snapshot(data_id_or_path, revision=version)
-        if cached_snapshot:
-            data_id_or_path = cached_snapshot
-            data_source = HubType.LOCAL
+
+    if data_source in [HubType.HUGGINGFACE, HubType.LOCAL] or cached_snapshot:
+        local_path = cached_snapshot or data_id_or_path
+        # Hugging Face datasets may fail on local mirrors that contain a stale dataset_infos.json.
+        dataset_infos_path = os.path.join(local_path, 'dataset_infos.json')
+        if cached_snapshot is None and os.path.exists(dataset_infos_path):
+            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
+            os.remove(dataset_infos_path)
+
+        load_kwargs = dict(
+            path=local_path,
+            name=subset if subset != 'default' else None,
+            split=split,
+            revision=version,
+            download_mode=hf_download_mode,
+            **kwargs,
+        )
+        if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
+            load_kwargs['trust_remote_code'] = trust_remote
+        try:
+            return datasets.load_dataset(**load_kwargs)
+        except (FileNotFoundError, ValueError) as exc:
+            # datasets reports missing splits as ValueError rather than a dedicated exception.
+            missing_split = (str(exc).startswith('Unknown split "') and '. Should be one of ' in str(exc)) or (
+                str(exc).startswith('Bad split: ') and '. Available splits: ' in str(exc)
+            )
+            if not cached_snapshot or not (isinstance(exc, FileNotFoundError) or missing_split):
+                raise
+            logger.info(
+                f'Cached ModelScope dataset {data_id_or_path} cannot provide subset {subset}, split {split}: '
+                f'{exc}. Falling back to MsDataset.load.'
+            )
 
     if data_source == HubType.MODELSCOPE:
         from modelscope import MsDataset
@@ -133,25 +162,6 @@ def load_dataset_from_hub(
         if not isinstance(dataset, datasets.Dataset):
             dataset = dataset.to_hf_dataset()
         return dataset
-
-    if data_source in [HubType.HUGGINGFACE, HubType.LOCAL]:
-        # Hugging Face datasets may fail on local mirrors that contain a stale dataset_infos.json.
-        dataset_infos_path = os.path.join(data_id_or_path, 'dataset_infos.json')
-        if cached_snapshot is None and os.path.exists(dataset_infos_path):
-            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
-            os.remove(dataset_infos_path)
-
-        load_kwargs = dict(
-            path=data_id_or_path,
-            name=subset if subset != 'default' else None,
-            split=split,
-            revision=version,
-            download_mode=hf_download_mode,
-            **kwargs,
-        )
-        if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
-            load_kwargs['trust_remote_code'] = trust_remote
-        return datasets.load_dataset(**load_kwargs)
 
     raise ValueError(f'Unsupported dataset hub: {data_source}')
 

@@ -138,6 +138,7 @@ def test_modelscope_cached_data_errors_do_not_trigger_remote_loading(
 ) -> None:
     snapshot = tmp_path / 'snapshot'
     snapshot.mkdir()
+    (snapshot / 'test.jsonl').write_text('not valid JSON\n', encoding='utf-8')
 
     def cached_snapshot(**kwargs: Any) -> str:
         return str(snapshot)
@@ -147,8 +148,78 @@ def test_modelscope_cached_data_errors_do_not_trigger_remote_loading(
 
     _install_modelscope_loaders(monkeypatch, cached_snapshot, remote_load)
 
-    with pytest.raises(FileNotFoundError):
+    from datasets.exceptions import DatasetGenerationError
+
+    with pytest.raises(DatasetGenerationError):
         load_dataset_from_hub('owner/data', split='test')
+
+
+@pytest.mark.parametrize('cache_layout', ['snapshot', 'legacy'])
+@pytest.mark.parametrize('missing_content', ['readme_only', 'declared_file', 'split', 'sliced_split', 'streaming_split'])
+def test_modelscope_partial_split_cache_falls_back_to_remote_loading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, cache_layout: str, missing_content: str,
+) -> None:
+    pytest.importorskip('modelscope_hub')
+    import httpx
+    import requests
+    from modelscope.hub.snapshot_download import snapshot_download
+    from modelscope_hub import config as hub_config
+
+    cache_root = tmp_path / 'modelscope'
+    repository = 'owner--data/snapshots/master' if cache_layout == 'snapshot' else 'owner/data'
+    snapshot = cache_root / 'datasets' / repository
+    snapshot.mkdir(parents=True)
+    (snapshot / 'README.md').write_text('A partial dataset repository.', encoding='utf-8')
+    if missing_content != 'readme_only':
+        (snapshot / 'train.jsonl').write_text('{"text": "cached-train"}\n', encoding='utf-8')
+    if missing_content == 'declared_file':
+        (snapshot / 'README.md').write_text(
+            '---\nconfigs:\n- config_name: default\n  data_files:\n'
+            '  - split: train\n    path: train.jsonl\n  - split: test\n    path: absent.jsonl\n---\n',
+            encoding='utf-8',
+        )
+    monkeypatch.setenv('MODELSCOPE_CACHE', str(cache_root))
+    monkeypatch.setattr(hub_config, '_default_config', None)
+
+    def forbid_network(*args: Any, **kwargs: Any) -> Any:
+        pytest.fail('The cache probe and local split loading must not make HTTP requests')
+
+    requested_split = 'test[:1]' if missing_content == 'sliced_split' else 'test'
+    streaming_kwargs = {'streaming': True} if missing_content == 'streaming_split' else {}
+
+    def remote_load(**kwargs: Any) -> HFDataset:
+        assert kwargs == {
+            'dataset_name': 'owner/data', 'split': requested_split, 'subset_name': None,
+            'trust_remote_code': True, 'data_dir': '.', **streaming_kwargs,
+        }
+        return HFDataset.from_dict({'text': ['remote-test']})
+
+    monkeypatch.setattr(requests.sessions.Session, 'request', forbid_network)
+    monkeypatch.setattr(httpx.Client, 'request', forbid_network)
+    _install_modelscope_loaders(monkeypatch, snapshot_download, remote_load)
+
+    dataset = load_dataset_from_hub('owner/data', split=requested_split, data_dir='.', **streaming_kwargs)
+
+    assert dataset['text'] == ['remote-test']
+
+
+@pytest.mark.parametrize('source', [HubType.LOCAL, HubType.MODELSCOPE])
+def test_explicit_partial_local_dataset_does_not_fall_back_to_remote_loading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str,
+) -> None:
+    from datasets.data_files import EmptyDatasetError
+
+    snapshot = tmp_path / 'explicit'
+    snapshot.mkdir()
+    (snapshot / 'README.md').write_text('A partial local dataset.', encoding='utf-8')
+
+    def forbid_remote(*args: Any, **kwargs: Any) -> Any:
+        pytest.fail('An explicit local path must not fall back to a remote source')
+
+    _install_modelscope_loaders(monkeypatch, forbid_remote, forbid_remote)
+
+    with pytest.raises(EmptyDatasetError):
+        load_dataset_from_hub(str(snapshot), split='test', data_source=source)
 
 
 def test_modelscope_cached_snapshot_keeps_repository_metadata(
