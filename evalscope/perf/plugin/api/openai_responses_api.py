@@ -133,7 +133,7 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                                 else:
                                     output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
                                 generated_text += delta
-                            elif event_type == 'response.completed':
+                            elif event_type in ('response.completed', 'response.incomplete'):
                                 response_payload = payload.get('response', {})
                                 usage = response_usage_from_dict(response_payload)
                                 if usage is not None:
