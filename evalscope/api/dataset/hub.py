@@ -14,7 +14,34 @@ logger = get_logger()
 
 if TYPE_CHECKING:
     from datasets import Dataset as HFDataset
+    from datasets import DownloadConfig
     from datasets import IterableDataset as HFIterableDataset
+
+
+# These SDK controls have no equivalent local Hugging Face loading semantics.
+_MODELSCOPE_LOAD_OPTIONS = {
+    'namespace',
+    'target',
+    'hub',
+    'use_streaming',
+    'stream_batch_size',
+    'custom_cfg',
+    'dataset_info_only',
+    'download_mode',
+    'engine',
+}
+
+# Include legacy options so older datasets versions do not pass them to the builder.
+_HF_LOAD_ONLY_OPTIONS = {
+    'split',
+    'streaming',
+    'num_proc',
+    'keep_in_memory',
+    'save_infos',
+    'verification_mode',
+    'ignore_verifications',
+    'task',
+}
 
 
 @dataclass(frozen=True)
@@ -37,17 +64,92 @@ class DatasetHub:
         **kwargs: Any,
     ) -> 'Union[HFDataset, HFIterableDataset]':
         """Load a split, optionally using caller-owned storage for cached snapshot parsing."""
-        return load_dataset_from_hub(
-            data_id_or_path=self.data_id_or_path,
+        source = _resolve_data_source(self.data_id_or_path, self.data_source)
+        if source in (HubType.LOCAL, HubType.HUGGINGFACE):
+            return self._load_huggingface(self.data_id_or_path, split, subset, kwargs)
+        if source == HubType.MODELSCOPE:
+            return self._load_modelscope(split, subset, kwargs, _snapshot_cache_dir)
+        raise ValueError(f'Unsupported dataset hub: {source}')
+
+    def _load_huggingface(
+        self,
+        path: str,
+        split: str,
+        subset: str,
+        options: Mapping[str, Any],
+        *,
+        cached_snapshot: bool = False,
+        snapshot_cache_dir: Optional[Callable[[], str]] = None,
+    ) -> 'Union[HFDataset, HFIterableDataset]':
+        import datasets
+
+        # Explicit local mirrors retain the legacy metadata workaround; SDK snapshots remain untouched.
+        dataset_infos_path = os.path.join(path, 'dataset_infos.json')
+        if not cached_snapshot and os.path.exists(dataset_infos_path):
+            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
+            os.remove(dataset_infos_path)
+
+        load_kwargs = dict(
+            path=path,
+            name=subset if subset != 'default' else None,
             split=split,
-            subset=subset,
-            data_source=self.data_source,
-            version=self.revision,
-            trust_remote=self.trust_remote,
-            force_redownload=self.force_redownload,
-            _snapshot_cache_dir=_snapshot_cache_dir,
-            **kwargs,
+            revision=self.revision,
+            download_mode=datasets.DownloadMode.FORCE_REDOWNLOAD if self.force_redownload else None,
+            **options,
         )
+        if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
+            load_kwargs['trust_remote_code'] = self.trust_remote
+        if cached_snapshot:
+            load_kwargs = _prepare_cached_dataset_kwargs(load_kwargs, snapshot_cache_dir)
+        return datasets.load_dataset(**load_kwargs)
+
+    def _load_modelscope(
+        self,
+        split: str,
+        subset: str,
+        options: Mapping[str, Any],
+        snapshot_cache_dir: Optional[Callable[[], str]],
+    ) -> 'Union[HFDataset, HFIterableDataset]':
+        """Try the SDK snapshot, falling back only when cached files or splits are missing."""
+        import datasets
+
+        snapshot = None
+        if not self.force_redownload and not _MODELSCOPE_LOAD_OPTIONS.intersection(options):
+            snapshot = _try_modelscope_cached_snapshot(self.data_id_or_path, revision=self.revision)
+        if snapshot:
+            try:
+                return self._load_huggingface(
+                    snapshot,
+                    split,
+                    subset,
+                    options,
+                    cached_snapshot=True,
+                    snapshot_cache_dir=snapshot_cache_dir,
+                )
+            except (FileNotFoundError, ValueError) as exc:
+                if not _is_missing_cached_data(exc):
+                    raise
+                logger.info(
+                    f'Cached ModelScope dataset {self.data_id_or_path} cannot provide subset {subset}, '
+                    f'split {split}: {exc}. Falling back to MsDataset.load.'
+                )
+
+        from modelscope import MsDataset
+        from modelscope.utils.constant import DownloadMode
+
+        load_kwargs = dict(
+            dataset_name=self.data_id_or_path,
+            split=split,
+            subset_name=subset if subset != 'default' else None,
+            trust_remote_code=self.trust_remote,
+            **options,
+        )
+        if self.revision:
+            load_kwargs['version'] = self.revision
+        if self.force_redownload:
+            load_kwargs['download_mode'] = DownloadMode.FORCE_REDOWNLOAD
+        dataset = MsDataset.load(**load_kwargs)
+        return dataset if isinstance(dataset, datasets.Dataset) else dataset.to_hf_dataset()
 
     def download_file(self, file_path: str) -> str:
         return download_dataset_file(
@@ -138,18 +240,7 @@ def _prepare_cached_dataset_kwargs(
     """Resolve snapshot files for validation and a distinct Hugging Face cache identity."""
     import datasets
 
-    # Include legacy load options so older datasets versions do not forward them to the builder.
-    load_only_options = {
-        'split',
-        'streaming',
-        'num_proc',
-        'keep_in_memory',
-        'save_infos',
-        'verification_mode',
-        'ignore_verifications',
-        'task',
-    }
-    builder_kwargs = {key: value for key, value in load_kwargs.items() if key not in load_only_options}
+    builder_kwargs = {key: value for key, value in load_kwargs.items() if key not in _HF_LOAD_ONLY_OPTIONS}
     builder = datasets.load_dataset_builder(**builder_kwargs)
     prepared_kwargs = dict(load_kwargs)
     if not builder.config.data_files:
@@ -160,24 +251,28 @@ def _prepare_cached_dataset_kwargs(
     prepared_kwargs['data_files'] = builder.config.data_files
     # Script loaders may create resources inside their builder output directory.
     # Only standard file builders use temporary Arrow storage; explicit cache settings remain authoritative.
-    if (
-        snapshot_cache_dir is not None
-        and load_kwargs.get('cache_dir') is None
-        and type(builder).__module__.startswith('datasets.packaged_modules.')
-    ):
-        prepared_kwargs['cache_dir'] = snapshot_cache_dir()
-        download_config = deepcopy(load_kwargs.get('download_config')) or datasets.DownloadConfig(
-            num_proc=load_kwargs.get('num_proc'),
-            token=load_kwargs.get('token'),
-            storage_options=load_kwargs.get('storage_options') or {},
-            use_etag=False,
-        )
-        # Downloaded/extracted resources can be referenced by plain string columns.
-        # Keep their original persistent location; only prepared Arrow files are temporary.
-        if download_config.cache_dir is None:
-            download_config.cache_dir = str(datasets.config.DOWNLOADED_DATASETS_PATH)
-        prepared_kwargs['download_config'] = download_config
+    if snapshot_cache_dir is None or load_kwargs.get('cache_dir') is not None:
+        return prepared_kwargs
+    if not type(builder).__module__.startswith('datasets.packaged_modules.'):
+        return prepared_kwargs
+    prepared_kwargs['cache_dir'] = snapshot_cache_dir()
+    prepared_kwargs['download_config'] = _persistent_download_config(load_kwargs)
     return prepared_kwargs
+
+
+def _persistent_download_config(load_kwargs: Mapping[str, Any]) -> 'DownloadConfig':
+    """Keep downloaded resources outside temporary Arrow storage without mutating caller options."""
+    import datasets
+
+    config = deepcopy(load_kwargs.get('download_config')) or datasets.DownloadConfig(
+        num_proc=load_kwargs.get('num_proc'),
+        token=load_kwargs.get('token'),
+        storage_options=load_kwargs.get('storage_options') or {},
+        use_etag=False,
+    )
+    if config.cache_dir is None:
+        config.cache_dir = str(datasets.config.DOWNLOADED_DATASETS_PATH)
+    return config
 
 
 def _is_missing_cached_data(exc: Exception) -> bool:
@@ -204,78 +299,14 @@ def load_dataset_from_hub(
     **kwargs: Any,
 ) -> 'Union[HFDataset, HFIterableDataset]':
     """Load a dataset split from ModelScope, Hugging Face, or a local dataset path."""
-    import datasets
-    from datasets import DownloadMode as HFDownloadMode
-
-    data_source = _resolve_data_source(data_id_or_path, data_source)
-    hf_download_mode = None if not force_redownload else HFDownloadMode.FORCE_REDOWNLOAD
-    cached_snapshot = None
-    # Preserve SDK controls that do not have equivalent local Hugging Face semantics.
-    modelscope_options = {
-        'namespace',
-        'target',
-        'hub',
-        'use_streaming',
-        'stream_batch_size',
-        'custom_cfg',
-        'dataset_info_only',
-        'download_mode',
-        'engine',
-    }
-    if data_source == HubType.MODELSCOPE and not force_redownload and not modelscope_options.intersection(kwargs):
-        cached_snapshot = _try_modelscope_cached_snapshot(data_id_or_path, revision=version)
-
-    if data_source in [HubType.HUGGINGFACE, HubType.LOCAL] or cached_snapshot:
-        local_path = cached_snapshot or data_id_or_path
-        # Hugging Face datasets may fail on local mirrors that contain a stale dataset_infos.json.
-        dataset_infos_path = os.path.join(local_path, 'dataset_infos.json')
-        if cached_snapshot is None and os.path.exists(dataset_infos_path):
-            logger.info(f'Removing dataset_infos.json file at {dataset_infos_path} to avoid datasets errors.')
-            os.remove(dataset_infos_path)
-
-        load_kwargs = dict(
-            path=local_path,
-            name=subset if subset != 'default' else None,
-            split=split,
-            revision=version,
-            download_mode=hf_download_mode,
-            **kwargs,
-        )
-        if 'trust_remote_code' in inspect.signature(datasets.load_dataset).parameters:
-            load_kwargs['trust_remote_code'] = trust_remote
-        try:
-            if cached_snapshot:
-                load_kwargs = _prepare_cached_dataset_kwargs(load_kwargs, _snapshot_cache_dir)
-            return datasets.load_dataset(**load_kwargs)
-        except (FileNotFoundError, ValueError) as exc:
-            if not cached_snapshot or not _is_missing_cached_data(exc):
-                raise
-            logger.info(
-                f'Cached ModelScope dataset {data_id_or_path} cannot provide subset {subset}, split {split}: '
-                f'{exc}. Falling back to MsDataset.load.'
-            )
-
-    if data_source == HubType.MODELSCOPE:
-        from modelscope import MsDataset
-        from modelscope.utils.constant import DownloadMode as MSDownloadMode
-
-        load_kwargs = dict(
-            dataset_name=data_id_or_path,
-            split=split,
-            subset_name=subset if subset != 'default' else None,
-            trust_remote_code=trust_remote,
-            **kwargs,
-        )
-        if version:
-            load_kwargs['version'] = version
-        if force_redownload:
-            load_kwargs['download_mode'] = MSDownloadMode.FORCE_REDOWNLOAD
-        dataset = MsDataset.load(**load_kwargs)
-        if not isinstance(dataset, datasets.Dataset):
-            dataset = dataset.to_hf_dataset()
-        return dataset
-
-    raise ValueError(f'Unsupported dataset hub: {data_source}')
+    hub = DatasetHub(
+        data_id_or_path=data_id_or_path,
+        data_source=data_source,
+        revision=version,
+        trust_remote=trust_remote,
+        force_redownload=force_redownload,
+    )
+    return hub.load(split=split, subset=subset, _snapshot_cache_dir=_snapshot_cache_dir, **kwargs)
 
 
 def download_dataset_file(
