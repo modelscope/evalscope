@@ -14,15 +14,15 @@
 
 ## 主要特性
 
-- 公开数据集：Hugging Face 上的 `facebook/anli`
+- 公开数据集：ModelScope 上的 `facebook/anli`
 - 保留原始标签和完整的任务上下文
-- 支持聊天生成模型和文本 System One Choice 模型
+- 支持聊天生成模型和文本单选（System One Choice）模型
 
 ## 评估说明
 
-- 分别报告每轮的准确率以及样本加权的总体得分。测试解释不会作为模型输入。
-- 默认为 0-shot；若存在训练集，可配置训练示例
-- 系统提示将转换为选择题任务指令，不使用原生的聊天角色层级结构
+- 分别报告每轮的准确率以及样本加权的总体得分。测试解释（explanations）不会作为模型输入。
+- 默认使用 0-shot 设置；若存在训练集，可配置训练示例
+- 系统提示（System prompts）将转换为选择题任务指令，不采用原生的聊天角色层级结构
 - 评估语义版本：v1.0
 
 ## 属性
@@ -30,7 +30,7 @@
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `anli` |
-| **数据集ID** | [facebook/anli](https://huggingface.co/datasets/facebook/anli) |
+| **数据集ID** | [facebook/anli](https://modelscope.cn/datasets/facebook/anli/summary) |
 | **论文** | N/A |
 | **标签** | `MCQ` |
 | **指标** | `accuracy` |
@@ -62,7 +62,7 @@
 {
   "input": [
     {
-      "id": "07cbb889",
+      "id": "00a00842",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nPremise:\nErnest Jones is a British jeweller and watchma ... [TRUNCATED 261 chars] ... ones store was opened on the continent of Europe.\n\nA) Entailment: the hypothesis follows from the premise.\nB) Neutral: the premise does not determine whether the hypothesis is true.\nC) Contradiction: the hypothesis conflicts with the premise."
     }
   ],

@@ -14,7 +14,7 @@ Adversarial natural language inference over three independently collected rounds
 
 ## Key Features
 
-- Public dataset: `facebook/anli` on Hugging Face
+- Public dataset: `facebook/anli` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 
@@ -31,7 +31,7 @@ Adversarial natural language inference over three independently collected rounds
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `anli` |
-| **Dataset ID** | [facebook/anli](https://huggingface.co/datasets/facebook/anli) |
+| **Dataset ID** | [facebook/anli](https://modelscope.cn/datasets/facebook/anli/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ` |
 | **Metrics** | `accuracy` |
@@ -64,7 +64,7 @@ Adversarial natural language inference over three independently collected rounds
 {
   "input": [
     {
-      "id": "07cbb889",
+      "id": "00a00842",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nPremise:\nErnest Jones is a British jeweller and watchma ... [TRUNCATED 261 chars] ... ones store was opened on the continent of Europe.\n\nA) Entailment: the hypothesis follows from the premise.\nB) Neutral: the premise does not determine whether the hypothesis is true.\nC) Contradiction: the hypothesis conflicts with the premise."
     }
   ],

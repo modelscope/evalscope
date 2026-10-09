@@ -12,8 +12,8 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
     BenchmarkMeta(
         name='contract_nli',
         pretty_name='ContractNLI (classification)',
-        dataset_id='tasksource/contract-nli',
-        dataset_hub=HubType.HUGGINGFACE,
+        dataset_id='evalscope/contract-nli',
+        dataset_hub=HubType.MODELSCOPE,
         default_subset='contractnli_b',
         subset_list=['contractnli_b'],
         eval_split='test',
@@ -38,7 +38,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 
 ## Key Features
 
-- Public dataset: `tasksource/contract-nli` on Hugging Face
+- Public dataset: `evalscope/contract-nli` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 

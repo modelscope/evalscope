@@ -14,7 +14,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='reward_bench',
         pretty_name='RewardBench v1 (pairwise)',
         dataset_id='allenai/reward-bench',
-        dataset_hub=HubType.HUGGINGFACE,
+        dataset_hub=HubType.MODELSCOPE,
         default_subset='default',
         subset_list=[
             'alpacaeval-easy',
@@ -63,7 +63,7 @@ Pairwise answer preference evaluation using RewardBench v1 human and reference p
 
 ## Key Features
 
-- Public dataset: `allenai/reward-bench` on Hugging Face
+- Public dataset: `allenai/reward-bench` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 

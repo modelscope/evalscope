@@ -14,7 +14,7 @@ Pairwise answer preference evaluation using RewardBench v1 human and reference p
 
 ## Key Features
 
-- Public dataset: `allenai/reward-bench` on Hugging Face
+- Public dataset: `allenai/reward-bench` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 
@@ -31,7 +31,7 @@ Pairwise answer preference evaluation using RewardBench v1 human and reference p
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `reward_bench` |
-| **Dataset ID** | [allenai/reward-bench](https://huggingface.co/datasets/allenai/reward-bench) |
+| **Dataset ID** | [allenai/reward-bench](https://modelscope.cn/datasets/allenai/reward-bench/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ` |
 | **Metrics** | `accuracy` |
@@ -83,7 +83,7 @@ Pairwise answer preference evaluation using RewardBench v1 human and reference p
 {
   "input": [
     {
-      "id": "09bc0656",
+      "id": "f1d88d83",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nUser prompt:\nHow do I detail a car?\n\nA) Detailing a car i ... [TRUNCATED 2984 chars] ... acuuming, cleaning the upholstery and air vents, polishing the dashboard and console, and dusting. Polishing and waxing the exterior will depend on the condition of the paint, but typically involves applying a polish and wax to make it shine."
     }
   ],

@@ -14,7 +14,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 
 ## Key Features
 
-- Public dataset: `tasksource/contract-nli` on Hugging Face
+- Public dataset: `evalscope/contract-nli` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 
@@ -31,7 +31,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `contract_nli` |
-| **Dataset ID** | [tasksource/contract-nli](https://huggingface.co/datasets/tasksource/contract-nli) |
+| **Dataset ID** | [evalscope/contract-nli](https://modelscope.cn/datasets/evalscope/contract-nli/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ` |
 | **Metrics** | `accuracy` |
@@ -56,7 +56,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 {
   "input": [
     {
-      "id": "499ba6f1",
+      "id": "21deb5eb",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nContract:\nNON-DISCLOSURE AGREEMENT\nRequired under JEA's ... [TRUNCATED 16664 chars] ... body Disclosing Party's Confidential Information.\n\nA) Contradiction: the contract contradicts the hypothesis.\nB) Entailment: the contract supports the hypothesis.\nC) Not mentioned: the contract neither supports nor contradicts the hypothesis."
     }
   ],

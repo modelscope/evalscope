@@ -12,7 +12,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='anli',
         pretty_name='ANLI',
         dataset_id='facebook/anli',
-        dataset_hub=HubType.HUGGINGFACE,
+        dataset_hub=HubType.MODELSCOPE,
         default_subset='plain_text',
         subset_list=['r1', 'r2', 'r3'],
         eval_split='test',
@@ -37,7 +37,7 @@ Adversarial natural language inference over three independently collected rounds
 
 ## Key Features
 
-- Public dataset: `facebook/anli` on Hugging Face
+- Public dataset: `facebook/anli` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 

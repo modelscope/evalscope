@@ -93,7 +93,7 @@ INTENT_LABELS = [
         name='banking77',
         pretty_name='BANKING77',
         dataset_id='mteb/banking77',
-        dataset_hub=HubType.HUGGINGFACE,
+        dataset_hub=HubType.MODELSCOPE,
         default_subset='default',
         subset_list=['default'],
         eval_split='test',
@@ -118,7 +118,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 
 ## Key Features
 
-- Public dataset: `mteb/banking77` on Hugging Face
+- Public dataset: `mteb/banking77` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 

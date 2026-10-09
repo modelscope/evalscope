@@ -14,7 +14,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 
 ## Key Features
 
-- Public dataset: `mteb/banking77` on Hugging Face
+- Public dataset: `mteb/banking77` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 
@@ -31,7 +31,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `banking77` |
-| **Dataset ID** | [mteb/banking77](https://huggingface.co/datasets/mteb/banking77) |
+| **Dataset ID** | [mteb/banking77](https://modelscope.cn/datasets/mteb/banking77/summary) |
 | **Paper** | N/A |
 | **Tags** | `MCQ` |
 | **Metrics** | `accuracy` |
@@ -56,7 +56,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 {
   "input": [
     {
-      "id": "627e7aaf",
+      "id": "59e429c3",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\n44) verify my identity\n45) verify source of funds\n46) verify top up\n47) virtual card not working\n48) visa or mastercard\n49) why verify identity\n50) wrong amount of cash received\n51) wrong exchange rate for cash withdrawal"
     }
   ],

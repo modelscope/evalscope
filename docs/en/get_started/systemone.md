@@ -49,7 +49,7 @@ The API base URL must end in `/v1`; requests append `/systemone`. Bailian also s
 - ContractNLI uses full-document `contractnli_b`, evaluating classification only, without evidence extraction.
 - RewardBench uses v1 filtered pairs with deterministic position shuffling. Overall accuracy is weighted by sample count, not the official category-weighted leaderboard score.
 
-The five new benchmarks default to Hugging Face. Their `dataset_args.dataset_hub`, `local_path` and `dataset_revision` settings control the source. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
+The five new benchmarks default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
 
 ## Results and reproducibility
 

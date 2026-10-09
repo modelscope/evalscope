@@ -12,7 +12,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='boolq',
         pretty_name='BoolQ',
         dataset_id='google/boolq',
-        dataset_hub=HubType.HUGGINGFACE,
+        dataset_hub=HubType.MODELSCOPE,
         default_subset='default',
         subset_list=['default'],
         eval_split='validation',
@@ -37,7 +37,7 @@ Binary reading comprehension using a passage and a naturally occurring question.
 
 ## Key Features
 
-- Public dataset: `google/boolq` on Hugging Face
+- Public dataset: `google/boolq` on ModelScope
 - Preserves the source labels and complete task context
 - Supports chat generation and text System One Choice models
 

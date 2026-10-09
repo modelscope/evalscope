@@ -49,7 +49,7 @@ run_task(TaskConfig(
 - ContractNLI 使用完整合同的 `contractnli_b`，仅评三分类，不评证据定位。
 - RewardBench 使用 v1 filtered 数据，确定性打乱回答位置。总体分数是样本加权 accuracy，不是官方类别加权榜单分数。
 
-新增的五个 benchmark 默认从 Hugging Face 下载；可通过各自的 `dataset_args.dataset_hub`、`local_path` 和 `dataset_revision` 配置数据源。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
+新增的五个 benchmark 均默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
 
 ## 结果与复现
 

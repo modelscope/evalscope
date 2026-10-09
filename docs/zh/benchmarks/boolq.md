@@ -3,40 +3,42 @@
 
 ## 概述
 
-基于一段文本和一个自然出现的问题进行二元阅读理解。
+基于段落和自然出现的问题进行二元阅读理解。
 
 ## 任务描述
 
 - **任务类型**：单选分类
-- **输入**：一段文本和一个是/否问题
+- **输入**：段落和是非问题
 - **输出**：是 或 否
 - **领域**：英文阅读理解
 
 ## 主要特性
 
-- 公开数据集：Hugging Face 上的 `google/boolq`
+- 公开数据集：ModelScope 上的 `google/boolq`
 - 保留原始标签和完整的任务上下文
-- 支持聊天生成和文本 System One Choice 模型
+- 支持聊天生成模型和文本 System One Choice 模型
 
 ## 评估说明
 
-- 默认使用公开的验证集标签，零样本（zero-shot）设置。System One 评估的是二选一的 Choice 任务，而非某些 Jev 研究中使用的 Noul 协议。
-- 默认为 0-shot；如果存在训练集，可配置训练示例
-- 系统提示将转换为 Choice 任务指令，不采用原生的聊天角色层级结构
+- 默认使用公开验证集标签进行零样本（zero-shot）评估。System One 评估的是二选一选择题，而非某些 Jev 研究中使用的 Noul 协议。
+- 默认为 0-shot；若存在训练集，可配置训练示例
+- 系统提示被转换为选择题任务指令，不采用原生的聊天角色层级结构
 - 评估语义版本：v1.0
+
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `boolq` |
-| **数据集ID** | [google/boolq](https://huggingface.co/datasets/google/boolq) |
-| **论文** | N/A |
+| **数据集ID** | [google/boolq](https://modelscope.cn/datasets/google/boolq/summary) |
+| **论文** | 无 |
 | **标签** | `MCQ` |
 | **指标** | `accuracy` |
 | **默认样本数** | 0-shot |
 | **评估划分** | `validation` |
 | **训练划分** | `train` |
+
 
 ## 数据统计
 
@@ -54,7 +56,7 @@
 {
   "input": [
     {
-      "id": "30283ebc",
+      "id": "b1babc15",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nPassage:\nAll biomass goes through at least some of these  ... [TRUNCATED 1152 chars] ... versity of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline.\n\nQuestion: does ethanol take more energy make that produces\n\nA) Yes\nB) No"
     }
   ],
