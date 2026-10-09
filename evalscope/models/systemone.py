@@ -1,7 +1,9 @@
 """System One transport for text single-choice decision models."""
 
+import os
 import time
 from typing import Any, List, Optional
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -27,6 +29,16 @@ class SystemOneAPI(ModelAPI):
         if kwargs:
             raise ValueError(f'Unsupported System One model_args: {", ".join(sorted(kwargs))}.')
         self.validate_config(config)
+        if api_key in (None, '', 'EMPTY'):
+            endpoint_url = urlsplit(base_url)
+            api_key = (
+                os.getenv('TYPESAFE_API_KEY')
+                if endpoint_url.scheme == 'https' and endpoint_url.hostname == 'api.typesafe.ai'
+                else None
+            )
+            if api_key in ('', 'EMPTY'):
+                api_key = None
+        self.api_key = api_key
         headers = {'Authorization': f'Bearer {api_key}'} if api_key else {}
         self.client = httpx.Client(headers=headers, follow_redirects=False)
         self.endpoint = base_url.rstrip('/') + '/systemone'

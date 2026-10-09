@@ -30,6 +30,25 @@ run_task(TaskConfig(
 
 `api_url` 必须以 `/v1` 结尾，实际请求追加 `/systemone`。百炼也可使用业务空间的域名；以当前[百炼 API 文档](https://help.aliyun.com/zh/model-studio/decision-model-api)为准。TypeSafe Jev 使用相同评测类型，配置其 API 基地址、API key 和固定模型版本。
 
+## TypeSafe Jev 示例
+
+在环境中设置 `TYPESAFE_API_KEY` 后运行：
+
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='jev-1.13.0',
+    eval_type='systemone_api',
+    api_url='https://api.typesafe.ai/v1',
+    datasets=['boolq'],
+    limit=2,
+    eval_batch_size=1,
+))
+```
+
+显式 `api_key` 优先。未指定、设置为 `None`、空字符串或默认占位值 `EMPTY` 时，仅对官方 HTTPS 域名 `api.typesafe.ai` 读取 `TYPESAFE_API_KEY`。百炼和自定义服务地址仍需显式配置 key，TypeSafe 环境 key 不会转发给它们。参见 [TypeSafe API 文档](https://docs.typesafe.ai/api)。
+
 ## 提示词与示例
 
 - `system_prompt` 合并到任务指令，协议没有原生 system 消息角色及其优先级。

@@ -30,6 +30,25 @@ run_task(TaskConfig(
 
 The API base URL must end in `/v1`; requests append `/systemone`. Bailian also supports workspace domains; consult its current [API documentation](https://help.aliyun.com/zh/model-studio/decision-model-api). TypeSafe Jev uses the same evaluation type with its own API base URL, key and pinned model version.
 
+## TypeSafe Jev example
+
+Set `TYPESAFE_API_KEY` in the environment, then run:
+
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='jev-1.13.0',
+    eval_type='systemone_api',
+    api_url='https://api.typesafe.ai/v1',
+    datasets=['boolq'],
+    limit=2,
+    eval_batch_size=1,
+))
+```
+
+An explicit `api_key` takes precedence. When it is omitted, `None`, empty or the default placeholder `EMPTY`, the adapter reads `TYPESAFE_API_KEY` only for the official HTTPS host `api.typesafe.ai`. Bailian and custom endpoints require an explicit key; the TypeSafe environment key is not forwarded to them. See the [TypeSafe API reference](https://docs.typesafe.ai/api).
+
 ## Instructions and demonstrations
 
 - `system_prompt` becomes part of the task instructions. System One has no native system message role or chat-role priority.

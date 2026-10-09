@@ -13,7 +13,7 @@ from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.evaluator.cache import CacheManager, ModelResult
 from evalscope.api.model import ChoiceQuestion, ChoiceRequest, ChoiceResult, GenerateConfig, ModelOutput
-from evalscope.api.model.model import ModelCache
+from evalscope.api.model.model import ModelCache, get_model_with_task_config
 from evalscope.api.registry import get_benchmark
 from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchmark_identity
 from evalscope.models.systemone import SystemOneAPI
@@ -39,6 +39,71 @@ def response(payload: dict, choice: str | None = None) -> dict:
         'usage': {'input_tokens': 12},
         'latency_ms': 42,
     }
+
+
+@pytest.mark.parametrize('credentials,expected_key', [
+    ({}, 'typesafe-fixture'),
+    ({'api_key': None}, 'typesafe-fixture'),
+    ({'api_key': ''}, 'typesafe-fixture'),
+    ({'api_key': 'EMPTY'}, 'typesafe-fixture'),
+    ({'api_key': 'explicit-fixture'}, 'explicit-fixture'),
+])
+def test_typesafe_authentication_from_task_config(
+    credentials: dict, expected_key: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv('TYPESAFE_API_KEY', 'typesafe-fixture')
+    monkeypatch.setattr(ModelCache, '_models', {})
+    seen = []
+
+    def handle(req: httpx.Request) -> httpx.Response:
+        seen.append(req.headers.get('Authorization'))
+        assert str(req.url) == 'https://api.typesafe.ai/v1/systemone'
+        return httpx.Response(200, json=response(json.loads(req.content)))
+
+    original = httpx.Client
+    monkeypatch.setattr(httpx, 'Client', lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
+    config = TaskConfig(model='jev-1.13.0', eval_type='systemone_api', api_url='https://api.typesafe.ai/v1',
+                        **credentials)
+    model = get_model_with_task_config(config)
+    try:
+        output = model.generate_choice(request(), GenerateConfig(retries=1))
+        assert seen == [f'Bearer {expected_key}']
+        assert model.api.api_key == expected_key
+        assert expected_key not in output.model_dump_json()
+    finally:
+        model.api.client.close()
+
+
+@pytest.mark.parametrize('env_key', [None, '', 'EMPTY'])
+def test_missing_typesafe_key_does_not_send_placeholder(env_key: str | None, monkeypatch: pytest.MonkeyPatch) -> None:
+    if env_key is None:
+        monkeypatch.delenv('TYPESAFE_API_KEY', raising=False)
+    else:
+        monkeypatch.setenv('TYPESAFE_API_KEY', env_key)
+    provider = SystemOneAPI('test', 'https://api.typesafe.ai/v1', api_key='EMPTY')
+    try:
+        assert 'Authorization' not in provider.client.headers
+        assert provider.api_key is None
+    finally:
+        provider.client.close()
+
+
+@pytest.mark.parametrize('base_url', [
+    'https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1',
+    'https://example.test/v1',
+    'https://api.typesafe.ai.example.test/v1',
+    'http://api.typesafe.ai/v1',
+])
+def test_typesafe_environment_key_is_scoped_to_official_endpoint(
+    base_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv('TYPESAFE_API_KEY', 'typesafe-fixture')
+    provider = SystemOneAPI('test', base_url, api_key='EMPTY')
+    try:
+        assert 'Authorization' not in provider.client.headers
+        assert provider.api_key is None
+    finally:
+        provider.client.close()
 
 
 @pytest.mark.parametrize('options', [2, 4, 10, 77, 255])
