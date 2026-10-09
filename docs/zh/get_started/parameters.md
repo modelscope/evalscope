@@ -92,39 +92,6 @@
 | `--repeats` | `int` | 重复推理一个样例多次 | `1` |
 | `--dataset-args` | `str` | 数据集配置参数（JSON字符串），详见下表 | `{}` |
 
-### 复用 ModelScope 本地数据集
-
-Native 后端使用 ModelScope 数据源时，未指定 `dataset_id` 会使用基准内置的仓库 ID。
-若没有命中 EvalScope 已处理的数据缓存，加载器会先通过 ModelScope SDK 离线查询已下载的仓库快照；
-快照命中后尝试加载本地文件；若缓存未命中，或缺少所需数据文件或切分，则回退到 ModelScope 加载。
-已有数据文件损坏或格式错误时仍会报错，不会作为缓存缺失处理。显式提供本地路径时不会回退。
-
-在下载和评测启动前设置相同的 `MODELSCOPE_CACHE`，即可复用该目录中的数据集，无需拼接快照路径：
-
-```bash
-export MODELSCOPE_CACHE=/mnt/workspace/.cache/modelscope
-modelscope download --dataset AI-ModelScope/gsm8k
-evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
-```
-
-缓存目录结构由所安装的 ModelScope SDK 解析，支持其识别的新旧布局。
-显式提供本地 `dataset_id` 时仍优先使用该路径。
-设置 `force_redownload: true` 会跳过本地快照探测；设置 `dataset_revision` 时仅复用能够确认版本匹配的快照，
-不复用无法确认版本的旧式缓存。快照中的文件仍须满足基准的数据格式、子集和切分要求。
-带有分片编号和总数的文件须包含全部编号，缺少分片时回退到 ModelScope 加载；显式指定的 `data_files` 保持原有选择。
-离线查询无法推断任意通配符集合中尚未下载的文件，因此请预先下载完整的数据集快照。
-
-对于标准文件格式的快照，Native 加载在 test 和 few-shot 切分之间共享 Hugging Face 临时解析目录，
-数据加载完成后清理该目录。长期保留 ModelScope 原始快照和 EvalScope 已处理的切分缓存，
-不再新增第三份永久 Arrow 数据。切分缓存先保存、验证再发布；强制刷新失败时保留旧缓存。
-转换期间仍会短暂同时存在两份 Arrow。下载、解压的资源保留其持久化下载缓存，避免已保存的文件路径失效。
-显式配置的 Hugging Face `cache_dir` 和脚本型加载器保持原有缓存行为。
-`target`、`use_streaming` 等 ModelScope 专用参数，以及显式提供的 SDK `download_mode`，
-继续使用原 SDK 加载路径及其网络依赖，不会转交给本地 HF builder。
-发布过程中断后，下次加载在持有切分锁时检查备份：若新缓存尚未发布则恢复旧缓存；
-若新缓存已经发布则先验证其可读性，再清理备份。恢复时同时清理该切分未完成的写入目录，
-已处理数据的缓存格式和缓存键保持不变。
-
 ### dataset-args 配置项
 
 `--dataset-args` 为JSON字符串，每个数据集可配置以下参数：

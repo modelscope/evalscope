@@ -92,43 +92,6 @@ The `--generation-config` parameter supports the following options (comma-separa
 | `--repeats` | `int` | Number of times to repeat inference on the same sample | `1` |
 | `--dataset-args` | `str` | Dataset configuration parameters (JSON string), see table below | `{}` |
 
-### Reusing local ModelScope datasets
-
-For the Native backend with the ModelScope source, omitting `dataset_id` uses the benchmark's built-in repository ID.
-If no processed EvalScope dataset cache is available, the loader first asks the ModelScope SDK for a downloaded snapshot
-without accessing the network. A cache hit attempts local loading; a cache miss or missing data files/splits falls back
-to the ModelScope loader. Malformed existing data still raises an error rather than being treated as a cache miss.
-An explicit local path never falls back to remote loading.
-
-Set the same `MODELSCOPE_CACHE` before starting both the download and evaluation to reuse the dataset without constructing
-a snapshot path:
-
-```bash
-export MODELSCOPE_CACHE=/mnt/workspace/.cache/modelscope
-modelscope download --dataset AI-ModelScope/gsm8k
-evalscope eval --model Qwen/Qwen2.5-0.5B-Instruct --datasets gsm8k --limit 5
-```
-
-The installed ModelScope SDK resolves the cache layout, including supported legacy layouts.
-An explicit local `dataset_id` takes precedence. Setting `force_redownload: true` skips the offline snapshot probe.
-With `dataset_revision`, only snapshots with a verified matching revision are reused; unversioned legacy caches are skipped.
-The cached files must still satisfy the benchmark's data format, subset, and split requirements.
-Numbered shards must include every index declared by their filenames; missing shards fall back to the ModelScope loader.
-Explicit `data_files` selections are preserved. Offline lookup cannot infer missing files in arbitrary wildcard sets,
-so pre-download a complete dataset snapshot.
-
-For standard file-based snapshots, Native loading shares a temporary Hugging Face parsing directory across test and
-few-shot splits, then removes it after loading. The ModelScope raw snapshot and the processed EvalScope split caches
-remain; a third permanent Arrow copy is not created. Dataset caches are saved and validated before publication, and
-failed forced refreshes preserve the previous cache. Conversion still temporarily needs both Arrow copies.
-Downloaded/extracted resources retain their persistent download cache so stored file paths remain usable.
-An explicitly configured Hugging Face `cache_dir` and script-based loaders retain their existing cache behavior.
-ModelScope-specific controls (such as `target` and `use_streaming`) and an explicit SDK `download_mode` keep the
-original SDK loading path, including its network requirements. They are not forwarded to a local HF builder.
-If publication is interrupted, the next load checks the split's backup under its lock: it restores the previous cache
-if the new cache was not published, or validates the published cache before removing the backup. Unfinished split
-write directories are cleaned up during recovery; the processed dataset format and cache keys remain unchanged.
-
 ### dataset-args Configuration Options
 
 `--dataset-args` is a JSON string; each dataset can be configured with the following parameters:
