@@ -209,6 +209,7 @@ class OCRBenchV2Adapter(VisionLanguageAdapter):
                     s = subset_dict[name]
                     if s.num > 0:
                         s.name = name  # Ensure the name is set correctly
+                        s.is_aggregate = True
                         dummy_subsets.append(s)
 
             if dummy_subsets:
