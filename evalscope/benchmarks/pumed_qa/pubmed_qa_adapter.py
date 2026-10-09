@@ -43,6 +43,7 @@ PubMedQA is a biomedical question answering dataset designed to evaluate models'
 @register_benchmark(
     BenchmarkMeta(
         name='pubmedqa',
+        evaluation_version='v1.1',
         pretty_name='PubMedQA',
         tags=[Tags.KNOWLEDGE, Tags.YES_NO],
         description=DESCRIPTION.strip(),
@@ -104,9 +105,12 @@ class PubMedQAAdapter(DefaultDataAdapter):
             maybe_count = 0
             total_count = len(scores)
             correct_count = 0
+            actual_counts = dict.fromkeys(confusion_matrix, 0)
 
             for ss in scores:
                 gt = ss.sample_metadata['answer'].strip().upper()
+                if gt in actual_counts:
+                    actual_counts[gt] += 1
 
                 if ss.score.main_value == 1:
                     correct_count += 1
@@ -148,8 +152,8 @@ class PubMedQAAdapter(DefaultDataAdapter):
                 # Calculate predicted positives (column sum)
                 pred_pos = sum(confusion_matrix[true_cls][cls] for true_cls in classes)
 
-                # Calculate actual positives (row sum)
-                act_pos = sum(confusion_matrix[cls][pred_cls] for pred_cls in classes)
+                # Unrecognized answers are false negatives, even without a predicted class.
+                act_pos = actual_counts[cls]
 
                 # Calculate precision and recall for this class
                 cls_precision = tp / pred_pos if pred_pos > 0 else 0.0
