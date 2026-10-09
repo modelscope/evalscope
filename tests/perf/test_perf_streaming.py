@@ -285,6 +285,45 @@ class TestDefaultApiPluginMetrics(unittest.IsolatedAsyncioTestCase):
 class TestOpenAIResponsesPluginStreaming(unittest.IsolatedAsyncioTestCase):
     """Streaming tests for the OpenAI Responses API plugin."""
 
+    async def test_control_events_do_not_shorten_output_intervals(self) -> None:
+        events = [
+            {'type': 'response.created', 'response': {'id': 'resp_test'}},
+            {'type': 'response.reasoning_summary_text.delta', 'delta': 'Think'},
+            {'type': 'response.reasoning_summary_text.done', 'text': 'Think'},
+            {'type': 'response.output_item.added', 'item': {'type': 'message'}},
+            {'type': 'response.output_text.delta', 'delta': 'Answer'},
+            {'type': 'response.output_text.delta', 'delta': ''},
+            {'type': 'response.output_text.delta', 'delta': '.'},
+            {'type': 'response.completed', 'response': {'usage': {'input_tokens': 5, 'output_tokens': 3}}},
+        ]
+        stream = ''.join(f'data: {json.dumps(event)}\n\n' for event in events)
+
+        async def iter_chunks() -> AsyncIterator[bytes]:
+            yield stream.encode()
+
+        response = MagicMock()
+        response.status = 200
+        response.headers = {'Content-Type': 'text/event-stream'}
+        response.content.iter_any.return_value = iter_chunks()
+        response.__aenter__.return_value = response
+        client_session = MagicMock()
+        client_session.post.return_value = response
+
+        plugin = OpenAIResponsesPlugin(Arguments(model='test-model', api='openai_responses'))
+        timestamps = [0.0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.7, 0.9, 1.0]
+        with patch('evalscope.perf.plugin.api.openai_responses_api.time.perf_counter', side_effect=timestamps):
+            output = await plugin.process_request(client_session, 'http://localhost/v1/responses', {}, {})
+
+        self.assertTrue(output.success)
+        self.assertAlmostEqual(output.first_chunk_latency, 0.2)
+        self.assertEqual(len(output.inter_chunk_latency), 2)
+        self.assertAlmostEqual(output.inter_chunk_latency[0], 0.4)
+        self.assertAlmostEqual(output.inter_chunk_latency[1], 0.3)
+        self.assertAlmostEqual(output.query_latency, 1.0)
+        self.assertEqual(output.generated_text, 'ThinkAnswer.')
+        self.assertEqual((output.prompt_tokens, output.completion_tokens), (5, 3))
+        self.assertEqual(output.response_messages, events)
+
     async def test_non_json_terminator_is_skipped(self) -> None:
         events = [
             {'type': 'response.output_text.delta', 'delta': 'Hello '},
