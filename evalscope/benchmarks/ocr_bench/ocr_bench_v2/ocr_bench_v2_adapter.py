@@ -86,6 +86,7 @@ OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comp
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class OCRBenchV2Adapter(VisionLanguageAdapter):
