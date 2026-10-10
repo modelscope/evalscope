@@ -80,12 +80,12 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
         data = json.dumps(body, ensure_ascii=False)
 
         output = BenchmarkData()
-        ttft = 0.0
         generated_text = ''
         st = time.perf_counter()
         output.start_time = st
         output.request = data
         most_recent_timestamp = st
+        last_output_timestamp: float | None = None
         try:
             async with client_session.post(url=url, data=data, headers=headers) as response:
                 content_type = response.headers.get('Content-Type', '')
@@ -127,11 +127,11 @@ class OpenAIResponsesPlugin(DefaultApiPlugin):
                             event_type = payload.get('type')
                             delta = payload.get('delta') or ''
                             if event_type in _DELTA_EVENT_TYPES and delta:
-                                if ttft == 0.0:
-                                    ttft = timestamp - st
-                                    output.first_chunk_latency = ttft
+                                if last_output_timestamp is None:
+                                    output.first_chunk_latency = timestamp - st
                                 else:
-                                    output.inter_chunk_latency.append(timestamp - most_recent_timestamp)
+                                    output.inter_chunk_latency.append(timestamp - last_output_timestamp)
+                                last_output_timestamp = timestamp
                                 generated_text += delta
                             elif event_type == 'response.completed':
                                 response_payload = payload.get('response', {})
