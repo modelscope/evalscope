@@ -2,8 +2,7 @@ from typing import Any, Dict, List
 
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
-from evalscope.api.messages import ChatMessageUser
-from evalscope.api.model.choice import CHOICE_PROTOCOL_VERSION, ChoiceQuestion, ChoiceRequest
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
     MultipleChoiceTemplate,
@@ -57,23 +56,37 @@ class MultiChoiceAdapter(DefaultDataAdapter):
             raise ValueError(f'{self.name} has fewer examples than few_shot_num={self.few_shot_num}.')
         return [self.sample_to_fewshot(example) for example in examples[: self.few_shot_num]]
 
-    def build_choice_request(self, sample: Sample, subset: str) -> ChoiceRequest:
-        """Convert a raw text sample before generation prompt formatting changes its input."""
+    def build_systemone_messages(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        """Prepare chat messages with the MCQ data needed by the System One provider."""
         if not isinstance(sample.input, str) or sample.tools:
             raise ValueError('System One Choice requires raw text input without tools.')
         criteria = {answer_character(i): value for i, value in enumerate(sample.choices or [])}
         target = Target(sample.target)
-        if len(target) != 1 or target.single() not in criteria:
-            raise ValueError('System One Choice requires one target matching a candidate label.')
+        if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
+            raise ValueError('System One Choice requires 2-255 options and one matching target label.')
         instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
-        if self.system_prompt:
-            instructions = self.system_prompt + '\n\n' + instructions
         state = {'question': sample.input, **self.choice_context(sample)}
         examples = self.choice_examples(subset)
         if examples:
             state['examples'] = examples
             instructions += '\nUse `examples` as demonstrations of the task.'
-        return ChoiceRequest(state=state, question=ChoiceQuestion(instructions=instructions, criteria=criteria))
+        messages: List[ChatMessage] = []
+        if self.system_prompt:
+            messages.append(ChatMessageSystem(content=self.system_prompt))
+        messages.append(
+            ChatMessageUser(
+                content=f'{sample.input}\n\n{answer_options(sample.choices or [])}',
+                internal={
+                    'systemone': {
+                        'state': state,
+                        'instructions': instructions,
+                        'criteria': criteria,
+                        'answer_prefix': '答案：' if '答案：' in (self.prompt_template or '') else 'ANSWER: ',
+                    }
+                },
+            )
+        )
+        return messages
 
     def _post_process_samples(self) -> None:
         if self._task_config is None or self.eval_type != 'systemone_api':
@@ -81,10 +94,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
             return
         for subset, dataset in self.test_dataset.items():
             for sample in dataset:
-                sample.choice_request = self.build_choice_request(sample, subset)
-                sample.metadata['choice_protocol'] = CHOICE_PROTOCOL_VERSION
-                sample.metadata['choice_few_shot_num'] = self.few_shot_num
-                sample.input = [ChatMessageUser(content=f'{sample.input}\n\n{answer_options(sample.choices or [])}')]
+                sample.input = self.build_systemone_messages(sample, subset)
 
     def format_prompt_template(self, sample: Sample) -> str:
         """

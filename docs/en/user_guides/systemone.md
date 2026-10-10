@@ -72,9 +72,11 @@ The five new benchmarks default to ModelScope. ContractNLI uses the `contractnli
 
 ## Results and reproducibility
 
-Prediction JSONL files retain labels, probabilities and provider confidence in `model_output.choice_result`. The complete request and response are stored in `model_output.metadata`. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization.
+System One uses the existing `Model.generate(messages)` entry point. MCQ adapters attach conversion data such as the original question, candidates and demonstrations to the existing `ChatMessage.internal` field. `SystemOneAPI.generate()` converts these messages into the protocol request. No additional sample or model-output fields are needed; arbitrary chat text without MCQ conversion data cannot be converted directly.
 
-Message records display the question and options. The instructions, context and demonstrations actually sent to the provider are recorded in `model_output.metadata.choice_request`.
+Returned labels are rendered in the benchmark's existing answer format, such as `ANSWER: A`, `答案：A` or `ANSWER: 51`, and then use the existing answer extraction, scoring, cache and report flow.
+
+Prediction JSONL files retain raw labels, probabilities and provider confidence in `model_output.metadata.choice_response.answers.answer`; `choice_request` retains the complete actual request. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization. Message text displays the question and options; system messages and `internal` retain the instructions, context and demonstrations needed for conversion.
 
 Configurations and original requests retain Choice instructions and few-shot settings. Execution statistics distinguish successes, failures and incomplete runs. Invalid responses terminate a run by default; with `ignore_errors=True`, failed samples are excluded and their coverage is reported.
 

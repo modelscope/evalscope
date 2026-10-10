@@ -11,7 +11,6 @@ from evalscope.api.tool import ToolChoice, ToolFunction, ToolInfo
 from evalscope.utils import get_logger, get_secret_value
 from evalscope.utils.function_utils import thread_safe
 
-from .choice import ChoiceRequest
 from .generate_config import GenerateConfig
 from .model_output import ModelOutput
 
@@ -67,10 +66,6 @@ class ModelAPI(abc.ABC):
            ModelOutput
         """
         ...
-
-    def generate_choice(self, request: ChoiceRequest, config: GenerateConfig) -> ModelOutput:
-        """Answer a structured decision request, if supported by this provider."""
-        raise NotImplementedError(f'{type(self).__name__} does not support Choice requests.')
 
     async def generate_async(
         self,
@@ -213,11 +208,6 @@ class Model:
 
         # return output
         return output
-
-    def generate_choice(self, request: ChoiceRequest, config: Optional[GenerateConfig] = None) -> ModelOutput:
-        """Answer a structured decision without converting it to chat messages."""
-        resolved = self.config.merge(config) if config is not None else self.config.model_copy(deep=True)
-        return self.api.generate_choice(request, resolved)
 
     async def generate_async(
         self,

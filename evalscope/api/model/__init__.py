@@ -1,4 +1,3 @@
-from .choice import CHOICE_PROTOCOL_VERSION, ChoiceQuestion, ChoiceRequest, ChoiceResult
 from .generate_config import AnthropicCacheControl, GenerateConfig
 from .lazy_model import LazyModel
 from .model import Model, ModelAPI, get_model, get_model_with_task_config

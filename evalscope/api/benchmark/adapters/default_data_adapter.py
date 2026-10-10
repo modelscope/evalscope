@@ -432,10 +432,6 @@ class DefaultDataAdapter(DataAdapter):
             benchmarks.
         """
         ac = self._task_config.agent_config if self._task_config is not None else None
-        if sample.choice_request is not None:
-            if sample.tools:
-                raise ValueError('System One Choice evaluation does not support tools.')
-            return model.generate_choice(sample.choice_request)
         if ac is not None:
             # Local import to avoid pulling the bridge stack at module load.
             from evalscope.agent.external.config import ExternalAgentConfig
@@ -608,13 +604,6 @@ class DefaultDataAdapter(DataAdapter):
         Returns:
             str: The filtered and extracted prediction ready for evaluation
         """
-        if self._task_config is not None and self.eval_type == 'systemone_api':
-            result = task_state.output.choice_result
-            request = task_state._sample.choice_request
-            if result is None or request is None:
-                raise MetricUnavailableError('Missing structured Choice request or result.')
-            result.validate_request(request)
-            return result.choice
         if self.filter_ensemble is not None:
             # Apply configured filters to clean the prediction
             prediction = self.filter_ensemble(prediction)

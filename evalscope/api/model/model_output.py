@@ -7,8 +7,6 @@ from evalscope.api.messages import ChatMessageAssistant, Content
 from evalscope.api.messages.perf_metrics import PerformanceMetrics
 from evalscope.api.tool import ToolCall, ToolFunction
 
-from .choice import ChoiceResult
-
 
 class ModelUsage(BaseModel):
     """Token usage for completion."""
@@ -150,9 +148,6 @@ class ModelOutput(BaseModel):
 
     metadata: Optional[Dict[str, Any]] = Field(default=None)
     """Additional metadata associated with model output."""
-
-    choice_result: Optional[ChoiceResult] = None
-    """Structured decision answer, distinct from token log probabilities."""
 
     error: Optional[str] = Field(default=None)
     """Error message in the case of content moderation refusals."""

@@ -9,19 +9,23 @@ import pytest
 
 from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
-from evalscope.api.model import ChoiceQuestion, ChoiceRequest, ChoiceResult, GenerateConfig, ModelOutput
+from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser, ContentImage
+from evalscope.api.model import GenerateConfig, Model, ModelOutput
 from evalscope.api.model.model import ModelCache, get_model_with_task_config
 from evalscope.api.registry import get_benchmark
-from evalscope.evaluation_versioning import ResolvedBenchmarkSpec, build_benchmark_identity
-from evalscope.models.systemone import SystemOneAPI
+from evalscope.models.systemone import SystemOneAPI, _ChoiceAnswer
 from evalscope.utils.multi_choices import answer_character
 
 
-def request(options: int = 2) -> ChoiceRequest:
-    return ChoiceRequest(
-        state={'question': 'Choose the best answer.'},
-        question=ChoiceQuestion(instructions='Choose one.', criteria={answer_character(i): f'Option {i}' for i in range(options)}),
-    )
+def request(options: int = 2) -> list[ChatMessage]:
+    return [ChatMessageUser(
+        content='Choose the best answer.',
+        internal={'systemone': {
+            'state': {'question': 'Choose the best answer.'},
+            'instructions': 'Choose one.',
+            'criteria': {answer_character(i): f'Option {i}' for i in range(options)},
+        }},
+    )]
 
 
 def response(payload: dict, choice: str | None = None) -> dict:
@@ -62,7 +66,7 @@ def test_typesafe_authentication_from_task_config(
                         **credentials)
     model = get_model_with_task_config(config)
     try:
-        output = model.generate_choice(request(), GenerateConfig(retries=1))
+        output = model.generate(request(), config=GenerateConfig(retries=1))
         assert seen == [f'Bearer {expected_key}']
         assert model.api.api_key == expected_key
         assert expected_key not in output.model_dump_json()
@@ -112,10 +116,10 @@ def test_wire_request_and_roundtrip(options: int) -> None:
         return httpx.Response(200, json=response(payload, choice=list(payload['questions']['answer']['criteria'])[-1]))
     provider.client.close()
     provider.client = httpx.Client(transport=httpx.MockTransport(handle))
-    output = provider.generate_choice(request(options), GenerateConfig(retries=1))
+    output = Model(provider, GenerateConfig(retries=1)).generate(request(options))
     assert output.model == 'resolved-model-v1'
-    assert len(output.choice_result.probabilities) == options
-    assert output.completion == answer_character(options - 1)
+    assert len(output.metadata['choice_response']['answers']['answer']['probabilities']) == options
+    assert output.completion == f'ANSWER: {answer_character(options - 1)}'
     assert output.metadata['choice_response']['latency_ms'] == 42
     assert output.metadata['choice_request'] == seen[0]
     assert seen[0]['model'] == 'test'
@@ -125,7 +129,8 @@ def test_wire_request_and_roundtrip(options: int) -> None:
     assert seen[0]['questions']['answer']['instructions'] == 'Choose one.'
     assert output.usage.total_tokens == 12
     assert output.choices[0].logprobs is None
-    assert ModelOutput.model_validate_json(output.model_dump_json()).choice_result == output.choice_result
+    assert ModelOutput.model_validate_json(output.model_dump_json()).metadata == output.metadata
+    assert 'choice_result' not in output.model_dump()
     provider.client.close()
 
 
@@ -137,7 +142,7 @@ def test_wire_request_and_roundtrip(options: int) -> None:
 def test_invalid_choice_result(changes: dict) -> None:
     answer = {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 1, 'B': 0}, 'confidence': 0.99}
     with pytest.raises(ValueError):
-        ChoiceResult.model_validate({**answer, **changes})
+        _ChoiceAnswer.model_validate({**answer, **changes})
 
 
 @pytest.mark.parametrize('status,attempts', [(400, 1), (401, 1), (422, 1), (429, 2), (529, 2), (503, 2)])
@@ -153,9 +158,9 @@ def test_transport_retry_policy(status: int, attempts: int) -> None:
     provider.client = httpx.Client(transport=httpx.MockTransport(handle))
     if attempts == 1:
         with pytest.raises(httpx.HTTPStatusError):
-            provider.generate_choice(request(), GenerateConfig(retries=2, retry_interval=0))
+            Model(provider, GenerateConfig(retries=2, retry_interval=0)).generate(request())
     else:
-        provider.generate_choice(request(), GenerateConfig(retries=2, retry_interval=0))
+        Model(provider, GenerateConfig(retries=2, retry_interval=0)).generate(request())
     assert len(seen) == attempts
     provider.client.close()
 
@@ -171,9 +176,42 @@ def test_timeout_retry_and_invalid_response_not_retried() -> None:
     provider.client.close()
     provider.client = httpx.Client(transport=httpx.MockTransport(handle))
     with pytest.raises(ValueError, match='exactly'):
-        provider.generate_choice(request(), GenerateConfig(retries=3, retry_interval=0))
+        Model(provider, GenerateConfig(retries=3, retry_interval=0)).generate(request())
     assert len(calls) == 2
     provider.client.close()
+
+
+@pytest.mark.parametrize('messages', [
+    [ChatMessageUser(content='A) one\nB) two')],
+    request() + [ChatMessageAssistant(content='A')],
+    [request()[0].model_copy(update={'content': [ContentImage(image='https://example.test/image.png')]})],
+])
+def test_unsupported_chat_requests_rejected(messages: list[ChatMessage]) -> None:
+    provider = SystemOneAPI('test', 'https://example.test/v1')
+    calls = []
+    provider.client.close()
+    provider.client = httpx.Client(transport=httpx.MockTransport(lambda req: calls.append(req)))
+    try:
+        with pytest.raises(ValueError):
+            Model(provider, GenerateConfig(retries=1)).generate(messages)
+        assert calls == []
+    finally:
+        provider.client.close()
+
+
+def test_response_options_must_match_request() -> None:
+    provider = SystemOneAPI('test', 'https://example.test/v1')
+    provider.client.close()
+    provider.client = httpx.Client(transport=httpx.MockTransport(lambda req: httpx.Response(200, json={
+        'model': 'test', 'answers': {'answer': {
+            'type': 'choice', 'choice': 'A', 'probabilities': {'A': 1, 'C': 0},
+        }},
+    })))
+    try:
+        with pytest.raises(ValueError, match='match the request'):
+            Model(provider, GenerateConfig(retries=1)).generate(request())
+    finally:
+        provider.client.close()
 
 
 @pytest.mark.parametrize('config', [{'temperature': 0}, {'max_tokens': 20}, {'stream': True}, {'extra_body': {'think': True}}])
@@ -193,18 +231,18 @@ def test_audited_adapter_preserves_context_without_gold(name: str) -> None:
     adapter.validate_choice_config()
     sample = Sample(input='Raw question', choices=['one', 'two'], target='A',
                     metadata={'subject': 'computer_network', 'explanation': 'SECRET_GOLD', 'correct_answer': 'SECRET_GOLD'})
-    built = adapter.build_choice_request(sample, 'default')
-    assert built.state['question'] == 'Raw question'
-    assert built.question.criteria == {'A': 'one', 'B': 'two'}
-    assert 'SECRET_GOLD' not in built.model_dump_json()
+    built = adapter.build_systemone_messages(sample, 'default')
+    assert built[-1].internal['systemone']['state']['question'] == 'Raw question'
+    assert built[-1].internal['systemone']['criteria'] == {'A': 'one', 'B': 'two'}
+    assert 'SECRET_GOLD' not in json.dumps([message.model_dump(mode='json') for message in built])
 
 
 @pytest.mark.parametrize('name', ['gpqa_diamond', 'super_gpqa'])
 def test_fixed_examples(name: str) -> None:
     config = TaskConfig(model='test', eval_type='systemone_api', dataset_args={name: {'few_shot_num': 5}})
     adapter = get_benchmark(name, config)
-    built = adapter.build_choice_request(Sample(input='Q', choices=['x', 'y'], target='A'), 'default')
-    assert len(built.state['examples'][0]) > 1000
+    built = adapter.build_systemone_messages(Sample(input='Q', choices=['x', 'y'], target='A'), 'default')
+    assert len(built[-1].internal['systemone']['state']['examples'][0]) > 1000
 
 
 def test_system_prompt_and_selected_demonstrations() -> None:
@@ -213,10 +251,11 @@ def test_system_prompt_and_selected_demonstrations() -> None:
     adapter = get_benchmark('mmlu', config)
     adapter.fewshot_dataset = DatasetDict({'subject': MemoryDataset([
         Sample(input='DEMO', choices=['x', 'y'], target='B')])})
-    built = adapter.build_choice_request(Sample(input='TEST', choices=['x', 'y'], target='A'), 'subject')
-    assert built.question.instructions.startswith('Use the supplied evidence.')
-    assert 'DEMO' in built.state['examples'][0]
-    assert 'TEST' not in built.state['examples'][0]
+    built = adapter.build_systemone_messages(Sample(input='TEST', choices=['x', 'y'], target='A'), 'subject')
+    assert isinstance(built[0], ChatMessageSystem)
+    assert built[0].content == 'Use the supplied evidence.'
+    assert 'DEMO' in built[-1].internal['systemone']['state']['examples'][0]
+    assert 'TEST' not in built[-1].internal['systemone']['state']['examples'][0]
 
 
 @pytest.mark.parametrize('overrides', [{'prompt_template': '{question}'}, {'few_shot_prompt_template': '{fewshot}'},
@@ -234,7 +273,7 @@ def test_incompatible_adapter_configuration(overrides: dict) -> None:
 def test_invalid_samples(sample: Sample) -> None:
     adapter = get_benchmark('general_mcq', TaskConfig(model='test', eval_type='systemone_api'))
     with pytest.raises(ValueError):
-        adapter.build_choice_request(sample, 'default')
+        adapter.build_systemone_messages(sample, 'default')
 
 
 def test_unsupported_benchmark_rejected_before_loading() -> None:
@@ -243,25 +282,13 @@ def test_unsupported_benchmark_rejected_before_loading() -> None:
         get_benchmark('gsm8k', config).validate_choice_config()
 
 
-def test_choice_settings_use_existing_evaluation_identity() -> None:
-    config = TaskConfig(model='test', eval_type='systemone_api')
-    adapter = get_benchmark('general_mcq', config)
-    spec = ResolvedBenchmarkSpec.from_meta(adapter.benchmark_meta, config)
-    identity = build_benchmark_identity(spec, 'v1.0', config)
-    spec.choice_instructions = 'A different task.'
-    assert build_benchmark_identity(spec, 'v1.0', config).fingerprint != identity.fingerprint
-    config.eval_type = 'mock_llm'
-    generation = ResolvedBenchmarkSpec.from_meta(adapter.benchmark_meta, config)
-    assert 'choice_protocol_version' not in generation.fingerprint_dict()
-
-
 def test_rounded_large_distribution_is_retained() -> None:
     probabilities = {answer_character(i): 0.0 for i in range(77)}
     probabilities.update({'A': 0.70, 'B': 0.20, 'C': 0.06})
-    answer = ChoiceResult(choice='A', probabilities=probabilities)
+    answer = _ChoiceAnswer(choice='A', probabilities=probabilities)
     assert sum(answer.probabilities.values()) == pytest.approx(0.96)
     with pytest.raises(ValueError, match='rounding tolerance'):
-        ChoiceResult(choice='A', probabilities={key: 0 for key in probabilities})
+        _ChoiceAnswer(choice='A', probabilities={key: 0 for key in probabilities})
 
 
 def test_anli_round_split_selection(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -312,49 +339,74 @@ def test_failure_is_excluded_with_execution_coverage(tmp_path: Path, monkeypatch
 NEW_RECORDS = {
     'anli': {'premise': 'Alice is home.', 'hypothesis': 'Alice is home.', 'label': 0, 'reason': 'SECRET_GOLD'},
     'boolq': {'passage': 'Paris is in France.', 'question': 'Is Paris in France?', 'answer': True},
-    'banking77': {'text': 'Please activate my card.', 'label': 0, 'label_text': 'activate_my_card'},
+    'banking77': {'text': 'Wrong exchange rate for cash withdrawal.', 'label': 76, 'label_text': 'wrong_exchange_rate_for_cash_withdrawal'},
     'contract_nli': {'premise': 'No disclosure is allowed.', 'hypothesis': 'Disclosure is allowed.', 'label': 0},
-    'reward_bench': {'prompt': 'Say hello.', 'chosen': 'Hello!', 'rejected': 'Goodbye.', 'subset': 'alpacaeval-easy'},
+    'reward_bench': {'prompt': 'Say hello.', 'chosen': 'Hello!\nA) A line in an answer.', 'rejected': 'Goodbye.\nB) Another line.', 'subset': 'alpacaeval-easy'},
 }
 
 
-@pytest.mark.parametrize('name', list(NEW_RECORDS) + ['ceval'])
-def test_native_pipeline_and_reports(name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize('name', AUDITED + list(NEW_RECORDS))
+@pytest.mark.parametrize('eval_type', ['systemone_api', 'openai_api'])
+def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
 
     monkeypatch.setattr(ModelCache, '_models', {})
     targets = []
+    prefixes = []
     seen = []
     def load(adapter: DefaultDataAdapter) -> tuple[DatasetDict, None]:
-        if name == 'ceval':
-            sample = Sample(input='题目', choices=['正确', '错误'], target='A', metadata={'subject': 'computer_network'})
-        else:
+        if name in NEW_RECORDS:
             sample = adapter.record_to_sample(NEW_RECORDS[name])
+        else:
+            count = 10 if name in ('mmlu_pro', 'super_gpqa') else 4
+            sample = Sample(input='Question with A) embedded in its text.',
+                            choices=[f'Option {i}\nWith another line.' for i in range(count)],
+                            target=answer_character(count - 1), metadata={'subject': 'computer_network'})
         sample.id = 0
         targets.append(sample.target)
+        prefixes.append('答案：' if '答案：' in (adapter.prompt_template or '') else 'ANSWER: ')
         subset = sample.subset_key or adapter.subset_list[0]
         return DatasetDict({subset: MemoryDataset([sample])}), None
     monkeypatch.setattr(DefaultDataAdapter, 'load', load)
     def handle(req: httpx.Request) -> httpx.Response:
         payload = json.loads(req.content)
         seen.append(payload)
-        return httpx.Response(200, json=response(payload, targets[0]))
-    original = httpx.Client
-    monkeypatch.setattr(httpx, 'Client', lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
-    config = TaskConfig(model='test', eval_type='systemone_api', api_url='https://example.test/v1', datasets=[name],
+        if eval_type == 'systemone_api':
+            return httpx.Response(200, json=response(payload, targets[0]))
+        return httpx.Response(200, json={
+            'id': 'chat-test', 'model': 'test',
+            'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': prefixes[0] + targets[0]},
+                         'finish_reason': 'stop'}],
+            'usage': {'prompt_tokens': 12, 'completion_tokens': 3, 'total_tokens': 15},
+        })
+    if eval_type == 'openai_api':
+        from evalscope.models import openai_compatible
+
+        sdk_client = openai_compatible.OpenAI
+        monkeypatch.setattr(openai_compatible, 'OpenAI', lambda **kwargs: sdk_client(
+            http_client=httpx.Client(transport=httpx.MockTransport(handle)), **kwargs))
+    else:
+        original = httpx.Client
+        monkeypatch.setattr(httpx, 'Client', lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
+    config = TaskConfig(model='test', eval_type=eval_type, api_url='https://example.test/v1', datasets=[name],
                         dataset_args={name: {'few_shot_num': 0}}, work_dir=str(tmp_path), no_timestamp=True)
     run_task(config)
     prediction = json.loads(next((tmp_path / 'predictions').rglob('*.jsonl')).read_text())
     review = json.loads(next((tmp_path / 'reviews').rglob('*.jsonl')).read_text())
     report = json.loads(next((tmp_path / 'reports').rglob(f'{name}.json')).read_text())
-    assert prediction['model_output']['choice_result']['choice'] == targets[0]
-    assert prediction['model_output']['metadata']['choice_request'] == seen[0]
-    displayed_input = prediction['messages'][0]['content']
-    assert seen[0]['state']['question'] in displayed_input
-    for label, text in seen[0]['questions']['answer']['criteria'].items():
-        assert f'{label}) {text}' in displayed_input
-    assert json.dumps(seen[0], ensure_ascii=False) not in displayed_input
+    assert 'choice_result' not in prediction['model_output']
     assert 'SECRET_GOLD' not in json.dumps(seen[0])
+    if eval_type == 'systemone_api':
+        assert prediction['model_output']['metadata']['choice_response']['answers']['answer']['choice'] == targets[0]
+        assert prediction['model_output']['metadata']['choice_request'] == seen[0]
+        displayed_input = prediction['messages'][0]['content']
+        assert seen[0]['state']['question'] in displayed_input
+        for label, text in seen[0]['questions']['answer']['criteria'].items():
+            assert f'{label}) {text}' in displayed_input
+        assert json.dumps(seen[0], ensure_ascii=False) not in displayed_input
+    else:
+        assert all(message.get('internal') is None for message in prediction['messages'])
+        assert prediction['messages'][0]['content'] == seen[0]['messages'][0]['content']
     assert list(review['sample_score']['score']['value'].values()) == [1.0]
     assert report['execution_summary']['succeeded'] == 1
     assert report['execution_summary']['errored'] == 0

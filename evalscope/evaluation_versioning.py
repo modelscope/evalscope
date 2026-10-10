@@ -41,8 +41,6 @@ class ResolvedBenchmarkSpec(BaseModel):
     prompt_template: Optional[str] = None
     few_shot_prompt_template: Optional[str] = None
     system_prompt: Optional[str] = None
-    choice_instructions: Optional[str] = None
-    choice_protocol_version: Optional[str] = None
     query_template: Optional[str] = None
     few_shot_num: int = 0
     few_shot_random: bool = False
@@ -58,8 +56,6 @@ class ResolvedBenchmarkSpec(BaseModel):
 
     @classmethod
     def from_meta(cls, meta: 'BenchmarkMeta', task_config: 'TaskConfig') -> 'ResolvedBenchmarkSpec':
-        from evalscope.api.model.choice import CHOICE_PROTOCOL_VERSION
-
         primary_metric = meta.primary_metric
         if primary_metric is not None and hasattr(primary_metric, 'model_dump'):
             primary_metric = primary_metric.model_dump(mode='json')
@@ -75,8 +71,6 @@ class ResolvedBenchmarkSpec(BaseModel):
             prompt_template=meta.prompt_template,
             few_shot_prompt_template=meta.few_shot_prompt_template,
             system_prompt=meta.system_prompt,
-            choice_instructions=meta.choice_instructions if task_config.eval_type == 'systemone_api' else None,
-            choice_protocol_version=CHOICE_PROTOCOL_VERSION if task_config.eval_type == 'systemone_api' else None,
             query_template=meta.query_template,
             few_shot_num=meta.few_shot_num,
             few_shot_random=meta.few_shot_random,
@@ -90,11 +84,6 @@ class ResolvedBenchmarkSpec(BaseModel):
             extra_params=meta.get_extra_params(),
             sandbox_config=meta.sandbox_config,
         )
-
-    def fingerprint_dict(self) -> Dict[str, Any]:
-        """Preserve pre-Choice identities for existing generation evaluations."""
-        excluded = {'choice_instructions', 'choice_protocol_version'} if self.choice_protocol_version is None else set()
-        return self.model_dump(mode='json', exclude=excluded)
 
 
 class CacheSource(BaseModel):
@@ -179,7 +168,7 @@ def build_benchmark_identity(
     payload = {
         'shared_scoring_version': SHARED_SCORING_VERSION,
         'evaluation_version': evaluation_version,
-        'benchmark': spec.fingerprint_dict(),
+        'benchmark': spec.model_dump(mode='json'),
         'task': _fingerprint_task_config(task_config),
     }
     encoded = _canonical_json(_scrub_secrets(payload)).encode('utf-8')
@@ -258,7 +247,7 @@ def legacy_identity_from_config(
         return None
     payload = {
         'evaluation_version': 'v1.0',
-        'benchmark': spec.fingerprint_dict(),
+        'benchmark': spec.model_dump(mode='json'),
         'task': _fingerprint_task_mapping(task_config),
     }
     encoded = _canonical_json(_scrub_secrets(payload)).encode('utf-8')

@@ -72,9 +72,11 @@ run_task(TaskConfig(
 
 ## 结果与复现
 
-预测 JSONL 中的 `model_output.choice_result` 保存标签、概率与厂商置信度；`model_output.metadata` 保存完整请求和响应。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。
+System One 沿用 `Model.generate(messages)` 调用入口。MCQ adapter 在现有 `ChatMessage.internal` 中附带原题、候选项和示例等转换信息，`SystemOneAPI.generate()` 将消息转换为协议请求。无需新增样本或模型输出字段；没有 MCQ 转换信息的任意聊天文本不能直接转换。
 
-消息记录展示题目和选项；实际发送的任务指令、上下文与示例以 `model_output.metadata.choice_request` 为准。
+返回标签转换为 benchmark 原有答案格式，例如 `ANSWER: A`、`答案：A` 或 `ANSWER: 51`，再通过原有答案提取、评分、缓存和报告流程。
+
+预测 JSONL 的 `model_output.metadata.choice_response.answers.answer` 保存原始标签、概率与厂商置信度；`choice_request` 保存完整实际请求。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。消息文本展示题目和选项，system 消息及 `internal` 保留转换所需的指令、上下文与示例。
 
 配置和原始请求保留 Choice 指令及 few-shot 设置；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
 
