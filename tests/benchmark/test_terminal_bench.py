@@ -119,15 +119,29 @@ def test_terminal_bench_v4_unmatched_task_filter_fails(harbor_dataset: list[dict
         adapter.load_dataset()
 
 
-def test_terminal_bench_v4_rejects_old_harbor_before_dataset_io(
-    harbor_dataset: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize('harbor_version', ['0.13.2', '1.0.0', '1.1.0'])
+def test_terminal_bench_v4_rejects_unsupported_harbor_before_dataset_io(
+    harbor_dataset: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch, harbor_version: str
 ) -> None:
-    monkeypatch.setattr(terminal_bench_adapter, 'version', lambda package: '0.13.2')
+    monkeypatch.setattr(terminal_bench_adapter, 'version', lambda package: harbor_version)
 
-    with pytest.raises(ImportError, match=r'Harbor>=0.14.0; found 0.13.2') as error:
+    with pytest.raises(ImportError, match=r'Harbor>=0\.14\.0,<1\.0\.0') as error:
         get_benchmark('terminal_bench_v4')
 
+    assert f'found {harbor_version}' in str(error.value)
     assert "pip install --upgrade 'evalscope[terminal_bench]'" in str(error.value)
+    assert harbor_dataset == []
+
+
+@pytest.mark.parametrize('harbor_version', ['0.14.0', '0.24.0'])
+def test_terminal_bench_v4_accepts_supported_harbor(
+    harbor_dataset: list[dict[str, Any]], monkeypatch: pytest.MonkeyPatch, harbor_version: str
+) -> None:
+    monkeypatch.setattr(terminal_bench_adapter, 'version', lambda package: harbor_version)
+
+    adapter = get_benchmark('terminal_bench_v4')
+
+    assert adapter.name == 'terminal_bench_v4'
     assert harbor_dataset == []
 
 

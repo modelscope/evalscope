@@ -619,8 +619,9 @@ class TerminalBenchV4Adapter(_TerminalBenchBase):
         """Initialize the adapter and reject unsupported Harbor versions."""
         super().__init__(**kwargs)
         harbor_version = version('harbor')
-        if Version(harbor_version) < Version('0.14.0'):
+        installed_version = Version(harbor_version)
+        if not Version('0.14.0') <= installed_version < Version('1.0.0'):
             raise ImportError(
-                f'Terminal-Bench 4.0 requires Harbor>=0.14.0; found {harbor_version}. '
+                f'Terminal-Bench 4.0 requires Harbor>=0.14.0,<1.0.0; found {harbor_version}. '
                 "Please run `pip install --upgrade 'evalscope[terminal_bench]'`."
             )
