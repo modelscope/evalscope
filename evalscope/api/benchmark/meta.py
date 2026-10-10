@@ -27,9 +27,6 @@ class BenchmarkMeta:
     dataset_id: str
     """ Dataset id on modelscope or path to local dataset."""
 
-    dataset_hub: Optional[str] = None
-    """Optional per-benchmark hub, taking precedence over the task's default hub."""
-
     data_adapter: Optional[Type['DataAdapter']] = None
     """ Data adapter class for the benchmark."""
 

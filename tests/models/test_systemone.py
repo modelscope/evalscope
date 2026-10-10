@@ -304,12 +304,6 @@ def test_failure_is_excluded_with_execution_coverage(tmp_path: Path, monkeypatch
     assert list(review['sample_score']['score']['value'].values()) == [1.0]
 
 
-def test_huggingface_documentation_link() -> None:
-    from evalscope.utils.doc_utils.readme_generator import _format_dataset_link
-
-    assert 'https://huggingface.co/datasets/google/boolq' in _format_dataset_link('google/boolq', 'huggingface')
-
-
 NEW_RECORDS = {
     'anli': {'premise': 'Alice is home.', 'hypothesis': 'Alice is home.', 'label': 0, 'reason': 'SECRET_GOLD'},
     'boolq': {'passage': 'Paris is in France.', 'question': 'Is Paris in France?', 'answer': True},

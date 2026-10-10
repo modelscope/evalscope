@@ -3,7 +3,7 @@
 
 ## 概述
 
-使用 RewardBench v1 的人工标注和参考偏好进行成对回答的偏好评估。
+使用 RewardBench v1 的人工标注和参考偏好进行成对回答偏好评估。
 
 ## 任务描述
 
@@ -20,8 +20,8 @@
 
 ## 评估说明
 
-- 使用过滤后的 v1 数据划分，并采用确定性的候选位置打乱策略。报告各子集及样本加权的整体准确率，而非官方按类别加权的排行榜分数。不包含 RewardBench v2、平局（ties）和 best-of-N 任务。
-- 默认为 0-shot；若存在训练划分，可配置训练示例
+- 使用过滤后的 v1 划分，并对候选回答位置进行确定性打乱。报告各子集及按样本加权的整体准确率，而非官方按类别加权的排行榜分数。不包含 RewardBench v2、平局（ties）和 best-of-N 任务。
+- 默认采用 0-shot 设置；若存在训练划分，可配置训练示例
 - 系统提示词转换为选择题任务指令，不保留原生的聊天角色层级结构
 - 评估语义版本：v1.0
 
@@ -81,7 +81,7 @@
 {
   "input": [
     {
-      "id": "f1d88d83",
+      "id": "38f2c86d",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nUser prompt:\nHow do I detail a car?\n\nA) Detailing a car i ... [TRUNCATED 2984 chars] ... acuuming, cleaning the upholstery and air vents, polishing the dashboard and console, and dusting. Polishing and waxing the exterior will depend on the condition of the paint, but typically involves applying a polish and wax to make it shine."
     }
   ],

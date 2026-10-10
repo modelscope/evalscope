@@ -20,7 +20,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 
 ## Evaluation Notes
 
-- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated. Contract and hypothesis hashes identify related samples.
+- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
 - Evaluation semantics version: v1.0
@@ -56,7 +56,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 {
   "input": [
     {
-      "id": "21deb5eb",
+      "id": "20082ee1",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nContract:\nNON-DISCLOSURE AGREEMENT\nRequired under JEA's ... [TRUNCATED 16664 chars] ... body Disclosing Party's Confidential Information.\n\nA) Contradiction: the contract contradicts the hypothesis.\nB) Entailment: the contract supports the hypothesis.\nC) Not mentioned: the contract neither supports nor contradicts the hypothesis."
     }
   ],
@@ -67,11 +67,7 @@ Document-level natural language inference on complete non-disclosure agreements.
   ],
   "target": "C",
   "id": 0,
-  "group_id": 0,
-  "metadata": {
-    "contract_id": "944f3cc63d215fdeb4182cbeb0d4b6ed3f3a5dcc51fe0680c879e709cabc0502",
-    "hypothesis_id": "e1ce8a23b0a81e1223e43ac59ff5c4eae4389b816b2b08c8803b5c02c1f94eca"
-  }
+  "group_id": 0
 }
 ```
 

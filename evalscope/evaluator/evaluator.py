@@ -170,8 +170,6 @@ class DefaultEvaluator(Evaluator):
         """
         try:
             logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
-            if self.task_config.eval_type == 'systemone_api':
-                self.benchmark.validate_choice_config()
             dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
 
             if not dataset_dict:
@@ -565,11 +563,6 @@ class DefaultEvaluator(Evaluator):
                 model_name=self.model_name,
             )
         report.execution_summary = execution_summary
-        if self.task_config.eval_type == 'systemone_api':
-            from evalscope.api.model.choice import CHOICE_PROTOCOL_VERSION
-
-            protocol = f'System One Choice {CHOICE_PROTOCOL_VERSION}; {self.benchmark.few_shot_num}-shot.'
-            report.dataset_description = protocol + '\n\n' + (report.dataset_description or '')
 
         # Generate and display a summary table of results
         if agg_score_dict:

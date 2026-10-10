@@ -3,7 +3,7 @@
 
 ## 概述
 
-在三个独立收集的轮次上进行对抗性自然语言推理。
+在三轮独立收集的数据上进行对抗性自然语言推理。
 
 ## 任务描述
 
@@ -20,9 +20,9 @@
 
 ## 评估说明
 
-- 分别报告每轮的准确率以及样本加权的总体得分。测试解释（explanations）不会作为模型输入。
+- 报告每轮的准确率以及样本加权的总体得分。测试集中的解释信息不会作为模型输入。
 - 默认使用 0-shot 设置；若存在训练集，可配置训练示例
-- 系统提示（System prompts）将转换为选择题任务指令，不采用原生的聊天角色层级结构
+- 系统提示将转换为选择题任务指令，不采用原生的聊天角色层级结构
 - 评估语义版本：v1.0
 
 ## 属性
@@ -62,7 +62,7 @@
 {
   "input": [
     {
-      "id": "00a00842",
+      "id": "c5d35c29",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C.\n\nPremise:\nErnest Jones is a British jeweller and watchma ... [TRUNCATED 261 chars] ... ones store was opened on the continent of Europe.\n\nA) Entailment: the hypothesis follows from the premise.\nB) Neutral: the premise does not determine whether the hypothesis is true.\nC) Contradiction: the hypothesis conflicts with the premise."
     }
   ],

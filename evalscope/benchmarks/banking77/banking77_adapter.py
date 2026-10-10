@@ -3,7 +3,7 @@ from typing import Any, Dict
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character
 
 # Canonical PolyAI/banking77 ClassLabel order, also used by the mteb data-only mirror.
@@ -93,7 +93,6 @@ INTENT_LABELS = [
         name='banking77',
         pretty_name='BANKING77',
         dataset_id='mteb/banking77',
-        dataset_hub=HubType.MODELSCOPE,
         default_subset='default',
         subset_list=['default'],
         eval_split='test',

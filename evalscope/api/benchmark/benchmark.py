@@ -180,17 +180,14 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         Return the dataset hub type for the benchmark.
         """
-        return self._benchmark_meta.dataset_hub or self._task_config.dataset_hub
+        return self._task_config.dataset_hub
 
     @dataset_hub.setter
     def dataset_hub(self, value: str):
         """
         Set the dataset hub type for the benchmark.
         """
-        if self._benchmark_meta.dataset_hub is not None:
-            self._benchmark_meta.dataset_hub = value
-        else:
-            self._task_config.dataset_hub = value
+        self._task_config.dataset_hub = value
 
     @property
     def dataset_revision(self) -> Optional[str]:

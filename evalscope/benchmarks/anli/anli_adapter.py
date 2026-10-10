@@ -3,7 +3,7 @@ from typing import Any, Dict, Type
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import DataLoader, Dataset, Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character
 
 
@@ -12,7 +12,6 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='anli',
         pretty_name='ANLI',
         dataset_id='facebook/anli',
-        dataset_hub=HubType.MODELSCOPE,
         default_subset='plain_text',
         subset_list=['r1', 'r2', 'r3'],
         eval_split='test',

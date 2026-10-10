@@ -1,10 +1,9 @@
-import hashlib
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiChoiceAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_character
 
 
@@ -13,7 +12,6 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='contract_nli',
         pretty_name='ContractNLI (classification)',
         dataset_id='evalscope/contract-nli',
-        dataset_hub=HubType.MODELSCOPE,
         default_subset='contractnli_b',
         subset_list=['contractnli_b'],
         eval_split='test',
@@ -44,7 +42,7 @@ Document-level natural language inference on complete non-disclosure agreements.
 
 ## Evaluation Notes
 
-- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated. Contract and hypothesis hashes identify related samples.
+- Uses the full-document contractnli_b data-only mirror. Each contract-hypothesis pair is one sample. Reports classification accuracy only; evidence extraction and official F1 metrics are not evaluated.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
 - Evaluation semantics version: v1.0
@@ -67,8 +65,4 @@ class ContractNLIAdapter(MultiChoiceAdapter):
                 'Not mentioned: the contract neither supports nor contradicts the hypothesis.',
             ],
             target=answer_character(label),
-            metadata={
-                'contract_id': hashlib.sha256(contract.encode('utf-8')).hexdigest(),
-                'hypothesis_id': hashlib.sha256(hypothesis.encode('utf-8')).hexdigest(),
-            },
         )

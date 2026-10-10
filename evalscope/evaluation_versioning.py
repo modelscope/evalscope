@@ -66,7 +66,7 @@ class ResolvedBenchmarkSpec(BaseModel):
         return cls(
             name=meta.name,
             dataset_id=meta.dataset_id,
-            dataset_hub=meta.dataset_hub or task_config.dataset_hub,
+            dataset_hub=task_config.dataset_hub,
             dataset_revision=getattr(meta, 'dataset_revision', None),
             eval_split=meta.eval_split,
             train_split=meta.train_split,

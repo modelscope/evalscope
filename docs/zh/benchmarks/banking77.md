@@ -20,9 +20,9 @@
 
 ## 评估说明
 
-- 报告指标为准确率（accuracy），而非 macro-F1。每个样本均可从全部 77 个意图中选择；不进行候选剪枝，也不额外添加“超出范围”（out-of-scope）意图。
-- 默认采用 0-shot 设置；若存在训练集，可配置训练示例
-- 系统提示将转换为单选任务指令，不使用原生的聊天角色层级结构
+- 报告准确率（accuracy），而非 macro-F1。每个样本均可选择全部 77 个意图；不进行候选剪枝，也不额外添加“超出范围”（out-of-scope）意图。
+- 默认为 0-shot 设置；若存在训练集，可配置训练示例
+- 系统提示将转换为单选任务指令，不采用原生的聊天角色层级结构
 - 评估语义版本：v1.0
 
 ## 属性
@@ -31,12 +31,13 @@
 |----------|-------|
 | **基准测试名称** | `banking77` |
 | **数据集ID** | [mteb/banking77](https://modelscope.cn/datasets/mteb/banking77/summary) |
-| **论文** | N/A |
+| **论文** | 无 |
 | **标签** | `MCQ` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估集** | `test` |
-| **训练集** | `train` |
+| **评估分割** | `test` |
+| **训练分割** | `train` |
+
 
 ## 数据统计
 
@@ -54,7 +55,7 @@
 {
   "input": [
     {
-      "id": "59e429c3",
+      "id": "28da3182",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\n44) verify my identity\n45) verify source of funds\n46) verify top up\n47) virtual card not working\n48) visa or mastercard\n49) why verify identity\n50) wrong amount of cash received\n51) wrong exchange rate for cash withdrawal"
     }
   ],
