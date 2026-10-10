@@ -118,3 +118,7 @@ def test_completed_and_token_limited_responses_remain_successes(provider: str, m
     result = accumulator.to_result()
     assert (result.succeed_requests, result.failed_requests) == (1, 0)
     assert (accumulator.total_prompt_tokens, accumulator.total_completion_tokens) == (7, 3)
+    assert output.real_cached_tokens == 2
+    assert output.cached_tokens == 2
+    assert accumulator.total_cached_tokens == 2
+    assert result.avg_cached_percent == pytest.approx(2 / 7 * 100)
