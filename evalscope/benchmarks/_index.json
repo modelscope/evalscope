@@ -235,6 +235,7 @@
  "tau_bench": "evalscope.benchmarks.tau_bench.tau_bench.tau_bench_adapter",
  "terminal_bench_v2": "evalscope.benchmarks.terminal_bench.terminal_bench_adapter",
  "terminal_bench_v2_1": "evalscope.benchmarks.terminal_bench.terminal_bench_adapter",
+ "terminal_bench_v4": "evalscope.benchmarks.terminal_bench.terminal_bench_adapter",
  "thchs30": "evalscope.benchmarks.thchs30.thchs30_adapter",
  "tifa160": "evalscope.benchmarks.text2image.tifa_adapter",
  "tir_bench": "evalscope.benchmarks.tir_bench.tir_bench_adapter",

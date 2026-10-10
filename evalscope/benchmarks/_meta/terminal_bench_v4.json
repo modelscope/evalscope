@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "pretty_name": "Terminal-Bench-4.0",
+    "dataset_id": "https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4",
+    "paper_url": null,
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nTerminal-Bench 4.0 evaluates agents on 66 challenging terminal tasks using the official Harbor harness. It calibrates task resources, fixes task instructions and verifiers, and removes tasks that no longer provide useful differentiation.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Task instructions and an isolated runtime environment\n- **Output**: Agent-produced artifacts and task completion, checked by the official verifier\n- **Domain**: Software engineering, machine learning, security, science, and operations\n\n## Key Features\n\n- Fixed upstream dataset revision **4.0.0**, with content-addressed task versions\n- 66 tasks, including 11 multi-container tasks and 3 tasks requiring an H100 GPU\n- Separate verifier environments for all tasks, including a task with a GPU verifier\n- Official agent timeout of 8 hours per task; task-specific CPU, memory, and verifier budgets\n- Configurable Harbor agents, explicit task-name filtering, and repeated evaluation\n\n## Evaluation Notes\n\n- Requires **Python>=3.12**, **Harbor>=0.14.0,<1.0.0**, and `pip install 'evalscope[terminal_bench]'`\n- Scores are the mean of valid official verifier rewards (0/1); failed trials and invalid rewards are not valid scores\n- Defaults to Docker and terminus-2; terminus-2 uses the configured EvalScope model, while external CLI agents use their own API credentials\n- Full evaluation requires a Docker host with H100 GPU access and multi-container support; Modal is an alternative with `harbor[modal]` and account credentials\n- Task resources and timeouts are inherited from upstream; max_turns defaults to None, using the Harbor agent default\n- Use task_names for an explicit debugging subset and repeats for repeated trials; subset results and results from older benchmark versions are not directly comparable to a full 4.0 evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "environment_type": {
+        "type": "str",
+        "description": "Environment type for running the benchmark.",
+        "value": "docker",
+        "choices": [
+          "docker",
+          "daytona",
+          "e2b",
+          "modal"
+        ]
+      },
+      "agent_name": {
+        "type": "str",
+        "description": "Agent type to be used in Harbor. Only terminus-2 uses the evalscope model for inference; other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys.",
+        "value": "terminus-2",
+        "choices": [
+          "oracle",
+          "terminus-2",
+          "claude-code",
+          "codex",
+          "qwen-coder",
+          "openhands",
+          "opencode",
+          "mini-swe-agent"
+        ]
+      },
+      "timeout_multiplier": {
+        "type": "float",
+        "description": "Timeout multiplier. If timeout errors occur, consider increasing this value.",
+        "value": 1.0
+      },
+      "agent_timeout_sec": {
+        "type": "float",
+        "description": "Final agent timeout in seconds. Cannot be combined with agent_timeout_multiplier.",
+        "value": null
+      },
+      "verifier_timeout_sec": {
+        "type": "float",
+        "description": "Final verifier timeout in seconds. Cannot be combined with verifier_timeout_multiplier.",
+        "value": null
+      },
+      "agent_timeout_multiplier": {
+        "type": "float",
+        "description": "Agent timeout multiplier. Overrides timeout_multiplier for the agent phase.",
+        "value": null
+      },
+      "verifier_timeout_multiplier": {
+        "type": "float",
+        "description": "Verifier timeout multiplier. Overrides timeout_multiplier for the verifier phase.",
+        "value": null
+      },
+      "max_turns": {
+        "type": "int",
+        "description": "Maximum agent turns. None uses the Harbor agent default.",
+        "value": null
+      },
+      "environment_kwargs": {
+        "type": "dict",
+        "description": "Extra kwargs passed to Harbor EnvironmentConfig. Supported keys: override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env, etc.",
+        "value": {}
+      },
+      "task_names": {
+        "type": "list",
+        "description": "Optional Harbor task names or glob patterns, e.g. terminal-bench/ctr-optimization.",
+        "value": null
+      }
+    },
+    "sandbox_config": {},
+    "category": "agent"
+  },
+  "statistics": {
+    "total_samples": 66,
+    "subset_stats": [
+      {
+        "name": "test",
+        "sample_count": 66,
+        "prompt_length_mean": 0,
+        "prompt_length_min": 0,
+        "prompt_length_max": 0,
+        "prompt_length_std": null,
+        "target_length_mean": null
+      }
+    ],
+    "prompt_length": {
+      "mean": 0,
+      "min": 0,
+      "max": 0,
+      "std": null
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-10-10T16:27:42.588501"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "5706a469",
+          "content": ""
+        }
+      ],
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "path": null,
+        "git_url": null,
+        "git_commit_id": null,
+        "name": "terminal-bench/layout-config-recreation2",
+        "ref": "sha256:193312b14b1dcb6ef551efff691cbb708b2032f58879b0b19efe88a2cddc9deb",
+        "overwrite": false,
+        "download_dir": "~/.cache/evalscope/terminal_bench_v4",
+        "source": "terminal-bench/terminal-bench"
+      }
+    },
+    "subset": "test",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# Terminal-Bench-4.0\n\n\n## Overview\n\nTerminal-Bench 4.0 evaluates agents on 66 challenging terminal tasks using the official Harbor harness. It calibrates task resources, fixes task instructions and verifiers, and removes tasks that no longer provide useful differentiation.\n\n## Task Description\n\n- **Task Type**: Command-Line Agent Evaluation\n- **Input**: Task instructions and an isolated runtime environment\n- **Output**: Agent-produced artifacts and task completion, checked by the official verifier\n- **Domain**: Software engineering, machine learning, security, science, and operations\n\n## Key Features\n\n- Fixed upstream dataset revision **4.0.0**, with content-addressed task versions\n- 66 tasks, including 11 multi-container tasks and 3 tasks requiring an H100 GPU\n- Separate verifier environments for all tasks, including a task with a GPU verifier\n- Official agent timeout of 8 hours per task; task-specific CPU, memory, and verifier budgets\n- Configurable Harbor agents, explicit task-name filtering, and repeated evaluation\n\n## Evaluation Notes\n\n- Requires **Python>=3.12**, **Harbor>=0.14.0,<1.0.0**, and `pip install 'evalscope[terminal_bench]'`\n- Scores are the mean of valid official verifier rewards (0/1); failed trials and invalid rewards are not valid scores\n- Defaults to Docker and terminus-2; terminus-2 uses the configured EvalScope model, while external CLI agents use their own API credentials\n- Full evaluation requires a Docker host with H100 GPU access and multi-container support; Modal is an alternative with `harbor[modal]` and account credentials\n- Task resources and timeouts are inherited from upstream; max_turns defaults to None, using the Harbor agent default\n- Use task_names for an explicit debugging subset and repeats for repeated trials; subset results and results from older benchmark versions are not directly comparable to a full 4.0 evaluation\n- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `terminal_bench_v4` |\n| **Dataset ID** | [4](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4) |\n| **Paper** | N/A |\n| **Tags** | `Coding` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 66 |\n| Prompt Length (Mean) | 0 chars |\n| Prompt Length (Min/Max) | 0 / 0 chars |\n\n## Sample Example\n\n**Subset**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5706a469\",\n      \"content\": \"\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"path\": null,\n    \"git_url\": null,\n    \"git_commit_id\": null,\n    \"name\": \"terminal-bench/layout-config-recreation2\",\n    \"ref\": \"sha256:193312b14b1dcb6ef551efff691cbb708b2032f58879b0b19efe88a2cddc9deb\",\n    \"overwrite\": false,\n    \"download_dir\": \"~/.cache/evalscope/terminal_bench_v4\",\n    \"source\": \"terminal-bench/terminal-bench\"\n  }\n}\n```\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | Environment type for running the benchmark. Choices: ['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | Agent type to be used in Harbor. Only terminus-2 uses the evalscope model for inference; other agents (claude-code, codex, etc.) run as standalone CLI tools with their own API keys. Choices: ['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | Timeout multiplier. If timeout errors occur, consider increasing this value. |\n| `agent_timeout_sec` | `float` | `None` | Final agent timeout in seconds. Cannot be combined with agent_timeout_multiplier. |\n| `verifier_timeout_sec` | `float` | `None` | Final verifier timeout in seconds. Cannot be combined with verifier_timeout_multiplier. |\n| `agent_timeout_multiplier` | `float` | `None` | Agent timeout multiplier. Overrides timeout_multiplier for the agent phase. |\n| `verifier_timeout_multiplier` | `float` | `None` | Verifier timeout multiplier. Overrides timeout_multiplier for the verifier phase. |\n| `max_turns` | `int` | `None` | Maximum agent turns. None uses the Harbor agent default. |\n| `environment_kwargs` | `dict` | `{}` | Extra kwargs passed to Harbor EnvironmentConfig. Supported keys: override_cpus, override_memory_mb, override_storage_mb, override_gpus, force_build, delete, env, etc. |\n| `task_names` | `list` | `None` | Optional Harbor task names or glob patterns, e.g. terminal-bench/ctr-optimization. |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v4 \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v4'],\n    dataset_args={\n        'terminal_bench_v4': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# Terminal-Bench-4.0\n\n\n## 概述\n\nTerminal-Bench 4.0 使用官方 Harbor harness 对智能体在 66 个具有挑战性的终端任务上进行评估。该版本校准了任务资源，修复了任务指令和验证器，并移除了不再能有效区分智能体性能的任务。\n\n## 任务描述\n\n- **任务类型**：命令行智能体评估\n- **输入**：任务指令和一个隔离的运行时环境\n- **输出**：智能体生成的产物及任务完成情况，由官方验证器检查\n- **领域**：软件工程、机器学习、安全、科学和运维\n\n## 主要特性\n\n- 固定上游数据集版本为 **4.0.0**，采用基于内容寻址的任务版本\n- 包含 66 个任务，其中 11 个为多容器任务，3 个任务需要 H100 GPU\n- 所有任务均配备独立的验证器环境，包括一个使用 GPU 的验证器任务\n- 官方设定每个任务的智能体超时时间为 8 小时；各任务具有特定的 CPU、内存和验证器资源配额\n- 支持可配置的 Harbor 智能体、显式任务名称过滤以及重复评估\n\n## 评估说明\n\n- 需要 **Python>=3.12**、**Harbor>=0.14.0,<1.0.0**，并执行 `pip install 'evalscope[terminal_bench]'`\n- 得分是有效官方验证器奖励（0/1）的平均值；失败的试验和无效奖励不计入有效得分\n- 默认使用 Docker 和 terminus-2；terminus-2 使用配置的 EvalScope 模型，而外部 CLI 智能体则使用其自身的 API 凭据\n- 完整评估需要具备 H100 GPU 访问权限和多容器支持的 Docker 主机；也可选择使用 Modal，需安装 `harbor[modal]` 并提供账户凭据\n- 任务资源和超时设置继承自上游；max_turns 默认为 None，使用 Harbor 智能体的默认值\n- 可通过 task_names 指定用于调试的子集，通过 repeats 设置重复试验次数；子集结果及旧版基准测试的结果不能直接与完整的 4.0 评估结果进行比较\n- [使用示例](https://evalscope.readthedocs.io/zh-cn/latest/third_party/terminal_bench.html)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `terminal_bench_v4` |\n| **数据集ID** | [4](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4) |\n| **论文** | N/A |\n| **标签** | `Coding` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估划分** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 66 |\n| 提示词长度（平均） | 0 字符 |\n| 提示词长度（最小/最大） | 0 / 0 字符 |\n\n## 样例示例\n\n**子集**: `test`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"5706a469\",\n      \"content\": \"\"\n    }\n  ],\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"path\": null,\n    \"git_url\": null,\n    \"git_commit_id\": null,\n    \"name\": \"terminal-bench/layout-config-recreation2\",\n    \"ref\": \"sha256:193312b14b1dcb6ef551efff691cbb708b2032f58879b0b19efe88a2cddc9deb\",\n    \"overwrite\": false,\n    \"download_dir\": \"~/.cache/evalscope/terminal_bench_v4\",\n    \"source\": \"terminal-bench/terminal-bench\"\n  }\n}\n```\n\n## 提示模板\n\n**提示模板:**\n```text\n{question}\n```\n\n## 额外参数\n\n| 参数 | 类型 | 默认值 | 描述 |\n|-----------|------|---------|-------------|\n| `environment_type` | `str` | `docker` | 运行基准测试的环境类型。选项：['docker', 'daytona', 'e2b', 'modal'] |\n| `agent_name` | `str` | `terminus-2` | Harbor 中使用的智能体类型。仅 terminus-2 使用 evalscope 模型进行推理；其他智能体（如 claude-code、codex 等）作为独立 CLI 工具运行，需自行提供 API 密钥。选项：['oracle', 'terminus-2', 'claude-code', 'codex', 'qwen-coder', 'openhands', 'opencode', 'mini-swe-agent'] |\n| `timeout_multiplier` | `float` | `1.0` | 超时倍率。若出现超时错误，可考虑增大此值。 |\n| `agent_timeout_sec` | `float` | `None` | 智能体阶段最终超时时间（秒）。不能与 agent_timeout_multiplier 同时使用。 |\n| `verifier_timeout_sec` | `float` | `None` | 验证器阶段最终超时时间（秒）。不能与 verifier_timeout_multiplier 同时使用。 |\n| `agent_timeout_multiplier` | `float` | `None` | 智能体阶段超时倍率。覆盖 timeout_multiplier 在智能体阶段的设置。 |\n| `verifier_timeout_multiplier` | `float` | `None` | 验证器阶段超时倍率。覆盖 timeout_multiplier 在验证器阶段的设置。 |\n| `max_turns` | `int` | `None` | 智能体最大交互轮次。None 表示使用 Harbor 智能体的默认值。 |\n| `environment_kwargs` | `dict` | `{}` | 传递给 Harbor EnvironmentConfig 的额外参数。支持的键包括：override_cpus、override_memory_mb、override_storage_mb、override_gpus、force_build、delete、env 等。 |\n| `task_names` | `list` | `None` | 可选的 Harbor 任务名称或通配符模式，例如 terminal-bench/ctr-optimization。 |\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets terminal_bench_v4 \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['terminal_bench_v4'],\n    dataset_args={\n        'terminal_bench_v4': {\n            # extra_params: {}  # 使用默认额外参数\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "1b851ddc97edf0bed1e5ba8fd8c1402f",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-10T16:27:43.384085",
+  "translation_updated_at": "2026-10-10T16:27:44"
+}
