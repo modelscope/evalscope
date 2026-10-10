@@ -3,10 +3,14 @@ import math
 import os
 import shutil
 import uuid
+from copy import deepcopy
 from datetime import datetime
+from importlib.metadata import version
 from numbers import Real
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
+
+from packaging.version import Version
 
 from evalscope.api.agent import AgentTrace, AgentTraceEvent, EventType
 from evalscope.api.benchmark import AgentAdapter, BenchmarkMeta
@@ -86,6 +90,17 @@ COMMON_EXTRA_PARAMS = {
     },
 }
 
+V4_EXTRA_PARAMS = deepcopy(COMMON_EXTRA_PARAMS)
+V4_EXTRA_PARAMS['max_turns'].update(
+    description='Maximum agent turns. None uses the Harbor agent default.',
+    value=None,
+)
+V4_EXTRA_PARAMS['task_names'] = {
+    'type': 'list',
+    'description': 'Optional Harbor task names or glob patterns, e.g. terminal-bench/ctr-optimization.',
+    'value': None,
+}
+
 
 def _validate_environment_requirements(environment_type: str):
     environment_type = (environment_type or '').strip().lower()
@@ -145,6 +160,8 @@ class _TerminalBenchBase(AgentAdapter):
 
         config = DatasetConfig(
             name=self.hub_dataset_name,
+            ref=self.benchmark_meta.dataset_revision,
+            task_names=self.extra_params.get('task_names'),
             overwrite=self.force_redownload,
             download_dir=Path(os.path.join(DEFAULT_EVALSCOPE_CACHE_DIR, self.name)),
         )
@@ -547,3 +564,63 @@ Terminal-Bench v2.1 is an improved iteration of Terminal-Bench 2.0, with 26 task
 )
 class TerminalBenchV2_1Adapter(_TerminalBenchBase):
     hub_dataset_name = 'terminal-bench/terminal-bench-2-1'
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='terminal_bench_v4',
+        pretty_name='Terminal-Bench-4.0',
+        tags=[Tags.CODING],
+        description="""
+## Overview
+
+Terminal-Bench 4.0 evaluates agents on 66 challenging terminal tasks using the official Harbor harness. It calibrates task resources, fixes task instructions and verifiers, and removes tasks that no longer provide useful differentiation.
+
+## Task Description
+
+- **Task Type**: Command-Line Agent Evaluation
+- **Input**: Task instructions and an isolated runtime environment
+- **Output**: Agent-produced artifacts and task completion, checked by the official verifier
+- **Domain**: Software engineering, machine learning, security, science, and operations
+
+## Key Features
+
+- Fixed upstream dataset revision **4.0.0**, with content-addressed task versions
+- 66 tasks, including 11 multi-container tasks and 3 tasks requiring an H100 GPU
+- Separate verifier environments for all tasks, including a task with a GPU verifier
+- Official agent timeout of 8 hours per task; task-specific CPU, memory, and verifier budgets
+- Configurable Harbor agents, explicit task-name filtering, and repeated evaluation
+
+## Evaluation Notes
+
+- Requires **Python>=3.12**, **Harbor>=0.14.0,<1.0.0**, and `pip install 'evalscope[terminal_bench]'`
+- Scores are the mean of valid official verifier rewards (0/1); failed trials and invalid rewards are not valid scores
+- Defaults to Docker and terminus-2; terminus-2 uses the configured EvalScope model, while external CLI agents use their own API credentials
+- Full evaluation requires a Docker host with H100 GPU access and multi-container support; Modal is an alternative with `harbor[modal]` and account credentials
+- Task resources and timeouts are inherited from upstream; max_turns defaults to None, using the Harbor agent default
+- Use task_names for an explicit debugging subset and repeats for repeated trials; subset results and results from older benchmark versions are not directly comparable to a full 4.0 evaluation
+- [Usage Example](https://evalscope.readthedocs.io/en/latest/third_party/terminal_bench.html)
+""",
+        dataset_id='https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4',
+        dataset_revision='4.0.0',
+        metric_list=['acc'],
+        eval_split='test',
+        prompt_template='{question}',
+        extra_params=V4_EXTRA_PARAMS,
+        evaluation_version='v1.0',
+    )
+)
+class TerminalBenchV4Adapter(_TerminalBenchBase):
+    """Run the fixed Terminal-Bench 4.0 dataset through Harbor."""
+
+    hub_dataset_name = 'terminal-bench/terminal-bench'
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize the adapter and reject unsupported Harbor versions."""
+        super().__init__(**kwargs)
+        harbor_version = version('harbor')
+        if Version(harbor_version) < Version('0.14.0'):
+            raise ImportError(
+                f'Terminal-Bench 4.0 requires Harbor>=0.14.0; found {harbor_version}. '
+                "Please run `pip install --upgrade 'evalscope[terminal_bench]'`."
+            )

@@ -4,20 +4,22 @@
 
 Terminal-Bench 是一个命令行基准测试套件，用于评估 AI 代理在真实世界的多步骤终端任务上的表现。这些任务涵盖了从编译和调试到系统管理的广泛范围，所有任务都在隔离的容器中执行。每个任务都经过严格验证并自动评分（0/1），旨在推动前沿模型证明它们不仅能回答问题，还能采取行动。
 
-EvalScope 支持两个版本：
+EvalScope 支持三个版本：
 
 - **`terminal_bench_v2`**：原始 89 个任务的基准测试（Terminal-Bench 2.0）。
 - **`terminal_bench_v2_1`**：改进版本，修复了 26 个任务的 bug、超时问题和防奖励作弊机制（Terminal-Bench 2.1，推荐使用）。
+- **`terminal_bench_v4`**：Terminal-Bench 4.0，固定上游版本 **4.0.0**，包含 66 个任务，全部使用独立 verifier 环境。结果不能与 2.0／2.1 直接比较。
 
 相关链接：
 
-- 项目地址：[harbor](https://github.com/laude-institute/harbor)
-- 数据集（Hub）：[terminal-bench-2](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2/latest) | [terminal-bench-2-1](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest)
+- 项目地址：[harbor](https://github.com/harbor-framework/harbor)
+- 数据集（Hub）：[terminal-bench-2](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2/latest) | [terminal-bench-2-1](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench-2-1/latest) | [terminal-bench 4.0](https://hub.harborframework.com/datasets/terminal-bench/terminal-bench/4)
 
 ## 环境要求
 
 ```{important}
 - **Python 版本**：必须使用 **Python >= 3.12**。
+- **Harbor 版本**：要求 **Harbor >= 0.14.0, < 1.0.0**。旧版本无法处理 4.0 的 sidecar artifact 和 verifier 收集钩子。
 - **Docker 环境**：默认使用 Docker 运行评测，请确保运行 EvalScope 的环境中已安装并启动 Docker Engine、Docker Compose 以及 `docker` 命令行工具。
 - **网络连接**：
   - 数据集从 Harbor Hub 下载，请确保网络通畅。
@@ -28,10 +30,53 @@ EvalScope 支持两个版本：
 ## 安装依赖
 
 ```bash
-pip install evalscope[terminal_bench]
+pip install --upgrade 'evalscope[terminal_bench]'
 ```
 
 ## 使用方法
+
+### Terminal-Bench 4.0
+
+默认加载 **4.0.0** 的全部 **66 个任务**，使用 Docker 和 `terminus-2`，继承官方任务的资源和时限（agent 为 8 小时），并采用 Harbor 默认回合上限（`max_turns=None`）。所有任务都有独立 verifier，其中 11 个包含 Docker Compose 服务，3 个要求 H100 GPU。全量运行需要支持 H100 的 Linux Docker 主机、足够的多容器资源，以及依赖下载所需的网络连接。
+
+本地 CPU 调试应显式选取任务；`limit` 只限制数量，不能保证排除 GPU 或多容器任务：
+
+```python
+import os
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='qwen3-coder-plus',
+    api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
+    api_key=os.getenv('DASHSCOPE_API_KEY'),
+    eval_type='openai_api',
+    datasets=['terminal_bench_v4'],
+    dataset_args={
+        'terminal_bench_v4': {
+            'extra_params': {
+                'task_names': ['terminal-bench/bun-sourcemap-leak'],
+            },
+        },
+    },
+    eval_batch_size=1,
+))
+```
+
+`task_names` 支持 Harbor 任务全名或 glob，例如 `terminal-bench/ctr-*`。筛选在 EvalScope 的 shuffle、limit、repeats 和索引之前执行。去掉 `task_names` 即加载全部 66 个任务。在 `TaskConfig` 设置 `repeats=5` 可让每个任务独立运行五次，报告聚合有效 reward 的平均值。子集结果仅用于调试，不代表完整基准分数。
+
+使用 Modal 时，安装额外依赖并配置账号凭据：
+
+```bash
+pip install --upgrade 'harbor[modal]>=0.14.0,<1.0.0'
+modal token new
+```
+
+然后在 `extra_params` 中设置 `'environment_type': 'modal'`。Harbor 根据任务配置选择 GPU，并管理独立 verifier 和 Compose 服务；账号需要能够申请这些资源。
+
+可通过 `agent_name` 选择外部 CLI agent，例如 `'claude-code'` 或 `'codex'`。这些工具自行处理推理和认证，使用各自凭据；只有 `terminus-2` 使用 EvalScope 的模型 API 桥接。
+使用 `eval_type='mock_llm'` 可避免创建不会用到的 EvalScope API 客户端；将 `model` 设置为所选 CLI 支持的模型，并在启动 EvalScope 前配置该工具的凭据。模型名称仍会传给 Harbor，但 `api_url` 和 `api_key` 不会配置外部 CLI。
+
+### Terminal-Bench 2.0 / 2.1
 
 以下示例展示如何使用 evalscope 评测 `qwen3-coder-plus` 模型。
 
@@ -59,7 +104,7 @@ task_cfg = TaskConfig(
                 # 代理类型，默认为 'terminus-2'
                 # 仅 'terminus-2' 使用你配置的模型进行推理。
                 # 其他代理（claude-code、codex 等）是独立 CLI 工具，
-                # 使用各自的 API key，忽略此处配置的模型。
+                # 使用各自的 API key；模型名称会传给 Harbor。
                 'agent_name': 'terminus-2',
 
                 # 超时倍率，如果遇到超时错误可适当调大
@@ -101,7 +146,8 @@ run_task(task_cfg)
 - `timeout_multiplier` (float)：超时倍率。默认为 1.0。
 - `agent_timeout_sec` / `verifier_timeout_sec` (float)：阶段最终超时秒数，不会再被 `timeout_multiplier` 二次放大。
 - `agent_timeout_multiplier` / `verifier_timeout_multiplier` (float)：覆盖全局倍率的阶段倍率；不得与同阶段绝对超时同时设置。
-- `max_turns` (int)：代理完成任务的最大交互轮数。默认为 200。
+- `max_turns` (int 或 None)：最大交互轮数。2.0／2.1 默认为 200，4.0 默认为 None（采用 Harbor 默认值）。
+- `task_names` (list，仅 4.0)：可选的 Harbor 任务全名或 glob，默认为 None，即加载全部任务。
 - `environment_kwargs` (dict)：传递给 Harbor `EnvironmentConfig` 的额外参数，用于配置容器资源限制等。支持的 key 包括：`override_cpus`、`override_memory_mb`、`override_storage_mb`、`override_gpus`、`force_build`、`delete`、`env` 等。
 
 `override_storage_mb` 是否生效取决于 Docker storage driver 和宿主文件系统是否支持容器配额。容器构建和 verifier
