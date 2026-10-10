@@ -147,10 +147,6 @@ class CEVALAdapter(MultiChoiceAdapter):
             metadata={'id': record.get('id', ''), 'explanation': record.get('explanation', ''), 'subject': subset},
         )
 
-    def choice_context(self, sample: Sample) -> Dict[str, Any]:
-        """Preserve the Chinese subject name without exposing test explanations."""
-        return {'subject': SUBJECT_MAPPING[sample.metadata['subject']][1]}
-
     def sample_to_fewshot(self, sample: Sample) -> str:
         q_str = f"""问题：{sample.input}"""
         choices = sample.choices if sample.choices is not None else []

@@ -225,14 +225,14 @@ AUDITED = ['mmlu', 'ceval', 'cmmlu', 'mmlu_pro', 'arc', 'gpqa_diamond', 'hellasw
 
 
 @pytest.mark.parametrize('name', AUDITED)
-def test_audited_adapter_preserves_context_without_gold(name: str) -> None:
+def test_audited_adapter_omits_sample_metadata(name: str) -> None:
     config = TaskConfig(model='test', eval_type='systemone_api', dataset_args={name: {'few_shot_num': 0}})
     adapter = get_benchmark(name, config)
     adapter.validate_choice_config()
     sample = Sample(input='Raw question', choices=['one', 'two'], target='A',
                     metadata={'subject': 'computer_network', 'explanation': 'SECRET_GOLD', 'correct_answer': 'SECRET_GOLD'})
     built = adapter.build_systemone_messages(sample, 'default')
-    assert built[-1].internal['systemone']['state']['question'] == 'Raw question'
+    assert built[-1].internal['systemone']['state'] == {'question': 'Raw question'}
     assert built[-1].internal['systemone']['criteria'] == {'A': 'one', 'B': 'two'}
     assert 'SECRET_GOLD' not in json.dumps([message.model_dump(mode='json') for message in built])
 

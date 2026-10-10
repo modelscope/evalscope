@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import List
 
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
@@ -38,11 +38,6 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         if self.extra_params.get('use_cot'):
             raise ValueError('System One Choice does not generate chain-of-thought text; disable use_cot.')
 
-    def choice_context(self, sample: Sample) -> Dict[str, Any]:
-        """Return audited auxiliary context without copying gold-bearing metadata."""
-        subject = sample.metadata.get('subject')
-        return {'subject': str(subject).replace('_', ' ')} if subject else {}
-
     def choice_examples(self, subset: str) -> List[str]:
         """Reuse the selected demonstration samples or benchmark-specific fixed examples."""
         if self.few_shot_num == 0:
@@ -65,7 +60,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
             raise ValueError('System One Choice requires 2-255 options and one matching target label.')
         instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
-        state = {'question': sample.input, **self.choice_context(sample)}
+        state = {'question': sample.input}
         examples = self.choice_examples(subset)
         if examples:
             state['examples'] = examples
