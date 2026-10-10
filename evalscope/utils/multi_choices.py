@@ -162,7 +162,7 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
 # such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
-_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,/、]*)')
+_PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,，/、]*)')
 _PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9 ,，/、]*)')
 
 _LABEL_TOKEN_RE = re.compile(r'[A-Za-z\d]+')
