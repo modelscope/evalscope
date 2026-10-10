@@ -276,10 +276,13 @@ def test_invalid_samples(sample: Sample) -> None:
         adapter.build_systemone_messages(sample, 'default')
 
 
-def test_unsupported_benchmark_rejected_before_loading() -> None:
+@pytest.mark.parametrize('supports_choice', [False, True])
+def test_unsupported_benchmark_rejected_before_loading(supports_choice: bool) -> None:
     config = TaskConfig(model='test', eval_type='systemone_api')
+    adapter = get_benchmark('gsm8k', config)
+    adapter.benchmark_meta.supports_choice = supports_choice
     with pytest.raises(ValueError, match='no audited'):
-        get_benchmark('gsm8k', config).validate_choice_config()
+        adapter.validate_choice_config()
 
 
 def test_rounded_large_distribution_is_retained() -> None:

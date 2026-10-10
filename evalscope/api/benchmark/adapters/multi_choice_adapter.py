@@ -32,7 +32,20 @@ class MultiChoiceAdapter(DefaultDataAdapter):
 
     def validate_choice_config(self) -> None:
         """Validate the benchmark's single-choice execution contract."""
-        super().validate_choice_config()
+        if not self._benchmark_meta.supports_choice:
+            raise ValueError(f'Benchmark {self.name!r} has no audited text Choice conversion.')
+        if self._task_config.agent_config is not None:
+            raise ValueError('System One Choice evaluation does not support agent_config.')
+        if self._task_config.judge.models or self._task_config.judge.strategy not in ('auto', 'rule'):
+            raise ValueError('System One Choice evaluation uses deterministic scoring, without an LLM judge.')
+        overrides = self._task_config.dataset_args.get(self.name, {})
+        incompatible = {'prompt_template', 'few_shot_prompt_template', 'filters', 'query_template'} & overrides.keys()
+        if incompatible:
+            raise ValueError(
+                f'System One cannot use {", ".join(sorted(incompatible))}; configure choice_instructions instead.'
+            )
+        if self.filters:
+            raise ValueError('System One Choice evaluation does not support output filters.')
         if self.multiple_correct:
             raise ValueError('System One Choice evaluation requires a single correct answer.')
         if self.extra_params.get('use_cot'):
