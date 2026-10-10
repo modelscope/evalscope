@@ -74,6 +74,8 @@ run_task(TaskConfig(
 
 预测 JSONL 中的 `model_output.choice_result` 保存标签、概率与厂商置信度；`model_output.metadata` 保存完整请求和响应。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。
 
+消息记录展示题目和选项；实际发送的任务指令、上下文与示例以 `model_output.metadata.choice_request` 为准。
+
 配置和原始请求保留 Choice 指令及 few-shot 设置；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
 
 固定模型版本、数据版本、split、示例数量和任务指令后再比较成绩。缓存复用和 `rerun_review` 沿用 EvalScope 现有规则；复用预测时，实际模型输入以保存的原始请求为准。模型别名不能保证远端模型版本稳定。

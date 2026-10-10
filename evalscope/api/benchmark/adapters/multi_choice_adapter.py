@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, List
 
 from evalscope.api.dataset.dataset import Sample
@@ -9,6 +8,7 @@ from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
     MultipleChoiceTemplate,
     answer_character,
+    answer_options,
     format_example,
     parse_answers,
     parse_answers_zh,
@@ -84,13 +84,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
                 sample.choice_request = self.build_choice_request(sample, subset)
                 sample.metadata['choice_protocol'] = CHOICE_PROTOCOL_VERSION
                 sample.metadata['choice_few_shot_num'] = self.few_shot_num
-                sample.input = [
-                    ChatMessageUser(
-                        content=json.dumps(
-                            sample.choice_request.to_payload(self._task_config.model_id), ensure_ascii=False
-                        )
-                    )
-                ]
+                sample.input = [ChatMessageUser(content=f'{sample.input}\n\n{answer_options(sample.choices or [])}')]
 
     def format_prompt_template(self, sample: Sample) -> str:
         """

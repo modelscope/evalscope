@@ -25,16 +25,12 @@ class ChoiceQuestion(BaseModel):
 
 
 class ChoiceRequest(BaseModel):
-    """Text state and a single named System One question, without gold labels."""
+    """Task state and a single decision question, without gold labels."""
 
     model_config = ConfigDict(extra='forbid')
 
     state: JsonValue
     question: ChoiceQuestion
-
-    def to_payload(self, model: str) -> dict:
-        """Render the provider's System One wire format."""
-        return {'model': model, 'state': self.state, 'questions': {'answer': self.question.model_dump()}}
 
 
 class ChoiceResult(BaseModel):

@@ -118,6 +118,11 @@ def test_wire_request_and_roundtrip(options: int) -> None:
     assert output.completion == answer_character(options - 1)
     assert output.metadata['choice_response']['latency_ms'] == 42
     assert output.metadata['choice_request'] == seen[0]
+    assert seen[0]['model'] == 'test'
+    assert seen[0]['state'] == {'question': 'Choose the best answer.'}
+    assert set(seen[0]['questions']) == {'answer'}
+    assert seen[0]['questions']['answer']['type'] == 'choice'
+    assert seen[0]['questions']['answer']['instructions'] == 'Choose one.'
     assert output.usage.total_tokens == 12
     assert output.choices[0].logprobs is None
     assert ModelOutput.model_validate_json(output.model_dump_json()).choice_result == output.choice_result
@@ -344,6 +349,11 @@ def test_native_pipeline_and_reports(name: str, tmp_path: Path, monkeypatch: pyt
     report = json.loads(next((tmp_path / 'reports').rglob(f'{name}.json')).read_text())
     assert prediction['model_output']['choice_result']['choice'] == targets[0]
     assert prediction['model_output']['metadata']['choice_request'] == seen[0]
+    displayed_input = prediction['messages'][0]['content']
+    assert seen[0]['state']['question'] in displayed_input
+    for label, text in seen[0]['questions']['answer']['criteria'].items():
+        assert f'{label}) {text}' in displayed_input
+    assert json.dumps(seen[0], ensure_ascii=False) not in displayed_input
     assert 'SECRET_GOLD' not in json.dumps(seen[0])
     assert list(review['sample_score']['score']['value'].values()) == [1.0]
     assert report['execution_summary']['succeeded'] == 1

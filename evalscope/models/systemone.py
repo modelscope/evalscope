@@ -68,7 +68,11 @@ class SystemOneAPI(ModelAPI):
     def generate_choice(self, request: ChoiceRequest, config: GenerateConfig) -> ModelOutput:
         """Run a single structured decision, retrying only transient transport failures."""
         self.validate_config(config)
-        payload = request.to_payload(self.model_name)
+        payload = {
+            'model': self.model_name,
+            'state': request.state,
+            'questions': {'answer': request.question.model_dump(mode='json')},
+        }
         started = time.monotonic()
         attempts = config.retries if config.retries is not None else 5
         for attempt in range(attempts):
