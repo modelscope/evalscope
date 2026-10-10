@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "pretty_name": "BoolQ",
+    "dataset_id": "google/boolq",
+    "paper_url": null,
+    "tags": [
+      "MCQ"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "validation",
+    "train_split": "train",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nBinary reading comprehension using a passage and a naturally occurring question.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Passage and yes/no question\n- **Output**: Yes or No\n- **Domain**: English reading comprehension\n\n## Key Features\n\n- Public dataset: `google/boolq` on ModelScope\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Uses the public validation labels, zero-shot by default. System One evaluates two-option Choice, not the Noul protocol used in some Jev studies.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n",
+    "prompt_template": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {
+    "total_samples": 3270,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 3270,
+        "prompt_length_mean": 822.26,
+        "prompt_length_min": 300,
+        "prompt_length_max": 5043,
+        "prompt_length_std": 329.04,
+        "target_length_mean": 1
+      }
+    ],
+    "prompt_length": {
+      "mean": 822.26,
+      "min": 300,
+      "max": 5043,
+      "std": 329.04
+    },
+    "target_length_mean": 1,
+    "computed_at": "2026-10-09T18:11:13.712407"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "800c0332",
+          "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nPassage:\nAll biomass goes through at least some of these  ... [TRUNCATED 1152 chars] ... versity of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline.\n\nQuestion: does ethanol take more energy make that produces\n\nA) Yes\nB) No"
+        }
+      ],
+      "choices": [
+        "Yes",
+        "No"
+      ],
+      "target": "B",
+      "id": 0,
+      "group_id": 0
+    },
+    "subset": "default",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# BoolQ\n\n\n## Overview\n\nBinary reading comprehension using a passage and a naturally occurring question.\n\n## Task Description\n\n- **Task Type**: Single-choice classification\n- **Input**: Passage and yes/no question\n- **Output**: Yes or No\n- **Domain**: English reading comprehension\n\n## Key Features\n\n- Public dataset: `google/boolq` on ModelScope\n- Preserves the source labels and complete task context\n- Supports chat generation and text System One Choice models\n\n## Evaluation Notes\n\n- Uses the public validation labels, zero-shot by default. System One evaluates two-option Choice, not the Noul protocol used in some Jev studies.\n- Defaults to 0-shot; training examples can be configured where a training split is available\n- System prompts become Choice task instructions, without a native chat-role hierarchy\n- Evaluation semantics version: v1.0\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `boolq` |\n| **Dataset ID** | [google/boolq](https://modelscope.cn/datasets/google/boolq/summary) |\n| **Paper** | N/A |\n| **Tags** | `MCQ` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `validation` |\n| **Train Split** | `train` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 3,270 |\n| Prompt Length (Mean) | 822.26 chars |\n| Prompt Length (Min/Max) | 300 / 5043 chars |\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"800c0332\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nPassage:\\nAll biomass goes through at least some of these  ... [TRUNCATED 1152 chars] ... versity of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline.\\n\\nQuestion: does ethanol take more energy make that produces\\n\\nA) Yes\\nB) No\"\n    }\n  ],\n  \"choices\": [\n    \"Yes\",\n    \"No\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets boolq \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['boolq'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# BoolQ\n\n\n## 概述\n\n基于段落和自然出现的问题进行二元阅读理解。\n\n## 任务描述\n\n- **任务类型**：单选分类\n- **输入**：段落和是非问题\n- **输出**：是 或 否\n- **领域**：英文阅读理解\n\n## 主要特性\n\n- 公开数据集：ModelScope 上的 `google/boolq`\n- 保留原始标签和完整的任务上下文\n- 支持聊天生成和文本 System One Choice 模型\n\n## 评估说明\n\n- 默认使用公开的验证集标签，采用零样本（zero-shot）设置。System One 评估的是二选项选择题，而非某些 Jev 研究中使用的 Noul 协议。\n- 默认为 0-shot；若存在训练集，可配置训练示例\n- 系统提示被转换为选择题任务指令，不包含原生的聊天角色层级结构\n- 评估语义版本：v1.0\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `boolq` |\n| **数据集ID** | [google/boolq](https://modelscope.cn/datasets/google/boolq/summary) |\n| **论文** | 无 |\n| **标签** | `MCQ` |\n| **指标** | `accuracy` |\n| **默认样本数（Shots）** | 0-shot |\n| **评估划分** | `validation` |\n| **训练划分** | `train` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 3,270 |\n| 提示词长度（平均） | 822.26 字符 |\n| 提示词长度（最小/最大） | 300 / 5043 字符 |\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"800c0332\",\n      \"content\": \"Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\\n\\nPassage:\\nAll biomass goes through at least some of these  ... [TRUNCATED 1152 chars] ... versity of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline.\\n\\nQuestion: does ethanol take more energy make that produces\\n\\nA) Yes\\nB) No\"\n    }\n  ],\n  \"choices\": [\n    \"Yes\",\n    \"No\"\n  ],\n  \"target\": \"B\",\n  \"id\": 0,\n  \"group_id\": 0\n}\n```\n\n*注：部分内容为显示目的已截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nAnswer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}.\n\n{question}\n\n{choices}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets boolq \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['boolq'],\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "5db109fbb3c732a6b51e6ad0d4c38d75",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-09T18:11:14.419020",
+  "translation_updated_at": "2026-10-10T09:42:42"
+}

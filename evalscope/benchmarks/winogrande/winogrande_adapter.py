@@ -8,6 +8,8 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 @register_benchmark(
     BenchmarkMeta(
         name='winogrande',
+        supports_choice=True,
+        choice_instructions='Which option correctly fills the blank `_` in `question`?',
         pretty_name='Winogrande',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description="""

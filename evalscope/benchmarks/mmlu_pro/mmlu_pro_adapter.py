@@ -47,6 +47,7 @@ SUBSET_LIST = [
 @register_benchmark(
     BenchmarkMeta(
         name='mmlu_pro',
+        supports_choice=True,
         pretty_name='MMLU-Pro',
         tags=[Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""

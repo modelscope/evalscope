@@ -63,6 +63,8 @@ class DefaultDataAdapter(DataAdapter):
                         organized by subset names.
         """
         # Load the dataset
+        if self._task_config is not None and self.eval_type == 'systemone_api':
+            self.validate_choice_config()
         self.test_dataset, self.fewshot_dataset = self.load()
 
         # Process each sample's input by applying prompt templates and few-shot formatting

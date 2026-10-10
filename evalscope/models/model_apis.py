@@ -18,6 +18,14 @@ def openai_api() -> type[ModelAPI]:
     return OpenAICompatibleAPI
 
 
+@register_model_api(name='systemone_api')
+def systemone_api() -> type[ModelAPI]:
+    """Register the System One single-choice decision provider."""
+    from .systemone import SystemOneAPI
+
+    return SystemOneAPI
+
+
 @register_model_api(name='openai_responses_api')
 def openai_responses_api() -> type[ModelAPI]:
     from .openai_responses import OpenAIResponsesAPI

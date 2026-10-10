@@ -11,6 +11,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate
 @register_benchmark(
     BenchmarkMeta(
         name='musr',
+        supports_choice=True,
         pretty_name='MuSR',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description="""

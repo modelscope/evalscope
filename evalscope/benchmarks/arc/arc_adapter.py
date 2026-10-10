@@ -13,6 +13,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='arc',
+        supports_choice=True,
         pretty_name='ARC',
         tags=[Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description="""

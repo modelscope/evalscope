@@ -84,6 +84,7 @@ DEFAULT_API_EVAL_BATCH_SIZE = 8
 REMOTE_API_EVAL_TYPES = frozenset(
     {
         EvalType.OPENAI_API,
+        EvalType.SYSTEMONE_API,
         EvalType.OPENAI_RESPONSES_API,
         EvalType.ANTHROPIC_API,
         EvalType.LITELLM,

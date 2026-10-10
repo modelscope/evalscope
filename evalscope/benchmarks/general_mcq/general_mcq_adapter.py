@@ -17,6 +17,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='general_mcq',
+        supports_choice=True,
         pretty_name='General-MCQ',
         description="""
 ## Overview

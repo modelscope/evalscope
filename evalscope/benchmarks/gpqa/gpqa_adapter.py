@@ -15,6 +15,7 @@ from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTempl
 @register_benchmark(
     BenchmarkMeta(
         name='gpqa_diamond',
+        supports_choice=True,
         pretty_name='GPQA-Diamond',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description="""
@@ -77,6 +78,12 @@ class GPQAAdapter(MultiChoiceAdapter):
                 ],
             },
         )
+
+    def choice_examples(self, subset: str) -> list[str]:
+        """Return the benchmark's fixed demonstrations for Choice evaluation."""
+        from .prompt import FEW_SHOT_SAMPLES
+
+        return [FEW_SHOT_SAMPLES] if self.few_shot_num else []
 
     def format_fewshot_template(self, fewshot, sample):
         from .prompt import FEW_SHOT_SAMPLES

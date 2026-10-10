@@ -87,6 +87,7 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
 @register_benchmark(
     BenchmarkMeta(
         name='ceval',
+        supports_choice=True,
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
         description="""

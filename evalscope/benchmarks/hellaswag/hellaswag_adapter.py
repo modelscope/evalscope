@@ -18,6 +18,8 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='hellaswag',
+        supports_choice=True,
+        choice_instructions='Which ending is the most plausible continuation of `question`?',
         pretty_name='HellaSwag',
         tags=[Tags.COMMONSENSE, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""

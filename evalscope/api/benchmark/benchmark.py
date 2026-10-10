@@ -83,6 +83,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """Convert the benchmark metadata to a dictionary."""
         return self._benchmark_meta.to_string_dict()
 
+    def validate_choice_config(self) -> None:
+        """Reject Choice evaluation unless an adapter implements its conversion."""
+        raise ValueError(f'Benchmark {self.name!r} has no audited text Choice conversion.')
+
     @property
     def benchmark_meta(self) -> 'BenchmarkMeta':
         """Return the resolved benchmark metadata used by this adapter."""

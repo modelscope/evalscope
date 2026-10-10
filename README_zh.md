@@ -38,6 +38,7 @@ evalscope eval --model your-model-name --api-url $OPENAI_API_BASE_URL --api-key 
 
 - **📚 全面的评测基准**: 内置 MMLU, C-Eval, GSM8K 等多个业界公认的评测基准。
 - **🧩 多模态与多领域支持**: 支持大语言模型 (LLM)、多模态 (VLM)、Embedding、Reranker、AIGC 等多种模型的评测。
+- **🧭 System One 评测**: 通过 `--eval-type systemone_api` 评测文本 Choice 决策模型，支持任务指令、few-shot 示例，并保留概率与置信度。详见[使用指南](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/systemone.html)。
 - **🚀 多后端集成**: 无缝集成 OpenCompass, VLMEvalKit, RAGEval 等多种评测后端，满足不同评测需求。
 - **🤖 Agent 评测模式**: 在受控的多轮 AgentLoop 中驱动 GSM8K、AIME、SWE-bench Agentic 等基准；支持可插拔的策略、工具与 Docker 沙箱，每条样本完整记录 Agent Trace 并可在仪表盘中按步骤回放。
 - **⚡ 推理性能测试**: 提供强大的模型服务压力测试工具，支持 TTFT, TPOT 等多项性能指标。
@@ -76,6 +77,7 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ## 🎉 内容更新
 
+- 🔥 **[2026.10.09]** 新增 **System One Choice 评测**，以及 **ANLI**、**BoolQ**、**BANKING77**、**ContractNLI**、**RewardBench v1** 评测基准。五个新增基准均默认从 ModelScope 加载，也支持普通 LLM 评测。详见 [System One 评测](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/systemone.html)。
 - 🔥 **[2026.08.24] v1.11.0** 引入可发布的评测版本标识，保障基准结果可复现；优化评测报告语义与不完整运行处理，并增强多模态媒体加载和任务配置校验。
 - 🔥 **[2026.08.13]** 评测报告升级：统一指标语义，并改善 Agent Trace 步骤分组与工具调用/结果关联的可靠性。
 - 🔥 **[2026.08.10]** 新增 **AutomationBench**、**JobBench**、**MiniWoB**、**OmniDocBench-v1.6**、**PerceptionBench**、**ScreenSpot-Pro**、**PLawBench**、**PMC-VQA**、**HiPhO**、**LogicVista** 和 **CC-OCR-V2** 基准。

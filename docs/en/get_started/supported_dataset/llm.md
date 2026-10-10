@@ -12,6 +12,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `alpaca_eval` | [AlpacaEval2.0](../../benchmarks/alpaca_eval.md) | `Arena`, `InstructionFollowing` |
 | `amc` | [AMC](../../benchmarks/amc.md) | `Math`, `Reasoning` |
 | `anat_em` | [AnatEM](../../benchmarks/anat_em.md) | `Knowledge`, `NER` |
+| `anli` | [ANLI](../../benchmarks/anli.md) | `MCQ` |
 | `arc` | [ARC](../../benchmarks/arc.md) | `MCQ`, `Reasoning` |
 | `arc_agi_2` | [ARC-AGI-2](../../benchmarks/arc_agi_2.md) | `Reasoning` |
 | `arc_indic` | [ARC-Challenge-Indic](../../benchmarks/arc_indic.md) | `MCQ`, `MultiLingual`, `Reasoning` |
@@ -19,6 +20,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `arxivmath` | [ArXiv-Math](../../benchmarks/arxivmath.md) | `Math`, `Reasoning` |
 | `arxivrollbench` | [ArxivRollBench](../../benchmarks/arxivrollbench.md) | `Knowledge`, `MCQ`, `Reasoning` |
 | `arxivrollbench_full` | [ArxivRollBench-Full](../../benchmarks/arxivrollbench_full.md) | `Knowledge`, `MCQ`, `Reasoning` |
+| `banking77` | [BANKING77](../../benchmarks/banking77.md) | `MCQ` |
 | `bbh` | [BBH](../../benchmarks/bbh.md) | `Reasoning` |
 | `bc2gm` | [BC2GM](../../benchmarks/bc2gm.md) | `Knowledge`, `NER` |
 | `bc4chemd` | [BC4CHEMD](../../benchmarks/bc4chemd.md) | `Knowledge`, `NER` |
@@ -34,6 +36,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `bigcodebench` | [BigCodeBench](../../benchmarks/bigcodebench.md) | `Coding` |
 | `bigcodebench_hard` | [BigCodeBench-Hard](../../benchmarks/bigcodebench_hard.md) | `Coding` |
 | `biomix_qa` | [BioMixQA](../../benchmarks/biomix_qa.md) | `Knowledge`, `MCQ`, `Medical` |
+| `boolq` | [BoolQ](../../benchmarks/boolq.md) | `MCQ` |
 | `broad_twitter_corpus` | [BroadTwitterCorpus](../../benchmarks/broad_twitter_corpus.md) | `Knowledge`, `NER` |
 | `ceval` | [C-Eval](../../benchmarks/ceval.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `chinese_simpleqa` | [Chinese-SimpleQA](../../benchmarks/chinese_simpleqa.md) | `Chinese`, `Knowledge`, `QA` |
@@ -45,6 +48,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `competition_math` | [Competition-MATH](../../benchmarks/competition_math.md) | `Math`, `Reasoning` |
 | `conll2003` | [CoNLL2003](../../benchmarks/conll2003.md) | `Knowledge`, `NER` |
 | `conllpp` | [CoNLL++](../../benchmarks/conllpp.md) | `Knowledge`, `NER` |
+| `contract_nli` | [ContractNLI (classification)](../../benchmarks/contract_nli.md) | `MCQ` |
 | `copious` | [Copious](../../benchmarks/copious.md) | `Knowledge`, `NER` |
 | `cross_ner` | [CrossNER](../../benchmarks/cross_ner.md) | `Knowledge`, `NER` |
 | `data_collection` | [Data-Collection](../../benchmarks/data_collection.md) | `Custom` |
@@ -128,6 +132,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `qasc` | [QASC](../../benchmarks/qasc.md) | `Knowledge`, `MCQ` |
 | `race` | [RACE](../../benchmarks/race.md) | `MCQ`, `Reasoning` |
 | `refcoco` | [RefCOCO](../../benchmarks/refcoco.md) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
+| `reward_bench` | [RewardBench v1 (pairwise)](../../benchmarks/reward_bench.md) | `MCQ` |
 | `sanskriti` | [Sanskriti](../../benchmarks/sanskriti.md) | `Knowledge`, `MCQ` |
 | `scicode` | [SciCode](../../benchmarks/scicode.md) | `Coding` |
 | `sciq` | [SciQ](../../benchmarks/sciq.md) | `Knowledge`, `MCQ`, `ReadingComprehension` |
@@ -161,6 +166,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/alpaca_eval.md
 ../../benchmarks/amc.md
 ../../benchmarks/anat_em.md
+../../benchmarks/anli.md
 ../../benchmarks/arc.md
 ../../benchmarks/arc_agi_2.md
 ../../benchmarks/arc_indic.md
@@ -168,6 +174,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/arxivmath.md
 ../../benchmarks/arxivrollbench.md
 ../../benchmarks/arxivrollbench_full.md
+../../benchmarks/banking77.md
 ../../benchmarks/bbh.md
 ../../benchmarks/bc2gm.md
 ../../benchmarks/bc4chemd.md
@@ -183,6 +190,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/bigcodebench.md
 ../../benchmarks/bigcodebench_hard.md
 ../../benchmarks/biomix_qa.md
+../../benchmarks/boolq.md
 ../../benchmarks/broad_twitter_corpus.md
 ../../benchmarks/ceval.md
 ../../benchmarks/chinese_simpleqa.md
@@ -194,6 +202,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/competition_math.md
 ../../benchmarks/conll2003.md
 ../../benchmarks/conllpp.md
+../../benchmarks/contract_nli.md
 ../../benchmarks/copious.md
 ../../benchmarks/cross_ner.md
 ../../benchmarks/data_collection.md
@@ -277,6 +286,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/qasc.md
 ../../benchmarks/race.md
 ../../benchmarks/refcoco.md
+../../benchmarks/reward_bench.md
 ../../benchmarks/sanskriti.md
 ../../benchmarks/scicode.md
 ../../benchmarks/sciq.md

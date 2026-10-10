@@ -1,8 +1,13 @@
+from typing import List
+
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
+from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
     MultipleChoiceTemplate,
+    answer_character,
+    answer_options,
     format_example,
     parse_answers,
     parse_answers_zh,
@@ -24,6 +29,80 @@ class MultiChoiceAdapter(DefaultDataAdapter):
 
         self.multiple_correct: bool = False
         """Whether the benchmark allows multiple correct answers."""
+
+    def validate_choice_config(self) -> None:
+        """Validate the benchmark's single-choice execution contract."""
+        if not self._benchmark_meta.supports_choice:
+            raise ValueError(f'Benchmark {self.name!r} has no audited text Choice conversion.')
+        if self._task_config.agent_config is not None:
+            raise ValueError('System One Choice evaluation does not support agent_config.')
+        if self._task_config.judge.models or self._task_config.judge.strategy not in ('auto', 'rule'):
+            raise ValueError('System One Choice evaluation uses deterministic scoring, without an LLM judge.')
+        overrides = self._task_config.dataset_args.get(self.name, {})
+        incompatible = {'prompt_template', 'few_shot_prompt_template', 'filters', 'query_template'} & overrides.keys()
+        if incompatible:
+            raise ValueError(
+                f'System One cannot use {", ".join(sorted(incompatible))}; configure choice_instructions instead.'
+            )
+        if self.filters:
+            raise ValueError('System One Choice evaluation does not support output filters.')
+        if self.multiple_correct:
+            raise ValueError('System One Choice evaluation requires a single correct answer.')
+        if self.extra_params.get('use_cot'):
+            raise ValueError('System One Choice does not generate chain-of-thought text; disable use_cot.')
+
+    def choice_examples(self, subset: str) -> List[str]:
+        """Reuse the selected demonstration samples or benchmark-specific fixed examples."""
+        if self.few_shot_num == 0:
+            return []
+        if self.fewshot_dataset is None:
+            raise ValueError(f'{self.name} needs a choice_examples() hook for fixed few-shot examples.')
+        examples = self.fewshot_dataset.get(subset)
+        if examples is None:
+            examples = next(iter(self.fewshot_dataset.values()))
+        if len(examples) < self.few_shot_num:
+            raise ValueError(f'{self.name} has fewer examples than few_shot_num={self.few_shot_num}.')
+        return [self.sample_to_fewshot(example) for example in examples[: self.few_shot_num]]
+
+    def build_systemone_messages(self, sample: Sample, subset: str) -> List[ChatMessage]:
+        """Prepare chat messages with the MCQ data needed by the System One provider."""
+        if not isinstance(sample.input, str) or sample.tools:
+            raise ValueError('System One Choice requires raw text input without tools.')
+        criteria = {answer_character(i): value for i, value in enumerate(sample.choices or [])}
+        target = Target(sample.target)
+        if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
+            raise ValueError('System One Choice requires 2-255 options and one matching target label.')
+        instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
+        state = {'question': sample.input}
+        examples = self.choice_examples(subset)
+        if examples:
+            state['examples'] = examples
+            instructions += '\nUse `examples` as demonstrations of the task.'
+        messages: List[ChatMessage] = []
+        if self.system_prompt:
+            messages.append(ChatMessageSystem(content=self.system_prompt))
+        messages.append(
+            ChatMessageUser(
+                content=f'{sample.input}\n\n{answer_options(sample.choices or [])}',
+                internal={
+                    'systemone': {
+                        'state': state,
+                        'instructions': instructions,
+                        'criteria': criteria,
+                        'answer_prefix': '答案：' if '答案：' in (self.prompt_template or '') else 'ANSWER: ',
+                    }
+                },
+            )
+        )
+        return messages
+
+    def _post_process_samples(self) -> None:
+        if self._task_config is None or self.eval_type != 'systemone_api':
+            super()._post_process_samples()
+            return
+        for subset, dataset in self.test_dataset.items():
+            for sample in dataset:
+                sample.input = self.build_systemone_messages(sample, subset)
 
     def format_prompt_template(self, sample: Sample) -> str:
         """

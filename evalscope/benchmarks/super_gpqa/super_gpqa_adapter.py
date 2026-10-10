@@ -88,6 +88,7 @@ SUBSET_MAPPING = {
 @register_benchmark(
     BenchmarkMeta(
         name='super_gpqa',
+        supports_choice=True,
         pretty_name='SuperGPQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description="""
@@ -152,6 +153,13 @@ class SuperGPQAAdapter(MultiChoiceAdapter):
                 'explanation': record.get('answer', ''),
             },
         )
+
+    def choice_examples(self, subset: str) -> list[str]:
+        """Return the benchmark's fixed demonstrations for Choice evaluation."""
+        from .prompt import FEW_SHOT_SAMPLES
+
+        examples = 'Question:' + FEW_SHOT_SAMPLES.split('Question:', 1)[1]
+        return [examples] if self.few_shot_num else []
 
     def format_fewshot_template(self, fewshot, sample):
         from .prompt import FEW_SHOT_SAMPLES
