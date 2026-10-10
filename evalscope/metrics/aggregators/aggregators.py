@@ -290,10 +290,16 @@ class MeanVoteAtK(Aggregator):
                         for index in range(n)
                     ]
 
-                    # Count prediction frequencies
+                    # Count prediction frequencies, ignoring failed extractions (None or blank)
                     prediction_counts = defaultdict(int)
                     for prediction, _ in n_samples:
+                        if prediction is None or (isinstance(prediction, str) and not prediction.strip()):
+                            continue
                         prediction_counts[prediction] += 1
+
+                    if not prediction_counts:
+                        vote_at_n_map[group_id] = 0.0
+                        continue
 
                     # Select most frequent prediction (ties broken by first occurrence)
                     most_frequent_pred = max(prediction_counts, key=prediction_counts.get)

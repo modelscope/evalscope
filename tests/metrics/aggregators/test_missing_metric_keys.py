@@ -165,3 +165,46 @@ def test_missing_middle_generation_excludes_only_affected_higher_k_groups(aggreg
     assert at_two is not None
     assert at_two.num == 1
     assert at_two.metadata == {'eligible': 1, 'total': 2, 'coverage': 0.5, 'excluded': 1}
+
+
+def _vote_scores(predictions: List[Optional[str]], correct: List[float]) -> List[SampleScore]:
+    return [
+        make_sample_score({'acc': value}, group_id='g0', sample_id=f'g0-{index}', prediction=prediction,
+                          generation_index=index) for index, (prediction, value) in enumerate(zip(predictions, correct))
+    ]
+
+
+@pytest.mark.parametrize('empty', [None, '', '   '])
+def test_vote_at_k_ignores_failed_extractions_in_tie(empty):
+    scores = _vote_scores([empty, empty, '42', '42'], [0.0, 0.0, 1.0, 1.0])
+
+    at_four = find_agg(MeanVoteAtK()(scores), 'vote_at_k', 4)
+
+    assert at_four.score == pytest.approx(1.0)
+
+
+def test_vote_at_k_ignores_failed_extractions_in_majority():
+    scores = _vote_scores([None, '', None, '42'], [0.0, 0.0, 0.0, 1.0])
+
+    at_four = find_agg(MeanVoteAtK()(scores), 'vote_at_k', 4)
+
+    assert at_four.score == pytest.approx(1.0)
+
+
+def test_vote_at_k_all_failed_extractions_scores_zero():
+    scores = _vote_scores([None, '', ' ', None], [0.0, 0.0, 0.0, 0.0])
+
+    at_four = find_agg(MeanVoteAtK()(scores), 'vote_at_k', 4)
+
+    assert at_four.score == pytest.approx(0.0)
+    assert at_four.num == 1
+
+
+def test_vote_at_k_majority_unchanged_without_empty_predictions():
+    scores = _vote_scores(['7', '7', '42', '7'], [0.0, 0.0, 1.0, 0.0])
+
+    at_four = find_agg(MeanVoteAtK()(scores), 'vote_at_k', 4)
+    at_three = find_agg(MeanVoteAtK()(scores), 'vote_at_k', 3)
+
+    assert at_four.score == pytest.approx(0.0)
+    assert at_three.score == pytest.approx(0.0)
