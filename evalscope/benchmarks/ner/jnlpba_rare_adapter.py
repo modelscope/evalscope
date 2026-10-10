@@ -33,6 +33,7 @@ The JNLPBA-Rare dataset is a specialized subset of the JNLPBA test set created t
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='jnlpba_rare',
         pretty_name='JNLPBA-Rare',
         dataset_id='extraordinarylab/jnlpba-rare',

@@ -33,6 +33,7 @@ The BC2GM (BioCreative II Gene Mention) dataset is a widely used corpus for gene
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='bc2gm',
         pretty_name='BC2GM',
         dataset_id='extraordinarylab/bc2gm',

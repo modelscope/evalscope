@@ -38,6 +38,7 @@ CrossNER is a fully-labeled collection of named entity recognition (NER) data sp
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='cross_ner',
         pretty_name='CrossNER',
         dataset_id='extraordinarylab/cross-ner',

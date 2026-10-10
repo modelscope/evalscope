@@ -33,6 +33,7 @@ The JNLPBA dataset is a widely-used resource for bio-entity recognition, consist
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='jnlpba',
         pretty_name='JNLPBA',
         dataset_id='extraordinarylab/jnlpba',

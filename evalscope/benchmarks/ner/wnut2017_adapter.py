@@ -33,6 +33,7 @@ The WNUT2017 dataset is a collection of user-generated text from various social 
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='wnut2017',
         pretty_name='WNUT2017',
         dataset_id='extraordinarylab/wnut2017',

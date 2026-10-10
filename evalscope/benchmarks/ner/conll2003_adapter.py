@@ -6,6 +6,7 @@ from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='conll2003',
         pretty_name='CoNLL2003',
         dataset_id='extraordinarylab/conll2003',
