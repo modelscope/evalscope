@@ -57,6 +57,13 @@ class BenchmarkData:
     prompt_tokens: Optional[int] = None
     completion_tokens: Optional[int] = None
 
+    # --- Token usage availability ---
+    usage_missing: bool = False
+    """True when a *successful* response carried no token usage and no tokenizer
+    was configured to recompute it.  Such a sample still counts as a successful
+    request (latency / QPS / throughput), but its unknown token counts are kept
+    out of the token averages instead of being counted as zero."""
+
     # --- Multi-turn specific (only populated in multi-turn benchmark mode) ---
     input_num_turns: int = 0
     """Number of user turns in the conversation context when this request was sent."""
@@ -106,9 +113,21 @@ class BenchmarkData:
         token counts already present will not be re-parsed.
         """
         if self.prompt_tokens is None or self.completion_tokens is None:
-            self.prompt_tokens, self.completion_tokens = api_plugin.parse_responses(
-                self.response_messages, request=self.request
-            )
+            try:
+                self.prompt_tokens, self.completion_tokens = api_plugin.parse_responses(
+                    self.response_messages, request=self.request
+                )
+            except ValueError as e:
+                # A successful response may simply carry no usage (e.g. an
+                # OpenAI Responses stream that closes without a terminal
+                # `response.completed` event) while no tokenizer was configured
+                # to recompute it.  Raising here escapes the metrics-consumer
+                # loop and aborts the entire benchmark run, so degrade instead:
+                # mark the sample and leave the token counts at zero.  The
+                # accumulator excludes such samples from the token averages.
+                logger.warning(f'Unable to determine token usage for a successful request: {e}')
+                self.usage_missing = True
+                self.prompt_tokens = self.completion_tokens = 0
 
         # tpot = (latency - ttft) / (output_len - 1)
         if self.completion_tokens and self.completion_tokens > 1:
@@ -173,6 +192,12 @@ class MetricsAccumulator:
     # --- Request counts ---
     n_total: int = 0
     n_success: int = 0
+    n_token_success: int = 0
+    """Successful requests that also reported token usage.  Token averages use
+    this as their denominator so successful-but-usage-less samples (see
+    :attr:`BenchmarkData.usage_missing`) are excluded rather than counted as
+    zero tokens.  Equals ``n_success`` whenever every success reported usage,
+    so the token averages are unchanged in that case."""
 
     # --- Wall-clock time window (private; exposed via wall_time property) ---
     _wall_start: Optional[float] = field(default=None, repr=False)
@@ -264,8 +289,13 @@ class MetricsAccumulator:
 
             self.total_latency += data.query_latency
             self.total_first_chunk_latency += data.first_chunk_latency
-            self.total_prompt_tokens += data.prompt_tokens
-            self.total_completion_tokens += data.completion_tokens
+            # Successful samples whose usage could not be determined stay in
+            # latency/QPS but are excluded from the token averages, so an
+            # unknown count is not silently averaged in as 0 tokens.
+            if not data.usage_missing:
+                self.total_prompt_tokens += data.prompt_tokens
+                self.total_completion_tokens += data.completion_tokens
+                self.n_token_success += 1
             self.total_time_per_output_token += data.time_per_output_token
             self.all_inter_token_latencies += data.inter_chunk_latency
             if self.enable_pd_metrics:
@@ -342,6 +372,7 @@ class MetricsAccumulator:
     def to_result(self) -> 'BenchmarkMetrics':
         """Compute averages and return an immutable :class:`BenchmarkMetrics` snapshot."""
         n = self.n_success
+        n_token = self.n_token_success
         t = self.wall_time
 
         def _safe_div(numerator, denominator, default=-1):
@@ -361,8 +392,11 @@ class MetricsAccumulator:
             else:
                 avg_first_chunk_latency = _safe_div(self.total_first_chunk_latency, n)
                 avg_time_per_output_token = _safe_div(self.total_time_per_output_token, n)
-            avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n)
-            avg_completion_tokens = _safe_div(self.total_completion_tokens, n)
+            # Token averages use the usage-reporting success count as their
+            # denominator (see ``n_token_success``); it equals ``n`` unless some
+            # successful sample could not report usage (``usage_missing``).
+            avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n_token)
+            avg_completion_tokens = _safe_div(self.total_completion_tokens, n_token)
             avg_inter_token_latency = (
                 sum(self.all_inter_token_latencies) / len(self.all_inter_token_latencies)
                 if self.all_inter_token_latencies
