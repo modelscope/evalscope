@@ -33,6 +33,7 @@ TweetNER7 is a large-scale NER dataset featuring over 11,000 tweets from 2019-20
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='tweet_ner_7',
         pretty_name='TweetNER7',
         dataset_id='extraordinarylab/tweet-ner-7',

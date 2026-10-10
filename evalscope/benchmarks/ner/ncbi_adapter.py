@@ -33,6 +33,7 @@ The NCBI disease corpus is a manually annotated resource of PubMed abstracts des
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='ncbi',
         pretty_name='NCBI',
         dataset_id='extraordinarylab/ncbi',

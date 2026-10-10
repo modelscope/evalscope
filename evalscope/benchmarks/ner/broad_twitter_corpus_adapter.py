@@ -33,6 +33,7 @@ BroadTwitterCorpus is a dataset of tweets collected over stratified times, place
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='broad_twitter_corpus',
         pretty_name='BroadTwitterCorpus',
         dataset_id='extraordinarylab/broad-twitter-corpus',
