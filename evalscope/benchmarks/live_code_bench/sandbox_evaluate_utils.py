@@ -194,6 +194,23 @@ except Exception as e:
         return False, {'error': str(e), 'total_tests': len(inputs), 'passed_tests': 0}
 
 
+def _stdio_outputs_match(actual: str, expected: str) -> bool:
+    """Line-by-line comparison of `testing_util.grade_stdio`: strip each line, then compare numbers as Decimals."""
+    from .testing_util import convert_line_to_decimals, get_stripped_lines
+
+    actual_lines, expected_lines = get_stripped_lines(actual), get_stripped_lines(expected)
+    if len(actual_lines) != len(expected_lines):
+        return False
+    for actual_line, expected_line in zip(actual_lines, expected_lines):
+        if actual_line == expected_line:
+            continue
+        ok_actual, actual_numbers = convert_line_to_decimals(actual_line)
+        ok_expected, expected_numbers = convert_line_to_decimals(expected_line)
+        if not (ok_actual and ok_expected and actual_numbers == expected_numbers):
+            return False
+    return True
+
+
 def _evaluate_stdio_in_sandbox(
     adapter: 'CodeExecutionSandboxMixin', code: str, inputs: list, outputs: list, timeout: int, debug: bool
 ) -> Tuple[bool, Dict]:
@@ -226,11 +243,11 @@ sys.stdin = io.TextIOWrapper(io.BytesIO({test_input_literal}.encode('utf-8')), e
                 all_passed = False
                 break
 
-            # Compare output
+            # Compare output the way the local grader (`testing_util.grade_stdio`) does
             actual_output = result.get('output', '').strip()
             expected_output = expected_output.strip()
 
-            if actual_output == expected_output:
+            if _stdio_outputs_match(actual_output, expected_output):
                 passed_count += 1
             else:
                 if debug:
