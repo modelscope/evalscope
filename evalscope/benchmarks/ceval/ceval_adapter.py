@@ -174,22 +174,7 @@ class CEVALAdapter(MultiChoiceAdapter):
         return USER_PROMPT_TEMPLATE.format(subject=subject_name, question=sample.input, choices=choices_str)
 
     def extract_answer(self, prediction, task_state) -> str:
-        """
-        Extract the answer from the prediction based on the task state.
+        """Parse the '答案：X' line with the shared Chinese multiple-choice parser, as CMMLU does."""
+        from evalscope.utils.multi_choices import parse_answers_zh
 
-        Args:
-            prediction (str): The model's prediction string
-            task_state (dict): The current task state containing metadata
-
-        Returns:
-            str: The extracted answer from the prediction
-        """
-        import re
-
-        # Use regex to find the answer in the format "答案：LETTER"
-        matches = re.findall(r'答案：([A-D])', prediction)
-        if matches:
-            return matches[-1]
-        else:
-            logger.warning(f'No valid answer found in prediction: {prediction}')
-            return ''
+        return ''.join(sorted(parse_answers_zh(task_state, completion=prediction)))
