@@ -9,6 +9,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from evalscope.perf.utils.benchmark_util import BenchmarkData, MetricsAccumulator, is_stream_body
 from evalscope.perf.utils.db_util import create_result_table, get_percentile_results, insert_benchmark_data
@@ -58,6 +59,43 @@ class TestAccumulatorBucketing(unittest.TestCase):
 
     def setUp(self):
         self.plugin = _DummyPlugin(10, 50)
+
+    def test_interval_averages_weight_by_interval_count(self) -> None:
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        intervals = []
+        steady_intervals = []
+        for values in ([], [0.30, 0.10, 0.20], [0.60], [0.50, 0.40]):
+            acc.update(_make(itl=values), self.plugin)
+            intervals.extend(values)
+            steady_intervals.extend(values[1:])
+            result = acc.to_result()
+            self.assertAlmostEqual(result.avg_inter_token_latency, sum(intervals) / len(intervals) if intervals else 0.0)
+            self.assertAlmostEqual(
+                result.avg_steady_inter_token_latency,
+                sum(steady_intervals) / len(steady_intervals) if steady_intervals else -1,
+            )
+
+        expected = acc.to_result()
+        warmup = _make(itl=[100.0, 100.0])
+        warmup.is_warmup = True
+        acc.update(warmup, self.plugin)
+        acc.update(_make(itl=[100.0, 100.0], success=False), self.plugin)
+        result = acc.to_result()
+        self.assertEqual(result.avg_inter_token_latency, expected.avg_inter_token_latency)
+        self.assertEqual(result.avg_steady_inter_token_latency, expected.avg_steady_inter_token_latency)
+
+    def test_snapshots_do_not_resum_latency_history(self) -> None:
+        acc = MetricsAccumulator(enable_pd_metrics=True)
+        for _ in range(10):
+            acc.update(_make(itl=[0.01] * 1000), self.plugin)
+        expected = acc.to_result()
+        with patch(
+            'evalscope.perf.utils.benchmark_util.sum',
+            side_effect=AssertionError('Metric snapshots must not sum past intervals'),
+            create=True,
+        ):
+            self.assertEqual(acc.to_result(), expected)
+            self.assertEqual(acc.to_result(), expected)
 
     def test_stream_only_metrics_excludes_nonstream(self):
         acc = MetricsAccumulator()
