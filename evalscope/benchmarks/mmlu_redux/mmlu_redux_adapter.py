@@ -142,7 +142,8 @@ class MMLUReduxAdapter(MultiChoiceAdapter):
             correct_answer = correct_answer.strip('()')
             try:
                 correct_answer = correct_answer.replace(' and ', ',').replace(' or ', ',')
-                target_index_list = list(map(int, correct_answer.split(',')))
+                # Annotators separate the indices with commas or spaces ('1, 3', '0 1 3').
+                target_index_list = list(map(int, correct_answer.replace(',', ' ').split()))
             except ValueError:
                 try:
                     target_index_list = [ord(c) - ord('A') for c in correct_answer.split(',')]
