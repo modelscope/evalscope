@@ -199,7 +199,10 @@ class _TerminalBenchBase(AgentAdapter):
         env_kwargs = {k: v for k, v in self.environment_kwargs.items() if k != 'type'}
         environment_config = EnvironmentConfig(type=self.environment_type, **env_kwargs)
 
-        agent_kwargs = {'max_turns': self.max_turns}
+        agent_kwargs = (
+            {} if self.agent_name == 'codex'
+            else {'max_turns': self.max_turns}
+        )
         if self.agent_name == 'terminus-2':
             agent_kwargs.update(
                 {
