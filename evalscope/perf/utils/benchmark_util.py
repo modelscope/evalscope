@@ -163,6 +163,7 @@ class MetricsAccumulator:
 
     Call :meth:`update` for each completed :class:`BenchmarkData`, then call
     :meth:`to_result` to obtain a computed :class:`BenchmarkMetrics` snapshot.
+    Latency averages use running totals so snapshots do not scan past intervals.
     """
 
     # --- Test configuration ---
@@ -188,12 +189,14 @@ class MetricsAccumulator:
     total_pd_handoff_overhead: float = 0.0
     n_pd_handoff_latency: int = 0
     n_pd_handoff_overhead: int = 0
-    all_inter_token_latencies: List[float] = field(default_factory=list)
-    all_steady_inter_token_latencies: List[float] = field(default_factory=list)
+    total_inter_token_latency: float = 0.0
+    n_inter_token_latencies: int = 0
+    total_steady_inter_token_latency: float = 0.0
+    n_steady_inter_token_latencies: int = 0
 
     # --- Stream-only cumulative sums (stream requests only) ---
     # ITL is intentionally *not* bucketed here: non-stream requests contribute an
-    # empty inter_chunk_latency list, so all_inter_token_latencies is already
+    # empty inter_chunk_latency list, so total_inter_token_latency is already
     # stream-only by construction and needs no separate accumulator.
     n_stream_success: int = 0
     n_stream_total: int = 0
@@ -267,10 +270,12 @@ class MetricsAccumulator:
             self.total_prompt_tokens += data.prompt_tokens
             self.total_completion_tokens += data.completion_tokens
             self.total_time_per_output_token += data.time_per_output_token
-            self.all_inter_token_latencies += data.inter_chunk_latency
+            self.total_inter_token_latency += sum(data.inter_chunk_latency)
+            self.n_inter_token_latencies += len(data.inter_chunk_latency)
             if self.enable_pd_metrics:
                 if len(data.inter_chunk_latency) > 1:
-                    self.all_steady_inter_token_latencies += data.inter_chunk_latency[1:]
+                    self.total_steady_inter_token_latency += sum(data.inter_chunk_latency[1:])
+                    self.n_steady_inter_token_latencies += len(data.inter_chunk_latency) - 1
                 if data.pd_handoff_latency is not None:
                     self.total_pd_handoff_latency += data.pd_handoff_latency
                     self.n_pd_handoff_latency += 1
@@ -364,13 +369,11 @@ class MetricsAccumulator:
             avg_prompt_tokens = _safe_div(self.total_prompt_tokens, n)
             avg_completion_tokens = _safe_div(self.total_completion_tokens, n)
             avg_inter_token_latency = (
-                sum(self.all_inter_token_latencies) / len(self.all_inter_token_latencies)
-                if self.all_inter_token_latencies
-                else 0.0
+                self.total_inter_token_latency / self.n_inter_token_latencies if self.n_inter_token_latencies else 0.0
             )
             avg_steady_inter_token_latency = (
-                sum(self.all_steady_inter_token_latencies) / len(self.all_steady_inter_token_latencies)
-                if self.all_steady_inter_token_latencies
+                self.total_steady_inter_token_latency / self.n_steady_inter_token_latencies
+                if self.n_steady_inter_token_latencies
                 else -1
             )
             avg_pd_handoff_latency = (
