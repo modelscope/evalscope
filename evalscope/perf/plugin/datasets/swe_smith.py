@@ -225,7 +225,10 @@ def _to_turns(conversation: List[Dict]) -> Optional[Conversation]:
     messages_per_turn: List[Messages] = [turn.get('messages', []) for turn in conversation]
     if not messages_per_turn:
         return None
-    return [Turn(messages=m, is_final=(i == len(messages_per_turn) - 1)) for i, m in enumerate(messages_per_turn)]
+    rid = conversation[0].get('rid')
+    return [
+        Turn(messages=m, is_final=(i == len(messages_per_turn) - 1), rid=rid) for i, m in enumerate(messages_per_turn)
+    ]
 
 
 # ---------------------------------------------------------------------------

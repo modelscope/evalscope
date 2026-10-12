@@ -31,12 +31,14 @@ class Turn:
     (per-turn output cap from the recorded length sequence) and
     ``tool_call_latency`` (seconds to sleep before sending this turn, simulating
     tool execution wait).  ``is_final`` flags the last turn of the trace.
+    An optional ``rid`` on the first turn supplies the conversation routing key.
     """
 
     messages: Messages
     max_tokens: Optional[int] = None
     tool_call_latency: Optional[float] = None
     is_final: bool = False
+    rid: Optional[str] = None
 
 
 # Type alias for a full conversation (list of turn deltas).
