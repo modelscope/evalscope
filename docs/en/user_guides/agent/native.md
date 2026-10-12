@@ -107,29 +107,6 @@ pip install evalscope[mcp]
 For search-agent benchmark examples that combine search MCP servers with fetch/browser-style tools, see the
 [DeepSearchQA](../../third_party/deepsearchqa.md) and [WideSearch](../../third_party/wide_search.md) guides.
 
-### Free search and fetch with Parallel
-
-[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) provides `web_search` and `web_fetch`
-through `https://search.parallel.ai/mcp`, without a Parallel account or API key. Anonymous access is intended for
-exploration and light use and has rate limits.
-
-The [runnable DeepSearchQA example](https://github.com/modelscope/evalscope/blob/main/examples/agent/parallel_search.py)
-uses the existing native agent loop with a function-calling model. From a source checkout:
-
-```bash
-pip install -e '.[mcp]'
-export MODEL_NAME='your-function-calling-model'
-export MODEL_API_URL='https://your-model-service/v1'
-export MODEL_API_KEY='your-model-api-key'
-python examples/agent/parallel_search.py
-```
-
-This runs one sample with `eval_batch_size=1`. Model inference and judging use your configured model service;
-only the Parallel tools are anonymous. The judge defaults to the same model service. Set `JUDGE_MODEL_NAME`,
-`JUDGE_API_URL`, and `JUDGE_API_KEY` to use a separate judge. The example configures both tools with
-`MCPServerConfigHTTP`, so no separate fetch server is needed. To use them with another native agent benchmark,
-copy its `mcp_servers` configuration into your `NativeAgentConfig`.
-
 ### Quick start
 
 Attach HTTP fetching and a remote MCP tool to a GAIA evaluation:
@@ -168,6 +145,28 @@ run_task(task_config)
 ```
 
 Once configured, the model sees both built-in tools and every tool advertised by the MCP servers, picking them by name. If an MCP tool call fails, the error is fed back to the model so it can retry — the evaluation loop keeps running.
+
+### Web search without an API key
+
+`evalscope[mcp]` already bundles `mcp-server-fetch`, so no-key HTTP fetching works out of the box. To add web search
+without signing up for a provider, point `MCPServerConfigHTTP` at a hosted search MCP server. For example,
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) exposes `web_search` and `web_fetch`
+anonymously, with rate limits on anonymous access:
+
+```python
+agent_config=NativeAgentConfig(
+    mcp_servers=[
+        MCPServerConfigHTTP(
+            name='parallel_search',
+            url='https://search.parallel.ai/mcp',
+            tools=['web_search', 'web_fetch'],  # anonymous, no API key
+        ),
+    ],
+)
+```
+
+Any Streamable HTTP search MCP server works the same way: swap `url` and `tools`, and add `headers` when the server
+requires a token.
 
 ### Connection methods
 
