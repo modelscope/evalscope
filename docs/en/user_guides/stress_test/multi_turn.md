@@ -68,6 +68,18 @@ When the request success rate is below 100%, interrupted conversations do not co
 | `--max-turns` | `int` | Maximum number of user turns per conversation; **required** for `random_multi_turn`; optional for ShareGPT / `custom_multi_turn` datasets to truncate long conversations; for `swe_smith` live construction, the per-conversation turn count is sampled from `[min_turns, max_turns]` | `None` |
 | `--dataset-offset` | `int` | Skip the first N conversations in the dataset; useful for sharded testing or avoiding cache hits | `0` |
 
+### Worker IDs for Sticky Routing
+
+For servers that support a top-level `rid` request field and sticky routing, such as SMG, set:
+
+```bash
+export EVALSCOPE_MULTITURN_WORKER_RID_PREFIX=my-run-cc16
+```
+
+Multi-turn workers then send IDs such as `my-run-cc16-slot0_t1`, `my-run-cc16-slot0_t2`, and so on. The `slot0` portion identifies a concurrency slot; its request counter continues across turns, replacement conversations, and the warmup-to-measurement transition. A router that uses the prefix before `_t<counter>` as its sticky key can keep that slot on one server rank. Sticky routing must also be enabled on the router.
+
+Use a distinct prefix for each benchmark run and concurrency point; worker counters restart for each run. A `rid` supplied by the API plugin, for example through `--extra-args`, is preserved. When the environment variable is unset or empty, requests are unchanged.
+
 ### Multi-turn Semantics of Common Parameters
 
 The following parameters mean different things in single-turn and multi-turn mode; in multi-turn mode they are all counted in **conversations**:

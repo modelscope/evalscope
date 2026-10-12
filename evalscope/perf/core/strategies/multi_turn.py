@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 from typing import TYPE_CHECKING, List, Optional
 
@@ -86,6 +87,8 @@ class MultiTurnStrategy(BenchmarkStrategy):
 
     async def _worker(self, worker_id: int) -> None:
         """Process conversations until the current work stream is exhausted."""
+        rid_prefix = os.environ.get('EVALSCOPE_MULTITURN_WORKER_RID_PREFIX')
+        request_index = 0
         while True:
             # Atomically claim a conversation slot before awaiting to prevent
             # other workers from overshooting the stream budget.
@@ -159,6 +162,9 @@ class MultiTurnStrategy(BenchmarkStrategy):
                     break
                 if turn.max_tokens is not None:
                     self.api_plugin.set_request_max_tokens(request, turn.max_tokens)
+                if rid_prefix:
+                    request_index += 1
+                    request.setdefault('rid', f'{rid_prefix}-slot{worker_id}_t{request_index}')
                 benchmark_data = await self.client.post(request)
 
                 # Inject multi-turn specific metadata.
