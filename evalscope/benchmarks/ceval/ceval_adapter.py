@@ -7,6 +7,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import parse_answers_zh
 
 logger = get_logger()
 
@@ -88,6 +89,7 @@ FEWSHOT_TEMPLATE = """以下是一些示例问题：
     BenchmarkMeta(
         name='ceval',
         supports_choice=True,
+        evaluation_version='v1.1',
         pretty_name='C-Eval',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.CHINESE],
         description="""
@@ -175,6 +177,4 @@ class CEVALAdapter(MultiChoiceAdapter):
 
     def extract_answer(self, prediction, task_state) -> str:
         """Parse the '答案：X' line with the shared Chinese multiple-choice parser, as CMMLU does."""
-        from evalscope.utils.multi_choices import parse_answers_zh
-
         return ''.join(sorted(parse_answers_zh(task_state, completion=prediction)))
