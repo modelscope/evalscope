@@ -19,6 +19,10 @@ runtime accumulates the full history across turns:
 Assistant messages in the source trajectory are ignored entirely; the runtime always
 appends the real server response as the assistant turn.
 
+Every generated conversation has a unique rid shared by all its turns.
+--replicas duplicates the built conversations; values above 1 add a unique
+first-message prefix to each copy to prevent prefix-cache sharing between copies.
+
 The dataset can be used with evalscope perf --dataset swe_smith via
 --dataset-path pointing to the generated JSON file.
 
@@ -36,6 +40,8 @@ Usage:
 """
 
 import argparse
+import copy
+import hashlib
 import json
 import multiprocessing
 import numpy as np
@@ -50,7 +56,7 @@ _DEFAULT_DATASET_NAME = 'SWE-bench/SWE-smith-trajectories'
 _DEFAULT_SPLIT = 'tool'
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Build multi-turn agentic benchmark dataset from SWE-smith trajectories.'
     )
@@ -103,7 +109,13 @@ def parse_args():
         '--number',
         type=int,
         default=128,
-        help='Number of conversations to generate (default: 128)',
+        help='Number of original conversations to generate before replication (default: 128)',
+    )
+    parser.add_argument(
+        '--replicas',
+        type=int,
+        default=1,
+        help='Copies of each built conversation; values above 1 add unique prompt prefixes (default: 1)',
     )
     parser.add_argument(
         '--output-path',
@@ -129,7 +141,10 @@ def parse_args():
         default=None,
         help='Number of parallel workers (default: number of CPU cores)',
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.replicas < 1:
+        parser.error('--replicas must be at least 1')
+    return args
 
 
 def extract_messages(raw_messages: str) -> List[Dict[str, str]]:
@@ -324,7 +339,7 @@ def _build_one(args_tuple):
     )
 
 
-def main():
+def main() -> None:
     args = parse_args()
 
     np.random.seed(args.seed)
@@ -439,6 +454,26 @@ def main():
         print('Error: No conversations were built. Check your dataset and parameters.')
         return
 
+    originals = conversations
+    conversations = []
+    for replica in range(args.replicas):
+        for conv_idx, original in enumerate(originals):
+            rid = hashlib.sha256(f'{replica}:{conv_idx}'.encode()).hexdigest()[:12]
+            conversation = copy.deepcopy(original) if args.replicas > 1 else original
+            token_delta = 0
+            if args.replicas > 1:
+                first_message = conversation[0]['messages'][0]
+                first_message['content'] = f"[rid:{rid}]\n\n{first_message['content']}"
+                token_delta = (
+                    count_tokens_for_messages(conversation[0]['messages'], tokenizer) - original[0]['prompt_tokens']
+                )
+            for turn in conversation:
+                turn['rid'] = rid
+                turn['prompt_tokens'] += token_delta
+            conversations.append(conversation)
+    if args.replicas > 1:
+        print(f'Replicated {len(originals)} conversations x {args.replicas} -> {len(conversations)}')
+
     all_turns = [len(conv) for conv in conversations]
     all_first_turn_tokens = [conv[0]['prompt_tokens'] for conv in conversations]
     all_last_turn_tokens = [conv[-1]['prompt_tokens'] for conv in conversations]
@@ -468,6 +503,7 @@ def main():
             'min_turns': min_turns,
             'max_turns': max_turns,
             'num_conversations': len(conversations),
+            'replicas': args.replicas,
         },
         'conversations': conversations,
     }

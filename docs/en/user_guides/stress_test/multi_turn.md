@@ -345,7 +345,7 @@ In live construction mode, the number of turns per conversation is sampled from 
 
 **Pre-building the Dataset**
 
-It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction. Note that the script takes CLI dashed flags, which map one-to-one onto the underscored `--dataset-args` keys above:
+It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build_swe_smith_dataset.py` before running a benchmark — build once, reuse many times, avoiding repeated downloads and on-the-fly construction. The builder accepts the following CLI options:
 
 | Parameter | Description | Default |
 |-----------|-------------|--------|
@@ -354,10 +354,13 @@ It is recommended to pre-build `agentic_dataset.json` using `examples/perf/build
 | `--subsequent-turn-length` | Target token increment per subsequent turn | `500` |
 | `--min-turns` | Minimum number of turns per conversation | `1` |
 | `--max-turns` | Maximum number of turns per conversation; the actual turn count is sampled from `[min_turns, max_turns]` (consistent with live construction behaviour); defaults to `--min-turns` if not set | `None` |
-| `--number` | Number of conversations to generate | `128` |
+| `--number` | Number of original conversations to generate before replication | `128` |
+| `--replicas` | Copies of each built conversation | `1` |
 | `--output-path` | Output file path | `agentic_dataset.json` |
 | `--seed` | Random seed for reproducibility | `42` |
 | `--num-workers` | Number of parallel workers | CPU count |
+
+Every generated conversation includes the same `rid` on all its turns. With `--replicas 1`, prompt content and conversation count are unchanged. Larger values repeat the original conversation list once per replica and add a unique `[rid:...]` prefix to each copy's first user message, preventing prefix-cache sharing between copies. The output metadata records the final conversation count and replica count.
 
 ```bash
 python examples/perf/build_swe_smith_dataset.py \
