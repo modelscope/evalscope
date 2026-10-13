@@ -66,7 +66,7 @@ class Ai2dAdapter(VisionLanguageAdapter):
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
-            # dataset mixes JPEG and PNG bytes, hence the sniffed MIME type
+            # dataset images are JPEG; sniff instead of assuming the PNG default
             image_base64 = self._image_bytes_to_base64(image['bytes'], guess_mimetype=True)
             content_list.append(ContentImage(image=image_base64))
 

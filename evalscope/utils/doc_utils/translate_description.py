@@ -14,8 +14,9 @@ Usage via CLI:
 """
 
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from evalscope.utils.io_utils import current_time
 
@@ -46,6 +47,30 @@ def _get_client():
         api_key=api_key,
         base_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
     )
+
+
+_CODE_BLOCK_PATTERN = re.compile(r'```[^\n]*\n.*?\n```', re.DOTALL)
+
+
+def _protect_code_blocks(text: str) -> Tuple[str, List[str]]:
+    """Replace fenced code blocks with placeholders so they are not translated."""
+    blocks: List[str] = []
+
+    def _collect(match):
+        blocks.append(match.group(0))
+        return f'[CODE_BLOCK_{len(blocks) - 1}]'
+
+    return _CODE_BLOCK_PATTERN.sub(_collect, text), blocks
+
+
+def _restore_code_blocks(text: str, blocks: List[str]) -> str:
+    """Restore original code blocks, failing if the model altered a placeholder."""
+    for i, block in enumerate(blocks):
+        placeholder = f'[CODE_BLOCK_{i}]'
+        if placeholder not in text:
+            raise ValueError(f'translation output is missing {placeholder}')
+        text = text.replace(placeholder, block)
+    return text
 
 
 def translate_readme(readme_content: str, benchmark_name: str, client=None) -> str:
@@ -90,18 +115,20 @@ Example translations:
 """
 
     try:
+        protected, code_blocks = _protect_code_blocks(readme_content)
         completion = client.chat.completions.create(
             model='qwen-max',
             messages=[
                 {'role': 'system', 'content': system_prompt},
                 {
                     'role': 'user',
-                    'content': f'Translate this benchmark documentation for "{benchmark_name}":\n\n{readme_content}',
+                    'content': f'Translate this benchmark documentation for "{benchmark_name}":\n\n{protected}',
                 },
             ],
             temperature=0.3,
         )
         translated = completion.choices[0].message.content.strip()
+        translated = _restore_code_blocks(translated, code_blocks)
 
         # Convert documentation links from English to Chinese
         translated = convert_doc_links(translated)
@@ -242,4 +269,6 @@ __all__ = [
     'translate_readme',
     'translate_benchmarks',
     'convert_doc_links',
+    '_protect_code_blocks',
+    '_restore_code_blocks',
 ]
