@@ -77,6 +77,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.10.13] v1.13.0** Added MT-Bench, Terminal-Bench 4.0, and System One Choice evaluation; unified mathematical scoring with Math-Verify and benchmark loading on demand; improved multimodal perf testing, SLA auto-tuning, and evaluation correctness.
 - 🔥 **[2026.10.09]** Added **System One Choice evaluation** and **ANLI**, **BoolQ**, **BANKING77**, **ContractNLI**, **RewardBench v1** benchmarks. All five default to ModelScope and also support standard LLM evaluation. See [System One Evaluation](https://evalscope.readthedocs.io/en/latest/user_guides/systemone.html).
 - 🔥 **[2026.08.24] v1.11.0** Introduced published evaluation versions for reproducible benchmark results; improved report semantics and incomplete-run handling; strengthened multimodal media loading and task-config validation.
 - 🔥 **[2026.08.13]** Improved evaluation reports with unified metric semantics and more reliable Agent Trace step grouping and tool-call/result linking.
