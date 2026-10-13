@@ -6,7 +6,6 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentImage, ContentText
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
 
@@ -49,10 +48,11 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 - Uses Chain-of-Thought (CoT) prompting for reasoning
 - Requires understanding both textual labels and visual elements
 """,  # noqa: E501
-        dataset_id='lmms-lab/ai2d',
+        dataset_id='evalscope/ai2d',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template=MULT_CHOICE_PROMPT,
     )
 )
@@ -66,7 +66,8 @@ class Ai2dAdapter(VisionLanguageAdapter):
         content_list: list[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
-            image_base64 = bytes_to_base64(image['bytes'], format='png', add_header=True)
+            # dataset images are JPEG; sniff instead of assuming the PNG default
+            image_base64 = self._image_bytes_to_base64(image['bytes'], guess_mimetype=True)
             content_list.append(ContentImage(image=image_base64))
 
         label_answer = chr(int(record['answer']) + ord('A'))

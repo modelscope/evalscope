@@ -33,7 +33,7 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `ai2d` |
-| **Dataset ID** | [lmms-lab/ai2d](https://modelscope.cn/datasets/lmms-lab/ai2d/summary) |
+| **Dataset ID** | [evalscope/ai2d](https://modelscope.cn/datasets/evalscope/ai2d/summary) |
 | **Paper** | N/A |
 | **Tags** | `Knowledge`, `MultiModal`, `QA` |
 | **Metrics** | `accuracy` |
@@ -56,7 +56,7 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 | Total Images | 3,088 |
 | Images per Sample | min: 1, max: 1, mean: 1 |
 | Resolution Range | 177x131 - 1500x1500 |
-| Formats | png |
+| Formats | jpeg |
 
 
 ## Sample Example
@@ -67,24 +67,24 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 {
   "input": [
     {
-      "id": "789e28fa",
+      "id": "ce4b20b6",
       "content": [
         {
-          "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nwhich of these define dairy item\n\nA) c\nB) D\nC) b\nD) a"
+          "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D. Think step by step before answering.\n\nWhat is between the head and abdomen?\n\nA) Antenna\nB) Simple eye\nC) Spiracle\nD) Thorax"
         },
         {
-          "image": "[BASE64_IMAGE: png, ~226.2KB]"
+          "image": "[BASE64_IMAGE: jpeg, ~59.4KB]"
         }
       ]
     }
   ],
   "choices": [
-    "c",
-    "D",
-    "b",
-    "a"
+    "Antenna",
+    "Simple eye",
+    "Spiracle",
+    "Thorax"
   ],
-  "target": "B",
+  "target": "D",
   "id": 0,
   "group_id": 0
 }
