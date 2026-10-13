@@ -558,7 +558,7 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
 
 # ---------------------------------------------------------------------------
 # 10. SWE-bench_Pro + external agent (codex) → bridge Responses API
-#     → DashScope qwen-max. Mirrors the claude-code variant above but
+#     → DashScope qwen3.8-flash. Mirrors the claude-code variant above but
 #     drives the OpenAI Responses route (PR2) end-to-end.
 # ---------------------------------------------------------------------------
 
@@ -566,13 +566,13 @@ class TestSWEBenchProExternalClaudeCode(_ScrubAnthropicEnvMixin, unittest.TestCa
 @requires_api
 @requires_swe_bench_pro_repo
 class TestSWEBenchProExternalCodex(unittest.TestCase):
-    """End-to-end SWE-bench_Pro through external codex CLI × qwen-max.
+    """End-to-end SWE-bench_Pro through external codex CLI × qwen3.8-flash.
 
     Differences vs ``TestSWEBenchProExternalClaudeCode``:
 
     * ``framework='codex'`` → bridge ``POST /openai/v1/responses`` route
       (codex v0.133+ refuses chat completions).
-    * Backend is DashScope qwen-max via the OpenAI-compatible endpoint;
+    * Backend is DashScope qwen3.8-flash via the OpenAI-compatible endpoint;
       no idealab User-Agent whitelist needed.
     * No ``_ScrubAnthropicEnvMixin`` — codex talks OpenAI; no Anthropic
       SDK env-var conflict can arise.
@@ -582,14 +582,14 @@ class TestSWEBenchProExternalCodex(unittest.TestCase):
       verified end-to-end in PR2's NodeBB 37-turn run).
 
     Slow / expensive: pulls per-instance sweap-images (~5-15 GB each),
-    runs codex × qwen-max against the real DashScope API, then runs the
+    runs codex × qwen3.8-flash against the real DashScope API, then runs the
     SWE-bench_Pro evaluation container. Budget per sample: 5-20 min wall,
     ¥0.5-5 in DashScope tokens.
     """
 
     def test_swe_bench_pro_through_external_codex(self):
         cfg = TaskConfig(
-            model='qwen-max',
+            model='qwen3.8-flash',
             api_url=_API_URL,
             api_key=_API_KEY,
             eval_type=EvalType.OPENAI_API,
@@ -653,7 +653,7 @@ class TestSWEBenchProExternalCodex(unittest.TestCase):
             )
 
         # Trace must reflect the external-agent codex path.
-        reviews = _read_review_results('swe_bench_pro', model='qwen-max', work_dir=cfg.work_dir)
+        reviews = _read_review_results('swe_bench_pro', model='qwen3.8-flash', work_dir=cfg.work_dir)
         self.assertGreater(len(reviews), 0)
         for r in reviews:
             trace_dict = r.get('agent_trace')

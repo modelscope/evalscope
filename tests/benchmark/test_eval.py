@@ -26,7 +26,7 @@ class TestNativeBenchmark(TestBenchmark):
     def setUp(self):
         """Setup common test configuration."""
         self.base_config = {
-            'model': 'qwen-max',
+            'model': 'qwen3.8-flash',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'eval_type': EvalType.OPENAI_API,
@@ -43,7 +43,7 @@ class TestNativeBenchmark(TestBenchmark):
             'judge': {
                 'strategy': JudgeStrategy.AUTO,
                 'models': {
-                'model_id': 'qwen-max',
+                'model_id': 'qwen3.8-flash',
                 'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
                 'api_key': env.get('DASHSCOPE_API_KEY'),
                 'generation_config': {
@@ -954,7 +954,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_plawbench(self):
         """Test PLawBench rubric-based legal practice benchmark with real API."""
         judge = {'models': {
-            'model_id': 'qwen-max',
+            'model_id': 'qwen3.8-flash',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'generation_config': {
@@ -990,7 +990,7 @@ class TestNativeBenchmark(TestBenchmark):
     def test_one_million_bench(self):
         """Test $OneMillion-Bench with a real model and judge API."""
         judge = {'models': {
-            'model_id': 'qwen-max',
+            'model_id': 'qwen3.8-flash',
             'api_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             'api_key': env.get('DASHSCOPE_API_KEY'),
             'generation_config': {
