@@ -150,7 +150,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-plus',
+            model='qwen-max',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.OPENAI_API,
@@ -173,7 +173,7 @@ class TestRun(unittest.TestCase):
 
         vlm_task_cfg = task_cfg.model_copy(
             deep=True,
-            update={'model': 'qwen-vl-plus', 'model_id': 'qwen-vl-plus', 'datasets': ['chartqa']},
+            update={'model': 'qwen3-vl-plus', 'model_id': 'qwen3-vl-plus', 'datasets': ['chartqa']},
         )
         run_task(task_cfg=vlm_task_cfg)
         run_task(task_cfg=task_cfg)
@@ -182,7 +182,7 @@ class TestRun(unittest.TestCase):
         from evalscope.config import TaskConfig
 
         task_cfg = TaskConfig(
-            model='qwen-vl-plus',
+            model='qwen3-vl-plus',
             api_url='https://dashscope.aliyuncs.com/compatible-mode/v1',
             api_key= env.get('DASHSCOPE_API_KEY'),
             eval_type=EvalType.OPENAI_API,
