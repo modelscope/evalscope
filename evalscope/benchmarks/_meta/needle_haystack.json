@@ -78,6 +78,13 @@
     },
     "sandbox_config": {},
     "category": "llm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": "mean",
+      "dimensions": {
+        "scope": "overall"
+      }
+    },
     "requires_judge": true
   },
   "statistics": {
@@ -141,6 +148,6 @@
     "content_hash": "821e86ef365297cfd0ad24041e9441d9",
     "needs_translation": false
   },
-  "updated_at": "2026-09-18T15:17:17.071520+08:00",
+  "updated_at": "2026-10-13T21:04:45.202592",
   "translation_updated_at": "2026-09-18T15:29:07+08:00"
 }

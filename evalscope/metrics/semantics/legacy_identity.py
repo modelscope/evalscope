@@ -138,6 +138,13 @@ def _apply_mrcr_scope(match: Match[str], dimensions: Dict[str, Scalar], aggregat
     return 'mrcr_score', 'mean'
 
 
+def _apply_needle_cell(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
+    """Needle-in-a-Haystack: accuracy of one context length and needle depth cell."""
+    dimensions.setdefault('context_length', int(match.group('context_length')))
+    dimensions.setdefault('depth_percent', int(match.group('depth_percent')))
+    return 'accuracy', 'mean'
+
+
 def _apply_wide_search(match: Match[str], dimensions: Dict[str, Scalar], aggregation: str) -> Tuple[str, str]:
     """WideSearch: ``{kind}@{k}_{scope}/{metric}``, optionally prefixed by a row/item target."""
     raw_name = match.group('metric')
@@ -186,6 +193,12 @@ LEGACY_NAME_RULES: Tuple[LegacyNameRule, ...] = (
         pattern=re.compile(r'(?:overall|(?P<minimum>\d+)-(?P<maximum>\d+))_mrcr_score'),
         apply=_apply_mrcr_scope,
         examples=('overall_mrcr_score', '4096-8192_mrcr_score'),
+    ),
+    LegacyNameRule(
+        benchmarks=('needle_haystack',),
+        pattern=re.compile(r'Context#(?P<context_length>\d+) Depth#(?P<depth_percent>\d+)'),
+        apply=_apply_needle_cell,
+        examples=('Context#1000 Depth#0', 'Context#32000 Depth#100'),
     ),
     LegacyNameRule(
         benchmarks=('wide_search',),
