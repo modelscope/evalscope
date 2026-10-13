@@ -1,4 +1,5 @@
-mcp>=1.0
+# Pinned to 1.x: MCP SDK 2.x renames FastMCP to MCPServer and changes the streamable_http_client return type and the call_tool read_timeout_seconds type.
+mcp>=1.0,<2
 # Bundled starter MCP server — the most commonly demoed one (no API key,
 # universal HTTP fetching). Power users with different needs can install
 # additional MCP servers (e.g. mcp-server-brave-search, mcp-server-github,
