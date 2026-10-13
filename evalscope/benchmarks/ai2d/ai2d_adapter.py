@@ -47,13 +47,6 @@ AI2D (AI2 Diagrams) is a benchmark dataset for evaluating AI systems' ability to
 - Primary metric: **Accuracy** on multiple-choice questions
 - Uses Chain-of-Thought (CoT) prompting for reasoning
 - Requires understanding both textual labels and visual elements
-- Since v1.1, images are selected per question following the official `abcLabel`
-  semantics: letter-masked diagrams only for letter questions, original diagrams
-  with text labels for all others. This matches VLMEvalKit `AI2D_TEST` and
-  OpenCompass numbers. v1.0 (dataset `lmms-lab/ai2d`) stored one image per
-  diagram and showed letter-masked diagrams for 725 questions that require the
-  original labels, scoring about 3 points lower; scores across versions are not
-  comparable.
 """,  # noqa: E501
         dataset_id='evalscope/ai2d',
         subset_list=SUBSET_LIST,
