@@ -132,7 +132,7 @@ def test_responses_first_turn_ingests_instructions_and_system_before_user():
     first user message, in document order. Captures the bug where codex was
     putting the SWE-bench Pro task in ``instructions`` and the recorder
     silently dropped it (review transcript missing the task description)."""
-    rec = BridgeTraceRecorder(trial_id='t5', framework='codex', model_name='qwen-max')
+    rec = BridgeTraceRecorder(trial_id='t5', framework='codex', model_name='qwen3.8-flash')
     rec.record_run_start(framework='codex', cmd_summary='CodexRunner')
     rec.record_responses_turn(
         request_body={
@@ -268,11 +268,11 @@ def test_assistant_message_is_a_copy_of_the_model_output():
     msg = ChatMessageAssistant(
         content=[ContentReasoning(reasoning='6 * 7'), ContentText(text='42')],
         tool_calls=[call],
-        model='qwen-max',
+        model='qwen3.8-flash',
         metadata={'finish_reason': 'stop'},
     )
     msg.perf_metrics = perf
-    output = ModelOutput(model='qwen-max', choices=[ChatCompletionChoice(message=msg, stop_reason='stop')])
+    output = ModelOutput(model='qwen3.8-flash', choices=[ChatCompletionChoice(message=msg, stop_reason='stop')])
 
     rec = BridgeTraceRecorder(trial_id='t9', framework='mock')
     rec.record_anthropic_turn(
@@ -284,7 +284,7 @@ def test_assistant_message_is_a_copy_of_the_model_output():
     recorded = rec.messages()[1]
     assert isinstance(recorded, ChatMessageAssistant)
     assert recorded.perf_metrics == perf
-    assert recorded.model == 'qwen-max'
+    assert recorded.model == 'qwen3.8-flash'
     assert recorded.metadata == {'finish_reason': 'stop'}
     assert [type(block) for block in recorded.content] == [ContentReasoning, ContentText]
     assert recorded.text == '42'
