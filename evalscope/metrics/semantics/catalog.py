@@ -358,6 +358,8 @@ METRIC_DEFINITIONS.update(
         ),
         # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
         'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
+        # SPaRC: share of answers that are not a valid line from start to end (paper Table 7).
+        'invalid_path_rate': MetricEntry(baseline='quality.error_rate.ratio', metric_name='Invalid Path Rate'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

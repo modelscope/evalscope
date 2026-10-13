@@ -900,6 +900,15 @@ class TestNativeBenchmark(TestBenchmark):
         """Test ARC-AGI-2 benchmark with mock."""
         self._run_dataset_test('arc_agi_2', limit=3, use_mock=True)
 
+    # SPaRC
+    def test_sparc(self):
+        """Test SPaRC spatial pathfinding benchmark (limit is per difficulty level)."""
+        self._run_dataset_test('sparc', limit=1)
+
+    def test_sparc_mock(self):
+        """Test SPaRC spatial pathfinding benchmark with mock."""
+        self._run_dataset_test('sparc', limit=2, use_mock=True)
+
     # AGIEval
     _AGIEVAL_ARGS = {'subset_list': ['aqua-rat', 'logiqa-zh', 'math'], 'few_shot_num': 0}
 
