@@ -91,7 +91,7 @@ Example translations:
 
     try:
         completion = client.chat.completions.create(
-            model='qwen3-max',
+            model='qwen-max',
             messages=[
                 {'role': 'system', 'content': system_prompt},
                 {
