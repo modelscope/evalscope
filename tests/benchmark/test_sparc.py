@@ -16,7 +16,7 @@ from evalscope.benchmarks.sparc.utils import SYSTEM_PROMPT, get_prompt
 from evalscope.config import TaskConfig
 from evalscope.constants import HubType
 
-# Test puzzle c6739963a7308111 from lkaesberg/SPaRC (config `all`, split `test`), without the unused
+# Test puzzle c6739963a7308111 from evalscope/SPaRC (config `all`, split `test`), without the unused
 # `text_visualization` field. S is at (0,4), E at (4,0); the puzzle has four stored solutions.
 PUZZLE: Dict[str, Any] = {
     'id': 'c6739963a7308111',
@@ -76,8 +76,8 @@ def _score(adapter: DefaultDataAdapter, sample: Sample, completion: str) -> Dict
 def test_sparc_registered_with_level_subsets_and_pinned_revision() -> None:
     adapter = _adapter()
 
-    assert adapter.dataset_id == 'lkaesberg/SPaRC'
-    assert adapter.dataset_revision == 'e2d908363190e9a244f931df2654a501facc90a7'
+    assert adapter.dataset_id == 'evalscope/SPaRC'
+    assert adapter.dataset_revision == '104103a0abae909a46b85f11fb2f949fc7448f87'
     assert adapter.default_subset == 'all'
     assert adapter.subset_list == ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
     assert adapter.eval_split == 'test'
@@ -179,26 +179,10 @@ def test_aggregation_reports_accuracy_and_invalid_path_rate() -> None:
     assert aggregates['accuracy'].num == 4
 
 
-@pytest.mark.parametrize(
-    'configured_hub, expected_hub',
-    [
-        (HubType.MODELSCOPE, HubType.HUGGINGFACE),
-        (HubType.HUGGINGFACE, HubType.HUGGINGFACE),
-    ],
-)
-def test_load_uses_hugging_face_and_restores_hub(
-    monkeypatch: pytest.MonkeyPatch, configured_hub: str, expected_hub: str
-) -> None:
+@pytest.mark.parametrize('configured_hub', [HubType.MODELSCOPE, HubType.HUGGINGFACE])
+def test_default_hub_is_modelscope_without_hf_override(configured_hub: str) -> None:
     adapter = _adapter(dataset_hub=configured_hub)
-    seen: List[str] = []
 
-    def fake_load(self: DefaultDataAdapter) -> tuple:
-        seen.append(self.dataset_hub)
-        return {}, None
-
-    monkeypatch.setattr(DefaultDataAdapter, 'load', fake_load)
-
-    adapter.load()
-
-    assert seen == [expected_hub]
     assert adapter.dataset_hub == configured_hub
+    # SPaRC ships on ModelScope, so the adapter must not override load() to redirect the hub.
+    assert type(adapter).load is DefaultDataAdapter.load

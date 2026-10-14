@@ -36,12 +36,11 @@ node that obeys every rule on the grid.
   is the "Invalid Path" column of Table 7 in the paper
 - The prompt builder and the validator are copies of the reference code in the `sparc-puzzle`
   package; they give the same prompts and the same scores on all 500 test puzzles
-- The dataset is loaded from Hugging Face (`lkaesberg/SPaRC`, config `all`, pinned revision),
-  because there is no ModelScope copy yet. The default `dataset_hub='modelscope'` falls back to
-  Hugging Face
+- The dataset is `evalscope/SPaRC` on ModelScope (config `all`), with the revision pinned for
+  reproducibility
 - Reasoning models often write more than 10k tokens per puzzle, so set a large `max_tokens`
 - [Paper](https://aclanthology.org/2025.emnlp-main.526/) | [Code](https://github.com/lkaesberg/SPaRC) |
-  [Dataset](https://huggingface.co/datasets/lkaesberg/SPaRC) | [Website](https://sparc.gipplab.org/)
+  [Dataset](https://www.modelscope.cn/datasets/evalscope/SPaRC) | [Website](https://sparc.gipplab.org/)
 
 
 ## Properties
@@ -49,7 +48,7 @@ node that obeys every rule on the grid.
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `sparc` |
-| **Dataset ID** | [lkaesberg/SPaRC](https://modelscope.cn/datasets/lkaesberg/SPaRC/summary) |
+| **Dataset ID** | [evalscope/SPaRC](https://modelscope.cn/datasets/evalscope/SPaRC/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2505.16686) |
 | **Tags** | `Reasoning` |
 | **Metrics** | `accuracy`, `invalid_path_rate` |
@@ -83,11 +82,11 @@ node that obeys every rule on the grid.
 {
   "input": [
     {
-      "id": "e9d45478",
+      "id": "a7ac7618",
       "content": "You are an expert at solving puzzles games."
     },
     {
-      "id": "f58f3740",
+      "id": "468c49a5",
       "content": "\n    ## Objective\n    You are a specialized AI proficient in spatial reasoning and solving puzzles from the game 'The Witness'. Your goal is to find a valid path (a continuous line) from the specified Start Node to the End Node on the provide ... [TRUNCATED 7215 chars] ...  marker string `####` followed immediately by the solution path as a list of node coordinates `(x, y)`. Include all intermediate nodes from start to end.\n\n    **Example Solution Path Format:**\n    ####\n    (0,0), (1,0), (2,0), (2,1), ...\n    "
     }
   ],

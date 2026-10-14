@@ -1,26 +1,25 @@
 # SPaRC adapter: 2D grid pathfinding puzzles with rule constraints (EMNLP 2025).
 #
 # Paper: https://aclanthology.org/2025.emnlp-main.526/ (arXiv: https://arxiv.org/abs/2505.16686)
-# Dataset: https://huggingface.co/datasets/lkaesberg/SPaRC (CC BY-SA 4.0)
+# Dataset: https://www.modelscope.cn/datasets/evalscope/SPaRC (CC BY-SA 4.0)
 # Reference implementation: https://github.com/lkaesberg/SPaRC (MIT)
 
-import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 from .utils import SYSTEM_PROMPT, analyze_path, extract_solution_path, get_prompt, path_to_text, validate_solution
 
 logger = get_logger()
 
-# Pinned commit of the Hugging Face dataset repository (2026-08-02).
-DATASET_REVISION = 'e2d908363190e9a244f931df2654a501facc90a7'
+# Pinned commit of the ModelScope dataset repository (2026-10).
+DATASET_REVISION = '104103a0abae909a46b85f11fb2f949fc7448f87'
 
 SUBSET_LIST = ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5']
 
@@ -63,12 +62,11 @@ node that obeys every rule on the grid.
   is the "Invalid Path" column of Table 7 in the paper
 - The prompt builder and the validator are copies of the reference code in the `sparc-puzzle`
   package; they give the same prompts and the same scores on all 500 test puzzles
-- The dataset is loaded from Hugging Face (`lkaesberg/SPaRC`, config `all`, pinned revision),
-  because there is no ModelScope copy yet. The default `dataset_hub='modelscope'` falls back to
-  Hugging Face
+- The dataset is `evalscope/SPaRC` on ModelScope (config `all`), with the revision pinned for
+  reproducibility
 - Reasoning models often write more than 10k tokens per puzzle, so set a large `max_tokens`
 - [Paper](https://aclanthology.org/2025.emnlp-main.526/) | [Code](https://github.com/lkaesberg/SPaRC) |
-  [Dataset](https://huggingface.co/datasets/lkaesberg/SPaRC) | [Website](https://sparc.gipplab.org/)
+  [Dataset](https://www.modelscope.cn/datasets/evalscope/SPaRC) | [Website](https://sparc.gipplab.org/)
 """
 
 
@@ -76,7 +74,7 @@ node that obeys every rule on the grid.
     BenchmarkMeta(
         name='sparc',
         pretty_name='SPaRC',
-        dataset_id='lkaesberg/SPaRC',
+        dataset_id='evalscope/SPaRC',
         dataset_revision=DATASET_REVISION,
         paper_url='https://arxiv.org/abs/2505.16686',
         tags=[Tags.REASONING],
@@ -99,14 +97,6 @@ class SPaRCAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
         # Load the single `all` config once and split it into one subset per difficulty level.
         self.reformat_subset = True
-
-    def load(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
-        """Load from Hugging Face when the ModelScope hub is selected, since SPaRC has no ModelScope copy."""
-        if self.dataset_hub != HubType.MODELSCOPE or os.path.exists(self.dataset_id):
-            return super().load()
-        logger.info(f'{self.dataset_id} has no ModelScope copy; loading it from Hugging Face.')
-        with self._temporary_attribute('dataset_hub', HubType.HUGGINGFACE):
-            return super().load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Build the paper's single-shot prompt and keep the puzzle for scoring."""
