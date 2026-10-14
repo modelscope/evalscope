@@ -7,7 +7,7 @@ import { loadReport as apiLoadReport, getHtmlReportUrl } from '@/api/reports'
 import type { ReportData } from '@/api/types'
 import { formatReportRef } from '@/domain/report/reportRef'
 import { datasetLabel, primaryMetricOf } from '@/domain/report/primaryMetrics'
-import { formatMetricIdentityLabel, metricIdentityKey } from '@/domain/metric'
+import { formatMetricIdentityLabel, formatMetricLabels, metricIdentityKey } from '@/domain/metric'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import Tabs from '@/components/ui/Tabs'
 import Skeleton from '@/components/ui/Skeleton'
@@ -83,7 +83,7 @@ export default function ReportDetailPage() {
   const htmlReportUrl = getHtmlReportUrl(rootPath, reportName)
 
   // Semantics of the dataset currently shown in the details panel: its primary metric drives the
-  // headline number, and the per-metric map lets each row format itself.
+  // headline number, and the per-metric maps let each row format and label itself.
   const activeReport = useMemo(() => {
     const report = reportList.find((r) => r.dataset_name === activeDataset)
     if (!report) return undefined
@@ -91,7 +91,14 @@ export default function ReportDetailPage() {
     const semanticsByMetric = Object.fromEntries(
       report.metrics.map((metric) => [metricIdentityKey(metric.identity), metric.semantics]),
     )
-    return { primaryMetric, semanticsByMetric }
+    const labelsByMetric = formatMetricLabels(
+      report.metrics.map((metric) => ({
+        identity: metric.identity,
+        semantics: metric.semantics,
+        legacyName: metric.legacy_name,
+      })),
+    )
+    return { primaryMetric, semanticsByMetric, labelsByMetric }
   }, [reportList, activeDataset])
 
   // Handler: switch dataset and auto-navigate to details tab
@@ -232,6 +239,7 @@ export default function ReportDetailPage() {
                 : undefined}
               semantics={activeReport?.primaryMetric?.semantics}
               semanticsByMetric={activeReport?.semanticsByMetric}
+              labelsByMetric={activeReport?.labelsByMetric}
               onSubsetClick={handleSubsetClick}
             />,
           ),

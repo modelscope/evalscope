@@ -208,17 +208,17 @@ run_task(task_cfg=task_cfg)
 +-----------------------+------------+-----------+----------+-------+---------+---------+
 | Model                 | Dataset    | Metric    | Subset   |   Num |   Score | Cat.0   |
 +=======================+============+===========+==========+=======+=========+=========+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · Recall    | example | 12 | 69.4% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · Recall    | example | 12 | 69.4% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · Precision | example | 12 | 17.6% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · Precision | example | 12 | 17.6% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 1 · F1        | example | 12 | 22.8% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 1 · F1        | example | 12 | 22.8% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · Recall    | example | 12 | 46.7% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · Recall    | example | 12 | 46.7% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · Precision | example | 12 | 9.4%  | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · Precision | example | 12 | 9.4%  | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · 2 · F1        | example | 12 | 12.3% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · n-gram 2 · F1        | example | 12 | 12.3% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
 | Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · Recall    | example | 12 | 65.3% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
@@ -226,13 +226,13 @@ run_task(task_cfg=task_cfg)
 +-----------------------+------------+-----------+----------+-------+---------+---------+
 | Qwen2.5-0.5B-Instruct | General-QA | ROUGE ↑ · L · F1        | example | 12 | 20.6% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 1              | example | 12 | 16.4% | default |
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 1              | example | 12 | 16.4% | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 2              | example | 12 | 9.4%  | default |
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 2              | example | 12 | 9.4%  | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 3              | example | 12 | 6.6%  | default |
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 3              | example | 12 | 6.6%  | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+
-| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · 4              | example | 12 | 5.6%  | default |
+| Qwen2.5-0.5B-Instruct | General-QA | BLEU ↑ · n-gram 4              | example | 12 | 5.6%  | default |
 +-----------------------+------------+-----------+----------+-------+---------+---------+ 
 ```
 </details>

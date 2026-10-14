@@ -264,25 +264,25 @@ Evaluation will output BLEU and Rouge metrics:
 +--------------+-------------+----------------+----------------+-------+---------+---------+
 | Model        | Dataset     | Metric         | Subset         |   Num |   Score | Cat.0   |
 +==============+=============+================+================+=======+=========+=========+
-| qwen-vl-plus | General-VQA | BLEU ↑ · 1              | example_openai |     5 |    0.7% | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · n-gram 1              | example_openai |     5 |    0.7% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | BLEU ↑ · 2              | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · n-gram 2              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | BLEU ↑ · 3              | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · n-gram 3              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | BLEU ↑ · 4              | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | BLEU ↑ · n-gram 4              | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · Recall    | example_openai |     5 |     40% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 1 · Recall    | example_openai |     5 |     40% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · Precision | example_openai |     5 |    0.6% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 1 · Precision | example_openai |     5 |    0.6% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 1 · F1        | example_openai |     5 |    1.2% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 1 · F1        | example_openai |     5 |    1.2% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · Recall    | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 2 · Recall    | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · Precision | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 2 · Precision | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
-| qwen-vl-plus | General-VQA | ROUGE ↑ · 2 · F1        | example_openai |     5 |      0% | default |
+| qwen-vl-plus | General-VQA | ROUGE ↑ · n-gram 2 · F1        | example_openai |     5 |      0% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+
 | qwen-vl-plus | General-VQA | ROUGE ↑ · L · Recall    | example_openai |     5 |     40% | default |
 +--------------+-------------+----------------+----------------+-------+---------+---------+

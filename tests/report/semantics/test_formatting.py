@@ -4,7 +4,7 @@ One formatting rule set, driven only by the display fields of ``MetricSemantics`
 the CLI, the HTML report, the reports API and the Web UI.
 """
 
-from typing import Optional
+from typing import Dict, Optional
 
 import pytest
 
@@ -14,6 +14,7 @@ from evalscope.api.metric.semantics import (
     MetricIdentity,
     MetricKind,
     MetricSemantics,
+    Scalar,
     ValueRange,
 )
 from evalscope.metrics.semantics.formatting import (
@@ -210,6 +211,21 @@ class TestMetricLabels:
         )
 
         assert format_metric_label(identity, make_percent_semantics()) == 'Accuracy ↑ · L · Recall'
+
+    @pytest.mark.parametrize(
+        'dimensions, expected', [
+            ({'context_length': 1000, 'depth_percent': 0}, 'Accuracy ↑ · Context 1000 · Depth 0'),
+            ({'max_tokens': 8192, 'min_tokens': 4096}, 'Accuracy ↑ · Min tokens 4096 · Max tokens 8192'),
+            ({'scope': 'overall', 'threshold': 0.5}, 'Accuracy ↑ · Overall · Threshold 0.5'),
+            ({'k': 1}, 'Accuracy ↑ · k 1'),
+            ({'ngram': 1, 'statistic': 'recall'}, 'Accuracy ↑ · n-gram 1 · Recall'),
+        ],
+        ids=['context_depth', 'token_range', 'threshold', 'k', 'ngram'],
+    )
+    def test_numeric_dimensions_are_named(self, dimensions: Dict[str, Scalar], expected: str) -> None:
+        identity = MetricIdentity(name='accuracy', aggregation='mean', dimensions=dimensions)
+
+        assert format_metric_label(identity, make_percent_semantics()) == expected
 
     def test_diagnostic_and_missing_semantics_keep_final_name(self) -> None:
         diagnostic = make_number_semantics(
