@@ -72,6 +72,7 @@
 | `tvbench` | [TVBench](../../benchmarks/tvbench.md) | `MCQ`, `MultiModal`, `Video` |
 | `videomme_v2` | [Video-MME-v2](../../benchmarks/videomme_v2.md) | `MCQ`, `MultiModal`, `Video` |
 | `visfactor` | [VisFactor](../../benchmarks/visfactor.md) | `MultiModal`, `QA`, `Reasoning` |
+| `visualoverload` | [VisualOverload](../../benchmarks/visualoverload.md) | `MultiModal`, `QA`, `Reasoning` |
 | `visulogic` | [VisuLogic](../../benchmarks/visulogic.md) | `MCQ`, `Math`, `MultiModal`, `Reasoning` |
 | `vlms_are_biased` | [VLMs Are Biased](../../benchmarks/vlms_are_biased.md) | `MultiModal`, `QA`, `Reasoning` |
 | `vqav2` | [VQAv2](../../benchmarks/vqav2.md) | `MultiModal`, `QA` |
@@ -153,6 +154,7 @@
 ../../benchmarks/tvbench.md
 ../../benchmarks/videomme_v2.md
 ../../benchmarks/visfactor.md
+../../benchmarks/visualoverload.md
 ../../benchmarks/visulogic.md
 ../../benchmarks/vlms_are_biased.md
 ../../benchmarks/vqav2.md
