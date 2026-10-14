@@ -99,7 +99,9 @@ def test_record_to_sample_uses_reference_prompt() -> None:
     assert isinstance(messages[0], ChatMessageSystem)
     assert messages[0].content == 'You are an expert at solving puzzles games.'
     assert isinstance(messages[1], ChatMessageUser)
-    assert messages[1].content == get_prompt(PUZZLE)['user']
+    # get_prompt returns only the user message; the system prompt comes from BenchmarkMeta.
+    assert isinstance(get_prompt(PUZZLE), str)
+    assert messages[1].content == get_prompt(PUZZLE)
     assert hashlib.sha256(messages[1].content.encode()).hexdigest() == REFERENCE_PROMPT_SHA256
 
 

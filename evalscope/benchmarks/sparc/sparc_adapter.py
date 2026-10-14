@@ -101,7 +101,7 @@ class SPaRCAdapter(DefaultDataAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Build the paper's single-shot prompt and keep the puzzle for scoring."""
         return Sample(
-            input=get_prompt(record)['user'],
+            input=get_prompt(record),
             target=path_to_text(record['solutions'][0]['path']),
             subset_key=f'Level {record["difficulty_level"]}',
             metadata={

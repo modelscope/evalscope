@@ -6,9 +6,11 @@ Both parts are copied from the reference implementation, so EvalScope does not n
 * prompt:    https://github.com/lkaesberg/SPaRC/blob/9f2a3d6/sparc/prompts/single_shot.py
 * validator: https://github.com/lkaesberg/SPaRC/blob/9f2a3d6/sparc/validation.py
 
-The logic is unchanged; only formatting was adapted to the repository's linters. A path counts as
-correct only if it exactly matches one of the puzzle's stored solutions (``validate_solution``).
-``analyze_path`` gives the structural checks behind the paper's "invalid path" rate.
+The logic is unchanged; only formatting and the return shape were adapted to the repository's
+conventions: ``get_prompt`` returns just the user message (the system prompt is declared once via
+``BenchmarkMeta.system_prompt``). A path counts as correct only if it exactly matches one of the
+puzzle's stored solutions (``validate_solution``). ``analyze_path`` gives the structural checks
+behind the paper's "invalid path" rate; only ``fully_valid_path`` feeds the score.
 """
 
 import json
@@ -34,15 +36,18 @@ def _get_polyshapes_str(puzzle_data: dict) -> str:
     return polyshapes_str
 
 
-def get_prompt(puzzle_data: dict) -> dict:
+def get_prompt(puzzle_data: dict) -> str:
     """
-    Generate the complete prompt dict for single-shot puzzle solving.
+    Build the single-shot user prompt for a puzzle.
+
+    The system prompt is not returned here; it is declared once on the benchmark as
+    ``BenchmarkMeta.system_prompt``.
 
     Args:
         puzzle_data: The puzzle data dictionary
 
     Returns:
-        Dict with 'system' and 'user' message content
+        The user message content
     """
     grid_size = puzzle_data.get('grid_size', {'width': 0, 'height': 0})
     puzzle_array = puzzle_data.get('puzzle_array', [])
@@ -173,10 +178,7 @@ def get_prompt(puzzle_data: dict) -> dict:
     (0,0), (1,0), (2,0), (2,1), ...
     """
 
-    return {
-        'system': 'You are an expert at solving puzzles games.',
-        'user': user_content,
-    }
+    return user_content
 
 
 # ---------------------------------------------------------------------------
@@ -279,7 +281,8 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
         puzzle: Puzzle dictionary with puzzle array and metadata
 
     Returns:
-        Dictionary with detailed path analysis results
+        Dictionary with the structural checks. Only ``fully_valid_path`` feeds the
+        ``invalid_path_rate`` metric; the other flags are stored as sample metadata for diagnosis.
     """
     # Early return with all metrics False if no path was provided
     if not solution_path:
@@ -287,7 +290,6 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
             'starts_at_start_ends_at_exit': False,
             'connected_line': False,
             'non_intersecting_line': False,
-            'start_to_exit_connected': False,
             'no_rule_crossing': False,
             'fully_valid_path': False,
         }
@@ -301,7 +303,6 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
             'starts_at_start_ends_at_exit': False,
             'connected_line': False,
             'non_intersecting_line': False,
-            'start_to_exit_connected': False,
             'no_rule_crossing': False,
             'fully_valid_path': False,
         }
@@ -321,7 +322,6 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
             'starts_at_start_ends_at_exit': False,
             'connected_line': False,
             'non_intersecting_line': False,
-            'start_to_exit_connected': False,
             'no_rule_crossing': False,
             'fully_valid_path': False,
         }
@@ -344,9 +344,6 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
     # Check if path doesn't intersect with itself
     non_intersecting_line = len(set(solution_path)) == len(solution_path)
 
-    # Check if there's a connected path from start to exit
-    start_to_exit_connected = starts_at_start_ends_at_exit and connected_line
-
     # Identify rule cells as cells where both coordinates are odd
     rule_cells = set()
     for y in range(len(puzzle_array)):
@@ -364,7 +361,6 @@ def analyze_path(solution_path: list[dict[str, int]] | None, puzzle: dict) -> di
         'starts_at_start_ends_at_exit': starts_at_start_ends_at_exit,
         'connected_line': connected_line,
         'non_intersecting_line': non_intersecting_line,
-        'start_to_exit_connected': start_to_exit_connected,
         'no_rule_crossing': no_rule_crossing,
         'fully_valid_path': fully_valid_path,
     }
