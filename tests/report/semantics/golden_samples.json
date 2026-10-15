@@ -293,6 +293,22 @@
       "display_unit": "%",
       "display_precision": 1
     },
+    "pass_hat_k": {
+      "semantic_id": "quality.pass_at_k.ratio",
+      "metric_name": "Pass^k",
+      "display_name": null,
+      "kind": "quality",
+      "direction": "higher_is_better",
+      "raw_unit": null,
+      "value_range": {
+        "min": 0.0,
+        "max": 1.0
+      },
+      "display_kind": "percent",
+      "display_multiplier": 100.0,
+      "display_unit": "%",
+      "display_precision": 1
+    },
     "legacy_diagnostic": {
       "semantic_id": "diagnostic.unspecified",
       "metric_name": "Weird.Metric",
@@ -529,6 +545,21 @@
       "expected_primary": "50%",
       "expected_raw": "0.5",
       "expected_label": "Accuracy ↑ · Threshold 0.5"
+    },
+    {
+      "id": "label-pass-hat-k",
+      "semantics_ref": "pass_hat_k",
+      "identity": {
+        "name": "accuracy",
+        "aggregation": "pass_hat_k",
+        "dimensions": {
+          "k": 2
+        }
+      },
+      "value": 0.25,
+      "expected_primary": "25%",
+      "expected_raw": "0.25",
+      "expected_label": "Pass^k ↑ · k 2"
     },
     {
       "id": "label-dimension-order",

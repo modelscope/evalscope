@@ -393,7 +393,7 @@ AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
     # `quality.pass_at_k.ratio` through METRIC_DEFINITIONS, and `vote_at_k` does not change what
     # any of these metrics measures, so neither is restated.
     ('accuracy', 'pass_at_k'): MetricEntry(baseline='quality.pass_at_k.ratio'),
-    ('accuracy', 'pass_hat_k'): MetricEntry(baseline='quality.pass_at_k.ratio'),
+    ('accuracy', 'pass_hat_k'): MetricEntry(baseline='quality.pass_at_k.ratio', metric_name='Pass^k'),
 }
 
 BENCHMARK_METRIC_OVERRIDES: Dict[Tuple[str, str], MetricEntry] = {

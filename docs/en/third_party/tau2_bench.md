@@ -111,13 +111,13 @@ Tips:
 +-----------+------------+-------------+----------+-------+---------+---------+
 | Model     | Dataset    | Metric      | Subset   |   Num |   Score | Cat.0   |
 +===========+============+=============+==========+=======+=========+=========+
-| qwen-plus | tau2_bench | Accuracy ↑ · k 1 | airline  |    10 |     60% | default |
+| qwen-plus | tau2_bench | Pass^k ↑ · k 1 | airline  |    10 |     60% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | Accuracy ↑ · k 1 | retail   |    10 |     70% | default |
+| qwen-plus | tau2_bench | Pass^k ↑ · k 1 | retail   |    10 |     70% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | Accuracy ↑ · k 1 | telecom  |    10 |     80% | default |
+| qwen-plus | tau2_bench | Pass^k ↑ · k 1 | telecom  |    10 |     80% | default |
 +-----------+------------+-------------+----------+-------+---------+---------+
-| qwen-plus | tau2_bench | Accuracy ↑ · k 1 | OVERALL  |    30 |     70% | -       |
+| qwen-plus | tau2_bench | Pass^k ↑ · k 1 | OVERALL  |    30 |     70% | -       |
 +-----------+------------+-------------+----------+-------+---------+---------+ 
 ```
 
