@@ -353,3 +353,20 @@ def test_average_precision_is_defined_for_all_positive_gold() -> None:
     aggregates = DecisionAggregator()([SampleScore(score=decision_score(a, 'yes', ['no', 'yes']), sample_id=0)])
     assert next(s.score for s in aggregates if s.metric_name == 'auprc') == 1
     assert not any(s.metric_name == 'auroc' for s in aggregates)
+
+
+def test_open_decisions_rejects_rounding_outside_official_tolerance() -> None:
+    from evalscope.api.evaluator import TaskState
+    from evalscope.api.metric import MetricUnavailableError
+    from evalscope.api.model import ModelOutput
+
+    adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
+    q = question('score')
+    sample = adapter.record_to_sample({'id': 'rounded', 'state': q.state,
+        'question': q.systemone_payload('test')['questions']['answer'], 'expected': '1', 'tier': 'hard'})
+    a = DecisionAnswer(type='score', score=1.51, legend=dict(zip(q.labels, q.criteria)),
+                       probabilities={'0': 0.26, '1': 0.26, '2': 0.25, '3': 0.25})
+    output = ModelOutput.from_content('test', '1.51')
+    output.metadata = {'decision': a.model_dump()}
+    with pytest.raises(MetricUnavailableError, match='sum tolerance'):
+        adapter.match_score('1.51', '1.51', '1', TaskState(model='test', sample=sample, output=output))

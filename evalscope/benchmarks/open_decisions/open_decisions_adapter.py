@@ -50,6 +50,7 @@ class OpenDecisionsAdapter(DecisionAdapter):
     """Evaluate OpenDecisions through a typed decision service."""
 
     aggregate_empty_scores = True
+    probability_sum_tolerance = 0.01
 
     def aggregate_scores(self, sample_scores: list) -> list:
         from .utils import aggregate_official
