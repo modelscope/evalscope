@@ -1,0 +1,358 @@
+{
+  "meta": {
+    "pretty_name": "SPaRC",
+    "dataset_id": "evalscope/SPaRC",
+    "paper_url": "https://arxiv.org/abs/2505.16686",
+    "tags": [
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy",
+      "invalid_path_rate"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Level 1",
+      "Level 2",
+      "Level 3",
+      "Level 4",
+      "Level 5"
+    ],
+    "description": "\n## Overview\n\nSPaRC (Spatial Pathfinding Reasoning Challenge) tests step-by-step spatial reasoning with 2D grid\npuzzles based on the game *The Witness*. The model must draw one line from a start node to an end\nnode that obeys every rule on the grid.\n\n## Task Description\n\n- **Task Type**: Spatial pathfinding under rule constraints\n- **Input**: A text grid (start and end nodes, gaps, dots, colored squares, stars, triangles,\n  polyominoes) and the rules of the game\n- **Output**: Step-by-step reasoning, then the marker `####` and the path as a list of `(x, y)`\n  node coordinates\n- **Domain**: Spatial reasoning, constraint satisfaction\n\n## Key Features\n\n- 500 test puzzles in five difficulty levels (Level 1 to Level 5: 86 / 118 / 121 / 86 / 89 puzzles);\n  the paper calls Level 5 \"hard\"\n- Every valid solution of each puzzle is stored in the dataset, so scoring needs no judge model\n- In the paper, humans solve 98.0% of the test puzzles (94.5% of Level 5), and the best model,\n  o4-mini, solves 15.8% (1.1% of Level 5)\n- The prompt is the paper's single-shot prompt, with one worked example inside the prompt\n\n## Evaluation Notes\n\n- Subsets are the difficulty levels; `subset_list: ['Level 5']` evaluates only the hard puzzles.\n  `limit` applies per level, so `limit=4` gives 20 puzzles (4 per level)\n- `accuracy` (primary): the path after the last `####` must exactly match one of the puzzle's\n  stored solutions\n- `invalid_path_rate` (lower is better): share of answers that are not a valid line from start to\n  end (wrong start or end, a gap between steps, a revisited node, or a step on a rule cell). This\n  is the \"Invalid Path\" column of Table 7 in the paper\n- The prompt builder and the validator are copies of the reference code in the `sparc-puzzle`\n  package; they give the same prompts and the same scores on all 500 test puzzles\n- The dataset is `evalscope/SPaRC` on ModelScope (config `all`), with the revision pinned for\n  reproducibility\n- Reasoning models often write more than 10k tokens per puzzle, so set a large `max_tokens`\n- [Paper](https://aclanthology.org/2025.emnlp-main.526/) | [Code](https://github.com/lkaesberg/SPaRC) |\n  [Dataset](https://www.modelscope.cn/datasets/evalscope/SPaRC) | [Website](https://sparc.gipplab.org/)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "You are an expert at solving puzzles games.",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "accuracy",
+      "aggregation": null,
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 500,
+    "subset_stats": [
+      {
+        "name": "Level 1",
+        "sample_count": 86,
+        "prompt_length_mean": 7565.24,
+        "prompt_length_min": 7478,
+        "prompt_length_max": 7746,
+        "prompt_length_std": 65.87,
+        "target_length_mean": 125.63
+      },
+      {
+        "name": "Level 2",
+        "sample_count": 118,
+        "prompt_length_mean": 7668.82,
+        "prompt_length_min": 7484,
+        "prompt_length_max": 7963,
+        "prompt_length_std": 104.35,
+        "target_length_mean": 165.99
+      },
+      {
+        "name": "Level 3",
+        "sample_count": 121,
+        "prompt_length_mean": 7715.45,
+        "prompt_length_min": 7486,
+        "prompt_length_max": 8018,
+        "prompt_length_std": 127.54,
+        "target_length_mean": 179.4
+      },
+      {
+        "name": "Level 4",
+        "sample_count": 86,
+        "prompt_length_mean": 7848.93,
+        "prompt_length_min": 7594,
+        "prompt_length_max": 8184,
+        "prompt_length_std": 120.8,
+        "target_length_mean": 235.09
+      },
+      {
+        "name": "Level 5",
+        "sample_count": 89,
+        "prompt_length_mean": 8004.79,
+        "prompt_length_min": 7610,
+        "prompt_length_max": 8589,
+        "prompt_length_std": 196.22,
+        "target_length_mean": 306.45
+      }
+    ],
+    "prompt_length": {
+      "mean": 7753.07,
+      "min": 7478,
+      "max": 8589,
+      "std": 193.56
+    },
+    "target_length_mean": 199.18,
+    "computed_at": "2026-10-14T08:48:46.737439"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a7ac7618",
+          "content": "You are an expert at solving puzzles games."
+        },
+        {
+          "id": "468c49a5",
+          "content": "\n    ## Objective\n    You are a specialized AI proficient in spatial reasoning and solving puzzles from the game 'The Witness'. Your goal is to find a valid path (a continuous line) from the specified Start Node to the End Node on the provide ... [TRUNCATED 7215 chars] ...  marker string `####` followed immediately by the solution path as a list of node coordinates `(x, y)`. Include all intermediate nodes from start to end.\n\n    **Example Solution Path Format:**\n    ####\n    (0,0), (1,0), (2,0), (2,1), ...\n    "
+        }
+      ],
+      "target": "(5,0), (6,0), (6,1), (6,2), (5,2), (4,2), (4,3), (4,4), (5,4), (6,4), (6,5), (6,6), (5,6), (4,6), (3,6), (2,6), (1,6), (0,6), (0,5), (0,4), (1,4), (2,4), (2,3), (2,2), (1,2), (0,2), (0,1), (0,0), (1,0), (2,0), (3,0), (4,0)",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Level 1",
+      "metadata": {
+        "difficulty_level": 1,
+        "difficulty_score": 0.842447049854198,
+        "solution_count": 3,
+        "puzzle": {
+          "id": "3fe8a85b768ae5b7",
+          "grid_size": {
+            "height": 3,
+            "width": 4
+          },
+          "puzzle_array": [
+            [
+              "+",
+              ".",
+              "+",
+              "+",
+              "E",
+              "S",
+              "+",
+              "+",
+              "+"
+            ],
+            [
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "P-B-1824",
+              "+"
+            ],
+            [
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+"
+            ],
+            [
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "N",
+              "G"
+            ],
+            [
+              ".",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              "+"
+            ],
+            [
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "N",
+              "+",
+              "N",
+              "+"
+            ],
+            [
+              "+",
+              "+",
+              "+",
+              "+",
+              "+",
+              ".",
+              "+",
+              "+",
+              "+"
+            ]
+          ],
+          "polyshapes": "{\"1824\":[[0,0,1,0],[0,1,1,0],[0,0,1,0],[0,0,0,0]]}",
+          "solutions": [
+            {
+              "index": 0,
+              "path": [
+                {
+                  "x": 5,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 3
+                },
+                {
+                  "x": 4,
+                  "y": 4
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                },
+                "... [TRUNCATED 22 more items] ..."
+              ],
+              "pathLength": 32
+            },
+            {
+              "index": 1,
+              "path": [
+                {
+                  "x": 5,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 3
+                },
+                {
+                  "x": 4,
+                  "y": 4
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                },
+                "... [TRUNCATED 18 more items] ..."
+              ],
+              "pathLength": 28
+            },
+            {
+              "index": 2,
+              "path": [
+                {
+                  "x": 5,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 2
+                },
+                {
+                  "x": 4,
+                  "y": 3
+                },
+                {
+                  "x": 4,
+                  "y": 4
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                },
+                "... [TRUNCATED 18 more items] ..."
+              ],
+              "pathLength": 28
+            }
+          ]
+        }
+      }
+    },
+    "subset": "Level 1",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# SPaRC\n\n\n## Overview\n\nSPaRC (Spatial Pathfinding Reasoning Challenge) tests step-by-step spatial reasoning with 2D grid\npuzzles based on the game *The Witness*. The model must draw one line from a start node to an end\nnode that obeys every rule on the grid.\n\n## Task Description\n\n- **Task Type**: Spatial pathfinding under rule constraints\n- **Input**: A text grid (start and end nodes, gaps, dots, colored squares, stars, triangles,\n  polyominoes) and the rules of the game\n- **Output**: Step-by-step reasoning, then the marker `####` and the path as a list of `(x, y)`\n  node coordinates\n- **Domain**: Spatial reasoning, constraint satisfaction\n\n## Key Features\n\n- 500 test puzzles in five difficulty levels (Level 1 to Level 5: 86 / 118 / 121 / 86 / 89 puzzles);\n  the paper calls Level 5 \"hard\"\n- Every valid solution of each puzzle is stored in the dataset, so scoring needs no judge model\n- In the paper, humans solve 98.0% of the test puzzles (94.5% of Level 5), and the best model,\n  o4-mini, solves 15.8% (1.1% of Level 5)\n- The prompt is the paper's single-shot prompt, with one worked example inside the prompt\n\n## Evaluation Notes\n\n- Subsets are the difficulty levels; `subset_list: ['Level 5']` evaluates only the hard puzzles.\n  `limit` applies per level, so `limit=4` gives 20 puzzles (4 per level)\n- `accuracy` (primary): the path after the last `####` must exactly match one of the puzzle's\n  stored solutions\n- `invalid_path_rate` (lower is better): share of answers that are not a valid line from start to\n  end (wrong start or end, a gap between steps, a revisited node, or a step on a rule cell). This\n  is the \"Invalid Path\" column of Table 7 in the paper\n- The prompt builder and the validator are copies of the reference code in the `sparc-puzzle`\n  package; they give the same prompts and the same scores on all 500 test puzzles\n- The dataset is `evalscope/SPaRC` on ModelScope (config `all`), with the revision pinned for\n  reproducibility\n- Reasoning models often write more than 10k tokens per puzzle, so set a large `max_tokens`\n- [Paper](https://aclanthology.org/2025.emnlp-main.526/) | [Code](https://github.com/lkaesberg/SPaRC) |\n  [Dataset](https://www.modelscope.cn/datasets/evalscope/SPaRC) | [Website](https://sparc.gipplab.org/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `sparc` |\n| **Dataset ID** | [evalscope/SPaRC](https://modelscope.cn/datasets/evalscope/SPaRC/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2505.16686) |\n| **Tags** | `Reasoning` |\n| **Metrics** | `accuracy`, `invalid_path_rate` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 500 |\n| Prompt Length (Mean) | 7753.07 chars |\n| Prompt Length (Min/Max) | 7478 / 8589 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 86 | 7565.24 | 7478 | 7746 |\n| `Level 2` | 118 | 7668.82 | 7484 | 7963 |\n| `Level 3` | 121 | 7715.45 | 7486 | 8018 |\n| `Level 4` | 86 | 7848.93 | 7594 | 8184 |\n| `Level 5` | 89 | 8004.79 | 7610 | 8589 |\n\n## Sample Example\n\n**Subset**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a7ac7618\",\n      \"content\": \"You are an expert at solving puzzles games.\"\n    },\n    {\n      \"id\": \"468c49a5\",\n      \"content\": \"\\n    ## Objective\\n    You are a specialized AI proficient in spatial reasoning and solving puzzles from the game 'The Witness'. Your goal is to find a valid path (a continuous line) from the specified Start Node to the End Node on the provide ... [TRUNCATED 7215 chars] ...  marker string `####` followed immediately by the solution path as a list of node coordinates `(x, y)`. Include all intermediate nodes from start to end.\\n\\n    **Example Solution Path Format:**\\n    ####\\n    (0,0), (1,0), (2,0), (2,1), ...\\n    \"\n    }\n  ],\n  \"target\": \"(5,0), (6,0), (6,1), (6,2), (5,2), (4,2), (4,3), (4,4), (5,4), (6,4), (6,5), (6,6), (5,6), (4,6), (3,6), (2,6), (1,6), (0,6), (0,5), (0,4), (1,4), (2,4), (2,3), (2,2), (1,2), (0,2), (0,1), (0,0), (1,0), (2,0), (3,0), (4,0)\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"difficulty_level\": 1,\n    \"difficulty_score\": 0.842447049854198,\n    \"solution_count\": 3,\n    \"puzzle\": {\n      \"id\": \"3fe8a85b768ae5b7\",\n      \"grid_size\": {\n        \"height\": 3,\n        \"width\": 4\n      },\n      \"puzzle_array\": [\n        [\n          \"+\",\n          \".\",\n          \"+\",\n          \"+\",\n          \"E\",\n          \"S\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"P-B-1824\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"G\"\n        ],\n        [\n          \".\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \".\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ]\n      ],\n      \"polyshapes\": \"{\\\"1824\\\":[[0,0,1,0],[0,1,1,0],[0,0,1,0],[0,0,0,0]]}\",\n      \"solutions\": [\n        {\n          \"index\": 0,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 22 more items] ...\"\n          ],\n          \"pathLength\": 32\n        },\n        {\n          \"index\": 1,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 18 more items] ...\"\n          ],\n          \"pathLength\": 28\n        },\n        {\n          \"index\": 2,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 18 more items] ...\"\n          ],\n          \"pathLength\": 28\n        }\n      ]\n    }\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nYou are an expert at solving puzzles games.\n```\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sparc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sparc'],\n    dataset_args={\n        'sparc': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# SPaRC\n\n## 概述\n\nSPaRC（空间路径推理挑战）基于游戏《见证者》测试二维网格谜题中的逐步空间推理。模型必须从起始节点到结束节点绘制一条线，这条线必须遵守网格上的所有规则。\n\n## 任务描述\n\n- **任务类型**：在规则约束下的空间路径寻找\n- **输入**：一个文本网格（起始和结束节点、空格、点、彩色方块、星星、三角形、多连块）以及游戏规则\n- **输出**：逐步推理，然后是标记 `####` 和路径作为 `(x, y)` 节点坐标的列表\n- **领域**：空间推理、约束满足\n\n## 主要特点\n\n- 500 个测试谜题，分为五个难度级别（级别 1 到级别 5：86 / 118 / 121 / 86 / 89 个谜题）；论文中称级别 5 为“困难”\n- 每个谜题的所有有效解决方案都存储在数据集中，因此评分不需要裁判模型\n- 在论文中，人类解决了 98.0% 的测试谜题（级别 5 中的 94.5%），而最好的模型 o4-mini 解决了 15.8%（级别 5 中的 1.1%）\n- 提示词是论文中的单次提示，提示词中包含一个示例\n\n## 评估说明\n\n- 子集是难度级别；`subset_list: ['Level 5']` 仅评估困难谜题。`limit` 适用于每个级别，因此 `limit=4` 会提供 20 个谜题（每个级别 4 个）\n- `accuracy`（主要指标）：最后一个 `####` 后的路径必须与谜题存储的解决方案之一完全匹配\n- `invalid_path_rate`（越低越好）：答案中不是从起点到终点的有效连线的比例（错误的起点或终点、步骤之间的空隙、重复访问的节点或在规则单元格上的步骤）。这是论文中表 7 的“Invalid Path”列\n- 提示生成器和验证器是 `sparc-puzzle` 包中参考代码的副本；它们在所有 500 个测试谜题上提供相同的提示和相同的分数\n- 数据集是 ModelScope 上的 `evalscope/SPaRC`（配置 `all`），为了可复现性，版本已固定\n- 推理模型通常每道谜题会写超过 10k 个 token，因此请设置较大的 `max_tokens`\n- [论文](https://aclanthology.org/2025.emnlp-main.526/) | [代码](https://github.com/lkaesberg/SPaRC) | [数据集](https://www.modelscope.cn/datasets/evalscope/SPaRC) | [网站](https://sparc.gipplab.org/)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `sparc` |\n| **数据集 ID** | [evalscope/SPaRC](https://modelscope.cn/datasets/evalscope/SPaRC/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2505.16686) |\n| **标签** | `Reasoning` |\n| **指标** | `accuracy`, `invalid_path_rate` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 500 |\n| 提示词长度（平均值） | 7753.07 字符 |\n| 提示词长度（最小值/最大值） | 7478 / 8589 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Level 1` | 86 | 7565.24 | 7478 | 7746 |\n| `Level 2` | 118 | 7668.82 | 7484 | 7963 |\n| `Level 3` | 121 | 7715.45 | 7486 | 8018 |\n| `Level 4` | 86 | 7848.93 | 7594 | 8184 |\n| `Level 5` | 89 | 8004.79 | 7610 | 8589 |\n\n## 样例示例\n\n**子集**: `Level 1`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a7ac7618\",\n      \"content\": \"You are an expert at solving puzzles games.\"\n    },\n    {\n      \"id\": \"468c49a5\",\n      \"content\": \"\\n    ## Objective\\n    You are a specialized AI proficient in spatial reasoning and solving puzzles from the game 'The Witness'. Your goal is to find a valid path (a continuous line) from the specified Start Node to the End Node on the provide ... [TRUNCATED 7215 chars] ...  marker string `####` followed immediately by the solution path as a list of node coordinates `(x, y)`. Include all intermediate nodes from start to end.\\n\\n    **Example Solution Path Format:**\\n    ####\\n    (0,0), (1,0), (2,0), (2,1), ...\\n    \"\n    }\n  ],\n  \"target\": \"(5,0), (6,0), (6,1), (6,2), (5,2), (4,2), (4,3), (4,4), (5,4), (6,4), (6,5), (6,6), (5,6), (4,6), (3,6), (2,6), (1,6), (0,6), (0,5), (0,4), (1,4), (2,4), (2,3), (2,2), (1,2), (0,2), (0,1), (0,0), (1,0), (2,0), (3,0), (4,0)\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Level 1\",\n  \"metadata\": {\n    \"difficulty_level\": 1,\n    \"difficulty_score\": 0.842447049854198,\n    \"solution_count\": 3,\n    \"puzzle\": {\n      \"id\": \"3fe8a85b768ae5b7\",\n      \"grid_size\": {\n        \"height\": 3,\n        \"width\": 4\n      },\n      \"puzzle_array\": [\n        [\n          \"+\",\n          \".\",\n          \"+\",\n          \"+\",\n          \"E\",\n          \"S\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"P-B-1824\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"G\"\n        ],\n        [\n          \".\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\",\n          \"N\",\n          \"+\"\n        ],\n        [\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \"+\",\n          \".\",\n          \"+\",\n          \"+\",\n          \"+\"\n        ]\n      ],\n      \"polyshapes\": \"{\\\"1824\\\":[[0,0,1,0],[0,1,1,0],[0,0,1,0],[0,0,0,0]]}\",\n      \"solutions\": [\n        {\n          \"index\": 0,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 22 more items] ...\"\n          ],\n          \"pathLength\": 32\n        },\n        {\n          \"index\": 1,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 18 more items] ...\"\n          ],\n          \"pathLength\": 28\n        },\n        {\n          \"index\": 2,\n          \"path\": [\n            {\n              \"x\": 5,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 0\n            },\n            {\n              \"x\": 6,\n              \"y\": 1\n            },\n            {\n              \"x\": 6,\n              \"y\": 2\n            },\n            {\n              \"x\": 5,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 2\n            },\n            {\n              \"x\": 4,\n              \"y\": 3\n            },\n            {\n              \"x\": 4,\n              \"y\": 4\n            },\n            {\n              \"x\": 5,\n              \"y\": 4\n            },\n            {\n              \"x\": 6,\n              \"y\": 4\n            },\n            \"... [TRUNCATED 18 more items] ...\"\n          ],\n          \"pathLength\": 28\n        }\n      ]\n    }\n  }\n}\n```\n\n*注：部分内容因显示原因被截断。*\n\n## 提示模板\n\n**系统提示:**\n```text\nYou are an expert at solving puzzles games.\n```\n\n**提示模板:**\n```text\n{question}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets sparc \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['sparc'],\n    dataset_args={\n        'sparc': {\n            # subset_list: ['Level 1', 'Level 2', 'Level 3']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "bf70639e48b4e67dcd96251fd420551b",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-14T08:48:47.287920",
+  "translation_updated_at": "2026-10-14T16:49:20+08:00"
+}

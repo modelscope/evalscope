@@ -223,6 +223,7 @@
  "siqa": "evalscope.benchmarks.siqa.siqa_adapter",
  "skillsbench": "evalscope.benchmarks.skillsbench.skillsbench_adapter",
  "slake": "evalscope.benchmarks.slake.slake_adapter",
+ "sparc": "evalscope.benchmarks.sparc.sparc_adapter",
  "stsb": "evalscope.benchmarks.stsb.stsb_adapter",
  "super_gpqa": "evalscope.benchmarks.super_gpqa.super_gpqa_adapter",
  "surds": "evalscope.benchmarks.surds.surds_adapter",

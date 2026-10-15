@@ -42,6 +42,19 @@ _RULE_CASES = [
         'identity',
         'mrcr_score:mean[max_tokens=8192,min_tokens=4096]',
     ),
+    # needle_haystack: one accuracy cell per context length and needle depth.
+    (
+        'Context#1000 Depth#0',
+        'needle_haystack',
+        'identity',
+        'accuracy:mean[context_length=1000,depth_percent=0]',
+    ),
+    (
+        'Context#32000 Depth#100',
+        'needle_haystack',
+        'identity',
+        'accuracy:mean[context_length=32000,depth_percent=100]',
+    ),
     # wide_search: kind@k plus a scope, and an optional row/item target.
     ('avg@4_row/f1', 'wide_search', 'identity', 'f1:mean[k=4,scope="row"]'),
     ('pass@2_item/precision', 'wide_search', 'identity', 'precision:pass_at_k[k=2,scope="item"]'),
@@ -114,6 +127,8 @@ def test_scope_split_ordering_is_preserved(metric_name: str, benchmark_name: str
         ('overall_mrcr_score', 'openai_mrcr', True),
         ('4096-8192_mrcr_score', 'openai_mrcr', True),
         ('mrcr_score', 'openai_mrcr', False),
+        ('Context#1000 Depth#0', 'needle_haystack', True),
+        ('Context#1000 Depth#0', 'openai_mrcr', False),
         ('avg@4_row/f1', 'wide_search', True),
         ('Overall_aAcc', 'hallusion_bench', True),
         ('Overall_zAcc', 'hallusion_bench', False),

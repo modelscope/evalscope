@@ -113,6 +113,7 @@ MMBench is a systematically designed benchmark for evaluating vision-language mo
         metric_list=['acc'],
         eval_split='dev',
         prompt_template=MULT_CHOICE_PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
@@ -122,8 +123,12 @@ class MMBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answers_list: List[str] = [record.get('A', ''), record.get('B', ''), record.get('C', ''), record.get('D', '')]
         answers_list = [ans for ans in answers_list if (ans.strip() and ans != 'nan')]
-        question_hint = record['hint'] + record['question']
-        input_text = prompt(question=question_hint, choices=answers_list, template=self.prompt_template)
+        # The dataset stores a missing hint as the string 'nan'; keep only real hints, formatted as in VLMEvalKit.
+        hint = record.get('hint')
+        question = record['question']
+        if hint and hint != 'nan':
+            question = f'Hint: {hint}\nQuestion: {question}'
+        input_text = prompt(question=question, choices=answers_list, template=self.prompt_template)
         content_list: List[Content] = [ContentText(text=input_text)]
         image = record.get('image')
         if image:
