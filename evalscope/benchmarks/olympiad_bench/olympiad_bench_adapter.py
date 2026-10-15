@@ -78,7 +78,7 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
         metric_list=['acc'],
         eval_split='train',
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
     )
 )
 class OlympiadBenchAdapter(VisionLanguageAdapter):
