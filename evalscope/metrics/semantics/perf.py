@@ -56,7 +56,6 @@ PERF_SEMANTICS: Dict[str, MetricEntry] = {
         baseline='diagnostic.count.items',
         metric_name=Metrics.FAILED_REQUESTS,
     ),
-    Metrics.TIMEOUT_REQUESTS: MetricEntry(baseline='diagnostic.count.items', metric_name=Metrics.TIMEOUT_REQUESTS),
     Metrics.STREAM_REQUESTS: MetricEntry(
         baseline='diagnostic.count.items',
         metric_name=Metrics.STREAM_REQUESTS,

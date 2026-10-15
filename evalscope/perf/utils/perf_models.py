@@ -46,7 +46,6 @@ class BenchmarkSummary(BaseModel):
     total_requests: int = Field(0, alias=Metrics.TOTAL_REQUESTS)
     succeed_requests: int = Field(0, alias=Metrics.SUCCEED_REQUESTS)
     failed_requests: int = Field(0, alias=Metrics.FAILED_REQUESTS)
-    timeout_requests: Optional[int] = Field(None, alias=Metrics.TIMEOUT_REQUESTS)
     stream_requests: int = Field(0, alias=Metrics.STREAM_REQUESTS)
     non_stream_requests: int = Field(0, alias=Metrics.NON_STREAM_REQUESTS)
     request_throughput: float = Field(0.0, alias=Metrics.REQUEST_THROUGHPUT)
@@ -137,8 +136,6 @@ class BenchmarkSummary(BaseModel):
         rows.append(
             ('Total / Success / Failed', f'{self.total_requests} / {self.succeed_requests} / {self.failed_requests}')
         )
-        if self.timeout_requests is not None:
-            rows.append((Metrics.TIMEOUT_REQUESTS, str(self.timeout_requests)))
         if self.stream_requests > 0 and self.non_stream_requests > 0:
             rows.append(('Stream / Non-Stream', f'{self.stream_requests} / {self.non_stream_requests}'))
         rows.append((Metrics.REQUEST_THROUGHPUT, _fmt(Metrics.REQUEST_THROUGHPUT, self.request_throughput)))

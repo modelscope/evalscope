@@ -5,7 +5,9 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
-DECISION_EVAL_TYPES = frozenset({'systemone_api', 'autotrust_api'})
+from evalscope.constants import EvalType
+
+DECISION_EVAL_TYPES = frozenset({EvalType.SYSTEMONE_API, EvalType.AUTOTRUST_API})
 
 
 def parse_decision_usage(raw: dict) -> tuple[int, int]:

@@ -3,12 +3,13 @@
 import pytest
 
 from evalscope import TaskConfig
-from evalscope.api.dataset import DatasetDict, MemoryDataset
+from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.model.decision import DecisionAnswer, DecisionInput, parse_decision_response
 from evalscope.api.registry import get_benchmark
+from evalscope.constants import ScoreStatus
 from evalscope.metrics.decision import DecisionAggregator, decision_score
 
 
@@ -35,6 +36,44 @@ def test_boolq_noul_gold_follows_semantics_after_choice_shuffle() -> None:
     output.metadata = {'decision': answer.model_dump()}
     result = adapter.match_score('yes', 'yes', sample.target, TaskState(model='test', sample=sample, output=output))
     assert result.value['acc'] == 1
+
+
+def test_mcq_missing_decision_is_excluded() -> None:
+    adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
+    sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
+    output = ModelOutput.from_content('test', 'ANSWER: A')
+    output.metadata = {}
+    state = TaskState(model='test', sample=sample, output=output, completed=True)
+    result = adapter.calculate_metrics(state)
+    assert result.score.status is ScoreStatus.EXCLUDED
+    assert result.score.metadata['metric_unavailable'] is True
+
+
+def test_mcq_legacy_choice_cache_remains_supported() -> None:
+    adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
+    sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
+    output = ModelOutput.from_content('test', 'ANSWER: A')
+    output.metadata = {
+        'choice_response': {
+            'answers': {'answer': {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 0.9, 'B': 0.1}}}
+        }
+    }
+    result = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
+    assert result.value['acc'] == 1
+
+
+def test_noul_conversion_requires_an_explicit_adapter_capability() -> None:
+    config = TaskConfig(
+        model='test',
+        eval_type='systemone_api',
+        datasets=['boolq'],
+        dataset_args={'boolq': {'extra_params': {'decision_kind': 'noul'}}},
+    )
+    adapter = get_benchmark('boolq', config)
+    adapter.decision_noul_positive_choice = None
+    sample = Sample(input='Question?', choices=['Yes', 'No'], target='A')
+    with pytest.raises(ValueError, match='no audited Noul conversion'):
+        adapter.build_systemone_messages(sample, 'default')
 
 
 def test_banking77_macro_f1_uses_intents_after_choice_shuffle() -> None:

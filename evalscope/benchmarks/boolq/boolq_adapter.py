@@ -64,6 +64,8 @@ Binary reading comprehension using a passage and a naturally occurring question.
 class BoolQAdapter(MultiChoiceAdapter):
     """Evaluate the original public BoolQ validation set as binary Choice."""
 
+    decision_noul_positive_choice = 'Yes'
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         answer = record['answer']
         if not isinstance(answer, bool):

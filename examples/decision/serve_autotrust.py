@@ -27,8 +27,6 @@ def main() -> None:
     args = parser.parse_args()
     head = json.loads((args.model_path / 'adapter_vllm/decision_head.json').read_text())
     temperatures = json.loads((args.model_path / 'calibration.json').read_text())['per_kind']
-    release = args.model_path / 'evalscope_release_manifest.json'
-    revision = json.loads(release.read_text())['revision'] if release.is_file() else None
     tokenizer = AutoTokenizer.from_pretrained(args.model_path, local_files_only=True)
     labels = []
     for label in list(string.ascii_uppercase) + [a + b for a in string.ascii_uppercase for b in string.ascii_uppercase]:
@@ -82,8 +80,7 @@ def main() -> None:
         index = max(range(len(options)), key=probabilities.__getitem__)
         return {'model': 'autotrust/JEV-27B', 'kind': kind, 'effective_kind': kind,
                 'options': options, 'probabilities': probabilities, 'choice_index': index, 'choice': options[index],
-                'usage': raw.get('usage', {}), 'protocol': 'jev27-bare-v1', 'num_model_requests': 1,
-                'model_revision': revision}
+                'usage': raw.get('usage', {}), 'protocol': 'jev27-bare-v1', 'num_model_requests': 1}
 
     uvicorn.run(app, host=args.host, port=args.port)
 

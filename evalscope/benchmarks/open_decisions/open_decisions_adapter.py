@@ -58,11 +58,6 @@ class OpenDecisionsAdapter(DecisionAdapter):
     def aggregate_scores(self, sample_scores: list) -> list:
         from .utils import aggregate_official
 
-        datasets = (
-            [self.test_dataset[self.current_subset_name]]
-            if self.current_subset_name in self.test_dataset.keys()
-            else self.test_dataset.values()
-        )
         tasks = [
             {
                 'id': sample.id,
@@ -71,7 +66,6 @@ class OpenDecisionsAdapter(DecisionAdapter):
                 'expected': sample.metadata['decision_gold'],
                 'tier': sample.metadata['tier'],
             }
-            for dataset in datasets
-            for sample in dataset
+            for sample in self.test_dataset[self.current_subset_name]
         ]
         return super().aggregate_scores(sample_scores) + aggregate_official(sample_scores, tasks)

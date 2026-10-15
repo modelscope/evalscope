@@ -184,7 +184,15 @@ def test_pinned_official_reference_fixture() -> None:
 
     fixture = json.loads((Path(__file__).parent / 'data/open_decisions_official.json').read_text())
     assert fixture['source_revision'] == '5026a13ad6e5a8606810a3a5c4e410d8d6638e71'
-    assert score(fixture['tasks'], fixture['predictions']) == fixture['expected']
+    actual = score(fixture['tasks'], fixture['predictions'])
+    expected = fixture['expected']
+    assert actual.keys() == expected.keys()
+    for key in ['capability', 'intelligence', 'calibration']:
+        assert actual[key] == pytest.approx(expected[key], abs=1e-12)
+    for key in ['competence_per_type', 'calibration_per_type', 'accuracy_per_type']:
+        assert actual[key] == pytest.approx(expected[key], abs=1e-12)
+    assert actual['items'] == expected['items']
+    assert actual['predicted'] == expected['predicted']
 
 
 def test_mixed_kinds_keep_losses_separate_and_one_primary() -> None:

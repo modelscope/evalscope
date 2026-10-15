@@ -1,30 +1,37 @@
-# 使用 EvalScope 评测决策模型
+# 从“答对了”到“概率可信”：使用 EvalScope 评测决策模型
 
 本文带你完成四件事：**选 benchmark → 部署模型 → 查看效果 → 测试性能**。先用少量样本跑通，再进行完整评测。所有命令均在 EvalScope 源码根目录执行，模型和数据从 ModelScope 下载。
 
-## 1. 先确认自己的模型属于哪一类
+## 为什么值得测
 
-- **Chat 模型**：通过 `/v1/chat/completions` 生成答案，例如输出 `ANSWER: A`。选择 `eval_type='openai_api'`。
-- **决策模型**：直接返回选项概率、判断概率或评分分布。根据服务接口选择 `autotrust_api` 或 `systemone_api`。
+两个决策模型都答对 80% 的题，不代表它们同样可靠：一个模型可能在答错时只给 51% 的概率，另一个却给 99%。Accuracy 看不出这个区别，NLL、Brier、ECE 等概率指标可以。
 
-决策模型有三类题型：Choice 是“从几个选项中选一个”；Noul 是“这件事成立的概率是多少”；Score 是“在有顺序的几个等级中评分”。例如，Score 的六档可以是 0–5 分，模型返回每档概率，EvalScope 用这些概率计算平均分。
+本指南只适用于**原生输出完整概率分布**的决策模型：
 
-先按下表选择 benchmark。普通 chat 接口不能直接替代决策接口。
+- 已有兼容的 `/v1/decide` 或 `/v1/systemone` 服务，可以直接跳到第 3 节。
+- 需要部署 AutoTrust JEV 示例，按第 2 节准备模型和决策接口。
+- 本地资源不足以部署示例模型时，应连接兼容的远程决策服务；不要用后处理生成的置信度冒充模型原生概率。
 
-| Benchmark | 用来测什么 | 普通 chat | System One 决策接口 | 本文的 AutoTrust JEV 示例 |
-|---|---|---|---|---|
-| `arc` | 科学选择题，本文选 ARC-Challenge | 支持 | 支持 | 支持 |
-| `banking77` | 银行业务意图分类，每题保留 77 类 | 支持 | 支持 | 支持 |
-| `boolq` | 根据短文回答是非题 | 支持 Choice | 支持 Choice / Noul | 支持 Choice / Noul |
-| `reward_bench` | 从两个回答中选出更好的回答 | 支持 | 支持 | 支持 |
-| `stsb` | 两句话有多相似，0–5 分 | 不支持本文适配器 | 支持 | 支持六档 Score |
-| `jevbench` | 231 道公开决策题，包含三类题型 | 不支持 | 需支持题目原有等级 | 不能完整运行：包含四档、五档 Score |
-| `open_decisions` | 2,352 道三类决策题 | 不支持 | 需支持题目原有等级 | 不能完整运行：包含三至六档 Score |
-| `general_decision` | 你自己的决策题 | 不支持 | 按题型和等级支持 | Score 必须是六档 |
+第一次阅读只需完成第 1、3、4 节；需要自己部署服务时再看第 2 节，需要自定义数据或压测时再看第 5、6 节。
 
-“支持普通 chat”表示可以测答案正确率。只有返回完整概率的决策接口，才能进一步计算本文的概率指标。不要让 chat 模型随口给一个“置信度”，再把它当作模型的选项概率。
+## 1. 选择决策接口和 benchmark
 
-这里的 [JevBench](https://modelscope.cn/datasets/evalscope/jevbench) 是 [Benchmark Heaven 的公开子集](https://github.com/fstandhartinger/jevbench)，与其他同名 benchmark 不同；它不提供完整榜单的 Composite 成绩。[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) 使用发布包中的 `train` 划分做评测，不会训练模型。
+决策模型直接返回选项概率、判断概率或评分分布。`/v1/decide` 使用 `eval_type='autotrust_api'`，`/v1/systemone` 使用 `eval_type='systemone_api'`。
+
+决策任务有三类题型：Choice 是“从几个选项中选一个”；Noul 是“这件事成立的概率是多少”；Score 是“在有顺序的几个等级中评分”。例如，Score 的六档可以是 0–5 分，模型返回每档概率，EvalScope 用这些概率计算平均分。
+
+| Benchmark | 用来测什么 | System One 决策接口 | 本文的 AutoTrust JEV 示例 |
+|---|---|---|---|
+| `arc` | 科学选择题，本文选 ARC-Challenge | 支持 | 支持 |
+| `banking77` | 银行业务意图分类，每题保留 77 类 | 支持 | 支持 |
+| `boolq` | 根据短文回答是非题 | 支持 Choice / Noul | 支持 Choice / Noul |
+| `reward_bench` | 从两个回答中选出更好的回答 | 支持 | 支持 |
+| `stsb` | 两句话有多相似，0–5 分 | 支持 | 支持六档 Score |
+| `jevbench` | 231 道公开决策题，包含三类题型 | 需支持题目原有等级 | 不能完整运行：包含四档、五档 Score |
+| `open_decisions` | 2,352 道三类决策题 | 需支持题目原有等级 | 不能完整运行：包含三至六档 Score |
+| `general_decision` | 你自己的决策题 | 按题型和等级支持 | Score 必须是六档 |
+
+只有服务返回完整概率分布，EvalScope 才能计算本文的概率指标。这里的 [JevBench](https://modelscope.cn/datasets/evalscope/jevbench) 是 [Benchmark Heaven 的公开子集](https://github.com/fstandhartinger/jevbench)，与其他同名 benchmark 不同；它不提供完整榜单的 Composite 成绩。[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) 使用发布包中的 `train` 划分做评测，不会训练模型。
 
 ## 2. 用 vLLM 部署模型
 
@@ -37,38 +44,17 @@ pip install -e '.[perf]'
 pip install -U uv modelscope fastapi uvicorn httpx
 ```
 
-下面两条路径任选其一。已有可用模型服务的用户可以直接跳到第 3 节。
+已有可用决策服务的用户可以直接跳到第 3 节。
 
-### 路径 A：普通 chat 模型
+### AutoTrust JEV 决策模型
 
-以一个小模型为例；你可以换成自己的 ModelScope 模型 ID，或者直接使用已下载的本地模型目录：
-
-```bash
-uv pip install -U vllm --torch-backend auto
-modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./models/my-chat-model
-vllm serve ./models/my-chat-model \
-  --served-model-name my-chat-model --port 8000 --max-model-len 8192
-```
-
-保留这个终端运行，在另一个终端检查服务：
-
-```bash
-curl http://127.0.0.1:8000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"my-chat-model","messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
-```
-
-能收到回答，就可以使用第 3 节的 chat 配置。后续的 `model` 必须与这里的 `--served-model-name` 一致。
-
-### 路径 B：AutoTrust 决策模型
-
-以下使用 `autotrust/JEV-27B`。它需要比上面的小模型更多显存；如果单卡放不下，可按 vLLM 的要求使用多卡。该模型使用较新的架构，这里按 [vLLM 官方方法](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/)安装开发版；下载脚本会准备完整模型并校验文件：
+以下使用 `autotrust/JEV-27B`。它需要较多显存；如果单卡放不下，可按 vLLM 的要求使用多卡。该模型使用较新的架构，这里按 [vLLM 官方方法](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/)安装开发版，并从 ModelScope 下载完整模型：
 
 ```bash
 uv pip install -U vllm --torch-backend auto \
   --extra-index-url https://wheels.vllm.ai/nightly
-python examples/decision/download_models.py \
-  --model autotrust/JEV-27B --output ./models/JEV-27B
+modelscope download --model autotrust/JEV-27B \
+  --local_dir ./models/JEV-27B
 vllm serve ./models/JEV-27B \
   --served-model-name autotrust/JEV-27B \
   --enable-lora --max-lora-rank 32 \
@@ -85,7 +71,7 @@ python examples/decision/serve_autotrust.py \
   --upstream http://127.0.0.1:18132/v1 --port 18133
 ```
 
-这里有两个端口：**18132 运行 vLLM，18133 是给 EvalScope 使用的决策接口**。模型的决策能力需要完整 adapter/head；仅启动底座 chat 服务不够。请使用支持该模型架构和输出 head LoRA 的 vLLM 版本，模型的[官方部署说明](https://modelscope.cn/models/autotrust/JEV-27B)列出了要求。
+这里有两个端口：**18132 运行 vLLM，18133 是给 EvalScope 使用的决策接口**。模型的决策能力需要完整 adapter/head；仅启动底座生成服务不够。请使用支持该模型架构和输出 head LoRA 的 vLLM 版本，模型的[官方部署说明](https://modelscope.cn/models/autotrust/JEV-27B)列出了要求。
 
 检查一次决策请求：
 
@@ -95,32 +81,13 @@ curl http://127.0.0.1:18133/v1/decide \
   -d '{"kind":"choice","state":"The sky is blue.","question":"What color is the sky?","options":["Blue","Red"],"thinking":"off"}'
 ```
 
-响应应包含 `options` 和一一对应的 `probabilities`，例如 `[0.97, 0.03]`。实际数字以服务返回为准。
+响应应包含 `options` 和一一对应的 `probabilities`，例如 `[0.97, 0.03]`。实际数字以服务返回为准。正式评测还应记录实际下载的模型 revision、vLLM 版本和启动参数，避免模型别名更新后无法复现。
 
-如果使用自己的决策模型，需要让它提供相应的 `/v1/decide` 或 `/v1/systemone` 接口。上面的示例服务针对 AutoTrust 发布格式；其他模型不能只改模型名字就套用。标准 vLLM 的聊天接口不会自动变成这两种决策接口。
+如果使用自己的决策模型，需要让它提供相应的 `/v1/decide` 或 `/v1/systemone` 接口。上面的示例服务针对 AutoTrust 发布格式；其他模型不能只改模型名字就套用。标准 vLLM 的 OpenAI 兼容接口不会自动变成这两种决策接口。
 
 ## 3. 先跑少量样本，再扩大评测
 
 将下面适合自己的配置保存为 `evaluate.py`，执行 `python evaluate.py`。
-
-### 普通 chat：测四个现有 benchmark
-
-```python
-from evalscope import TaskConfig, run_task
-
-run_task(TaskConfig(
-    model='my-chat-model',
-    eval_type='openai_api',
-    api_url='http://127.0.0.1:8000/v1',
-    api_key='EMPTY',
-    datasets=['arc', 'banking77', 'boolq', 'reward_bench'],
-    dataset_args={'arc': {'subset_list': ['ARC-Challenge']}},
-    generation_config={'temperature': 0, 'max_tokens': 256},
-    limit=5,
-))
-```
-
-这里的 BoolQ 使用默认 Choice。不要在 chat 配置中打开 Noul，也不要加入表中标为不支持 chat 的决策 benchmark。
 
 ### AutoTrust：同时测 Choice、Noul、Score
 
@@ -212,7 +179,7 @@ dataset_args={'general_decision': {'local_path': './decision-data'}},
 
 ## 6. 怎么测性能
 
-先停止同一个服务上的效果评测，避免两种流量互相影响。下面接着使用 AutoTrust 决策服务；普通 chat 模型的压测见[性能评测快速开始](../user_guides/stress_test/quick_start.md)。
+先停止同一个服务上的效果评测，避免两种流量互相影响。下面接着使用 AutoTrust 决策服务；通用性能评测概念见[性能评测快速开始](../user_guides/stress_test/quick_start.md)。
 
 先导出三组固定请求。Choice 使用完整 77 类的 BANKING77，Noul 使用 BoolQ，Score 使用 STS-B：
 
@@ -240,7 +207,7 @@ done
 
 在输出目录打开 `perf_report.html`，按这个顺序读：
 
-1. **成功率、失败和超时**：先确认服务正确处理了请求；HTTP 200 但答案格式非法也算失败。
+1. **成功率和失败**：先确认服务正确处理了请求；HTTP 200 但答案格式非法也算失败。
 2. **p50 / p90 / p95 / p99 延迟**：分别表示约 50% / 90% / 95% / 99% 的请求能在这个时间内完成，越低越快。
 3. **成功 req/s**：每秒完成多少次决策，越高越好。本文一请求一题，因此也等于 decisions/s。
 4. **并发增加后的变化**：吞吐提高多少，延迟是否明显变长；如果吞吐几乎不变而延迟变长，往往是在排队。
@@ -251,9 +218,9 @@ done
 
 | 问题 | 处理方法 |
 |---|---|
-| `404 Not Found` | 核对 API 类型和端口；普通 vLLM chat 端口没有原生 `/decide` / `/systemone` |
+| `404 Not Found` | 核对 API 类型和端口；普通模型端口没有原生 `/decide` / `/systemone` |
 | vLLM 提示不支持模型或 `lm_head` LoRA | 使用模型官方要求的兼容 vLLM 版本，保留完整 adapter/head |
 | 提示 Score 必须是六档 | AutoTrust 示例的限制；换用支持原始等级的服务，不要改 benchmark 的等级 |
-| Chat 配置运行新决策 benchmark 时报错 | 按第 1 节的兼容表更换 benchmark 或 API |
+| 决策 benchmark 拒绝当前 API 配置 | 按第 1 节的兼容表选择匹配的决策 API |
 | 只想先确认能跑 | 评测加 `limit=5`，压测先用 20 次请求 |
 | 想复核个别答案 | 查看对应的 predictions 和 reviews，先确认题目、原选项、答案和评分 |

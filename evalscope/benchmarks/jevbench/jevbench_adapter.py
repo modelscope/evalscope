@@ -69,16 +69,10 @@ class JevbenchAdapter(DecisionAdapter):
         }
         families = defaultdict(list)
         outcomes = []
-        datasets = (
-            [self.test_dataset[self.current_subset_name]]
-            if self.current_subset_name in self.test_dataset.keys()
-            else self.test_dataset.values()
-        )
-        for dataset in datasets:
-            for sample in dataset:
-                correct = predictions.get(sample.id, 0.0)
-                families[sample.metadata['family']].append(correct)
-                outcomes.append(correct)
+        for sample in self.test_dataset[self.current_subset_name]:
+            correct = predictions.get(sample.id, 0.0)
+            families[sample.metadata['family']].append(correct)
+            outcomes.append(correct)
         if outcomes:
             metadata = {
                 'missing_predictions_count_as_wrong': True,

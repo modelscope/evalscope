@@ -1,7 +1,6 @@
 """Export representative benchmark inputs as complete, gold-free decision perf requests."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -19,7 +18,6 @@ def main() -> None:
     parser.add_argument('--samples', type=int, default=20)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    summary = {}
     for kind, dataset in [('choice', 'banking77'), ('noul', 'boolq'), ('score', 'stsb')]:
         extra = {'extra_params': {'decision_kind': 'noul'}} if kind == 'noul' else {}
         config = TaskConfig(model=args.model, eval_type=args.api + '_api', datasets=[dataset],
@@ -33,12 +31,7 @@ def main() -> None:
                 body = question.systemone_payload(args.model) if args.api == 'systemone' else question.autotrust_payload()
                 bodies.append(json.dumps(body, ensure_ascii=False))
         path = args.output / f'{kind}.jsonl'
-        raw = ('\n'.join(bodies) + '\n').encode()
-        path.write_bytes(raw)
-        summary[kind] = {'count': len(bodies), 'sha256': hashlib.sha256(raw).hexdigest(),
-                         'utf8_bytes': [len(body.encode()) for body in bodies],
-                         'characters': [len(body) for body in bodies]}
-    (args.output / 'manifest.json').write_text(json.dumps(summary, indent=2) + '\n')
+        path.write_text('\n'.join(bodies) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':

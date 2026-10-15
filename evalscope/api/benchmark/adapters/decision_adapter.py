@@ -7,9 +7,9 @@ from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
-from evalscope.api.metric.decision import decision_score
+from evalscope.api.metric.decision import decision_score, read_decision_answer
 from evalscope.api.model import Model
-from evalscope.api.model.decision import DECISION_EVAL_TYPES, DecisionAnswer, DecisionInput
+from evalscope.api.model.decision import DECISION_EVAL_TYPES, DecisionInput
 from evalscope.api.registry import get_aggregation
 
 from .default_data_adapter import DefaultDataAdapter
@@ -92,10 +92,7 @@ class DecisionAdapter(DefaultDataAdapter):
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
-        data = (task_state.output.metadata or {}).get('decision') if task_state.output else None
-        if not data:
-            raise MetricUnavailableError('A validated decision response is required; text is not a probability.')
-        answer = DecisionAnswer.model_validate(data)
+        answer = read_decision_answer(task_state)
         deviation = abs(sum(answer.probabilities.values()) - 1)
         if self.probability_sum_tolerance is not None and deviation > self.probability_sum_tolerance:
             raise MetricUnavailableError("Distribution exceeds this benchmark's probability sum tolerance.")

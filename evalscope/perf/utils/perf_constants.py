@@ -30,7 +30,6 @@ class Metrics:
     TOTAL_REQUESTS = 'Total Requests'
     SUCCEED_REQUESTS = 'Success Requests'
     FAILED_REQUESTS = 'Failed Requests'
-    TIMEOUT_REQUESTS = 'Timeout Requests'
     STREAM_REQUESTS = 'Stream Requests'
     NON_STREAM_REQUESTS = 'Non-Stream Requests'
     REQUEST_THROUGHPUT = 'Req Throughput (req/s)'

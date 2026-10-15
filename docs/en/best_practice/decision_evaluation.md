@@ -1,27 +1,37 @@
-# Evaluate decision models with EvalScope
+# From correct answers to trustworthy probabilities: evaluate decision models with EvalScope
 
 Follow this workflow: **choose a benchmark → serve the model → check quality → measure performance**. Start with a few samples, then remove the limit for a complete evaluation. Run these commands from the EvalScope source repository. Models and datasets are downloaded from ModelScope.
 
-## 1. Choose the model interface and benchmarks
+## Why this evaluation matters
 
-A **chat model** generates an answer through `/v1/chat/completions`; use `eval_type='openai_api'`. A **decision model** returns probabilities through `/v1/decide` or `/v1/systemone`; use `autotrust_api` or `systemone_api`, respectively.
+Two decision models can both answer 80% of questions correctly while being very different decision makers: one may assign 51% probability to its mistakes, while another assigns 99%. Accuracy cannot show that difference; probability metrics such as NLL, Brier and ECE can.
+
+This guide is only for decision models that **natively return complete probability distributions**:
+
+- If you already have a compatible `/v1/decide` or `/v1/systemone` service, skip deployment and go to section 3.
+- To deploy the AutoTrust JEV example, prepare the model and decision endpoint in section 2.
+- If local resources cannot host the example, connect to a compatible remote decision service. Do not substitute post-processed confidence for native model probabilities.
+
+For a first read, complete sections 1, 3 and 4. Use section 2 only when you need to deploy a service, and sections 5–6 for custom data or performance testing.
+
+## 1. Choose the decision interface and benchmarks
+
+A decision model returns option probabilities, a truth probability or an ordered score distribution. Use `eval_type='autotrust_api'` for `/v1/decide`, or `eval_type='systemone_api'` for `/v1/systemone`.
 
 Decision tasks have three types: **Choice** selects one option, **Noul** predicts the probability that a statement is true, and **Score** returns probabilities over ordered levels. For Score, EvalScope calculates an expected rating from that distribution.
 
-| Benchmark | Task | Ordinary chat | System One | AutoTrust JEV example |
-|---|---|---|---|---|
-| `arc` | Science questions; select ARC-Challenge | Yes | Yes | Yes |
-| `banking77` | Banking intent; all 77 options | Yes | Yes | Yes |
-| `boolq` | Answer a yes/no question from a passage | Choice | Choice / Noul | Choice / Noul |
-| `reward_bench` | Select the better of two answers | Yes | Yes | Yes |
-| `stsb` | Sentence similarity, 0–5 | No, for this adapter | Yes | Six-level Score |
-| `jevbench` | 231 public decisions of all three types | No | Must support original levels | Cannot run the complete set: four-/five-level Score |
-| `open_decisions` | 2,352 decisions of all three types | No | Must support original levels | Cannot run the complete set: three- to six-level Score |
-| `general_decision` | Your local decision data | No | Depends on task/levels | Score must have six levels |
+| Benchmark | Task | System One | AutoTrust JEV example |
+|---|---|---|---|
+| `arc` | Science questions; select ARC-Challenge | Yes | Yes |
+| `banking77` | Banking intent; all 77 options | Yes | Yes |
+| `boolq` | Answer a yes/no question from a passage | Choice / Noul | Choice / Noul |
+| `reward_bench` | Select the better of two answers | Yes | Yes |
+| `stsb` | Sentence similarity, 0–5 | Yes | Six-level Score |
+| `jevbench` | 231 public decisions of all three types | Must support original levels | Cannot run the complete set: four-/five-level Score |
+| `open_decisions` | 2,352 decisions of all three types | Must support original levels | Cannot run the complete set: three- to six-level Score |
+| `general_decision` | Your local decision data | Depends on task/levels | Score must have six levels |
 
-Chat support means answer accuracy can be evaluated. Probability metrics require a decision service that returns the complete distribution. A chat model's self-reported confidence is not its token probability.
-
-[JevBench](https://modelscope.cn/datasets/evalscope/jevbench) here is the [Benchmark Heaven public subset](https://github.com/fstandhartinger/jevbench), not another benchmark with the same name. It does not produce the full leaderboard Composite. [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) uses its published `train` split for evaluation only; no model training occurs.
+EvalScope can calculate the probability metrics in this guide only when the service returns the complete distribution. [JevBench](https://modelscope.cn/datasets/evalscope/jevbench) here is the [Benchmark Heaven public subset](https://github.com/fstandhartinger/jevbench), not another benchmark with the same name. It does not produce the full leaderboard Composite. [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) uses its published `train` split for evaluation only; no model training occurs.
 
 ## 2. Deploy with vLLM
 
@@ -34,38 +44,17 @@ pip install -e '.[perf]'
 pip install -U uv modelscope fastapi uvicorn httpx
 ```
 
-Choose one route. Skip to evaluation if you already have a compatible service.
+Skip to evaluation if you already have a compatible decision service.
 
-### Route A: an ordinary chat model
+### AutoTrust JEV decision model
 
-Replace the example ModelScope ID with your own, or use a model directory you already downloaded:
-
-```bash
-uv pip install -U vllm --torch-backend auto
-modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./models/my-chat-model
-vllm serve ./models/my-chat-model \
-  --served-model-name my-chat-model --port 8000 --max-model-len 8192
-```
-
-Keep that terminal running. Check it from another terminal:
-
-```bash
-curl http://127.0.0.1:8000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"my-chat-model","messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
-```
-
-Use the same served model name in EvalScope.
-
-### Route B: AutoTrust decisions
-
-The following uses `autotrust/JEV-27B`; it needs substantially more GPU memory than the small chat example. Use vLLM's multi-GPU configuration if necessary. This model uses a recent architecture, so install a development build using the [official vLLM instructions](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/). The download script fetches and checks the complete release:
+The following uses `autotrust/JEV-27B`; it needs substantial GPU memory. Use vLLM's multi-GPU configuration if necessary. This model uses a recent architecture, so install a development build using the [official vLLM instructions](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/), then download the complete model from ModelScope:
 
 ```bash
 uv pip install -U vllm --torch-backend auto \
   --extra-index-url https://wheels.vllm.ai/nightly
-python examples/decision/download_models.py \
-  --model autotrust/JEV-27B --output ./models/JEV-27B
+modelscope download --model autotrust/JEV-27B \
+  --local_dir ./models/JEV-27B
 vllm serve ./models/JEV-27B \
   --served-model-name autotrust/JEV-27B \
   --enable-lora --max-lora-rank 32 \
@@ -90,30 +79,11 @@ curl http://127.0.0.1:18133/v1/decide \
   -d '{"kind":"choice","state":"The sky is blue.","question":"What color is the sky?","options":["Blue","Red"],"thinking":"off"}'
 ```
 
-The response should contain `options` and aligned `probabilities`. Your own decision model must provide a compatible `/v1/decide` or `/v1/systemone` service. This wrapper expects the AutoTrust release format; changing the model name alone does not adapt a different model. Standard vLLM chat serving does not automatically provide these decision routes.
+The response should contain `options` and aligned `probabilities`. For a formal evaluation, record the downloaded model revision, vLLM version and serving arguments so that a moving model alias does not make the run irreproducible. Your own decision model must provide a compatible `/v1/decide` or `/v1/systemone` service. This wrapper expects the AutoTrust release format; changing the model name alone does not adapt a different model. A standard vLLM OpenAI-compatible endpoint does not automatically provide these decision routes.
 
 ## 3. Run a small evaluation
 
 Save the appropriate example as `evaluate.py`, then run `python evaluate.py`.
-
-### Ordinary chat: four existing benchmarks
-
-```python
-from evalscope import TaskConfig, run_task
-
-run_task(TaskConfig(
-    model='my-chat-model',
-    eval_type='openai_api',
-    api_url='http://127.0.0.1:8000/v1',
-    api_key='EMPTY',
-    datasets=['arc', 'banking77', 'boolq', 'reward_bench'],
-    dataset_args={'arc': {'subset_list': ['ARC-Challenge']}},
-    generation_config={'temperature': 0, 'max_tokens': 256},
-    limit=5,
-))
-```
-
-BoolQ uses its default Choice mode. Do not enable Noul or select benchmarks marked as incompatible with chat.
 
 ### AutoTrust: Choice, Noul and Score
 
@@ -203,7 +173,7 @@ Keep the other model/API settings. AutoTrust requires six Score levels; other se
 
 ## 6. Measure performance
 
-Stop quality-evaluation traffic on the same service first. The following uses the AutoTrust decision service; ordinary chat performance testing is covered by the [performance quick start](../user_guides/stress_test/quick_start.md).
+Stop quality-evaluation traffic on the same service first. The following uses the AutoTrust decision service; general performance-testing concepts are covered by the [performance quick start](../user_guides/stress_test/quick_start.md).
 
 Export fixed requests: full 77-way BANKING77 Choice, BoolQ Noul and STS-B Score.
 
@@ -224,7 +194,7 @@ Each kind runs at concurrency 1/4/8/16, with 20 warmups followed by 1,000 measur
 
 Open `perf_report.html` in the output directory and read:
 
-1. **Success rate, failures and timeouts**: an invalid answer fails even with HTTP 200.
+1. **Success rate and failures**: an invalid answer fails even with HTTP 200.
 2. **p50 / p90 / p95 / p99 latency**: about 50% / 90% / 95% / 99% of requests finish within this time.
 3. **Successful requests/s**: higher means more completed decisions per second; there is one decision per request here.
 4. **Concurrency trade-off**: more concurrency may increase queueing without improving throughput.
@@ -235,9 +205,9 @@ TTFT/TPOT/ITL do not apply to non-streaming decisions. Request latency includes 
 
 | Symptom | Action |
 |---|---|
-| HTTP 404 | Check API type and port; a plain chat server does not expose native decision routes |
+| HTTP 404 | Check API type and port; a plain model endpoint does not expose native decision routes |
 | Unsupported model or `lm_head` LoRA | Use a compatible vLLM build required by the model and retain its adapter/head |
 | Score requires six levels | Use a service supporting the benchmark's original levels; do not change the benchmark |
-| New decision benchmark rejects a chat configuration | Follow the compatibility table and change the benchmark or API |
+| A decision benchmark rejects the API configuration | Follow the compatibility table and select the matching decision API |
 | Want a quick check first | Use `limit=5` for quality and 20 requests for perf |
 | Need to inspect an answer | Check its input, original options, prediction and review |

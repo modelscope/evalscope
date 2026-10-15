@@ -12,6 +12,7 @@ from evalscope.api.evaluator import InferenceResult, InferenceReturn, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.model import Model, ModelOutput
+from evalscope.api.model.decision import DECISION_EVAL_TYPES
 from evalscope.api.registry import get_aggregation, get_metric
 from evalscope.constants import HubType, JudgeStrategy, ScoreStatus
 from evalscope.report import Report, ReportGenerator
@@ -63,7 +64,7 @@ class DefaultDataAdapter(DataAdapter):
                         organized by subset names.
         """
         # Load the dataset
-        if self._task_config is not None and self.eval_type in ('systemone_api', 'autotrust_api'):
+        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
             self.validate_choice_config()
         self.test_dataset, self.fewshot_dataset = self.load()
 

@@ -4,8 +4,8 @@ from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricSelector, SampleScore, Score
-from evalscope.api.metric.decision import decision_score
-from evalscope.api.model.decision import DECISION_EVAL_TYPES, DecisionAnswer
+from evalscope.api.metric.decision import decision_score, read_decision_answer
+from evalscope.api.model.decision import DECISION_EVAL_TYPES
 from evalscope.api.registry import get_aggregation
 from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
@@ -28,6 +28,11 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     Adapter for multi-choice benchmarks.
     This adapter formats the input for multi-choice questions and handles few-shot examples.
     """
+
+    decision_noul_positive_choice: str | None = None
+    """Choice text that represents yes for an audited Noul conversion."""
+    decision_fixed_classes: bool = False
+    """Whether every sample uses the same semantic class inventory."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -84,8 +89,8 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
             raise ValueError('System One Choice requires 2-255 options and one matching target label.')
         kind = self.extra_params.get('decision_kind', 'choice')
-        if kind != 'choice' and (kind != 'noul' or self.name != 'boolq'):
-            raise ValueError('Only BoolQ has an audited Noul conversion.')
+        if kind != 'choice' and (kind != 'noul' or self.decision_noul_positive_choice is None):
+            raise ValueError(f'Benchmark {self.name!r} has no audited Noul conversion.')
         instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
         state = {'question': sample.input}
         examples = self.choice_examples(subset)
@@ -125,24 +130,21 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         """Retain categorical probabilities on decision protocols and preserve ordinary MCQ grading."""
         if self._task_config is None or self.eval_type not in DECISION_EVAL_TYPES:
             return super().match_score(original_prediction, filtered_prediction, reference, task_state)
-        metadata = task_state.output.metadata or {}
-        data = metadata.get('decision')
-        if data is None:
-            data = metadata['choice_response']['answers']['answer']
-        answer = DecisionAnswer.model_validate(data)
+        answer = read_decision_answer(task_state, allow_legacy_choice=True)
         labels = list(answer.probabilities)
         gold = reference
         if answer.type == 'noul':
             labels = ['no', 'yes']
-            gold = 'yes' if task_state.choices[answer_index(reference)].value == 'Yes' else 'no'
+            choice = task_state.choices[answer_index(reference)].value
+            gold = 'yes' if choice == self.decision_noul_positive_choice else 'no'
         score = decision_score(
             answer,
             gold,
             labels,
             threshold=self.extra_params.get('decision_threshold', 0.5),
-            fixed_classes=self.name == 'banking77',
+            fixed_classes=self.decision_fixed_classes,
             class_labels={answer_character(i): choice.value for i, choice in enumerate(task_state.choices)}
-            if self.name == 'banking77'
+            if self.decision_fixed_classes
             else None,
         )
         score.prediction = original_prediction

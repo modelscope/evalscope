@@ -133,6 +133,8 @@ Fine-grained banking support intent classification with the complete 77-class ta
 class Banking77Adapter(MultiChoiceAdapter):
     """Classify support messages over the complete canonical intent inventory."""
 
+    decision_fixed_classes = True
+
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         label = int(record['label'])
         if not 0 <= label < len(INTENT_LABELS):

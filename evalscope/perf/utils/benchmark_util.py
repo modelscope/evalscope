@@ -174,7 +174,6 @@ class MetricsAccumulator:
     # --- Request counts ---
     n_total: int = 0
     n_success: int = 0
-    n_timeouts: int = 0
 
     # --- Wall-clock time window (private; exposed via wall_time property) ---
     _wall_start: Optional[float] = field(default=None, repr=False)
@@ -257,11 +256,6 @@ class MetricsAccumulator:
             return  # Warmup requests are excluded from all metrics
 
         self.n_total += 1
-        if not data.success and (
-            data.status_code == 504
-            or ('TimeoutError' in (data.error or '') and not (data.error or '').startswith('Invalid decision response'))
-        ):
-            self.n_timeouts += 1
         if data.is_stream:
             self.n_stream_total += 1
         else:
@@ -442,7 +436,6 @@ class MetricsAccumulator:
             total_requests=self.n_total,
             succeed_requests=self.n_success,
             failed_requests=self.n_failed,
-            timeout_requests=self.n_timeouts,
             stream_requests=self.n_stream_total,
             non_stream_requests=self.n_non_stream_total,
             total_time=t,
@@ -488,7 +481,6 @@ class BenchmarkMetrics:
     total_requests: int = 0
     succeed_requests: int = 0
     failed_requests: int = 0
-    timeout_requests: int = 0
     stream_requests: int = 0
     non_stream_requests: int = 0
     total_time: float = 0.0
@@ -542,7 +534,6 @@ class BenchmarkMetrics:
             else self._build_llm_fields(ndigits, enable_pd_metrics)
         )
         if api_type in ('systemone', 'autotrust'):
-            specific[Metrics.TIMEOUT_REQUESTS] = self.timeout_requests
             specific[Metrics.INPUT_TOKEN_THROUGHPUT] = round(self.avg_prompt_tokens * self.qps, ndigits)
             specific['Not Applicable Metrics'] = [
                 Metrics.AVERAGE_TIME_TO_FIRST_TOKEN,

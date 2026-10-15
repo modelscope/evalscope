@@ -127,35 +127,3 @@ def test_concurrency_sweep_and_input_metrics(tmp_path: Path) -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
-
-
-def test_timeout_is_a_failed_request_with_separate_count() -> None:
-    from evalscope.perf.utils.benchmark_util import MetricsAccumulator
-
-    async def go() -> None:
-        async def handle(req: web.Request) -> web.Response:
-            await asyncio.sleep(0.1)
-            return web.json_response(response('systemone', 'choice'))
-        app = web.Application()
-        app.router.add_post('/v1/systemone', handle)
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, '127.0.0.1', 0)
-        await site.start()
-        port = site._server.sockets[0].getsockname()[1]
-        args = Arguments(model='v1', api='systemone', stream=False)
-        plugin = SystemOnePerfPlugin(args)
-        try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=0.01)) as client:
-                data = await plugin.process_request(client, f'http://127.0.0.1:{port}/v1/systemone', {},
-                                                    request('choice').systemone_payload('v1'))
-            assert not data.success
-            assert 'TimeoutError' in data.error
-            assert 'evalscope_error' in data.response_messages[-1]
-            accumulator = MetricsAccumulator()
-            accumulator.update(data, plugin)
-            summary = accumulator.to_result().create_message(api_type='systemone')
-            assert summary[Metrics.FAILED_REQUESTS] == summary[Metrics.TIMEOUT_REQUESTS] == 1
-        finally:
-            await runner.cleanup()
-    asyncio.run(go())
