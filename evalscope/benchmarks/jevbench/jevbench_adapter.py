@@ -2,12 +2,14 @@ from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 
 
 @register_benchmark(
     BenchmarkMeta(
         name='jevbench',
         pretty_name='JevBench public subset',
+        tags=[Tags.DECISION],
         dataset_id='evalscope/jevbench',
         eval_split='test',
         train_split=None,

@@ -37,7 +37,7 @@ OpenDecisions v1.0: 2352 typed decisions. The upstream train split is evaluation
 | **Benchmark Name** | `open_decisions` |
 | **Dataset ID** | [evalscope/OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions/summary) |
 | **Paper** | N/A |
-| **Tags** | N/A |
+| **Tags** | `Decision` |
 | **Metrics** | `capability` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |

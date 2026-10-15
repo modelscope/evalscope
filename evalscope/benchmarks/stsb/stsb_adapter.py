@@ -5,12 +5,14 @@ from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
+from evalscope.constants import Tags
 
 
 @register_benchmark(
     BenchmarkMeta(
         name='stsb',
         pretty_name='STS-B Decision',
+        tags=[Tags.DECISION],
         dataset_id='sentence-transformers/stsb',
         eval_split='test',
         train_split=None,

@@ -35,7 +35,7 @@ Sentence similarity rated on six ordered levels from 0 to 5; continuous gold is 
 | **Benchmark Name** | `stsb` |
 | **Dataset ID** | [sentence-transformers/stsb](https://modelscope.cn/datasets/sentence-transformers/stsb/summary) |
 | **Paper** | N/A |
-| **Tags** | N/A |
+| **Tags** | `Decision` |
 | **Metrics** | `mae` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |

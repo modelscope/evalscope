@@ -62,7 +62,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `fin_ner` | [FinNER](../../benchmarks/fin_ner.md) | `Knowledge`, `NER` |
 | `frames` | [FRAMES](../../benchmarks/frames.md) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](../../benchmarks/general_arena.md) | `Arena`, `Custom` |
-| `general_decision` | [General Decision](../../benchmarks/general_decision.md) | N/A |
+| `general_decision` | [General Decision](../../benchmarks/general_decision.md) | `Custom`, `Decision` |
 | `general_mcq` | [General-MCQ](../../benchmarks/general_mcq.md) | `Custom`, `MCQ` |
 | `general_qa` | [General-QA](../../benchmarks/general_qa.md) | `Custom`, `QA` |
 | `genia_ner` | [GeniaNER](../../benchmarks/genia_ner.md) | `Knowledge`, `NER` |
@@ -86,7 +86,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `indic_boolq` | [BoolQ-Indic](../../benchmarks/indic_boolq.md) | `MCQ`, `MultiLingual`, `ReadingComprehension` |
 | `indic_param` | [IndicParam](../../benchmarks/indic_param.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `iquiz` | [IQuiz](../../benchmarks/iquiz.md) | `Chinese`, `Knowledge`, `MCQ` |
-| `jevbench` | [JevBench public subset](../../benchmarks/jevbench.md) | N/A |
+| `jevbench` | [JevBench public subset](../../benchmarks/jevbench.md) | `Decision` |
 | `jnlpba` | [JNLPBA](../../benchmarks/jnlpba.md) | `Knowledge`, `NER` |
 | `jnlpba_rare` | [JNLPBA-Rare](../../benchmarks/jnlpba_rare.md) | `Knowledge`, `NER` |
 | `kina` | [KINA](../../benchmarks/kina.md) | `Knowledge`, `MCQ` |
@@ -122,7 +122,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `needle_haystack` | [Needle-in-a-Haystack](../../benchmarks/needle_haystack.md) | `LongContext`, `Retrieval` |
 | `one_million_bench` | [$OneMillion-Bench](../../benchmarks/one_million_bench.md) | `Agent`, `Knowledge`, `MultiLingual`, `QA`, `Reasoning` |
 | `ontonotes5` | [OntoNotes5](../../benchmarks/ontonotes5.md) | `Knowledge`, `NER` |
-| `open_decisions` | [OpenDecisions](../../benchmarks/open_decisions.md) | N/A |
+| `open_decisions` | [OpenDecisions](../../benchmarks/open_decisions.md) | `Decision` |
 | `openai_mrcr` | [OpenAI MRCR](../../benchmarks/openai_mrcr.md) | `LongContext`, `Retrieval` |
 | `perspective_gap_prompt_writing` | [PerspectiveGap Prompt Writing](../../benchmarks/perspective_gap_prompt_writing.md) | `Agent`, `InstructionFollowing` |
 | `perspective_gap_role_assignment` | [PerspectiveGap Role Assignment](../../benchmarks/perspective_gap_role_assignment.md) | `Agent`, `InstructionFollowing` |
@@ -143,7 +143,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `simple_qa` | [SimpleQA](../../benchmarks/simple_qa.md) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](../../benchmarks/siqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
 | `sparc` | [SPaRC](../../benchmarks/sparc.md) | `Reasoning` |
-| `stsb` | [STS-B Decision](../../benchmarks/stsb.md) | N/A |
+| `stsb` | [STS-B Decision](../../benchmarks/stsb.md) | `Decision` |
 | `super_gpqa` | [SuperGPQA](../../benchmarks/super_gpqa.md) | `Knowledge`, `MCQ` |
 | `swe_bench_lite` | [SWE-bench_Lite](../../benchmarks/swe_bench_lite.md) | `Coding` |
 | `swe_bench_verified` | [SWE-bench_Verified](../../benchmarks/swe_bench_verified.md) | `Coding` |

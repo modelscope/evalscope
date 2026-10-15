@@ -36,7 +36,7 @@ Public 231 Benchmark Heaven decisions, preserving original rubrics and labels.
 | **Benchmark Name** | `jevbench` |
 | **Dataset ID** | [evalscope/jevbench](https://modelscope.cn/datasets/evalscope/jevbench/summary) |
 | **Paper** | N/A |
-| **Tags** | N/A |
+| **Tags** | `Decision` |
 | **Metrics** | `public_accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |

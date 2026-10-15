@@ -36,7 +36,7 @@ User-provided single-question typed decisions in local JSONL files.
 | **Benchmark Name** | `general_decision` |
 | **Dataset ID** | `general_decision` |
 | **Paper** | N/A |
-| **Tags** | N/A |
+| **Tags** | `Custom`, `Decision` |
 | **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |
