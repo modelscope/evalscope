@@ -1,6 +1,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import contextlib
+import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -11,6 +12,7 @@ from evalscope.api.filter import FilterEnsemble, build_filter_ensemble
 from evalscope.api.metric import AggScore, SampleScore
 from evalscope.api.mixin import LLMJudgeMixin
 from evalscope.api.model import Model
+from evalscope.constants import HubType
 from evalscope.report import Report
 from evalscope.utils.logger import get_logger
 
@@ -137,9 +139,22 @@ class DataAdapter(LLMJudgeMixin, ABC):
     @property
     def dataset_id(self) -> str:
         """
-        Return the dataset ID or path to the benchmark.
+        Return the dataset ID or path to the benchmark, resolved against the
+        configured dataset hub. When the hub is Hugging Face and the benchmark
+        declares an ``hf_dataset_id``, that ID is used instead of the
+        ModelScope dataset ID.
         """
-        return self._benchmark_meta.dataset_id
+        meta = self._benchmark_meta
+        if os.path.exists(meta.dataset_id):
+            return meta.dataset_id
+        if self.dataset_hub == HubType.HUGGINGFACE:
+            if meta.hf_dataset_id:
+                return meta.hf_dataset_id
+            logger.warning(
+                f'Benchmark {meta.name} has no hf_dataset_id mapping; '
+                f'falling back to the ModelScope dataset id {meta.dataset_id!r} on the Hugging Face hub.'
+            )
+        return meta.dataset_id
 
     @property
     def output_types(self) -> Optional[List[str]]:
@@ -179,7 +194,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
     @property
     def dataset_revision(self) -> Optional[str]:
         """Return the resolved revision of the remote dataset source."""
-        return self._benchmark_meta.dataset_revision
+        meta = self._benchmark_meta
+        if self.dataset_hub == HubType.HUGGINGFACE and meta.hf_dataset_revision:
+            return meta.hf_dataset_revision
+        return meta.dataset_revision
 
     @property
     def eval_type(self) -> str:

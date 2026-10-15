@@ -533,6 +533,68 @@ def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
     assert len(remote_calls) == (2 if missing_shard else 0)
 
 
+def test_hf_dataset_id_mapping_resolves_on_huggingface_hub(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'))
+    benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = 'openai/gsm8k'
+    benchmark._benchmark_meta.hf_dataset_revision = 'refs/convert/parquet'
+
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert benchmark.dataset_revision is None
+
+    benchmark.dataset_hub = HubType.HUGGINGFACE
+
+    assert benchmark.dataset_id == 'openai/gsm8k'
+    assert benchmark.dataset_revision == 'refs/convert/parquet'
+
+
+def test_hf_dataset_mapping_falls_back_without_mapping(tmp_path, monkeypatch) -> None:
+    from evalscope.api.benchmark import benchmark as benchmark_module
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'), dataset_hub=HubType.HUGGINGFACE,
+    )
+    benchmark = get_benchmark('gsm8k', config)
+    warnings = []
+    monkeypatch.setattr(benchmark_module.logger, 'warning', lambda message: warnings.append(message))
+
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert any('no hf_dataset_id mapping' in message for message in warnings)
+
+
+def test_hf_dataset_mapping_ignored_for_local_and_modelscope_hubs(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'))
+    benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = 'openai/gsm8k'
+
+    for hub in [HubType.MODELSCOPE, HubType.LOCAL]:
+        benchmark.dataset_hub = hub
+        assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+
+
+def test_local_path_override_clears_hf_mapping(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'), dataset_hub=HubType.HUGGINGFACE,
+        dataset_args={'gsm8k': {'local_path': str(tmp_path / 'local-gsm8k')}},
+    )
+    benchmark = get_benchmark('gsm8k', config)
+
+    assert benchmark.dataset_id == str(tmp_path / 'local-gsm8k')
+    assert benchmark._benchmark_meta.hf_dataset_id is None
+    assert benchmark._benchmark_meta.hf_dataset_revision is None
+
+
 def test_download_snapshot_resolves_existing_local_path(tmp_path) -> None:
     snapshot_dir = tmp_path / 'dataset'
     snapshot_dir.mkdir()

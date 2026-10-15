@@ -156,6 +156,13 @@ class BenchmarkMeta:
     dataset_revision: Optional[str] = None
     """Optional immutable revision of the remote dataset source."""
 
+    hf_dataset_id: Optional[str] = None
+    """Optional Hugging Face dataset repo id when it differs from the ModelScope dataset id.
+    Used automatically when ``dataset_hub`` is set to ``huggingface``."""
+
+    hf_dataset_revision: Optional[str] = None
+    """Optional revision override used when loading the dataset from the Hugging Face hub."""
+
     def __post_init__(self):
         """Validate fields after initialization."""
         from evalscope.evaluation_versioning import validate_evaluation_version
@@ -336,6 +343,9 @@ class BenchmarkMeta:
 
         if args.get('local_path'):
             self.dataset_id = args['local_path']
+            # A local mirror fully replaces the remote source, including any hub-specific mapping.
+            self.hf_dataset_id = None
+            self.hf_dataset_revision = None
             del args['local_path']
 
         if args.get('filters'):
