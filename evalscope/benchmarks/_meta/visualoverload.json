@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "pretty_name": "VisualOverload",
+    "dataset_id": "evalscope/visualoverload",
+    "paper_url": "https://arxiv.org/abs/2509.25339",
+    "tags": [
+      "MultiModal",
+      "QA",
+      "Reasoning"
+    ],
+    "metrics": [
+      "response_present"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "default"
+    ],
+    "description": "\n## Overview\n\nVisualOverload (CVPR 2026) probes visual understanding in dense, high-resolution scenes.\nGround-truth answers are privately held; official grading uses the benchmark's evaluation server.\n\n## Task Description\n\n- **Task Type**: Visual question answering\n- **Input**: A high-resolution painting and the official `default_prompt`\n- **Output**: An option letter, a count, or an OCR answer, depending on the question\n- **Domain**: Activities, attributes, counting, OCR, reasoning, and scene understanding\n\n## Key Features\n\n- 2,720 questions from `evalscope/visualoverload` on ModelScope, mirrored from the official\n  `paulgavrikov/visualoverload` on Hugging Face\n- Combines multiple-choice and free-form questions across easy, medium, and hard difficulties\n- Uses the official prompt unchanged and preserves original image bytes by default\n- Exports raw responses in the official `question_id`/`response` submission format\n\n## Evaluation Notes\n\n- The dataset is loaded from the ModelScope mirror's public `test` split with zero-shot evaluation.\n- `response_present` is a diagnostic for non-empty responses, not answer accuracy.\n- Official scores are available only from the evaluation server; no local quality metric is selected.\n- Upload `visualoverload_submission.json` from the model's reports directory to\n  [the official evaluator](https://huggingface.co/spaces/paulgavrikov/visualoverload-submit).\n- Hugging Face sign-in is required for official evaluation; EvalScope does not submit automatically.\n- Use one generation per question (`repeats=1`). Duplicate question IDs are rejected during export.\n- Limited runs produce partial submissions for testing, not full benchmark scores.\n- Model processors may resize or tile images; report those settings. `max_image_bytes` can explicitly\n  enable compression, which changes the visual input.\n",
+    "prompt_template": "",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "vlm"
+  },
+  "statistics": {
+    "total_samples": 2720,
+    "subset_stats": [
+      {
+        "name": "default",
+        "sample_count": 2720,
+        "prompt_length_mean": 116.59,
+        "prompt_length_min": 40,
+        "prompt_length_max": 356,
+        "prompt_length_std": 37.85,
+        "target_length_mean": null,
+        "multimodal": {
+          "has_images": true,
+          "has_audio": false,
+          "has_video": false,
+          "image": {
+            "count_total": 2720,
+            "count_per_sample": {
+              "min": 1,
+              "max": 1,
+              "mean": 1
+            },
+            "resolutions": [
+              "1477x2048",
+              "1922x2400",
+              "2163x3834",
+              "2360x3515",
+              "2438x3403",
+              "2444x3393",
+              "2473x3353",
+              "2479x3345",
+              "2479x3346",
+              "2500x1216"
+            ],
+            "resolution_range": {
+              "min": "922x2500",
+              "max": "3412x2432"
+            },
+            "formats": [
+              "jpeg"
+            ]
+          }
+        }
+      }
+    ],
+    "prompt_length": {
+      "mean": 116.59,
+      "min": 40,
+      "max": 356,
+      "std": 37.85
+    },
+    "target_length_mean": null,
+    "computed_at": "2026-10-15T15:34:40.106368+08:00",
+    "multimodal": {
+      "has_images": true,
+      "has_audio": false,
+      "has_video": false,
+      "image": {
+        "count_total": 2720,
+        "count_per_sample": {
+          "min": 1,
+          "max": 1,
+          "mean": 1
+        },
+        "resolutions": [
+          "1477x2048",
+          "1922x2400",
+          "2163x3834",
+          "2360x3515",
+          "2438x3403",
+          "2444x3393",
+          "2473x3353",
+          "2479x3345",
+          "2479x3346",
+          "2500x1216"
+        ],
+        "resolution_range": {
+          "min": "922x2500",
+          "max": "3412x2432"
+        },
+        "formats": [
+          "jpeg"
+        ]
+      }
+    }
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "a4c42212",
+          "content": [
+            {
+              "image": "[BASE64_IMAGE: jpeg, ~3.3MB]"
+            },
+            {
+              "text": "Does the scene feature fantasy characters? Options:\nA. yes\nB. no\nAnswer with the option's letter from the given choices directly."
+            }
+          ]
+        }
+      ],
+      "target": "",
+      "id": 0,
+      "group_id": 0,
+      "metadata": {
+        "question_id": "4ba66530",
+        "question_type": "choice",
+        "category": "scene",
+        "difficulty": "medium"
+      }
+    },
+    "subset": "default",
+    "truncated": false
+  },
+  "readme": {
+    "en": "# VisualOverload\n\n\n## Overview\n\nVisualOverload (CVPR 2026) probes visual understanding in dense, high-resolution scenes.\nGround-truth answers are privately held; official grading uses the benchmark's evaluation server.\n\n## Task Description\n\n- **Task Type**: Visual question answering\n- **Input**: A high-resolution painting and the official `default_prompt`\n- **Output**: An option letter, a count, or an OCR answer, depending on the question\n- **Domain**: Activities, attributes, counting, OCR, reasoning, and scene understanding\n\n## Key Features\n\n- 2,720 questions from `evalscope/visualoverload` on ModelScope, mirrored from the official\n  `paulgavrikov/visualoverload` on Hugging Face\n- Combines multiple-choice and free-form questions across easy, medium, and hard difficulties\n- Uses the official prompt unchanged and preserves original image bytes by default\n- Exports raw responses in the official `question_id`/`response` submission format\n\n## Evaluation Notes\n\n- The dataset is loaded from the ModelScope mirror's public `test` split with zero-shot evaluation.\n- `response_present` is a diagnostic for non-empty responses, not answer accuracy.\n- Official scores are available only from the evaluation server; no local quality metric is selected.\n- Upload `visualoverload_submission.json` from the model's reports directory to\n  [the official evaluator](https://huggingface.co/spaces/paulgavrikov/visualoverload-submit).\n- Hugging Face sign-in is required for official evaluation; EvalScope does not submit automatically.\n- Use one generation per question (`repeats=1`). Duplicate question IDs are rejected during export.\n- Limited runs produce partial submissions for testing, not full benchmark scores.\n- Model processors may resize or tile images; report those settings. `max_image_bytes` can explicitly\n  enable compression, which changes the visual input.\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `visualoverload` |\n| **Dataset ID** | [evalscope/visualoverload](https://modelscope.cn/datasets/evalscope/visualoverload/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2509.25339) |\n| **Tags** | `MultiModal`, `QA`, `Reasoning` |\n| **Metrics** | `response_present` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 2,720 |\n| Prompt Length (Mean) | 116.59 chars |\n| Prompt Length (Min/Max) | 40 / 356 chars |\n\n**Image Statistics:**\n\n| Metric | Value |\n|--------|-------|\n| Total Images | 2,720 |\n| Images per Sample | min: 1, max: 1, mean: 1 |\n| Resolution Range | 922x2500 - 3412x2432 |\n| Formats | jpeg |\n\n\n## Sample Example\n\n**Subset**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a4c42212\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~3.3MB]\"\n        },\n        {\n          \"text\": \"Does the scene feature fantasy characters? Options:\\nA. yes\\nB. no\\nAnswer with the option's letter from the given choices directly.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"4ba66530\",\n    \"question_type\": \"choice\",\n    \"category\": \"scene\",\n    \"difficulty\": \"medium\"\n  }\n}\n```\n\n## Prompt Template\n\n*No prompt template defined.*\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visualoverload \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visualoverload'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# VisualOverload\n\n\n## 概述\n\nVisualOverload (CVPR 2026) 探索了在密集、高分辨率场景中的视觉理解能力。真实答案是私有的；官方评分使用基准测试的评估服务器。\n\n## 任务描述\n\n- **任务类型**: 视觉问答\n- **输入**: 一幅高分辨率的画作和官方的 `default_prompt`\n- **输出**: 根据问题的不同，输出一个选项字母、一个计数或一个OCR答案\n- **领域**: 活动、属性、计数、OCR、推理和场景理解\n\n## 主要特点\n\n- 从ModelScope上的`evalscope/visualoverload`中获取2,720个问题，该数据集镜像自Hugging Face上的官方`paulgavrikov/visualoverload`\n- 结合了多种选择题和自由形式的问题，难度分为简单、中等和困难\n- 使用官方提示不变，并默认保留原始图像字节\n- 以官方的`question_id`/`response`提交格式导出原始响应\n\n## 评估说明\n\n- 数据集从ModelScope镜像的公共`test`分割加载，进行零样本评估。\n- `response_present` 是用于诊断非空响应的指标，而不是答案准确性。\n- 官方分数仅从评估服务器获得；没有选择本地质量度量。\n- 将模型报告目录中的`visualoverload_submission.json`上传到[官方评估器](https://huggingface.co/spaces/paulgavrikov/visualoverload-submit)。\n- 需要登录Hugging Face才能进行官方评估；EvalScope不会自动提交。\n- 每个问题生成一次（`repeats=1`）。导出时会拒绝重复的问题ID。\n- 有限次运行会产生部分提交用于测试，而不是完整的基准测试分数。\n- 模型处理器可能会调整或平铺图像；请报告这些设置。`max_image_bytes`可以显式启用压缩，这会改变视觉输入。\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `visualoverload` |\n| **数据集ID** | [evalscope/visualoverload](https://modelscope.cn/datasets/evalscope/visualoverload/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2509.25339) |\n| **标签** | `MultiModal`, `QA`, `Reasoning` |\n| **度量标准** | `response_present` |\n| **默认样本数** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 2,720 |\n| 提示词长度（平均） | 116.59 字符 |\n| 提示词长度（最小/最大） | 40 / 356 字符 |\n\n**图像统计:**\n\n| 指标 | 值 |\n|--------|-------|\n| 总图像数 | 2,720 |\n| 每个样本的图像数 | 最小: 1, 最大: 1, 平均: 1 |\n| 分辨率范围 | 922x2500 - 3412x2432 |\n| 格式 | jpeg |\n\n\n## 样例示例\n\n**子集**: `default`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"a4c42212\",\n      \"content\": [\n        {\n          \"image\": \"[BASE64_IMAGE: jpeg, ~3.3MB]\"\n        },\n        {\n          \"text\": \"Does the scene feature fantasy characters? Options:\\nA. yes\\nB. no\\nAnswer with the option's letter from the given choices directly.\"\n        }\n      ]\n    }\n  ],\n  \"target\": \"\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"metadata\": {\n    \"question_id\": \"4ba66530\",\n    \"question_type\": \"choice\",\n    \"category\": \"scene\",\n    \"difficulty\": \"medium\"\n  }\n}\n```\n\n## 提示模板\n\n*未定义提示模板。*\n\n## 使用方法\n\n### 使用CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets visualoverload \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### 使用Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['visualoverload'],\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "07936d9264968c0ca7bc653d8c5af4c3",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-15T15:35:05.208647+08:00",
+  "translation_updated_at": "2026-10-15T15:35:23+08:00"
+}

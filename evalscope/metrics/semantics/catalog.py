@@ -350,6 +350,7 @@ METRIC_DEFINITIONS.update(
         # Three-way answer grading exposes these distribution shares as diagnostics. They remain
         # non-primary and directionless, but deserve report labels rather than internal identities,
         # which is why they are declared here instead of in the table above.
+        'response_present': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Response availability'),
         'is_incorrect': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Incorrect rate'),
         'is_not_attempted': MetricEntry(baseline='diagnostic.parse_status.ratio', display_name='Not attempted rate'),
         'bias_ratio': MetricEntry(

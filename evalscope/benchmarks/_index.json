@@ -251,6 +251,7 @@
  "tweet_ner_7": "evalscope.benchmarks.ner.tweet_ner_7_adapter",
  "videomme_v2": "evalscope.benchmarks.videomme_v2.videomme_v2_adapter",
  "visfactor": "evalscope.benchmarks.visfactor.visfactor_adapter",
+ "visualoverload": "evalscope.benchmarks.visualoverload.visualoverload_adapter",
  "visulogic": "evalscope.benchmarks.visu_logic.visu_logic_adapter",
  "vlms_are_biased": "evalscope.benchmarks.vlms_are_biased.vlms_are_biased_adapter",
  "vqav2": "evalscope.benchmarks.vqav2.vqav2_adapter",
