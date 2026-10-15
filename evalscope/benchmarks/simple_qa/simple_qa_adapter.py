@@ -133,6 +133,7 @@ SimpleQA is a benchmark by OpenAI designed to evaluate language models' ability 
 - Tests models' ability to admit uncertainty appropriately
 """,
         dataset_id='evalscope/SimpleQA',
+        hf_dataset_id='basicv8vc/SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
         primary_metric='is_correct',
         few_shot_num=0,

@@ -33,6 +33,8 @@ Here are some examples of how to solve similar problems:
         name='mgsm',
         pretty_name='MGSM',
         dataset_id='evalscope/mgsm',
+        hf_dataset_id='juletxara/mgsm',
+        hf_dataset_revision='8b8fc49735a81a057bac06ee374bee12d5a7e6a9',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTI_LINGUAL],
         description="""
 ## Overview

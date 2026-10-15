@@ -50,6 +50,7 @@ HumanEval is a benchmark for evaluating the code generation capabilities of lang
 - Code is extracted from markdown code blocks if present
 """,
         dataset_id='opencompass/humaneval',
+        hf_dataset_id='openai/openai_humaneval',
         subset_list=['openai_humaneval'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',
