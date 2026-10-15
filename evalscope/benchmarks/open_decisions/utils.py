@@ -185,9 +185,8 @@ def aggregate_official(sample_scores: list, tasks: list) -> list:
     predictions = []
     for sample in sample_scores:
         observation = (sample.score.metadata or {}).get('decision')
-        metadata = sample.sample_metadata or {}
         if observation:
-            predictions.append({'id': metadata['source_id'], 'probs': observation['raw_probabilities']})
+            predictions.append({'id': sample.sample_id, 'probs': observation['raw_probabilities']})
     result = score(tasks, predictions)
     return [
         AggScore(

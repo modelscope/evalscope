@@ -61,7 +61,7 @@ class JevbenchAdapter(DecisionAdapter):
 
         aggregates = [a for a in super().aggregate_scores(sample_scores) if a.metric_name != 'family_macro']
         predictions = {
-            sample.sample_metadata['source_id']: sample.score.metadata['decision']['correct']
+            sample.sample_id: sample.score.metadata['decision']['correct']
             for sample in sample_scores
             if (sample.score.metadata or {}).get('decision')
         }
@@ -74,7 +74,7 @@ class JevbenchAdapter(DecisionAdapter):
         )
         for dataset in datasets:
             for sample in dataset:
-                correct = predictions.get(sample.metadata['source_id'], 0.0)
+                correct = predictions.get(sample.id, 0.0)
                 families[sample.metadata['family']].append(correct)
                 outcomes.append(correct)
         if outcomes:

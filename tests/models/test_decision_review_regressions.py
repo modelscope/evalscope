@@ -1,0 +1,112 @@
+"""Regression checks for native decision scoring under standard dataset transforms."""
+
+import pytest
+
+from evalscope import TaskConfig
+from evalscope.api.dataset import DatasetDict, MemoryDataset
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import SampleScore
+from evalscope.api.model import ModelOutput
+from evalscope.api.model.decision import DecisionAnswer, DecisionInput, parse_decision_response
+from evalscope.api.registry import get_benchmark
+from evalscope.metrics.decision import DecisionAggregator, decision_score
+
+
+@pytest.mark.parametrize('name', ['jevbench', 'open_decisions', 'stsb', 'general_decision'])
+def test_typed_benchmarks_reject_chat_before_loading(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = get_benchmark(name, TaskConfig(model='test', eval_type='openai_api', datasets=[name]))
+
+    def forbidden_load() -> None:
+        pytest.fail('An incompatible chat run must not download the dataset.')
+
+    monkeypatch.setattr(adapter, 'load', forbidden_load)
+    with pytest.raises(ValueError, match='systemone_api or autotrust_api'):
+        adapter.load_dataset()
+
+
+def test_boolq_noul_gold_follows_semantics_after_choice_shuffle() -> None:
+    adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq'],
+        dataset_args={'boolq': {'extra_params': {'decision_kind': 'noul'}}}))
+    sample = adapter.record_to_sample({'passage': 'Paris is in France.', 'question': 'Is Paris in France?', 'answer': True})
+    sample.choices = ['No', 'Yes']
+    sample.target = 'B'
+    answer = DecisionAnswer(type='noul', noul=0.9, probabilities={'no': 0.1, 'yes': 0.9})
+    output = ModelOutput.from_content('test', 'ANSWER: yes')
+    output.metadata = {'decision': answer.model_dump()}
+    result = adapter.match_score('yes', 'yes', sample.target, TaskState(model='test', sample=sample, output=output))
+    assert result.value['acc'] == 1
+
+
+def test_banking77_macro_f1_uses_intents_after_choice_shuffle() -> None:
+    from evalscope.benchmarks.banking77.banking77_adapter import INTENT_LABELS
+    from evalscope.utils.multi_choices import answer_character
+
+    adapter = get_benchmark('banking77', TaskConfig(model='test', eval_type='systemone_api', datasets=['banking77']))
+    scores = []
+    # Both requests select position A, but they represent two distinct correctly predicted intents.
+    for index in [0, 1]:
+        sample = adapter.record_to_sample({'text': 'Support request', 'label': index})
+        sample.choices[0], sample.choices[index] = sample.choices[index], sample.choices[0]
+        sample.target = 'A'
+        probabilities = {answer_character(i): float(i == 0) for i in range(77)}
+        output = ModelOutput.from_content('test', 'ANSWER: A')
+        output.metadata = {'decision': DecisionAnswer(choice='A', probabilities=probabilities).model_dump()}
+        score = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
+        scores.append(SampleScore(sample_id=index, score=score))
+    metrics = DecisionAggregator()(scores)
+    assert next(m.score for m in metrics if m.metric_name == 'macro_f1') == pytest.approx(2 / len(INTENT_LABELS))
+
+
+@pytest.mark.parametrize('name', ['jevbench', 'open_decisions'])
+def test_repeated_official_tasks_keep_independent_predictions(name: str) -> None:
+    adapter = get_benchmark(name, TaskConfig(model='test', eval_type='systemone_api', datasets=[name]))
+    samples, scores = [], []
+    for index in [0, 1]:
+        sample = adapter.record_to_sample({'id': 'same-source', 'state': 'Fact.', 'family': 'unit', 'tier': 'hard',
+            'question': {'type': 'choice', 'instructions': 'Select.', 'criteria': {'A': 'First', 'B': 'Second'}},
+            'expected': 'A'})
+        sample.id = index
+        samples.append(sample)
+        answer = DecisionAnswer(choice='A' if index == 0 else 'B', probabilities={'A': float(index == 0), 'B': float(index == 1)})
+        scores.append(SampleScore(sample_id=index, sample_metadata=sample.metadata,
+                                 score=decision_score(answer, 'A', ['A', 'B'], family='unit', tier='hard')))
+    adapter.test_dataset = DatasetDict({'default': MemoryDataset(samples)})
+    adapter.current_subset_name = 'default'
+    metrics = adapter.aggregate_scores(scores)
+    if name == 'jevbench':
+        assert next(m.score for m in metrics if m.metric_name == 'public_accuracy') == 0.5
+    else:
+        assert next(m.score for m in metrics if m.metric_name == 'intelligence') == 0
+    assert all(m.num == 2 for m in metrics if m.aggregation == 'official')
+
+
+def test_risk_coverage_does_not_depend_on_tied_sample_order() -> None:
+    scores = [SampleScore(sample_id=index, score=decision_score(
+        DecisionAnswer(choice='A', probabilities={'A': 0.9, 'B': 0.1}), gold, ['A', 'B']))
+        for index, gold in enumerate(['A', 'B'])]
+    first = next(m for m in DecisionAggregator()(scores) if m.metric_name == 'aurc')
+    second = next(m for m in DecisionAggregator()(list(reversed(scores))) if m.metric_name == 'aurc')
+    assert first.score == second.score == 0.5
+    assert first.metadata['risk_coverage_top_probability'] == [{'coverage': 1.0, 'risk': 0.5}]
+
+
+def test_jevbench_rounding_band_is_not_rejected_by_transport() -> None:
+    request = DecisionInput(kind='choice', state='Fact.', instructions='Select.', criteria={'A': 'First', 'B': 'Second'})
+    raw = {'model': 'test', 'answers': {'answer': {
+        'type': 'choice', 'choice': 'A', 'probabilities': {'A': 0.67, 'B': 0.345}}}}
+    answer = parse_decision_response(raw, request)
+    adapter = get_benchmark('jevbench', TaskConfig(model='test', eval_type='systemone_api', datasets=['jevbench']))
+    sample = adapter.record_to_sample({'id': 'rounded', 'state': 'Fact.',
+        'question': request.systemone_payload('test')['questions']['answer'], 'expected': 'A'})
+    output = ModelOutput.from_content('test', 'ANSWER: A')
+    output.metadata = {'decision': answer.model_dump()}
+    score = adapter.match_score('A', 'A', 'A', TaskState(model='test', sample=sample, output=output))
+    assert score.value['acc'] == 1
+    assert score.metadata['probabilities_normalized_for_scoring']
+    assert score.metadata['decision']['raw_probabilities'] == {'A': 0.67, 'B': 0.345}
+
+
+def test_wide_options_do_not_justify_impossible_rounding() -> None:
+    probabilities = {str(i): float(i < 2) for i in range(255)}
+    with pytest.raises(ValueError, match='rounding tolerance'):
+        DecisionAnswer(choice='0', probabilities=probabilities)

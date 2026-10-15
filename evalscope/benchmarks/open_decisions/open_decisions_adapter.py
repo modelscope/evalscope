@@ -62,7 +62,7 @@ class OpenDecisionsAdapter(DecisionAdapter):
         )
         tasks = [
             {
-                'id': sample.metadata['source_id'],
+                'id': sample.id,
                 'question': {'type': sample.metadata['decision_kind']},
                 'labels': sample.metadata['decision_labels'],
                 'expected': sample.metadata['decision_gold'],

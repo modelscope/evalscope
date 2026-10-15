@@ -99,7 +99,12 @@ class DecisionAnswer(BaseModel):
         values = self.probabilities.values()
         if any(not math.isfinite(v) or not 0 <= v <= 1 for v in values):
             raise ValueError('Decision probabilities must be finite and between 0 and 1.')
-        tolerance = max(0.01, len(self.probabilities) * 0.005) if all(round(v, 2) == v for v in values) else 0.01
+        tolerance = 0.02
+        if all(round(v, 2) == v for v in values):
+            lower = sum(max(0.0, v - 0.005) for v in values)
+            upper = sum(min(1.0, v + 0.005) for v in values)
+            if lower <= 1 + 1e-12 and upper >= 1 - 1e-12:
+                tolerance = max(tolerance, len(self.probabilities) * 0.005)
         if not math.isclose(sum(values), 1, abs_tol=tolerance + 1e-12) or sum(values) <= 0:
             raise ValueError('Decision probabilities do not sum to 1 within their rounding tolerance.')
         if self.type == 'choice':

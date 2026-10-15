@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
@@ -23,6 +23,12 @@ class DecisionAdapter(DefaultDataAdapter):
     probability_sum_tolerance: float | None = None
     normalization_threshold: float = 0.0
     noul_use_argmax: bool = False
+
+    def load_dataset(self) -> DatasetDict:
+        """Reject unsupported chat execution before downloading the decision dataset."""
+        if self._task_config is not None and self.eval_type not in DECISION_EVAL_TYPES:
+            self.validate_choice_config()
+        return super().load_dataset()
 
     def validate_choice_config(self) -> None:
         """Require a decision API and deterministic grading."""

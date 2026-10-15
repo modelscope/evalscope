@@ -29,6 +29,7 @@ class DecisionObservation(BaseModel):
     family: str = ''
     tier: str = ''
     fixed_classes: bool = False
+    class_labels: dict[str, str] | None = None
     noul_rule: str = 'threshold'
 
 
@@ -42,6 +43,7 @@ def decision_score(
     family: str = '',
     tier: str = '',
     fixed_classes: bool = False,
+    class_labels: dict[str, str] | None = None,
     normalize: bool = True,
     noul_use_argmax: bool = False,
 ) -> Score:
@@ -70,6 +72,7 @@ def decision_score(
         family=family,
         tier=tier,
         fixed_classes=fixed_classes,
+        class_labels=class_labels,
         noul_rule='argmax' if noul_use_argmax else 'threshold',
     )
     value = {} if continuous else {'acc': correct}

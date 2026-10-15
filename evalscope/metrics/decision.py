@@ -147,12 +147,15 @@ class DecisionAggregator(Aggregator):
                     for row in rows
                 ]
                 add('ece', ece(calibration), bins=10, mode='binary' if kind == 'noul' else 'top_label')
-                if all(r.fixed_classes for r in rows) and len({tuple(sorted(r.labels)) for r in rows}) == 1:
+                class_maps = [r.class_labels or {label: label for label in r.labels} for r in rows]
+                if all(r.fixed_classes for r in rows) and len({tuple(sorted(m.values())) for m in class_maps}) == 1:
                     f1s = []
-                    for label in rows[0].labels:
-                        tp = sum(r.predicted == label and str(r.gold) == label for r in rows)
-                        fp = sum(r.predicted == label and str(r.gold) != label for r in rows)
-                        fn = sum(r.predicted != label and str(r.gold) == label for r in rows)
+                    predictions = [m[r.predicted] for m, r in zip(class_maps, rows)]
+                    golds = [m[str(r.gold)] for m, r in zip(class_maps, rows)]
+                    for label in class_maps[0].values():
+                        tp = sum(p == g == label for p, g in zip(predictions, golds))
+                        fp = sum(p == label and g != label for p, g in zip(predictions, golds))
+                        fn = sum(p != label and g == label for p, g in zip(predictions, golds))
                         f1s.append(2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0)
                     add('macro_f1', float(np.mean(f1s)))
             for basis in ['top_probability', 'provider_confidence']:
@@ -167,10 +170,23 @@ class DecisionAggregator(Aggregator):
                     abs(r.expected - float(r.gold)) / (len(r.labels) - 1) if kind == 'score' else 1 - r.correct
                     for r in ordered
                 ]
-                risks = np.cumsum(losses) / np.arange(1, len(ordered) + 1)
+                confidences = [
+                    r.confidence if basis == 'provider_confidence' else max(r.probabilities) for r in ordered
+                ]
+                cumulative = np.cumsum(losses)
+                curve = []
+                area = 0.0
+                previous = 0
+                for end in range(1, len(ordered) + 1):
+                    if end < len(ordered) and confidences[end - 1] == confidences[end]:
+                        continue
+                    risk = float(cumulative[end - 1] / end)
+                    curve.append({'coverage': end / len(ordered), 'risk': risk})
+                    area += (end - previous) / len(ordered) * risk
+                    previous = end
                 add(
                     'aurc',
-                    float(np.mean(risks)),
+                    area,
                     confidence=basis,
                     risk='normalized_mae' if kind == 'score' else 'classification_error',
                 )
@@ -178,9 +194,7 @@ class DecisionAggregator(Aggregator):
                 result[-1].ids = [
                     s.sample_id for s, row in entries if basis != 'provider_confidence' or row.confidence is not None
                 ]
-                diagnostics[f'risk_coverage_{basis}'] = [
-                    {'coverage': k / len(ordered), 'risk': risk} for k, risk in enumerate(risks, 1)
-                ]
+                diagnostics[f'risk_coverage_{basis}'] = curve
             if kind == 'noul':
                 y = [int(r.gold == 'yes') for r in rows]
                 predicted = [int(r.predicted == 'yes') for r in rows]

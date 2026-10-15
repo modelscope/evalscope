@@ -11,6 +11,7 @@ from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
     MultipleChoiceTemplate,
     answer_character,
+    answer_index,
     answer_options,
     format_example,
     parse_answers,
@@ -133,13 +134,16 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         gold = reference
         if answer.type == 'noul':
             labels = ['no', 'yes']
-            gold = 'yes' if reference == 'A' else 'no'
+            gold = 'yes' if task_state.choices[answer_index(reference)].value == 'Yes' else 'no'
         score = decision_score(
             answer,
             gold,
             labels,
             threshold=self.extra_params.get('decision_threshold', 0.5),
             fixed_classes=self.name == 'banking77',
+            class_labels={answer_character(i): choice.value for i, choice in enumerate(task_state.choices)}
+            if self.name == 'banking77'
+            else None,
         )
         score.prediction = original_prediction
         return score
