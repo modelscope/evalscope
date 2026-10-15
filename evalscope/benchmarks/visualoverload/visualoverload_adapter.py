@@ -1,14 +1,14 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
-from evalscope.api.dataset import DatasetDict, Sample
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentImage, ContentText
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
+from evalscope.constants import Tags
 from evalscope.utils.io_utils import jsonl_to_list
 from evalscope.utils.logger import get_logger
 
@@ -20,7 +20,7 @@ EVALUATOR_URL = 'https://huggingface.co/spaces/paulgavrikov/visualoverload-submi
     BenchmarkMeta(
         name='visualoverload',
         pretty_name='VisualOverload',
-        dataset_id='paulgavrikov/visualoverload',
+        dataset_id='evalscope/visualoverload',
         paper_url='https://arxiv.org/abs/2509.25339',
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.REASONING],
         subset_list=['default'],
@@ -44,14 +44,15 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 
 ## Key Features
 
-- 2,720 questions from `paulgavrikov/visualoverload` on Hugging Face
+- 2,720 questions from `evalscope/visualoverload` on ModelScope, mirrored from the official
+  `paulgavrikov/visualoverload` on Hugging Face
 - Combines multiple-choice and free-form questions across easy, medium, and hard difficulties
 - Uses the official prompt unchanged and preserves original image bytes by default
 - Exports raw responses in the official `question_id`/`response` submission format
 
 ## Evaluation Notes
 
-- The official dataset is loaded from Hugging Face's public `test` split with zero-shot evaluation.
+- The dataset is loaded from the ModelScope mirror's public `test` split with zero-shot evaluation.
 - `response_present` is a diagnostic for non-empty responses, not answer accuracy.
 - Official scores are available only from the evaluation server; no local quality metric is selected.
 - Upload `visualoverload_submission.json` from the model's reports directory to
@@ -66,13 +67,6 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 )
 class VisualOverloadAdapter(VisionLanguageAdapter):
     """Generate VisualOverload predictions and export them for private server grading."""
-
-    def load_from_remote(self) -> Tuple[DatasetDict, Optional[DatasetDict]]:
-        """Resolve the official dataset on Hugging Face through the standard loader."""
-        if self.dataset_id == 'paulgavrikov/visualoverload':
-            with self._temporary_attribute('dataset_hub', HubType.HUGGINGFACE):
-                return super().load_from_remote()
-        return super().load_from_remote()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         """Use original image bytes and the official prompt without a public target."""

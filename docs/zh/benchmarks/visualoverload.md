@@ -1,79 +1,76 @@
 # VisualOverload
 
 
-## Overview
+## 概述
 
-VisualOverload (CVPR 2026) probes visual understanding in dense, high-resolution scenes.
-Ground-truth answers are privately held; official grading uses the benchmark's evaluation server.
+VisualOverload (CVPR 2026) 探索了在密集、高分辨率场景中的视觉理解能力。真实答案是私有的；官方评分使用基准测试的评估服务器。
 
-## Task Description
+## 任务描述
 
-- **Task Type**: Visual question answering
-- **Input**: A high-resolution painting and the official `default_prompt`
-- **Output**: An option letter, a count, or an OCR answer, depending on the question
-- **Domain**: Activities, attributes, counting, OCR, reasoning, and scene understanding
+- **任务类型**: 视觉问答
+- **输入**: 一幅高分辨率的画作和官方的 `default_prompt`
+- **输出**: 根据问题的不同，输出一个选项字母、一个计数或一个OCR答案
+- **领域**: 活动、属性、计数、OCR、推理和场景理解
 
-## Key Features
+## 主要特点
 
-- 2,720 questions from `paulgavrikov/visualoverload` on Hugging Face
-- Combines multiple-choice and free-form questions across easy, medium, and hard difficulties
-- Uses the official prompt unchanged and preserves original image bytes by default
-- Exports raw responses in the official `question_id`/`response` submission format
+- 从ModelScope上的`evalscope/visualoverload`中获取2,720个问题，该数据集镜像自Hugging Face上的官方`paulgavrikov/visualoverload`
+- 结合了多种选择题和自由形式的问题，难度分为简单、中等和困难
+- 使用官方提示不变，并默认保留原始图像字节
+- 以官方的`question_id`/`response`提交格式导出原始响应
 
-## Evaluation Notes
+## 评估说明
 
-- The official dataset is loaded from Hugging Face's public `test` split with zero-shot evaluation.
-- `response_present` is a diagnostic for non-empty responses, not answer accuracy.
-- Official scores are available only from the evaluation server; no local quality metric is selected.
-- Upload `visualoverload_submission.json` from the model's reports directory to
-  [the official evaluator](https://huggingface.co/spaces/paulgavrikov/visualoverload-submit).
-- Hugging Face sign-in is required for official evaluation; EvalScope does not submit automatically.
-- Use one generation per question (`repeats=1`). Duplicate question IDs are rejected during export.
-- Limited runs produce partial submissions for testing, not full benchmark scores.
-- Model processors may resize or tile images; report those settings. `max_image_bytes` can explicitly
-  enable compression, which changes the visual input.
+- 数据集从ModelScope镜像的公共`test`分割加载，进行零样本评估。
+- `response_present` 是用于诊断非空响应的指标，而不是答案准确性。
+- 官方分数仅从评估服务器获得；没有选择本地质量度量。
+- 将模型报告目录中的`visualoverload_submission.json`上传到[官方评估器](https://huggingface.co/spaces/paulgavrikov/visualoverload-submit)。
+- 需要登录Hugging Face才能进行官方评估；EvalScope不会自动提交。
+- 每个问题生成一次（`repeats=1`）。导出时会拒绝重复的问题ID。
+- 有限次运行会产生部分提交用于测试，而不是完整的基准测试分数。
+- 模型处理器可能会调整或平铺图像；请报告这些设置。`max_image_bytes`可以显式启用压缩，这会改变视觉输入。
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `visualoverload` |
-| **Dataset ID** | [paulgavrikov/visualoverload](https://modelscope.cn/datasets/paulgavrikov/visualoverload/summary) |
-| **Paper** | [Paper](https://arxiv.org/abs/2509.25339) |
-| **Tags** | `MultiModal`, `QA`, `Reasoning` |
-| **Metrics** | `response_present` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `test` |
+| **基准测试名称** | `visualoverload` |
+| **数据集ID** | [evalscope/visualoverload](https://modelscope.cn/datasets/evalscope/visualoverload/summary) |
+| **论文** | [论文](https://arxiv.org/abs/2509.25339) |
+| **标签** | `MultiModal`, `QA`, `Reasoning` |
+| **度量标准** | `response_present` |
+| **默认样本数** | 0-shot |
+| **评估分割** | `test` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 2,720 |
-| Prompt Length (Mean) | 116.59 chars |
-| Prompt Length (Min/Max) | 40 / 356 chars |
+| 总样本数 | 2,720 |
+| 提示词长度（平均） | 116.59 字符 |
+| 提示词长度（最小/最大） | 40 / 356 字符 |
 
-**Image Statistics:**
+**图像统计:**
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Images | 2,720 |
-| Images per Sample | min: 1, max: 1, mean: 1 |
-| Resolution Range | 922x2500 - 3412x2432 |
-| Formats | jpeg |
+| 总图像数 | 2,720 |
+| 每个样本的图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 分辨率范围 | 922x2500 - 3412x2432 |
+| 格式 | jpeg |
 
 
-## Sample Example
+## 样例示例
 
-**Subset**: `default`
+**子集**: `default`
 
 ```json
 {
   "input": [
     {
-      "id": "0174a8bf",
+      "id": "a4c42212",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~3.3MB]"
@@ -96,13 +93,13 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 }
 ```
 
-## Prompt Template
+## 提示模板
 
-*No prompt template defined.*
+*未定义提示模板。*
 
-## Usage
+## 使用方法
 
-### Using CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -113,7 +110,7 @@ evalscope eval \
     --limit 10  # Remove this line for formal evaluation
 ```
 
-### Using Python
+### 使用Python
 
 ```python
 from evalscope import run_task

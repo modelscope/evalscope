@@ -2,18 +2,15 @@ import base64
 import json
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from PIL import Image
 
-from evalscope.api.benchmark import VisionLanguageAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import BENCHMARK_REGISTRY
 from evalscope.benchmarks.visualoverload.visualoverload_adapter import VisualOverloadAdapter
 from evalscope.config import TaskConfig
-from evalscope.constants import HubType
 from evalscope.run import run_task
 
 
@@ -30,18 +27,6 @@ def image_bytes() -> bytes:
     stream = BytesIO()
     Image.new('RGB', (3840, 2160)).save(stream, format='JPEG')
     return stream.getvalue()
-
-
-def test_official_dataset_uses_huggingface(adapter: VisualOverloadAdapter) -> None:
-    original_hub = adapter.dataset_hub
-
-    def load() -> tuple:
-        assert adapter.dataset_hub == HubType.HUGGINGFACE
-        return {}, None
-
-    with patch.object(VisionLanguageAdapter, 'load_from_remote', side_effect=load):
-        assert adapter.load_from_remote() == ({}, None)
-    assert adapter.dataset_hub == original_hub
 
 
 @pytest.mark.parametrize('question_type', ['choice', 'counting', 'ocr'])

@@ -15,14 +15,15 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 
 ## Key Features
 
-- 2,720 questions from `paulgavrikov/visualoverload` on Hugging Face
+- 2,720 questions from `evalscope/visualoverload` on ModelScope, mirrored from the official
+  `paulgavrikov/visualoverload` on Hugging Face
 - Combines multiple-choice and free-form questions across easy, medium, and hard difficulties
 - Uses the official prompt unchanged and preserves original image bytes by default
 - Exports raw responses in the official `question_id`/`response` submission format
 
 ## Evaluation Notes
 
-- The official dataset is loaded from Hugging Face's public `test` split with zero-shot evaluation.
+- The dataset is loaded from the ModelScope mirror's public `test` split with zero-shot evaluation.
 - `response_present` is a diagnostic for non-empty responses, not answer accuracy.
 - Official scores are available only from the evaluation server; no local quality metric is selected.
 - Upload `visualoverload_submission.json` from the model's reports directory to
@@ -39,7 +40,7 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `visualoverload` |
-| **Dataset ID** | [paulgavrikov/visualoverload](https://modelscope.cn/datasets/paulgavrikov/visualoverload/summary) |
+| **Dataset ID** | [evalscope/visualoverload](https://modelscope.cn/datasets/evalscope/visualoverload/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2509.25339) |
 | **Tags** | `MultiModal`, `QA`, `Reasoning` |
 | **Metrics** | `response_present` |
@@ -73,7 +74,7 @@ Ground-truth answers are privately held; official grading uses the benchmark's e
 {
   "input": [
     {
-      "id": "0174a8bf",
+      "id": "a4c42212",
       "content": [
         {
           "image": "[BASE64_IMAGE: jpeg, ~3.3MB]"
