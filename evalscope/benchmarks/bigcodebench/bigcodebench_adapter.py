@@ -134,6 +134,7 @@ _SANDBOX_CONFIG = {
         review_timeout=240,
         extra_params=_EXTRA_PARAMS,
         sandbox_config=_SANDBOX_CONFIG,
+        evaluation_version='v1.1',
     )
 )
 class BigCodeBenchAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -247,6 +248,7 @@ class BigCodeBenchAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         review_timeout=240,
         extra_params=_EXTRA_PARAMS,
         sandbox_config=_SANDBOX_CONFIG,
+        evaluation_version='v1.1',
     )
 )
 class BigCodeBenchHardAdapter(BigCodeBenchAdapter):
