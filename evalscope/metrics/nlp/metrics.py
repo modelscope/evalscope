@@ -132,6 +132,8 @@ class ANLS(Metric):
                 answer = json.loads(reference)
             except json.JSONDecodeError:
                 answer = reference
+            if not isinstance(answer, (str, list)):
+                answer = reference
             if isinstance(answer, str):
                 answer = [answer]
             assert isinstance(answer, list), 'The reference answer should be a list of answers.'
