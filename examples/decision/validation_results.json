@@ -1,6 +1,6 @@
 {
   "date": "2026-10-15",
-  "code_commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+  "code_commit": "b947dbdc115304b24260ae5650259079e930bb01",
   "provenance": "Inference and perf were captured during development using the verified model releases. All 20962 evaluation wire requests/responses and 24000 measured perf responses were replayed against the follow-up implementation commit, and all quality predictions re-scored. Initial serving examples also passed six fresh requests with immutable model revision assertions; serving code is unchanged by the follow-up. No new full inference or CUDA serving validation is claimed.",
   "platform": {
     "python": "3.12.14 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:46:43) [GCC 14.3.0]",
@@ -579,7 +579,7 @@
     }
   },
   "contract_replay": {
-    "commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+    "commit": "b947dbdc115304b24260ae5650259079e930bb01",
     "evaluation_predictions": {
       "clef/arc": 1172,
       "clef/banking77": 3076,
@@ -597,7 +597,7 @@
     }
   },
   "perf": {
-    "evaluation_code_commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+    "evaluation_code_commit": "b947dbdc115304b24260ae5650259079e930bb01",
     "validation": "Every saved request, answer distribution, usage, and success was replayed against the final shared contract.",
     "rows": [
       {
@@ -1279,7 +1279,7 @@
     "device_query_exit": 0
   },
   "local_validation": {
-    "targeted_tests": 1175,
+    "targeted_tests": 1181,
     "dashboard_regression_tests": 47,
     "ci_lite": "passed; live qwen-plus smoke; separate from the PPU decision runs",
     "lint": "passed",
@@ -1665,7 +1665,7 @@
   },
   "initial_validation_commit": "6e9970881fdf8a3cf28de6ba0e893db78513e00c",
   "review_followup": {
-    "commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+    "commit": "b947dbdc115304b24260ae5650259079e930bb01",
     "regressions_fixed": [
       "BoolQ Noul gold after choice shuffle",
       "BANKING77 stable intent identities for macro-F1",
@@ -1673,7 +1673,9 @@
       "Confidence-threshold grouping for tied AURC",
       "JevBench transport accepts official rounding band",
       "Impossible wide-distribution rounding rejected",
-      "Typed decision adapters reject chat before downloading data"
+      "Typed decision adapters reject chat before downloading data",
+      "Boolean classifications and numeric strings rejected in numeric probability fields",
+      "OpenDecisions auxiliary metrics retain raw official probabilities near the Noul threshold"
     ],
     "live_chat_smoke": {
       "arc": {
@@ -1804,6 +1806,7 @@
       "jev/stsb": 1
     },
     "official_scores_and_counts_unchanged": true,
-    "guide": "Rewritten in Chinese and English for first-time users; vLLM chat/native decision routes, compatibility, metrics, custom data and perf; no PPU setup."
+    "guide": "Rewritten in Chinese and English for first-time users; vLLM chat/native decision routes, compatibility, metrics, custom data and perf; no PPU setup.",
+    "initial_review_commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce"
   }
 }

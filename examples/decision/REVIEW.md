@@ -1,6 +1,6 @@
 # Follow-up review of decision evaluation
 
-Reviewed implementation: `2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce`. Results and source/input checksums are in [validation_results.json](validation_results.json); original deployment and quality/perf evidence is in [VALIDATION.md](VALIDATION.md).
+Reviewed implementation: `b947dbdc115304b24260ae5650259079e930bb01`. Results and source/input checksums are in [validation_results.json](validation_results.json); original deployment and quality/perf evidence is in [VALIDATION.md](VALIDATION.md).
 
 ## Benchmark audit
 
@@ -33,7 +33,10 @@ Ordinary chat smoke used the real OpenAI-compatible qwen-plus endpoint, two exam
 5. Transport rejected a valid JevBench probability sum of 1.015, despite its official 0.02 band. The shared contract accepts that band, while benchmark-specific validation remains stricter where required.
 6. A wide vector containing two probabilities of one was accepted as rounding error. The rounding allowance now requires a feasible probability interval around the rounded values.
 
-Regression cases reproduce these failures and pass after the fixes. All 20,962 quality predictions were re-scored; primary scores, official comparisons and coverage are unchanged. One hundred real risk curves and their AURC summaries were independently recomputed.
+7. Boolean classifications and numeric strings were coerced into probability fields. JSON probabilities, Noul values, Score values and confidence now require numeric values.
+8. OpenDecisions auxiliary metrics normalized rounded distributions although its official scorer retains them. They now use raw probabilities too, so a value just below the Noul threshold cannot cross it through normalization.
+
+Regression cases reproduce these failures and pass after the fixes. The final affected suite has 1,181 passing tests. All 20,962 quality predictions were re-scored; primary scores, official comparisons and coverage are unchanged. One hundred real risk curves and their AURC summaries were independently recomputed.
 
 ## Documentation and validation boundary
 
