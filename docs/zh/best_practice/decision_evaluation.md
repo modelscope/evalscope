@@ -246,7 +246,19 @@ AutoTrust 改为 `--api autotrust`、模型 `autotrust/JEV-27B`、地址 `http:/
 
 ## 7. 验证记录与常见问题
 
-本实践的验证平台是 PPU-ZW810，使用独立目录、端口和设备；模型从 ModelScope 下载。最终效果和 perf 数值及验证范围随本次变更的验收记录提供。普通 CUDA 命令是开发者部署示例；不能用 PPU 验证替代 CUDA 验证，也不能把 Clef PyTorch 结果称为 vLLM 结果。
+2026-10-15 已在 PPU-ZW810 完成真实验证，模型和数据均来自 ModelScope。Clef 使用官方 PyTorch，JEV 使用厂商 vLLM 0.20.1 与本文的注册插件；普通 CUDA 命令是部署示例，未作 CUDA 实测。完整表和机器可读记录位于仓库 `examples/decision/VALIDATION.md`、`validation_results.json`。
+
+| 验证项 | 实测结果 |
+|---|---|
+| Clef 完整评测 | JevBench 231、OpenDecisions 2,352、ARC-Challenge 1,172、BANKING77 3,076、BoolQ Choice/Noul 各 3,270、RewardBench 2,985、STS-B 1,379；全部预测与评分成功 |
+| 官方口径 | JevBench 公开准确率 82.25%、family-macro 82.70%；OpenDecisions Intelligence 55.3260%、Calibration 79.0701%、Capability 67.1981%，均经独立官方 scorer 核对 |
+| AutoTrust | BANKING77 完整 3,076 条、77 类；另跑 Noul、六档 Score、ARC、RewardBench 冒烟；其他 Score 档位显式拒绝 |
+| perf | 两模型 × 三题型 × 四并发，共 24,000 次正式请求，失败和超时均为 0；每组另有 20 次预热 |
+| 本地 | 合并主分支后 1,164 项相关测试、CI-lite、lint 与架构检查通过；GitHub CI 状态单独看 PR |
+
+以并发 1 → 16 为例，Clef Choice 为 3.8880 → 4.0865 req/s、p99 为 0.2909 → 3.9250 s，反映串行排队；JEV Score 为 4.7369 → 19.3471 req/s、p99 为 0.2485 → 0.8732 s。全部并发和输入长度见验收记录。这些是不同模型与后端的运行结果，不是受控速度排名，也不是未经训练污染核查的榜单声明。
+
+实测请求和响应在开发期间保存，最终以归档实现 `6e9970881fdf8a3cf28de6ba0e893db78513e00c` 重放全部 20,962 条效果预测、24,000 条 perf 响应并重新评分；最终部署示例另通过六个真实请求与模型 revision 校验。Clef 发布实现的 state 窗口为 16,384 token，本轮最大观测输入为 4,032 token，未验证更长输入。结束后本轮服务、端口和设备均已清理，原始证据保留。
 
 | 现象 | 检查方向 |
 |---|---|

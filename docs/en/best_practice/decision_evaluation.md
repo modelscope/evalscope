@@ -123,3 +123,15 @@ Read summary/percentile JSON and HTML for p50/p90/p95/p99 latency, successful re
 Archive request manifests, actual usage lengths, model/code revisions, versions, cache settings and device occupancy. HTTP latency includes network, service queueing, the full response and JSON decoding. Request preparation and protocol validation are outside that timer; the throughput window includes client processing. Server-internal timing is separate. Measure localhost on the PPU server rather than through an SSH tunnel. Higher concurrency can primarily increase queueing in the serial Clef reference service.
 
 The actual validation platform is PPU-ZW810. Clef's PyTorch path and AutoTrust's vLLM path must be reported separately. Ordinary CUDA commands are deployment examples, not evidence of CUDA validation. Final quality/perf evidence accompanies the change's validation record.
+
+## Recorded PPU results (2026-10-15)
+
+The complete evidence tables and machine-readable record are in the repository at `examples/decision/VALIDATION.md` and `validation_results.json`. Clef completed JevBench (231), OpenDecisions (2,352), ARC-Challenge (1,172), BANKING77 (3,076), BoolQ Choice and Noul (3,270 each), RewardBench (2,985), and STS-B (1,379), with no inference/review failures. AutoTrust completed all 3,076 BANKING77 test examples with every one of the 77 options, plus Noul, six-level Score, ARC and RewardBench smoke runs.
+
+Independent pinned official scorers agree: Clef JevBench public accuracy 82.25%, family-macro 82.70%; OpenDecisions Intelligence 55.3260%, Calibration 79.0701%, Capability 67.1981%. These validate the integration; no training-contamination audit or leaderboard claim is made.
+
+All 24 perf configurations (two models × three kinds × concurrency 1/4/8/16) completed 1,000 measured requests plus 20 warmups each, with zero failures/timeouts. For example, Clef Choice at concurrency 1 → 16 achieved 3.8880 → 4.0865 requests/s and p99 0.2909 → 3.9250 seconds, illustrating serial queueing. JEV Score achieved 4.7369 → 19.3471 requests/s and p99 0.2485 → 0.8732 seconds. Full latency percentiles and input lengths are recorded separately; this is not a controlled speed comparison between different models/backends.
+
+Inference was captured during development. All 20,962 quality predictions and 24,000 measured perf responses were replayed against archived implementation `6e9970881fdf8a3cf28de6ba0e893db78513e00c`, and quality predictions re-scored; both committed serving examples also passed six fresh live requests with immutable revision checks. After merging main, 1,164 targeted tests, CI-lite, lint and architecture checks passed. GitHub CI is tracked separately on the PR. Owned processes and ports were cleaned up; raw artifacts were retained.
+
+Clef ran its official PyTorch head; only JEV used vendor vLLM. CUDA commands are deployment examples, not CUDA validation. Clef's released encoder has a 16,384-token state window; the largest observed input here was 4,032 tokens. Longer inputs and Clef's head under vLLM remain unverified. AutoTrust's six-level Score limit is enforced explicitly.
