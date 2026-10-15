@@ -51,6 +51,18 @@ describe('formatMetricIdentityLabel', () => {
       ),
     ).toBe('Accuracy ↑ · L · Recall')
   })
+
+  it.each<[MetricIdentity['dimensions'], string]>([
+    [{ context_length: 1000, depth_percent: 0 }, 'Accuracy ↑ · Context 1000 · Depth 0'],
+    [{ max_tokens: 8192, min_tokens: 4096 }, 'Accuracy ↑ · Min tokens 4096 · Max tokens 8192'],
+    [{ scope: 'overall', threshold: 0.5 }, 'Accuracy ↑ · Overall · Threshold 0.5'],
+    [{ k: 1 }, 'Accuracy ↑ · k 1'],
+    [{ ngram: 1, statistic: 'recall' }, 'Accuracy ↑ · n-gram 1 · Recall'],
+  ])('names the numeric dimensions in %j', (dimensions, expected) => {
+    expect(formatMetricIdentityLabel({ name: 'accuracy', aggregation: 'mean', dimensions }, ratioSemantics())).toBe(
+      expected,
+    )
+  })
 })
 
 describe('metricIdentityKey', () => {
@@ -150,13 +162,34 @@ describe('metric labels', () => {
 
   it('disambiguates repeated labels within one report', () => {
     const labels = formatMetricLabels([
-      { metricName: 'mean_acc', semantics: ratioSemantics() },
-      { metricName: 'mean_fact_acc', semantics: { ...ratioSemantics(), kind: 'quality' } },
+      { identity: { name: 'acc', aggregation: 'mean', dimensions: {} }, semantics: ratioSemantics() },
+      { identity: { name: 'fact_acc', aggregation: 'mean', dimensions: {} }, semantics: ratioSemantics() },
     ])
 
     expect(labels).toEqual({
-      mean_acc: 'Accuracy ↑ (mean_acc)',
-      mean_fact_acc: 'Accuracy ↑ (mean_fact_acc)',
+      'acc:mean': 'Accuracy ↑ (acc:mean)',
+      'fact_acc:mean': 'Accuracy ↑ (fact_acc:mean)',
+    })
+  })
+
+  it('labels each identity with its dimensions, keyed by identity key', () => {
+    const labels = formatMetricLabels([
+      { identity: { name: 'accuracy', aggregation: 'mean', dimensions: { scope: 'overall' } }, semantics: ratioSemantics() },
+      {
+        identity: { name: 'accuracy', aggregation: 'mean', dimensions: { context_length: 1000, depth_percent: 0 } },
+        semantics: ratioSemantics(),
+      },
+      {
+        identity: { name: 'legacy_metric', aggregation: 'identity', dimensions: { original_name: 'Weird.Metric' } },
+        semantics: diagnosticSemantics(),
+        legacyName: 'Weird.Metric',
+      },
+    ])
+
+    expect(labels).toEqual({
+      'accuracy:mean[scope="overall"]': 'Accuracy ↑ · Overall',
+      'accuracy:mean[context_length=1000,depth_percent=0]': 'Accuracy ↑ · Context 1000 · Depth 0',
+      'legacy_metric:identity[original_name="Weird.Metric"]': 'Weird.Metric',
     })
   })
 })

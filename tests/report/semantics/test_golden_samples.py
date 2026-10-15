@@ -21,7 +21,12 @@ import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
 from evalscope.api.metric.semantics import MetricDisplayKind, MetricIdentity, MetricSemantics
-from evalscope.metrics.semantics.formatting import MISSING_PLACEHOLDER, format_metric_label, format_metric_value
+from evalscope.metrics.semantics.formatting import (
+    _DIMENSION_LABELS,
+    MISSING_PLACEHOLDER,
+    format_metric_label,
+    format_metric_value,
+)
 
 #: Location of the golden samples shared with the frontend formatting tests.
 GOLDEN_SAMPLES_PATH = Path(__file__).with_name('golden_samples.json')
@@ -171,6 +176,9 @@ class TestGoldenSampleCoverage:
         assert any(
             isinstance(value, bool) for s in labelled for value in s.identity.dimensions.values()
         ), 'no boolean dimension label'
+        assert set(_DIMENSION_LABELS) <= {key for s in labelled for key in s.identity.dimensions}, (
+            'a dimension with an axis name has no label sample, so its name is unpinned'
+        )
         assert any(s.legacy_name for s in labelled), 'no diagnostic label falling back to a legacy name'
         assert any(
             isinstance(value, str) and value != value.lower()

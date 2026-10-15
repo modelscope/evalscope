@@ -1,9 +1,11 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { getDataFrame } from '@/api/reports'
 import type { PerfMetrics } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
-import type { MetricSemantics } from '@/domain/metric'
+import { formatMetricLabels, metricIdentityKey } from '@/domain/metric'
+import type { MetricIdentity, MetricSemantics } from '@/domain/metric'
 import DetailsTab from './DetailsTab'
 
 vi.mock('@/api/reports', () => ({
@@ -90,6 +92,56 @@ describe('DetailsTab metric semantics', () => {
     })
 
     expect(screen.getByText('Token Throughput ↑')).toBeInTheDocument()
+  })
+
+  it('labels each row by its identity, dimensions included', async () => {
+    const accuracy: MetricSemantics = {
+      semantic_id: 'quality.accuracy.ratio',
+      metric_name: 'Accuracy',
+      kind: 'quality',
+      direction: 'higher_is_better',
+      value_range: { min: 0, max: 1 },
+      display_kind: 'percent',
+      display_multiplier: 100,
+      display_unit: '%',
+      display_precision: 1,
+    }
+    const overall: MetricIdentity = { name: 'accuracy', aggregation: 'mean', dimensions: { scope: 'overall' } }
+    const cell: MetricIdentity = {
+      name: 'accuracy',
+      aggregation: 'mean',
+      dimensions: { context_length: 1000, depth_percent: 0 },
+    }
+    // The dataset frame names each row by its final report name, the identity key.
+    vi.mocked(getDataFrame).mockResolvedValueOnce({
+      columns: ['Subset', 'Metric', 'Score', 'Num'],
+      data: [
+        { Subset: 'english', Metric: metricIdentityKey(overall), Score: 0.5, Num: 4 },
+        { Subset: 'english', Metric: metricIdentityKey(cell), Score: 1, Num: 2 },
+      ],
+    })
+    render(
+      <LocaleProvider>
+        <DetailsTab
+          reportName="fixture-report"
+          datasetName="fixture-dataset"
+          rootPath="/outputs"
+          semanticsByMetric={{ [metricIdentityKey(overall)]: accuracy, [metricIdentityKey(cell)]: accuracy }}
+          labelsByMetric={formatMetricLabels([
+            { identity: overall, semantics: accuracy },
+            { identity: cell, semantics: accuracy },
+          ])}
+        />
+      </LocaleProvider>,
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('Accuracy ↑ · Overall')).toBeInTheDocument()
+    expect(screen.getByText('Accuracy ↑ · Context 1000 · Depth 0')).toBeInTheDocument()
+    expect(screen.queryByText(/accuracy:mean/)).not.toBeInTheDocument()
   })
 
   it('hides the performance panel when only coverage metadata is available', async () => {

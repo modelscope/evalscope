@@ -33,8 +33,17 @@ def test_three_way_grading_diagnostics_have_explicit_display_names(name: str, ex
     assert resolved.semantics.display_name == expected_display_name
 
 
-def test_pass_at_k_dimensions_share_one_aggregation_semantics() -> None:
+@pytest.mark.parametrize(
+    ('aggregation', 'expected_metric_name'),
+    [('pass_at_k', 'Pass@k'), ('pass_hat_k', 'Pass^k')],
+)
+def test_pass_k_dimensions_share_semantics_but_keep_distinct_names(
+    aggregation: str, expected_metric_name: str
+) -> None:
     resolver = get_semantics_resolver()
     for k in (1, 7, 137):
-        identity = MetricIdentity(name='accuracy', aggregation='pass_at_k', dimensions={'k': k})
-        assert resolver.resolve('humaneval', identity).semantics.semantic_id == 'quality.pass_at_k.ratio'
+        identity = MetricIdentity(name='accuracy', aggregation=aggregation, dimensions={'k': k})
+        semantics = resolver.resolve('humaneval', identity).semantics
+
+        assert semantics.semantic_id == 'quality.pass_at_k.ratio'
+        assert semantics.metric_name == expected_metric_name
