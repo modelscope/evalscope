@@ -1,3 +1,5 @@
+import pytest
+
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
@@ -316,3 +318,10 @@ def test_configured_filter_reaches_multi_choice_extraction() -> None:
 
     assert adapter.filter_ensemble is not None
     assert adapter.filter_prediction(state.output.completion, state) == 'B'
+
+
+@pytest.mark.parametrize('label', ['$B$', '$\\boxed{B}$', '\\boxed{B}', '\\(\\text{B}\\)', '$\\boxed{\\text{B}}$'])
+def test_parse_answers_math_wrapped_label_with_trailing_text(label: str) -> None:
+    # Without the label, the last capital of the trailing sentence ('I') was taken instead.
+    assert parse_answers(_make_state(f'reasoning\nANSWER: {label}\n\nI hope this helps.')) == {'B'}
+    assert parse_answers_zh(_make_state(f'推理\n答案：{label}\n\nHope this helps.')) == {'B'}

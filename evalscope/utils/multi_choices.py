@@ -162,6 +162,9 @@ _ANSWER_MARKER_ZH_RE = re.compile(r'答案\s*[:：]\s*\**\s*')
 # such as '(see the diagram above)' and an echoed '[LETTER]' placeholder stay unparseable.
 _BRACKETED_LABEL_RE = re.compile(r'[\(\[（【]\s*([A-Za-z\d](?:\s*[,，/、]\s*[A-Za-z\d])*)\s*[\)\]）】]')
 
+# Math typesetting a model may wrap the label in: '$B$', '\\(B\\)', '\\boxed{B}', '$\\boxed{\\text{B}}$'.
+_LATEX_LABEL_PREFIX_RE = re.compile(r'(?:(?:\$+|\\\(|\\(?:boxed|fbox|text|textbf|mathbf|mathrm)\s*\{)\s*)*')
+
 _PLAIN_LABEL_RE = re.compile(r'([A-Za-z\d][A-Za-z\d ,，/、]*)')
 _PLAIN_LABEL_ZH_RE = re.compile(r'([A-Za-z0-9][A-Za-z0-9 ,，/、]*)')
 
@@ -226,6 +229,7 @@ def _last_labelled_answer(
     """
     for marker in reversed(list(marker_re.finditer(text))):
         tail = text[marker.end() :]
+        tail = tail[_LATEX_LABEL_PREFIX_RE.match(tail).end() :]
         for label_re in (_BRACKETED_LABEL_RE, plain_label_re):
             label = label_re.match(tail)
             if label is None:
