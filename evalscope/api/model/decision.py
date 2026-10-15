@@ -1,7 +1,7 @@
 """Validated text decisions shared by model transports, scoring and performance plugins."""
 
 import math
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
@@ -87,12 +87,12 @@ class DecisionAnswer(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
     type: Literal['choice', 'noul', 'score'] = 'choice'
-    probabilities: dict[str, float] = Field(min_length=2, max_length=255)
+    probabilities: dict[str, Annotated[float, Field(strict=True)]] = Field(min_length=2, max_length=255)
     choice: str | None = None
-    noul: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
-    score: float | None = Field(default=None, allow_inf_nan=False)
+    noul: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False, strict=True)
+    score: float | None = Field(default=None, allow_inf_nan=False, strict=True)
     legend: dict[str, str] | None = None
-    confidence: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False)
+    confidence: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False, strict=True)
 
     @model_validator(mode='after')
     def validate_distribution(self) -> 'DecisionAnswer':

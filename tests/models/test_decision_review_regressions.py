@@ -110,3 +110,16 @@ def test_wide_options_do_not_justify_impossible_rounding() -> None:
     probabilities = {str(i): float(i < 2) for i in range(255)}
     with pytest.raises(ValueError, match='rounding tolerance'):
         DecisionAnswer(choice='0', probabilities=probabilities)
+
+
+@pytest.mark.parametrize('value', [True, False, '0.9'])
+def test_classification_labels_are_not_coerced_into_noul_probabilities(value: object) -> None:
+    request = DecisionInput(kind='noul', state='Fact.', instructions='Is it true?')
+    with pytest.raises(ValueError):
+        parse_decision_response({'model': 'test', 'answers': {'answer': {'type': 'noul', 'noul': value}}}, request)
+
+
+@pytest.mark.parametrize('value', [True, '0.9'])
+def test_choice_probabilities_must_be_json_numbers(value: object) -> None:
+    with pytest.raises(ValueError):
+        DecisionAnswer(choice='A', probabilities={'A': value, 'B': 0.1})
