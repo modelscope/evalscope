@@ -1,0 +1,112 @@
+{
+  "source_revision": "609a664e81f46e03731600bd7bd9f1b7a61257c5",
+  "source_sha256": "6aa17d212ea20a3eeb6876149367842e8462c11dcb54d73df062fb406368331e",
+  "cases": [
+    {
+      "kind": "noul",
+      "labels": [
+        "no",
+        "yes"
+      ],
+      "gold": "yes",
+      "probabilities": {
+        "no": 0.5,
+        "yes": 0.5
+      },
+      "expected": {
+        "valid": true,
+        "strict_valid": true,
+        "renormalized": false,
+        "probs": {
+          "no": 0.5,
+          "yes": 0.5
+        },
+        "predicted": "no",
+        "correct": false
+      }
+    },
+    {
+      "kind": "choice",
+      "labels": [
+        "B",
+        "A"
+      ],
+      "gold": "A",
+      "probabilities": {
+        "B": 0.5,
+        "A": 0.5
+      },
+      "expected": {
+        "valid": true,
+        "strict_valid": true,
+        "renormalized": false,
+        "probs": {
+          "B": 0.5,
+          "A": 0.5
+        },
+        "predicted": "A",
+        "correct": true
+      }
+    },
+    {
+      "kind": "score",
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "gold": "2",
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.2,
+        "2": 0.3,
+        "3": 0.4005
+      },
+      "expected": {
+        "valid": true,
+        "strict_valid": true,
+        "renormalized": false,
+        "probs": {
+          "0": 0.1,
+          "1": 0.2,
+          "2": 0.3,
+          "3": 0.4005
+        },
+        "ordinal_ev": 2.0015,
+        "predicted": "3",
+        "correct": false
+      }
+    },
+    {
+      "kind": "score",
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "gold": "2",
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.2,
+        "2": 0.3,
+        "3": 0.41
+      },
+      "expected": {
+        "valid": true,
+        "strict_valid": false,
+        "renormalized": true,
+        "probs": {
+          "0": 0.09900990099009901,
+          "1": 0.19801980198019803,
+          "2": 0.297029702970297,
+          "3": 0.4059405940594059
+        },
+        "ordinal_ev": 2.00990099009901,
+        "predicted": "3",
+        "correct": false
+      }
+    }
+  ]
+}

@@ -123,7 +123,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 
 ## Evaluation Notes
 
-- Reports accuracy, not macro-F1. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.
+- Reports accuracy; decision APIs additionally report macro-F1 and probability metrics. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
 - Evaluation semantics version: v1.0

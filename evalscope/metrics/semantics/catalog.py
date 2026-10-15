@@ -14,7 +14,7 @@ current one (``error_rate``).
 
 from typing import Dict, Tuple
 
-from evalscope.api.metric.semantics import MetricDirection
+from evalscope.api.metric.semantics import MetricDirection, ValueRange
 from evalscope.metrics.semantics.aliases import read_old_baselines
 from evalscope.metrics.semantics.baselines import SEMANTIC_BASELINES
 from evalscope.metrics.semantics.entry import BASELINE_TABLE_LOCATION, MetricEntry
@@ -381,6 +381,37 @@ METRIC_DEFINITIONS.update(
         ),
     }
 )
+
+METRIC_DEFINITIONS.update(
+    {
+        name: MetricEntry(baseline='quality.loss.unbounded', metric_name=name.upper())
+        for name in ('nll', 'brier', 'ece', 'mae', 'nrps', 'aurc')
+    }
+)
+METRIC_DEFINITIONS.update(
+    {
+        name: MetricEntry(
+            baseline='quality.correlation.coefficient', metric_name=name.title(), value_range=ValueRange(min=-1, max=1)
+        )
+        for name in ('pearson', 'spearman')
+    }
+)
+METRIC_DEFINITIONS.update(
+    {
+        name: MetricEntry(baseline='quality.score.ratio', metric_name=name.replace('_', ' ').title())
+        for name in ('auroc', 'auprc', 'intelligence', 'calibration', 'capability', 'family_macro')
+    }
+)
+METRIC_DEFINITIONS['public_accuracy'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Public Accuracy')
+METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
+for _registered, _reported in {
+    'decision_nll': 'nll',
+    'decision_brier': 'brier',
+    'decision_binary_brier': 'brier',
+    'decision_rps': 'nrps',
+    'decision_mae': 'mae',
+}.items():
+    METRIC_DEFINITIONS[_registered] = METRIC_DEFINITIONS[_reported]
 
 AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
     # An `accuracy` aggregated by pass@k / pass^k measures a pass ratio, not accuracy, so the

@@ -30,6 +30,7 @@ class Metrics:
     TOTAL_REQUESTS = 'Total Requests'
     SUCCEED_REQUESTS = 'Success Requests'
     FAILED_REQUESTS = 'Failed Requests'
+    TIMEOUT_REQUESTS = 'Timeout Requests'
     STREAM_REQUESTS = 'Stream Requests'
     NON_STREAM_REQUESTS = 'Non-Stream Requests'
     REQUEST_THROUGHPUT = 'Req Throughput (req/s)'
@@ -67,6 +68,11 @@ class Metrics:
             return False
         api_lower = api_name.lower()
         return 'embedding' in api_lower or 'rerank' in api_lower or 'embed' in api_lower
+
+    @staticmethod
+    def is_input_only(api_name: str) -> bool:
+        """Use request and input metrics for APIs without generated token streams."""
+        return Metrics.is_embedding_or_rerank(api_name) or api_name in ('systemone', 'autotrust')
 
 
 # ---------------------------------------------------------------------------

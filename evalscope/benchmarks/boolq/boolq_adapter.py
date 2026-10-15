@@ -16,11 +16,23 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         subset_list=['default'],
         eval_split='validation',
         train_split='train',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
         supports_choice=True,
         choice_instructions='Answer the question in `question` using only the accompanying passage.',
         tags=[Tags.MULTIPLE_CHOICE],
         metric_list=['acc'],
+        extra_params={
+            'decision_kind': {
+                'type': 'str',
+                'value': 'choice',
+                'description': 'Decision API question type: choice (default) or noul. Requires a decision API for noul.',
+            },
+            'decision_threshold': {
+                'type': 'float',
+                'value': 0.5,
+                'description': 'Classify Noul as yes when P(yes) is at least this threshold, in [0, 1].',
+            },
+        },
         prompt_template=MultipleChoiceTemplate.SINGLE_ANSWER,
         description="""
 ## Overview
@@ -42,10 +54,10 @@ Binary reading comprehension using a passage and a naturally occurring question.
 
 ## Evaluation Notes
 
-- Uses the public validation labels, zero-shot by default. System One evaluates two-option Choice, not the Noul protocol used in some Jev studies.
+- Uses the public validation labels, zero-shot by default. Decision APIs use two-option Choice by default. Set `extra_params.decision_kind="noul"` for P(yes), with `decision_threshold=0.5` by default.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
-- Evaluation semantics version: v1.0
+- Evaluation semantics version: v1.1
 """,
     )
 )

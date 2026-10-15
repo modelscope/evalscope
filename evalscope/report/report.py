@@ -154,6 +154,8 @@ class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
+    metadata: Optional[Dict[str, Any]] = None
+    """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
     """True for derived/summary subsets (e.g. BFCL OVERALL, MULTI_TURN) that
     aggregate other real subsets. Excluded from num/score totals so they

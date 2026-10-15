@@ -168,7 +168,7 @@ async def connect_test(args: Arguments, api_plugin: 'ApiPluginBase') -> None:
     Raises:
         TimeoutError: If the test connection fails.
     """
-    if Metrics.is_embedding_or_rerank(args.api):
+    if Metrics.is_input_only(args.api):
         return
 
     if args.no_test_connection:

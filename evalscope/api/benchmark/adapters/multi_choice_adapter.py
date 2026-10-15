@@ -3,6 +3,10 @@ from typing import List
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
+from evalscope.api.metric import AggScore, MetricSelector, SampleScore, Score
+from evalscope.api.metric.decision import decision_score
+from evalscope.api.model.decision import DECISION_EVAL_TYPES, DecisionAnswer
+from evalscope.api.registry import get_aggregation
 from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
     MultipleChoiceTemplate,
@@ -27,6 +31,10 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
+            self._benchmark_meta.primary_metric = MetricSelector(name='accuracy', aggregation='mean')
+        elif self.extra_params.get('decision_kind', 'choice') != 'choice':
+            raise ValueError('Noul conversion requires systemone_api or autotrust_api.')
         self.multiple_correct: bool = False
         """Whether the benchmark allows multiple correct answers."""
 
@@ -50,6 +58,8 @@ class MultiChoiceAdapter(DefaultDataAdapter):
             raise ValueError('System One Choice evaluation requires a single correct answer.')
         if self.extra_params.get('use_cot'):
             raise ValueError('System One Choice does not generate chain-of-thought text; disable use_cot.')
+        if not 0 <= self.extra_params.get('decision_threshold', 0.5) <= 1:
+            raise ValueError('Decision threshold must be between zero and one.')
 
     def choice_examples(self, subset: str) -> List[str]:
         """Reuse the selected demonstration samples or benchmark-specific fixed examples."""
@@ -72,6 +82,9 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         target = Target(sample.target)
         if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
             raise ValueError('System One Choice requires 2-255 options and one matching target label.')
+        kind = self.extra_params.get('decision_kind', 'choice')
+        if kind != 'choice' and (kind != 'noul' or self.name != 'boolq'):
+            raise ValueError('Only BoolQ has an audited Noul conversion.')
         instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
         state = {'question': sample.input}
         examples = self.choice_examples(subset)
@@ -86,9 +99,10 @@ class MultiChoiceAdapter(DefaultDataAdapter):
                 content=f'{sample.input}\n\n{answer_options(sample.choices or [])}',
                 internal={
                     'systemone': {
+                        'kind': kind,
                         'state': state,
                         'instructions': instructions,
-                        'criteria': criteria,
+                        'criteria': criteria if kind == 'choice' else None,
                         'answer_prefix': '答案：' if '答案：' in (self.prompt_template or '') else 'ANSWER: ',
                     }
                 },
@@ -97,12 +111,44 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         return messages
 
     def _post_process_samples(self) -> None:
-        if self._task_config is None or self.eval_type != 'systemone_api':
+        if self._task_config is None or self.eval_type not in DECISION_EVAL_TYPES:
             super()._post_process_samples()
             return
         for subset, dataset in self.test_dataset.items():
             for sample in dataset:
                 sample.input = self.build_systemone_messages(sample, subset)
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        """Retain categorical probabilities on decision protocols and preserve ordinary MCQ grading."""
+        if self._task_config is None or self.eval_type not in DECISION_EVAL_TYPES:
+            return super().match_score(original_prediction, filtered_prediction, reference, task_state)
+        metadata = task_state.output.metadata or {}
+        data = metadata.get('decision')
+        if data is None:
+            data = metadata['choice_response']['answers']['answer']
+        answer = DecisionAnswer.model_validate(data)
+        labels = list(answer.probabilities)
+        gold = reference
+        if answer.type == 'noul':
+            labels = ['no', 'yes']
+            gold = 'yes' if reference == 'A' else 'no'
+        score = decision_score(
+            answer,
+            gold,
+            labels,
+            threshold=self.extra_params.get('decision_threshold', 0.5),
+            fixed_classes=self.name == 'banking77',
+        )
+        score.prediction = original_prediction
+        return score
+
+    def aggregate_scores(self, sample_scores: list[SampleScore]) -> list[AggScore]:
+        """Compute cross-sample metrics only when a decision service supplied distributions."""
+        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
+            return get_aggregation('decision')()(sample_scores)
+        return super().aggregate_scores(sample_scores)
 
     def format_prompt_template(self, sample: Sample) -> str:
         """

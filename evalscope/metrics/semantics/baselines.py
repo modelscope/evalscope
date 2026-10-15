@@ -105,6 +105,17 @@ def _plain_number(
 
 
 SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
+    'quality.loss.unbounded': _plain_number(
+        'quality.loss.unbounded',
+        'Loss',
+        display_precision=4,
+        direction=MetricDirection.LOWER_IS_BETTER,
+    ),
+    'quality.correlation.coefficient': _plain_number(
+        'quality.correlation.coefficient',
+        'Correlation',
+        display_precision=4,
+    ),
     # --- quality: bounded ratios, higher is better ---------------------------------------
     'quality.accuracy.ratio': _percent('quality.accuracy.ratio', 'Accuracy'),
     'quality.f1.ratio': _percent('quality.f1.ratio', 'F1'),

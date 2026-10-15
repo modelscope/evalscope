@@ -27,6 +27,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
     Data Adapter for the benchmark.
     """
 
+    aggregate_empty_scores: bool = False
+    """Run official denominator-based aggregation even when every prediction is unavailable."""
+
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config

@@ -336,7 +336,7 @@ def test_failure_is_excluded_with_execution_coverage(tmp_path: Path, monkeypatch
     assert report['execution_summary']['errored'] == 1
     assert report['execution_summary']['incomplete'] is True
     review = json.loads(next((output / 'reviews').rglob('*.jsonl')).read_text())
-    assert list(review['sample_score']['score']['value'].values()) == [1.0]
+    assert review['sample_score']['score']['value']['acc'] == 1.0
 
 
 NEW_RECORDS = {
@@ -410,7 +410,7 @@ def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, 
     else:
         assert all(message.get('internal') is None for message in prediction['messages'])
         assert prediction['messages'][0]['content'] == seen[0]['messages'][0]['content']
-    assert list(review['sample_score']['score']['value'].values()) == [1.0]
+    assert review['sample_score']['score']['value'].get('acc', review['sample_score']['score']['value'].get('accuracy')) == 1.0
     assert report['execution_summary']['succeeded'] == 1
     assert report['execution_summary']['errored'] == 0
     assert (tmp_path / 'reports' / 'report.html').is_file()
