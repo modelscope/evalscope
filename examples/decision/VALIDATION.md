@@ -4,7 +4,7 @@ This record distinguishes real PPU inference, cached prediction verification, lo
 
 ## Platform and provenance
 
-- Archived implementation and final review/replay: `6e9970881fdf8a3cf28de6ba0e893db78513e00c`; subsequent changes only document results.
+- Initial implementation review/replay: `6e9970881fdf8a3cf28de6ba0e893db78513e00c`. Follow-up review/replay and re-scoring: `2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce`; serving examples and model releases are unchanged.
 - Python 3.12.14, torch `2.10.0+v0.1.0.ppu2.1.0.oe`, vLLM `0.20.1+v0.1.0.ppu2.1.0.oe`, transformers 5.8.1, ModelScope 1.36.3, datasets 4.8.4. PPU SDK driver 1.5.0-299c95; HGGC 13.0.
 - One PPU-ZW810 (96 GiB) per model, isolated devices 7 / 6. Clef uses its official PyTorch joint head, eager attention and a serial service. JEV uses the released LoRA/head/bias/calibration through vendor vLLM and the bundled architecture-registration plugin, eager execution, 16,384 context, prefix caching disabled, memory utilization 0.85. No shared environment upgrade or source patch.
 - ModelScope releases: Clef `0dc1ab273435d4681bce5996f50b8d79fb79bb83`, JEV `4163b1f068332b00cbdab60938a3e84e260f2498`. All 17 / 65 release files were SHA-256 verified, including inference code and calibration.
@@ -76,3 +76,13 @@ Clef's throughput stays nearly flat as concurrency increases because its referen
 - AutoTrust supports six-level Score only; complete JevBench/OpenDecisions use Clef. The 77-choice path uses the upstream single-pass extension beyond its 16 trained choice slots. Ordinary CUDA deployment commands are examples, not CUDA test evidence. Clef's dedicated head was not validated under vLLM.
 - Clef's released encoder has a 16,384-token state window. The maximum observed input usage across these complete runs was 4,032 tokens (JevBench); no selected input hit the window. This does not validate longer inputs.
 - Only this task's services and engine were stopped. Ports 18131/18132/18133 are closed, no owned process remains, and devices 6/7 returned to 10 MiB with 0% utilization and no running processes. Logs and result artifacts were retained.
+
+## Follow-up review
+
+The follow-up reproduced and fixed choice-shuffle semantics (BoolQ Noul and BANKING77 macro-F1), repeat-ID collisions in both official aggregators, tied-confidence AURC ordering, and probability-rounding boundary checks. Typed decision adapters now reject chat configurations before downloading data. The beginner guides were rewritten around vLLM, API/benchmark selection, results and perf; platform-specific setup and low-level validation details remain outside those guides.
+
+After these fixes, **1,175 targeted tests**, CI-lite, lint/import contracts and both language documentation builds passed. Real qwen-plus chat smoke completed **two samples each** on ARC-Challenge, BANKING77, BoolQ and RewardBench (alpacaeval-easy), with all eight predictions and reviews valid. A source audit checked all ARC-Challenge 1,172 / ARC-Easy 2,376 choice-label orders and all BANKING77 3,076 numeric/text labels; no mismatches were found.
+
+All **20,962** saved quality predictions were re-scored; the independent pinned official scorers and all primary scores/counts remain unchanged. All quality wire records and **24,000** perf wire records were replayed with the follow-up implementation. An independent threshold-group calculation checked **100** real risk-coverage curves and AURC summaries. This phase reused real saved inference; it does not claim a new complete inference run or CUDA runtime validation.
+
+The ordinary CUDA guide follows upstream vLLM installation and native AutoTrust serving requirements. The v0.20.1 source lacks the text architecture registration; the current main implementation has registration, hybrid-cache support and output-head LoRA mapping. The guide therefore uses the official development-wheel installation path for JEV. This is source verification, separate from the real vendor-vLLM runtime evidence above. Chat support remains limited to the four compatible benchmarks; the new typed adapters do not invent probability distributions from generated answers.

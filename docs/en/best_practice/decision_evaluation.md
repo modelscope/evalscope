@@ -1,137 +1,243 @@
-# Evaluating decision models
+# Evaluate decision models with EvalScope
 
-Use EvalScope to retain and evaluate the complete probability distribution of a **Choice**, **Noul** (probability of yes), or **Score** (ordered levels) decision. Correct answers, probability quality, execution coverage, and serving performance are separate measurements.
+Follow this workflow: **choose a benchmark → serve the model → check quality → measure performance**. Start with a few samples, then remove the limit for a complete evaluation. Run these commands from the EvalScope source repository. Models and datasets are downloaded from ModelScope.
 
-The Chinese walkthrough contains the complete deployment and troubleshooting procedure. All example commands run from the EvalScope repository root.
+## 1. Choose the model interface and benchmarks
 
-## Benchmarks and protocols
+A **chat model** generates an answer through `/v1/chat/completions`; use `eval_type='openai_api'`. A **decision model** returns probabilities through `/v1/decide` or `/v1/systemone`; use `autotrust_api` or `systemone_api`, respectively.
 
-| Benchmark | Evaluation data | Main metric / boundary |
-|---|---|---|
-| `arc` | `allenai/ai2_arc`, ARC-Challenge/test | Accuracy |
-| `banking77` | `mteb/banking77`, test | Accuracy; all 77 labels retained; macro-F1 |
-| `boolq` | `google/boolq`, validation | Accuracy; Choice by default, explicit Noul mode |
-| `reward_bench` | `allenai/reward-bench`, filtered | v1 pairwise accuracy; existing sample-weighted aggregation |
-| `stsb` | `sentence-transformers/stsb`, test | Expected-value MAE; continuous source gold multiplied by 5 |
-| `jevbench` | `evalscope/jevbench`, test | Public-subset accuracy, family macro, per-kind metrics |
-| `open_decisions` | `evalscope/OpenDecisions`, train | Official Capability; evaluation only |
-| `general_decision` | Local `default_test.jsonl` | Accuracy; one question per record |
+Decision tasks have three types: **Choice** selects one option, **Noul** predicts the probability that a statement is true, and **Score** returns probabilities over ordered levels. For Score, EvalScope calculates an expected rating from that distribution.
 
-`systemone_api` accepts a base URL ending in `/v1` and calls `/systemone`. `autotrust_api` calls `/decide`. The latter maps the returned probability array back to the original option IDs without reordering. Both preserve raw responses and validated distributions. A chat-completions endpoint alone is insufficient: load the decision adapter/head and apply its released readout and calibration.
+| Benchmark | Task | Ordinary chat | System One | AutoTrust JEV example |
+|---|---|---|---|---|
+| `arc` | Science questions; select ARC-Challenge | Yes | Yes | Yes |
+| `banking77` | Banking intent; all 77 options | Yes | Yes | Yes |
+| `boolq` | Answer a yes/no question from a passage | Choice | Choice / Noul | Choice / Noul |
+| `reward_bench` | Select the better of two answers | Yes | Yes | Yes |
+| `stsb` | Sentence similarity, 0–5 | No, for this adapter | Yes | Six-level Score |
+| `jevbench` | 231 public decisions of all three types | No | Must support original levels | Cannot run the complete set: four-/five-level Score |
+| `open_decisions` | 2,352 decisions of all three types | No | Must support original levels | Cannot run the complete set: three- to six-level Score |
+| `general_decision` | Your local decision data | No | Depends on task/levels | Score must have six levels |
 
-The ModelScope JevBench mirror contains Benchmark Heaven's 231 public tasks (72 original, 48 easy, 111 hard), pinned to `609a664e81f46e03731600bd7bd9f1b7a61257c5`. It is distinct from the similarly named coherence benchmark. The mirror includes original JSONL, lossless Parquet, source licenses and SHA-256 hashes. Public results are not the full leaderboard Composite/Capability.
+Chat support means answer accuracy can be evaluated. Probability metrics require a decision service that returns the complete distribution. A chat model's self-reported confidence is not its token probability.
 
-## Download and serve
+[JevBench](https://modelscope.cn/datasets/evalscope/jevbench) here is the [Benchmark Heaven public subset](https://github.com/fstandhartinger/jevbench), not another benchmark with the same name. It does not produce the full leaderboard Composite. [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) uses its published `train` split for evaluation only; no model training occurs.
+
+## 2. Deploy with vLLM
+
+These commands target Linux with NVIDIA GPUs. Create an isolated environment; in each new terminal, enter the same repository and run `source .venv/bin/activate`.
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -e '.[perf]'
-pip install modelscope transformers accelerate safetensors fastapi uvicorn httpx
-python examples/decision/download_models.py \
-  --model Cloudflare/clef-flash --output ./models/clef-flash
-python examples/decision/download_models.py \
-  --model autotrust/JEV-27B --output ./models/JEV-27B
-CUDA_VISIBLE_DEVICES=0 python examples/decision/serve_clef.py \
-  --model-path ./models/clef-flash --port 18131
+pip install -U uv modelscope fastapi uvicorn httpx
 ```
 
-The downloader verifies the named ModelScope ref against the pinned commit's file tree, then verifies every file. Some SDK versions reject commit IDs in the snapshot validator; the hash checks preserve the content pin while using a named ref for transfer. All models and evaluation data are downloaded from ModelScope.
+Choose one route. Skip to evaluation if you already have a compatible service.
 
-Clef uses the released PyTorch implementation, including the joint schema head. This reference service serializes requests and is not a vLLM batching benchmark.
+### Route A: an ordinary chat model
 
-AutoTrust uses a vLLM completions engine plus a thin `/decide` service:
+Replace the example ModelScope ID with your own, or use a model directory you already downloaded:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 vllm serve ./models/JEV-27B \
+uv pip install -U vllm --torch-backend auto
+modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./models/my-chat-model
+vllm serve ./models/my-chat-model \
+  --served-model-name my-chat-model --port 8000 --max-model-len 8192
+```
+
+Keep that terminal running. Check it from another terminal:
+
+```bash
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"my-chat-model","messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
+```
+
+Use the same served model name in EvalScope.
+
+### Route B: AutoTrust decisions
+
+The following uses `autotrust/JEV-27B`; it needs substantially more GPU memory than the small chat example. Use vLLM's multi-GPU configuration if necessary. This model uses a recent architecture, so install a development build using the [official vLLM instructions](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/). The download script fetches and checks the complete release:
+
+```bash
+uv pip install -U vllm --torch-backend auto \
+  --extra-index-url https://wheels.vllm.ai/nightly
+python examples/decision/download_models.py \
+  --model autotrust/JEV-27B --output ./models/JEV-27B
+vllm serve ./models/JEV-27B \
   --served-model-name autotrust/JEV-27B \
   --enable-lora --max-lora-rank 32 \
   --lora-modules jev-decision=./models/JEV-27B/adapter_vllm \
   --max-model-len 16384 --max-logprobs 256 \
   --logprobs-mode processed_logprobs --port 18132
-python examples/decision/serve_autotrust.py \
-  --model-path ./models/JEV-27B --upstream http://127.0.0.1:18132/v1 --port 18133
 ```
 
-This requires support for Qwen3.5 hybrid attention/GDN and `lm_head` LoRA. The PPU vendor build requires initializing `/usr/local/PPU_SDK/envsetup.sh` and installing the isolated registration plugin under `examples/decision/ppu_vllm`. See the Chinese walkthrough for exact commands. Keep the matched vendor torch/vLLM environment; generic CUDA wheels are not a PPU upgrade path.
+In another terminal, expose the decision interface:
 
-The AutoTrust wrapper follows the released bare prompt, verbalizer bias and per-kind temperature, with thinking off. It rejects missing/nonfinite candidate logprobs. Choice above the native 16 training slots uses the released single-pass extension, retaining every option. Score has exactly six levels (0–5); other scales fail explicitly. Clef supports the original variable-level rubrics needed for complete JevBench and OpenDecisions runs.
+```bash
+python examples/decision/serve_autotrust.py \
+  --model-path ./models/JEV-27B \
+  --upstream http://127.0.0.1:18132/v1 --port 18133
+```
 
-## Evaluate
+**vLLM runs on 18132; EvalScope calls the decision service on 18133.** Retain the decision adapter/head and use a vLLM build supporting the architecture and output-head LoRA, as required by the [model's deployment instructions](https://modelscope.cn/models/autotrust/JEV-27B).
+
+```bash
+curl http://127.0.0.1:18133/v1/decide \
+  -H 'Content-Type: application/json' \
+  -d '{"kind":"choice","state":"The sky is blue.","question":"What color is the sky?","options":["Blue","Red"],"thinking":"off"}'
+```
+
+The response should contain `options` and aligned `probabilities`. Your own decision model must provide a compatible `/v1/decide` or `/v1/systemone` service. This wrapper expects the AutoTrust release format; changing the model name alone does not adapt a different model. Standard vLLM chat serving does not automatically provide these decision routes.
+
+## 3. Run a small evaluation
+
+Save the appropriate example as `evaluate.py`, then run `python evaluate.py`.
+
+### Ordinary chat: four existing benchmarks
 
 ```python
 from evalscope import TaskConfig, run_task
 
 run_task(TaskConfig(
-    model='Cloudflare/clef-flash', eval_type='systemone_api',
-    api_url='http://127.0.0.1:18131/v1',
-    datasets=['jevbench', 'open_decisions', 'stsb'],
-    eval_batch_size=4,
-    generation_config={'timeout': 300, 'retries': 1},
-    limit=5,  # remove for full evaluation; applies per subset
+    model='my-chat-model',
+    eval_type='openai_api',
+    api_url='http://127.0.0.1:8000/v1',
+    api_key='EMPTY',
+    datasets=['arc', 'banking77', 'boolq', 'reward_bench'],
+    dataset_args={'arc': {'subset_list': ['ARC-Challenge']}},
+    generation_config={'temperature': 0, 'max_tokens': 256},
+    limit=5,
 ))
 ```
 
-For P0, use `datasets=['arc','banking77','boolq','reward_bench','stsb']` and `dataset_args={'arc': {'subset_list': ['ARC-Challenge']}}`. To select BoolQ Noul, set `dataset_args={'boolq': {'extra_params': {'decision_kind': 'noul', 'decision_threshold': 0.5}}}`. AutoTrust uses `eval_type='autotrust_api'` and base URL `http://127.0.0.1:18133/v1`.
+BoolQ uses its default Choice mode. Do not enable Noul or select benchmarks marked as incompatible with chat.
 
-Gold answers, rationale, teacher predictions and provenance are never sent to the model. Do not set generation controls such as temperature, max_tokens, tools or streaming. `retries=1` means one total attempt.
+### AutoTrust: Choice, Noul and Score
 
-A local `default_test.jsonl` accepts:
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='autotrust/JEV-27B',
+    eval_type='autotrust_api',
+    api_url='http://127.0.0.1:18133/v1',
+    datasets=['arc', 'banking77', 'boolq', 'reward_bench', 'stsb'],
+    dataset_args={
+        'arc': {'subset_list': ['ARC-Challenge']},
+        'boolq': {'extra_params': {'decision_kind': 'noul'}},
+    },
+    eval_batch_size=4,
+    generation_config={'timeout': 300, 'retries': 1},
+    limit=5,
+))
+```
+
+ARC, BANKING77 and RewardBench test Choice; BoolQ tests Noul; STS-B tests six-level Score. Decision requests do not use temperature, max_tokens or streaming. `retries=1` means one total attempt per sample.
+
+### System One: complete JevBench / OpenDecisions
+
+Use a service that supports the tasks' original Score levels:
+
+```python
+from evalscope import TaskConfig, run_task
+
+run_task(TaskConfig(
+    model='your-decision-model',
+    eval_type='systemone_api',
+    api_url='http://127.0.0.1:9000/v1',
+    datasets=['jevbench', 'open_decisions'],
+    eval_batch_size=4,
+    generation_config={'timeout': 300, 'retries': 1},
+    limit=5,
+))
+```
+
+Replace the model name and URL with your actual System One service. Do not remap four-/five-level tasks to AutoTrust's six-level scale.
+
+**Remove `limit=5` after the smoke run to evaluate the complete split.** Limits apply per subset; a benchmark with multiple subsets can issue more than five requests. Datasets load automatically from ModelScope. Gold answers are not sent to the model.
+
+## 4. Read the results
+
+The terminal prints the report directory, usually `outputs/<timestamp>/reports/`. Open `report.html` for results; inspect `predictions/` and `reviews/` for individual samples. First check successful requests and valid review counts, then interpret scores.
+
+| Metric | Meaning | Better direction |
+|---|---|---|
+| Accuracy | Fraction of correct answers | Higher |
+| macro-F1 | Give each class equal importance | Higher |
+| Precision / Recall / F1 | Accuracy of positive Noul answers / positive cases found / balance between the two | Higher |
+| NLL / Brier | Reward useful probabilities; penalize confident mistakes | Lower |
+| ECE | Whether stated confidence matches observed correctness | Lower; also check accuracy |
+| AUROC / AUPRC | Separate positive and negative Noul examples | Higher; compare datasets cautiously |
+| MAE | Average rating error | Lower |
+| Spearman / Pearson | Agreement in ranking / score variation | Closer to 1 |
+| nRPS | Put Score probability near the correct level | Lower |
+| AURC | Error risk when answering higher-confidence questions first | Lower |
+
+Score MAE uses the expected rating; discrete Score accuracy uses the most probable level. On STS-B's 0–5 scale, MAE 0.6 means an average error of about 0.6 points. Continuous gold is preserved, so this adapter does not report classification accuracy or nRPS for STS-B. Some metrics need enough distinct observations; missing values are not zero.
+
+JevBench's primary metric is public-subset accuracy, with family-macro also reported. OpenDecisions uses Capability and also reports Intelligence (task ability) and Calibration (probability reliability). These have their own scoring rules. A ratio of `0.82` in JSON means 82%; MAE stays in rating units. Limited runs are not complete leaderboard results. RewardBench uses v1 pairwise decisions and a sample-weighted summary, rather than the official category-weighted leaderboard score.
+
+## 5. Evaluate your own data
+
+Create `decision-data/default_test.jsonl`, one question per line:
 
 ```json
-{"id":"c1","state":"I am happy.","question":{"type":"choice","instructions":"Classify sentiment.","criteria":{"positive":"Positive","negative":"Negative"}},"expected":"positive"}
+{"id":"c1","state":"The customer cannot find their card.","question":{"type":"choice","instructions":"What should support help with?","criteria":{"find":"Find the card","close":"Close the account"}},"expected":"find"}
 {"id":"n1","state":"The sky is blue.","question":{"type":"noul","instructions":"Is the sky blue?"},"expected":"yes"}
-{"id":"s1","state":"Excellent service.","question":{"type":"score","instructions":"Rate satisfaction.","criteria":["Poor","Fair","Good","Excellent"]},"expected":"3"}
+{"id":"s1","state":"Excellent service.","question":{"type":"score","instructions":"Rate satisfaction.","criteria":["Very poor","Poor","Fair","Good","Very good","Excellent"]},"expected":"5"}
 ```
 
-Select `general_decision` and `dataset_args={'general_decision': {'local_path': './decision-data'}}`. For fixed-category classification, set `fixed_classes=true` on records to enable macro-F1. Question-local A/B/C/D positions are not global classes.
+`state` is the input material, `question` defines the task, and `expected` is the gold answer used only for scoring. Gold is an option ID for Choice, `yes` / `no` for Noul, or a zero-based level number for Score.
 
-## Interpret probability metrics
+In your working decision configuration replace:
 
-Each report declares one primary metric. JevBench public accuracy and family macro include missing predictions as wrong. Its pinned public scorer selects no for a Noul tie, retains probabilities within a 0.001 sum tolerance, and normalizes only above that within 0.02. Ordinary valid-sample metrics are separate. NLL uses an explicit `1e-12` floor. Binary Brier is `(p_yes-y)^2`; multiclass Brier sums class-wise squared errors. They are not averaged together. AUPRC uses the average-precision step integral with grouped ties. ECE uses ten equal-width bins; binary ECE uses P(yes), categorical ECE uses top-label confidence. Permitted rounding normalization is recorded separately from unchanged raw probabilities.
-
-Different Score level counts are reported separately, keeping MAE and correlations on a common scale within each group. Score retains its expected level and ordered distribution. For example, probabilities `[0.1,0.2,0.3,0.4]` have expectation 2.0 and argmax 3. Continuous STS-B gold is not discretized for nRPS or accuracy. Spearman, Pearson, AUROC and AUPRC are computed across samples; undefined values are omitted with reasons and effective counts. Risk is classification error for Choice/Noul and normalized expected-value absolute error for Score, including continuous gold. Risk–coverage curves/AURC distinguish top-option probability from provider confidence; ties use stable sample order.
-
-Ordinary metrics use valid responses; inspect execution coverage. OpenDecisions additionally follows its pinned MIT scorer (`5026a13ad6e5a8606810a3a5c4e410d8d6638e71`), using all selected tasks as the official denominator, including missing predictions as wrong in Intelligence. Its Noul threshold is 0.5, unlike some JevBench abstention rules. Limited runs are not full leaderboard submissions. Official 0–100 values are stored as 0–1 ratios and displayed as percentages.
-
-Export the persisted curves to standalone interactive HTML:
-
-```bash
-python examples/decision/plot_reliability.py \
-  --report outputs/<run>/reports/<model>/jevbench.json --output reliability.html
+```python
+datasets=['general_decision'],
+dataset_args={'general_decision': {'local_path': './decision-data'}},
 ```
 
-## Benchmark serving performance
+Keep the other model/API settings. AutoTrust requires six Score levels; other services must support the levels you specify.
 
-Run perf without other evaluation traffic on the same service. Export separate fixed request sets:
+## 6. Measure performance
+
+Stop quality-evaluation traffic on the same service first. The following uses the AutoTrust decision service; ordinary chat performance testing is covered by the [performance quick start](../user_guides/stress_test/quick_start.md).
+
+Export fixed requests: full 77-way BANKING77 Choice, BoolQ Noul and STS-B Score.
 
 ```bash
 python examples/decision/prepare_perf_requests.py \
-  --api systemone --model Cloudflare/clef-flash --output ./perf-input/systemone
+  --api autotrust --model autotrust/JEV-27B --output ./perf-input/autotrust
 for kind in choice noul score; do
-  evalscope perf --api systemone --model Cloudflare/clef-flash \
-    --url http://127.0.0.1:18131/v1 --dataset line_by_line \
-    --dataset-path "./perf-input/systemone/$kind.jsonl" \
+  evalscope perf --api autotrust --model autotrust/JEV-27B \
+    --url http://127.0.0.1:18133/v1 --dataset line_by_line \
+    --dataset-path "./perf-input/autotrust/$kind.jsonl" \
     --parallel 1 4 8 16 --number 1000 1000 1000 1000 \
     --warmup-num 20 --no-stream --read-timeout 300 \
-    --outputs-dir "./perf-results/clef-$kind"
+    --outputs-dir "./perf-results/$kind"
 done
 ```
 
-For JEV, export `--api autotrust --model autotrust/JEV-27B`, then select `--api autotrust`, its input directory and port 18133. The plugins inject no generation parameters and perform no hidden retries. An invalid HTTP 200 decision is a failed request.
+Each kind runs at concurrency 1/4/8/16, with 20 warmups followed by 1,000 measured requests per setting. For an initial check, use `--parallel 1 --number 20 --warmup-num 2`. To test System One, use `--api systemone` in both export and perf commands and change the model, URL and input directory. The files are specific to their protocol.
 
-Read summary/percentile JSON and HTML for p50/p90/p95/p99 latency, successful requests/s, failures, Timeout Requests and input throughput. Each concurrency level excludes 20 warmups and measures 1,000 requests. One request contains one decision, so successful requests/s equals decisions/s. Input throughput divides successful input tokens by the measurement window. TTFT/TPOT/ITL are explicitly listed as not applicable; compatibility zero fields do not mean zero latency.
+Open `perf_report.html` in the output directory and read:
 
-Archive request manifests, actual usage lengths, model/code revisions, versions, cache settings and device occupancy. HTTP latency includes network, service queueing, the full response and JSON decoding. Request preparation and protocol validation are outside that timer; the throughput window includes client processing. Server-internal timing is separate. Measure localhost on the PPU server rather than through an SSH tunnel. Higher concurrency can primarily increase queueing in the serial Clef reference service.
+1. **Success rate, failures and timeouts**: an invalid answer fails even with HTTP 200.
+2. **p50 / p90 / p95 / p99 latency**: about 50% / 90% / 95% / 99% of requests finish within this time.
+3. **Successful requests/s**: higher means more completed decisions per second; there is one decision per request here.
+4. **Concurrency trade-off**: more concurrency may increase queueing without improving throughput.
 
-The actual validation platform is PPU-ZW810. Clef's PyTorch path and AutoTrust's vLLM path must be reported separately. Ordinary CUDA commands are deployment examples, not evidence of CUDA validation. Final quality/perf evidence accompanies the change's validation record.
+TTFT/TPOT/ITL do not apply to non-streaming decisions. Request latency includes network and queueing. Compare runs using the same inputs, serving settings and measurement location.
 
-## Recorded PPU results (2026-10-15)
+## Troubleshooting
 
-The complete evidence tables and machine-readable record are in the repository at `examples/decision/VALIDATION.md` and `validation_results.json`. Clef completed JevBench (231), OpenDecisions (2,352), ARC-Challenge (1,172), BANKING77 (3,076), BoolQ Choice and Noul (3,270 each), RewardBench (2,985), and STS-B (1,379), with no inference/review failures. AutoTrust completed all 3,076 BANKING77 test examples with every one of the 77 options, plus Noul, six-level Score, ARC and RewardBench smoke runs.
-
-Independent pinned official scorers agree: Clef JevBench public accuracy 82.25%, family-macro 82.70%; OpenDecisions Intelligence 55.3260%, Calibration 79.0701%, Capability 67.1981%. These validate the integration; no training-contamination audit or leaderboard claim is made.
-
-All 24 perf configurations (two models × three kinds × concurrency 1/4/8/16) completed 1,000 measured requests plus 20 warmups each, with zero failures/timeouts. For example, Clef Choice at concurrency 1 → 16 achieved 3.8880 → 4.0865 requests/s and p99 0.2909 → 3.9250 seconds, illustrating serial queueing. JEV Score achieved 4.7369 → 19.3471 requests/s and p99 0.2485 → 0.8732 seconds. Full latency percentiles and input lengths are recorded separately; this is not a controlled speed comparison between different models/backends.
-
-Inference was captured during development. All 20,962 quality predictions and 24,000 measured perf responses were replayed against archived implementation `6e9970881fdf8a3cf28de6ba0e893db78513e00c`, and quality predictions re-scored; both committed serving examples also passed six fresh live requests with immutable revision checks. After merging main, 1,164 targeted tests, CI-lite, lint and architecture checks passed. GitHub CI is tracked separately on the PR. Owned processes and ports were cleaned up; raw artifacts were retained.
-
-Clef ran its official PyTorch head; only JEV used vendor vLLM. CUDA commands are deployment examples, not CUDA validation. Clef's released encoder has a 16,384-token state window; the largest observed input here was 4,032 tokens. Longer inputs and Clef's head under vLLM remain unverified. AutoTrust's six-level Score limit is enforced explicitly.
+| Symptom | Action |
+|---|---|
+| HTTP 404 | Check API type and port; a plain chat server does not expose native decision routes |
+| Unsupported model or `lm_head` LoRA | Use a compatible vLLM build required by the model and retain its adapter/head |
+| Score requires six levels | Use a service supporting the benchmark's original levels; do not change the benchmark |
+| New decision benchmark rejects a chat configuration | Follow the compatibility table and change the benchmark or API |
+| Want a quick check first | Use `limit=5` for quality and 20 requests for perf |
+| Need to inspect an answer | Check its input, original options, prediction and review |

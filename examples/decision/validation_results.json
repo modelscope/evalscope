@@ -1,7 +1,7 @@
 {
   "date": "2026-10-15",
-  "code_commit": "6e9970881fdf8a3cf28de6ba0e893db78513e00c",
-  "provenance": "Inference and perf were collected during development using the verified model releases. All 20962 saved evaluation requests/responses and 24000 measured perf requests/responses were replayed against this archived commit, all evaluation predictions re-scored, and both committed serving examples freshly exercised with three live kinds and model revision assertions. Later commits add documentation only.",
+  "code_commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+  "provenance": "Inference and perf were captured during development using the verified model releases. All 20962 evaluation wire requests/responses and 24000 measured perf responses were replayed against the follow-up implementation commit, and all quality predictions re-scored. Initial serving examples also passed six fresh requests with immutable model revision assertions; serving code is unchanged by the follow-up. No new full inference or CUDA serving validation is claimed.",
   "platform": {
     "python": "3.12.14 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:46:43) [GCC 14.3.0]",
     "platform": "Linux-5.10.134-013.7.2.kangaroo.al8.x86_64-x86_64-with-glibc2.39",
@@ -579,7 +579,7 @@
     }
   },
   "contract_replay": {
-    "commit": "6e9970881fdf8a3cf28de6ba0e893db78513e00c",
+    "commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
     "evaluation_predictions": {
       "clef/arc": 1172,
       "clef/banking77": 3076,
@@ -597,7 +597,7 @@
     }
   },
   "perf": {
-    "evaluation_code_commit": "6e9970881fdf8a3cf28de6ba0e893db78513e00c",
+    "evaluation_code_commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
     "validation": "Every saved request, answer distribution, usage, and success was replayed against the final shared contract.",
     "rows": [
       {
@@ -1279,13 +1279,14 @@
     "device_query_exit": 0
   },
   "local_validation": {
-    "targeted_tests": 1164,
+    "targeted_tests": 1175,
     "dashboard_regression_tests": 47,
     "ci_lite": "passed; live qwen-plus smoke; separate from the PPU decision runs",
     "lint": "passed",
     "import_contracts": "5 kept, 0 broken",
     "web_contracts_and_build": "passed",
-    "sphinx_zh": "passed"
+    "sphinx_zh": "passed",
+    "sphinx_en": "passed"
   },
   "request_sets": {
     "systemone": {
@@ -1661,5 +1662,148 @@
         "serialization": "json.dumps(sample.model_dump(mode=json), ensure_ascii=False, sort_keys=True, separators=(comma,colon)); ordered list with subset name"
       }
     }
+  },
+  "initial_validation_commit": "6e9970881fdf8a3cf28de6ba0e893db78513e00c",
+  "review_followup": {
+    "commit": "2bbbbbad4993594eb92340c8c4d22bcf1b5f08ce",
+    "regressions_fixed": [
+      "BoolQ Noul gold after choice shuffle",
+      "BANKING77 stable intent identities for macro-F1",
+      "Independent repeat IDs in both official aggregators",
+      "Confidence-threshold grouping for tied AURC",
+      "JevBench transport accepts official rounding band",
+      "Impossible wide-distribution rounding rejected",
+      "Typed decision adapters reject chat before downloading data"
+    ],
+    "live_chat_smoke": {
+      "arc": {
+        "execution": {
+          "requested": 2,
+          "succeeded": 2,
+          "errored": 0,
+          "incomplete": false,
+          "subsets": {
+            "ARC-Challenge": {
+              "requested": 2,
+              "succeeded": 2,
+              "errored": 0
+            }
+          }
+        },
+        "primary_metric": {
+          "name": "accuracy",
+          "aggregation": "mean",
+          "dimensions": {}
+        },
+        "model": "qwen-plus",
+        "api": "openai_api",
+        "reviewed": 2,
+        "nonempty_extracted_answers": 2
+      },
+      "banking77": {
+        "execution": {
+          "requested": 2,
+          "succeeded": 2,
+          "errored": 0,
+          "incomplete": false,
+          "subsets": {
+            "default": {
+              "requested": 2,
+              "succeeded": 2,
+              "errored": 0
+            }
+          }
+        },
+        "primary_metric": {
+          "name": "accuracy",
+          "aggregation": "mean",
+          "dimensions": {}
+        },
+        "model": "qwen-plus",
+        "api": "openai_api",
+        "reviewed": 2,
+        "nonempty_extracted_answers": 2
+      },
+      "boolq": {
+        "execution": {
+          "requested": 2,
+          "succeeded": 2,
+          "errored": 0,
+          "incomplete": false,
+          "subsets": {
+            "default": {
+              "requested": 2,
+              "succeeded": 2,
+              "errored": 0
+            }
+          }
+        },
+        "primary_metric": {
+          "name": "accuracy",
+          "aggregation": "mean",
+          "dimensions": {}
+        },
+        "model": "qwen-plus",
+        "api": "openai_api",
+        "reviewed": 2,
+        "nonempty_extracted_answers": 2
+      },
+      "reward_bench": {
+        "execution": {
+          "requested": 2,
+          "succeeded": 2,
+          "errored": 0,
+          "incomplete": false,
+          "subsets": {
+            "alpacaeval-easy": {
+              "requested": 2,
+              "succeeded": 2,
+              "errored": 0
+            }
+          }
+        },
+        "primary_metric": {
+          "name": "accuracy",
+          "aggregation": "mean",
+          "dimensions": {}
+        },
+        "model": "qwen-plus",
+        "api": "openai_api",
+        "reviewed": 2,
+        "nonempty_extracted_answers": 2
+      }
+    },
+    "dataset_audit": {
+      "ARC-Challenge": {
+        "rows": 1172,
+        "nonpositional_labels": []
+      },
+      "ARC-Easy": {
+        "rows": 2376,
+        "nonpositional_labels": []
+      },
+      "banking77": {
+        "rows": 3076,
+        "classes": 77,
+        "all_class_names_match": true
+      }
+    },
+    "independently_verified_risk_curves": {
+      "clef/arc": 2,
+      "clef/banking77": 2,
+      "clef/boolq": 2,
+      "clef/boolq-noul": 1,
+      "clef/jevbench": 7,
+      "clef/open_decisions": 11,
+      "clef/reward_bench": 46,
+      "clef/stsb": 2,
+      "jev/arc": 1,
+      "jev/banking77": 1,
+      "jev/boolq": 1,
+      "jev/reward_bench": 23,
+      "jev/stsb": 1
+    },
+    "official_scores_and_counts_unchanged": true,
+    "guide": "Rewritten in Chinese and English for first-time users; vLLM chat/native decision routes, compatibility, metrics, custom data and perf; no PPU setup."
   }
 }

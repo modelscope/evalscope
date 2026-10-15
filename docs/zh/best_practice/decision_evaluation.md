@@ -1,93 +1,93 @@
 # 使用 EvalScope 评测决策模型
 
-决策模型把一条输入转成选项概率或等级分布。评测时需要保留完整分布：选对答案与概率可信是两个独立问题。本实践覆盖 **Choice、Noul、Score**，接入 System One 与 AutoTrust 两种接口，并给出 ModelScope 下载、部署、效果评测和并发压测的完整路径。
+本文带你完成四件事：**选 benchmark → 部署模型 → 查看效果 → 测试性能**。先用少量样本跑通，再进行完整评测。所有命令均在 EvalScope 源码根目录执行，模型和数据从 ModelScope 下载。
 
-## 1. 先选任务与协议
+## 1. 先确认自己的模型属于哪一类
 
-| 题型 | 输入与返回 | 主要评测方式 |
-|---|---|---|
-| Choice | 原始选项 ID、描述及每个选项的概率 | Accuracy；固定类别任务的 macro-F1；NLL、Brier、ECE |
-| Noul | 判断问题，返回 `P(yes)` | 默认阈值 0.5 的分类指标、AUROC、AUPRC、NLL、二分类 Brier、ECE |
-| Score | 有顺序的等级描述及每档概率 | 期望等级的 MAE、Spearman、Pearson；离散 gold 另报 nRPS 和 argmax Accuracy |
+- **Chat 模型**：通过 `/v1/chat/completions` 生成答案，例如输出 `ANSWER: A`。选择 `eval_type='openai_api'`。
+- **决策模型**：直接返回选项概率、判断概率或评分分布。根据服务接口选择 `autotrust_api` 或 `systemone_api`。
 
-| EvalScope `eval_type` | 地址形式 | 适用服务 |
-|---|---|---|
-| `systemone_api` | 基地址 `/v1`，自动请求 `/systemone` | System One；本实践使用 Clef 官方 PyTorch 实现 |
-| `autotrust_api` | 基地址 `/v1`，自动请求 `/decide` | AutoTrust 原生格式；本实践使用 JEV 的 LoRA、head、bias 和 temperature |
+决策模型有三类题型：Choice 是“从几个选项中选一个”；Noul 是“这件事成立的概率是多少”；Score 是“在有顺序的几个等级中评分”。例如，Score 的六档可以是 0–5 分，模型返回每档概率，EvalScope 用这些概率计算平均分。
 
-聊天模型的 `/chat/completions` 不会自动变成决策模型。部署 JEV 时必须加载决策 adapter/head，并读取全部候选 token；本实践不启用 thinking、选项裁剪或等级重映射。
+先按下表选择 benchmark。普通 chat 接口不能直接替代决策接口。
 
-| benchmark | 数据与评测划分 | 注意事项 |
-|---|---|---|
-| `arc` | `allenai/ai2_arc`，`ARC-Challenge` / test | 显式选择 Challenge |
-| `banking77` | `mteb/banking77` / test | 每题保留全部 77 类 |
-| `boolq` | `google/boolq` / validation | 默认 Choice；可显式选择 Noul |
-| `reward_bench` | `allenai/reward-bench` / filtered | v1 成对偏好；现有 sample-weighted 聚合，不是官方 category-weighted 榜单成绩 |
-| `stsb` | `sentence-transformers/stsb` / test | 原标签 0–1 乘以 5；保留小数 gold，使用六档 Score |
-| `jevbench` | `evalscope/jevbench` / test | Benchmark Heaven 公开 231 题，含四档、五档 Score |
-| `open_decisions` | `evalscope/OpenDecisions` / train | 全部 2,352 条仅用于评测；Score 有 3–6 档 |
-| `general_decision` | 本地 `default_test.jsonl` | 不需要上传数据 |
+| Benchmark | 用来测什么 | 普通 chat | System One 决策接口 | 本文的 AutoTrust JEV 示例 |
+|---|---|---|---|---|
+| `arc` | 科学选择题，本文选 ARC-Challenge | 支持 | 支持 | 支持 |
+| `banking77` | 银行业务意图分类，每题保留 77 类 | 支持 | 支持 | 支持 |
+| `boolq` | 根据短文回答是非题 | 支持 Choice | 支持 Choice / Noul | 支持 Choice / Noul |
+| `reward_bench` | 从两个回答中选出更好的回答 | 支持 | 支持 | 支持 |
+| `stsb` | 两句话有多相似，0–5 分 | 不支持本文适配器 | 支持 | 支持六档 Score |
+| `jevbench` | 231 道公开决策题，包含三类题型 | 不支持 | 需支持题目原有等级 | 不能完整运行：包含四档、五档 Score |
+| `open_decisions` | 2,352 道三类决策题 | 不支持 | 需支持题目原有等级 | 不能完整运行：包含三至六档 Score |
+| `general_decision` | 你自己的决策题 | 不支持 | 按题型和等级支持 | Score 必须是六档 |
 
-这里的 JevBench 来自 [fstandhartinger/jevbench](https://github.com/fstandhartinger/jevbench)，与 HF 上的同名一致性评测项目不同。[ModelScope 镜像](https://modelscope.cn/datasets/evalscope/jevbench)固定上游 commit `609a664e81f46e03731600bd7bd9f1b7a61257c5`，包含 72 original、48 easy、111 hard；README、原始 JSONL、许可证、转换脚本及文件校验和均可追溯。完整榜单的 Composite/Capability 不在这个公开子集内。
+“支持普通 chat”表示可以测答案正确率。只有返回完整概率的决策接口，才能进一步计算本文的概率指标。不要让 chat 模型随口给一个“置信度”，再把它当作模型的选项概率。
 
-## 2. 安装与 ModelScope 下载
+这里的 [JevBench](https://modelscope.cn/datasets/evalscope/jevbench) 是 [Benchmark Heaven 的公开子集](https://github.com/fstandhartinger/jevbench)，与其他同名 benchmark 不同；它不提供完整榜单的 Composite 成绩。[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) 使用发布包中的 `train` 划分做评测，不会训练模型。
 
-在 EvalScope 仓库根目录使用独立环境。普通 CUDA 开发环境可安装：
+## 2. 用 vLLM 部署模型
+
+下面以 Linux / NVIDIA GPU 为例，先创建独立环境并安装 EvalScope。每个新终端都先进入同一仓库，执行 `source .venv/bin/activate`：
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -e '.[perf]'
-pip install modelscope transformers accelerate safetensors fastapi uvicorn httpx
-python examples/decision/download_models.py \
-  --model Cloudflare/clef-flash --output ./models/clef-flash
+pip install -U uv modelscope fastapi uvicorn httpx
+```
+
+下面两条路径任选其一。已有可用模型服务的用户可以直接跳到第 3 节。
+
+### 路径 A：普通 chat 模型
+
+以一个小模型为例；你可以换成自己的 ModelScope 模型 ID，或者直接使用已下载的本地模型目录：
+
+```bash
+uv pip install -U vllm --torch-backend auto
+modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./models/my-chat-model
+vllm serve ./models/my-chat-model \
+  --served-model-name my-chat-model --port 8000 --max-model-len 8192
+```
+
+保留这个终端运行，在另一个终端检查服务：
+
+```bash
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"my-chat-model","messages":[{"role":"user","content":"Hello"}],"max_tokens":32}'
+```
+
+能收到回答，就可以使用第 3 节的 chat 配置。后续的 `model` 必须与这里的 `--served-model-name` 一致。
+
+### 路径 B：AutoTrust 决策模型
+
+以下使用 `autotrust/JEV-27B`。它需要比上面的小模型更多显存；如果单卡放不下，可按 vLLM 的要求使用多卡。该模型使用较新的架构，这里按 [vLLM 官方方法](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/)安装开发版；下载脚本会准备完整模型并校验文件：
+
+```bash
+uv pip install -U vllm --torch-backend auto \
+  --extra-index-url https://wheels.vllm.ai/nightly
 python examples/decision/download_models.py \
   --model autotrust/JEV-27B --output ./models/JEV-27B
-```
-
-下载脚本固定已验证的 ModelScope Git commit，并逐文件校验 SHA-256，生成 `evalscope_release_manifest.json`。由于部分 ModelScope SDK 的 snapshot 接口只接受分支/标签，脚本先核对命名 ref 与固定 commit 的文件树完全一致，再下载和逐字节验证；分支发生变化时会明确失败。不要只下载底座权重，也不要遗漏 adapter、专用 head、校准文件和模型推理代码。
-
-数据通过 EvalScope 默认的 ModelScope 加载器下载，不需要访问 Hugging Face。复现时同时归档数据 revision、模型 manifest、EvalScope commit、Python/torch/transformers/vLLM 版本、设备及配置。凭据通过环境变量或 SDK 登录缓存提供，不写入配置和日志。
-
-## 3. 部署与最小请求
-
-### Clef：完整三类与可变等级
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python examples/decision/serve_clef.py \
-  --model-path ./models/clef-flash --port 18131
-```
-
-该示例调用发布包中的 `load_release_model()` 和 `systemone()`，加载 backbone 与 joint schema head，使用 PyTorch eager 推理。服务串行处理请求；并发主要用于验证排队、超时和服务容量。它没有实现动态批处理，压测结果不能解释为 vLLM 性能。
-
-```bash
-curl http://127.0.0.1:18131/v1/systemone \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"Cloudflare/clef-flash","state":"The sky is blue.","questions":{"answer":{"type":"choice","instructions":"What color is the sky?","criteria":{"blue":"Blue","red":"Red"}}}}'
-```
-
-响应的最小结构：
-
-```json
-{"model":"Cloudflare/clef-flash","answers":{"answer":{"type":"choice","choice":"blue","probabilities":{"blue":0.97,"red":0.03},"confidence":0.97}},"usage":{"input_tokens":150,"output_tokens":0}}
-```
-
-Noul 的问题为 `{"type":"noul","instructions":"Is the sky blue?"}`，回答为 `{"type":"noul","noul":0.97}`。Score 的 `criteria` 是按低到高排列的字符串数组；回答包含 `score`、`legend` 和以 `"0"` 开始的每档 `probabilities`。实际概率以服务返回为准，以上数字仅说明格式。
-
-### AutoTrust：原生 `/decide`
-
-先启动支持该架构、混合 attention/GDN 和 `lm_head` LoRA 的 vLLM。常规安装示例：
-
-```bash
-CUDA_VISIBLE_DEVICES=0 vllm serve ./models/JEV-27B \
+vllm serve ./models/JEV-27B \
   --served-model-name autotrust/JEV-27B \
   --enable-lora --max-lora-rank 32 \
   --lora-modules jev-decision=./models/JEV-27B/adapter_vllm \
   --max-model-len 16384 --max-logprobs 256 \
   --logprobs-mode processed_logprobs --port 18132
-python examples/decision/serve_autotrust.py \
-  --model-path ./models/JEV-27B --upstream http://127.0.0.1:18132/v1 --port 18133
 ```
 
-薄服务复用标准 `/completions`，按官方 bare prompt、verbalizer bias 和分题型 temperature 计算概率。每题只执行一次模型请求；候选 logprobs 缺失或非有限值会报错。Choice 超过原生训练的 16 个选项时使用官方 single 扩展读出，保留全部类别；其效果必须独立验证。
+然后在另一个终端启动决策接口：
+
+```bash
+python examples/decision/serve_autotrust.py \
+  --model-path ./models/JEV-27B \
+  --upstream http://127.0.0.1:18132/v1 --port 18133
+```
+
+这里有两个端口：**18132 运行 vLLM，18133 是给 EvalScope 使用的决策接口**。模型的决策能力需要完整 adapter/head；仅启动底座 chat 服务不够。请使用支持该模型架构和输出 head LoRA 的 vLLM 版本，模型的[官方部署说明](https://modelscope.cn/models/autotrust/JEV-27B)列出了要求。
+
+检查一次决策请求：
 
 ```bash
 curl http://127.0.0.1:18133/v1/decide \
@@ -95,178 +95,165 @@ curl http://127.0.0.1:18133/v1/decide \
   -d '{"kind":"choice","state":"The sky is blue.","question":"What color is the sky?","options":["Blue","Red"],"thinking":"off"}'
 ```
 
-```json
-{"model":"autotrust/JEV-27B","kind":"choice","options":["Blue","Red"],"probabilities":[0.97,0.03],"choice_index":0,"choice":"Blue","usage":{"prompt_tokens":150,"completion_tokens":1}}
-```
+响应应包含 `options` 和一一对应的 `probabilities`，例如 `[0.97, 0.03]`。实际数字以服务返回为准。
 
-数组概率必须按请求中的 `options` 原始顺序返回。Noul 使用 `kind="noul"`，返回 `options=["false","true"]`；Score 使用 `kind="score"`，返回 `options=["0","1","2","3","4","5"]`。AutoTrust 这一路固定六档，不能完整评测 JevBench/OpenDecisions；EvalScope 对其他档位明确报不支持。
+如果使用自己的决策模型，需要让它提供相应的 `/v1/decide` 或 `/v1/systemone` 接口。上面的示例服务针对 AutoTrust 发布格式；其他模型不能只改模型名字就套用。标准 vLLM 的聊天接口不会自动变成这两种决策接口。
 
-### PPU 环境
+## 3. 先跑少量样本，再扩大评测
 
-保留厂商匹配的 torch/vLLM 环境。每个 SSH 会话先初始化 SDK，并选择空闲设备：
+将下面适合自己的配置保存为 `evaluate.py`，执行 `python evaluate.py`。
 
-```bash
-export PPU_SDK=/usr/local/PPU_SDK
-source "$PPU_SDK/envsetup.sh"
-export UMD_PLATFORM_TYPE=1 HGGC_DRIVER_CANDIDATE=UMD
-```
-
-本实践的厂商 vLLM 0.20.1 已包含 Qwen3.5 文本实现，但缺少文本架构注册、混合缓存声明、文本 M-RoPE 位置接口及输出 head 的 LoRA 声明。`examples/decision/ppu_vllm` 提供独立注册插件，复用厂商现有实现，不修改共享环境的 vLLM 源码：
-
-```bash
-python -m pip install --no-deps --target ./decision-runtime ./examples/decision/ppu_vllm
-export PYTHONPATH="$PWD/decision-runtime:${PYTHONPATH:-}"
-export VLLM_PLUGINS=evalscope_decision_ppu
-```
-
-随后启动上述 vLLM 命令；本次验证使用 `--enforce-eager`。如果当前版本已有对应架构注册，插件不会替换它。PPU 版包必须与 SDK 配套，不能直接用通用 CUDA wheel 覆盖。Clef 使用官方 PyTorch 路径，其专用 head 的 vLLM 部署不在本次已验证范围内。
-
-## 4. 使用 EvalScope 评测
+### 普通 chat：测四个现有 benchmark
 
 ```python
 from evalscope import TaskConfig, run_task
 
 run_task(TaskConfig(
-    model='Cloudflare/clef-flash',
-    eval_type='systemone_api',
-    api_url='http://127.0.0.1:18131/v1',
-    datasets=['jevbench', 'open_decisions', 'stsb'],
-    eval_batch_size=4,
-    generation_config={'timeout': 300, 'retries': 1},
-    limit=5,  # 正式评测删除；limit 对每个 subset 生效
+    model='my-chat-model',
+    eval_type='openai_api',
+    api_url='http://127.0.0.1:8000/v1',
+    api_key='EMPTY',
+    datasets=['arc', 'banking77', 'boolq', 'reward_bench'],
+    dataset_args={'arc': {'subset_list': ['ARC-Challenge']}},
+    generation_config={'temperature': 0, 'max_tokens': 256},
+    limit=5,
 ))
 ```
 
-P0 配置：
+这里的 BoolQ 使用默认 Choice。不要在 chat 配置中打开 Noul，也不要加入表中标为不支持 chat 的决策 benchmark。
+
+### AutoTrust：同时测 Choice、Noul、Score
 
 ```python
+from evalscope import TaskConfig, run_task
+
 run_task(TaskConfig(
-    model='Cloudflare/clef-flash', eval_type='systemone_api',
-    api_url='http://127.0.0.1:18131/v1',
+    model='autotrust/JEV-27B',
+    eval_type='autotrust_api',
+    api_url='http://127.0.0.1:18133/v1',
     datasets=['arc', 'banking77', 'boolq', 'reward_bench', 'stsb'],
-    dataset_args={'arc': {'subset_list': ['ARC-Challenge']}},
+    dataset_args={
+        'arc': {'subset_list': ['ARC-Challenge']},
+        'boolq': {'extra_params': {'decision_kind': 'noul'}},
+    },
+    eval_batch_size=4,
     generation_config={'timeout': 300, 'retries': 1},
     limit=5,
 ))
 ```
 
-BoolQ 显式 Noul：
+这个配置用 ARC / BANKING77 / RewardBench 测 Choice，用 BoolQ 测 Noul，用 STS-B 测六档 Score。决策接口不使用 `temperature`、`max_tokens` 或流式输出；`retries=1` 表示每题只请求一次。
+
+### System One：测完整 JevBench / OpenDecisions
+
+已经有支持原始 Score 等级的 System One 服务时，使用：
 
 ```python
+from evalscope import TaskConfig, run_task
+
 run_task(TaskConfig(
-    model='autotrust/JEV-27B', eval_type='autotrust_api',
-    api_url='http://127.0.0.1:18133/v1', datasets=['boolq'],
-    dataset_args={'boolq': {'extra_params': {'decision_kind': 'noul', 'decision_threshold': 0.5}}},
-    generation_config={'timeout': 300, 'retries': 1}, limit=5,
+    model='your-decision-model',
+    eval_type='systemone_api',
+    api_url='http://127.0.0.1:9000/v1',
+    datasets=['jevbench', 'open_decisions'],
+    eval_batch_size=4,
+    generation_config={'timeout': 300, 'retries': 1},
+    limit=5,
 ))
 ```
 
-仅提交 state、问题、选项/等级和显式配置的任务说明。gold、rationale、教师预测和 provenance 只用于评分。不要给决策 API 配置 `temperature`、`max_tokens`、流式输出或工具。`retries` 表示总尝试次数，效果验证可显式设为 1 便于核对请求数。
+将模型名和地址替换为实际服务；该地址必须能处理 `/v1/systemone` 请求。不能把 AutoTrust 的六档 Score 改写成四档、五档来凑完整评测。
 
-### 自定义 JSONL
+**跑通后删除 `limit=5`，即可做完整评测。** `limit` 按每个子集生效，因此有多个子集的 benchmark 可能不止请求 5 题。数据会自动从 ModelScope 加载，标准答案不会发给模型。
 
-建立目录 `./decision-data`，放入 `default_test.jsonl`，一行一题：
+## 4. 怎么看结果
+
+终端会显示报告目录，通常位于 `outputs/<时间>/reports/`；打开其中的 `report.html` 看汇总，`predictions/` 和 `reviews/` 中可以追查具体样本。
+
+先看**请求是否全部成功、有效评分数量是否完整**，再看分数。只有少数题成功的高分，不能代表整套 benchmark。
+
+| 指标 | 大白话解释 | 哪个方向更好 |
+|---|---|---|
+| Accuracy | 有多少题选对了 | 越高越好 |
+| macro-F1 | 每个类别都同样重要，避免只看常见类别 | 越高越好 |
+| Precision / Recall / F1 | Noul 中，肯定回答有多准 / 找出了多少正例 / 两者的平衡 | 越高越好 |
+| NLL / Brier | 给正确答案的概率是否合理；自信地答错会被惩罚 | 越低越好 |
+| ECE | 说自己有八成把握的答案，实际是否大约八成正确 | 越低越好；也要同时看准确率 |
+| AUROC / AUPRC | Noul 能否把“成立”和“不成立”的题分开 | 越高越好；不同数据集间慎比 |
+| MAE | 预测分数平均离标准分数多远 | 越低越好 |
+| Spearman / Pearson | 预测分数与标准分数的排序 / 变化趋势是否一致 | 越接近 1 越好 |
+| nRPS | Score 的概率是否集中在正确等级附近 | 越低越好 |
+| AURC | 优先回答把握大的题时，错误风险能降到多低 | 越低越好 |
+
+Score 的 MAE 看期望分数；离散等级的 Accuracy 看概率最高的一档，两者含义不同。例如，STS-B 使用 0–5 分，MAE 为 0.6 表示平均相差约 0.6 分。它保留连续标准分数，不强行取整来计算分类准确率或 nRPS。有些指标需要足够多的不同样本才能计算；报告缺项时先看原因，不要把缺项当作零分。
+
+JevBench 的主指标是公开子集准确率，并另报 family-macro；OpenDecisions 的主指标是 Capability，同时报告 Intelligence（任务能力）和 Calibration（概率校准）。它们使用各自的官方口径，与普通 Accuracy 不完全相同。JSON 中的比率 `0.82` 对应 `82%`；MAE 仍按分数单位读。只跑 `limit` 样本得到的是试跑成绩，不能当作完整榜单成绩。RewardBench 这里使用 v1 的成对选择和样本加权汇总，也不是官方分类别加权榜单成绩。
+
+## 5. 用自己的数据
+
+创建目录 `decision-data`，将下面内容保存为 `decision-data/default_test.jsonl`，**每行一道题**：
 
 ```json
-{"id":"c1","state":{"text":"I am happy."},"question":{"type":"choice","instructions":"Classify sentiment.","criteria":{"positive":"Positive","negative":"Negative"}},"expected":"positive"}
+{"id":"c1","state":"The customer cannot find their card.","question":{"type":"choice","instructions":"What should support help with?","criteria":{"find":"Find the card","close":"Close the account"}},"expected":"find"}
 {"id":"n1","state":"The sky is blue.","question":{"type":"noul","instructions":"Is the sky blue?"},"expected":"yes"}
-{"id":"s1","state":"The service was excellent.","question":{"type":"score","instructions":"Rate satisfaction.","criteria":["Poor","Fair","Good","Excellent"]},"expected":"3"}
+{"id":"s1","state":"Excellent service.","question":{"type":"score","instructions":"Rate satisfaction.","criteria":["Very poor","Poor","Fair","Good","Very good","Excellent"]},"expected":"5"}
 ```
 
-```bash
-evalscope eval --model Cloudflare/clef-flash --eval-type systemone_api \
-  --api-url http://127.0.0.1:18131/v1 --datasets general_decision \
-  --dataset-args '{"general_decision":{"local_path":"./decision-data"}}'
+`state` 是给模型看的材料，`question` 是问题，`expected` 是只用于评分的标准答案。Choice 的标准答案必须是选项 ID；Noul 是 `yes` / `no`；Score 是从 0 开始的等级编号。
+
+在已经跑通的决策配置中替换：
+
+```python
+datasets=['general_decision'],
+dataset_args={'general_decision': {'local_path': './decision-data'}},
 ```
 
-自定义固定类别分类可在每条记录设置 `fixed_classes=true`，计算保留全部类别的 macro-F1。普通多选题的 A/B/C/D 只是题内选项位置，不视为跨题分类类别。
+其余模型和 API 参数保持原来的配置。使用 AutoTrust 示例时，Score 保留六档；其他服务按其实际支持的等级填写。
 
-## 5. 解释结果与复核
+## 6. 怎么测性能
 
-输出目录保留原始请求/响应、规范化决策结果、评分输入与 JSON/HTML 报告。原概率不改写；允许的舍入偏差会另外生成评分分布，并在 review 的 `probabilities_normalized_for_scoring` 标记中说明。旧 Choice 缓存字段仍可读取；使用现有 `use_cache` 和 `rerun_review` 重新评分，无需重复推理。
+先停止同一个服务上的效果评测，避免两种流量互相影响。下面接着使用 AutoTrust 决策服务；普通 chat 模型的压测见[性能评测快速开始](../user_guides/stress_test/quick_start.md)。
 
-- **唯一主指标**：JevBench 为公开子集 Accuracy（缺失计错），自定义/P0 分类为 Accuracy，STS-B 为 MAE，OpenDecisions 为 Capability。其他数值用于解释原因。
-- **NLL**：越低越好，数值下限为 `1e-12`，每条 review 都记录该值。
-- **Brier**：Noul 为 `(p_yes-y)^2`；Choice/离散 Score 为各类别平方误差之和。不同定义不混合平均。
-- **AUPRC**：使用平均精确率 AP 的阶梯积分，保留相同预测概率的并列组。
-- **ECE**：默认 10 个等宽分箱。Noul 校准 `P(yes)`；Choice/离散 Score 校准最大选项概率与正确率。
-- **Score**：不同档数的通用指标分组报告，避免把不同等级尺度的 MAE/相关系数混在一起。期望值是 `sum(level * probability)`。例如 `[0.1,0.2,0.3,0.4]` 的期望为 2.0，而 argmax 是 3；MAE 与 Accuracy 因此衡量不同问题。STS-B 不为计算 Accuracy/nRPS 而离散化 gold。
-- **可靠性**：按题型分别输出风险—覆盖率曲线及 AURC；Choice/Noul 风险为分类错误率，Score 为按等级跨度归一化的期望值绝对误差（含连续 gold）；最大选项概率与厂商 confidence 分开统计。相同置信度按样本顺序稳定排序，曲线不是重新训练得到的校准器。
-- **不可计算**：单类 AUROC、常量相关系数等会省略数值，在聚合 metadata 记录原因和有效数量；不会补零。
-- **失败与覆盖率**：普通指标只使用有效样本。检查 execution summary 中 requested/succeeded/errored，不能只看分数。
-
-JevBench 公开 scorer 在 Noul 概率并列时选 no；概率总和偏差不超过 0.001 时保留原值，超过 0.001 且不超过 0.02 时才归一化。公开子集 Accuracy 和 family-macro 使用全部所选任务为分母。通用指标使用有效样本，报告中与公开协议指标分开。
-
-可以把 JSON 报告中的曲线导出为可交互的独立 HTML（`plotly` 随 perf 依赖安装）：
+先导出三组固定请求。Choice 使用完整 77 类的 BANKING77，Noul 使用 BoolQ，Score 使用 STS-B：
 
 ```bash
-python examples/decision/plot_reliability.py \
-  --report outputs/<run>/reports/<model>/jevbench.json \
-  --output reliability.html
-```
-
-OpenDecisions 对齐其固定版本官方 `score.py`，Intelligence、Calibration、Capability 在报告中存为 0–1 比例并按百分比显示。官方 Intelligence 使用全部所选任务作为分母，缺失预测计错；普通指标使用有效分布。默认阈值 0.5 与部分 JevBench 版本的 Noul 弃答规则不同。`limit` 后的成绩只代表所选样本，不能与完整榜单直接比较。
-
-## 6. perf：完整决策请求的性能
-
-先停止该模型的效果评测流量，再导出固定请求集。每个文件对应一种题型，Choice 使用完整 BANKING77：
-
-```bash
-python examples/decision/prepare_perf_requests.py \
-  --api systemone --model Cloudflare/clef-flash --output ./perf-input/systemone
 python examples/decision/prepare_perf_requests.py \
   --api autotrust --model autotrust/JEV-27B --output ./perf-input/autotrust
 ```
 
-manifest 记录请求数、UTF-8 字节数、字符数及 SHA-256；服务实际 tokenizer 的输入长度记录在 usage/perf 输出中。不要把字符数当 token 数。
-
-每个模型、每种题型独立运行：
+再分别测三种题型：
 
 ```bash
 for kind in choice noul score; do
-  evalscope perf --api systemone --model Cloudflare/clef-flash \
-    --url http://127.0.0.1:18131/v1 --dataset line_by_line \
-    --dataset-path "./perf-input/systemone/$kind.jsonl" \
+  evalscope perf --api autotrust --model autotrust/JEV-27B \
+    --url http://127.0.0.1:18133/v1 --dataset line_by_line \
+    --dataset-path "./perf-input/autotrust/$kind.jsonl" \
     --parallel 1 4 8 16 --number 1000 1000 1000 1000 \
     --warmup-num 20 --no-stream --read-timeout 300 \
-    --outputs-dir "./perf-results/clef-$kind"
+    --outputs-dir "./perf-results/$kind"
 done
 ```
 
-AutoTrust 改为 `--api autotrust`、模型 `autotrust/JEV-27B`、地址 `http://127.0.0.1:18133/v1` 及对应输入文件。插件不会注入生成参数，不做隐藏重试；HTTP 200 的非法答案同样记失败。
+这表示每种题型分别用 1、4、8、16 并发测试，每档预热 20 次，再正式测 1,000 次。第一次试跑可以缩减为 `--parallel 1 --number 20 --warmup-num 2`，确认成功后再跑完整配置。
 
-读取每档的 `benchmark_summary.json`、`benchmark_percentile.json` 和 HTML：
+如果测的是 System One 服务，导出和压测时都改为 `--api systemone`，并替换模型名、服务地址和输入目录。导出的文件对应具体协议，不能只切换压测命令中的 API 名。
 
-- 每档 20 次预热不进入正式 1,000 次统计。关注 p50/p90/p95/p99 请求延迟、成功 req/s、成功率、失败和 Timeout Requests。
-- 本实践一请求一题，因此成功 req/s 就是成功 decisions/s。输入吞吐为成功输入 token 总数除以完整测量窗口。
-- TTFT/TPOT/ITL 不适用于非流式决策；摘要用 `Not Applicable Metrics` 显式标记，兼容字段中的零值不代表零延迟。
-- 固定推理配置、缓存开关、数据顺序、设备占用与输入集合。相同请求集会重复使用，vLLM prefix cache 会影响结果，必须说明是否开启。
-- 客户端 HTTP 延迟包含网络、服务排队、模型推理、完整响应接收和 JSON 解码；请求准备与协议校验在 HTTP 计时之外，吞吐测量窗口包含这些客户端开销；若服务另报内部耗时，单独列出。PPU 压测应在服务器本机请求 localhost，避免把 SSH 隧道延迟当推理延迟。
-- Clef 参考服务串行执行，增加并发可能主要增加排队延迟。验收不预设吞吐门槛；优化需另行对比相同输入和正确性。
+在输出目录打开 `perf_report.html`，按这个顺序读：
 
-## 7. 验证记录与常见问题
+1. **成功率、失败和超时**：先确认服务正确处理了请求；HTTP 200 但答案格式非法也算失败。
+2. **p50 / p90 / p95 / p99 延迟**：分别表示约 50% / 90% / 95% / 99% 的请求能在这个时间内完成，越低越快。
+3. **成功 req/s**：每秒完成多少次决策，越高越好。本文一请求一题，因此也等于 decisions/s。
+4. **并发增加后的变化**：吞吐提高多少，延迟是否明显变长；如果吞吐几乎不变而延迟变长，往往是在排队。
 
-2026-10-15 已在 PPU-ZW810 完成真实验证，模型和数据均来自 ModelScope。Clef 使用官方 PyTorch，JEV 使用厂商 vLLM 0.20.1 与本文的注册插件；普通 CUDA 命令是部署示例，未作 CUDA 实测。完整表和机器可读记录位于仓库 `examples/decision/VALIDATION.md`、`validation_results.json`。
+决策接口不逐字输出，因此不看 TTFT、TPOT、ITL 等生成速度指标。请求延迟包含网络和排队；比较两次结果时，应使用同一组输入、相同模型配置和相同测量位置。
 
-| 验证项 | 实测结果 |
+## 常见问题
+
+| 问题 | 处理方法 |
 |---|---|
-| Clef 完整评测 | JevBench 231、OpenDecisions 2,352、ARC-Challenge 1,172、BANKING77 3,076、BoolQ Choice/Noul 各 3,270、RewardBench 2,985、STS-B 1,379；全部预测与评分成功 |
-| 官方口径 | JevBench 公开准确率 82.25%、family-macro 82.70%；OpenDecisions Intelligence 55.3260%、Calibration 79.0701%、Capability 67.1981%，均经独立官方 scorer 核对 |
-| AutoTrust | BANKING77 完整 3,076 条、77 类；另跑 Noul、六档 Score、ARC、RewardBench 冒烟；其他 Score 档位显式拒绝 |
-| perf | 两模型 × 三题型 × 四并发，共 24,000 次正式请求，失败和超时均为 0；每组另有 20 次预热 |
-| 本地 | 合并主分支后 1,164 项相关测试、CI-lite、lint 与架构检查通过；GitHub CI 状态单独看 PR |
-
-以并发 1 → 16 为例，Clef Choice 为 3.8880 → 4.0865 req/s、p99 为 0.2909 → 3.9250 s，反映串行排队；JEV Score 为 4.7369 → 19.3471 req/s、p99 为 0.2485 → 0.8732 s。全部并发和输入长度见验收记录。这些是不同模型与后端的运行结果，不是受控速度排名，也不是未经训练污染核查的榜单声明。
-
-实测请求和响应在开发期间保存，最终以归档实现 `6e9970881fdf8a3cf28de6ba0e893db78513e00c` 重放全部 20,962 条效果预测、24,000 条 perf 响应并重新评分；最终部署示例另通过六个真实请求与模型 revision 校验。Clef 发布实现的 state 窗口为 16,384 token，本轮最大观测输入为 4,032 token，未验证更长输入。结束后本轮服务、端口和设备均已清理，原始证据保留。
-
-| 现象 | 检查方向 |
-|---|---|
-| PPU 首次推理退出，提示 SDK 不存在 | 在启动服务的同一个 shell 中 source PPU SDK |
-| Qwen3.5 config 类型或 hybrid cache 报错 | 检查厂商版本与文本架构注册插件，保留日志，不绕过 head |
-| adapter 报 `lm_head` 不支持 | 确认输出 head 的 LoRA 声明及匹配的模型实现 |
-| 候选 logprobs 缺失/非有限 | 检查 `--max-logprobs`、processed logprobs、候选 token 限制及 generation defaults |
-| AutoTrust 无法跑四档/五档 Score | 模型协议固定六档；使用 Clef 完整评测，不能改写 benchmark 等级 |
-| 下载数据报 Offline mode | 效果评测进程不要设置全局 HF_HUB_OFFLINE；ModelScope SDK 可能复用此开关。服务可在本地模型下载后离线启动 |
-| 分数正常但覆盖率不足 | 检查逐条错误、超时与标签/等级一致性，修复后补跑 |
-| ECE 很低但 Accuracy 低 | 校准和任务能力是两个问题，应同时读主指标、NLL/Brier 和覆盖率 |
+| `404 Not Found` | 核对 API 类型和端口；普通 vLLM chat 端口没有原生 `/decide` / `/systemone` |
+| vLLM 提示不支持模型或 `lm_head` LoRA | 使用模型官方要求的兼容 vLLM 版本，保留完整 adapter/head |
+| 提示 Score 必须是六档 | AutoTrust 示例的限制；换用支持原始等级的服务，不要改 benchmark 的等级 |
+| Chat 配置运行新决策 benchmark 时报错 | 按第 1 节的兼容表更换 benchmark 或 API |
+| 只想先确认能跑 | 评测加 `limit=5`，压测先用 20 次请求 |
+| 想复核个别答案 | 查看对应的 predictions 和 reviews，先确认题目、原选项、答案和评分 |
