@@ -13,6 +13,16 @@ from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 
+# Mirrors the official harness: load only TestCases and fail on any failure or error.
+_RUN_TEST_CASES = """
+
+import sys as _sys
+import unittest as _unittest
+
+_result = _unittest.TextTestRunner().run(_unittest.defaultTestLoader.loadTestsFromTestCase(TestCases))
+_sys.exit(0 if _result.wasSuccessful() else 1)
+"""
+
 DESCRIPTION = """
 ## Overview
 
@@ -201,8 +211,9 @@ class BigCodeBenchAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         if self._calibrate:
             solution = problem['code_prompt'] + '\n    pass\n' + solution
 
-        # Construct full test program: solution + unittest test class
-        check_program = solution + '\n' + problem['test']
+        # Construct full test program: solution + unittest test class. The dataset's test only defines
+        # TestCases, so run it explicitly (as the official harness does) and exit non-zero on any failure.
+        check_program = solution + '\n' + problem['test'] + _RUN_TEST_CASES
 
         # Execute in sandbox
         res = self.execute_code_in_sandbox(code=check_program, timeout=self.review_timeout, language='python')
