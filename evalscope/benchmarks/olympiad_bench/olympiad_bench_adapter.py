@@ -159,9 +159,11 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
             # are alternative derivations, not additional required answers.
             official_answers = metadata.get('final_answer') or []
             reference = official_answers[0] if official_answers else reference
+            # The official judge reads a full-width comma as an answer separator ('，' -> ','); Chinese
+            # references use it, and the prompt asks the model for ASCII commas.
             result = compare_answers(
-                filtered_prediction,
-                reference,
+                filtered_prediction.replace('，', ','),
+                reference.replace('，', ','),
                 absolute_tolerance=tolerances,
                 multiple_answers=metadata.get('is_multiple_answer', False) or ',' in answer_type,
             )
