@@ -4,7 +4,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Any, ClassVar, Dict, Iterator, List, Optional, Tuple, Type, Union
 
-from evalscope.api.dataset.hub import download_dataset_file, load_dataset_from_hub
+from evalscope.api.dataset.hub import DatasetSource, download_dataset_file, load_dataset_from_hub
 from evalscope.constants import HubType
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.dataset_args import BaseDatasetArgs, TextLengthArgs
@@ -58,6 +58,9 @@ class DatasetPluginBase:
 
     requires_model: bool = True
     """False if the dataset carries model info in each request body, making ``--model`` optional."""
+
+    dataset_source: ClassVar[Optional[DatasetSource]] = None
+    """Hub-aware source declaration for the plugin's built-in dataset."""
 
     def __init__(self, query_parameters: Arguments):
         """Build data set plugin
@@ -358,7 +361,20 @@ class DatasetPluginBase:
         is_valid = self.query_parameters.min_prompt_length <= prompt_length <= self.query_parameters.max_prompt_length
         return is_valid, prompt_length
 
-    def load_hub_dataset(self, dataset_id: str, split: str = 'train', subset: str = 'default') -> Any:
+    def _get_dataset_source(self, dataset_id: Optional[str] = None) -> DatasetSource:
+        """Return the declared source, or wrap a caller-provided id for backward compatibility."""
+        if self.dataset_source and (dataset_id is None or dataset_id == self.dataset_source.dataset_id):
+            return self.dataset_source
+        if dataset_id:
+            return DatasetSource(dataset_id=dataset_id)
+        raise ValueError(f'{type(self).__name__} must declare dataset_source or pass dataset_id.')
+
+    def load_hub_dataset(
+        self,
+        dataset_id: Optional[str] = None,
+        split: str = 'train',
+        subset: str = 'default',
+    ) -> Any:
         """Load a dataset from the configured data source.
 
         If dataset_path is a local directory, loads from there directly.
@@ -374,6 +390,7 @@ class DatasetPluginBase:
         """
         dataset_path = self.query_parameters.dataset_path
         data_source = self.query_parameters.data_source or HubType.MODELSCOPE
+        revision = None
 
         if dataset_path:
             if not os.path.exists(dataset_path):
@@ -381,16 +398,19 @@ class DatasetPluginBase:
             data_id_or_path = dataset_path
             data_source = HubType.LOCAL
         else:
-            data_id_or_path = dataset_id
+            source = self._get_dataset_source(dataset_id)
+            data_id_or_path = source.resolve_dataset_id(data_source)
+            revision = source.resolve_revision(data_source)
 
         return load_dataset_from_hub(
             data_id_or_path=data_id_or_path,
             split=split,
             subset=subset,
             data_source=data_source,
+            version=revision,
         )
 
-    def download_hub_file(self, dataset_id: str, file_name: str) -> str:
+    def download_hub_file(self, dataset_id: Optional[str] = None, file_name: Optional[str] = None) -> str:
         """Download/resolve a single file from the configured data source.
 
         If dataset_path is an existing file, returns it directly.
@@ -404,6 +424,8 @@ class DatasetPluginBase:
         Returns:
             str: The resolved local file path.
         """
+        if not file_name:
+            raise ValueError('file_name is required when downloading a dataset file.')
         dataset_path = self.query_parameters.dataset_path
         data_source = self.query_parameters.data_source or HubType.MODELSCOPE
 
@@ -428,8 +450,10 @@ class DatasetPluginBase:
             raise FileNotFoundError(f"The specified dataset_path '{dataset_path}' does not exist.")
 
         # Remote download
+        source = self._get_dataset_source(dataset_id)
         return download_dataset_file(
-            data_id_or_path=dataset_id,
-            file_path=file_name,
+            data_id_or_path=source.resolve_dataset_id(data_source),
+            file_path=source.resolve_file_path(data_source, file_name),
             data_source=data_source,
+            revision=source.resolve_revision(data_source),
         )

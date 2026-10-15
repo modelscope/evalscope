@@ -39,6 +39,7 @@ from typing import Any, Dict, Iterator
 
 import numpy as np
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import Conversation, Turn
 from evalscope.perf.plugin.datasets.random_dataset import RandomDatasetPlugin
@@ -46,8 +47,6 @@ from evalscope.perf.plugin.registry import register_dataset
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-
-_HUB_REPO = 'evalscope/trie-workloads'
 
 
 class TrieReplayBase(RandomDatasetPlugin):
@@ -66,6 +65,7 @@ class TrieReplayBase(RandomDatasetPlugin):
     """
 
     FILE_NAME: str = ''  # subclasses must override
+    dataset_source = DatasetSource(dataset_id='evalscope/trie-workloads')
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -78,7 +78,7 @@ class TrieReplayBase(RandomDatasetPlugin):
     def _resolve_dataset_path(self) -> str:
         if self.query_parameters.dataset_path and os.path.isfile(self.query_parameters.dataset_path):
             return self.query_parameters.dataset_path
-        path = self.download_hub_file(dataset_id=_HUB_REPO, file_name=self.FILE_NAME)
+        path = self.download_hub_file(file_name=self.FILE_NAME)
         self.query_parameters.dataset_path = path
         return path
 

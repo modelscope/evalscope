@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import contextlib
-import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
@@ -145,16 +144,13 @@ class DataAdapter(LLMJudgeMixin, ABC):
         ModelScope dataset ID.
         """
         meta = self._benchmark_meta
-        if os.path.exists(meta.dataset_id):
-            return meta.dataset_id
-        if self.dataset_hub == HubType.HUGGINGFACE:
-            if meta.hf_dataset_id:
-                return meta.hf_dataset_id
+        source = meta.dataset_source
+        if self.dataset_hub == HubType.HUGGINGFACE and not meta.hf_dataset_id and not source.is_local:
             logger.warning(
                 f'Benchmark {meta.name} has no hf_dataset_id mapping; '
                 f'falling back to the ModelScope dataset id {meta.dataset_id!r} on the Hugging Face hub.'
             )
-        return meta.dataset_id
+        return source.resolve_dataset_id(self.dataset_hub)
 
     @property
     def output_types(self) -> Optional[List[str]]:
@@ -194,10 +190,7 @@ class DataAdapter(LLMJudgeMixin, ABC):
     @property
     def dataset_revision(self) -> Optional[str]:
         """Return the resolved revision of the remote dataset source."""
-        meta = self._benchmark_meta
-        if self.dataset_hub == HubType.HUGGINGFACE and meta.hf_dataset_revision:
-            return meta.hf_dataset_revision
-        return meta.dataset_revision
+        return self._benchmark_meta.dataset_source.resolve_revision(self.dataset_hub)
 
     @property
     def eval_type(self) -> str:

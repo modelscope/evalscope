@@ -7,7 +7,13 @@ from typing import Any, Callable
 import pytest
 from datasets import Dataset as HFDataset
 
-from evalscope.api.dataset import DatasetHub, download_dataset_file, download_dataset_snapshot, load_dataset_from_hub
+from evalscope.api.dataset import (
+    DatasetHub,
+    DatasetSource,
+    download_dataset_file,
+    download_dataset_snapshot,
+    load_dataset_from_hub,
+)
 from evalscope.constants import HubType
 
 
@@ -29,6 +35,32 @@ def _write_snapshot(snapshot: Path) -> None:
     snapshot.mkdir(parents=True)
     (snapshot / 'test.jsonl').write_text(json.dumps({'text': 'cached-test'}) + '\n', encoding='utf-8')
     (snapshot / 'train.jsonl').write_text(json.dumps({'text': 'cached-train'}) + '\n', encoding='utf-8')
+
+
+def test_dataset_source_resolves_hub_specific_location() -> None:
+    source = DatasetSource(
+        dataset_id='ms-org/data',
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf-org/data',
+        hf_dataset_revision='hf-revision',
+        hf_file_paths={'data.jsonl': 'files/data.jsonl'},
+    )
+
+    assert source.resolve_dataset_id(HubType.MODELSCOPE) == 'ms-org/data'
+    assert source.resolve_revision(HubType.MODELSCOPE) == 'ms-revision'
+    assert source.resolve_file_path(HubType.MODELSCOPE, 'data.jsonl') == 'data.jsonl'
+    assert source.resolve_dataset_id(HubType.HUGGINGFACE) == 'hf-org/data'
+    assert source.resolve_revision(HubType.HUGGINGFACE) == 'hf-revision'
+    assert source.resolve_file_path(HubType.HUGGINGFACE, 'data.jsonl') == 'files/data.jsonl'
+
+
+def test_dataset_source_preserves_existing_local_path(tmp_path: Path) -> None:
+    local_path = tmp_path / 'dataset'
+    local_path.mkdir()
+    source = DatasetSource(dataset_id=str(local_path), hf_dataset_id='hf-org/data')
+
+    assert source.is_local
+    assert source.resolve_dataset_id(HubType.HUGGINGFACE) == str(local_path)
 
 
 def test_modelscope_load_prefers_cached_snapshot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

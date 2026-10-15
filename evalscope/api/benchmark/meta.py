@@ -15,6 +15,7 @@ logger = get_logger()
 if TYPE_CHECKING:
     from evalscope.api.benchmark import DataAdapter
     from evalscope.api.benchmark.statistics import DataStatistics, SampleExample
+    from evalscope.api.dataset import DatasetSource
 
 
 @dataclass
@@ -162,6 +163,18 @@ class BenchmarkMeta:
 
     hf_dataset_revision: Optional[str] = None
     """Optional revision override used when loading the dataset from the Hugging Face hub."""
+
+    @property
+    def dataset_source(self) -> 'DatasetSource':
+        """Return the shared hub-aware dataset source declaration."""
+        from evalscope.api.dataset import DatasetSource
+
+        return DatasetSource(
+            dataset_id=self.dataset_id,
+            dataset_revision=self.dataset_revision,
+            hf_dataset_id=self.hf_dataset_id,
+            hf_dataset_revision=self.hf_dataset_revision,
+        )
 
     def __post_init__(self):
         """Validate fields after initialization."""
