@@ -97,7 +97,7 @@ MMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benc
         metric_list=['acc'],
         eval_split='validation',
         prompt_template=OPEN_PROMPT,
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class MMMUAdapter(VisionLanguageAdapter):
