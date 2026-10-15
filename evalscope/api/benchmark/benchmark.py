@@ -178,6 +178,8 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """
         Return the dataset hub type for the benchmark.
         """
+        if self._task_config is None:
+            return HubType.MODELSCOPE
         return self._task_config.dataset_hub
 
     @dataset_hub.setter

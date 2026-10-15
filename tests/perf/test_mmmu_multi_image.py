@@ -40,8 +40,8 @@ class TestMMMUMultiImageDataset:
         ]
         load_args = {}
 
-        def fake_load_hub_dataset(dataset_id, split='train', subset='default'):
-            load_args.update(dataset_id=dataset_id, split=split, subset=subset)
+        def fake_load_hub_dataset(split='train', subset='default'):
+            load_args.update(split=split, subset=subset)
             return rows
 
         monkeypatch.setattr(plugin, 'load_hub_dataset', fake_load_hub_dataset)
@@ -49,7 +49,6 @@ class TestMMMUMultiImageDataset:
         requests = list(plugin.build_messages())
 
         assert load_args == {
-            'dataset_id': 'AI-ModelScope/MMMU',
             'split': 'validation',
             'subset': 'Music',
         }
@@ -192,8 +191,8 @@ class TestMMMUMultiImageDataset:
             ],
         }
 
-        def fake_load_hub_dataset(dataset_id, split='train', subset='default'):
-            loaded_subsets.append((dataset_id, split, subset))
+        def fake_load_hub_dataset(split='train', subset='default'):
+            loaded_subsets.append((split, subset))
             return rows_by_subset[subset]
 
         monkeypatch.setattr(plugin, 'load_hub_dataset', fake_load_hub_dataset)
@@ -201,8 +200,8 @@ class TestMMMUMultiImageDataset:
         messages = list(plugin.build_messages())
 
         assert loaded_subsets == [
-            ('AI-ModelScope/MMMU', 'validation', 'Accounting'),
-            ('AI-ModelScope/MMMU', 'validation', 'Music'),
+            ('validation', 'Accounting'),
+            ('validation', 'Music'),
         ]
         assert [message[0]['content'][0]['text'] for message in messages] == [
             'Accounting 1',

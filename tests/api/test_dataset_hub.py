@@ -565,6 +565,34 @@ def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
     assert len(remote_calls) == (2 if missing_shard else 0)
 
 
+def test_benchmark_dataset_source_defaults_to_modelscope_without_task_config() -> None:
+    from evalscope.api.registry import get_benchmark
+
+    benchmark = get_benchmark('gsm8k')
+
+    assert benchmark.dataset_hub == HubType.MODELSCOPE
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert benchmark.dataset_revision is None
+
+
+def test_explicit_dataset_id_override_clears_builtin_hf_mapping(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'],
+        dataset_dir=str(tmp_path / 'evalscope'),
+        dataset_hub=HubType.HUGGINGFACE,
+        dataset_args={'gsm8k': {'dataset_id': 'custom/gsm8k'}},
+    )
+    benchmark = get_benchmark('gsm8k', config)
+
+    assert benchmark.dataset_id == 'custom/gsm8k'
+    assert benchmark.dataset_revision is None
+    assert benchmark._benchmark_meta.hf_dataset_id is None
+    assert benchmark._benchmark_meta.hf_dataset_revision is None
+
+
 def test_hf_dataset_id_mapping_resolves_on_huggingface_hub(tmp_path) -> None:
     from evalscope.api.registry import get_benchmark
     from evalscope.config import TaskConfig

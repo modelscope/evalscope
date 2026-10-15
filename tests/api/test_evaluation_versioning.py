@@ -6,6 +6,7 @@ import pytest
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.config import TaskConfig, load_task_config_snapshot, parse_task_config
+from evalscope.constants import HubType
 from evalscope.evaluation_versioning import (
     BenchmarkEvaluationIdentity,
     EvaluationIdentity,
@@ -110,6 +111,52 @@ def test_identity_changes_only_for_evaluation_semantics() -> None:
     assert first.fingerprint != build_benchmark_identity(changed_image_limit, 'v1.0', config).fingerprint
     agent_config = _task_config(agent_config={'mode': 'native', 'max_steps': 3})
     assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', agent_config).fingerprint
+
+
+def test_resolved_spec_and_fingerprint_use_effective_hub_source() -> None:
+    meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/demo-data',
+        hf_dataset_revision='hf-revision-1',
+    )
+    hf_config = _task_config(dataset_hub=HubType.HUGGINGFACE)
+
+    hf_spec = ResolvedBenchmarkSpec.from_meta(meta, hf_config)
+    first = build_benchmark_identity(hf_spec, 'v1.0', hf_config)
+
+    assert hf_spec.dataset_id == 'hf/demo-data'
+    assert hf_spec.dataset_revision == 'hf-revision-1'
+
+    meta.hf_dataset_revision = 'hf-revision-2'
+    changed_spec = ResolvedBenchmarkSpec.from_meta(meta, hf_config)
+    changed = build_benchmark_identity(changed_spec, 'v1.0', hf_config)
+
+    assert changed_spec.dataset_revision == 'hf-revision-2'
+    assert first.fingerprint != changed.fingerprint
+
+
+def test_modelscope_identity_ignores_alternate_hf_declaration() -> None:
+    config = _task_config(dataset_hub=HubType.MODELSCOPE)
+    first_meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/first',
+        hf_dataset_revision='hf-revision-1',
+    )
+    second_meta = _meta(
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf/second',
+        hf_dataset_revision='hf-revision-2',
+    )
+
+    first_spec = ResolvedBenchmarkSpec.from_meta(first_meta, config)
+    second_spec = ResolvedBenchmarkSpec.from_meta(second_meta, config)
+
+    assert first_spec.dataset_id == 'demo/data'
+    assert first_spec.dataset_revision == 'ms-revision'
+    assert first_spec == second_spec
+    assert build_benchmark_identity(first_spec, 'v1.0', config) == build_benchmark_identity(
+        second_spec, 'v1.0', config
+    )
 
 
 def test_cache_identity_requires_match_unless_rerun_review_is_explicit() -> None:

@@ -357,9 +357,17 @@ class BenchmarkMeta:
         if args.get('local_path'):
             self.dataset_id = args['local_path']
             # A local mirror fully replaces the remote source, including any hub-specific mapping.
+            self.dataset_revision = None
             self.hf_dataset_id = None
             self.hf_dataset_revision = None
             del args['local_path']
+
+        if args.get('dataset_id') and args['dataset_id'] != self.dataset_id:
+            # Revisions and alternate-hub mappings belong to the declared default dataset id.
+            # Clear inherited values before applying any explicit replacements from args below.
+            self.dataset_revision = None
+            self.hf_dataset_id = None
+            self.hf_dataset_revision = None
 
         if args.get('filters'):
             self._update_filters(args['filters'])
