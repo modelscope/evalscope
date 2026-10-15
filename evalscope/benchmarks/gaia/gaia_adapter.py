@@ -95,6 +95,7 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 - [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/gaia.html)
 """,
         dataset_id=_GAIA_DATASET_ID,
+        hf_dataset_id='gaia-benchmark/GAIA',
         metric_list=['acc'],
         eval_split='validation',
         subset_list=['2023_level1', '2023_level2', '2023_level3'],

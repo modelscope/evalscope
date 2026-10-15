@@ -37,6 +37,7 @@ The WNUT2017 dataset is a collection of user-generated text from various social 
         name='wnut2017',
         pretty_name='WNUT2017',
         dataset_id='extraordinarylab/wnut2017',
+        hf_dataset_id='extraordinarylab/wnut2017',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

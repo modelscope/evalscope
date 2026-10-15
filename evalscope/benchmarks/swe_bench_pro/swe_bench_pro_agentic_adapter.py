@@ -201,6 +201,7 @@ _EXTRA_PARAMS: Dict[str, Any] = {
         tags=[Tags.CODING],
         description=_DESCRIPTION,
         dataset_id='ScaleAI/SWE-bench_Pro',
+        hf_dataset_id='ScaleAI/SWE-bench_Pro',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',

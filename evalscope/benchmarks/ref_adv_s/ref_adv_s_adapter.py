@@ -72,6 +72,7 @@ Ref-Adv-s is the public 1,142-case subset of Ref-Adv, a referring expression com
         name='ref_adv_s',
         pretty_name='Ref-Adv-s',
         dataset_id='evalscope/ref-adv-s',
+        hf_dataset_id='dddraxxx/ref-adv-s',
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2602.23898',
         tags=[Tags.MULTI_MODAL, Tags.GROUNDING, Tags.REASONING],

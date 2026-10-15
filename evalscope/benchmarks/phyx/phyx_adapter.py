@@ -206,6 +206,7 @@ class PhyXAdapter(VisionLanguageAdapter):
         name='phyx_mc',
         pretty_name='PhyX-MC',
         dataset_id='evalscope/PhyX',
+        hf_dataset_id='Cloudriver/PhyX',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description=f"""
 ## Overview
@@ -287,6 +288,7 @@ class PhyXMCAdapter(PhyXAdapter):
         name='phyx_oe',
         pretty_name='PhyX-OE',
         dataset_id='evalscope/PhyX',
+        hf_dataset_id='Cloudriver/PhyX',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=f"""
 ## Overview

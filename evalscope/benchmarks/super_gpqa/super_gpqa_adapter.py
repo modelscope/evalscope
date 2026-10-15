@@ -123,6 +123,7 @@ SuperGPQA is a large-scale multiple-choice question answering dataset designed t
 - Results can be grouped by field or discipline category
 """,  # noqa: E501
         dataset_id='m-a-p/SuperGPQA',
+        hf_dataset_id='m-a-p/SuperGPQA',
         subset_list=list(SUBSET_MAPPING.keys()),
         metric_list=['acc'],
         few_shot_num=0,

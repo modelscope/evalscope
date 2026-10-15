@@ -70,6 +70,7 @@ LongMemEval evaluates long-term interactive memory in chat assistants. Each ques
 - `retrieval_log` mode consumes official LongMemEval retrieval logs; it does not run embedding retrieval itself
 """,
         dataset_id='evalscope/longmemeval-cleaned',
+        hf_dataset_id='xiaowu0162/longmemeval-cleaned',
         metric_list=['accuracy'],
         primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
         few_shot_num=0,

@@ -71,6 +71,7 @@ OmniDocBench v1.6 evaluates end-to-end document parsing for text, formulas, tabl
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
         description=DESCRIPTION,
         dataset_id='OpenDataLab/OmniDocBench',
+        hf_dataset_id='OpenDataLab/OmniDocBench',
         paper_url='https://github.com/opendatalab/OmniDocBench',
         metric_list=[*PAGE_METRICS, 'normalized_score'],
         primary_metric='normalized_score',

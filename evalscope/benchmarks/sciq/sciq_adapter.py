@@ -40,6 +40,7 @@ SciQ is a crowdsourced science exam question dataset covering Physics, Chemistry
         tags=[Tags.READING_COMPREHENSION, Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/sciq',
+        hf_dataset_id='extraordinarylab/sciq',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

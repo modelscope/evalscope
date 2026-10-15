@@ -68,6 +68,7 @@ RefCOCO is a dataset for training and evaluating models on Referring Expression 
 """,  # noqa: E501
         tags=[Tags.KNOWLEDGE, Tags.MULTI_MODAL, Tags.GROUNDING, Tags.IMAGE_CAPTIONING],
         dataset_id='lmms-lab/RefCOCO',
+        hf_dataset_id='lmms-lab/RefCOCO',
         metric_list=[
             'IoU',
             'ACC@0.1',

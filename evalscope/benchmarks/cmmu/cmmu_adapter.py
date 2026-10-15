@@ -50,6 +50,7 @@ FILL_IN_BLANK_TYPE = 'fill-in-the-blank'
         name='cmmu',
         pretty_name='CMMU',
         dataset_id='evalscope/CMMU',
+        hf_dataset_id='BAAI/CMMU',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

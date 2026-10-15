@@ -86,6 +86,7 @@ and medical knowledge that has to be recalled on top of what the image shows.
         name='slake',
         pretty_name='SLAKE',
         dataset_id='evalscope/SLAKE',
+        hf_dataset_id='BoKelvin/SLAKE',
         tags=[Tags.MULTI_MODAL, Tags.MEDICAL, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2102.09542',

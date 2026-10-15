@@ -59,6 +59,7 @@ WorldVQA is a benchmark designed to evaluate the atomic visual world knowledge o
 - Results reported per category and overall
 """,
         dataset_id='evalscope/WorldVQA',
+        hf_dataset_id='moonshotai/WorldVQA',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='train',

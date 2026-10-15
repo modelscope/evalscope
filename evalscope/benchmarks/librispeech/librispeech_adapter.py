@@ -17,6 +17,7 @@ logger = get_logger()
         name='librispeech',
         pretty_name='LibriSpeech',
         dataset_id='lmms-lab/Librispeech-concat',
+        hf_dataset_id='lmms-lab/Librispeech-concat',
         tags=[Tags.AUDIO, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview

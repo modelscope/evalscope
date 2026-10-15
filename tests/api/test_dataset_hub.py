@@ -560,6 +560,7 @@ def test_hf_dataset_mapping_falls_back_without_mapping(tmp_path, monkeypatch) ->
         datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'), dataset_hub=HubType.HUGGINGFACE,
     )
     benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = None
     warnings = []
     monkeypatch.setattr(benchmark_module.logger, 'warning', lambda message: warnings.append(message))
 

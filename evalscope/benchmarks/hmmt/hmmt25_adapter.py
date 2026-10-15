@@ -26,6 +26,7 @@ Please reason step by step, and put your final answer within \boxed{{}}.
         name='hmmt25',
         pretty_name='HMMT25',
         dataset_id='evalscope/hmmt_feb_2025',
+        hf_dataset_id='MathArena/hmmt_feb_2025',
         description="""
 ## Overview
 

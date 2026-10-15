@@ -25,6 +25,7 @@ LOCALE_TO_LANG = {
         name='common_voice_15',
         pretty_name='CommonVoice15',
         dataset_id='lmms-lab/common_voice_15',
+        hf_dataset_id='lmms-lab/common_voice_15',
         tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview

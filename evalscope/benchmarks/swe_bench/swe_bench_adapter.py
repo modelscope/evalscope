@@ -46,6 +46,7 @@ SWE-bench Verified is a human-validated subset of 500 samples from SWE-bench, de
 - Supports both local image building and remote image pulling
 """,
         dataset_id='princeton-nlp/SWE-bench_Verified',
+        hf_dataset_id='princeton-nlp/SWE-bench_Verified',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
@@ -237,6 +238,7 @@ SWE-bench Verified Mini is a compact subset of SWE-bench Verified, containing 50
 - Good for rapid prototyping and initial model assessment
 """,
         dataset_id='evalscope/swe-bench-verified-mini',
+        hf_dataset_id='MariusHobbhahn/swe-bench-verified-mini',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',
@@ -306,6 +308,7 @@ SWE-bench Lite is a focused subset of SWE-bench containing 300 Issue-Pull Reques
 - Popular benchmark variant for initial model comparison
 """,
         dataset_id='princeton-nlp/SWE-bench_Lite',
+        hf_dataset_id='princeton-nlp/SWE-bench_Lite',
         metric_list=['acc'],
         eval_split='test',
         prompt_template='{question}',

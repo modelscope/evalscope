@@ -103,6 +103,7 @@ AA-LCR (Artificial Analysis Long Context Retrieval) is a benchmark for evaluatin
 - Judge prompt compares candidate answer against reference
 """,  # noqa: E501
         dataset_id='evalscope/AA-LCR',
+        hf_dataset_id='ArtificialAnalysis/AA-LCR',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

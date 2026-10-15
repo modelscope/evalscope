@@ -80,6 +80,7 @@ SUBSET_LIST = ['descriptive', 'reasoning']
         name='charxiv',
         pretty_name='CharXiv',
         dataset_id='princeton-nlp/CharXiv',
+        hf_dataset_id='princeton-nlp/CharXiv',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2406.18521',

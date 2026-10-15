@@ -50,6 +50,7 @@ CMATH is a Chinese elementary school mathematics benchmark containing 1,698 prob
         name='cmath',
         pretty_name='CMATH',
         dataset_id='evalscope/cmath',
+        hf_dataset_id='weitianwen/cmath',
         description=DESCRIPTION.strip(),
         tags=[Tags.MATH, Tags.REASONING, Tags.CHINESE],
         subset_list=['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],

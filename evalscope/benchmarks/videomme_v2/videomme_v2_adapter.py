@@ -62,6 +62,7 @@ downloads, so it exercises the same reusable video benchmark path as MVBench.
 """,
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.MULTIPLE_CHOICE],
         dataset_id=DATASET_ID,
+        hf_dataset_id='MME-Benchmarks/Video-MME-v2',
         paper_url='https://arxiv.org/abs/2604.05015',
         subset_list=DEFAULT_SUBSET_LIST,
         metric_list=['acc'],

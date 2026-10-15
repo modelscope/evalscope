@@ -65,6 +65,7 @@ Multi-IF is a benchmark designed to evaluate LLM capabilities in multi-turn inst
 """,  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.MULTI_LINGUAL, Tags.MULTI_TURN],
         dataset_id='facebook/Multi-IF',
+        hf_dataset_id='facebook/Multi-IF',
         subset_list=SUBSET_LIST,
         metric_list=[
             'prompt_level_strict',

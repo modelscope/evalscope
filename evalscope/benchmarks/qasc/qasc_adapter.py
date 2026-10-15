@@ -40,6 +40,7 @@ QASC (Question Answering via Sentence Composition) is a question-answering datas
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/qasc',
+        hf_dataset_id='extraordinarylab/qasc',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

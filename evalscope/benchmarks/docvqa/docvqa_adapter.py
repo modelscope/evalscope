@@ -51,6 +51,7 @@ DocVQA (Document Visual Question Answering) is a benchmark designed to evaluate 
 - Multiple valid answers may be accepted for each question
 """,  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
+        hf_dataset_id='lmms-lab/DocVQA',
         subset_list=['DocVQA'],
         metric_list=['anls'],
         eval_split='validation',

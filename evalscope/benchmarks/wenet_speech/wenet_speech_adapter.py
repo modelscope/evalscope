@@ -16,6 +16,7 @@ logger = get_logger()
         name='wenet_speech',
         pretty_name='WenetSpeech',
         dataset_id='lmms-lab/WenetSpeech',
+        hf_dataset_id='lmms-lab/WenetSpeech',
         tags=[Tags.AUDIO, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview

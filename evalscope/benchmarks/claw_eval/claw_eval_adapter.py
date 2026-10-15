@@ -86,6 +86,7 @@ parallel execution, reporting, and dashboard trace review.
         name='claw_eval',
         pretty_name='Claw-Eval',
         dataset_id=DEFAULT_CLAW_EVAL_DATASET_ID,
+        hf_dataset_id='claw-eval/Claw-Eval',
         tags=[Tags.AGENT, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
         metric_list=['judge_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],

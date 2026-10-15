@@ -64,6 +64,7 @@ The EvalScope native adapter reads the official per-task JSON annotations from t
         name='tvbench',
         pretty_name='TVBench',
         dataset_id=DATASET_ID,
+        hf_dataset_id='FunAILab/TVBench',
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         subset_list=DEFAULT_SUBSET_LIST,

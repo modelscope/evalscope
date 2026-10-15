@@ -58,6 +58,7 @@ ANSWER_FORMAT_SUFFIX = (
         name='measure_bench',
         pretty_name='MeasureBench',
         dataset_id='evalscope/MeasureBench',
+        hf_dataset_id='FlagEval/MeasureBench',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2510.26865',

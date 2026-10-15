@@ -109,6 +109,7 @@ C: NOT_ATTEMPTED
         name='simple_vqa',
         pretty_name='SimpleVQA',
         dataset_id='m-a-p/SimpleVQA',
+        hf_dataset_id='m-a-p/SimpleVQA',
         tags=[Tags.REASONING, Tags.MULTI_MODAL, Tags.QA],
         description="""
 ## Overview
