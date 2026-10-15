@@ -58,6 +58,7 @@ multiple-choice benchmark evaluating LLM knowledge of {domain_desc}, covering En
             domain='Ayur', domain_lower='ayur', domain_desc='Ayurvedic medicine', article='An'
         ),
         dataset_id='bharatgenai/BhashaBench-Ayur',
+        hf_dataset_id='bharatgenai/BhashaBench-Ayur',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,

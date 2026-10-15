@@ -61,6 +61,7 @@ LongBench v2 is a challenging benchmark for evaluating long-context understandin
 - Use `subset_list` to evaluate specific length subsets (e.g., `['short', 'medium']`)
 """,
         dataset_id='ZhipuAI/LongBench-v2',
+        hf_dataset_id='zai-org/LongBench-v2',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

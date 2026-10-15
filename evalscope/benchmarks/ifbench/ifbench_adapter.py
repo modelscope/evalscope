@@ -48,6 +48,7 @@ IFBench is a benchmark designed to evaluate how reliably AI models follow novel,
 """,  # noqa: E501
         tags=[Tags.INSTRUCTION_FOLLOWING],
         dataset_id='allenai/IFBench_test',
+        hf_dataset_id='allenai/IFBench_test',
         subset_list=['default'],
         metric_list=[
             'prompt_level_strict',

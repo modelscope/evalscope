@@ -19,6 +19,7 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         name='micro_vqa',
         pretty_name='MicroVQA',
         dataset_id='evalscope/MicroVQA',
+        hf_dataset_id='jmhb/microvqa',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL, Tags.MEDICAL],
         description="""
 ## Overview

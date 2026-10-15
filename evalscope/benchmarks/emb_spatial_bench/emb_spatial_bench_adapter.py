@@ -49,6 +49,7 @@ perspective: **close**, **far**, **above**, **under**, **left**, and **right**.
         name='emb_spatial_bench',
         pretty_name='EmbSpatial-Bench',
         dataset_id='evalscope/EmbSpatial-Bench',
+        hf_dataset_id='Phineas476/EmbSpatial-Bench',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         paper_url='https://aclanthology.org/2024.acl-short.33/',

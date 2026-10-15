@@ -74,6 +74,7 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
 - Supports numerical precision/error thresholds for approximate answers
 """,
         dataset_id='AI-ModelScope/OlympiadBench',
+        hf_dataset_id='Hothan/OlympiadBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='train',

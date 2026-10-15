@@ -51,6 +51,7 @@ MultiPL-E MBPP is a multilingual code generation benchmark derived from MBPP (Mo
 - See [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for setup
 """,  # noqa: E501
         dataset_id='evalscope/MultiPL-E',
+        hf_dataset_id='nuprl/MultiPL-E',
         subset_list=[
             'mbpp-cpp',
             'mbpp-ts',

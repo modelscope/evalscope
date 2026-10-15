@@ -71,6 +71,7 @@ FEWSHOT_TEMPLATE = (
         name='bbh',
         pretty_name='BBH',
         dataset_id='evalscope/bbh',
+        hf_dataset_id='lukaemon/bbh',
         tags=[Tags.REASONING],
         description="""
 ## Overview

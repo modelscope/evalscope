@@ -58,6 +58,7 @@ PROMPT_TEMPLATE = '{question}'
         name='arc_agi_2',
         pretty_name='ARC-AGI-2',
         dataset_id='evalscope/arc-agi-2',
+        hf_dataset_id='arc-agi-community/arc-agi-2',
         tags=[Tags.REASONING],
         description=DESCRIPTION,
         subset_list=['default'],

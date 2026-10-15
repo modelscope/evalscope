@@ -115,6 +115,7 @@ BrowseComp is an OpenAI benchmark for evaluating browsing and search agents. It 
 - LLM judge is enabled by default. `JudgeStrategy.RULE` falls back to normalized exact match.
 """,  # noqa: E501
         dataset_id=BROWSECOMP_DATASET_ID,
+        hf_dataset_id='smolagents/browse_comp',
         metric_list=['is_correct', 'is_incorrect'],
         primary_metric='is_correct',
         few_shot_num=0,

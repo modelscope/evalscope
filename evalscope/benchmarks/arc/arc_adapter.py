@@ -44,6 +44,7 @@ ARC (AI2 Reasoning Challenge) is a benchmark designed to evaluate science questi
 - Supports few-shot evaluation with train split examples
 """,
         dataset_id='allenai/ai2_arc',
+        hf_dataset_id='allenai/ai2_arc',
         subset_list=['ARC-Easy', 'ARC-Challenge'],
         metric_list=['acc'],
         few_shot_num=0,
