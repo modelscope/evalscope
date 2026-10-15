@@ -123,3 +123,16 @@ def test_classification_labels_are_not_coerced_into_noul_probabilities(value: ob
 def test_choice_probabilities_must_be_json_numbers(value: object) -> None:
     with pytest.raises(ValueError):
         DecisionAnswer(choice='A', probabilities={'A': value, 'B': 0.1})
+
+
+def test_open_decisions_uses_raw_probabilities_like_official_scorer() -> None:
+    adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
+    sample = adapter.record_to_sample({'id': 'rounded-noul', 'state': 'Fact.', 'tier': 'hard',
+        'question': {'type': 'noul', 'instructions': 'Is it true?'}, 'expected': 'no'})
+    answer = DecisionAnswer(type='noul', noul=0.496, probabilities={'no': 0.496, 'yes': 0.496})
+    output = ModelOutput.from_content('test', 'ANSWER: no')
+    output.metadata = {'decision': answer.model_dump()}
+    score = adapter.match_score('no', 'no', 'no', TaskState(model='test', sample=sample, output=output))
+    assert score.value['acc'] == 1
+    assert score.value['brier'] == pytest.approx(0.496**2)
+    assert not score.metadata['probabilities_normalized_for_scoring']
