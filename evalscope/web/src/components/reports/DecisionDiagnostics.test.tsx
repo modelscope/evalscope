@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { axe } from 'jest-axe'
 import type { ReportData } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { decisionCurves, decisionObservation } from '@/domain/report/decisionDiagnostics'
@@ -41,12 +42,18 @@ function reportFixture(): ReportData {
 describe('Decision result interactions', () => {
   it('preserves original probabilities and ordered levels when switching views', () => {
     render(<LocaleProvider><DecisionPanel metadata={{ decision: observation }} /></LocaleProvider>)
-    expect(screen.getByText(/Probability-weighted score: 1.3/)).toBeInTheDocument()
+    expect(screen.getByText('Probability-weighted score')).toBeInTheDocument()
+    expect(screen.getByText('1.3')).toBeInTheDocument()
+    expect(screen.getByText('Most likely level')).toBeInTheDocument()
     expect(screen.getByText('20%')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Probability view'), { target: { value: 'raw' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Original service probabilities' }))
     expect(screen.getByText('19.9%')).toBeInTheDocument()
     expect(screen.getAllByRole('meter').map((el) => el.getAttribute('aria-label'))).toEqual(['0', '1', '2'])
-    expect(screen.getByText(/Provider confidence: 0.6/)).toBeInTheDocument()
+    expect(screen.getByText(/Provider confidence:/)).toHaveTextContent('Provider confidence: 0.6')
+    expect(screen.getByRole('meter', { name: '0' })).toHaveAttribute('aria-valuenow', '0.199')
+    expect(screen.getByRole('button', { name: 'Original service probabilities' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Probabilities used for scoring' }))
+    expect(screen.getByRole('meter', { name: '0' })).toHaveAttribute('aria-valuenow', '0.2')
   })
 
   it('keeps Noul P(yes) and its classification threshold explicit', () => {
@@ -55,7 +62,8 @@ describe('Decision result interactions', () => {
       raw_probabilities: { no: 0.4, yes: 0.6 }, threshold: 0.7, predicted: 'no', expected: null,
     } }} /></LocaleProvider>)
     expect(screen.getByText('P(yes) classification threshold: 0.7')).toBeInTheDocument()
-    expect(screen.getByText(/Prediction: no/)).toBeInTheDocument()
+    expect(screen.getByText('no', { selector: 'dd' })).toBeInTheDocument()
+    expect(screen.getByRole('meter', { name: 'yes' })).toHaveAttribute('aria-valuenow', '0.6')
   })
 
   it('does not add decision UI to ordinary or invalid cached outputs', () => {
@@ -64,6 +72,19 @@ describe('Decision result interactions', () => {
     for (const probabilities of [[0.2], [NaN, 0.3, 0.5], ['0.2', 0.3, 0.5], [-0.2, 0.3, 0.9]]) {
       expect(decisionObservation({ decision: { ...observation, probabilities } })).toBeNull()
     }
+  })
+
+  it('keeps a confident wrong prediction distinct from its reference and handles zero probability', () => {
+    render(<LocaleProvider><DecisionPanel metadata={{ decision: {
+      kind: 'choice', labels: ['A', 'B', 'C'], probabilities: [0.99, 0.01, 0],
+      predicted: 'A', gold: 'B',
+    } }} /></LocaleProvider>)
+    expect(screen.getByText('A', { selector: 'dd' })).toBeInTheDocument()
+    expect(screen.getByText('B', { selector: 'dd' })).toBeInTheDocument()
+    expect(screen.getByRole('meter', { name: 'A' })).toHaveAttribute('aria-valuetext', '99%')
+    expect(screen.getByRole('meter', { name: 'C' })).toHaveAttribute('aria-valuenow', '0')
+    expect(screen.queryByRole('button', { name: 'Original service probabilities' })).not.toBeInTheDocument()
+    expect(screen.getByText(/not correctness/)).toBeInTheDocument()
   })
 
   it('renders continuous decision MAE as an error rather than a percentage score', () => {
@@ -89,12 +110,13 @@ describe('Decision result interactions', () => {
 
   it('switches confidence sources and explores measured coverage without splitting ties', () => {
     render(<LocaleProvider><DecisionDiagnostics report={reportFixture()} /></LocaleProvider>)
-    expect(screen.getByText('Coverage: 100% · Risk: 20%')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Coverage: 100% · Risk: 20%' })).toBeInTheDocument()
     fireEvent.change(screen.getByRole('slider'), { target: { value: '0' } })
-    expect(screen.getByText('Coverage: 33.3% · Risk: 10%')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Coverage: 33.3% · Risk: 10%' })).toBeInTheDocument()
     const selection = screen.getByLabelText('Subset, decision type and confidence source')
     fireEvent.change(selection, { target: { value: decisionCurves(reportFixture())[1].id } })
-    expect(screen.getByText('Coverage: 100% · Risk: 20%')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Coverage: 100% · Risk: 20%' })).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Unavailable metrics'))
     expect(screen.getByText(/Need nonconstant/)).toBeInTheDocument()
     expect(screen.getByText(/MAE divided by the score range/)).toBeInTheDocument()
   })
@@ -106,5 +128,29 @@ describe('Decision result interactions', () => {
       risk_coverage_top_probability: [{ coverage: 0.5, risk: NaN }],
     }
     expect(decisionCurves(report)).toHaveLength(1)
+  })
+
+  it('disables coverage selection when tied confidence leaves only one measured point', () => {
+    const report = reportFixture()
+    report.metrics[0].categories[0].subsets[0].metadata = {
+      risk_coverage_top_probability: [{ coverage: 1, risk: 0.2 }],
+    }
+    render(<LocaleProvider><DecisionDiagnostics report={report} /></LocaleProvider>)
+    expect(screen.getByRole('slider')).toBeDisabled()
+    expect(screen.getByRole('status', { name: 'Coverage: 100% · Risk: 20%' })).toBeInTheDocument()
+  })
+
+  it('exposes probability values and coverage controls without accessibility violations', async () => {
+    const { container } = render(<LocaleProvider>
+      <DecisionPanel metadata={{ decision: observation }} />
+      <DecisionDiagnostics report={reportFixture()} />
+    </LocaleProvider>)
+    vi.useRealTimers()
+    try {
+      expect((await axe(container)).violations).toEqual([])
+    } finally {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-07-01T00:00:00.000Z'))
+    }
   })
 })
