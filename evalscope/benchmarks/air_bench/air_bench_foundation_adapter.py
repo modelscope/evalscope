@@ -128,8 +128,11 @@ class AIRBenchFoundationAdapter(AudioLanguageAdapter):
         track_root = download_air_bench(
             track='Foundation',
             dataset_id=self.dataset_id,
+            data_source=self.dataset_hub,
             cache_dir=self.dataset_dir,
             subset_dirs=requested_subsets,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
         )
         self._track_root = track_root
         self._audio_cache_dir = os.path.join(self.dataset_dir, 'air_bench_converted_audio')

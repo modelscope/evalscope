@@ -47,12 +47,14 @@ def load_task_manifest(
     dataset_id: str,
     data_source: str,
     splits: Iterable[str],
+    revision: Optional[str] = None,
     force_redownload: bool = False,
 ) -> List[Dict[str, Any]]:
     """Load Claw-Eval task rows through EvalScope's shared dataset hub."""
     hub = DatasetHub(
         data_id_or_path=dataset_id,
         data_source=data_source,
+        revision=revision,
         force_redownload=force_redownload,
     )
     records: List[Dict[str, Any]] = []
@@ -66,8 +68,9 @@ def load_task_manifest(
 
 
 def prepare_claw_eval_assets(
-    dataset_id: str = DEFAULT_CLAW_EVAL_DATASET_ID,
-    data_source: str = HubType.MODELSCOPE,
+    dataset_id: str,
+    data_source: str,
+    revision: Optional[str] = None,
     cache_dir: Optional[str] = None,
     force_redownload: bool = False,
     official_repo_path: Optional[str] = None,
@@ -85,6 +88,7 @@ def prepare_claw_eval_assets(
         DatasetHub(
             data_id_or_path=dataset_id,
             data_source=data_source,
+            revision=revision,
             force_redownload=force_redownload,
             cache_dir=str(root / 'modelscope'),
         ).download_file(FIXTURES_FILE_PATH)

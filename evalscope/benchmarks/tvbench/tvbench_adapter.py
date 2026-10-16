@@ -98,6 +98,7 @@ class TVBenchAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
         return DatasetHub(
             data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
         )
 

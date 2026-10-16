@@ -47,6 +47,7 @@ with multiple reference captions.
 """,
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
         dataset_id='AI-ModelScope/msr-vtt',
+        hf_dataset_id='VLM2Vec/MSR-VTT',
         paper_url='https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
@@ -70,10 +71,6 @@ with multiple reference captions.
 class MSRVTTAdapter(VisionLanguageAdapter):
     """Adapter for MSR-VTT video captioning."""
 
-    SOURCE_DATASET_IDS = {
-        HubType.MODELSCOPE: 'AI-ModelScope/msr-vtt',
-        HubType.HUGGINGFACE: 'VLM2Vec/MSR-VTT',
-    }
     SOURCE_EVAL_SPLITS = {
         HubType.MODELSCOPE: 'validation',
         HubType.HUGGINGFACE: 'test',
@@ -84,14 +81,8 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         self.use_batch_scoring = True
 
     @property
-    def source_dataset_id(self) -> str:
-        if self.dataset_id != self.name and self.dataset_id not in self.SOURCE_DATASET_IDS.values():
-            return self.dataset_id
-        return self.SOURCE_DATASET_IDS.get(self.dataset_hub, self.dataset_id)
-
-    @property
     def source_eval_split(self) -> str:
-        is_default_dataset = self.dataset_id in self.SOURCE_DATASET_IDS.values()
+        is_default_dataset = self._benchmark_meta.hf_dataset_id is not None
         is_default_modelscope_split = self.eval_split == self.SOURCE_EVAL_SPLITS[HubType.MODELSCOPE]
         if is_default_dataset and is_default_modelscope_split:
             return self.SOURCE_EVAL_SPLITS.get(self.dataset_hub, self.eval_split)
@@ -100,8 +91,9 @@ class MSRVTTAdapter(VisionLanguageAdapter):
     @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
-            data_id_or_path=self.source_dataset_id,
+            data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
         )
 
@@ -114,7 +106,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
                     records=records,
                     sample_fields=self.record_to_sample,
                     name=self.name,
-                    location=self.source_dataset_id,
+                    location=self.dataset_id,
                     limit=self.limit,
                     repeats=self.repeats,
                     shuffle=self.shuffle,
@@ -146,7 +138,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
             metadata={
                 'references': references,
                 'subset': self.current_subset_name,
-                'dataset_id': self.source_dataset_id,
+                'dataset_id': self.dataset_id,
                 'dataset_hub': self.dataset_hub,
                 'video': video,
                 'start': start,
@@ -182,7 +174,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
             subset = 'test_1k'
         logger.info(
             f'Loading MSR-VTT from {self.dataset_hub}: '
-            f'{self.source_dataset_id}, subset={subset}, split={self.source_eval_split}.'
+            f'{self.dataset_id}, subset={subset}, split={self.source_eval_split}.'
         )
         dataset = self.source_dataset.load(split=self.source_eval_split, subset=subset)
         return list(dataset)

@@ -656,6 +656,91 @@ def test_local_path_override_clears_hf_mapping(tmp_path) -> None:
     assert benchmark._benchmark_meta.hf_dataset_revision is None
 
 
+@pytest.mark.parametrize(
+    ('benchmark_name', 'hf_dataset_id'),
+    [('msvd', 'VLM2Vec/MSVD'), ('msr_vtt', 'VLM2Vec/MSR-VTT')],
+)
+def test_video_caption_adapters_use_shared_hf_dataset_mapping(
+    benchmark_name: str,
+    hf_dataset_id: str,
+) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    adapter = get_benchmark(
+        benchmark_name,
+        TaskConfig(datasets=[benchmark_name], dataset_hub=HubType.HUGGINGFACE),
+    )
+
+    assert adapter.dataset_id == hf_dataset_id
+    assert adapter.source_dataset.data_id_or_path == hf_dataset_id
+    if benchmark_name == 'msr_vtt':
+        assert adapter.source_eval_split == 'test'
+
+
+def test_aa_lcr_document_archive_uses_resolved_hub_source(tmp_path, monkeypatch) -> None:
+    import zipfile
+
+    from evalscope.api.registry import get_benchmark
+    from evalscope.benchmarks.aa_lcr import aa_lcr_adapter as aa_lcr_module
+    from evalscope.config import TaskConfig
+
+    archive_path = tmp_path / 'documents.zip'
+    with zipfile.ZipFile(archive_path, 'w') as archive:
+        archive.writestr('lcr/document.txt', 'content')
+    captured = {}
+
+    class CapturingDatasetHub:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def download_file(self, file_path):
+            captured['file_path'] = file_path
+            return str(archive_path)
+
+    monkeypatch.setattr(aa_lcr_module, 'DatasetHub', CapturingDatasetHub)
+    monkeypatch.setattr(aa_lcr_module, 'DEFAULT_EVALSCOPE_CACHE_DIR', str(tmp_path / 'cache'))
+    adapter = get_benchmark(
+        'aa_lcr',
+        TaskConfig(datasets=['aa_lcr'], dataset_hub=HubType.HUGGINGFACE),
+    )
+
+    extracted_dir = adapter._ensure_text_dir_downloaded()
+
+    assert captured['data_id_or_path'] == 'ArtificialAnalysis/AA-LCR'
+    assert captured['data_source'] == HubType.HUGGINGFACE
+    assert captured['revision'] is None
+    assert captured['file_path'] == 'extracted_text/AA-LCR_extracted-text.zip'
+    assert (extracted_dir / 'document.txt').read_text(encoding='utf-8') == 'content'
+
+
+def test_swe_bench_oracle_loader_uses_selected_hub_and_own_revision(monkeypatch) -> None:
+    from evalscope.api.benchmark import DefaultDataAdapter
+    from evalscope.api.dataset import Sample
+    from evalscope.benchmarks.swe_bench import swe_bench_adapter as swe_module
+
+    captured = {}
+
+    class CapturingRemoteDataLoader:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def load(self):
+            return [Sample(input='problem', metadata={'instance_id': 'id', 'text': 'context'})]
+
+    adapter = object.__new__(swe_module.SWEBenchVerifiedAdapter)
+    adapter.inference_dataset_id = 'princeton-nlp/SWE-bench_oracle'
+    adapter.inference_dataset_revision = 'oracle-revision'
+    adapter._task_config = type('Config', (), {'dataset_hub': HubType.HUGGINGFACE})()
+    monkeypatch.setattr(swe_module, 'RemoteDataLoader', CapturingRemoteDataLoader)
+    monkeypatch.setattr(DefaultDataAdapter, 'load', lambda self: 'main-dataset')
+
+    assert swe_module.SWEBenchVerifiedAdapter.load(adapter) == 'main-dataset'
+    assert captured['data_id_or_path'] == 'princeton-nlp/SWE-bench_oracle'
+    assert captured['data_source'] == HubType.HUGGINGFACE
+    assert captured['version'] == 'oracle-revision'
+
+
 def test_download_snapshot_resolves_existing_local_path(tmp_path) -> None:
     snapshot_dir = tmp_path / 'dataset'
     snapshot_dir.mkdir()
