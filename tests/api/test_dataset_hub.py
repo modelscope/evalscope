@@ -676,6 +676,62 @@ def test_video_caption_adapters_use_shared_hf_dataset_mapping(
     assert adapter.source_dataset.data_id_or_path == hf_dataset_id
     if benchmark_name == 'msr_vtt':
         assert adapter.source_eval_split == 'test'
+        assert adapter.source_subset == 'test_1k'
+
+
+@pytest.mark.parametrize(
+    ('dataset_id', 'expected_split', 'expected_subset'),
+    [
+        ('VLM2Vec/MSR-VTT', 'test', 'test_1k'),
+        ('custom/MSR-VTT', 'validation', 'default'),
+    ],
+)
+def test_msr_vtt_split_follows_effective_dataset_source(
+    dataset_id: str,
+    expected_split: str,
+    expected_subset: str,
+) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    adapter = get_benchmark(
+        'msr_vtt',
+        TaskConfig(
+            datasets=['msr_vtt'],
+            dataset_hub=HubType.HUGGINGFACE,
+            dataset_args={'msr_vtt': {'dataset_id': dataset_id}},
+        ),
+    )
+
+    assert adapter.dataset_id == dataset_id
+    assert adapter.source_eval_split == expected_split
+    assert adapter.source_subset == expected_subset
+
+
+def test_msr_vtt_explicit_official_hf_source_loads_official_split(monkeypatch) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.benchmarks.msr_vtt.msr_vtt_adapter import MSRVTTAdapter
+    from evalscope.config import TaskConfig
+
+    captured = {}
+
+    class CapturingDatasetHub:
+        def load(self, split, subset):
+            captured.update(split=split, subset=subset)
+            return []
+
+    adapter = get_benchmark(
+        'msr_vtt',
+        TaskConfig(
+            datasets=['msr_vtt'],
+            dataset_hub=HubType.HUGGINGFACE,
+            dataset_args={'msr_vtt': {'dataset_id': 'VLM2Vec/MSR-VTT'}},
+        ),
+    )
+    monkeypatch.setattr(MSRVTTAdapter, 'source_dataset', property(lambda self: CapturingDatasetHub()))
+
+    assert adapter._load_records() == []
+    assert captured == {'split': 'test', 'subset': 'test_1k'}
 
 
 def test_aa_lcr_document_archive_uses_resolved_hub_source(tmp_path, monkeypatch) -> None:

@@ -18,6 +18,9 @@ from .utils import DEFAULT_PROMPT, group_caption_records, optional_float
 
 logger = get_logger()
 
+MODELSCOPE_DATASET_ID = 'AI-ModelScope/msr-vtt'
+HUGGINGFACE_DATASET_ID = 'VLM2Vec/MSR-VTT'
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -46,8 +49,8 @@ with multiple reference captions.
 - Set `extra_params.video_dir` to prefer local media files over URL metadata
 """,
         tags=[Tags.MULTI_MODAL, Tags.VIDEO, Tags.IMAGE_CAPTIONING],
-        dataset_id='AI-ModelScope/msr-vtt',
-        hf_dataset_id='VLM2Vec/MSR-VTT',
+        dataset_id=MODELSCOPE_DATASET_ID,
+        hf_dataset_id=HUGGINGFACE_DATASET_ID,
         paper_url='https://www.microsoft.com/en-us/research/publication/msr-vtt-a-large-video-description-dataset-for-bridging-video-and-language/',
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
@@ -81,12 +84,20 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         self.use_batch_scoring = True
 
     @property
+    def uses_official_hf_dataset(self) -> bool:
+        """Return whether the effective source is the built-in Hugging Face dataset."""
+        return self.dataset_hub == HubType.HUGGINGFACE and self.dataset_id == HUGGINGFACE_DATASET_ID
+
+    @property
     def source_eval_split(self) -> str:
-        is_default_dataset = self._benchmark_meta.hf_dataset_id is not None
-        is_default_modelscope_split = self.eval_split == self.SOURCE_EVAL_SPLITS[HubType.MODELSCOPE]
-        if is_default_dataset and is_default_modelscope_split:
-            return self.SOURCE_EVAL_SPLITS.get(self.dataset_hub, self.eval_split)
+        is_default_split = self.eval_split == self.SOURCE_EVAL_SPLITS[HubType.MODELSCOPE]
+        if self.uses_official_hf_dataset and is_default_split:
+            return self.SOURCE_EVAL_SPLITS[HubType.HUGGINGFACE]
         return self.eval_split
+
+    @property
+    def source_subset(self) -> str:
+        return 'test_1k' if self.uses_official_hf_dataset else 'default'
 
     @property
     def source_dataset(self) -> DatasetHub:
@@ -169,9 +180,7 @@ class MSRVTTAdapter(VisionLanguageAdapter):
         return sample_scores
 
     def _load_records(self) -> List[Dict[str, Any]]:
-        subset = 'default'
-        if self.dataset_hub == HubType.HUGGINGFACE:
-            subset = 'test_1k'
+        subset = self.source_subset
         logger.info(
             f'Loading MSR-VTT from {self.dataset_hub}: '
             f'{self.dataset_id}, subset={subset}, split={self.source_eval_split}.'
