@@ -117,10 +117,11 @@ export default function PerfReportDetailPage() {
   const [pickedTab, setActiveTab] = useScopedState<TabKey | null>(tabScope, null)
   const activeTab: TabKey = pickedTab ?? (singleRun && data ? 'runs' : 'overview')
 
-  // Charts available for this run mode (embedding runs have no TTFT/TPOT).
+  const inputOnly = Boolean(data?.is_embedding || ['systemone', 'autotrust'].includes(data?.api_type ?? ''))
+  // Input-only runs have no token-generation latency measurements.
   const latencyCharts = useMemo(
-    () => (data?.is_embedding ? (['latency'] as const) : LATENCY_CHARTS),
-    [data],
+    () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
+    [inputOnly],
   )
 
   const htmlUrl = useMemo(
@@ -282,7 +283,7 @@ export default function PerfReportDetailPage() {
         panels={{
           'perf-overview-panel': overviewPanel,
           ...(!singleRun ? { 'perf-charts-panel': chartsPanel } : {}),
-          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} isEmbedding={data.is_embedding} />,
+          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} isEmbedding={data.is_embedding} inputOnly={inputOnly} />,
         }}
       />
     </div>

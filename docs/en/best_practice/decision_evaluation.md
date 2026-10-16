@@ -1,4 +1,4 @@
-# From Jev to Clef-Flash: measure decision quality and performance with EvalScope
+# Evaluate decision models with EvalScope: from quality to performance
 
 An agent is about to stop. One small decision determines what happens next.
 
@@ -6,11 +6,11 @@ Is the task actually complete?
 
 Similar decisions appear when it chooses a search tool, checks whether evidence is sufficient, or rates a result. A wrong choice, an unreliable probability, or a growing queue can affect every step that follows.
 
-Jev brought attention to these frequent judgments. TypeSafe offers structured decisions and probabilities that software can consume directly; open models such as Clef-Flash provide related capabilities. Whether they save time and suit your application is something you can measure.
+Jev brought attention to decision models. Once you have a model, practical questions remain: which judgments it handles well, whether its probabilities are useful, and how long decisions take under business traffic.
 
-Start with **Bailian's hosted API, then optionally deploy Clef-Flash using the same System One format**. After the public benchmarks work, bring your own decision data.
+This guide follows the **EvalScope evaluation workflow**. ModelScope provides models and public datasets; EvalScope organizes requests, scoring, reports and performance tests. Connect an existing decision service or deploy open Clef-Flash, keeping the same System One evaluation configuration when switching services.
 
-> Image placeholder 1 | An agent choosing tools and checking completion, with Choice, Noul and Score at the decision points. Mark this as an illustration; do not add unmeasured speed claims.
+> Image placeholder 1 | ModelScope supplies models and datasets, an inference service returns decisions, and EvalScope handles quality evaluation, reports and performance tests. Show the role of each component.
 
 ## 1. Run three kinds of decisions
 
@@ -27,18 +27,17 @@ Run these commands from an [EvalScope source checkout](https://github.com/models
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[perf]'
+pip install -e '.[perf,service]'
 ```
 
-### Connect to Bailian
+### Connect a decision service
 
-Prepare a Bailian API key with access to `decision-model-preview`. The example uses the Beijing trial endpoint. Use the address for your own region/workspace when required by the [Bailian API reference](https://help.aliyun.com/zh/model-studio/decision-model-api).
+EvalScope needs a model name, service address and API key. The connection example uses Bailian's hosted `decision-model-preview`; use an available model/address for your account and consult the [service reference](https://help.aliyun.com/zh/model-studio/decision-model-api) for region, workspace and access details. Replace these three values for an existing compatible service. To serve an open model first, follow section 3.
 
 ```bash
-export DASHSCOPE_API_KEY='replace-with-your-Bailian-key'
-export DECISION_API_KEY="$DASHSCOPE_API_KEY"
-export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
 export DECISION_MODEL='decision-model-preview'
+export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
+export DECISION_API_KEY='replace-with-your-service-key'
 ```
 
 Save this as `evaluate.py` and run `python evaluate.py`.
@@ -72,7 +71,16 @@ Keep `limit=5` for the first run, then remove it for a complete evaluation. The 
 
 ## 2. Read the report before comparing models
 
-The terminal prints the output directory. Open `outputs/<timestamp>/reports/report.html` for the summary. Inspect individual predictions and reviews in the same run's `predictions/` and `reviews/` directories.
+After evaluation, view the results in the EvalScope Web UI. For a source install, install Node.js and build the frontend once. From the repository root, run:
+
+```bash
+make web-build
+evalscope service --host 127.0.0.1 --port 9000 --outputs ./outputs
+```
+
+Open `http://127.0.0.1:9000`, choose Evaluations and open the model report. Details shows metrics and lets you select the decision group, confidence source and accepted coverage to inspect risk. Predictions supports dataset switching, sample filtering and per-sample probability distributions, with original and scoring probability views.
+
+The output directory also keeps `predictions/`, `reviews/` and the HTML summary for later inspection.
 
 Check successful requests, valid review counts and coverage before reading scores. A high score on a partially completed test does not represent the whole benchmark.
 
@@ -102,21 +110,18 @@ Use these auxiliary metrics when needed.
 
 Small samples, a single gold class or constant ratings can leave metrics undefined. Inspect the reason instead of interpreting an absent value as zero. Avoid directly averaging binary/multiclass Brier or errors on different Score scales.
 
-## 3. Keep the interface and serve an open model
+## 3. Download an open model from ModelScope and serve it
 
-After the hosted run works, you can use a GPU to serve [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash) yourself.
+For self-hosting, use [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash) on ModelScope. Set `VLLM_USE_MODELSCOPE=true` so vLLM downloads and loads it automatically, then connect EvalScope to evaluate it.
 
 Clef-Flash is an approximately 9B-parameter model based on Qwen3.5-9B with a joint decision head. This guide uses text inputs.
 
 The commands target Linux/NVIDIA GPUs with sufficient memory. The [latest vLLM development documentation](https://docs.vllm.ai/en/latest/models/structured_decisions_models/) lists native Clef-Flash System One support. Install a development build containing that implementation; loading the backbone alone does not establish decision-head support.
 
 ```bash
-pip install -U uv modelscope
-uv pip install -U vllm --torch-backend auto \
-  --extra-index-url https://wheels.vllm.ai/nightly
-modelscope download --model Cloudflare/clef-flash \
-  --local_dir ./models/clef-flash
-vllm serve ./models/clef-flash \
+pip install -U modelscope
+pip install -U --pre vllm --extra-index-url https://wheels.vllm.ai/nightly
+VLLM_USE_MODELSCOPE=true vllm serve Cloudflare/clef-flash \
   --served-model-name clef-flash \
   --max-model-len 16384 --port 8000
 ```
@@ -143,24 +148,22 @@ Run `python evaluate.py` again. The model name, address and key changed; the sam
 
 **Deployment verification scope:** these commands follow the current vLLM development documentation and have not been validated by this project on NVIDIA GPUs. Earlier real Clef-Flash quality runs used the official PyTorch implementation. Those are separate kinds of evidence. Record model revision, vLLM version and serving arguments for comparisons, and check whether long inputs are truncated.
 
-## 4. Choose benchmarks that match your goal
+## 4. Choose evaluation data from ModelScope
 
-Start with the three introductory datasets, then extend the evaluation.
+Start with the three introductory datasets. EvalScope maps benchmark names to ModelScope datasets, builds task-specific requests, reads gold answers and computes metrics. Change the dataset configuration to extend your evaluation.
 
-| Benchmark | Task | What to check |
-|---|---|---|
-| `arc` | Science multiple-choice questions | Select `ARC-Challenge` here |
-| `boolq` | Yes/no reading comprehension | Choice by default; this guide enables Noul with threshold 0.5 |
-| `stsb` | Continuous sentence-similarity ratings | Six output levels, continuous gold; primary metric MAE |
-| `jevbench` | 231 public decisions across all three kinds | Four-/five-level Score; primary public-subset accuracy |
-| `open_decisions` | 2,352 decisions across all three kinds | Three- to six-level Score; primary Capability |
-| `banking77` | Banking intent classification over all 77 classes | The service must accept all 77 options |
-| `reward_bench` | Select the better of two responses | v1 pairwise preferences; existing sample-weighted aggregation |
-| `general_decision` | Your local decisions | One question per record; service must support the options/levels |
+| Benchmark | What it measures |
+|---|---|
+| `arc` | Scientific knowledge and reasoning; this guide uses ARC-Challenge |
+| `boolq` | Yes/no judgments based on a passage; this guide uses Noul |
+| `stsb` | Sentence-pair semantic similarity, rated from 0 to 5 |
+| `jevbench` | Choice, Noul and Score decisions across 231 public tasks |
+| `open_decisions` | Three decision types across 2,352 tasks, including Intelligence, Calibration and Capability |
+| `banking77` | Banking intent recognition across 77 classes |
+| `reward_bench` | Choosing the better of two answers |
+| `general_decision` | Choices, boolean judgments and ratings from your own application |
 
-The currently inspected vLLM Clef-Flash System One path accepts at most 26 Choice options, so it cannot run complete BANKING77. Check actual limits for hosted services as well. Do not prune candidates to bypass a limit.
-
-[JevBench](https://modelscope.cn/datasets/evalscope/jevbench) is the [Benchmark Heaven public subset](https://github.com/fstandhartinger/jevbench), not another benchmark with the same name. It does not produce the full leaderboard Composite. Its family-macro weights task families equally. [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) uses the published `train` split for evaluation only and reports Intelligence, Calibration and Capability using its own official protocol.
+[JevBench](https://modelscope.cn/datasets/evalscope/jevbench) and [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) are available on ModelScope. See the detailed usage documentation linked at the end for sources, scoring definitions and service requirements.
 
 Replace the dataset settings in your working `evaluate.py` to try the comprehensive decision sets.
 
@@ -198,7 +201,7 @@ These three records check formatting and execution. Use independent, representat
 
 Quality evaluation measures decisions; performance testing measures the wait for a decision and the number completed each second.
 
-Stop quality-evaluation traffic on the same service. Fix the model configuration and inputs. These commands use the active terminal's `DECISION_*` settings for Bailian or local Clef-Flash. Respect hosted quotas and begin with a small run.
+Stop quality-evaluation traffic on the same service. Fix the model configuration and inputs. These commands use the active terminal's `DECISION_*` settings for a compatible hosted or local inference service. Respect hosted quotas and begin with a small run.
 
 Export ARC-Challenge Choice, BoolQ Noul and STS-B Score inputs. Each file contains 20 distinct requests by default; performance tests cycle through them.
 
@@ -228,7 +231,7 @@ done
 
 Each kind uses concurrency 1/4/8/16, with 20 warmups and 1,000 measured requests per setting. Export again after switching models so requests do not retain the previous model name.
 
-Open `perf_report.html` in the output directory. Check success rate and failures, then p50/p90/p95/p99 latency and successful requests/s. A p95 of 0.3 seconds means about 95% of successful requests finish within that time. One request is one question here, so successful requests/s equals successful decisions/s.
+In the Web UI Performance page, select the `perf-results` directory and open a run to switch charts, inspect concurrency results and browse request records. The output directory also keeps `perf_report.html`. Check success rate and failures, then p50/p90/p95/p99 latency and successful requests/s. A p95 of 0.3 seconds means about 95% of successful requests finish within that time. One request is one question here, so successful requests/s equals successful decisions/s.
 
 If concurrency raises latency without improving throughput, requests are probably queueing. Network, request length, caching and measurement location also affect comparisons.
 
@@ -236,23 +239,7 @@ If concurrency raises latency without improving throughput, requests are probabl
 
 An invalid decision fails even with HTTP 200. Request latency includes HTTP network, queueing and service execution, rather than model compute alone. These non-streaming decisions do not use TTFT/TPOT/ITL. See the [performance quick start](../user_guides/stress_test/quick_start.md) for additional options.
 
-## 7. Use the same format with TypeSafe Jev
-
-[TypeSafe Jev](https://api.typesafe.ai/redoc) also supports System One. Query `/v1/models` with your account, choose an available model, then change the connection settings.
-
-```bash
-export TYPESAFE_API_KEY='replace-with-your-TypeSafe-key'
-export DECISION_API_KEY="$TYPESAFE_API_KEY"
-export DECISION_API_URL='https://api.typesafe.ai/v1'
-export DECISION_MODEL='replace-with-a-model-name-from-/v1/models'
-python evaluate.py
-```
-
-The script still uses `systemone_api`. Bailian and TypeSafe offer their own models and services; the same API format does not guarantee identical weights, probabilities or limits.
-
-EvalScope also supports AutoTrust JEV's `/v1/decide` using `autotrust_api`. It uses a different request structure; see `examples/decision/serve_autotrust.py`. Its fixed-six-level Score cannot cover complete JevBench/OpenDecisions. Ordinary chat models use `openai_api` and can still run ARC, BANKING77, default-Choice BoolQ and RewardBench for answer correctness. Self-reported confidence in chat does not substitute for option probabilities.
-
-## 8. Customize with ms-swift when needed
+## 7. Customize with ms-swift when needed
 
 [ms-swift](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html) provides decision training for JEV-27B-VL, Cloudflare/clef, OmniJev and generic CausalLMs. Trained models can run through Transformers; a compatible decision-service adapter can then connect them to EvalScope for re-evaluation.
 
@@ -270,3 +257,19 @@ The agent's next step was the starting question. You can now examine the answer,
 | Unsupported Score levels | Preserve the original rubric and use a compatible service |
 | Scores with incomplete review counts | Failed/invalid responses, coverage and saved predictions/reviews |
 | Want a small first run | Keep `limit=5`; use 20 requests for perf |
+
+## Other interfaces
+
+[TypeSafe Jev](https://api.typesafe.ai/redoc) also uses `systemone_api`. Set the address to `https://api.typesafe.ai/v1`, choose a model returned by your account's `/v1/models` and provide its API key. The EvalScope benchmark, scoring and performance-testing workflow stays the same; check each model's capabilities and limits.
+
+AutoTrust JEV's `/v1/decide` uses `autotrust_api`; see `examples/decision/serve_autotrust.py`. Its fixed-six-level Score cannot cover complete JevBench/OpenDecisions. Ordinary chat models use `openai_api` and can run ARC, BANKING77, default-Choice BoolQ and RewardBench for answer correctness. Self-reported confidence in chat does not substitute for option probabilities.
+
+## Continue with EvalScope
+
+For more options and full instructions, see:
+
+- [EvalScope documentation](https://evalscope.readthedocs.io/en/latest/)
+- [Decision API configuration](../user_guides/systemone.md)
+- [Supported benchmarks](../get_started/supported_dataset/llm.md)
+- [Web service and result browsing](../user_guides/service.md)
+- [Performance quick start](../user_guides/stress_test/quick_start.md)

@@ -14,6 +14,8 @@ import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ScoreBadge from '@/components/ui/ScoreBadge'
 import JsonViewer from '@/components/ui/JsonViewer'
 import { RATIO_PERCENT_SEMANTICS } from '@/domain/report/primaryMetrics'
+import { formatMetric } from '@/domain/metric'
+import { decisionObservation } from '@/domain/report/decisionDiagnostics'
 
 /* ─── CollapsibleJson ──────────────────────────────────────── */
 
@@ -91,6 +93,13 @@ export function EvalResultPanel({
   showPred,
 }: EvalResultPanelProps) {
   const { t } = useLocale()
+  const decision = decisionObservation(score.metadata)
+  const resultGold = decision?.gold ?? gold
+  const resultPred = decision?.continuous && decision.expected !== null
+    ? formatMetric(decision.expected, null).primary
+    : pred
+  const values = score.value as Record<string, unknown> | undefined
+  const decisionMae = decision?.continuous && typeof values?.mae === 'number' ? values.mae : null
   const isSameAsGenerated = pred === '*Same as Generated*' || pred === ''
   const metaStr = (() => {
     if (metadata == null) return ''
@@ -130,7 +139,7 @@ export function EvalResultPanel({
               </span>
             ) : (
               <div className="type-body-sm text-[var(--text)]">
-                <MarkdownRenderer content={pred} />
+                <MarkdownRenderer content={resultPred} />
               </div>
             )}
           </div>
@@ -142,16 +151,16 @@ export function EvalResultPanel({
             {t('prediction.expectedAnswer')}
           </div>
           <div className="type-body-sm text-[var(--text)]">
-            {Array.isArray(gold) ? (
+            {Array.isArray(resultGold) ? (
               <ul className="list-disc space-y-1 pl-4">
-                {gold.map((answer, index) => (
+                {resultGold.map((answer, index) => (
                   <li key={`${index}-${answer}`}>
                     <MarkdownRenderer content={answer} />
                   </li>
                 ))}
               </ul>
             ) : (
-              <MarkdownRenderer content={gold} />
+              <MarkdownRenderer content={resultGold} />
             )}
           </div>
         </div>
@@ -180,7 +189,11 @@ export function EvalResultPanel({
               </>
             ) : (
               <>
-                <ScoreBadge score={nScore} semantics={RATIO_PERCENT_SEMANTICS} threshold={threshold} className="self-start" />
+                {decisionMae !== null ? (
+                  <span className="font-mono tabular-nums">MAE ↓ · {formatMetric(decisionMae, null).primary}</span>
+                ) : (
+                  <ScoreBadge score={nScore} semantics={RATIO_PERCENT_SEMANTICS} threshold={threshold} className="self-start" />
+                )}
                 <span className="type-body-xs text-[var(--text-muted)]">
                   {nScore >= threshold ? t('prediction.aboveFilter') : t('prediction.belowFilter')} · {threshold}
                 </span>

@@ -139,6 +139,23 @@ async function renderDetail(detail: PerfDetailResponse = detailFixture) {
 }
 
 describe('PerfReportDetailPage', () => {
+  it.each(['systemone', 'autotrust'])('hides generation timings for %s decisions', async (apiType) => {
+    vi.mocked(perfApi.getPerfRequests).mockResolvedValue({
+      ...EMPTY_REQUESTS,
+      columns: ['#', 'Latency(s)', 'TTFT(ms)', 'TPOT(ms)', 'Success'],
+      rows: [{ '#': 1, 'Latency(s)': 0.1, 'TTFT(ms)': 0, 'TPOT(ms)': 0, Success: 'OK' }],
+      total: 1,
+    })
+    await renderDetail({ ...detailFixture, api_type: apiType, basic_info: { ...detailFixture.basic_info, Protocol: '' } })
+    expect(labelledValue('Protocol')).toBe(apiType === 'systemone' ? 'System One' : 'AutoTrust /decide')
+    expect(screen.getByText(/TTFT, TPOT and ITL are not applicable/)).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: /TTFT|TPOT/ })).not.toBeInTheDocument()
+    const chartTypes = vi.mocked(perfApi.getPerfChartUrl).mock.calls.map((call) => call[2])
+    expect(chartTypes).not.toContain('percentile_token')
+    expect(chartTypes).not.toContain('req_ttft_tpot')
+    expect(chartTypes).toContain('req_latency')
+  })
+
   it('renders Provider and Protocol as two independent labelled fields', async () => {
     await renderDetail()
 

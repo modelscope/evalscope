@@ -221,6 +221,7 @@ export default function ReportDetailPage() {
               reportName={reportName}
               datasetName={activeDataset}
               rootPath={rootPath}
+              report={reportList.find((r) => r.dataset_name === activeDataset)}
               perfMetrics={reportList.find((r) => r.dataset_name === activeDataset)?.perf_metrics}
               overallScore={activeReport?.primaryMetric?.score}
               metricName={activeReport?.primaryMetric

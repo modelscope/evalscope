@@ -8,6 +8,8 @@ import {
   formatMetric,
   formatMetricLabel,
   formatMetricLabels,
+  formatMetricIdentityLabel,
+  metricIdentityKey,
   getBoundedQualityRatio,
   getValuePosition,
 } from '@/domain/metric'
@@ -16,13 +18,15 @@ import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
-import type { PerfMetrics } from '@/api/types'
+import type { PerfMetrics, ReportData } from '@/api/types'
+import DecisionDiagnostics from './DecisionDiagnostics'
 
 interface Props {
   reportName: string
   datasetName: string
   rootPath: string
   perfMetrics?: PerfMetrics | null
+  report?: ReportData
   onSubsetClick?: (subset: string) => void
   overallScore?: number
   metricName?: string
@@ -39,6 +43,7 @@ export default function DetailsTab({
   datasetName,
   rootPath,
   perfMetrics,
+  report,
   onSubsetClick,
   overallScore,
   metricName,
@@ -70,7 +75,10 @@ export default function DetailsTab({
 
   // Detect whether data has Metric column
   const hasMetricCol = subsetData.data.length > 0 && 'Metric' in subsetData.data[0]
-  const metricLabels = formatMetricLabels(
+  const metricLabels = report ? Object.fromEntries(report.metrics.map((metric) => [
+    metricIdentityKey(metric.identity),
+    formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name),
+  ])) : formatMetricLabels(
     Object.entries(semanticsByMetric).map(([name, metricSemantics]) => ({
       metricName: name,
       semantics: metricSemantics,
@@ -108,7 +116,7 @@ export default function DetailsTab({
         // The metric's display name and direction, the same label the header card and every other
         // surface uses. The raw name stays reachable through the tooltip.
         return (
-          <span className="text-xs text-[var(--text-muted)]" title={metricName}>
+          <span className="text-xs break-words text-[var(--text-muted)]" title={metricName}>
             {metricLabels[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
           </span>
         )
@@ -192,6 +200,8 @@ export default function DetailsTab({
           />
         </Card>
       )}
+
+      <DecisionDiagnostics report={report} />
 
       {/* AI Analysis */}
       <Card title={t('reportDetail.analysis')}>

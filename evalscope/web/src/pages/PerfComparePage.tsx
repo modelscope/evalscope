@@ -123,11 +123,11 @@ export default function PerfComparePage() {
     [details, baselineParam],
   )
 
-  // Embedding/rerank runs omit TTFT/TPOT charts (mirrors PerfReportDetailPage).
-  const isEmbedding = details?.[0]?.is_embedding ?? false
+  // Compare only timing measurements that apply to every selected run.
+  const inputOnly = details?.some((detail) => detail.is_embedding || ['systemone', 'autotrust'].includes(detail.api_type)) ?? false
   const latencyCharts = useMemo(
-    () => (isEmbedding ? (['latency'] as const) : LATENCY_CHARTS),
-    [isEmbedding],
+    () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
+    [inputOnly],
   )
 
   if (paths.length < 2) {

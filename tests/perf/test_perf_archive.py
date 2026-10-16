@@ -178,6 +178,29 @@ class TestPerfArchive(unittest.TestCase):
         self.assertEqual(body['num_runs'], 1)
         self.assertEqual(body['basic_info']['API Host'], 'dashscope.aliyuncs.com')
 
+    def test_decision_reports_use_input_metrics_without_generation_timings(self) -> None:
+        for api_type in ('systemone', 'autotrust'):
+            with self.subTest(api=api_type):
+                _write_json(
+                    os.path.join(self.tmp, self.cli_rel, 'parallel_1_number_2', 'benchmark_args.json'),
+                    {'model': 'my-model', 'api': api_type, 'dataset': 'line_by_line'},
+                )
+                query = {'root_path': self.tmp, 'path': self.cli_rel}
+                response = self.client.get('/api/v1/perf/detail', query_string=query)
+                self.assertEqual(response.status_code, 200)
+                body = response.get_json()
+                columns = {column['key'] for column in body['summary_columns']}
+                self.assertIn('input_token_throughput', columns)
+                self.assertIn('Total Input Tokens', body['basic_info'])
+                self.assertNotIn('Total Output Tokens', body['basic_info'])
+                self.assertNotIn('avg_ttft', columns)
+                self.assertNotIn('p99_tpot', columns)
+                self.assertNotIn('output_token_throughput', columns)
+                self.assertFalse(body['is_embedding'])
+                for chart_type in ('ttft', 'tpot', 'req_ttft_tpot', 'percentile_token'):
+                    chart = self.client.get('/api/v1/perf/chart', query_string={**query, 'chart_type': chart_type})
+                    self.assertEqual(chart.status_code, 404)
+
     def test_detail_includes_pd_metrics_when_measured(self):
         pd_rel = os.path.join('20260103_120000', 'pd-model')
         _make_run(os.path.join(self.tmp, pd_rel), with_html=False, with_pd=True)

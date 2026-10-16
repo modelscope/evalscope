@@ -1,4 +1,4 @@
-# 从 Jev 到 Clef-Flash，用 EvalScope 测清决策模型的效果与性能
+# 用 EvalScope 评测决策模型，从效果到性能
 
 一个 Agent 准备结束任务时，需要做一个很小、却很关键的判断。
 
@@ -6,11 +6,11 @@
 
 同样的判断还会出现在它选择搜索工具、检查信息是否充分、给结果打分的时候。这些步骤往往只需要一个选项、一个判断或一个分数。执行得是否准确、概率能否信任、请求多起来会不会排队，都直接影响后面的流程。
 
-Jev 让这类高频判断受到更多关注。TypeSafe 将它做成了面向软件的决策服务，输入业务状态和问题，输出程序可以直接使用的结构化结果与概率。开源模型 Clef-Flash 也提供了类似能力。具体省下多少时间、是否适合你的业务，值得自己测一遍。
+Jev 带动了大家对决策模型的关注。拿到一个模型之后，开发者还需要回答几个实际问题：它擅长哪些判断，给出的概率能否作为依据，以及业务请求多起来以后要等多久。
 
-这篇实践从一次可运行的评测开始。**先调用百炼，再按需部署 Clef-Flash，全程使用 System One 格式。** 最后再把公共测试换成你的业务数据。
+这篇实践围绕 **EvalScope 的使用流程**展开。模型和公开数据从 ModelScope 准备，EvalScope 负责组织请求、评分、生成报告和性能测试。你可以连接已有决策服务，也可以部署开源模型 Clef-Flash；更换服务时沿用同一套 System One 评测配置。
 
-> 配图占位 1｜Agent 选择工具、检查完成度的流程，在每个判断节点标出 Choice、Noul、Score。示意图，不使用未经测量的速度数字。
+> 配图占位 1｜ModelScope 提供模型和数据，推理服务提供决策结果，EvalScope 完成效果评测、报告与性能测试。突出生态中各环节的分工。
 
 ## 1. 先让三类判断跑起来
 
@@ -27,18 +27,17 @@ EvalScope 会保留这些结果，评估答案和概率。这里测的是单次�
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[perf]'
+pip install -e '.[perf,service]'
 ```
 
-### 使用百炼决策 API
+### 连接一个决策服务
 
-准备有权调用 `decision-model-preview` 的百炼 API Key。接入地址以自己的地域和业务空间为准，下面使用北京 trial 地址；需要专属业务空间地址时，按[百炼 API 文档](https://help.aliyun.com/zh/model-studio/decision-model-api)替换。
+EvalScope 需要模型名、服务地址和 API Key。下面以百炼托管的 `decision-model-preview` 为连接示例；使用自己的可用模型和接入地址即可，具体地域、业务空间和权限见[服务文档](https://help.aliyun.com/zh/model-studio/decision-model-api)。已有兼容服务可直接替换这三项；需要部署开源模型时，先按第 3 节准备服务。
 
 ```bash
-export DASHSCOPE_API_KEY='替换为你的百炼 API Key'
-export DECISION_API_KEY="$DASHSCOPE_API_KEY"
-export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
 export DECISION_MODEL='decision-model-preview'
+export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
+export DECISION_API_KEY='替换为所用服务的 API Key'
 ```
 
 将下面代码保存为 `evaluate.py`，执行 `python evaluate.py`。
@@ -72,7 +71,16 @@ run_task(TaskConfig(
 
 ## 2. 报告出来了，先看哪几项
 
-终端会打印输出目录。打开 `outputs/<时间>/reports/report.html` 看汇总，在同一次运行的 `predictions/` 和 `reviews/` 中追查具体样本。
+评测结束后，在 EvalScope Web UI 里查看结果。从源码安装时，首次使用需先安装 Node.js 并构建页面；在源码根目录执行：
+
+```bash
+make web-build
+evalscope service --host 127.0.0.1 --port 9000 --outputs ./outputs
+```
+
+打开 `http://127.0.0.1:9000`，进入「评估」，点击模型报告。「详情」可查看各指标，并选择题型、概率来源和接收覆盖范围，查看对应风险；「预测浏览」支持切换数据集、筛选样本和逐条翻看概率分布。原始概率与评分用概率可以切换查看。
+
+终端打印的输出目录还保留了 `predictions/`、`reviews/` 和 HTML 汇总，方便保存和复查。
 
 先检查请求成功数、有效评分数量和覆盖情况，再读分数。只完成一部分题的高分，不能代表整套测试。
 
@@ -102,21 +110,18 @@ run_task(TaskConfig(
 
 样本太少、只有一个类别或评分没有变化时，有些指标无法计算。先看报告给出的原因，缺项不等于零分。二分类和多分类 Brier、不同 Score 档位的误差也不宜混在一起比较。
 
-## 3. 换成开源模型，沿用同一种接口
+## 3. 从 ModelScope 下载开源模型并部署
 
-线上 API 跑通后，如果你有 GPU，或者希望自己控制模型服务，可以尝试 [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash)。
+需要自己部署时，可以从 ModelScope 下载 [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash)。设置 `VLLM_USE_MODELSCOPE=true` 后，vLLM 会自动从 ModelScope 下载并加载模型，再交给 EvalScope 评测。
 
 Clef-Flash 是基于 Qwen3.5-9B 的约 90 亿参数模型，使用联合决策头输出候选概率。本文使用文本输入。
 
 以下部署面向 Linux / NVIDIA GPU，需要足够的显存。目前 [vLLM 最新开发文档](https://docs.vllm.ai/en/latest/models/structured_decisions_models/)已列出 Clef-Flash 的原生 System One 支持。请安装包含该实现的开发版本；旧版仅能加载底座，并不代表已经加载了决策头。
 
 ```bash
-pip install -U uv modelscope
-uv pip install -U vllm --torch-backend auto \
-  --extra-index-url https://wheels.vllm.ai/nightly
-modelscope download --model Cloudflare/clef-flash \
-  --local_dir ./models/clef-flash
-vllm serve ./models/clef-flash \
+pip install -U modelscope
+pip install -U --pre vllm --extra-index-url https://wheels.vllm.ai/nightly
+VLLM_USE_MODELSCOPE=true vllm serve Cloudflare/clef-flash \
   --served-model-name clef-flash \
   --max-model-len 16384 --port 8000
 ```
@@ -143,24 +148,22 @@ curl "$DECISION_API_URL/systemone" \
 
 **部署验证范围**：上述命令依据 vLLM 当前开发文档整理，尚未在 NVIDIA GPU 上完成本项目的部署验收；此前 Clef-Flash 的真实效果验证使用官方 PyTorch 推理。二者不能混为同一次验证。正式比较时记录模型 revision、vLLM 版本、启动参数，并核对长输入是否被截断。
 
-## 4. 接下来，选更贴近目标的 benchmark
+## 4. 从 ModelScope 选择评测数据
 
-前面的三组数据适合入门。想看更广泛的决策能力，再按目标增加测试。
+前面的三组数据适合入门。EvalScope 将 benchmark 名称对应到 ModelScope 上的数据，并按任务要求构造请求、读取标准答案和计算指标。扩展评测时，按目标调整数据配置即可。
 
-| Benchmark | 测什么 | 使用时留意什么 |
-|---|---|---|
-| `arc` | 科学选择题 | 本文选择 `ARC-Challenge` |
-| `boolq` | 根据短文回答是非题 | 默认 Choice；本文显式使用 Noul，默认阈值 0.5 |
-| `stsb` | 连续的句子相似度评分 | 六档输出、连续标准答案，主指标 MAE |
-| `jevbench` | 三类综合决策，共 231 道公开题 | 含四／五档 Score；主指标为公开子集准确率 |
-| `open_decisions` | 三类综合决策，共 2,352 道题 | 含三至六档 Score；主指标为 Capability |
-| `banking77` | 完整 77 类银行业务意图分类 | 需要服务接受全部 77 个选项 |
-| `reward_bench` | 从两个回答中选择更好的一个 | v1 成对偏好，沿用现有样本加权汇总 |
-| `general_decision` | 自己的本地决策数据 | 一行一道题，选项／等级须与服务能力匹配 |
+| Benchmark | 测什么 |
+|---|---|
+| `arc` | 科学知识和推理，本文使用 ARC-Challenge 选择题 |
+| `boolq` | 阅读短文后的是非判断，本文使用 Noul |
+| `stsb` | 两句话的语义相似度，按 0–5 分评价 |
+| `jevbench` | Choice、Noul、Score 三类综合决策，共 231 道公开题 |
+| `open_decisions` | 三类综合决策，共 2,352 道题，评估 Intelligence、Calibration 和 Capability |
+| `banking77` | 77 类银行业务意图识别 |
+| `reward_bench` | 比较两个回答，选出更好的一个 |
+| `general_decision` | 自己业务中的选择、是非判断和分级评分 |
 
-目前核对的 vLLM Clef-Flash System One 路径最多接受 26 个 Choice 选项，不能直接运行完整 BANKING77。百炼等服务也应按实际限制选择任务，不要裁剪候选项来凑兼容。
-
-[JevBench](https://modelscope.cn/datasets/evalscope/jevbench)来自 [Benchmark Heaven 的公开子集](https://github.com/fstandhartinger/jevbench)，与其他同名 benchmark 不同，不输出完整榜单的 Composite。其 family-macro 对不同题目家族同等计权。[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions)使用发布包的 `train` 划分做评测，不会训练模型；同时报告 Intelligence、Calibration 和 Capability，采用该 benchmark 自己的官方口径。
+[JevBench](https://modelscope.cn/datasets/evalscope/jevbench)和[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions)已在 ModelScope 提供。数据来源、评分定义及服务能力要求，可在文末的详细使用文档中查阅。
 
 在已跑通的 `evaluate.py` 中，将数据设置替换为下面两行，就能先试跑综合决策题。
 
@@ -198,7 +201,7 @@ dataset_args={'general_decision': {'local_path': './decision-data'}},
 
 效果评测回答选得怎么样，性能测试回答一次判断要等多久、服务每秒能完成多少次判断。
 
-先停止同一服务上的效果评测，固定模型配置和测试输入。下面的命令继续使用当前终端的 `DECISION_*` 参数，可以连接百炼，也可以连接本地 Clef-Flash。线上测试需遵守服务配额，先从小规模开始。
+先停止同一服务上的效果评测，固定模型配置和测试输入。下面的命令继续使用当前终端的 `DECISION_*` 参数，适用于兼容的线上或本地推理服务。线上测试需遵守服务配额，先从小规模开始。
 
 导出 ARC-Challenge Choice、BoolQ Noul 和 STS-B Score 三组请求。每组默认 20 个不同输入，压测时循环取用。
 
@@ -228,7 +231,7 @@ done
 
 每种题型分别在 1、4、8、16 并发下，先预热 20 次，再正式测 1,000 次。切换模型后重新导出请求，避免文件中仍保留旧模型名。
 
-打开输出目录的 `perf_report.html`。先确认成功率和失败数，再看 p50／p90／p95／p99 延迟，以及成功 req/s。p95 为 0.3 秒，表示约 95% 的成功请求在 0.3 秒内完成；这里每请求一道题，成功 req/s 也就是成功 decisions/s。
+在 Web UI 的「性能」页选择 `perf-results` 目录，打开运行记录，可切换图表、查看不同并发结果和逐请求记录；输出目录也保留 `perf_report.html`。先确认成功率和失败数，再看 p50／p90／p95／p99 延迟，以及成功 req/s。p95 为 0.3 秒，表示约 95% 的成功请求在 0.3 秒内完成；这里每请求一道题，成功 req/s 也就是成功 decisions/s。
 
 并发升高时，如果吞吐几乎不变，延迟却持续变长，通常是在排队。比较线上和本地结果时，还要留意网络、请求长度、缓存和测量位置，不能只拿一个吞吐数字排名。
 
@@ -236,23 +239,7 @@ done
 
 HTTP 200 但决策结果非法，也会记为失败。请求延迟包含客户端 HTTP 请求中的网络、排队和服务执行，不是单独的模型计算时间。本文使用非流式决策，不看逐字生成的 TTFT、TPOT、ITL。更多参数见[性能评测快速开始](../user_guides/stress_test/quick_start.md)。
 
-## 7. 同一种格式，也支持 TypeSafe Jev
-
-[TypeSafe Jev](https://api.typesafe.ai/redoc)也支持 System One。在自己的账号中查询 `/v1/models`，选择当前可用模型名，再设置连接参数。
-
-```bash
-export TYPESAFE_API_KEY='替换为你的 TypeSafe API Key'
-export DECISION_API_KEY="$TYPESAFE_API_KEY"
-export DECISION_API_URL='https://api.typesafe.ai/v1'
-export DECISION_MODEL='替换为 /v1/models 返回的模型名'
-python evaluate.py
-```
-
-`evaluate.py` 仍使用 `systemone_api`。百炼与 TypeSafe 提供的是各自的模型和服务，同一种 API 格式不保证权重、概率质量和使用限制相同。
-
-EvalScope 也支持 AutoTrust JEV 的 `/v1/decide`，对应 `autotrust_api`；它是另一种请求结构，示例服务见 `examples/decision/serve_autotrust.py`。其 Score 固定六档，不能直接评完整 JevBench／OpenDecisions。普通 chat 模型使用 `openai_api`，仍可运行 ARC、BANKING77、默认 Choice 的 BoolQ、RewardBench 来测答案正确率；聊天中自报的把握不能替代候选概率。
-
-## 8. 需要业务定制时，接上 ms-swift
+## 7. 需要业务定制时，接上 ms-swift
 
 [ms-swift](https://swift.readthedocs.io/zh-cn/latest/BestPractices/Decision.html)支持决策模型训练，已有 JEV-27B-VL、Cloudflare/clef、OmniJev 和通用 CausalLM 路径。训练后的模型可通过 Transformers 加载并推理，再适配成兼容决策服务，交给 EvalScope 复评。
 
@@ -270,3 +257,19 @@ EvalScope 也支持 AutoTrust JEV 的 `/v1/decide`，对应 `autotrust_api`；�
 | Score 档位不支持 | 保留原始等级，选择兼容服务 |
 | 有分数但评分数量不足 | 请求失败、非法响应和覆盖率，查看 predictions／reviews |
 | 第一次只想确认能跑 | 质量评测保留 `limit=5`；perf 先用 20 次请求 |
+
+## 接口补充
+
+[TypeSafe Jev](https://api.typesafe.ai/redoc)同样使用 `systemone_api`。服务地址设为 `https://api.typesafe.ai/v1`，模型名从账号的 `/v1/models` 查询，API Key 换成该服务的 key。EvalScope 的 benchmark、评分和性能测试用法保持一致；不同模型的能力和使用限制仍需分别确认。
+
+AutoTrust JEV 的 `/v1/decide` 对应 `autotrust_api`，示例服务见 `examples/decision/serve_autotrust.py`。其 Score 固定六档，不能直接评完整 JevBench／OpenDecisions。普通 chat 模型使用 `openai_api`，仍可运行 ARC、BANKING77、默认 Choice 的 BoolQ、RewardBench 来测答案正确率；聊天中自报的把握不能替代候选概率。
+
+## 继续使用 EvalScope
+
+更多参数和完整说明，可按需要查阅：
+
+- [EvalScope 使用文档](https://evalscope.readthedocs.io/zh-cn/latest/)
+- [决策模型 API 与配置](../user_guides/systemone.md)
+- [评测数据集](../get_started/supported_dataset/llm.md)
+- [Web 服务与结果查看](../user_guides/service.md)
+- [性能评测快速开始](../user_guides/stress_test/quick_start.md)
