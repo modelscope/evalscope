@@ -175,6 +175,18 @@ _LABEL_CONNECTORS = {'and', 'or'}
 _LABEL_CONNECTOR_RE = re.compile(r'\s+(?:and|or)\s+', re.IGNORECASE)
 
 
+def extract_answer_line(text: str) -> Optional[str]:
+    """Text after the last 'ANSWER:' marker, up to the end of its line, without bold markers.
+
+    The marker is matched like the multiple-choice parser does, in any case and inside or around
+    markdown bold ('**ANSWER: 45**', 'ANSWER: **45**', 'Answer: 45').  Returns None without a marker.
+    """
+    markers = list(_ANSWER_MARKER_RE.finditer(text or ''))
+    if not markers:
+        return None
+    return text[markers[-1].end() :].split('\n', 1)[0].strip().strip('*').strip()
+
+
 def _fallback_parse_answer(completion: str, allowed_options: set[str]) -> Optional[set[str]]:
     # Fallback to find the last upper case letter
     for letter in reversed(completion):
