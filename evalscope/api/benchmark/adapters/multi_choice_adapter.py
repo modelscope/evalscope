@@ -38,7 +38,8 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         super().__init__(**kwargs)
 
         if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
-            self._benchmark_meta.primary_metric = MetricSelector(name='accuracy', aggregation='mean')
+            if 'primary_metric' not in self._task_config.dataset_args.get(self.name, {}):
+                self._benchmark_meta.primary_metric = MetricSelector(name='accuracy', aggregation='mean')
         elif self.extra_params.get('decision_kind', 'choice') != 'choice':
             raise ValueError('Noul conversion requires systemone_api or autotrust_api.')
         self.multiple_correct: bool = False

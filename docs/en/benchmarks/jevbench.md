@@ -17,6 +17,7 @@ Public 231 Benchmark Heaven decisions, preserving original rubrics and labels.
 - Pinned Benchmark Heaven public snapshot: 72 original, 48 easy and 111 hard tasks (139 Choice, 74 Noul, 18 Score)
 - Source: [fstandhartinger/jevbench](https://github.com/fstandhartinger/jevbench/tree/609a664e81f46e03731600bd7bd9f1b7a61257c5); MIT-licensed public records
 - Preserves option order, source IDs and rubric descriptions
+- Uses the ModelScope public-task mirror; the official Hugging Face JevBench repository contains leaderboard results, not these task records
 - Supports System One and native AutoTrust APIs within their declared capabilities
 
 ## Evaluation Notes
@@ -58,7 +59,7 @@ Public 231 Benchmark Heaven decisions, preserving original rubrics and labels.
 {
   "input": [
     {
-      "id": "f98fca19",
+      "id": "87ffaae3",
       "content": "{\"state\": \"Where is my package? I ordered it last week and it still hasn't arrived.\", \"question\": {\"criteria\": {\"billing_question\": \"Asks about a charge, invoice or payment\", \"cancel_order\": \"Wants to cancel an order\", \"change_address\": \"Wants to change the delivery address\", \"report_damage\": \"Received an item that is broken or damaged\", \"track_order\": \"Wants to know where an order is or when it arrives\"}, \"instructions\": \"Which intent does the user's message express?\", \"type\": \"choice\"}}",
       "internal": {
         "systemone": {

@@ -68,7 +68,24 @@ An explicit `api_key` takes precedence. When it is omitted, `None`, empty or the
 - ContractNLI uses full-document `contractnli_b`, evaluating classification only, without evidence extraction.
 - RewardBench uses v1 filtered pairs with deterministic position shuffling. Overall accuracy is weighted by sample count, not the official category-weighted leaderboard score.
 
-The five new benchmarks default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
+The list above covers existing multiple-choice adapters. `jevbench`, `open_decisions`, `stsb` and `general_decision` also support native typed decisions with zero-shot rule grading; see the [best practice](../best_practice/decision_evaluation.md).
+
+Public datasets default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
+
+### Using Hugging Face datasets
+
+With `TaskConfig(dataset_hub='huggingface', ...)`, the framework selects the corresponding HF repository automatically. Benchmark names stay the same.
+
+| Benchmark | Hugging Face dataset ID |
+|---|---|
+| `arc` | `allenai/ai2_arc` |
+| `banking77` | `mteb/banking77` |
+| `boolq` | `google/boolq` |
+| `reward_bench` | `allenai/reward-bench` |
+| `stsb` | `sentence-transformers/stsb` |
+| `open_decisions` | `jgeuter/OpenDecisions` |
+
+OpenDecisions defaults to HF's `test` or ModelScope's `train`; both contain the same tasks. For historical revisions, set `dataset_args.open_decisions.eval_split` explicitly if needed. `jevbench` uses `evalscope/jevbench` on ModelScope: the [official HF repository](https://huggingface.co/datasets/benchmarkheaven/jevbench) contains leaderboard results rather than the task records used here. `general_decision` reads local files and needs no HF ID.
 
 ## Results and reproducibility
 
@@ -76,7 +93,7 @@ System One uses the existing `Model.generate(messages)` entry point. MCQ adapter
 
 Returned labels are rendered in the benchmark's existing answer format, such as `ANSWER: A`, `答案：A` or `ANSWER: 51`, and then use the existing answer extraction, scoring, cache and report flow.
 
-Prediction JSONL files retain raw labels, probabilities and provider confidence in `model_output.metadata.choice_response.answers.answer`; `choice_request` retains the complete actual request. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization. Message text displays the question and options; system messages and `internal` retain the instructions, context and demonstrations needed for conversion.
+Prediction JSONL files retain raw labels, probabilities and provider confidence in `model_output.metadata.choice_response.answers.answer`; `choice_request` retains the complete actual request. Two-decimal probability distributions are validated with their rounding tolerance; original values stay unchanged. Scoring distributions and normalization flags are stored separately in review metadata, and the Web UI can switch between the two views. Message text displays the question and options; system messages and `internal` retain the instructions, context and demonstrations needed for conversion.
 
 Configurations and original requests retain Choice instructions and few-shot settings. Execution statistics distinguish successes, failures and incomplete runs. Invalid responses terminate a run by default; with `ignore_errors=True`, failed samples are excluded and their coverage is reported.
 

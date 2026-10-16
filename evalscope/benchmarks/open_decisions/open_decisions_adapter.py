@@ -1,8 +1,13 @@
+from typing import TYPE_CHECKING
+
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import Tags
+from evalscope.constants import HubType, Tags
+
+if TYPE_CHECKING:
+    from evalscope.config import TaskConfig
 
 
 @register_benchmark(
@@ -11,6 +16,7 @@ from evalscope.constants import Tags
         pretty_name='OpenDecisions',
         tags=[Tags.DECISION],
         dataset_id='evalscope/OpenDecisions',
+        hf_dataset_id='jgeuter/OpenDecisions',
         eval_split='train',
         train_split=None,
         evaluation_version='v1.0',
@@ -20,7 +26,7 @@ from evalscope.constants import Tags
         description="""
 ## Overview
 
-OpenDecisions v1.0: 2352 typed decisions. The upstream train split is evaluation-only.
+OpenDecisions: 2352 typed decisions. Loads the ModelScope train split or the Hugging Face test split for evaluation only.
 
 ## Task Description
 
@@ -54,6 +60,17 @@ class OpenDecisionsAdapter(DecisionAdapter):
     aggregate_empty_scores = True
     probability_sum_tolerance = 0.01
     normalization_threshold = 0.01
+
+    def __init__(self, benchmark_meta: BenchmarkMeta, task_config: 'TaskConfig | None' = None) -> None:
+        """Select the upstream split default while preserving explicit user configuration."""
+        super().__init__(benchmark_meta, task_config)
+        explicit_split = task_config and 'eval_split' in task_config.dataset_args.get(self.name, {})
+        if (
+            self.dataset_hub == HubType.HUGGINGFACE
+            and self.dataset_id == 'jgeuter/OpenDecisions'
+            and not explicit_split
+        ):
+            self.eval_split = 'test'
 
     def aggregate_scores(self, sample_scores: list) -> list:
         from .utils import aggregate_official

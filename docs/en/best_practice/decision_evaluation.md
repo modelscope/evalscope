@@ -80,6 +80,8 @@ evalscope service --host 127.0.0.1 --port 9000 --outputs ./outputs
 
 Open `http://127.0.0.1:9000`, choose Evaluations and open the model report. Details shows metrics and lets you select the decision group, confidence source and accepted coverage to inspect risk. Predictions supports dataset switching, sample filtering and per-sample probability distributions, with original and scoring probability views.
 
+For each sample, the probability panel shows the prediction, reference and option probabilities. Evaluation Result shows the score. Raw scoring data stays collapsed until you need it for troubleshooting.
+
 The output directory also keeps `predictions/`, `reviews/` and the HTML summary for later inspection.
 
 Check successful requests, valid review counts and coverage before reading scores. A high score on a partially completed test does not represent the whole benchmark.
@@ -246,8 +248,6 @@ An invalid decision fails even with HTTP 200. Request latency includes HTTP netw
 [ms-swift](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html) provides decision training for JEV-27B-VL, Cloudflare/clef, OmniJev and generic CausalLMs. Trained models can run through Transformers; a compatible decision-service adapter can then connect them to EvalScope for re-evaluation.
 
 `Cloudflare/clef` and `clef-flash` are different models. Exporting a trained ms-swift checkpoint to vLLM System One requires separate adaptation and validation; this guide does not claim that complete training-to-serving path has been verified. Keep training, calibration and evaluation data separate.
-
-The agent's next step was the starting question. You can now examine the answer, the probability and the wait under load, keeping evidence to revisit when the model, rules or training change.
 
 ## Troubleshooting
 

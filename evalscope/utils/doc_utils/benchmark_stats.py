@@ -645,7 +645,9 @@ def compute_benchmark_statistics(
         try:
             from evalscope.config import TaskConfig
 
-            adapter._task_config = TaskConfig(model='dummy', datasets=[adapter.name])
+            adapter._task_config = TaskConfig(
+                model='dummy', datasets=[adapter.name], eval_type=getattr(adapter, 'doc_eval_type', None)
+            )
         except Exception as e:
             logger.warning(f'Could not create TaskConfig for {adapter.name}: {e}')
             return DataStatistics(computed_at=current_time().isoformat())
@@ -803,7 +805,9 @@ def get_sample_example(
         try:
             from evalscope.config import TaskConfig
 
-            adapter._task_config = TaskConfig(model='dummy', datasets=[adapter.name])
+            adapter._task_config = TaskConfig(
+                model='dummy', datasets=[adapter.name], eval_type=getattr(adapter, 'doc_eval_type', None)
+            )
         except Exception as e:
             logger.warning(f'Could not create TaskConfig for {adapter.name}: {e}')
             return None

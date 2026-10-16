@@ -34,6 +34,7 @@ Public 231 Benchmark Heaven decisions, preserving original rubrics and labels.
 - Pinned Benchmark Heaven public snapshot: 72 original, 48 easy and 111 hard tasks (139 Choice, 74 Noul, 18 Score)
 - Source: [fstandhartinger/jevbench](https://github.com/fstandhartinger/jevbench/tree/609a664e81f46e03731600bd7bd9f1b7a61257c5); MIT-licensed public records
 - Preserves option order, source IDs and rubric descriptions
+- Uses the ModelScope public-task mirror; the official Hugging Face JevBench repository contains leaderboard results, not these task records
 - Supports System One and native AutoTrust APIs within their declared capabilities
 
 ## Evaluation Notes

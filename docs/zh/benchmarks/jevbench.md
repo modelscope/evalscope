@@ -3,30 +3,32 @@
 
 ## 概述
 
-公开的231个Benchmark Heaven决策，保留了原始的评分标准和标签。
+公开的 231 个 Benchmark Heaven 决策，保留了原始的评分标准和标签。
 
 ## 任务描述
 
 - **任务类型**: 文本决策
 - **输入**: 状态和一个带有命名选项或有序级别的问题
-- **输出**: 选择、是的概率或序数得分分布
+- **输出**: 选择、是的概率或顺序得分分布
 - **领域**: 文本理解和决策
 
 ## 主要特点
 
-- 固定的Benchmark Heaven公开快照：72个原始任务，48个简单任务和111个困难任务（139个选择题，74个Noul题，18个评分题）
-- 来源: [fstandhartinger/jevbench](https://github.com/fstandhartinger/jevbench/tree/609a664e81f46e03731600bd7bd9f1b7a61257c5); MIT许可的公开记录
-- 保留选项顺序、来源ID和评分标准描述
-- 支持System One和原生AutoTrust API在其声明的能力范围内
+- 固定的 Benchmark Heaven 公开快照：72 个原始任务，48 个简单任务和 111 个困难任务（139 个选择题，74 个 Noul 题，18 个评分题）
+- 来源: [fstandhartinger/jevbench](https://github.com/fstandhartinger/jevbench/tree/609a664e81f46e03731600bd7bd9f1b7a61257c5); MIT 许可的公开记录
+- 保留选项顺序、来源 ID 和评分描述
+- 使用 ModelScope 公共任务镜像；Hugging Face 的官方 JevBench 仓库包含排行榜结果，而不是这些任务记录
+- 支持 System One 和在其声明能力范围内的原生 AutoTrust API
 
 ## 评估说明
 
 - 零样本确定性评分；黄金答案和来源从未进入请求
-- 主要指标：公共子集准确率（缺失的预测计为错误）；还包括家族宏观准确率、每种类型的概率指标和评分期望值误差
-- 四级和五级评分任务保留其原始评分标准；AutoTrust固定六级服务明确拒绝这些任务
+- 主要指标：公共子集准确率（缺失预测计为错误）；还包括家族宏准确率、每种类型的概率指标和评分期望值误差
+- 四级和五级评分任务保留其原始评分标准；AutoTrust 固定六级服务明确拒绝这些任务
 - 无效响应被排除在普通指标之外，并反映在执行覆盖率中
-- 公开评分器：概率总和容差0.001；仅在0.02范围内进行归一化；Noul平局选择否
-- 此公开快照不产生完整的JevBench复合或能力排行榜指标
+- 公共评分器：概率总和容差 0.001；仅在 0.02 范围内且超过 0.001 时进行归一化；Noul 平局选择无
+- 此公开快照不生成完整的 JevBench 综合或能力排行榜指标
+
 
 ## 属性
 
@@ -37,7 +39,7 @@
 | **论文** | N/A |
 | **标签** | `Decision` |
 | **指标** | `public_accuracy` |
-| **默认样本数** | 0-shot |
+| **默认示例数** | 0-shot |
 | **评估分割** | `test` |
 
 
@@ -57,7 +59,7 @@
 {
   "input": [
     {
-      "id": "f98fca19",
+      "id": "87ffaae3",
       "content": "{\"state\": \"Where is my package? I ordered it last week and it still hasn't arrived.\", \"question\": {\"criteria\": {\"billing_question\": \"Asks about a charge, invoice or payment\", \"cancel_order\": \"Wants to cancel an order\", \"change_address\": \"Wants to change the delivery address\", \"report_damage\": \"Received an item that is broken or damaged\", \"track_order\": \"Wants to know where an order is or when it arrives\"}, \"instructions\": \"Which intent does the user's message express?\", \"type\": \"choice\"}}",
       "internal": {
         "systemone": {
@@ -106,7 +108,7 @@
 
 ## 使用方法
 
-### 使用CLI
+### 使用 CLI
 
 ```bash
 evalscope eval \
@@ -118,7 +120,7 @@ evalscope eval \
     --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用Python
+### 使用 Python
 
 ```python
 from evalscope import run_task

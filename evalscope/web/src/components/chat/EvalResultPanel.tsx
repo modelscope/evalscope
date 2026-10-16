@@ -94,10 +94,6 @@ export function EvalResultPanel({
 }: EvalResultPanelProps) {
   const { t } = useLocale()
   const decision = decisionObservation(score.metadata)
-  const resultGold = decision?.gold ?? gold
-  const resultPred = decision?.continuous && decision.expected !== null
-    ? formatMetric(decision.expected, null).primary
-    : pred
   const values = score.value as Record<string, unknown> | undefined
   const decisionMae = decision?.continuous && typeof values?.mae === 'number' ? values.mae : null
   const isSameAsGenerated = pred === '*Same as Generated*' || pred === ''
@@ -122,12 +118,12 @@ export function EvalResultPanel({
 
       <div
         className={`grid grid-cols-1 gap-0 px-4 py-4 ${
-          showPred
+          decision ? '' : showPred
             ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(9rem,auto)]'
             : 'md:grid-cols-[minmax(0,1fr)_minmax(9rem,auto)]'
         }`}
       >
-        {showPred && (
+        {!decision && showPred && (
           <div className="pb-4 md:border-r md:border-[var(--border)] md:pb-0 md:pr-4">
             <div className={eyebrowBase}>
               <Scissors size={13} />
@@ -139,33 +135,33 @@ export function EvalResultPanel({
               </span>
             ) : (
               <div className="type-body-sm text-[var(--text)]">
-                <MarkdownRenderer content={resultPred} />
+                <MarkdownRenderer content={pred} />
               </div>
             )}
           </div>
         )}
 
-        <div className={`${showPred ? 'border-t border-[var(--border)] py-4 md:border-t-0 md:px-4 md:py-0' : 'pb-4 md:border-r md:border-[var(--border)] md:pb-0 md:pr-4'} md:border-r`}>
+        {!decision && <div className={`${showPred ? 'border-t border-[var(--border)] py-4 md:border-t-0 md:px-4 md:py-0' : 'pb-4 md:border-r md:border-[var(--border)] md:pb-0 md:pr-4'} md:border-r`}>
           <div className={eyebrowBase}>
             <Target size={13} />
             {t('prediction.expectedAnswer')}
           </div>
           <div className="type-body-sm text-[var(--text)]">
-            {Array.isArray(resultGold) ? (
+            {Array.isArray(gold) ? (
               <ul className="list-disc space-y-1 pl-4">
-                {resultGold.map((answer, index) => (
+                {gold.map((answer, index) => (
                   <li key={`${index}-${answer}`}>
                     <MarkdownRenderer content={answer} />
                   </li>
                 ))}
               </ul>
             ) : (
-              <MarkdownRenderer content={resultGold} />
+              <MarkdownRenderer content={gold} />
             )}
           </div>
-        </div>
+        </div>}
 
-        <div className="border-t border-[var(--border)] pt-4 md:border-t-0 md:pl-4 md:pt-0">
+        <div className={decision ? '' : 'border-t border-[var(--border)] pt-4 md:border-t-0 md:pl-4 md:pt-0'}>
           <div className={eyebrowBase}>
             <Gauge size={13} />
             {t('prediction.score')}
@@ -207,7 +203,7 @@ export function EvalResultPanel({
         <div className="flex flex-col gap-1 border-t border-[var(--border)] px-4 py-3">
           {Object.keys(score).length > 0 && (
             <CollapsibleJson
-              label={t('prediction.scoreJson')}
+              label={t(decision ? 'reportDetail.decisionScoreJson' : 'prediction.scoreJson')}
               value={score}
               maxHeight={200}
               icon={<FileJson size={11} />}

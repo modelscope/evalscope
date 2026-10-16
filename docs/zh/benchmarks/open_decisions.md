@@ -3,31 +3,31 @@
 
 ## 概述
 
-OpenDecisions v1.0：2352 个类型决策。上游训练集仅用于评估。
+OpenDecisions：2352 个类型化的决策。仅用于评估，加载 ModelScope 的训练集拆分或 Hugging Face 的测试集拆分。
 
 ## 任务描述
 
-- **任务类型**：类型文本决策
+- **任务类型**：类型化文本决策
 - **输入**：状态和一个带有命名选项或有序级别的问题
-- **输出**：选择、肯定的概率或顺序得分分布
-- **领域**：文本理解和决策
+- **输出**：选择、是的概率或序数得分分布
+- **领域**：文本理解和决策制定
 
 ## 主要特点
 
-- 1178 个选择任务，586 个 Noul 任务和 588 个评分任务；多语言输入
-- 数据集：[jgeuter/OpenDecisions](https://huggingface.co/datasets/jgeuter/OpenDecisions)；数据采用 CC BY-SA 4.0 许可，并附带每项来源证明，评分器采用 MIT 许可
+- 1178 个选择任务、586 个 Noul 任务和 588 个评分任务；多语言输入
+- 数据集：[jgeuter/OpenDecisions](https://huggingface.co/datasets/jgeuter/OpenDecisions)；数据采用 CC BY-SA 4.0 许可，每个项目的来源信息，评分器采用 MIT 许可
 - 保留选项顺序、源 ID 和评分标准描述
-- 支持 System One 和在其声明能力范围内的原生 AutoTrust API
+- 支持在其声明的能力范围内的 System One 和原生 AutoTrust API
 
 ## 评估说明
 
-- 零样本确定性评分；黄金答案和来源证明从未进入请求
-- 主要：能力；官方智能和校准使用固定版本 v1.0 的评分器，修订号为 `5026a13ad6e5a8606810a3a5c4e410d8d6638e71`
+- 零样本确定性评分；黄金答案和来源信息永远不会进入请求
+- 主要指标：能力；官方智能和校准使用固定版本 v1.0 的评分器，修订号为 `5026a13ad6e5a8606810a3a5c4e410d8d6638e71`
 - 官方值存储为比率（显示为百分比）；在智能评估中，缺失的预测计为错误
 - 普通概率指标仅使用有效预测。Noul 的阈值在官方协议中为 0.5
 - 无效响应被排除在普通指标之外，并反映在执行覆盖率中
-- 评分标准有 3 到 6 个级别。AutoTrust 固定六个级别的服务无法评估完整数据集
-- 限制/随机运行仅对选定项目进行评分，不得与完整的排行榜运行进行比较
+- 评分标准有 3 到 6 个级别。AutoTrust 固定六级的服务无法评估完整数据集
+- 限制/随机运行只对选定项目进行评分，不应与完整的排行榜运行进行比较
 
 ## 属性
 
@@ -39,7 +39,7 @@ OpenDecisions v1.0：2352 个类型决策。上游训练集仅用于评估。
 | **标签** | `Decision` |
 | **指标** | `capability` |
 | **默认示例数** | 0-shot |
-| **评估分割** | `train` |
+| **评估拆分** | `train` |
 
 
 ## 数据统计
@@ -58,7 +58,7 @@ OpenDecisions v1.0：2352 个类型决策。上游训练集仅用于评估。
 {
   "input": [
     {
-      "id": "fe3dcf15",
+      "id": "6e41ac5e",
       "content": "{\"state\": \"Here are three expense lines from my trip. Turn them into a JSON list with fields merchant, date, amount_usd.\\n- Blue Cafe, 2024-03-02, $14.50\\n- MetroCab, 2024-03-02, $23.00\\n- Hotel Lira, 2024-03-04, $189.90\", \"question\": {\"type\" ... [TRUNCATED 79 chars] ... .\", \"criteria\": {\"chitchat\": \"Casual small talk, no task.\", \"creative_writing\": \"Compose original text.\", \"extraction_json\": \"Pull given details into a structured JSON shape.\", \"data_analysis\": \"Compute statistics or trends over the data.\"}}}",
       "internal": {
         "systemone": {
@@ -99,7 +99,7 @@ OpenDecisions v1.0：2352 个类型决策。上游训练集仅用于评估。
 }
 ```
 
-*注：部分内容因显示原因被截断。*
+*注：部分内容为了显示而被截断。*
 
 ## 提示模板
 

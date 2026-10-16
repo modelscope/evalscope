@@ -13,6 +13,47 @@ from evalscope.constants import ScoreStatus
 from evalscope.metrics.decision import DecisionAggregator, decision_score
 
 
+@pytest.mark.parametrize(
+    ('hub', 'args', 'expected'),
+    [
+        ('modelscope', {}, 'train'),
+        ('huggingface', {}, 'test'),
+        ('huggingface', {'eval_split': 'train'}, 'train'),
+        ('huggingface', {'dataset_id': 'custom/decisions'}, 'train'),
+    ],
+)
+def test_open_decisions_split_follows_source_and_explicit_configuration(hub: str, args: dict, expected: str) -> None:
+    adapter = get_benchmark('open_decisions', TaskConfig(
+        model='test', datasets=['open_decisions'], dataset_hub=hub,
+        dataset_args={'open_decisions': args},
+    ))
+    assert adapter.eval_split == expected
+
+
+def test_decision_mcq_preserves_an_explicit_primary_metric() -> None:
+    adapter = get_benchmark('boolq', TaskConfig(
+        model='test', eval_type='systemone_api', datasets=['boolq'],
+        dataset_args={'boolq': {'metric_list': ['nll'], 'primary_metric': 'nll'}},
+    ))
+    assert adapter.primary_metric.name == 'nll'
+
+
+@pytest.mark.parametrize('operation', ['statistics', 'example'])
+def test_decision_documentation_loads_using_its_declared_api(
+    operation: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from evalscope.utils.doc_utils.benchmark_stats import compute_benchmark_statistics, get_sample_example
+
+    adapter = get_benchmark('stsb')
+    sample = adapter.record_to_sample({'sentence1': 'One.', 'sentence2': 'Two.', 'score': 0.5})
+    dataset = DatasetDict({'default': MemoryDataset([sample])})
+    monkeypatch.setattr(adapter, 'load', lambda: (dataset, None))
+    if operation == 'statistics':
+        assert compute_benchmark_statistics(adapter).total_samples == 1
+    else:
+        assert get_sample_example(adapter) is not None
+
+
 @pytest.mark.parametrize('name', ['jevbench', 'open_decisions', 'stsb', 'general_decision'])
 def test_typed_benchmarks_reject_chat_before_loading(name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     adapter = get_benchmark(name, TaskConfig(model='test', eval_type='openai_api', datasets=[name]))

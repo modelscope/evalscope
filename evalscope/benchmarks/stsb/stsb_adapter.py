@@ -14,6 +14,7 @@ from evalscope.constants import Tags
         pretty_name='STS-B Decision',
         tags=[Tags.DECISION],
         dataset_id='sentence-transformers/stsb',
+        hf_dataset_id='sentence-transformers/stsb',
         eval_split='test',
         train_split=None,
         evaluation_version='v1.0',
@@ -34,7 +35,7 @@ Sentence similarity rated on six ordered levels from 0 to 5; continuous gold is 
 
 ## Key Features
 
-- Uses the public test split of `sentence-transformers/stsb` on ModelScope
+- Uses the public test split of `sentence-transformers/stsb` on ModelScope or Hugging Face
 - Converts source similarity labels from [0, 1] to [0, 5], retaining fractional gold values
 - Preserves option order, source IDs and rubric descriptions
 - Supports System One and native AutoTrust APIs within their declared capabilities

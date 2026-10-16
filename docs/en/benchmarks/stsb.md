@@ -14,7 +14,7 @@ Sentence similarity rated on six ordered levels from 0 to 5; continuous gold is 
 
 ## Key Features
 
-- Uses the public test split of `sentence-transformers/stsb` on ModelScope
+- Uses the public test split of `sentence-transformers/stsb` on ModelScope or Hugging Face
 - Converts source similarity labels from [0, 1] to [0, 5], retaining fractional gold values
 - Preserves option order, source IDs and rubric descriptions
 - Supports System One and native AutoTrust APIs within their declared capabilities
@@ -57,7 +57,7 @@ Sentence similarity rated on six ordered levels from 0 to 5; continuous gold is 
 {
   "input": [
     {
-      "id": "b8369a8a",
+      "id": "8eaa765d",
       "content": "{\"state\": {\"sentence1\": \"A girl is styling her hair.\", \"sentence2\": \"A girl is brushing her hair.\"}, \"question\": {\"type\": \"score\", \"instructions\": \"Rate the semantic similarity of sentence1 and sentence2.\", \"criteria\": [\"Unrelated\", \"Very different\", \"Some shared meaning\", \"Mostly similar\", \"Nearly equivalent\", \"Completely equivalent\"]}}",
       "internal": {
         "systemone": {

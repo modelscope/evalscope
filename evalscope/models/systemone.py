@@ -1,4 +1,4 @@
-"""System One transport for text single-choice decision models."""
+"""Shared transport for single-question text decision APIs."""
 
 import os
 import time
@@ -75,9 +75,9 @@ class SystemOneAPI(ModelAPI):
     def generate(
         self, input: List[ChatMessage], tools: List[ToolInfo], tool_choice: ToolChoice, config: GenerateConfig
     ) -> ModelOutput:
-        """Convert an annotated MCQ chat request and return text for the existing answer extractor."""
+        """Send an annotated decision request and retain its structured result."""
         if tools:
-            raise ValueError('System One Choice evaluation does not support tools.')
+            raise ValueError('Decision APIs do not support tools.')
         self.validate_config(config)
         converted = self._convert_messages(input)
         system_prompt = '\n\n'.join(message.text for message in input if message.role == 'system' and message.text)
@@ -137,15 +137,15 @@ class SystemOneAPI(ModelAPI):
     def _convert_messages(input: List[ChatMessage]) -> DecisionInput:
         """Read conversion data without attempting to parse arbitrary prompt text."""
         if any(message.role not in ('system', 'user') for message in input):
-            raise ValueError('System One requires system messages and one annotated MCQ user message.')
+            raise ValueError('Decision APIs require system messages and one annotated user message.')
         if any(
             not isinstance(message.content, str) and any(part.type != 'text' for part in message.content)
             for message in input
         ):
-            raise ValueError('System One Choice supports text messages only.')
+            raise ValueError('Decision APIs support text messages only.')
         users = [message for message in input if message.role == 'user']
         if len(users) != 1 or not isinstance(users[0].internal, dict) or 'systemone' not in users[0].internal:
-            raise ValueError('System One requires MCQ conversion data in ChatMessage.internal["systemone"].')
+            raise ValueError('Decision APIs require conversion data in ChatMessage.internal["systemone"].')
         return DecisionInput.model_validate(users[0].internal['systemone'])
 
     async def aclose(self) -> None:

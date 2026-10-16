@@ -13,18 +13,18 @@
 
 ## 主要特点
 
-- 使用ModelScope上的`sentence-transformers/stsb`公开测试分割
-- 将源相似度标签从[0, 1]转换为[0, 5]，保留小数点后的黄金标准值
+- 使用ModelScope或Hugging Face上的`sentence-transformers/stsb`公共测试分割
+- 将源相似度标签从[0, 1]转换为[0, 5]，保留小数黄金值
 - 保持选项顺序、源ID和评分描述
-- 支持System One和其声明能力范围内的原生AutoTrust API
+- 支持System One和在其声明能力范围内的原生AutoTrust API
 
 ## 评估说明
 
 - 零样本确定性评分；黄金答案和来源从未进入请求
-- 主要指标：预期得分值的MAE；同时计算跨样本的Spearman和Pearson相关系数
-- 不对连续的黄金标准进行离散化以计算准确率或排名概率分数
-- 无效响应被排除在常规指标之外，并反映在执行覆盖率中
-- 六个级别（0-5）适用于两种协议；常量或不足的输入会使相关系数未定义
+- 主要指标：预期得分值的MAE；同时计算跨样本的Spearman和Pearson相关性
+- 不对连续黄金标准进行离散化以计算准确率或排名概率得分
+- 无效响应被排除在普通指标之外，并反映在执行覆盖率中
+- 六个级别（0-5）适用于两种协议；常量或不足的输入使相关性未定义
 
 ## 属性
 
@@ -54,7 +54,7 @@
 {
   "input": [
     {
-      "id": "b8369a8a",
+      "id": "8eaa765d",
       "content": "{\"state\": {\"sentence1\": \"A girl is styling her hair.\", \"sentence2\": \"A girl is brushing her hair.\"}, \"question\": {\"type\": \"score\", \"instructions\": \"Rate the semantic similarity of sentence1 and sentence2.\", \"criteria\": [\"Unrelated\", \"Very different\", \"Some shared meaning\", \"Mostly similar\", \"Nearly equivalent\", \"Completely equivalent\"]}}",
       "internal": {
         "systemone": {

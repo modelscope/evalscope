@@ -68,7 +68,24 @@ run_task(TaskConfig(
 - ContractNLI 使用完整合同的 `contractnli_b`，仅评三分类，不评证据定位。
 - RewardBench 使用 v1 filtered 数据，确定性打乱回答位置。总体分数是样本加权 accuracy，不是官方类别加权榜单分数。
 
-新增的五个 benchmark 均默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
+以上为已有选择题 benchmark 的适配。`jevbench`、`open_decisions`、`stsb` 和 `general_decision` 还支持原生三类决策题，使用零样本规则评分；完整用法见[最佳实践](../best_practice/decision_evaluation.md)。
+
+公共数据默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
+
+### 使用 Hugging Face 数据
+
+设置 `TaskConfig(dataset_hub='huggingface', ...)` 后，框架自动选择对应的 HF 仓库，无需替换 benchmark 名称。
+
+| Benchmark | Hugging Face dataset ID |
+|---|---|
+| `arc` | `allenai/ai2_arc` |
+| `banking77` | `mteb/banking77` |
+| `boolq` | `google/boolq` |
+| `reward_bench` | `allenai/reward-bench` |
+| `stsb` | `sentence-transformers/stsb` |
+| `open_decisions` | `jgeuter/OpenDecisions` |
+
+OpenDecisions 默认读取 HF 的 `test` 或 ModelScope 的 `train`，两端题目相同；使用历史版本时可以显式指定 `dataset_args.open_decisions.eval_split`。`jevbench` 使用 ModelScope 的 `evalscope/jevbench`：[HF 官方仓库](https://huggingface.co/datasets/benchmarkheaven/jevbench)只有榜单结果，不提供本适配器使用的题目。`general_decision` 是本地数据入口，不需要 HF ID。
 
 ## 结果与复现
 
@@ -76,7 +93,7 @@ System One 沿用 `Model.generate(messages)` 调用入口。MCQ adapter 在现�
 
 返回标签转换为 benchmark 原有答案格式，例如 `ANSWER: A`、`答案：A` 或 `ANSWER: 51`，再通过原有答案提取、评分、缓存和报告流程。
 
-预测 JSONL 的 `model_output.metadata.choice_response.answers.answer` 保存原始标签、概率与厂商置信度；`choice_request` 保存完整实际请求。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。消息文本展示题目和选项，system 消息及 `internal` 保留转换所需的指令、上下文与示例。
+预测 JSONL 的 `model_output.metadata.choice_response.answers.answer` 保存原始标签、概率与厂商置信度；`choice_request` 保存完整实际请求。厂商将概率保留到两位小数时，校验允许对应舍入误差，原始概率保持不变。评分所用分布及是否进行了归一化另存于 reviews 的评分元数据，Web UI 可以切换查看。消息文本展示题目和选项，system 消息及 `internal` 保留转换所需的指令、上下文与示例。
 
 配置和原始请求保留 Choice 指令及 few-shot 设置；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
 

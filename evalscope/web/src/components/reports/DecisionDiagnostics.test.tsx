@@ -5,6 +5,7 @@ import type { ReportData } from '@/api/types'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { decisionCurves, decisionObservation } from '@/domain/report/decisionDiagnostics'
 import { EvalResultPanel } from '@/components/chat/EvalResultPanel'
+import ChatView from '@/components/chat/ChatView'
 import DecisionPanel from '@/components/chat/DecisionPanel'
 import DecisionDiagnostics from './DecisionDiagnostics'
 
@@ -96,16 +97,23 @@ describe('Decision result interactions', () => {
     expect(screen.queryByText('20%')).not.toBeInTheDocument()
   })
 
-  it('shows semantic Noul gold instead of the original multiple-choice letter', () => {
-    render(<LocaleProvider><EvalResultPanel
-      pred="yes" gold="B" nScore={0} threshold={0.99} showPred
-      score={{ value: { acc: 0 }, metadata: { decision: {
+  it('shows decision answers once and leaves raw scoring data collapsed', () => {
+    render(<LocaleProvider><ChatView prediction={{
+      Index: '0', Input: 'A boolean question', Generated: 'ANSWER: yes',
+      Pred: 'yes', Gold: 'B', NScore: 0, Metadata: {},
+      Score: { value: { acc: 0 }, metadata: { decision: {
         ...observation, kind: 'noul', labels: ['no', 'yes'], probabilities: [0.4, 0.6],
         gold: 'no', predicted: 'yes', expected: null, continuous: false,
-      } } }} metadata={{}}
-    /></LocaleProvider>)
-    expect(screen.getByText('no')).toBeInTheDocument()
+      } } },
+    }} /></LocaleProvider>)
+    expect(screen.getAllByText('no', { selector: 'dd' })).toHaveLength(1)
+    expect(screen.getAllByText('yes', { selector: 'dd' })).toHaveLength(1)
     expect(screen.queryByText('B')).not.toBeInTheDocument()
+    expect(screen.queryByText('Extracted Answer')).not.toBeInTheDocument()
+    expect(screen.queryByText('Expected Answer')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Raw scoring data' })).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(screen.getByRole('button', { name: 'Raw scoring data' }))
+    expect(screen.getByRole('button', { name: 'Raw scoring data' })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('switches confidence sources and explores measured coverage without splitting ties', () => {
