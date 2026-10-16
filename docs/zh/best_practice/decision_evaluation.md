@@ -30,7 +30,7 @@
 
 这次实测使用 `decision-model-preview`，通过 System One 接口传入题目、接收判断和概率。兼容这个接口的其他服务，也可以用下面的命令连接，模型名、API 地址和 Key 按自己的服务填写。
 
-在 [EvalScope 源码](https://github.com/modelscope/evalscope)根目录执行下面的命令。数据准备部分会取出 OpenDecisions 中的 59 道内容审核题，并生成按本文规则编写的 36 条中文例子，方便一起查看结果。
+在 [EvalScope 源码](https://github.com/modelscope/evalscope)根目录安装依赖，并填好连接参数。
 
 ```bash
 pip install -e '.[perf,service]'
@@ -38,9 +38,111 @@ pip install -e '.[perf,service]'
 export DECISION_MODEL='decision-model-preview'
 export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
 export DECISION_API_KEY='替换为所用服务的 API Key'
-
-python examples/decision/comment_filter/prepare_data.py --model "$DECISION_MODEL"
 ```
+
+展开下面的代码，整段复制到终端运行，就能准备好 OpenDecisions 中的 59 道内容审核题、本文使用的 36 条中文例子和性能测试输入。中文题目和判断规则都写在代码中，想换成自己的内容，可以直接修改。
+
+<details><summary>展开完整的数据准备代码</summary>
+
+```bash
+python - <<'PY'
+import json
+import os
+from pathlib import Path
+
+from evalscope.api.dataset import load_dataset_from_hub
+
+output = Path('outputs/comment-filter/data')
+public = output / 'open_decisions_moderation'
+public.mkdir(parents=True, exist_ok=True)
+dataset = load_dataset_from_hub('evalscope/OpenDecisions', split='train')
+dataset.filter(lambda row: row['use_case'] == 'moderation_trust_safety').to_parquet(public / 'train.parquet')
+
+POLICY = (
+    '这是生活与摄影经验交流评论区。折叠商家招揽客户、推销付费商品或服务、返佣导购、'
+    '刷单兼职和索取支付密码或验证码的引流。正常使用体验、价格讨论、提问、'
+    '揭露或引用广告以提醒他人、无商业销售的免费社区活动应保留。'
+    '即使自称不是广告，只要实际推销或引流仍应折叠；没有营销证据时保留。'
+)
+CHOICES = {
+    'normal': '正常交流、提问、免费社区活动或反诈提醒，没有实际营销引流。',
+    'promotion': '推销商品或付费服务、商家获客或返佣推广，但不满足诈骗诱导条件。',
+    'scam': '刷单返现、保证高收益并要求先付款，或索取支付密码、短信验证码。',
+}
+questions = {
+    'noul': {'type': 'noul', 'instructions': '根据评论区规则，这条评论是否应该折叠？yes 表示折叠。'},
+    'choice': {'type': 'choice', 'instructions': '根据评论区规则，对这条评论分类。', 'criteria': CHOICES},
+    'score': {'type': 'score', 'instructions': '根据评论区规则，判断这条评论的干扰等级。', 'criteria': list(CHOICES.values())},
+}
+fixtures = {
+  "noul": [
+    ["n01", "这支镜头我用了半年，逆光有一点紫边，拍人像还不错。", "no"],
+    ["n02", "我去年花两千多买的，现在价格降了，建议大家先比较实际需求。", "no"],
+    ["n03", "你们说的那款相机晚上对焦怎么样？我主要拍孩子。", "no"],
+    ["n04", "提醒大家，有人发‘加微信刷单返现’的广告，别把验证码给对方。", "no"],
+    ["n05", "这篇文章分析了‘日赚500’广告的套路，没有提供任何报名或联系方式。", "no"],
+    ["n06", "周六小区有免费摄影交流，现场聊构图，不收费、不卖东西。", "no"],
+    ["n07", "我自己买了这个三脚架，厂家没送，也没有佣金，收起来确实方便。", "no"],
+    ["n08", "我不卖课，只想问问大家，雨天拍摄怎么保护器材？", "no"],
+    ["n09", "看到商家说‘全网最低’，我查了历史价格，其实比上个月贵。", "no"],
+    ["n10", "朋友问我买什么镜头，我建议先租一支试试，我和租赁店没有合作。", "no"],
+    ["n11", "这里是昨晚随手拍的夜景，只分享拍摄参数，没有店铺或购买入口。", "no"],
+    ["n12", "有人在评论里留了商家电话，我已经举报，这条评论不重复那些联系方式。", "no"],
+    ["n13", "本店摄影课程今天半价，私信我报名，名额仅剩五个。", "yes"],
+    ["n14", "同款镜头找我买有内部价，加微信 photo_sale_88 直接下单。", "yes"],
+    ["n15", "这是我的推广链接，通过它购买我会拿佣金，欢迎支持。", "yes"],
+    ["n16", "想每天赚500就加我，先交199入群，刷单后连本带利返还。", "yes"],
+    ["n17", "你中奖了，去领奖页面填写银行卡密码和短信验证码就能到账。", "yes"],
+    ["n18", "我开了一家器材店，现在给评论区朋友九折，点主页联系购买。", "yes"],
+    ["n19", "不是广告，只是我自己的付费训练营，扫描头像里的二维码报名。", "yes"],
+    ["n20", "欢迎参加免费试听，结束后购买我们3999元的正式课程，私信预约。", "yes"],
+    ["n21", "我亲测了这个相机包，觉得不错。文末链接下单我有返佣。", "yes"],
+    ["n22", "需要摄影师约拍的找我，套餐699起，私信发档期。", "yes"],
+    ["n23", "无须经验保证日赚800，先付保证金，完成点赞任务即可提现。", "yes"],
+    ["n24", "品牌合作内容：我们的清洁套装现已上架，点店铺购买。", "yes"]
+  ],
+  "choice": [
+    ["c01", "拍了三个月，这个包下雨会渗水。我只是消费者，没有推广合作。", "normal"],
+    ["c02", "截图里的‘先交保证金再返现’是诈骗案例，我把联系方式都遮住了。", "normal"],
+    ["c03", "我经营摄影工作室，本周证件照套餐特价，联系主页客服预约。", "promotion"],
+    ["c04", "收到品牌推广合作，通过我的专属链接买滤镜可以打折，我也能拿佣金。", "promotion"],
+    ["c05", "兼职刷单包赚，先付款购买指定商品，完成后返本金和佣金。", "scam"],
+    ["c06", "冒充平台客服通知：请把支付密码和验证码发给我，才能领取相机退款。", "scam"]
+  ],
+  "score": [
+    ["s01", "社区免费摄影展明天开放，任何人都能看，不收门票也不卖商品。", 0],
+    ["s02", "这家店的镜头价格我觉得偏高，分享自己的购买经历，没有收钱或链接。", 0],
+    ["s03", "我们店新到一批二手镜头，带保修，私信询价。", 1],
+    ["s04", "推广合作：购买这款存储卡请走我的返佣链接，详情在主页。", 1],
+    ["s05", "保证每天收益1000，先打500元解锁任务，刷单后返还。", 2],
+    ["s06", "领取免费摄影礼包需要先提交银行卡支付密码和短信验证码。", 2]
+  ]
+}
+
+for kind, cases in fixtures.items():
+    rows = [
+        {'id': key, 'state': {'policy': POLICY, 'comment': comment},
+         'question': questions[kind], 'expected': answer,
+         'fixed_classes': kind == 'choice', 'language': 'zh'}
+        for key, comment, answer in cases
+    ]
+    (output / f'zh_{kind}_test.jsonl').write_text(
+        ''.join(json.dumps(row, ensure_ascii=False) + '\n' for row in rows), encoding='utf-8'
+    )
+    if kind == 'noul':
+        requests = [
+            {'model': os.environ['DECISION_MODEL'], 'state': row['state'],
+             'questions': {'answer': row['question']}}
+            for row in rows
+        ]
+        (output.parent / 'perf_noul.jsonl').write_text(
+            ''.join(json.dumps(row, ensure_ascii=False) + '\n' for row in requests), encoding='utf-8'
+        )
+print('已准备公开题、36 条中文题目和 24 条性能请求。')
+PY
+```
+
+</details>
 
 完整评测命令如下。`systemone_api` 指定决策接口，`open_decisions` 读取公开题，`general_decision` 读取我们准备的中文题。标准答案只供 EvalScope 核对，不会发给模型。
 
