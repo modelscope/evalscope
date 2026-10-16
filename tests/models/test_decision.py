@@ -9,11 +9,12 @@ import pytest
 from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset
 from evalscope.api.metric import SampleScore
+from evalscope.api.metric.decision import decision_score
 from evalscope.api.model import GenerateConfig, Model
 from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.model.model import ModelCache
 from evalscope.api.registry import get_benchmark
-from evalscope.metrics.decision import DecisionAggregator, decision_score
+from evalscope.metrics.decision import DecisionAggregator
 from evalscope.models.systemone import AutoTrustAPI
 from evalscope.models.utils.decision import build_autotrust_request, build_systemone_request, parse_decision_response
 
@@ -94,7 +95,7 @@ def test_hand_computed_probability_metrics() -> None:
     assert s.value['brier'] == pytest.approx(0.125)
     binary = DecisionAnswer(type='noul', noul=0.75, probabilities={'no': 0.25, 'yes': 0.75})
     assert decision_score(binary, 'yes', ['no', 'yes']).value['brier'] == pytest.approx(0.0625)
-    zero = DecisionAnswer(choice='A', probabilities={'A': 1, 'B': 0})
+    zero = DecisionAnswer(type='choice', choice='A', probabilities={'A': 1, 'B': 0})
     assert decision_score(zero, 'B', ['A', 'B']).value['nll'] > 20
 
 

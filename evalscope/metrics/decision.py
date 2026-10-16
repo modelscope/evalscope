@@ -7,7 +7,7 @@ from collections import defaultdict
 import numpy as np
 
 from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore
-from evalscope.api.metric.decision import NLL_EPSILON, DecisionObservation, decision_score
+from evalscope.api.metric.decision import NLL_EPSILON, DecisionObservation
 from evalscope.api.registry import register_aggregation, register_metric
 from evalscope.metrics.aggregators.aggregators import Mean
 

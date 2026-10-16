@@ -125,7 +125,6 @@ class SystemOneAPI(ModelAPI):
             'choice_request': payload,
             'choice_response': raw,
             'decision': result.model_dump(exclude_none=True),
-            'decision_request': converted.model_dump(),
             'transport_attempts': attempt + 1,
             'model_revision': raw.get('model_revision'),
         }

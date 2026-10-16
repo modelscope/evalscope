@@ -9,11 +9,9 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    SerializerFunctionWrapHandler,
     computed_field,
     field_serializer,
     field_validator,
-    model_serializer,
     model_validator,
 )
 from typing_extensions import Self
@@ -170,15 +168,6 @@ class Subset(BaseModel):
     """True for derived/summary subsets (e.g. BFCL OVERALL, MULTI_TURN) that
     aggregate other real subsets. Excluded from num/score totals so they
     don't double-count, and hidden by the webview subset table."""
-
-    @model_serializer(mode='wrap')
-    def _serialize_optional_fields(self, handler: SerializerFunctionWrapHandler) -> Dict[str, Any]:
-        data = handler(self)
-        if self.metadata is None:
-            data.pop('metadata', None)
-        if not self.is_aggregate:
-            data.pop('is_aggregate', None)
-        return data
 
     @field_validator('score', mode='after')
     @classmethod

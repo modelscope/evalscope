@@ -22,6 +22,7 @@ def request(options: int = 2) -> list[ChatMessage]:
     return [ChatMessageUser(
         content='Choose the best answer.',
         internal={'systemone': {
+            'kind': 'choice',
             'state': {'question': 'Choose the best answer.'},
             'instructions': 'Choose one.',
             'criteria': {answer_character(i): f'Option {i}' for i in range(options)},
@@ -131,7 +132,6 @@ def test_wire_request_and_roundtrip(options: int) -> None:
     assert output.usage.total_tokens == 12
     assert output.choices[0].logprobs is None
     assert ModelOutput.model_validate_json(output.model_dump_json()).metadata == output.metadata
-    assert 'choice_result' not in output.model_dump()
     provider.client.close()
 
 
@@ -289,10 +289,10 @@ def test_unsupported_benchmark_rejected_before_loading(supports_choice: bool) ->
 def test_rounded_large_distribution_is_retained() -> None:
     probabilities = {answer_character(i): 0.0 for i in range(77)}
     probabilities.update({'A': 0.70, 'B': 0.20, 'C': 0.06})
-    answer = DecisionAnswer(choice='A', probabilities=probabilities)
+    answer = DecisionAnswer(type='choice', choice='A', probabilities=probabilities)
     assert sum(answer.probabilities.values()) == pytest.approx(0.96)
     with pytest.raises(ValueError, match='rounding tolerance'):
-        DecisionAnswer(choice='A', probabilities={key: 0 for key in probabilities})
+        DecisionAnswer(type='choice', choice='A', probabilities={key: 0 for key in probabilities})
 
 
 def test_anli_round_split_selection(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -398,7 +398,6 @@ def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, 
     prediction = json.loads(next((tmp_path / 'predictions').rglob('*.jsonl')).read_text())
     review = json.loads(next((tmp_path / 'reviews').rglob('*.jsonl')).read_text())
     report = json.loads(next((tmp_path / 'reports').rglob(f'{name}.json')).read_text())
-    assert 'choice_result' not in prediction['model_output']
     assert 'SECRET_GOLD' not in json.dumps(seen[0])
     if eval_type == 'systemone_api':
         assert prediction['model_output']['metadata']['choice_response']['answers']['answer']['choice'] == targets[0]
@@ -411,7 +410,8 @@ def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, 
     else:
         assert all(message.get('internal') is None for message in prediction['messages'])
         assert prediction['messages'][0]['content'] == seen[0]['messages'][0]['content']
-    assert review['sample_score']['score']['value'].get('acc', review['sample_score']['score']['value'].get('accuracy')) == 1.0
+    metric_name = 'acc' if eval_type == 'systemone_api' else 'accuracy'
+    assert review['sample_score']['score']['value'][metric_name] == 1.0
     assert report['execution_summary']['succeeded'] == 1
     assert report['execution_summary']['errored'] == 0
     assert (tmp_path / 'reports' / 'report.html').is_file()

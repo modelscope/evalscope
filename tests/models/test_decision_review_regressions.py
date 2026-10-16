@@ -9,12 +9,33 @@ from evalscope import TaskConfig
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
+from evalscope.api.metric.decision import decision_score
 from evalscope.api.model import ModelOutput
 from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.registry import get_benchmark
 from evalscope.constants import ScoreStatus
-from evalscope.metrics.decision import DecisionAggregator, decision_score
+from evalscope.metrics.decision import DecisionAggregator
 from evalscope.models.utils.decision import build_systemone_request, parse_decision_response
+
+
+def test_decision_input_requires_an_explicit_kind() -> None:
+    with pytest.raises(ValueError, match='kind'):
+        DecisionInput.model_validate({'state': 'Facts.', 'instructions': 'Choose.', 'criteria': {'A': 'One', 'B': 'Two'}})
+
+
+@pytest.mark.parametrize('location', ['transport', 'cache'])
+def test_decision_answer_requires_an_explicit_type(location: str) -> None:
+    answer = {'choice': 'A', 'probabilities': {'A': 1.0, 'B': 0.0}}
+    with pytest.raises(ValueError, match='type'):
+        if location == 'cache':
+            from evalscope.api.metric.decision import read_decision_answer
+
+            output = ModelOutput.from_content('test', 'ANSWER: A')
+            output.metadata = {'decision': answer}
+            read_decision_answer(TaskState(model='test', sample=Sample(input='Facts.', target='A'), output=output))
+        else:
+            request = DecisionInput(kind='choice', state='Facts.', instructions='Choose.', criteria={'A': 'One', 'B': 'Two'})
+            parse_decision_response({'model': 'test', 'answers': {'answer': answer}}, request)
 
 
 def test_native_decision_uses_standard_system_prompt_preparation(tmp_path: Path) -> None:
@@ -160,7 +181,7 @@ def test_banking77_macro_f1_uses_intents_after_choice_shuffle() -> None:
         sample.target = 'A'
         probabilities = {answer_character(i): float(i == 0) for i in range(77)}
         output = ModelOutput.from_content('test', 'ANSWER: A')
-        output.metadata = {'decision': DecisionAnswer(choice='A', probabilities=probabilities).model_dump()}
+        output.metadata = {'decision': DecisionAnswer(type='choice', choice='A', probabilities=probabilities).model_dump()}
         score = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
         scores.append(SampleScore(sample_id=index, score=score))
     metrics = DecisionAggregator()(scores)
@@ -177,7 +198,7 @@ def test_repeated_official_tasks_keep_independent_predictions(name: str) -> None
             'expected': 'A'})
         sample.id = index
         samples.append(sample)
-        answer = DecisionAnswer(choice='A' if index == 0 else 'B', probabilities={'A': float(index == 0), 'B': float(index == 1)})
+        answer = DecisionAnswer(type='choice', choice='A' if index == 0 else 'B', probabilities={'A': float(index == 0), 'B': float(index == 1)})
         scores.append(SampleScore(sample_id=index, sample_metadata=sample.metadata,
                                  score=decision_score(answer, 'A', ['A', 'B'], family='unit', tier='hard')))
     adapter.test_dataset = DatasetDict({'default': MemoryDataset(samples)})
@@ -193,7 +214,7 @@ def test_repeated_official_tasks_keep_independent_predictions(name: str) -> None
 
 def test_risk_coverage_does_not_depend_on_tied_sample_order() -> None:
     scores = [SampleScore(sample_id=index, score=decision_score(
-        DecisionAnswer(choice='A', probabilities={'A': 0.9, 'B': 0.1}), gold, ['A', 'B']))
+        DecisionAnswer(type='choice', choice='A', probabilities={'A': 0.9, 'B': 0.1}), gold, ['A', 'B']))
         for index, gold in enumerate(['A', 'B'])]
     first = next(m for m in DecisionAggregator()(scores) if m.metric_name == 'aurc')
     second = next(m for m in DecisionAggregator()(list(reversed(scores))) if m.metric_name == 'aurc')
@@ -220,7 +241,7 @@ def test_jevbench_rounding_band_is_not_rejected_by_transport() -> None:
 def test_wide_options_do_not_justify_impossible_rounding() -> None:
     probabilities = {str(i): float(i < 2) for i in range(255)}
     with pytest.raises(ValueError, match='rounding tolerance'):
-        DecisionAnswer(choice='0', probabilities=probabilities)
+        DecisionAnswer(type='choice', choice='0', probabilities=probabilities)
 
 
 @pytest.mark.parametrize('value', [True, False, '0.9'])
@@ -233,7 +254,7 @@ def test_classification_labels_are_not_coerced_into_noul_probabilities(value: ob
 @pytest.mark.parametrize('value', [True, '0.9'])
 def test_choice_probabilities_must_be_json_numbers(value: object) -> None:
     with pytest.raises(ValueError):
-        DecisionAnswer(choice='A', probabilities={'A': value, 'B': 0.1})
+        DecisionAnswer(type='choice', choice='A', probabilities={'A': value, 'B': 0.1})
 
 
 @pytest.mark.parametrize('change', [
@@ -247,7 +268,7 @@ def test_choice_probabilities_must_be_json_numbers(value: object) -> None:
     {'options': ['Second', 'First']},
 ])
 def test_autotrust_response_contract_rejects_invalid_arrays_and_selections(change: dict) -> None:
-    request = DecisionInput(state='Fact.', instructions='Choose.', criteria={'A': 'First', 'B': 'Second'})
+    request = DecisionInput(kind='choice', state='Fact.', instructions='Choose.', criteria={'A': 'First', 'B': 'Second'})
     raw = {'model': 'test', 'kind': 'choice', 'options': ['First', 'Second'],
            'probabilities': [1.0, 0.0], 'choice_index': 0, 'choice': 'First', **change}
     with pytest.raises(ValueError):
@@ -258,7 +279,7 @@ def test_mcq_probability_order_follows_the_question_not_the_response() -> None:
     adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
     sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
     output = ModelOutput.from_content('test', 'ANSWER: A')
-    output.metadata = {'decision': DecisionAnswer(choice='A', probabilities={'B': 0.1, 'A': 0.9}).model_dump()}
+    output.metadata = {'decision': DecisionAnswer(type='choice', choice='A', probabilities={'B': 0.1, 'A': 0.9}).model_dump()}
     score = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
     assert score.metadata['decision']['labels'] == ['A', 'B']
     assert score.metadata['decision']['probabilities'] == [0.9, 0.1]

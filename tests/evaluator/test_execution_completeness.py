@@ -1,4 +1,3 @@
-from contextlib import nullcontext
 from types import SimpleNamespace
 
 from evalscope.api.messages import ChatMessageAssistant
@@ -80,7 +79,6 @@ def test_batch_review_error_tracks_cached_and_successful_samples() -> None:
     evaluator.benchmark = SimpleNamespace(
         use_batch_scoring=True,
         aggregate_subset=lambda subset, sample_scores: [],
-        _temporary_attribute=lambda *_: nullcontext(),
     )
     task_state = SimpleNamespace(sample_id=2)
 

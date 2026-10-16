@@ -30,7 +30,7 @@ class DecisionInput(BaseModel):
     """One typed question, without gold answers or scoring metadata."""
 
     model_config = ConfigDict(extra='forbid')
-    kind: DecisionKind = 'choice'
+    kind: DecisionKind
     state: JsonValue
     instructions: str = Field(min_length=1)
     criteria: dict[str, str] | list[str] | None = None
@@ -67,7 +67,7 @@ class DecisionAnswer(BaseModel):
     """Canonical answer retaining the provider's unmodified probability values."""
 
     model_config = ConfigDict(extra='forbid')
-    type: DecisionKind = 'choice'
+    type: DecisionKind
     probabilities: dict[str, Probability] = Field(min_length=2, max_length=255)
     choice: str | None = None
     noul: Probability | None = None
