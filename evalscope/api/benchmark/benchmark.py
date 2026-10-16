@@ -56,7 +56,7 @@ class DataAdapter(LLMJudgeMixin, ABC):
         """Category map for the benchmark"""
 
         self.current_subset_name = ''
-        """Subset name while loading or aggregating datasets"""
+        """Subset name when loading datasets"""
 
         # dataset
         self.test_dataset: Optional[DatasetDict] = None
@@ -118,6 +118,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
     @abstractmethod
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         pass
+
+    def aggregate_subset(self, subset: str, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate a named subset; override when grading also needs its complete task list."""
+        return self.aggregate_scores(sample_scores)
 
     @abstractmethod
     def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:

@@ -497,8 +497,7 @@ class DefaultEvaluator(Evaluator):
 
             logger.info(f'Aggregating scores for subset: {subset}')
             self._sample_scores_by_subset[subset] = all_scores
-            with self.benchmark._temporary_attribute('current_subset_name', subset):
-                agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
+            agg_score_dict[subset] = self.benchmark.aggregate_subset(subset, sample_scores=all_scores)
 
         return agg_score_dict
 

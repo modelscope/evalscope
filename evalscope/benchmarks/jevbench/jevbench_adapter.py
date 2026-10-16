@@ -56,7 +56,7 @@ class JevbenchAdapter(DecisionAdapter):
     normalization_threshold = 0.001
     noul_use_argmax = True
 
-    def aggregate_scores(self, sample_scores: list) -> list:
+    def aggregate_subset(self, subset: str, sample_scores: list) -> list:
         """Include missing public predictions in the accuracy and family-macro denominators."""
         from collections import defaultdict
 
@@ -70,7 +70,7 @@ class JevbenchAdapter(DecisionAdapter):
         }
         families = defaultdict(list)
         outcomes = []
-        for sample in self.test_dataset[self.current_subset_name]:
+        for sample in self.test_dataset[subset]:
             correct = predictions.get(sample.id, 0.0)
             families[sample.metadata['family']].append(correct)
             outcomes.append(correct)

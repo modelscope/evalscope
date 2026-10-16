@@ -72,21 +72,6 @@ run_task(TaskConfig(
 
 公共数据默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
 
-### 使用 Hugging Face 数据
-
-设置 `TaskConfig(dataset_hub='huggingface', ...)` 后，框架自动选择对应的 HF 仓库，无需替换 benchmark 名称。
-
-| Benchmark | Hugging Face dataset ID |
-|---|---|
-| `arc` | `allenai/ai2_arc` |
-| `banking77` | `mteb/banking77` |
-| `boolq` | `google/boolq` |
-| `reward_bench` | `allenai/reward-bench` |
-| `stsb` | `sentence-transformers/stsb` |
-| `open_decisions` | `jgeuter/OpenDecisions` |
-
-OpenDecisions 默认读取 HF 的 `test` 或 ModelScope 的 `train`，两端题目相同；使用历史版本时可以显式指定 `dataset_args.open_decisions.eval_split`。`jevbench` 使用 ModelScope 的 `evalscope/jevbench`：[HF 官方仓库](https://huggingface.co/datasets/benchmarkheaven/jevbench)只有榜单结果，不提供本适配器使用的题目。`general_decision` 是本地数据入口，不需要 HF ID。
-
 ## 结果与复现
 
 System One 沿用 `Model.generate(messages)` 调用入口。MCQ adapter 在现有 `ChatMessage.internal` 中附带原题、候选项和示例等转换信息，`SystemOneAPI.generate()` 将消息转换为协议请求。无需新增样本或模型输出字段；没有 MCQ 转换信息的任意聊天文本不能直接转换。

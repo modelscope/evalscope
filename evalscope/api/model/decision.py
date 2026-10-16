@@ -8,6 +8,23 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 from evalscope.constants import EvalType
 
 DECISION_EVAL_TYPES = frozenset({EvalType.SYSTEMONE_API, EvalType.AUTOTRUST_API})
+DecisionKind = Literal['choice', 'noul', 'score']
+DecisionProtocol = Literal['systemone', 'autotrust']
+Probability = Annotated[float, Field(strict=True, ge=0, le=1, allow_inf_nan=False)]
+PROBABILITY_TOLERANCE = 0.02
+ANSWER_TOLERANCE = 1e-6
+
+
+def _probability_sum_tolerance(values: list[float]) -> float:
+    """Allow two-decimal rounding only when a unit-mass distribution could produce these values."""
+    if not all(round(value, 2) == value for value in values):
+        return PROBABILITY_TOLERANCE
+    half_step = 0.005
+    lower = sum(max(0.0, value - half_step) for value in values)
+    upper = sum(min(1.0, value + half_step) for value in values)
+    if lower <= 1 + 1e-12 and upper >= 1 - 1e-12:
+        return max(PROBABILITY_TOLERANCE, len(values) * half_step)
+    return PROBABILITY_TOLERANCE
 
 
 def parse_decision_usage(raw: dict) -> tuple[int, int]:
@@ -30,7 +47,7 @@ class DecisionInput(BaseModel):
     """One typed question, without gold answers or scoring metadata."""
 
     model_config = ConfigDict(extra='forbid')
-    kind: Literal['choice', 'noul', 'score'] = 'choice'
+    kind: DecisionKind = 'choice'
     state: JsonValue
     instructions: str = Field(min_length=1)
     criteria: dict[str, str] | list[str] | None = None
@@ -80,44 +97,46 @@ class DecisionInput(BaseModel):
             instructions += '\n' + '\n'.join(f'{k}: {v}' for k, v in self.criteria.items())
         payload = {'kind': self.kind, 'state': self.state, 'question': instructions, 'thinking': 'off'}
         if self.kind == 'choice':
-            payload['options'] = list(self.criteria.values())
+            payload['options'] = self.autotrust_options
         return payload
+
+    @property
+    def autotrust_options(self) -> list[str]:
+        """Return wire options in the order used by AutoTrust's probability array."""
+        if self.kind == 'choice':
+            return list(self.criteria.values())
+        if self.kind == 'noul':
+            return ['false', 'true']
+        return [str(i) for i in range(6)]
 
 
 class DecisionAnswer(BaseModel):
     """Canonical answer retaining the provider's unmodified probability values."""
 
     model_config = ConfigDict(extra='forbid')
-    type: Literal['choice', 'noul', 'score'] = 'choice'
-    probabilities: dict[str, Annotated[float, Field(strict=True)]] = Field(min_length=2, max_length=255)
+    type: DecisionKind = 'choice'
+    probabilities: dict[str, Probability] = Field(min_length=2, max_length=255)
     choice: str | None = None
-    noul: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False, strict=True)
+    noul: Probability | None = None
     score: float | None = Field(default=None, allow_inf_nan=False, strict=True)
     legend: dict[str, str] | None = None
-    confidence: float | None = Field(default=None, ge=0, le=1, allow_inf_nan=False, strict=True)
+    confidence: Probability | None = None
 
     @model_validator(mode='after')
     def validate_distribution(self) -> 'DecisionAnswer':
-        values = self.probabilities.values()
-        if any(not math.isfinite(v) or not 0 <= v <= 1 for v in values):
-            raise ValueError('Decision probabilities must be finite and between 0 and 1.')
-        tolerance = 0.02
-        if all(round(v, 2) == v for v in values):
-            lower = sum(max(0.0, v - 0.005) for v in values)
-            upper = sum(min(1.0, v + 0.005) for v in values)
-            if lower <= 1 + 1e-12 and upper >= 1 - 1e-12:
-                tolerance = max(tolerance, len(self.probabilities) * 0.005)
+        values = list(self.probabilities.values())
+        tolerance = _probability_sum_tolerance(values)
         if not math.isclose(sum(values), 1, abs_tol=tolerance + 1e-12) or sum(values) <= 0:
             raise ValueError('Decision probabilities do not sum to 1 within their rounding tolerance.')
         if self.type == 'choice':
             if self.choice not in self.probabilities:
                 raise ValueError('The selected choice is missing from probabilities.')
-            if self.probabilities[self.choice] < max(values) - 1e-6:
+            if self.probabilities[self.choice] < max(values) - ANSWER_TOLERANCE:
                 raise ValueError('The selected choice must have the highest probability.')
         elif self.type == 'noul':
             if set(self.probabilities) != {'no', 'yes'} or self.noul is None:
                 raise ValueError('Noul must provide a probability of yes.')
-            if not math.isclose(self.noul, self.probabilities['yes'], abs_tol=1e-6):
+            if not math.isclose(self.noul, self.probabilities['yes'], abs_tol=ANSWER_TOLERANCE):
                 raise ValueError('Noul and yes probability disagree.')
         else:
             keys = [str(i) for i in range(len(self.probabilities))]
@@ -128,54 +147,71 @@ class DecisionAnswer(BaseModel):
             expected = sum(int(k) * p for k, p in self.probabilities.items())
             if self.score is None or not 0 <= self.score <= len(keys) - 1:
                 raise ValueError('Score must be inside the declared scale.')
-            if not math.isclose(self.score, expected, abs_tol=tolerance * (len(keys) - 1) + 1e-6):
+            if not math.isclose(self.score, expected, abs_tol=tolerance * (len(keys) - 1) + ANSWER_TOLERANCE):
                 raise ValueError('Score does not match the expected level.')
         return self
 
 
-def parse_decision_response(raw: dict, request: DecisionInput, protocol: str = 'systemone') -> DecisionAnswer:
-    """Validate a provider result against the exact question that was sent."""
+class _AutoTrustResponse(BaseModel):
+    """Fields needed to map AutoTrust's array response onto the request labels."""
+
+    kind: DecisionKind
+    options: list[str] = Field(strict=True)
+    probabilities: list[Probability] = Field(strict=True, min_length=2, max_length=255)
+    choice_index: int = Field(strict=True, ge=0)
+    choice: str
+
+
+def _parse_systemone_answer(raw: dict, request: DecisionInput) -> DecisionAnswer:
+    answers = raw.get('answers')
+    if not isinstance(answers, dict) or set(answers) != {'answer'}:
+        raise ValueError('System One must return exactly the requested answer question.')
+    if not isinstance(answers['answer'], dict):
+        raise ValueError('System One answer must be a JSON object.')
+    data = dict(answers['answer'])
+    probability = data.get('noul')
+    if request.kind == 'noul' and 'probabilities' not in data and isinstance(probability, (int, float)):
+        data['probabilities'] = {'no': 1 - probability, 'yes': probability}
+    return DecisionAnswer.model_validate(data)
+
+
+def _parse_autotrust_answer(raw: dict, request: DecisionInput) -> DecisionAnswer:
+    response = _AutoTrustResponse.model_validate(raw)
+    if response.kind != request.kind or raw.get('effective_kind', request.kind) != request.kind:
+        raise ValueError('AutoTrust returned a different decision kind.')
+    probabilities = response.probabilities
+    if response.options != request.autotrust_options or len(probabilities) != len(request.labels):
+        raise ValueError('AutoTrust options do not match the request.')
+    index = response.choice_index
+    if index >= len(response.options):
+        raise ValueError('AutoTrust returned an invalid choice index.')
+    if response.choice != response.options[index]:
+        raise ValueError('AutoTrust choice and index disagree.')
+    if probabilities[index] < max(probabilities) - ANSWER_TOLERANCE:
+        raise ValueError('AutoTrust choice index must identify a highest-probability option.')
+    data = {'type': request.kind, 'probabilities': dict(zip(request.labels, probabilities))}
+    if request.kind == 'choice':
+        data['choice'] = request.labels[index]
+    elif request.kind == 'noul':
+        data['noul'] = probabilities[1]
+    else:
+        data['score'] = sum(i * probability for i, probability in enumerate(probabilities))
+        data['legend'] = dict(zip(request.labels, request.criteria))
+    return DecisionAnswer.model_validate(data)
+
+
+def parse_decision_response(
+    raw: dict, request: DecisionInput, protocol: DecisionProtocol = 'systemone'
+) -> DecisionAnswer:
+    """Parse either wire format, then validate it against the original question."""
     if not isinstance(raw, dict) or not isinstance(raw.get('model'), str) or not raw['model']:
         raise ValueError('Decision response must include the resolved model name.')
     if protocol == 'systemone':
-        if not isinstance(raw.get('answers'), dict) or set(raw['answers']) != {'answer'}:
-            raise ValueError('System One must return exactly the requested answer question.')
-        data = dict(raw['answers']['answer'])
-        if request.kind == 'noul':
-            p = data.get('noul')
-            if 'probabilities' not in data and isinstance(p, (float, int)):
-                data['probabilities'] = {'no': 1 - p, 'yes': p}
+        answer = _parse_systemone_answer(raw, request)
+    elif protocol == 'autotrust':
+        answer = _parse_autotrust_answer(raw, request)
     else:
-        if raw.get('kind') != request.kind or raw.get('effective_kind', request.kind) != request.kind:
-            raise ValueError('AutoTrust returned a different decision kind.')
-        options = (
-            list(request.criteria.values())
-            if request.kind == 'choice'
-            else ['false', 'true']
-            if request.kind == 'noul'
-            else [str(i) for i in range(6)]
-        )
-        probs = raw.get('probabilities')
-        if raw.get('options') != options or not isinstance(probs, list) or len(probs) != len(options):
-            raise ValueError('AutoTrust options do not match the request.')
-        index = raw.get('choice_index')
-        if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(options):
-            raise ValueError('AutoTrust returned an invalid choice index.')
-        if raw.get('choice') != options[index]:
-            raise ValueError('AutoTrust choice and index disagree.')
-        if any(not isinstance(p, (int, float)) or not math.isfinite(p) for p in probs):
-            raise ValueError('AutoTrust probabilities must be finite numbers.')
-        if probs[index] < max(probs) - 1e-6:
-            raise ValueError('AutoTrust choice index must identify a highest-probability option.')
-        data = {'type': request.kind, 'probabilities': dict(zip(request.labels, probs))}
-        if request.kind == 'choice':
-            data['choice'] = request.labels[index]
-        elif request.kind == 'noul':
-            data['noul'] = probs[1]
-        else:
-            data['score'] = sum(i * p for i, p in enumerate(probs))
-            data['legend'] = dict(zip(request.labels, request.criteria))
-    answer = DecisionAnswer.model_validate(data)
+        raise ValueError(f'Unsupported decision protocol: {protocol}')
     if answer.type != request.kind or set(answer.probabilities) != set(request.labels):
         raise ValueError('Returned decision options do not match the request criteria.')
     if answer.type == 'score' and answer.legend != dict(zip(request.labels, request.criteria)):

@@ -72,7 +72,8 @@ class OpenDecisionsAdapter(DecisionAdapter):
         ):
             self.eval_split = 'test'
 
-    def aggregate_scores(self, sample_scores: list) -> list:
+    def aggregate_subset(self, subset: str, sample_scores: list) -> list:
+        """Score every requested task in this subset, including missing predictions."""
         from .utils import aggregate_official
 
         tasks = [
@@ -83,6 +84,6 @@ class OpenDecisionsAdapter(DecisionAdapter):
                 'expected': sample.metadata['decision_gold'],
                 'tier': sample.metadata['tier'],
             }
-            for sample in self.test_dataset[self.current_subset_name]
+            for sample in self.test_dataset[subset]
         ]
         return super().aggregate_scores(sample_scores) + aggregate_official(sample_scores, tasks)

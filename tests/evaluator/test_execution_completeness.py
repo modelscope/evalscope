@@ -79,7 +79,7 @@ def test_batch_review_error_tracks_cached_and_successful_samples() -> None:
     evaluator._sample_scores_by_subset = {}
     evaluator.benchmark = SimpleNamespace(
         use_batch_scoring=True,
-        aggregate_scores=lambda sample_scores: [],
+        aggregate_subset=lambda subset, sample_scores: [],
         _temporary_attribute=lambda *_: nullcontext(),
     )
     task_state = SimpleNamespace(sample_id=2)

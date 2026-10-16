@@ -72,21 +72,6 @@ The list above covers existing multiple-choice adapters. `jevbench`, `open_decis
 
 Public datasets default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
 
-### Using Hugging Face datasets
-
-With `TaskConfig(dataset_hub='huggingface', ...)`, the framework selects the corresponding HF repository automatically. Benchmark names stay the same.
-
-| Benchmark | Hugging Face dataset ID |
-|---|---|
-| `arc` | `allenai/ai2_arc` |
-| `banking77` | `mteb/banking77` |
-| `boolq` | `google/boolq` |
-| `reward_bench` | `allenai/reward-bench` |
-| `stsb` | `sentence-transformers/stsb` |
-| `open_decisions` | `jgeuter/OpenDecisions` |
-
-OpenDecisions defaults to HF's `test` or ModelScope's `train`; both contain the same tasks. For historical revisions, set `dataset_args.open_decisions.eval_split` explicitly if needed. `jevbench` uses `evalscope/jevbench` on ModelScope: the [official HF repository](https://huggingface.co/datasets/benchmarkheaven/jevbench) contains leaderboard results rather than the task records used here. `general_decision` reads local files and needs no HF ID.
-
 ## Results and reproducibility
 
 System One uses the existing `Model.generate(messages)` entry point. MCQ adapters attach conversion data such as the original question, candidates and demonstrations to the existing `ChatMessage.internal` field. `SystemOneAPI.generate()` converts these messages into the protocol request. No additional sample or model-output fields are needed; arbitrary chat text without MCQ conversion data cannot be converted directly.

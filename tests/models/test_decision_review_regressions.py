@@ -151,8 +151,9 @@ def test_repeated_official_tasks_keep_independent_predictions(name: str) -> None
         scores.append(SampleScore(sample_id=index, sample_metadata=sample.metadata,
                                  score=decision_score(answer, 'A', ['A', 'B'], family='unit', tier='hard')))
     adapter.test_dataset = DatasetDict({'default': MemoryDataset(samples)})
-    adapter.current_subset_name = 'default'
-    metrics = adapter.aggregate_scores(scores)
+    adapter.current_subset_name = 'loading-another-subset'
+    metrics = adapter.aggregate_subset('default', scores)
+    assert adapter.current_subset_name == 'loading-another-subset'
     if name == 'jevbench':
         assert next(m.score for m in metrics if m.metric_name == 'public_accuracy') == 0.5
     else:
@@ -203,6 +204,35 @@ def test_classification_labels_are_not_coerced_into_noul_probabilities(value: ob
 def test_choice_probabilities_must_be_json_numbers(value: object) -> None:
     with pytest.raises(ValueError):
         DecisionAnswer(choice='A', probabilities={'A': value, 'B': 0.1})
+
+
+@pytest.mark.parametrize('change', [
+    {'probabilities': [True, False]},
+    {'probabilities': ['1.0', 0.0]},
+    {'probabilities': [float('nan'), 0.0]},
+    {'choice_index': True},
+    {'choice_index': '0'},
+    {'choice_index': 2},
+    {'choice': 'Second'},
+    {'options': ['Second', 'First']},
+])
+def test_autotrust_response_contract_rejects_invalid_arrays_and_selections(change: dict) -> None:
+    request = DecisionInput(state='Fact.', instructions='Choose.', criteria={'A': 'First', 'B': 'Second'})
+    raw = {'model': 'test', 'kind': 'choice', 'options': ['First', 'Second'],
+           'probabilities': [1.0, 0.0], 'choice_index': 0, 'choice': 'First', **change}
+    with pytest.raises(ValueError):
+        parse_decision_response(raw, request, 'autotrust')
+
+
+def test_mcq_probability_order_follows_the_question_not_the_response() -> None:
+    adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
+    sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
+    output = ModelOutput.from_content('test', 'ANSWER: A')
+    output.metadata = {'decision': DecisionAnswer(choice='A', probabilities={'B': 0.1, 'A': 0.9}).model_dump()}
+    score = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
+    assert score.metadata['decision']['labels'] == ['A', 'B']
+    assert score.metadata['decision']['probabilities'] == [0.9, 0.1]
+    assert list(score.metadata['decision']['raw_probabilities']) == ['B', 'A']
 
 
 def test_open_decisions_uses_raw_probabilities_like_official_scorer() -> None:

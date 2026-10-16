@@ -4,7 +4,7 @@ Use `general_decision` to evaluate choices, yes/no judgments and ratings from yo
 
 This format requires `systemone_api` or `autotrust_api`. For deployment and connection settings, see the [decision evaluation best practice](../../best_practice/decision_evaluation.md). For ordinary chat-model questions, use the [LLM dataset formats](llm.md).
 
-## Prepare a dataset
+## Data Preparation
 
 Create this directory where you will run evaluation:
 
@@ -58,7 +58,19 @@ EvalScope accepts 2–255 Choice options and 2–10 Score levels; the service ma
 | `family` | Empty | For discrete references, add `family_macro`: average accuracy per family, then average families equally |
 | `group`, `tier`, `language` | Absent / empty | Provenance retained in metadata; these do not automatically create subsets or metrics |
 
-## Run evaluation
+### File naming and subsets
+
+`local_path` points to the directory. The default subset is `default`, and the evaluation split is `test`, hence `default_test.jsonl`. To use `routing_test.jsonl` and `quality_test.jsonl`, set `subset_list=['routing', 'quality']` in the benchmark's dataset arguments. Each file may contain all three types.
+
+### Continuous reference scores (optional)
+
+For a real-valued reference, set `continuous=true`. Save this record separately as `decision-data/continuous_test.jsonl`:
+
+```json
+{"id":"similarity","state":{"sentence1":"A girl is styling her hair.","sentence2":"A girl is brushing her hair."},"question":{"type":"score","instructions":"Rate the semantic similarity of the two sentences.","criteria":["Unrelated","Some shared meaning","Mostly similar","Equivalent"]},"expected":1.5,"continuous":true}
+```
+
+## Configuration Task
 
 With a local System One service running, save this as `evaluate_custom.py` and run `python evaluate_custom.py`. For an existing service, set `DECISION_MODEL`, `DECISION_API_URL` and `DECISION_API_KEY`; the dataset stays the same.
 
@@ -83,36 +95,9 @@ run_task(TaskConfig(
 ))
 ```
 
-`local_path` points to the directory. The default subset is `default`, and the evaluation split is `test`, hence `default_test.jsonl`. To use `routing_test.jsonl` and `quality_test.jsonl`, set `subset_list=['routing', 'quality']` in the benchmark's dataset arguments. Each file may contain all three types.
-
 No chat generation parameters or LLM judge are needed: references are graded directly against the returned decisions.
 
-## Read the metrics
-
-The default primary metric is **accuracy** across discrete-reference records. Other metrics are separated by type and, for Score, by level count. Do not average incompatible error scales.
-
-| Type | Metrics | Interpretation |
-|---|---|---|
-| Choice | Accuracy; NLL, multiclass Brier, ECE; macro-F1 for fixed classes | Accuracy/F1: higher is better. Probability errors: lower is better |
-| Noul | Accuracy, Precision, Recall, F1, AUROC, AUPRC; NLL, binary Brier, ECE | Classification/ranking: higher is better. Probability errors: lower is better |
-| Discrete Score | Accuracy, MAE, normalized RPS; NLL, multiclass Brier, ECE; Spearman, Pearson | MAE uses level units. Errors: lower is better. Correlations closer to 1 are better |
-| All types | AURC and saved risk–coverage points | Lower AURC is better; check the confidence source and risk definition |
-
-NLL penalizes low probability on the reference; its numerical floor is saved as `nll_epsilon`. ECE uses 10 equal-width bins: `P(yes)` for Noul, top-label probability for Choice/discrete Score. Binary and multiclass Brier have different definitions and should not be averaged together.
-
-Choice/Noul risk is the error rate among accepted predictions; Score risk is MAE divided by the score range. Top option probability and provider `confidence` are separate confidence sources. The Web UI coverage control selects saved points without splitting tied-confidence groups.
-
-The three introductory records are too few for some metrics: AUROC may be unavailable, and Score correlations cannot be calculated. The report keeps the reason; an unavailable value is not zero. Check execution coverage and valid counts before comparing models.
-
-View results through the [EvalScope Web UI](../../best_practice/decision_evaluation.md#2-read-the-report-before-comparing-models), or inspect `predictions/`, `reviews/` and `reports/`. The probability panel switches between original and scoring distributions; reviews record any normalization of rounded probabilities.
-
-## Continuous reference scores
-
-For a real-valued reference, set `continuous=true`. Save this record separately as `decision-data/continuous_test.jsonl`:
-
-```json
-{"id":"similarity","state":{"sentence1":"A girl is styling her hair.","sentence2":"A girl is brushing her hair."},"question":{"type":"score","instructions":"Rate the semantic similarity of the two sentences.","criteria":["Unrelated","Some shared meaning","Mostly similar","Equivalent"]},"expected":1.5,"continuous":true}
-```
+### Continuous-score configuration
 
 To evaluate only this four-level continuous subset, replace `dataset_args` in the script with:
 
@@ -128,5 +113,20 @@ dataset_args={
 ```
 
 MAE is now the primary metric. Continuous references are not rounded to calculate Accuracy, NLL, Brier, ECE or RPS. MAE, correlations and risk–coverage remain available when their sample requirements are met. Convert business ratings on another scale to the declared zero-based scale first.
+
+## Evaluation Metrics
+
+The default primary metric is **accuracy** across discrete-reference records. Other metrics are separated by type and, for Score, by level count. Do not average incompatible error scales.
+
+| Type | Metrics | Interpretation |
+|---|---|---|
+| Choice | Accuracy; NLL, multiclass Brier, ECE; macro-F1 for fixed classes | Accuracy/F1: higher is better. Probability errors: lower is better |
+| Noul | Accuracy, Precision, Recall, F1, AUROC, AUPRC; NLL, binary Brier, ECE | Classification/ranking: higher is better. Probability errors: lower is better |
+| Discrete Score | Accuracy, MAE, normalized RPS; NLL, multiclass Brier, ECE; Spearman, Pearson | MAE uses level units. Errors: lower is better. Correlations closer to 1 are better |
+| All types | AURC and saved risk–coverage points | Lower AURC is better; check the confidence source and risk definition |
+
+The three introductory records are too few for some metrics: AUROC may be unavailable, and Score correlations cannot be calculated. The report keeps the reason; an unavailable value is not zero. Check execution coverage and valid counts before comparing models.
+
+View results through the [EvalScope Web UI](../../best_practice/decision_evaluation.md#2-read-the-report-before-comparing-models), or inspect `predictions/`, `reviews/` and `reports/`. The probability panel switches between original and scoring distributions; reviews record any normalization of rounded probabilities.
 
 For more options, see [Decision API configuration](../../user_guides/systemone.md) and [evaluation parameters](../../get_started/parameters.md).

@@ -1,11 +1,11 @@
-from typing import List
+from typing import Any, List, Literal
 
 from evalscope.api.dataset.dataset import Sample
 from evalscope.api.evaluator import Choices, Target, TaskState
 from evalscope.api.messages import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, MetricSelector, SampleScore, Score
 from evalscope.api.metric.decision import decision_score, read_decision_answer
-from evalscope.api.model.decision import DECISION_EVAL_TYPES
+from evalscope.api.model.decision import DECISION_EVAL_TYPES, DecisionInput
 from evalscope.api.registry import get_aggregation
 from evalscope.utils.multi_choices import (
     FEW_SHOT_TEMPLATE,
@@ -22,6 +22,13 @@ from evalscope.utils.multi_choices import (
 
 from .default_data_adapter import DefaultDataAdapter
 
+CHINESE_ANSWER_TEMPLATES = (
+    MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE,
+    MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
+    MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE,
+    MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT,
+)
+
 
 class MultiChoiceAdapter(DefaultDataAdapter):
     """
@@ -34,16 +41,29 @@ class MultiChoiceAdapter(DefaultDataAdapter):
     decision_fixed_classes: bool = False
     """Whether every sample uses the same semantic class inventory."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-
-        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
-            if 'primary_metric' not in self._task_config.dataset_args.get(self.name, {}):
-                self._benchmark_meta.primary_metric = MetricSelector(name='accuracy', aggregation='mean')
-        elif self.extra_params.get('decision_kind', 'choice') != 'choice':
-            raise ValueError('Noul conversion requires systemone_api or autotrust_api.')
         self.multiple_correct: bool = False
         """Whether the benchmark allows multiple correct answers."""
+        if not self._uses_decision_api:
+            if self.extra_params.get('decision_kind', 'choice') != 'choice':
+                raise ValueError('Noul conversion requires systemone_api or autotrust_api.')
+            return
+        if 'primary_metric' not in self._task_config.dataset_args.get(self.name, {}):
+            self._benchmark_meta.primary_metric = MetricSelector(name='accuracy', aggregation='mean')
+
+    @property
+    def _uses_decision_api(self) -> bool:
+        return self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES
+
+    @property
+    def _decision_kind(self) -> Literal['choice', 'noul']:
+        kind = self.extra_params.get('decision_kind', 'choice')
+        if kind == 'choice':
+            return kind
+        if kind == 'noul' and self.decision_noul_positive_choice is not None:
+            return kind
+        raise ValueError(f'Benchmark {self.name!r} has no audited Noul conversion.')
 
     def validate_choice_config(self) -> None:
         """Validate the benchmark's single-choice execution contract."""
@@ -89,36 +109,33 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         target = Target(sample.target)
         if not 2 <= len(criteria) <= 255 or len(target) != 1 or target.single() not in criteria:
             raise ValueError('System One Choice requires 2-255 options and one matching target label.')
-        kind = self.extra_params.get('decision_kind', 'choice')
-        if kind != 'choice' and (kind != 'noul' or self.decision_noul_positive_choice is None):
-            raise ValueError(f'Benchmark {self.name!r} has no audited Noul conversion.')
+        kind = self._decision_kind
         instructions = self._benchmark_meta.choice_instructions or 'Which option correctly answers `question`?'
         state = {'question': sample.input}
         examples = self.choice_examples(subset)
         if examples:
             state['examples'] = examples
             instructions += '\nUse `examples` as demonstrations of the task.'
+        request = DecisionInput(
+            kind=kind,
+            state=state,
+            instructions=instructions,
+            criteria=criteria if kind == 'choice' else None,
+            answer_prefix='答案：' if self.prompt_template in CHINESE_ANSWER_TEMPLATES else 'ANSWER: ',
+        )
         messages: List[ChatMessage] = []
         if self.system_prompt:
             messages.append(ChatMessageSystem(content=self.system_prompt))
         messages.append(
             ChatMessageUser(
                 content=f'{sample.input}\n\n{answer_options(sample.choices or [])}',
-                internal={
-                    'systemone': {
-                        'kind': kind,
-                        'state': state,
-                        'instructions': instructions,
-                        'criteria': criteria if kind == 'choice' else None,
-                        'answer_prefix': '答案：' if '答案：' in (self.prompt_template or '') else 'ANSWER: ',
-                    }
-                },
+                internal={'systemone': request.model_dump()},
             )
         )
         return messages
 
     def _post_process_samples(self) -> None:
-        if self._task_config is None or self.eval_type not in DECISION_EVAL_TYPES:
+        if not self._uses_decision_api:
             super()._post_process_samples()
             return
         for subset, dataset in self.test_dataset.items():
@@ -129,31 +146,32 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
     ) -> Score:
         """Retain categorical probabilities on decision protocols and preserve ordinary MCQ grading."""
-        if self._task_config is None or self.eval_type not in DECISION_EVAL_TYPES:
+        if not self._uses_decision_api:
             return super().match_score(original_prediction, filtered_prediction, reference, task_state)
         answer = read_decision_answer(task_state, allow_legacy_choice=True)
-        labels = list(answer.probabilities)
+        labels = [answer_character(i) for i in range(len(task_state.choices))]
         gold = reference
         if answer.type == 'noul':
             labels = ['no', 'yes']
             choice = task_state.choices[answer_index(reference)].value
             gold = 'yes' if choice == self.decision_noul_positive_choice else 'no'
+        class_labels = None
+        if self.decision_fixed_classes:
+            class_labels = {answer_character(i): choice.value for i, choice in enumerate(task_state.choices)}
         score = decision_score(
             answer,
             gold,
             labels,
             threshold=self.extra_params.get('decision_threshold', 0.5),
             fixed_classes=self.decision_fixed_classes,
-            class_labels={answer_character(i): choice.value for i, choice in enumerate(task_state.choices)}
-            if self.decision_fixed_classes
-            else None,
+            class_labels=class_labels,
         )
         score.prediction = original_prediction
         return score
 
     def aggregate_scores(self, sample_scores: list[SampleScore]) -> list[AggScore]:
         """Compute cross-sample metrics only when a decision service supplied distributions."""
-        if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
+        if self._uses_decision_api:
             return get_aggregation('decision')()(sample_scores)
         return super().aggregate_scores(sample_scores)
 
@@ -208,12 +226,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         return format_example(question=sample.input, choices=Choices(sample.choices), answer=Target(sample.target))
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        if self.prompt_template in [
-            MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE,
-            MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT,
-            MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE,
-            MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT,
-        ]:
+        if self.prompt_template in CHINESE_ANSWER_TEMPLATES:
             # For Chinese templates, use the Chinese-format extractor ('答案：...')
             answers = parse_answers_zh(task_state, multiple_correct=self.multiple_correct, completion=prediction)
         else:
