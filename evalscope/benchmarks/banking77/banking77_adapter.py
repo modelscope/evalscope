@@ -93,6 +93,7 @@ INTENT_LABELS = [
         name='banking77',
         pretty_name='BANKING77',
         dataset_id='mteb/banking77',
+        hf_dataset_id='mteb/banking77',
         default_subset='default',
         subset_list=['default'],
         eval_split='test',

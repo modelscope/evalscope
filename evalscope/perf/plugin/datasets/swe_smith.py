@@ -28,6 +28,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.multi_turn_args import _get_range_upper
 from evalscope.perf.plugin.datasets.base import Conversation, DatasetPluginBase, Messages, Turn
@@ -39,8 +40,6 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
-# Default ModelScope dataset used for live construction
-_DEFAULT_DATASET_NAME = 'SWE-bench/SWE-smith-trajectories'
 _DEFAULT_SPLIT = 'tool'
 
 # ---------------------------------------------------------------------------
@@ -277,6 +276,10 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
     """
 
     args_schema = MultiTurnDatasetArgs
+    dataset_source = DatasetSource(
+        dataset_id='SWE-bench/SWE-smith-trajectories',
+        hf_dataset_id='SWE-bench/SWE-smith-trajectories',
+    )
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -363,7 +366,7 @@ class SweSmithDatasetPlugin(DatasetPluginBase):
             f'target_count={target_count}, min_chars={min_chars}'
         )
 
-        dataset = self.load_hub_dataset(dataset_id=_DEFAULT_DATASET_NAME, split=_DEFAULT_SPLIT)
+        dataset = self.load_hub_dataset(split=_DEFAULT_SPLIT)
 
         candidates = []
         skipped_short = 0

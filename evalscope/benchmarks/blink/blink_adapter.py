@@ -65,6 +65,7 @@ BLINK is a benchmark designed to evaluate the core visual perception abilities o
 - Results can be analyzed across 14 different perception categories
 """,  # noqa: E501
         dataset_id='evalscope/BLINK',
+        hf_dataset_id='BLINK-Benchmark/BLINK',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='val',

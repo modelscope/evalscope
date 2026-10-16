@@ -95,6 +95,7 @@ atomic facts and return one structured Markdown table. EvalScope uses the ModelS
         tags=[Tags.AGENT, Tags.MULTI_TURN, Tags.RETRIEVAL],
         description=DESCRIPTION,
         dataset_id=DATASET_ID,
+        hf_dataset_id='ByteDance-Seed/WideSearch',
         subset_list=['default'],
         default_subset='default',
         eval_split='full',

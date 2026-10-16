@@ -4,7 +4,7 @@ import inspect
 import os
 import re
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, List, Mapping, Optional, Sequence, Union
 
 from evalscope.constants import HubType
@@ -42,6 +42,42 @@ _HF_LOAD_ONLY_OPTIONS = {
     'ignore_verifications',
     'task',
 }
+
+
+@dataclass(frozen=True)
+class DatasetSource:
+    """Hub-specific locations for one logical dataset."""
+
+    dataset_id: str
+    dataset_revision: Optional[str] = None
+    hf_dataset_id: Optional[str] = None
+    hf_dataset_revision: Optional[str] = None
+    hf_file_paths: Mapping[str, str] = field(default_factory=dict)
+
+    @property
+    def is_local(self) -> bool:
+        """Return whether the default dataset id resolves to an existing local path."""
+        return os.path.exists(self.dataset_id)
+
+    def resolve_dataset_id(self, data_source: Optional[str]) -> str:
+        """Return the dataset id for ``data_source``, preserving local paths."""
+        if data_source == HubType.LOCAL or self.is_local:
+            return self.dataset_id
+        if data_source == HubType.HUGGINGFACE and self.hf_dataset_id:
+            return self.hf_dataset_id
+        return self.dataset_id
+
+    def resolve_revision(self, data_source: Optional[str]) -> Optional[str]:
+        """Return the revision paired with the resolved dataset id."""
+        if data_source == HubType.HUGGINGFACE and self.hf_dataset_revision:
+            return self.hf_dataset_revision
+        return self.dataset_revision
+
+    def resolve_file_path(self, data_source: Optional[str], file_path: str) -> str:
+        """Return the hub-specific path for a file within the dataset repository."""
+        if data_source == HubType.HUGGINGFACE:
+            return self.hf_file_paths.get(file_path, file_path)
+        return file_path
 
 
 @dataclass(frozen=True)

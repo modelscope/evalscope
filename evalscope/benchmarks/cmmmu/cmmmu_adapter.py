@@ -98,6 +98,7 @@ CMMU (Chinese Massive Multi-discipline Multimodal Understanding) includes manual
 - Chinese language prompts used
 """,  # noqa: E501
         dataset_id='lmms-lab/CMMMU',
+        hf_dataset_id='lmms-lab/CMMMU',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='val',

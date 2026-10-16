@@ -12,6 +12,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='anli',
         pretty_name='ANLI',
         dataset_id='facebook/anli',
+        hf_dataset_id='facebook/anli',
         default_subset='plain_text',
         subset_list=['r1', 'r2', 'r3'],
         eval_split='test',

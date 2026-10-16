@@ -97,6 +97,7 @@ CL-bench represents a step towards building LMs with this fundamental capability
         tags=[Tags.INSTRUCTION_FOLLOWING, Tags.REASONING],
         description=CL_BENCH_DESCRIPTION,
         dataset_id='tencent-community/CL-bench',
+        hf_dataset_id='tencent/CL-bench',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,

@@ -52,6 +52,7 @@ challenging medical examination questions and reviewed by licensed physicians.
         name='medxpertqa',
         pretty_name='MedXpertQA',
         dataset_id='evalscope/MedXpertQA',
+        hf_dataset_id='TsinghuaC3I/MedXpertQA',
         subset_list=SUBSET_LIST,
         tags=[Tags.MULTI_MODAL, Tags.MEDICAL, Tags.MULTIPLE_CHOICE, Tags.REASONING],
         description=DESCRIPTION,

@@ -48,6 +48,7 @@ GEDIT_CONTRACT = OutputContract(schema_model=GeditGrade)
         name='gedit',
         pretty_name='GEdit-Bench',
         dataset_id='stepfun-ai/GEdit-Bench',
+        hf_dataset_id='stepfun-ai/GEdit-Bench',
         description="""
 ## Overview
 

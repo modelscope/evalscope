@@ -60,6 +60,7 @@ PROMPT_TEMPLATE = (
         name='screenspot_pro',
         pretty_name='ScreenSpot-Pro',
         dataset_id='lmms-lab/ScreenSpot-Pro',
+        hf_dataset_id='lmms-lab/ScreenSpot-Pro',
         tags=[Tags.MULTI_MODAL, Tags.GROUNDING, Tags.AGENT],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2504.07981',

@@ -102,6 +102,7 @@ class DeepSWEAdapter(AgentAdapter):
         return download_snapshot(
             data_id_or_path=self.dataset_id,
             data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
             cache_dir=str(cache_dir),
         )
@@ -219,6 +220,7 @@ integrates it through Pier and runs each benchmark sample as one Pier Python API
 - Use `pier_agent_kwargs={'model_class': 'litellm'}` for OpenAI-compatible providers that do not support Responses API
 """,
         dataset_id=DEFAULT_MODELSCOPE_DATASET_ID,
+        hf_dataset_id='datacurve/deep-swe',
         eval_split='test',
         prompt_template='{question}',
         metric_list=['acc'],

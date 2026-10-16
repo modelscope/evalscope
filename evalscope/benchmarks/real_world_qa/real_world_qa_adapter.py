@@ -59,6 +59,7 @@ RealWorldQA is a benchmark contributed by XAI designed to evaluate multimodal AI
 - Tests models on practical, real-world scenarios
 """,
         dataset_id='lmms-lab/RealWorldQA',
+        hf_dataset_id='lmms-lab/RealWorldQA',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

@@ -49,6 +49,7 @@ _IMAGE_PATTERN = re.compile(r'<IMAGE_(\d+)>')
         name='visfactor',
         pretty_name='VisFactor',
         dataset_id='lmms-lab-encoder/visfactor',
+        hf_dataset_id='lmms-lab-encoder/visfactor',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2502.16435',

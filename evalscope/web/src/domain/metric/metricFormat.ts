@@ -78,6 +78,49 @@ export function formatMetricLabel(
   return `${semantics.metric_name} ${directionArrow(semantics)}`.trimEnd()
 }
 
+/**
+ * Axis names for dimensions whose value does not say what it measures, rendered as `Context 1000`.
+ * Word-valued dimensions such as `scope`, `target` or `level` read on their own and stay bare.
+ * Mirrors the backend `_DIMENSION_LABELS`.
+ */
+const DIMENSION_LABELS = new Map<string, string>([
+  ['context_length', 'Context'],
+  ['depth_percent', 'Depth'],
+  ['min_tokens', 'Min tokens'],
+  ['max_tokens', 'Max tokens'],
+  ['threshold', 'Threshold'],
+  ['ngram', 'n-gram'],
+  ['k', 'k'],
+])
+
+/**
+ * Position of a dimension in a label, mirroring the backend `_DIMENSION_DISPLAY_ORDER`. Unlisted
+ * keys sit at 3 and ties sort by key, so `max_tokens` follows `min_tokens` and a token range reads
+ * lower bound first.
+ */
+const DIMENSION_ORDER = new Map<string, number>([
+  ['target', 0],
+  ['level', 1],
+  ['scope', 2],
+  ['min_tokens', 3],
+  ['ngram', 3],
+  ['variant', 3],
+  ['max_tokens', 4],
+  ['statistic', 4],
+])
+
+/** Render one dimension like the backend `_format_dimension`, after its axis name when it has one. */
+function formatDimension(key: string, value: string | number | boolean): string {
+  const text =
+    typeof value === 'boolean'
+      ? (value ? 'Yes' : 'No')
+      : String(value)
+          .replaceAll('_', ' ')
+          .replace(/\b\w/g, (character) => character.toUpperCase())
+  const axis = DIMENSION_LABELS.get(key)
+  return axis ? `${axis} ${text}` : text
+}
+
 /** Label a v2 identity; default mean stays in the tooltip/key, while dimensions disambiguate rows. */
 export function formatMetricIdentityLabel(
   identity: MetricIdentity,
@@ -87,39 +130,36 @@ export function formatMetricIdentityLabel(
   if (!semantics) return legacyName || metricIdentityKey(identity)
   if (semantics.kind === 'diagnostic') return semantics.display_name || legacyName || metricIdentityKey(identity)
   const base = formatMetricLabel(identity.name, semantics)
-  const dimensionOrder: Record<string, number> = {
-    target: 0,
-    level: 1,
-    scope: 2,
-    ngram: 3,
-    variant: 3,
-    statistic: 4,
-  }
   const dimensions = Object.entries(identity.dimensions)
-    .sort(([left], [right]) => (dimensionOrder[left] ?? 3) - (dimensionOrder[right] ?? 3) || left.localeCompare(right))
-    .map(([, value]) => {
-    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-    return String(value)
-      .replaceAll('_', ' ')
-      .replace(/\b\w/g, (character) => character.toUpperCase())
-    })
+    .sort(
+      ([left], [right]) =>
+        (DIMENSION_ORDER.get(left) ?? 3) - (DIMENSION_ORDER.get(right) ?? 3) || left.localeCompare(right),
+    )
+    .map(([key, value]) => formatDimension(key, value))
   return dimensions.length > 0 ? `${base} · ${dimensions.join(' · ')}` : base
 }
 
-/** Label all metrics of one report and disambiguate repeated semantic display names. */
+/**
+ * Label all metrics of one report by identity key, like the backend `format_metric_labels`: a
+ * label that repeats within the report carries the identity key in parentheses.
+ */
 export function formatMetricLabels(
-  metrics: ReadonlyArray<{ metricName: string; semantics: MetricSemantics | null | undefined }>,
+  metrics: ReadonlyArray<{
+    identity: MetricIdentity
+    semantics: MetricSemantics | null | undefined
+    legacyName?: string | null
+  }>,
 ): Record<string, string> {
   const labels = Object.fromEntries(
-    metrics.map(({ metricName, semantics }) => [metricName, formatMetricLabel(metricName, semantics)]),
+    metrics.map(({ identity, semantics, legacyName }) => [
+      metricIdentityKey(identity),
+      formatMetricIdentityLabel(identity, semantics, legacyName),
+    ]),
   )
   const counts = new Map<string, number>()
   for (const label of Object.values(labels)) counts.set(label, (counts.get(label) ?? 0) + 1)
   return Object.fromEntries(
-    metrics.map(({ metricName }) => [
-      metricName,
-      counts.get(labels[metricName])! > 1 ? `${labels[metricName]} (${metricName})` : labels[metricName],
-    ]),
+    Object.entries(labels).map(([key, label]) => [key, counts.get(label)! > 1 ? `${label} (${key})` : label]),
   )
 }
 

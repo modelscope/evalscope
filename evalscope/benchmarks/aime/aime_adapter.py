@@ -137,6 +137,7 @@ AIME 2024 (American Invitational Mathematics Examination 2024) is a benchmark ba
 - Problems are significantly harder than GSM8K or standard MATH benchmark
 """,
         dataset_id='evalscope/aime24',
+        hf_dataset_id='math-ai/aime24',
         subset_list=['default'],
         metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,
@@ -234,6 +235,7 @@ AIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark ba
 - Uses LLM-as-judge for mathematical equivalence checking
 """,
         dataset_id='evalscope/aime25',
+        hf_dataset_id='math-ai/aime25',
         subset_list=['default'],
         metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,
@@ -278,6 +280,7 @@ AIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark ba
 - Uses LLM-as-judge for mathematical equivalence checking
 """,
         dataset_id='evalscope/aime26',
+        hf_dataset_id='math-ai/aime26',
         subset_list=['default'],
         metric_list=[{'acc': {'numeric': True}}],
         few_shot_num=0,

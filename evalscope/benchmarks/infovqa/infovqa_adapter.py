@@ -51,6 +51,7 @@ InfoVQA (Infographic Visual Question Answering) is a benchmark designed to evalu
 - Uses same dataset source as DocVQA (InfographicVQA subset)
 """,  # noqa: E501
         dataset_id='lmms-lab/DocVQA',
+        hf_dataset_id='lmms-lab/DocVQA',
         subset_list=['InfographicVQA'],
         metric_list=['anls'],
         eval_split='validation',

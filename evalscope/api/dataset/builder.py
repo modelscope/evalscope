@@ -96,6 +96,7 @@ def resolve_snapshot_or_local_path(
     return DatasetHub(
         data_id_or_path=adapter.dataset_id,
         data_source=adapter.dataset_hub,
+        revision=adapter.dataset_revision,
         force_redownload=adapter.force_redownload,
         cache_dir=adapter.dataset_dir,
     ).download_snapshot(allow_file_pattern=allow_file_pattern)

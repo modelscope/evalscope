@@ -57,6 +57,7 @@ languages plus English, for evaluating multilingual passage understanding.
 - All languages ship in a single dataset config; this adapter reformats by the `language` field
 """,
         dataset_id='sarvamai/boolq-indic',
+        hf_dataset_id='sarvamai/boolq-indic',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,

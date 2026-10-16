@@ -64,6 +64,7 @@ MMStar is an elite vision-indispensable multimodal benchmark designed to ensure 
 - Results reported per category and overall
 """,  # noqa: E501
         dataset_id='evalscope/MMStar',
+        hf_dataset_id='Lin-Chen/MMStar',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         default_subset='val',

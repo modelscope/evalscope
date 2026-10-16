@@ -141,14 +141,11 @@ class GDPvalAdapter(AgentLoopAdapter):
         self._submission_records: List[Dict[str, Any]] = []
 
     @property
-    def source_dataset_hub(self) -> str:
-        return self.dataset_hub or HubType.MODELSCOPE
-
-    @property
     def source_dataset(self) -> DatasetHub:
         return DatasetHub(
             data_id_or_path=self.dataset_id,
-            data_source=self.source_dataset_hub,
+            data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
         )
 
@@ -177,7 +174,7 @@ class GDPvalAdapter(AgentLoopAdapter):
                 'rubric_pretty': record.get('rubric_pretty'),
                 'rubric_json': record.get('rubric_json'),
                 'dataset_id': self.dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_hub': self.dataset_hub,
             },
         )
 
@@ -297,5 +294,5 @@ class GDPvalAdapter(AgentLoopAdapter):
             subset_list=self.subset_list,
             benchmark_name=self.name,
             dataset_id=self.dataset_id,
-            dataset_hub=self.source_dataset_hub,
+            dataset_hub=self.dataset_hub,
         )

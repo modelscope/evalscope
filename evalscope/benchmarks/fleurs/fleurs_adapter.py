@@ -127,6 +127,7 @@ FLEURS_LANG_TO_ID = OrderedDict(
         name='fleurs',
         pretty_name='FLEURS',
         dataset_id='lmms-lab/fleurs',
+        hf_dataset_id='lmms-lab/fleurs',
         tags=[Tags.AUDIO, Tags.MULTI_LINGUAL, Tags.SPEECH_RECOGNITION],
         description="""
 ## Overview

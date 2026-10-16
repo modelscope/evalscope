@@ -37,6 +37,7 @@ Tweebank-NER is an English Twitter corpus created by annotating the syntacticall
         name='tweebank_ner',
         pretty_name='TweeBankNER',
         dataset_id='extraordinarylab/tweebank-ner',
+        hf_dataset_id='extraordinarylab/tweebank-ner',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION,
         few_shot_num=5,

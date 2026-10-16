@@ -68,6 +68,7 @@ MMMLU (Multilingual Massive Multitask Language Understanding) is a multilingual 
 - Cross-lingual performance comparison supported
 """,
         dataset_id='openai-mirror/MMMLU',
+        hf_dataset_id='openai/MMMLU',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,

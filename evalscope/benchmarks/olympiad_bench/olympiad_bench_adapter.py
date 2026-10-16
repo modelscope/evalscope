@@ -74,11 +74,12 @@ OlympiadBench is an Olympiad-level bilingual multimodal scientific benchmark fea
 - Supports numerical precision/error thresholds for approximate answers
 """,
         dataset_id='AI-ModelScope/OlympiadBench',
+        hf_dataset_id='Hothan/OlympiadBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='train',
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
     )
 )
 class OlympiadBenchAdapter(VisionLanguageAdapter):
@@ -159,9 +160,11 @@ class OlympiadBenchAdapter(VisionLanguageAdapter):
             # are alternative derivations, not additional required answers.
             official_answers = metadata.get('final_answer') or []
             reference = official_answers[0] if official_answers else reference
+            # The official judge reads a full-width comma as an answer separator ('，' -> ','); Chinese
+            # references use it, and the prompt asks the model for ASCII commas.
             result = compare_answers(
-                filtered_prediction,
-                reference,
+                filtered_prediction.replace('，', ','),
+                reference.replace('，', ','),
                 absolute_tolerance=tolerances,
                 multiple_answers=metadata.get('is_multiple_answer', False) or ',' in answer_type,
             )

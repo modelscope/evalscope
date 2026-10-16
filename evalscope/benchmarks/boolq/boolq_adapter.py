@@ -12,6 +12,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='boolq',
         pretty_name='BoolQ',
         dataset_id='google/boolq',
+        hf_dataset_id='google/boolq',
         default_subset='default',
         subset_list=['default'],
         eval_split='validation',

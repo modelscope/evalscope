@@ -101,6 +101,7 @@ AlpacaEval 2.0 is an evaluation framework for instruction-following language mod
 - Note: Length-controlled win rate not currently supported
 """,
         dataset_id='AI-ModelScope/alpaca_eval',
+        hf_dataset_id='tatsu-lab/alpaca_eval',
         subset_list=['alpaca_eval_gpt4_baseline'],
         metric_list=['win_rate'],
         evaluation_version='v1.1',

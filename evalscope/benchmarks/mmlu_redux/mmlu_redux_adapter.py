@@ -109,6 +109,7 @@ MMLU-Redux is an improved version of the MMLU benchmark with corrected answers. 
 - Results aggregated by subject and category (STEM, Humanities, Social Science, Other)
 """,  # noqa: E501
         dataset_id='AI-ModelScope/mmlu-redux-2.0',
+        hf_dataset_id='edinburgh-dawg/mmlu-redux-2.0',
         subset_list=SUBSET_LIST,
         metric_list=[{'acc': {'allow_inclusion': True}}],
         few_shot_num=0,

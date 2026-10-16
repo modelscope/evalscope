@@ -67,6 +67,7 @@ EQ-Bench is a benchmark for evaluating language models on emotional intelligence
 - Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
 """,
         dataset_id='evalscope/EQ-Bench',  # ModelScope dataset ID, falls back to local if not found
+        hf_dataset_id='pbevan11/EQ-Bench',
         metric_list=['eq_bench_score'],  # Official v2 full-scale scoring
         few_shot_num=0,
         train_split=None,

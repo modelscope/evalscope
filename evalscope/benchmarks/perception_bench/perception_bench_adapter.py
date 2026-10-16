@@ -87,6 +87,7 @@ SUBSET_LIST = [
         name='perception_bench',
         pretty_name='PerceptionBench',
         dataset_id='moonshotai/PerceptionBench',
+        hf_dataset_id='moonshotai/PerceptionBench',
         tags=[Tags.MULTI_MODAL, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2607.24957',

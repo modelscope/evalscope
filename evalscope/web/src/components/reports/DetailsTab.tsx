@@ -7,9 +7,6 @@ import { scoreColor } from '@/utils/colorScale'
 import {
   formatMetric,
   formatMetricLabel,
-  formatMetricLabels,
-  formatMetricIdentityLabel,
-  metricIdentityKey,
   getBoundedQualityRatio,
   getValuePosition,
 } from '@/domain/metric'
@@ -33,6 +30,8 @@ interface Props {
   /** Backend semantics of the primary metric, and of each metric by its final report name. */
   semantics?: MetricSemantics | null
   semanticsByMetric?: Record<string, MetricSemantics | null | undefined>
+  /** Display label of each metric by its final report name, from `formatMetricLabels`. */
+  labelsByMetric?: Record<string, string>
 }
 
 /** Stable placeholder so an unresolved frame does not produce a new object each render. */
@@ -49,6 +48,7 @@ export default function DetailsTab({
   metricName,
   semantics,
   semanticsByMetric = {},
+  labelsByMetric = {},
 }: Props) {
   const { t } = useLocale()
 
@@ -75,15 +75,6 @@ export default function DetailsTab({
 
   // Detect whether data has Metric column
   const hasMetricCol = subsetData.data.length > 0 && 'Metric' in subsetData.data[0]
-  const metricLabels = report ? Object.fromEntries(report.metrics.map((metric) => [
-    metricIdentityKey(metric.identity),
-    formatMetricIdentityLabel(metric.identity, metric.semantics, metric.legacy_name),
-  ])) : formatMetricLabels(
-    Object.entries(semanticsByMetric).map(([name, metricSemantics]) => ({
-      metricName: name,
-      semantics: metricSemantics,
-    })),
-  )
 
   const subsetColumns = [
     {
@@ -113,11 +104,11 @@ export default function DetailsTab({
       render: (row: Record<string, unknown>) => {
         const metricName = String(row.Metric ?? '')
         const rowSemantics = semanticsByMetric[metricName] ?? null
-        // The metric's display name and direction, the same label the header card and every other
-        // surface uses. The raw name stays reachable through the tooltip.
+        // The metric's display name, direction and dimensions, the same label the CLI table and the
+        // HTML report print. The raw name stays reachable through the tooltip.
         return (
           <span className="text-xs break-words text-[var(--text-muted)]" title={metricName}>
-            {metricLabels[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
+            {labelsByMetric[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
           </span>
         )
       },

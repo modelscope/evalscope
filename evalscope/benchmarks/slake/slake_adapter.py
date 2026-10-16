@@ -86,6 +86,7 @@ and medical knowledge that has to be recalled on top of what the image shows.
         name='slake',
         pretty_name='SLAKE',
         dataset_id='evalscope/SLAKE',
+        hf_dataset_id='BoKelvin/SLAKE',
         tags=[Tags.MULTI_MODAL, Tags.MEDICAL, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2102.09542',
@@ -122,6 +123,7 @@ class SLAKEAdapter(VisionLanguageAdapter):
             data_id_or_path=self.dataset_id,
             file_path=IMAGE_ARCHIVE,
             data_source=self.dataset_hub,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
             cache_dir=self.dataset_dir,
         )

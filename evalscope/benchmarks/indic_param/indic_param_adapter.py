@@ -68,6 +68,7 @@ form for Sanskrit-English).
   reformats by that field
 """,
         dataset_id='bharatgenai/IndicParam',
+        hf_dataset_id='bharatgenai/IndicParam',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,

@@ -14,6 +14,7 @@ from evalscope.utils.multi_choices import MultipleChoiceTemplate, answer_charact
         name='reward_bench',
         pretty_name='RewardBench v1 (pairwise)',
         dataset_id='allenai/reward-bench',
+        hf_dataset_id='allenai/reward-bench',
         default_subset='default',
         subset_list=[
             'alpacaeval-easy',

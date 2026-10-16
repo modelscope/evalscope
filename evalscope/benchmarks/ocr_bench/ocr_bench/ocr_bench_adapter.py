@@ -62,6 +62,7 @@ OCRBench is a comprehensive evaluation benchmark designed to assess the OCR (Opt
 - Comprehensive test of OCR capabilities in multimodal models
 """,
         dataset_id='evalscope/OCRBench',
+        hf_dataset_id='echo840/OCRBench',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

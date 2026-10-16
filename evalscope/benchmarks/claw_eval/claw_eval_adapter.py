@@ -86,6 +86,7 @@ parallel execution, reporting, and dashboard trace review.
         name='claw_eval',
         pretty_name='Claw-Eval',
         dataset_id=DEFAULT_CLAW_EVAL_DATASET_ID,
+        hf_dataset_id='claw-eval/Claw-Eval',
         tags=[Tags.AGENT, Tags.MULTI_MODAL, Tags.MULTI_TURN],
         description=_DESCRIPTION,
         metric_list=['judge_score', 'pass_at_k', 'pass_hat_k', 'error_rate'],
@@ -119,8 +120,9 @@ class ClawEvalAdapter(AgentAdapter):
             task_ids_filter = {str(task_id).strip() for task_id in task_ids if str(task_id).strip()}
         records = load_task_manifest(
             dataset_id=self.dataset_id,
-            data_source=self.dataset_hub or HubType.MODELSCOPE,
+            data_source=self.dataset_hub,
             splits=selected_splits,
+            revision=self.dataset_revision,
             force_redownload=self.force_redownload,
         )
 
@@ -393,7 +395,8 @@ class ClawEvalAdapter(AgentAdapter):
             if self._assets is None:
                 self._assets = prepare_claw_eval_assets(
                     dataset_id=self.dataset_id,
-                    data_source=self.dataset_hub or HubType.MODELSCOPE,
+                    data_source=self.dataset_hub,
+                    revision=self.dataset_revision,
                     cache_dir=self._cache_dir(),
                     force_redownload=self.force_redownload,
                     official_repo_path=self._official_repo_path(),

@@ -121,6 +121,7 @@ range from text-only problems to diagram-based problems.
         name='hipho',
         pretty_name='HiPhO',
         dataset_id='evalscope/HiPhO',
+        hf_dataset_id='SciYu/HiPhO',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.MATH, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2509.07894',

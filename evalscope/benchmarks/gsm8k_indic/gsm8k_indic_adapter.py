@@ -61,6 +61,7 @@ available in native script and a romanized (Latin transliteration) variant, plus
   translated
 """,
         dataset_id='sarvamai/gsm8k-indic',
+        hf_dataset_id='sarvamai/gsm8k-indic',
         subset_list=SUBSET_LIST,
         few_shot_num=0,
         train_split=None,

@@ -20,6 +20,7 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         name='science_qa',
         pretty_name='ScienceQA',
         dataset_id='AI-ModelScope/ScienceQA',
+        hf_dataset_id='derek-thomas/ScienceQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

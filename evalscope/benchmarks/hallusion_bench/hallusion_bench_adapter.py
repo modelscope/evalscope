@@ -52,6 +52,7 @@ HallusionBench is an advanced diagnostic benchmark designed to evaluate image-co
 - Aggregation at subcategory, category, and overall levels
 """,  # noqa: E501
         dataset_id='lmms-lab/HallusionBench',
+        hf_dataset_id='lmms-lab/HallusionBench',
         metric_list=['aAcc', 'qAcc', 'fAcc'],
         primary_metric=MetricSelector(
             name='accuracy',

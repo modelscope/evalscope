@@ -346,12 +346,12 @@ class End2EndEvaluator:
                     and 'page' in result_all[category_type]
                     and metric in result_all[category_type]['page']
                 ):
-                    save_dict[category_type + '_' + metric + '_EN'] = result_all[category_type]['page'][metric][
-                        'language: english'
-                    ]
-                    save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric][
-                        'language: simplified_chinese'
-                    ]
+                    save_dict[category_type + '_' + metric + '_EN'] = result_all[category_type]['page'][metric].get(
+                        'language: english', np.nan
+                    )
+                    save_dict[category_type + '_' + metric + '_CH'] = result_all[category_type]['page'][metric].get(
+                        'language: simplified_chinese', np.nan
+                    )
                 else:
                     save_dict[category_type + '_' + metric + '_EN'] = np.nan
                     save_dict[category_type + '_' + metric + '_CH'] = np.nan

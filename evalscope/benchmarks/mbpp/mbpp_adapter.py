@@ -85,6 +85,7 @@ MBPP (Mostly Basic Python Problems) is a benchmark consisting of approximately 1
 - Code is extracted from `[BEGIN]...[DONE]` blocks if present
 """,
         dataset_id='google-research-datasets/mbpp',
+        hf_dataset_id='google-research-datasets/mbpp',
         subset_list=['full'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',

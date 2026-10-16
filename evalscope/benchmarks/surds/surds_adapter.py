@@ -68,6 +68,7 @@ without supplying depth maps or visual markers.
         name='surds',
         pretty_name='SURDS',
         dataset_id='evalscope/SURDS_eval',
+        hf_dataset_id='bonbon-rj/SURDS_eval',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA, Tags.GROUNDING],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2411.13112',

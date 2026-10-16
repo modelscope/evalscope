@@ -40,6 +40,7 @@ BiomixQA is a curated biomedical question-answering dataset designed to evaluate
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MEDICAL],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/biomix-qa',
+        hf_dataset_id='extraordinarylab/biomix-qa',
         metric_list=['acc'],
         few_shot_num=0,
         train_split=None,
