@@ -1,6 +1,6 @@
 # System One 评测
 
-使用 `eval_type='systemone_api'` 评测只返回选择结果的文本决策模型。EvalScope 将原始题目、上下文、示例和完整选项转换为 System One 请求，再以返回标签计算准确率。
+使用 `eval_type='systemone_api'` 评测返回结构化结果和概率的文本决策模型。本页侧重已有选择题 benchmark 的转换、示例和配置；Choice、Noul、Score 三类评测、百炼 API 与 Clef-Flash 部署见[决策模型评测最佳实践](../best_practice/decision_evaluation.md)。
 
 ## 百炼示例
 
@@ -63,7 +63,7 @@ run_task(TaskConfig(
 
 - ARC-C 使用 `arc` 的 `ARC-Challenge` 子集。
 - ANLI 的子集为 `r1`、`r2`、`r3`；默认使用各轮 test，示例使用对应 train。
-- BoolQ 使用原版 validation，评测两选一 Choice。
+- BoolQ 使用原版 validation，默认评测两选一 Choice；设置 `extra_params.decision_kind='noul'` 可评测判断概率。
 - BANKING77 保留全部 77 类；不进行候选项裁剪。
 - ContractNLI 使用完整合同的 `contractnli_b`，仅评三分类，不评证据定位。
 - RewardBench 使用 v1 filtered 数据，确定性打乱回答位置。总体分数是样本加权 accuracy，不是官方类别加权榜单分数。

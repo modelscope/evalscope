@@ -1,6 +1,6 @@
 # System One Evaluation
 
-Use `eval_type='systemone_api'` for text decision models that return a selected option. EvalScope converts raw questions, context, demonstrations and complete candidate lists into System One requests, then computes accuracy from the returned labels.
+Use `eval_type='systemone_api'` for text decision models returning structured results and probabilities. This page focuses on existing multiple-choice benchmarks, demonstrations and configuration. For Choice, Noul and Score evaluation, Bailian API access and Clef-Flash deployment, see the [decision evaluation best practice](../best_practice/decision_evaluation.md).
 
 ## Bailian example
 
@@ -63,7 +63,7 @@ An explicit `api_key` takes precedence. When it is omitted, `None`, empty or the
 
 - ARC-C is the `ARC-Challenge` subset of `arc`.
 - ANLI exposes `r1`, `r2`, `r3`: test evaluation with demonstrations from the corresponding training round.
-- BoolQ uses original validation labels and a binary Choice request.
+- BoolQ uses original validation labels and binary Choice by default; set `extra_params.decision_kind='noul'` to evaluate judgment probabilities.
 - BANKING77 retains all 77 intents without candidate pruning.
 - ContractNLI uses full-document `contractnli_b`, evaluating classification only, without evidence extraction.
 - RewardBench uses v1 filtered pairs with deterministic position shuffling. Overall accuracy is weighted by sample count, not the official category-weighted leaderboard score.

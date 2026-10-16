@@ -16,10 +16,16 @@ def main() -> None:
     parser.add_argument('--model', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--samples', type=int, default=20)
+    parser.add_argument(
+        '--choice-benchmark', choices=['banking77', 'arc'], default='banking77',
+        help='Use arc for services that cannot accept all 77 BANKING77 options.',
+    )
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
-    for kind, dataset in [('choice', 'banking77'), ('noul', 'boolq'), ('score', 'stsb')]:
+    for kind, dataset in [('choice', args.choice_benchmark), ('noul', 'boolq'), ('score', 'stsb')]:
         extra = {'extra_params': {'decision_kind': 'noul'}} if kind == 'noul' else {}
+        if dataset == 'arc':
+            extra['subset_list'] = ['ARC-Challenge']
         config = TaskConfig(model=args.model, eval_type=args.api + '_api', datasets=[dataset],
                             dataset_args={dataset: extra}, limit=args.samples)
         adapter = get_benchmark(dataset, config)
