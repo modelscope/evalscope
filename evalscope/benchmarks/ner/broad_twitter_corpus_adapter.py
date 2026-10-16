@@ -37,6 +37,7 @@ BroadTwitterCorpus is a dataset of tweets collected over stratified times, place
         name='broad_twitter_corpus',
         pretty_name='BroadTwitterCorpus',
         dataset_id='extraordinarylab/broad-twitter-corpus',
+        hf_dataset_id='extraordinarylab/broad-twitter-corpus',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

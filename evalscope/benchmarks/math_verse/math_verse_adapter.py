@@ -33,6 +33,7 @@ SUBSET_LIST = ['Text Dominant', 'Text Lite', 'Vision Intensive', 'Vision Dominan
         name='math_verse',
         pretty_name='MathVerse',
         dataset_id='evalscope/MathVerse',
+        hf_dataset_id='AI4Math/MathVerse',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

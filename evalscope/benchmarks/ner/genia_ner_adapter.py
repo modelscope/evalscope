@@ -37,6 +37,7 @@ GeniaNER is a large-scale biomedical NER dataset consisting of 2,000 MEDLINE abs
         name='genia_ner',
         pretty_name='GeniaNER',
         dataset_id='extraordinarylab/genia-ner',
+        hf_dataset_id='extraordinarylab/genia-ner',
         tags=[Tags.KNOWLEDGE, Tags.NER],
         description=DESCRIPTION.strip(),
         few_shot_num=5,

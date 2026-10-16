@@ -61,6 +61,7 @@ logger = get_logger()
         tags=[Tags.KNOWLEDGE, Tags.HALLUCINATION, Tags.YES_NO],
         description=DESCRIPTION.strip(),
         dataset_id='evalscope/HaluEval',
+        hf_dataset_id='pminervini/HaluEval',
         subset_list=['dialogue_samples', 'qa_samples', 'summarization_samples'],
         default_subset='Full',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],

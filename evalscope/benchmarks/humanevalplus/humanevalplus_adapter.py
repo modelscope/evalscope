@@ -55,6 +55,7 @@ HumanEval Plus is a rigorous extension of OpenAI's HumanEval benchmark, designed
         tags=[Tags.CODING],
         description=DESCRIPTION,
         dataset_id='evalscope/humanevalplus',
+        hf_dataset_id='evalplus/humanevalplus',
         subset_list=['default'],
         metric_list=['acc'],
         aggregation='mean_and_pass_at_k',

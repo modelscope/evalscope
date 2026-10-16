@@ -23,6 +23,28 @@ def test_runtime_update_revalidates_primary_metric() -> None:
         meta._update({'primary_metric': 'missing'})
 
 
+def test_dataset_id_override_resets_inherited_source_metadata() -> None:
+    meta = BenchmarkMeta(
+        name='mapped',
+        dataset_id='default/data',
+        dataset_revision='default-revision',
+        hf_dataset_id='hf/default-data',
+        hf_dataset_revision='hf-default-revision',
+    )
+
+    meta._update({
+        'dataset_id': 'custom/data',
+        'dataset_revision': 'custom-revision',
+        'hf_dataset_id': 'hf/custom-data',
+        'hf_dataset_revision': 'hf-custom-revision',
+    })
+
+    assert meta.dataset_id == 'custom/data'
+    assert meta.dataset_revision == 'custom-revision'
+    assert meta.hf_dataset_id == 'hf/custom-data'
+    assert meta.hf_dataset_revision == 'hf-custom-revision'
+
+
 def test_string_primary_metric_is_first_class_shorthand() -> None:
     meta = BenchmarkMeta(
         name='single_name_selector',

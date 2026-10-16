@@ -64,6 +64,7 @@ Each task type uses a specialized scoring method:
 - json1/json2: DIoU layout score + text score (0.7 * diou + 0.3 * text)
 """,
         dataset_id='HiDolphin/MaritimeOCRBench',
+        hf_dataset_id='ml-resources/MaritimeOCRBench',
         subset_list=SUBSET_LIST,
         metric_list=['normalized_score'],
         eval_split='test',

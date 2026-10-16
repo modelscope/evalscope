@@ -56,6 +56,7 @@ diverse task categories requiring spatial, compositional, and multi-step visual 
         name='tir_bench',
         pretty_name='TIR-Bench',
         dataset_id='evalscope/TIR-Bench',
+        hf_dataset_id='Agents-X/TIR-Bench',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.QA],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2511.01833',

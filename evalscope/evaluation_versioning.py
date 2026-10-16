@@ -59,11 +59,12 @@ class ResolvedBenchmarkSpec(BaseModel):
         primary_metric = meta.primary_metric
         if primary_metric is not None and hasattr(primary_metric, 'model_dump'):
             primary_metric = primary_metric.model_dump(mode='json')
+        dataset_source = meta.dataset_source
         return cls(
             name=meta.name,
-            dataset_id=meta.dataset_id,
+            dataset_id=dataset_source.resolve_dataset_id(task_config.dataset_hub),
             dataset_hub=task_config.dataset_hub,
-            dataset_revision=getattr(meta, 'dataset_revision', None),
+            dataset_revision=dataset_source.resolve_revision(task_config.dataset_hub),
             eval_split=meta.eval_split,
             train_split=meta.train_split,
             subset_list=list(meta.subset_list),

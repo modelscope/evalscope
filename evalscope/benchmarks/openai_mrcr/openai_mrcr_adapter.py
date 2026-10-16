@@ -52,6 +52,7 @@ MRCR (Memory-Recall with Contextual Retrieval) is OpenAI's benchmark for evaluat
 - Uses tiktoken for accurate token counting
 """,
         dataset_id='openai-mirror/mrcr',
+        hf_dataset_id='openai/mrcr',
         metric_list=['mrcr_score'],
         primary_metric=MetricSelector(name='mrcr_score', aggregation='mean', dimensions={'scope': 'overall'}),
         few_shot_num=0,

@@ -95,6 +95,7 @@ def parse_count(prediction: str) -> Optional[int]:
         name='count_qa',
         pretty_name='CountQA',
         dataset_id='evalscope/CountQA',
+        hf_dataset_id='Jayant-Sravan/CountQA',
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.REASONING],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2508.06585',

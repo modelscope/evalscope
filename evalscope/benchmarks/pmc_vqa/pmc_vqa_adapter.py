@@ -66,6 +66,7 @@ def strip_choice_prefix(choice: str, letter: str) -> str:
         name='pmc_vqa',
         pretty_name='PMC-VQA',
         dataset_id='evalscope/PMC-VQA',
+        hf_dataset_id='RadGenome/PMC-VQA',
         tags=[Tags.MULTI_MODAL, Tags.MEDICAL, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2305.10415',

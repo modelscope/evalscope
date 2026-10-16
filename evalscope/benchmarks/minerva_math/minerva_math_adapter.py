@@ -44,6 +44,7 @@ Minerva-Math is a benchmark designed to evaluate advanced mathematical and quant
 - Designed to test the upper limits of model reasoning capabilities
 """,
         dataset_id='knoveleng/Minerva-Math',
+        hf_dataset_id='knoveleng/Minerva-Math',
         subset_list=['default'],
         metric_list=[{'acc': {'numeric': True}}],
         eval_split='train',

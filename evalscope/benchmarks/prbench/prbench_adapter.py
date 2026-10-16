@@ -135,6 +135,7 @@ RUBRIC_CONTRACT = OutputContract(schema_model=RubricGrade)
         name='prbench',
         pretty_name='PRBench',
         dataset_id='ScaleAI/PRBench',
+        hf_dataset_id='ScaleAI/PRBench',
         tags=[Tags.KNOWLEDGE, Tags.QA, Tags.REASONING, Tags.MULTI_TURN],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2511.11562',

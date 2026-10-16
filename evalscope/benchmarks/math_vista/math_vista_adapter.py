@@ -29,6 +29,7 @@ OPEN_TYPE = 'free_form'
         name='math_vista',
         pretty_name='MathVista',
         dataset_id='evalscope/MathVista',
+        hf_dataset_id='AI4Math/MathVista',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

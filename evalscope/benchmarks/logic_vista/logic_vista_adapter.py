@@ -57,6 +57,7 @@ OPTION_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']
         name='logic_vista',
         pretty_name='LogicVista',
         dataset_id='evalscope/LogicVista',
+        hf_dataset_id='lscpku/LogicVista',
         tags=[Tags.MULTI_MODAL, Tags.REASONING, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2407.04973',

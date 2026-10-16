@@ -142,6 +142,7 @@ Resources: [Paper](https://arxiv.org/abs/2511.07685) |
         tags=[Tags.AGENT, Tags.MULTI_TURN, Tags.RETRIEVAL, Tags.REASONING],
         description=_DESCRIPTION,
         dataset_id='evalscope/researchrubrics',
+        hf_dataset_id='ScaleAI/researchrubrics',
         paper_url='https://arxiv.org/abs/2511.07685',
         subset_list=['default'],
         default_subset='default',

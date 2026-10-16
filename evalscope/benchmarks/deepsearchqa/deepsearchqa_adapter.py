@@ -62,6 +62,7 @@ runtime examples, MCP search/fetch configuration, and evaluation notes.
         tags=[Tags.AGENT, Tags.KNOWLEDGE, Tags.QA, Tags.RETRIEVAL],
         description=DESCRIPTION,
         dataset_id=DEEPSEARCHQA_DATASET_ID,
+        hf_dataset_id='google/deepsearchqa',
         metric_list=['f1', 'precision', 'recall'],
         primary_metric='f1',
         few_shot_num=0,

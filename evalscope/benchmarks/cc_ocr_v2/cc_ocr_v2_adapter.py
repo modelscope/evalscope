@@ -92,6 +92,7 @@ scanned tables, handwritten formulas, multi-page receipts, and low-quality multi
         tags=[Tags.MULTI_MODAL, Tags.QA, Tags.GROUNDING, Tags.MULTI_LINGUAL],
         description=DESCRIPTION,
         dataset_id='evalscope/CC-OCR-V2',
+        hf_dataset_id='Eioss/CC-OCR-V2',
         subset_list=SUBSET_LIST,
         metric_list=['normalized_score'],
         eval_split='test',

@@ -1,11 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 # flake8: noqa: E501
 
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, cast
 
 from evalscope.api.benchmark import BenchmarkMeta, MultiTurnAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages.chat_message import ChatMessage, ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric import AggScore, SampleScore, Score
@@ -13,7 +14,6 @@ from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
 from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
-from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
 
 from .prompt_templates import (
@@ -103,8 +103,15 @@ class SciCodeAdapter(CodeExecutionSandboxMixin, MultiTurnAdapter):
         Download the test data if it does not exist.
         """
         test_data_path = self.docker_path / 'test_data.h5'
-        data_url = 'https://modelscope.cn/datasets/evalscope/SciCode/resolve/master/test_data.h5'
-        download_url(data_url, str(test_data_path))
+        source_path = DatasetHub(
+            data_id_or_path=self.dataset_id,
+            data_source=self.dataset_hub,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
+            cache_dir=self.dataset_dir,
+        ).download_file('test_data.h5')
+        if Path(source_path).resolve() != test_data_path.resolve():
+            shutil.copyfile(source_path, test_data_path)
         return super().load()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:

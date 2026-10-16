@@ -54,6 +54,7 @@ _OUTCOME_SCORE = {'fulfilled': 1.0, 'partially_fulfilled': 0.5, 'not_fulfilled':
         tags=[Tags.AGENT, Tags.MULTI_TURN],
         description=DESCRIPTION,
         dataset_id=DATASET_ID,
+        hf_dataset_id='ScaleAI/MCP-Atlas',
         subset_list=['default'],
         default_subset='default',
         eval_split='train',

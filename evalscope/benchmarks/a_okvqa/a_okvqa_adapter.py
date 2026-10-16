@@ -22,6 +22,7 @@ MULT_CHOICE_PROMPT = MultipleChoiceTemplate.SINGLE_ANSWER_COT
         name='a_okvqa',
         pretty_name='A-OKVQA',
         dataset_id='HuggingFaceM4/A-OKVQA',
+        hf_dataset_id='HuggingFaceM4/A-OKVQA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

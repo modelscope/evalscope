@@ -119,6 +119,7 @@ RATING_CONTRACT = OutputContract(schema_model=MTBenchVerdict)
         name='mt_bench',
         pretty_name='MT-Bench',
         dataset_id='HuggingFaceH4/mt_bench_prompts',
+        hf_dataset_id='HuggingFaceH4/mt_bench_prompts',
         tags=[Tags.QA, Tags.INSTRUCTION_FOLLOWING, Tags.MULTI_TURN, Tags.REASONING, Tags.CODING, Tags.MATH],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2306.05685',

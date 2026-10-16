@@ -49,6 +49,7 @@ POPE (Polling-based Object Probing Evaluation) is a benchmark specifically desig
 - yes_ratio indicates model's tendency to answer "yes"
 """,
         dataset_id='lmms-lab/POPE',
+        hf_dataset_id='lmms-lab/POPE',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
         primary_metric='f1',
         aggregation='f1',

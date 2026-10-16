@@ -46,6 +46,7 @@ ID redirects here), the same dataset used by lighteval's `community_hellaswag_hi
 - Loads from ModelScope by default (mirrored as `ai4bharat/hellaswag-translated`), no token required
 """,
         dataset_id='ai4bharat/hellaswag-translated',
+        hf_dataset_id='ai4bharat/hellaswag-translated',
         metric_list=['acc'],
         subset_list=['hi'],
         few_shot_num=0,

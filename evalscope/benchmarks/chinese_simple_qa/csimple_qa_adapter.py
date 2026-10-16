@@ -128,6 +128,7 @@ Chinese SimpleQA is a Chinese question-answering dataset designed to evaluate th
 """,  # noqa: E501
         subset_list=SUBSET_LIST,
         dataset_id='AI-ModelScope/Chinese-SimpleQA',
+        hf_dataset_id='OpenStellarTeam/Chinese-SimpleQA',
         metric_list=['is_correct', 'is_incorrect', 'is_not_attempted'],
         primary_metric='is_correct',
         few_shot_num=0,

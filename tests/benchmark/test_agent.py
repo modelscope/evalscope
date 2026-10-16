@@ -567,8 +567,9 @@ class TestAgentBenchmark(TestBenchmark):
                 },
             }
 
-        def fake_manifest_loader(dataset_id, data_source, splits, force_redownload=False):
+        def fake_manifest_loader(dataset_id, data_source, splits, revision=None, force_redownload=False):
             self.assertEqual(dataset_id, 'claw-eval/Claw-Eval')
+            self.assertIsNone(revision)
             self.assertEqual(splits, ['general'])
             return [
                 {

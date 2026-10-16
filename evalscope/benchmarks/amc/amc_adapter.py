@@ -44,6 +44,7 @@ AMC (American Mathematics Competitions) is a benchmark based on problems from th
 - Solutions available in metadata for verification
 """,
         dataset_id='evalscope/amc_22-24',
+        hf_dataset_id='scottgeng00/amc_22-24',
         subset_list=['amc22', 'amc23', 'amc24'],
         metric_list=[{'acc': {'numeric': True}}],
         prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',

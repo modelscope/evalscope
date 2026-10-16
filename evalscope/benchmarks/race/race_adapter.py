@@ -43,6 +43,7 @@ RACE (ReAding Comprehension from Examinations) is a large-scale reading comprehe
 - Evaluates on test split
 """,
         dataset_id='evalscope/race',
+        hf_dataset_id='ehovy/race',
         metric_list=['acc'],
         subset_list=['high', 'middle'],
         few_shot_num=3,

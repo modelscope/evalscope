@@ -30,6 +30,7 @@ def _build_grade_schema(component_weight: List[int]) -> Type[BaseModel]:
         name='mia_bench',
         pretty_name='MIA-Bench',
         dataset_id='lmms-lab/MIA-Bench',
+        hf_dataset_id='lmms-lab/MIA-Bench',
         tags=[Tags.MULTI_MODAL, Tags.INSTRUCTION_FOLLOWING, Tags.QA],
         description="""
 ## Overview

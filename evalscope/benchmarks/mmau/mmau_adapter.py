@@ -30,6 +30,7 @@ MMAU_PROMPT = r"""Answer the following multiple choice question based on the aud
         name='mmau',
         pretty_name='MMAU',
         dataset_id='lmms-lab/mmau',
+        hf_dataset_id='lmms-lab/mmau',
         tags=[Tags.AUDIO, Tags.MULTIPLE_CHOICE],
         description="""
 ## Overview

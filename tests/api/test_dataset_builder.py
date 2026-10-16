@@ -6,6 +6,7 @@ from evalscope.api.dataset import (
     Sample,
     build_dataset_dict_from_record_map,
     build_dataset_from_records,
+    builder,
     load_local_file_dataset,
     resolve_snapshot_or_local_path,
 )
@@ -98,6 +99,36 @@ def test_resolve_snapshot_or_local_path_uses_adapter_hub(tmp_path) -> None:
     adapter = make_adapter(str(dataset_dir))
 
     assert resolve_snapshot_or_local_path(adapter) == str(dataset_dir.resolve())
+
+
+def test_resolve_snapshot_passes_effective_revision(monkeypatch) -> None:
+    captured: Dict[str, Any] = {}
+
+    class CapturingDatasetHub:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+
+        def download_snapshot(self, allow_file_pattern=None) -> str:
+            captured['allow_file_pattern'] = allow_file_pattern
+            return '/tmp/snapshot'
+
+    adapter = DummyAdapter(
+        benchmark_meta=BenchmarkMeta(
+            name='dummy',
+            dataset_id='ms/data',
+            hf_dataset_id='hf/data',
+            hf_dataset_revision='hf-revision',
+            eval_split='test',
+        ),
+        task_config=TaskConfig(datasets=['dummy'], dataset_hub='huggingface'),
+    )
+    monkeypatch.setattr(builder, 'DatasetHub', CapturingDatasetHub)
+
+    assert resolve_snapshot_or_local_path(adapter, allow_file_pattern='data/*') == '/tmp/snapshot'
+    assert captured['data_id_or_path'] == 'hf/data'
+    assert captured['data_source'] == 'huggingface'
+    assert captured['revision'] == 'hf-revision'
+    assert captured['allow_file_pattern'] == 'data/*'
 
 
 def test_load_local_file_dataset_passes_loader_args(monkeypatch) -> None:

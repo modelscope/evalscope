@@ -76,6 +76,8 @@ node that obeys every rule on the grid.
         pretty_name='SPaRC',
         dataset_id='evalscope/SPaRC',
         dataset_revision=DATASET_REVISION,
+        hf_dataset_id='lkaesberg/SPaRC',
+        hf_dataset_revision='82de88e9ed0594ab6694beb2436db272daba39ea',
         paper_url='https://arxiv.org/abs/2505.16686',
         tags=[Tags.REASONING],
         description=DESCRIPTION,

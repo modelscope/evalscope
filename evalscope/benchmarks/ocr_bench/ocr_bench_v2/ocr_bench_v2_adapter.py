@@ -82,6 +82,7 @@ OCRBench v2 is a large-scale bilingual text-centric benchmark with the most comp
 - Simple accuracy metric
 """,  # noqa: E501
         dataset_id='evalscope/OCRBench_v2',
+        hf_dataset_id='ling99/OCRBench_v2',
         subset_list=SUBSET_LIST,
         metric_list=['acc'],
         eval_split='test',

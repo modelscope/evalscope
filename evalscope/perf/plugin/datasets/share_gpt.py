@@ -2,6 +2,7 @@ import json
 import os
 from typing import Dict, Iterator, List
 
+from evalscope.api.dataset import DatasetSource
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.datasets.base import DatasetPluginBase
 from evalscope.perf.plugin.datasets.dataset_args import TextDatasetArgs
@@ -42,6 +43,14 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
     FILE_NAME: str = None
 
     args_schema = TextDatasetArgs
+    dataset_source = DatasetSource(
+        dataset_id='swift/sharegpt',
+        hf_dataset_id='shareAI/ShareGPT-Chinese-English-90k',
+        hf_file_paths={
+            'common_zh_70k.jsonl': 'sharegpt_jsonl/common_zh_70k.jsonl',
+            'common_en_70k.jsonl': 'sharegpt_jsonl/common_en_70k.jsonl',
+        },
+    )
 
     def __init__(self, query_parameters: Arguments):
         super().__init__(query_parameters)
@@ -71,9 +80,7 @@ class ShareGPTDatasetPluginBase(DatasetPluginBase):
 
     def build_messages(self) -> Iterator[List[Dict]]:
         if not self.query_parameters.dataset_path or os.path.isdir(self.query_parameters.dataset_path):
-            self.query_parameters.dataset_path = self.download_hub_file(
-                dataset_id='swift/sharegpt', file_name=self.FILE_NAME
-            )
+            self.query_parameters.dataset_path = self.download_hub_file(file_name=self.FILE_NAME)
 
         for item in self.dataset_line_by_line(self.query_parameters.dataset_path):
             item = json.loads(item)

@@ -51,6 +51,7 @@ HellaSwag is a benchmark for evaluating commonsense natural language inference, 
 - Activity labels available in metadata for analysis
 """,
         dataset_id='evalscope/hellaswag',
+        hf_dataset_id='Rowan/hellaswag',
         metric_list=['acc'],
         subset_list=['default'],
         few_shot_num=0,

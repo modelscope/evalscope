@@ -48,6 +48,7 @@ CCBench (Chinese Culture Bench) is an extension of MMBench specifically designed
 - Requires both visual perception and cultural knowledge
 """,
         dataset_id='lmms-lab/MMBench',
+        hf_dataset_id='lmms-lab/MMBench',
         subset_list=['cc'],
         metric_list=['acc'],
         eval_split='test',
@@ -109,6 +110,7 @@ MMBench is a systematically designed benchmark for evaluating vision-language mo
 - Results include category-level breakdown
 """,
         dataset_id='lmms-lab/MMBench',
+        hf_dataset_id='lmms-lab/MMBench',
         subset_list=['cn', 'en'],
         metric_list=['acc'],
         eval_split='dev',

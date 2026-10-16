@@ -7,7 +7,13 @@ from typing import Any, Callable
 import pytest
 from datasets import Dataset as HFDataset
 
-from evalscope.api.dataset import DatasetHub, download_dataset_file, download_dataset_snapshot, load_dataset_from_hub
+from evalscope.api.dataset import (
+    DatasetHub,
+    DatasetSource,
+    download_dataset_file,
+    download_dataset_snapshot,
+    load_dataset_from_hub,
+)
 from evalscope.constants import HubType
 
 
@@ -29,6 +35,32 @@ def _write_snapshot(snapshot: Path) -> None:
     snapshot.mkdir(parents=True)
     (snapshot / 'test.jsonl').write_text(json.dumps({'text': 'cached-test'}) + '\n', encoding='utf-8')
     (snapshot / 'train.jsonl').write_text(json.dumps({'text': 'cached-train'}) + '\n', encoding='utf-8')
+
+
+def test_dataset_source_resolves_hub_specific_location() -> None:
+    source = DatasetSource(
+        dataset_id='ms-org/data',
+        dataset_revision='ms-revision',
+        hf_dataset_id='hf-org/data',
+        hf_dataset_revision='hf-revision',
+        hf_file_paths={'data.jsonl': 'files/data.jsonl'},
+    )
+
+    assert source.resolve_dataset_id(HubType.MODELSCOPE) == 'ms-org/data'
+    assert source.resolve_revision(HubType.MODELSCOPE) == 'ms-revision'
+    assert source.resolve_file_path(HubType.MODELSCOPE, 'data.jsonl') == 'data.jsonl'
+    assert source.resolve_dataset_id(HubType.HUGGINGFACE) == 'hf-org/data'
+    assert source.resolve_revision(HubType.HUGGINGFACE) == 'hf-revision'
+    assert source.resolve_file_path(HubType.HUGGINGFACE, 'data.jsonl') == 'files/data.jsonl'
+
+
+def test_dataset_source_preserves_existing_local_path(tmp_path: Path) -> None:
+    local_path = tmp_path / 'dataset'
+    local_path.mkdir()
+    source = DatasetSource(dataset_id=str(local_path), hf_dataset_id='hf-org/data')
+
+    assert source.is_local
+    assert source.resolve_dataset_id(HubType.HUGGINGFACE) == str(local_path)
 
 
 def test_modelscope_load_prefers_cached_snapshot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -531,6 +563,238 @@ def test_native_gsm8k_uses_sdk_cache_without_dataset_id(
     assert dataset['main'][0].target == '2'
     assert len(benchmark.fewshot_dataset['main']) == 4
     assert len(remote_calls) == (2 if missing_shard else 0)
+
+
+def test_benchmark_dataset_source_defaults_to_modelscope_without_task_config() -> None:
+    from evalscope.api.registry import get_benchmark
+
+    benchmark = get_benchmark('gsm8k')
+
+    assert benchmark.dataset_hub == HubType.MODELSCOPE
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert benchmark.dataset_revision is None
+
+
+def test_explicit_dataset_id_override_clears_builtin_hf_mapping(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'],
+        dataset_dir=str(tmp_path / 'evalscope'),
+        dataset_hub=HubType.HUGGINGFACE,
+        dataset_args={'gsm8k': {'dataset_id': 'custom/gsm8k'}},
+    )
+    benchmark = get_benchmark('gsm8k', config)
+
+    assert benchmark.dataset_id == 'custom/gsm8k'
+    assert benchmark.dataset_revision is None
+    assert benchmark._benchmark_meta.hf_dataset_id is None
+    assert benchmark._benchmark_meta.hf_dataset_revision is None
+
+
+def test_hf_dataset_id_mapping_resolves_on_huggingface_hub(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'))
+    benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = 'openai/gsm8k'
+    benchmark._benchmark_meta.hf_dataset_revision = 'refs/convert/parquet'
+
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert benchmark.dataset_revision is None
+
+    benchmark.dataset_hub = HubType.HUGGINGFACE
+
+    assert benchmark.dataset_id == 'openai/gsm8k'
+    assert benchmark.dataset_revision == 'refs/convert/parquet'
+
+
+def test_hf_dataset_mapping_falls_back_without_mapping(tmp_path, monkeypatch) -> None:
+    from evalscope.api.benchmark import benchmark as benchmark_module
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'), dataset_hub=HubType.HUGGINGFACE,
+    )
+    benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = None
+    warnings = []
+    monkeypatch.setattr(benchmark_module.logger, 'warning', lambda message: warnings.append(message))
+
+    assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+    assert any('no hf_dataset_id mapping' in message for message in warnings)
+
+
+def test_hf_dataset_mapping_ignored_for_local_and_modelscope_hubs(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'))
+    benchmark = get_benchmark('gsm8k', config)
+    benchmark._benchmark_meta.hf_dataset_id = 'openai/gsm8k'
+
+    for hub in [HubType.MODELSCOPE, HubType.LOCAL]:
+        benchmark.dataset_hub = hub
+        assert benchmark.dataset_id == 'AI-ModelScope/gsm8k'
+
+
+def test_local_path_override_clears_hf_mapping(tmp_path) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    config = TaskConfig(
+        datasets=['gsm8k'], dataset_dir=str(tmp_path / 'evalscope'), dataset_hub=HubType.HUGGINGFACE,
+        dataset_args={'gsm8k': {'local_path': str(tmp_path / 'local-gsm8k')}},
+    )
+    benchmark = get_benchmark('gsm8k', config)
+
+    assert benchmark.dataset_id == str(tmp_path / 'local-gsm8k')
+    assert benchmark._benchmark_meta.hf_dataset_id is None
+    assert benchmark._benchmark_meta.hf_dataset_revision is None
+
+
+@pytest.mark.parametrize(
+    ('benchmark_name', 'hf_dataset_id'),
+    [('msvd', 'VLM2Vec/MSVD'), ('msr_vtt', 'VLM2Vec/MSR-VTT')],
+)
+def test_video_caption_adapters_use_shared_hf_dataset_mapping(
+    benchmark_name: str,
+    hf_dataset_id: str,
+) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    adapter = get_benchmark(
+        benchmark_name,
+        TaskConfig(datasets=[benchmark_name], dataset_hub=HubType.HUGGINGFACE),
+    )
+
+    assert adapter.dataset_id == hf_dataset_id
+    assert adapter.source_dataset.data_id_or_path == hf_dataset_id
+    if benchmark_name == 'msr_vtt':
+        assert adapter.source_eval_split == 'test'
+        assert adapter.source_subset == 'test_1k'
+
+
+@pytest.mark.parametrize(
+    ('dataset_id', 'expected_split', 'expected_subset'),
+    [
+        ('VLM2Vec/MSR-VTT', 'test', 'test_1k'),
+        ('custom/MSR-VTT', 'validation', 'default'),
+    ],
+)
+def test_msr_vtt_split_follows_effective_dataset_source(
+    dataset_id: str,
+    expected_split: str,
+    expected_subset: str,
+) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.config import TaskConfig
+
+    adapter = get_benchmark(
+        'msr_vtt',
+        TaskConfig(
+            datasets=['msr_vtt'],
+            dataset_hub=HubType.HUGGINGFACE,
+            dataset_args={'msr_vtt': {'dataset_id': dataset_id}},
+        ),
+    )
+
+    assert adapter.dataset_id == dataset_id
+    assert adapter.source_eval_split == expected_split
+    assert adapter.source_subset == expected_subset
+
+
+def test_msr_vtt_explicit_official_hf_source_loads_official_split(monkeypatch) -> None:
+    from evalscope.api.registry import get_benchmark
+    from evalscope.benchmarks.msr_vtt.msr_vtt_adapter import MSRVTTAdapter
+    from evalscope.config import TaskConfig
+
+    captured = {}
+
+    class CapturingDatasetHub:
+        def load(self, split, subset):
+            captured.update(split=split, subset=subset)
+            return []
+
+    adapter = get_benchmark(
+        'msr_vtt',
+        TaskConfig(
+            datasets=['msr_vtt'],
+            dataset_hub=HubType.HUGGINGFACE,
+            dataset_args={'msr_vtt': {'dataset_id': 'VLM2Vec/MSR-VTT'}},
+        ),
+    )
+    monkeypatch.setattr(MSRVTTAdapter, 'source_dataset', property(lambda self: CapturingDatasetHub()))
+
+    assert adapter._load_records() == []
+    assert captured == {'split': 'test', 'subset': 'test_1k'}
+
+
+def test_aa_lcr_document_archive_uses_resolved_hub_source(tmp_path, monkeypatch) -> None:
+    import zipfile
+
+    from evalscope.api.registry import get_benchmark
+    from evalscope.benchmarks.aa_lcr import aa_lcr_adapter as aa_lcr_module
+    from evalscope.config import TaskConfig
+
+    archive_path = tmp_path / 'documents.zip'
+    with zipfile.ZipFile(archive_path, 'w') as archive:
+        archive.writestr('lcr/document.txt', 'content')
+    captured = {}
+
+    class CapturingDatasetHub:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def download_file(self, file_path):
+            captured['file_path'] = file_path
+            return str(archive_path)
+
+    monkeypatch.setattr(aa_lcr_module, 'DatasetHub', CapturingDatasetHub)
+    monkeypatch.setattr(aa_lcr_module, 'DEFAULT_EVALSCOPE_CACHE_DIR', str(tmp_path / 'cache'))
+    adapter = get_benchmark(
+        'aa_lcr',
+        TaskConfig(datasets=['aa_lcr'], dataset_hub=HubType.HUGGINGFACE),
+    )
+
+    extracted_dir = adapter._ensure_text_dir_downloaded()
+
+    assert captured['data_id_or_path'] == 'ArtificialAnalysis/AA-LCR'
+    assert captured['data_source'] == HubType.HUGGINGFACE
+    assert captured['revision'] is None
+    assert captured['file_path'] == 'extracted_text/AA-LCR_extracted-text.zip'
+    assert (extracted_dir / 'document.txt').read_text(encoding='utf-8') == 'content'
+
+
+def test_swe_bench_oracle_loader_uses_selected_hub_and_own_revision(monkeypatch) -> None:
+    from evalscope.api.benchmark import DefaultDataAdapter
+    from evalscope.api.dataset import Sample
+    from evalscope.benchmarks.swe_bench import swe_bench_adapter as swe_module
+
+    captured = {}
+
+    class CapturingRemoteDataLoader:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def load(self):
+            return [Sample(input='problem', metadata={'instance_id': 'id', 'text': 'context'})]
+
+    adapter = object.__new__(swe_module.SWEBenchVerifiedAdapter)
+    adapter.inference_dataset_id = 'princeton-nlp/SWE-bench_oracle'
+    adapter.inference_dataset_revision = 'oracle-revision'
+    adapter._task_config = type('Config', (), {'dataset_hub': HubType.HUGGINGFACE})()
+    monkeypatch.setattr(swe_module, 'RemoteDataLoader', CapturingRemoteDataLoader)
+    monkeypatch.setattr(DefaultDataAdapter, 'load', lambda self: 'main-dataset')
+
+    assert swe_module.SWEBenchVerifiedAdapter.load(adapter) == 'main-dataset'
+    assert captured['data_id_or_path'] == 'princeton-nlp/SWE-bench_oracle'
+    assert captured['data_source'] == HubType.HUGGINGFACE
+    assert captured['version'] == 'oracle-revision'
 
 
 def test_download_snapshot_resolves_existing_local_path(tmp_path) -> None:

@@ -53,6 +53,7 @@ into 10 Indic languages plus English, for evaluating multilingual world-knowledg
   count — the full default run is ~18k samples per language across all 11 languages (~198k total)
 """,
         dataset_id='sarvamai/trivia-qa-indic-mcq',
+        hf_dataset_id='sarvamai/trivia-qa-indic-mcq',
         metric_list=['acc'],
         subset_list=SUBSET_LIST,
         few_shot_num=0,

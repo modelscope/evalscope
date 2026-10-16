@@ -104,6 +104,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
 """,
         tags=[Tags.MULTI_MODAL, Tags.QA],
         dataset_id='lmms-lab/VQAv2',
+        hf_dataset_id='lmms-lab/VQAv2',
         paper_url='https://arxiv.org/abs/1612.00837',
         subset_list=['default'],
         metric_list=['vqa_score', 'exact_match'],

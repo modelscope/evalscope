@@ -43,6 +43,8 @@ MaritimeBench is a benchmark for evaluating AI models on maritime-related multip
         tags=[Tags.CHINESE, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description=DESCRIPTION.strip(),
         dataset_id='HiDolphin/MaritimeBench',
+        hf_dataset_id='Hi-Dolphin/MaritimeBench',
+        hf_dataset_revision='0feca6543bf5929f94e4bd684921667deaa6ef16',
         metric_list=['acc'],
         few_shot_num=0,
         eval_split='test',

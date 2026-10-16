@@ -121,6 +121,7 @@ C-Eval is a comprehensive Chinese evaluation benchmark designed to assess the kn
 - Use `subset_list` parameter to evaluate specific subjects
 """,
         dataset_id='evalscope/ceval',
+        hf_dataset_id='ceval/ceval-exam',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],
         few_shot_num=5,

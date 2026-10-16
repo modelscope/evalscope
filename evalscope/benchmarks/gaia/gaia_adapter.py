@@ -26,7 +26,7 @@ from evalscope.agent.tools.bash import BASH_TOOL_INFO, run_bash
 from evalscope.api.agent import AgentEnvironment, AgentStrategy
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters import AgentLoopAdapter
-from evalscope.api.dataset import Sample
+from evalscope.api.dataset import DatasetHub, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import get_strategy, register_benchmark
@@ -95,6 +95,7 @@ GAIA (General AI Assistants) is a benchmark of 450+ questions targeting next-gen
 - [Usage Documentation](https://evalscope.readthedocs.io/en/latest/third_party/gaia.html)
 """,
         dataset_id=_GAIA_DATASET_ID,
+        hf_dataset_id='gaia-benchmark/GAIA',
         metric_list=['acc'],
         eval_split='validation',
         subset_list=['2023_level1', '2023_level2', '2023_level3'],
@@ -160,25 +161,14 @@ class GaiaAdapter(AgentLoopAdapter):
         if self._snapshot_dir is not None or is_build_doc():
             return
 
-        if self.dataset_hub == HubType.LOCAL or os.path.exists(self.dataset_id):
-            self._snapshot_dir = os.path.abspath(self.dataset_id)
-        elif self.dataset_hub == HubType.HUGGINGFACE:
-            from huggingface_hub import snapshot_download
-
-            logger.info(f'Downloading GAIA snapshot from Hugging Face (split={self.eval_split})...')
-            self._snapshot_dir = snapshot_download(
-                repo_id=self.dataset_id,
-                repo_type='dataset',
-                allow_patterns=[f'2023/{self.eval_split}/*'],
-            )
-        else:
-            from modelscope import dataset_snapshot_download
-
-            logger.info(f'Downloading GAIA snapshot from ModelScope (split={self.eval_split})...')
-            self._snapshot_dir = dataset_snapshot_download(
-                self.dataset_id,
-                allow_file_pattern=[f'2023/{self.eval_split}/*'],
-            )
+        logger.info(f'Downloading GAIA snapshot from {self.dataset_hub} (split={self.eval_split})...')
+        self._snapshot_dir = DatasetHub(
+            data_id_or_path=self.dataset_id,
+            data_source=self.dataset_hub,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
+            cache_dir=self.dataset_dir,
+        ).download_snapshot(allow_file_pattern=[f'2023/{self.eval_split}/*'])
 
         split_dir = os.path.join(self._snapshot_dir, '2023', self.eval_split)
         if not os.path.isdir(split_dir):

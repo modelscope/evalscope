@@ -28,6 +28,7 @@ SUBSET_LIST = ['level 1', 'level 2', 'level 3', 'level 4', 'level 5']
         name='math_vision',
         pretty_name='MathVision',
         dataset_id='evalscope/MathVision',
+        hf_dataset_id='MathLLMs/MathVision',
         tags=[Tags.MATH, Tags.REASONING, Tags.MULTIPLE_CHOICE, Tags.MULTI_MODAL],
         description="""
 ## Overview

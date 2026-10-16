@@ -58,6 +58,7 @@ ChartQA is a benchmark designed to evaluate question-answering capabilities over
 - Numerical answers may have tolerance for rounding differences
 """,  # noqa: E501
         dataset_id='lmms-lab/ChartQA',
+        hf_dataset_id='lmms-lab/ChartQA',
         subset_list=['human_test', 'augmented_test'],
         metric_list=['relaxed_acc'],
         eval_split='test',

@@ -143,6 +143,7 @@ HealthBench is a comprehensive benchmark designed to measure AI capabilities for
 - Aggregation: **clipped_mean** for robust scoring
 """,  # noqa: E501
         dataset_id='openai-mirror/healthbench',
+        hf_dataset_id='openai/healthbench',
         subset_list=SUBSET_LIST,
         metric_list=[
             'communication_quality',

@@ -69,6 +69,7 @@ Here are some examples of how to solve similar problems:
         tags=[Tags.REASONING, Tags.YES_NO],
         description=DESCRIPTION.strip(),
         dataset_id='extraordinarylab/coin-flip',
+        hf_dataset_id='extraordinarylab/coin-flip',
         metric_list=['accuracy', 'precision', 'recall', 'f1_score', 'yes_ratio'],
         primary_metric='accuracy',
         few_shot_num=0,
