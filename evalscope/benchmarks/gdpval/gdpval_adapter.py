@@ -174,7 +174,7 @@ class GDPvalAdapter(AgentLoopAdapter):
                 'rubric_pretty': record.get('rubric_pretty'),
                 'rubric_json': record.get('rubric_json'),
                 'dataset_id': self.dataset_id,
-                'dataset_hub': self.source_dataset_hub,
+                'dataset_hub': self.dataset_hub,
             },
         )
 
@@ -294,5 +294,5 @@ class GDPvalAdapter(AgentLoopAdapter):
             subset_list=self.subset_list,
             benchmark_name=self.name,
             dataset_id=self.dataset_id,
-            dataset_hub=self.source_dataset_hub,
+            dataset_hub=self.dataset_hub,
         )
