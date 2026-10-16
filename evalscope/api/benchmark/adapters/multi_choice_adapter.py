@@ -148,7 +148,7 @@ class MultiChoiceAdapter(DefaultDataAdapter):
         """Retain categorical probabilities on decision protocols and preserve ordinary MCQ grading."""
         if not self._uses_decision_api:
             return super().match_score(original_prediction, filtered_prediction, reference, task_state)
-        answer = read_decision_answer(task_state, allow_legacy_choice=True)
+        answer = read_decision_answer(task_state)
         labels = [answer_character(i) for i in range(len(task_state.choices))]
         gold = reference
         if answer.type == 'noul':

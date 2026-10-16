@@ -16,16 +16,10 @@ if TYPE_CHECKING:
 NLL_EPSILON = 1e-12
 
 
-def read_decision_answer(task_state: 'TaskState', *, allow_legacy_choice: bool = False) -> DecisionAnswer:
-    """Read a validated decision answer, optionally accepting the legacy Choice cache shape."""
+def read_decision_answer(task_state: 'TaskState') -> DecisionAnswer:
+    """Read the canonical decision result retained by the model transport."""
     metadata = (task_state.output.metadata if task_state.output else None) or {}
     data = metadata.get('decision')
-    if data is None and allow_legacy_choice:
-        response = metadata.get('choice_response')
-        if isinstance(response, dict):
-            answers = response.get('answers')
-            if isinstance(answers, dict):
-                data = answers.get('answer')
     if not data:
         raise MetricUnavailableError('A validated decision response is required; text is not a probability.')
     return DecisionAnswer.model_validate(data)

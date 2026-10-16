@@ -11,9 +11,10 @@ from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser, ContentImage
 from evalscope.api.model import GenerateConfig, Model, ModelOutput
+from evalscope.api.model.decision import DecisionAnswer
 from evalscope.api.model.model import ModelCache, get_model_with_task_config
 from evalscope.api.registry import get_benchmark
-from evalscope.models.systemone import SystemOneAPI, _ChoiceAnswer
+from evalscope.models.systemone import SystemOneAPI
 from evalscope.utils.multi_choices import answer_character
 
 
@@ -142,7 +143,7 @@ def test_wire_request_and_roundtrip(options: int) -> None:
 def test_invalid_choice_result(changes: dict) -> None:
     answer = {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 1, 'B': 0}, 'confidence': 0.99}
     with pytest.raises(ValueError):
-        _ChoiceAnswer.model_validate({**answer, **changes})
+        DecisionAnswer.model_validate({**answer, **changes})
 
 
 @pytest.mark.parametrize('status,attempts', [(400, 1), (401, 1), (422, 1), (429, 2), (529, 2), (503, 2)])
@@ -288,10 +289,10 @@ def test_unsupported_benchmark_rejected_before_loading(supports_choice: bool) ->
 def test_rounded_large_distribution_is_retained() -> None:
     probabilities = {answer_character(i): 0.0 for i in range(77)}
     probabilities.update({'A': 0.70, 'B': 0.20, 'C': 0.06})
-    answer = _ChoiceAnswer(choice='A', probabilities=probabilities)
+    answer = DecisionAnswer(choice='A', probabilities=probabilities)
     assert sum(answer.probabilities.values()) == pytest.approx(0.96)
     with pytest.raises(ValueError, match='rounding tolerance'):
-        _ChoiceAnswer(choice='A', probabilities={key: 0 for key in probabilities})
+        DecisionAnswer(choice='A', probabilities={key: 0 for key in probabilities})
 
 
 def test_anli_round_split_selection(monkeypatch: pytest.MonkeyPatch) -> None:

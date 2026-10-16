@@ -117,28 +117,20 @@ def test_boolq_noul_gold_follows_semantics_after_choice_shuffle() -> None:
     assert result.value['acc'] == 1
 
 
-def test_mcq_missing_decision_is_excluded() -> None:
+@pytest.mark.parametrize('metadata', [{}, {
+    'choice_response': {
+        'answers': {'answer': {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 0.9, 'B': 0.1}}},
+    },
+}])
+def test_mcq_missing_decision_is_excluded(metadata: dict) -> None:
     adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
     sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
     output = ModelOutput.from_content('test', 'ANSWER: A')
-    output.metadata = {}
+    output.metadata = metadata
     state = TaskState(model='test', sample=sample, output=output, completed=True)
     result = adapter.calculate_metrics(state)
     assert result.score.status is ScoreStatus.EXCLUDED
     assert result.score.metadata['metric_unavailable'] is True
-
-
-def test_mcq_legacy_choice_cache_remains_supported() -> None:
-    adapter = get_benchmark('boolq', TaskConfig(model='test', eval_type='systemone_api', datasets=['boolq']))
-    sample = adapter.record_to_sample({'passage': 'Fact.', 'question': 'True?', 'answer': True})
-    output = ModelOutput.from_content('test', 'ANSWER: A')
-    output.metadata = {
-        'choice_response': {
-            'answers': {'answer': {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 0.9, 'B': 0.1}}}
-        }
-    }
-    result = adapter.match_score('A', 'A', sample.target, TaskState(model='test', sample=sample, output=output))
-    assert result.value['acc'] == 1
 
 
 def test_noul_conversion_requires_an_explicit_adapter_capability() -> None:

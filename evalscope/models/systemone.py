@@ -2,15 +2,14 @@
 
 import os
 import time
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Optional
 from urllib.parse import urlsplit
 
 import httpx
-from pydantic import Field
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput, ModelUsage
-from evalscope.api.model.decision import DecisionAnswer, DecisionInput
+from evalscope.api.model.decision import DecisionInput
 from evalscope.api.tool import ToolChoice, ToolInfo
 from evalscope.models.utils.decision import (
     build_autotrust_request,
@@ -18,13 +17,6 @@ from evalscope.models.utils.decision import (
     parse_decision_response,
     parse_decision_usage,
 )
-
-
-class _ChoiceAnswer(DecisionAnswer):
-    """Compatibility contract for saved Choice responses."""
-
-    type: Literal['choice'] = 'choice'
-    choice: str = Field(min_length=1)
 
 
 class SystemOneAPI(ModelAPI):
