@@ -1,5 +1,9 @@
+import json
+from typing import Any
+
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
+from evalscope.api.dataset import Sample
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
@@ -55,6 +59,12 @@ class JevbenchAdapter(DecisionAdapter):
     aggregate_empty_scores = True
     normalization_threshold = 0.001
     noul_use_argmax = True
+
+    def record_to_sample(self, record: dict[str, Any]) -> Sample:
+        """Unpack the lossless JSON column used by the public Parquet mirror."""
+        if 'record_json' in record:
+            record = json.loads(record['record_json'])
+        return super().record_to_sample(record)
 
     def aggregate_subset(self, subset: str, sample_scores: list) -> list:
         """Include missing public predictions in the accuracy and family-macro denominators."""

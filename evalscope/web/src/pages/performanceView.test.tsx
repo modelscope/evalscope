@@ -139,6 +139,14 @@ async function renderDetail(detail: PerfDetailResponse = detailFixture) {
 }
 
 describe('PerfReportDetailPage', () => {
+  it('does not describe an embedding run as a decision service', async () => {
+    await renderDetail({ ...detailFixture, is_embedding: true, api_type: 'openai_embedding' })
+    expect(screen.queryByText(/Input-only decisions:/)).not.toBeInTheDocument()
+    const chartTypes = vi.mocked(perfApi.getPerfChartUrl).mock.calls.map((call) => call[2])
+    expect(chartTypes).not.toContain('percentile_token')
+    expect(chartTypes).not.toContain('req_ttft_tpot')
+  })
+
   it.each(['systemone', 'autotrust'])('hides generation timings for %s decisions', async (apiType) => {
     vi.mocked(perfApi.getPerfRequests).mockResolvedValue({
       ...EMPTY_REQUESTS,
@@ -246,7 +254,7 @@ describe('PerfReportDetailPage', () => {
 async function renderRunsTab() {
   render(
     <LocaleProvider>
-      <PerfRunsTab rootPath="./outputs" path={RUN_PATH} isEmbedding={false} />
+      <PerfRunsTab rootPath="./outputs" path={RUN_PATH} mode="generation" />
     </LocaleProvider>,
   )
   await settle()

@@ -14,7 +14,7 @@ import LabelledField from '@/components/ui/LabelledField'
 import ErrorAlert from '@/components/ui/ErrorAlert'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import PerfRunsTab from '@/components/perf/PerfRunsTab'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, perfRunMode } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { resolveProvider } from '@/domain/perf/providerResolution'
 import { formatMetric } from '@/domain/metric'
@@ -117,7 +117,8 @@ export default function PerfReportDetailPage() {
   const [pickedTab, setActiveTab] = useScopedState<TabKey | null>(tabScope, null)
   const activeTab: TabKey = pickedTab ?? (singleRun && data ? 'runs' : 'overview')
 
-  const inputOnly = Boolean(data?.is_embedding || ['systemone', 'autotrust'].includes(data?.api_type ?? ''))
+  const runMode = perfRunMode(data)
+  const inputOnly = runMode !== 'generation'
   // Input-only runs have no token-generation latency measurements.
   const latencyCharts = useMemo(
     () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
@@ -283,7 +284,7 @@ export default function PerfReportDetailPage() {
         panels={{
           'perf-overview-panel': overviewPanel,
           ...(!singleRun ? { 'perf-charts-panel': chartsPanel } : {}),
-          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} isEmbedding={data.is_embedding} inputOnly={inputOnly} />,
+          'perf-runs-panel': <PerfRunsTab rootPath={rootPath} path={path} mode={runMode} />,
         }}
       />
     </div>

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import type { PerfRunMode } from '@/domain/perf/charts'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useScopedState } from '@/hooks/useScopedState'
 import { listPerfRunDetails, getPerfRequests, getPerfChartUrl } from '@/api/perf'
@@ -26,8 +27,7 @@ const EMPTY_RUNS: PerfRunItem[] = []
 interface Props {
   rootPath: string
   path: string
-  isEmbedding: boolean
-  inputOnly?: boolean
+  mode: PerfRunMode
 }
 
 /** Convert a columns + row-arrays table into the record list DataTable expects. */
@@ -39,9 +39,9 @@ function toRecords(columns: string[], rows: (string | number)[][]): Record<strin
  * Per-run drill-down: run selector + percentile table/charts + per-request
  * records (parsed from benchmark_data.db) as a table and Plotly charts.
  */
-export default function PerfRunsTab({ rootPath, path, isEmbedding, inputOnly = false }: Props) {
+export default function PerfRunsTab({ rootPath, path, mode }: Props) {
   const { t } = useLocale()
-  const hideGeneration = isEmbedding || inputOnly
+  const hideGeneration = mode !== 'generation'
 
   // The user's pick is remembered against the run list it was made in, so a new
   // list falls back to its own first run without an effect resetting state.
@@ -133,7 +133,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding, inputOnly = f
       {(runError || requestError) && (
         <ErrorAlert className="rounded-[var(--radius-sm)] px-3 py-2">{runError || requestError}</ErrorAlert>
       )}
-      {inputOnly && <p className="text-sm text-[var(--text-muted)]">{t('perf.archive.inputOnlyHint')}</p>}
+      {mode === 'decision' && <p className="text-sm text-[var(--text-muted)]">{t('perf.archive.inputOnlyHint')}</p>}
       {/* Run selector */}
       {runs.length > 1 && (
         <div className="flex flex-wrap gap-2">

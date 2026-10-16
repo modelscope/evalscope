@@ -14,7 +14,7 @@ import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, perfRunMode } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { AlertTriangle, ArrowLeftRight, GitCompareArrows, Info } from 'lucide-react'
 
@@ -124,7 +124,7 @@ export default function PerfComparePage() {
   )
 
   // Compare only timing measurements that apply to every selected run.
-  const inputOnly = details?.some((detail) => detail.is_embedding || ['systemone', 'autotrust'].includes(detail.api_type)) ?? false
+  const inputOnly = details?.some((detail) => perfRunMode(detail) !== 'generation') ?? false
   const latencyCharts = useMemo(
     () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
     [inputOnly],

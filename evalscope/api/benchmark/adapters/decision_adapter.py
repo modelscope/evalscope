@@ -5,7 +5,7 @@ from typing import Any
 
 from evalscope.api.dataset import DatasetDict, Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
+from evalscope.api.messages import ChatMessageUser
 from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, Score
 from evalscope.api.metric.decision import decision_score, read_decision_answer
 from evalscope.api.model import Model
@@ -42,8 +42,6 @@ class DecisionAdapter(DefaultDataAdapter):
         self.validate_choice_config()
 
     def record_to_sample(self, record: dict[str, Any]) -> Sample:
-        if 'record_json' in record:
-            record = json.loads(record['record_json'])
         question = record['question']
         request = DecisionInput(
             kind=question['type'],
@@ -60,17 +58,13 @@ class DecisionAdapter(DefaultDataAdapter):
             raise ValueError(f'Gold answer is not an allowed label: {record.get("id")}')
         if record.get('continuous') and (request.kind != 'score' or not 0 <= float(gold) <= len(request.labels) - 1):
             raise ValueError('Continuous gold must be inside a Score scale.')
-        messages = []
-        if self.system_prompt:
-            messages.append(ChatMessageSystem(content=self.system_prompt))
-        messages.append(
-            ChatMessageUser(
-                content=json.dumps({'state': request.state, 'question': question}, ensure_ascii=False),
-                internal={'systemone': request.model_dump()},
-            )
-        )
         return Sample(
-            input=messages,
+            input=[
+                ChatMessageUser(
+                    content=json.dumps({'state': request.state, 'question': question}, ensure_ascii=False),
+                    internal={'systemone': request.model_dump()},
+                )
+            ],
             target=str(gold),
             metadata={
                 'source_id': record.get('id'),

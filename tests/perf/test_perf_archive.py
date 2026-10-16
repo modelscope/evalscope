@@ -201,6 +201,29 @@ class TestPerfArchive(unittest.TestCase):
                     chart = self.client.get('/api/v1/perf/chart', query_string={**query, 'chart_type': chart_type})
                     self.assertEqual(chart.status_code, 404)
 
+    def test_decision_html_uses_the_same_metric_mode_as_the_web_archive(self) -> None:
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        from evalscope.perf.utils.report.generate_report import gen_perf_html_report
+
+        run_dir = os.path.join(self.tmp, self.cli_rel)
+        _write_json(
+            os.path.join(run_dir, 'parallel_1_number_2', 'benchmark_summary.json'),
+            {'Total Requests': 2, 'Success Requests': 2, 'Request Rate (req/s)': -1},
+        )
+        for api_type in ('systemone', 'autotrust'):
+            with self.subTest(api=api_type):
+                _write_json(
+                    os.path.join(run_dir, 'parallel_1_number_2', 'benchmark_args.json'),
+                    {'model': 'my-model', 'api': api_type, 'dataset': 'line_by_line'},
+                )
+                report = Path(gen_perf_html_report(run_dir, {}, SimpleNamespace(api=api_type))).read_text()
+                self.assertIn('Avg Inp.TPS', report)
+                self.assertNotIn('data-i18n="TTFT"', report)
+                self.assertNotIn('data-i18n="TPOT"', report)
+                self.assertNotIn('data-i18n="card.percentile_curves_token_lat"', report)
+
     def test_detail_includes_pd_metrics_when_measured(self):
         pd_rel = os.path.join('20260103_120000', 'pd-model')
         _make_run(os.path.join(self.tmp, pd_rel), with_html=False, with_pd=True)

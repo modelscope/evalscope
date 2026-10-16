@@ -1,5 +1,8 @@
 """Regression checks for native decision scoring under standard dataset transforms."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 from evalscope import TaskConfig
@@ -12,6 +15,40 @@ from evalscope.api.registry import get_benchmark
 from evalscope.constants import ScoreStatus
 from evalscope.metrics.decision import DecisionAggregator, decision_score
 from evalscope.models.utils.decision import build_systemone_request, parse_decision_response
+
+
+def test_native_decision_uses_standard_system_prompt_preparation(tmp_path: Path) -> None:
+    record = {
+        'state': 'Facts.', 'question': {'type': 'noul', 'instructions': 'Is it true?'}, 'expected': 'yes',
+    }
+    (tmp_path / 'default_test.jsonl').write_text(json.dumps(record) + '\n')
+    adapter = get_benchmark('general_decision', TaskConfig(
+        model='test', eval_type='systemone_api', datasets=['general_decision'],
+        dataset_args={'general_decision': {'local_path': str(tmp_path), 'system_prompt': 'Use only the facts.'}},
+    ))
+    sample = adapter.load_dataset()['default'][0]
+    assert [message.role for message in sample.input] == ['system', 'user']
+    assert sample.input[0].text == 'Use only the facts.'
+    assert sample.input[1].internal['systemone']['instructions'] == 'Is it true?'
+
+
+@pytest.mark.parametrize('kind', ['choice', 'noul', 'score'])
+def test_jevbench_accepts_lossless_mirror_records_and_original_json(kind: str) -> None:
+    adapter = get_benchmark('jevbench', TaskConfig(model='test', eval_type='systemone_api', datasets=['jevbench']))
+    question = {'type': kind, 'instructions': '按材料判断。'}
+    if kind == 'choice':
+        question['criteria'] = {'A': '第一项', 'B': '第二项'}
+    elif kind == 'score':
+        question['criteria'] = ['不符合', '部分符合', '完全符合']
+    record = {
+        'id': 'public-source', 'state': {'text': '公开材料'}, 'question': question,
+        'expected': 'A' if kind == 'choice' else 'yes' if kind == 'noul' else '1',
+        'family': 'source-family', 'tier': 'hard',
+    }
+    original = adapter.record_to_sample(record)
+    mirrored = adapter.record_to_sample({'record_json': json.dumps(record, ensure_ascii=False)})
+    exclude = {'input': {'__all__': {'id'}}}
+    assert mirrored.model_dump(exclude=exclude) == original.model_dump(exclude=exclude)
 
 
 @pytest.mark.parametrize(

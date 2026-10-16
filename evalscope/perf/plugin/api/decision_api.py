@@ -3,8 +3,7 @@
 import json
 from typing import Any
 
-from evalscope.api.model.decision import DecisionInput
-from evalscope.models.utils.decision import parse_decision_response, parse_decision_usage
+from evalscope.models.utils.decision import parse_decision_request, parse_decision_response, parse_decision_usage
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api
@@ -26,31 +25,8 @@ class SystemOnePerfPlugin(DefaultApiPlugin):
             raise ValueError(f'Decisions do not accept generation controls: {sorted(forbidden)}')
         if self.protocol == 'systemone':
             body.setdefault('model', (param or self.param).model)
-        self._request_contract(body)
+        parse_decision_request(body, self.protocol)
         return body
-
-    def _request_contract(self, body: dict) -> DecisionInput:
-        if self.protocol == 'systemone':
-            if set(body.get('questions', {})) != {'answer'}:
-                raise ValueError('Decision perf currently requires one question named answer.')
-            question = body['questions']['answer']
-            return DecisionInput(
-                kind=question['type'],
-                state=body['state'],
-                instructions=question['instructions'],
-                criteria=question.get('criteria'),
-            )
-        kind = body['kind']
-        criteria = (
-            {str(i): option for i, option in enumerate(body['options'])}
-            if kind == 'choice'
-            else [str(i) for i in range(6)]
-            if kind == 'score'
-            else None
-        )
-        if body.get('thinking', 'off') != 'off':
-            raise ValueError('This benchmark measures System One only; set thinking=off.')
-        return DecisionInput(kind=kind, state=body['state'], instructions=body['question'], criteria=criteria)
 
     def parse_responses(self, responses: list, request: str = None, **kwargs: Any) -> tuple[int, int]:
         """Read usage using either provider's token naming convention."""
@@ -66,7 +42,9 @@ class SystemOnePerfPlugin(DefaultApiPlugin):
             try:
                 if output.is_stream or len(output.response_messages) != 1:
                     raise ValueError('Expected one non-stream JSON decision response.')
-                parse_decision_response(output.response_messages[0], self._request_contract(body), self.protocol)
+                parse_decision_response(
+                    output.response_messages[0], parse_decision_request(body, self.protocol), self.protocol
+                )
                 output.prompt_tokens, output.completion_tokens = self.parse_responses(output.response_messages)
             except (ValueError, TypeError, KeyError) as exc:
                 output.success = False

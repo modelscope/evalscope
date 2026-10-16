@@ -47,6 +47,33 @@ def _autotrust_options(request: DecisionInput) -> list[str]:
     return [str(i) for i in range(6)]
 
 
+def parse_decision_request(body: dict, protocol: DecisionProtocol = 'systemone') -> DecisionInput:
+    """Read one complete wire request for validation and response matching."""
+    if protocol == 'systemone':
+        if set(body.get('questions', {})) != {'answer'}:
+            raise ValueError('Decision perf currently requires one question named answer.')
+        question = body['questions']['answer']
+        return DecisionInput(
+            kind=question['type'],
+            state=body['state'],
+            instructions=question['instructions'],
+            criteria=question.get('criteria'),
+        )
+    if protocol != 'autotrust':
+        raise ValueError(f'Unsupported decision protocol: {protocol}')
+    if body.get('thinking', 'off') != 'off':
+        raise ValueError('Decision perf requires thinking=off.')
+    kind = body['kind']
+    criteria = (
+        {str(i): option for i, option in enumerate(body['options'])}
+        if kind == 'choice'
+        else [str(i) for i in range(6)]
+        if kind == 'score'
+        else None
+    )
+    return DecisionInput(kind=kind, state=body['state'], instructions=body['question'], criteria=criteria)
+
+
 def parse_decision_usage(raw: dict) -> tuple[int, int]:
     """Read optional usage in either protocol, rejecting malformed token counts."""
     usage = raw.get('usage')
