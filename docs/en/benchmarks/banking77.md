@@ -23,7 +23,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 - Reports accuracy; decision APIs additionally report macro-F1 and probability metrics. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
-- Evaluation semantics version: v1.0
+- Evaluation semantics version: v1.1
 
 
 ## Properties
@@ -56,7 +56,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 {
   "input": [
     {
-      "id": "384b911d",
+      "id": "7b8ddfa9",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,1,2,3,4,5,6 ... [TRUNCATED 1840 chars] ... e to verify identity\n44) verify my identity\n45) verify source of funds\n46) verify top up\n47) virtual card not working\n48) visa or mastercard\n49) why verify identity\n50) wrong amount of cash received\n51) wrong exchange rate for cash withdrawal"
     }
   ],

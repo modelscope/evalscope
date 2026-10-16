@@ -35,6 +35,7 @@ from evalscope.service.api_models import (
     TaskStatusResponse,
     WebApiContracts,
 )
+from evalscope.service.api_models.reports import ReportSubset
 from evalscope.service.responses import json_response
 from evalscope.version import __version__
 
@@ -236,6 +237,22 @@ def test_json_response_validates_and_serializes_aliases() -> None:
     assert body['predictions'][0]['Index'] == '0'
     assert body['predictions'][0]['NScore'] is None
     assert body['predictions'][0]['Metadata']['nullable'] is None
+
+
+def test_report_subset_omits_unused_diagnostics() -> None:
+    regular = ReportSubset(name='test', score=1.0, num=1).model_dump(mode='json')
+    assert 'metadata' not in regular
+    assert 'is_aggregate' not in regular
+
+    diagnostic = ReportSubset(
+        name='test',
+        score=1.0,
+        num=1,
+        metadata={'risk_coverage': []},
+        is_aggregate=True,
+    ).model_dump(mode='json')
+    assert diagnostic['metadata'] == {'risk_coverage': []}
+    assert diagnostic['is_aggregate'] is True
 
 
 def test_json_response_rejects_invalid_success_shape() -> None:

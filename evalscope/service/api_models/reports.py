@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer, model_validator
 
 from evalscope.api.agent.trace import EventType
 from evalscope.api.metric import JudgeSummary
@@ -42,6 +42,15 @@ class ReportSubset(ApiResponseModel):
     num: int
     is_aggregate: bool = False
     metadata: Optional[Dict[str, Any]] = None
+
+    @model_serializer(mode='wrap')
+    def _serialize_optional_fields(self, handler: SerializerFunctionWrapHandler) -> Dict[str, Any]:
+        data = handler(self)
+        if self.metadata is None:
+            data.pop('metadata', None)
+        if not self.is_aggregate:
+            data.pop('is_aggregate', None)
+        return data
 
 
 class ReportCategory(ApiResponseModel):

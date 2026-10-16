@@ -97,7 +97,7 @@ INTENT_LABELS = [
         subset_list=['default'],
         eval_split='test',
         train_split='train',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
         supports_choice=True,
         choice_instructions='Which banking support intent is expressed by the message in `question`?',
         tags=[Tags.MULTIPLE_CHOICE],
@@ -126,7 +126,7 @@ Fine-grained banking support intent classification with the complete 77-class ta
 - Reports accuracy; decision APIs additionally report macro-F1 and probability metrics. All 77 intents remain available for every sample; no candidate pruning or added out-of-scope intent.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
-- Evaluation semantics version: v1.0
+- Evaluation semantics version: v1.1
 """,
     )
 )

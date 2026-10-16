@@ -169,6 +169,21 @@ def test_v2_serialization_contains_no_v1_metric_fields() -> None:
         assert set(('identity', 'semantics')).issubset(metric)
 
 
+def test_subset_serialization_omits_unused_diagnostics() -> None:
+    report = _report()
+    subset = report.metrics[0].categories[0].subsets[0]
+
+    serialized = report.to_dict()['metrics'][0]['categories'][0]['subsets'][0]
+    assert 'metadata' not in serialized
+    assert 'is_aggregate' not in serialized
+
+    subset.metadata = {'risk_coverage': []}
+    subset.is_aggregate = True
+    serialized = report.to_dict()['metrics'][0]['categories'][0]['subsets'][0]
+    assert serialized['metadata'] == {'risk_coverage': []}
+    assert serialized['is_aggregate'] is True
+
+
 def test_report_persists_first_class_judge_summary() -> None:
     report = _report()
     report.judge_summary = JudgeSummary(status=ScoreStatus.DEGRADED, scored=8, total=10, coverage=0.8)
