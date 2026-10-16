@@ -7,10 +7,11 @@ from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import ModelOutput
-from evalscope.api.model.decision import DecisionAnswer, DecisionInput, parse_decision_response
+from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.registry import get_benchmark
 from evalscope.constants import ScoreStatus
 from evalscope.metrics.decision import DecisionAggregator, decision_score
+from evalscope.models.utils.decision import build_systemone_request, parse_decision_response
 
 
 @pytest.mark.parametrize(
@@ -178,7 +179,7 @@ def test_jevbench_rounding_band_is_not_rejected_by_transport() -> None:
     answer = parse_decision_response(raw, request)
     adapter = get_benchmark('jevbench', TaskConfig(model='test', eval_type='systemone_api', datasets=['jevbench']))
     sample = adapter.record_to_sample({'id': 'rounded', 'state': 'Fact.',
-        'question': request.systemone_payload('test')['questions']['answer'], 'expected': 'A'})
+        'question': build_systemone_request(request, 'test')['questions']['answer'], 'expected': 'A'})
     output = ModelOutput.from_content('test', 'ANSWER: A')
     output.metadata = {'decision': answer.model_dump()}
     score = adapter.match_score('A', 'A', 'A', TaskState(model='test', sample=sample, output=output))

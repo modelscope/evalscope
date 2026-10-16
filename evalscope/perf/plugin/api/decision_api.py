@@ -3,7 +3,8 @@
 import json
 from typing import Any
 
-from evalscope.api.model.decision import DecisionInput, parse_decision_response, parse_decision_usage
+from evalscope.api.model.decision import DecisionInput
+from evalscope.models.utils.decision import parse_decision_response, parse_decision_usage
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.plugin.api.default_api import DefaultApiPlugin
 from evalscope.perf.plugin.registry import register_api

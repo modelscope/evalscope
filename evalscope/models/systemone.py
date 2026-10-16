@@ -10,8 +10,14 @@ from pydantic import Field
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput, ModelUsage
-from evalscope.api.model.decision import DecisionAnswer, DecisionInput, parse_decision_response, parse_decision_usage
+from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.models.utils.decision import (
+    build_autotrust_request,
+    build_systemone_request,
+    parse_decision_response,
+    parse_decision_usage,
+)
 
 
 class _ChoiceAnswer(DecisionAnswer):
@@ -84,9 +90,9 @@ class SystemOneAPI(ModelAPI):
         instructions = f'{system_prompt}\n\n{converted.instructions}' if system_prompt else converted.instructions
         converted = converted.model_copy(update={'instructions': instructions})
         payload = (
-            converted.systemone_payload(self.model_name)
+            build_systemone_request(converted, self.model_name)
             if self.protocol == 'systemone'
-            else converted.autotrust_payload()
+            else build_autotrust_request(converted)
         )
         started = time.monotonic()
         attempts = config.retries if config.retries is not None else 5

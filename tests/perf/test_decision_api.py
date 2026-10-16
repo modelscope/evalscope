@@ -11,6 +11,7 @@ import pytest
 from aiohttp import web
 
 from evalscope.api.model.decision import DecisionInput
+from evalscope.models.utils.decision import build_autotrust_request, build_systemone_request
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.plugin.api.decision_api import AutoTrustPerfPlugin, SystemOnePerfPlugin
@@ -60,7 +61,11 @@ def test_decision_http_validation(protocol: str, cls: type, kind: str) -> None:
         port = site._server.sockets[0].getsockname()[1]
         args = Arguments(model='v1', api=protocol, url=f'http://127.0.0.1:{port}/v1', stream=False)
         plugin = cls(args)
-        body = request(kind).systemone_payload('v1') if protocol == 'systemone' else request(kind).autotrust_payload()
+        body = (
+            build_systemone_request(request(kind), 'v1')
+            if protocol == 'systemone'
+            else build_autotrust_request(request(kind))
+        )
         assert plugin.build_request(body) == body
         try:
             async with aiohttp.ClientSession() as client:
@@ -83,7 +88,11 @@ def test_decision_http_validation(protocol: str, cls: type, kind: str) -> None:
 @pytest.mark.parametrize('api,cls', [('systemone', SystemOnePerfPlugin), ('autotrust', AutoTrustPerfPlugin)])
 def test_reject_generation_controls(api: str, cls: type) -> None:
     plugin = cls(Arguments(model='v1', api=api))
-    body = request('choice').systemone_payload('v1') if api == 'systemone' else request('choice').autotrust_payload()
+    body = (
+        build_systemone_request(request('choice'), 'v1')
+        if api == 'systemone'
+        else build_autotrust_request(request('choice'))
+    )
     with pytest.raises(ValueError, match='generation controls'):
         plugin.build_request({**body, 'max_tokens': 1})
 
@@ -107,7 +116,7 @@ def test_concurrency_sweep_and_input_metrics(tmp_path: Path) -> None:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     path = tmp_path / 'requests.jsonl'
-    path.write_text(json.dumps(request('choice').systemone_payload('v1')) + '\n')
+    path.write_text(json.dumps(build_systemone_request(request('choice'), 'v1')) + '\n')
     try:
         results = run_perf_benchmark(Arguments(
             model='v1', api='systemone', url=f'http://127.0.0.1:{server.server_port}/v1',

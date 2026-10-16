@@ -7,6 +7,7 @@ from pathlib import Path
 from evalscope import TaskConfig
 from evalscope.api.model.decision import DecisionInput
 from evalscope.api.registry import get_benchmark
+from evalscope.models.utils.decision import build_autotrust_request, build_systemone_request
 
 
 def main() -> None:
@@ -34,7 +35,11 @@ def main() -> None:
             for sample in samples:
                 user = next(message for message in sample.input if message.role == 'user')
                 question = DecisionInput.model_validate(user.internal['systemone'])
-                body = question.systemone_payload(args.model) if args.api == 'systemone' else question.autotrust_payload()
+                body = (
+                    build_systemone_request(question, args.model)
+                    if args.api == 'systemone'
+                    else build_autotrust_request(question)
+                )
                 bodies.append(json.dumps(body, ensure_ascii=False))
         path = args.output / f'{kind}.jsonl'
         path.write_text('\n'.join(bodies) + '\n', encoding='utf-8')

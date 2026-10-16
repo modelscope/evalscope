@@ -10,11 +10,12 @@ from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset
 from evalscope.api.metric import SampleScore
 from evalscope.api.model import GenerateConfig, Model
-from evalscope.api.model.decision import DecisionAnswer, DecisionInput, parse_decision_response
+from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.model.model import ModelCache
 from evalscope.api.registry import get_benchmark
 from evalscope.metrics.decision import DecisionAggregator, decision_score
 from evalscope.models.systemone import AutoTrustAPI
+from evalscope.models.utils.decision import build_autotrust_request, build_systemone_request, parse_decision_response
 
 
 def question(kind: str, levels: int = 4) -> DecisionInput:
@@ -76,7 +77,7 @@ def test_autotrust_transport_and_labels(kind: str) -> None:
 @pytest.mark.parametrize('levels', [2, 3, 4, 5, 7, 10])
 def test_no_silent_score_remapping(levels: int) -> None:
     with pytest.raises(ValueError, match='six Score levels'):
-        question('score', levels).autotrust_payload()
+        build_autotrust_request(question('score', levels))
 
 
 @pytest.mark.parametrize('p', [float('nan'), float('inf'), -0.1, 1.1])
@@ -144,7 +145,7 @@ def test_typed_dataset_native_pipeline(name: str, kind: str, tmp_path: Path, mon
     monkeypatch.setattr(ModelCache, '_models', {})
     request = question(kind, 6 if name == 'stsb' else 4)
     record = {'id': 'source-1', 'state': request.state,
-              'question': request.systemone_payload('test')['questions']['answer'],
+              'question': build_systemone_request(request, 'test')['questions']['answer'],
               'expected': request.labels[0], 'family': 'unit', 'tier': 'hard', 'rationale': 'SECRET_GOLD'}
     if name == 'stsb':
         record = {'sentence1': 'Cats.', 'sentence2': 'Dogs.', 'score': 0.1}
@@ -372,7 +373,7 @@ def test_all_failed_predictions_keep_official_denominator(name: str, tmp_path: P
 
 @pytest.mark.parametrize('usage', [[], False, '', {'input_tokens': -1}, {'prompt_tokens': 1.5}, {'output_tokens': True}])
 def test_malformed_usage_is_not_a_success(usage: object) -> None:
-    from evalscope.api.model.decision import parse_decision_usage
+    from evalscope.models.utils.decision import parse_decision_usage
 
     with pytest.raises(ValueError):
         parse_decision_usage({'usage': usage})
@@ -430,7 +431,7 @@ def test_open_decisions_rejects_rounding_outside_official_tolerance() -> None:
     adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
     q = question('score')
     sample = adapter.record_to_sample({'id': 'rounded', 'state': q.state,
-        'question': q.systemone_payload('test')['questions']['answer'], 'expected': '1', 'tier': 'hard'})
+        'question': build_systemone_request(q, 'test')['questions']['answer'], 'expected': '1', 'tier': 'hard'})
     a = DecisionAnswer(type='score', score=1.51, legend=dict(zip(q.labels, q.criteria)),
                        probabilities={'0': 0.26, '1': 0.26, '2': 0.25, '3': 0.25})
     output = ModelOutput.from_content('test', '1.51')
