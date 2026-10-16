@@ -219,6 +219,9 @@ def gemini_tool_choice(tool_config: Any) -> Optional[ToolChoice]:
     if mode == 'AUTO':
         return 'auto'
     elif mode == 'ANY':
+        allowed = fcc.get('allowedFunctionNames') or []
+        if len(allowed) == 1:
+            return ToolFunction(name=allowed[0], arguments={})
         return 'any'
     elif mode == 'NONE':
         return 'none'
