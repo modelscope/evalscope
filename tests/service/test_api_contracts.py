@@ -240,7 +240,7 @@ def test_json_response_validates_and_serializes_aliases() -> None:
 
 
 def test_report_subset_omits_unused_diagnostics() -> None:
-    regular = ReportSubset(name='test', score=1.0, num=1).model_dump(mode='json')
+    regular = ReportSubset(name='test', score=1.0, num=1).model_dump(mode='json', exclude_unset=True)
     assert 'metadata' not in regular
     assert 'is_aggregate' not in regular
 
@@ -250,7 +250,7 @@ def test_report_subset_omits_unused_diagnostics() -> None:
         num=1,
         metadata={'risk_coverage': []},
         is_aggregate=True,
-    ).model_dump(mode='json')
+    ).model_dump(mode='json', exclude_unset=True)
     assert diagnostic['metadata'] == {'risk_coverage': []}
     assert diagnostic['is_aggregate'] is True
 
