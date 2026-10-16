@@ -44,6 +44,7 @@ VALID_LETTERS = ('A', 'B', 'C', 'D')
         name='air_bench_foundation',
         pretty_name='AIR-Bench-Foundation',
         dataset_id=HF_REPO_ID,
+        hf_dataset_id='qyang1021/AIR-Bench-Dataset',
         paper_url='https://aclanthology.org/2024.acl-long.109/',
         tags=[Tags.AUDIO, Tags.MULTIPLE_CHOICE, Tags.KNOWLEDGE],
         description="""

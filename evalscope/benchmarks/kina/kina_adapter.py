@@ -48,6 +48,7 @@ design principle.
         name='kina',
         pretty_name='KINA',
         dataset_id='evalscope/KINA',
+        hf_dataset_id='2077AIDataFoundation/KINA',
         tags=[Tags.KNOWLEDGE, Tags.MULTIPLE_CHOICE],
         description=DESCRIPTION,
         paper_url='https://www.2077ai.com/kina',

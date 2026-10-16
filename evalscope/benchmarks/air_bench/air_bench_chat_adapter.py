@@ -81,6 +81,7 @@ Please rate the helpfulness, relevance, accuracy, and comprehensiveness of their
         name='air_bench_chat',
         pretty_name='AIR-Bench-Chat',
         dataset_id=HF_REPO_ID,
+        hf_dataset_id='qyang1021/AIR-Bench-Dataset',
         paper_url='https://aclanthology.org/2024.acl-long.109/',
         tags=[Tags.AUDIO, Tags.QA, Tags.INSTRUCTION_FOLLOWING],
         description="""
