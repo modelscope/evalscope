@@ -127,6 +127,6 @@ dataset_args={
 
 上例只有三个样本，AUROC 可能无法计算，Score 的相关系数也无法计算。报告会保留原因，缺项不等于零分。比较分数前，先检查执行覆盖情况和有效样本数量。
 
-可通过 [EvalScope Web UI](../../best_practice/decision_evaluation.md#2-报告出来了先看哪几项)查看，也可检查输出目录的 `predictions/`、`reviews/` 和 `reports/`。概率面板可切换原始概率和评分用概率；如果评分时对舍入后的概率进行了归一化，review 中会记录这一处理。
+可通过 [EvalScope Web UI](../../best_practice/decision_evaluation.md#3-在-web-ui-里读懂结果)查看，也可检查输出目录的 `predictions/`、`reviews/` 和 `reports/`。概率面板可切换原始概率和评分用概率；如果评分时对舍入后的概率进行了归一化，review 中会记录这一处理。
 
 更多配置见[决策模型 API](../../user_guides/systemone.md)和[评测参数](../../get_started/parameters.md)。
