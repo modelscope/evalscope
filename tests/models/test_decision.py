@@ -227,6 +227,65 @@ def test_generated_usage_declares_protocol_and_local_path() -> None:
     assert 'local_path' in readme
 
 
+@pytest.mark.parametrize('subsets', [None, ['routing', 'quality'], ['continuous']])
+def test_general_decision_reads_named_jsonl_files(
+    subsets: list[str] | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise local loading and grading with mixed schemas and unrelated neighboring files."""
+    monkeypatch.setattr(ModelCache, '_models', {})
+    data = tmp_path / 'data'
+    data.mkdir()
+    records = [
+        {'id': 'route', 'state': {'facts': 'An external lookup is needed.'},
+         'question': {'type': 'choice', 'instructions': 'Choose the next step.',
+                      'criteria': {'go': 'Search', 'stop': 'Stop'}}, 'expected': 'go'},
+        {'id': 'ready', 'state': 'No lookup has been performed.',
+         'question': {'type': 'noul', 'instructions': 'Is the lookup complete?'}, 'expected': False},
+        {'id': 'rating', 'state': 'One item is covered.',
+         'question': {'type': 'score', 'instructions': 'Rate completion.',
+                      'criteria': ['None', 'One', 'Two', 'Three']}, 'expected': 1},
+    ]
+    continuous = {**records[2], 'id': 'continuous', 'expected': 1.5, 'continuous': True}
+    for subset, rows in [('default', records), ('routing', records[:2]), ('quality', records[2:]),
+                         ('continuous', [continuous])]:
+        (data / f'{subset}_test.jsonl').write_text('\n'.join(json.dumps(row) for row in rows) + '\n')
+    calls = []
+
+    def handle(req: httpx.Request) -> httpx.Response:
+        payload = json.loads(req.content)
+        calls.append(payload)
+        q = payload['questions']['answer']
+        contract = DecisionInput(kind=q['type'], state=payload['state'], instructions=q['instructions'],
+                                 criteria=q.get('criteria'))
+        return httpx.Response(200, json={'model': 'local-fixture', 'answers': {'answer': answer(contract)}})
+
+    original_init = httpx.Client.__init__
+
+    def mock_init(self: httpx.Client, **kwargs: object) -> None:
+        original_init(self, transport=httpx.MockTransport(handle), **kwargs)
+
+    monkeypatch.setattr(httpx.Client, '__init__', mock_init)
+    args = {'local_path': str(data)}
+    if subsets:
+        args['subset_list'] = subsets
+    if subsets == ['continuous']:
+        args.update(metric_list=['mae'], primary_metric='mae')
+    output = tmp_path / 'output'
+    run_task(TaskConfig(model='local-fixture', eval_type='systemone_api', api_url='http://example.test/v1',
+                        datasets=['general_decision'], dataset_args={'general_decision': args},
+                        work_dir=str(output), no_timestamp=True))
+    report = json.loads(next((output / 'reports').rglob('general_decision.json')).read_text())
+    assert len(calls) == report['execution_summary']['succeeded'] == (1 if subsets == ['continuous'] else 3)
+    assert report['num'] == len(calls)
+    primary = report['primary_metric_identity']
+    assert primary['name'] == ('mae' if subsets == ['continuous'] else 'accuracy')
+    if subsets == ['continuous']:
+        assert next(metric['score'] for metric in report['metrics'] if metric['identity']['name'] == 'mae') == 1.5
+    else:
+        assert {payload['questions']['answer']['type'] for payload in calls} == {'choice', 'noul', 'score'}
+    assert all('expected' not in payload and 'continuous' not in payload for payload in calls)
+
+
 @pytest.mark.parametrize('provider', ['systemone_api', 'autotrust_api'])
 def test_boolq_explicit_noul_and_threshold(provider: str) -> None:
     from evalscope.api.evaluator import TaskState

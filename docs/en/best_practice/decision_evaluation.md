@@ -197,6 +197,8 @@ dataset_args={'general_decision': {'local_path': './decision-data'}},
 
 These three records check formatting and execution. Use independent, representative samples for conclusions about quality, including ambiguous and insufficient-evidence cases.
 
+For all supported fields, multiple subsets and continuous reference scores, see [Custom decision datasets](../advanced_guides/custom_dataset/decision.md).
+
 ## 6. Check what happens when requests arrive together
 
 Quality evaluation measures decisions; performance testing measures the wait for a decision and the number completed each second.

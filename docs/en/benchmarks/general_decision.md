@@ -3,11 +3,11 @@
 
 ## Overview
 
-User-provided single-question typed decisions in local JSONL files.
+Evaluate local JSONL datasets containing one Choice, Noul or Score question per record.
 
 ## Task Description
 
-- **Task Type**: Typed text decisions
+- **Task Type**: Text decisions: Choice, Noul and Score
 - **Input**: State and one question with named options or ordered levels
 - **Output**: Choice, probability of yes, or ordinal score distribution
 - **Domain**: Text understanding and decision making
@@ -21,12 +21,14 @@ User-provided single-question typed decisions in local JSONL files.
 
 ## Evaluation Notes
 
-- Zero-shot deterministic grading; gold answers and provenance never enter requests
-- Primary: accuracy; Choice/Noul use categorical gold, Score uses an integer level
+- Rule-based zero-shot grading; reference answers and provenance are used only for scoring, never as request fields
+- Default primary metric: accuracy on discrete reference labels; continuous Score runs can select MAE explicitly
 - Probability metrics are separated by type; Score retains its expectation and normalized RPS
 - Invalid responses are excluded from ordinary metrics and reflected in execution coverage
 - This is a local data entry point; no upload is required
-- See the decision evaluation best practice for examples and deployment limits
+- See [Custom decision datasets](../advanced_guides/custom_dataset/decision.md) for runnable JSONL examples,
+  required and optional fields, question types, metrics, continuous scores, and configuration
+- See the [decision evaluation best practice](../best_practice/decision_evaluation.md) for deployment and Web UI
 
 
 ## Properties
