@@ -4,6 +4,8 @@ from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 
+from .utils import PROBABILITY_SUM_TOLERANCE
+
 
 @register_benchmark(
     BenchmarkMeta(
@@ -13,7 +15,7 @@ from evalscope.constants import Tags
         dataset_id='evalscope/OpenDecisions',
         eval_split='test',
         train_split=None,
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
         subset_list=['default'],
         metric_list=['capability'],
         primary_metric=MetricSelector(name='capability', aggregation='official'),
@@ -52,8 +54,8 @@ class OpenDecisionsAdapter(DecisionAdapter):
     """Evaluate OpenDecisions through a typed decision service."""
 
     aggregate_empty_scores = True
-    probability_sum_tolerance = 0.01
-    normalization_threshold = 0.01
+    probability_sum_tolerance = PROBABILITY_SUM_TOLERANCE
+    normalization_threshold = PROBABILITY_SUM_TOLERANCE
 
     def aggregate_subset(self, subset: str, sample_scores: list) -> list:
         """Score every requested task in this subset, including missing predictions."""

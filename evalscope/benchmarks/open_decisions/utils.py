@@ -32,6 +32,8 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
+# Keep the one-percent boundary inclusive despite binary floating-point rounding.
+PROBABILITY_SUM_TOLERANCE = 0.01 + 1e-12
 TIER_WEIGHTS = {'easy': 0.1, 'standard': 0.2, 'judge': 0.3, 'hard': 0.4}
 TYPES = ('choice', 'noul', 'score')
 
@@ -182,7 +184,7 @@ def normalized(task: dict, probs: dict) -> dict:
     values = {lab: float(probs.get(lab, 0.0)) for lab in labels}
     if any(not math.isfinite(v) or v < 0 for v in values.values()):
         raise ValueError(f'{task["id"]}: probabilities must be finite and non-negative')
-    if abs(sum(values.values()) - 1.0) > 0.01:
+    if abs(sum(values.values()) - 1.0) > PROBABILITY_SUM_TOLERANCE:
         raise ValueError(
             f'{task["id"]}: probabilities over the labels {labels} sum to {sum(values.values()):.4f}, not 1'
         )

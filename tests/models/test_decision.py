@@ -424,6 +424,40 @@ def test_average_precision_is_defined_for_all_positive_gold() -> None:
     assert not any(s.metric_name == 'auroc' for s in aggregates)
 
 
+@pytest.mark.parametrize('kind,probabilities', [
+    ('choice', {'A': 0.92, 'B': 0.07}),
+    ('choice', {'A': 0.92, 'B': 0.09}),
+    ('score', {'0': 0.01, '1': 0.97, '2': 0.01, '3': 0.0}),
+    ('score', {'0': 0.68, '1': 0.15, '2': 0.16, '3': 0.02}),
+])
+def test_open_decisions_accepts_rounded_probability_boundary(kind: str, probabilities: dict[str, float]) -> None:
+    from evalscope.api.evaluator import TaskState
+    from evalscope.api.model import ModelOutput
+    from evalscope.benchmarks.open_decisions.utils import normalized
+    from evalscope.benchmarks.open_decisions.utils import score as official_score
+
+    adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
+    q = question(kind)
+    selected = max(probabilities, key=probabilities.get)
+    task = {'id': 'rounded', 'state': q.state, 'question': build_systemone_request(q, 'test')['questions']['answer'],
+            'expected': selected, 'tier': 'hard', 'labels': q.labels}
+    sample = adapter.record_to_sample(task)
+    fields = {'choice': selected} if kind == 'choice' else {
+        'score': sum(int(label) * value for label, value in probabilities.items()),
+        'legend': dict(zip(q.labels, q.criteria)),
+    }
+    a = DecisionAnswer(type=kind, probabilities=probabilities, **fields)
+    output = ModelOutput.from_content('test', selected)
+    output.metadata = {'decision': a.model_dump()}
+    result = adapter.match_score(selected, selected, selected, TaskState(model='test', sample=sample, output=output))
+
+    assert result.value['acc'] == 1
+    assert result.metadata['decision']['raw_probabilities'] == probabilities
+    assert not result.metadata['probabilities_normalized_for_scoring']
+    assert normalized(task, probabilities) == probabilities
+    assert official_score([task], [{'id': 'rounded', 'probs': probabilities}])['predicted'] == 1
+
+
 def test_open_decisions_rejects_rounding_outside_official_tolerance() -> None:
     from evalscope.api.evaluator import TaskState
     from evalscope.api.metric import MetricUnavailableError
