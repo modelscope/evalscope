@@ -65,6 +65,7 @@ def add_argument(parser: argparse.ArgumentParser):
                             EvalType.CHECKPOINT,
                             EvalType.OPENAI_API,
                             EvalType.SYSTEMONE_API,
+                            EvalType.AUTOTRUST_API,
                             EvalType.OPENAI_RESPONSES_API,
                             EvalType.ANTHROPIC_API,
                             EvalType.LITELLM,

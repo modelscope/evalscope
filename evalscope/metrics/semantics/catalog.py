@@ -402,9 +402,11 @@ METRIC_DEFINITIONS.update(
 METRIC_DEFINITIONS.update(
     {
         name: MetricEntry(baseline='quality.score.ratio', metric_name=name.replace('_', ' ').title())
-        for name in ('auroc', 'auprc', 'intelligence', 'calibration', 'capability', 'family_macro')
+        for name in ('intelligence', 'calibration', 'capability', 'family_macro')
     }
 )
+METRIC_DEFINITIONS['auroc'] = MetricEntry(baseline='quality.score.ratio', metric_name='AUROC')
+METRIC_DEFINITIONS['auprc'] = MetricEntry(baseline='quality.score.ratio', metric_name='AUPRC')
 METRIC_DEFINITIONS['public_accuracy'] = MetricEntry(baseline='quality.accuracy.ratio', metric_name='Public Accuracy')
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
 for _registered, _reported in {

@@ -16,7 +16,7 @@ from evalscope.constants import Tags
         dataset_id='general_decision',
         eval_split='test',
         train_split=None,
-        evaluation_version='v1.1',
+        evaluation_version='v1.0',
         subset_list=['default'],
         metric_list=['acc'],
         primary_metric=MetricSelector(name='accuracy', aggregation='mean'),

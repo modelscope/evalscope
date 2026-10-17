@@ -82,7 +82,8 @@ class JevbenchAdapter(DecisionAdapter):
         outcomes = []
         for sample in self.test_dataset[subset]:
             correct = predictions.get(sample.id, 0.0)
-            families[sample.metadata['family']].append(correct)
+            if sample.metadata['family']:
+                families[sample.metadata['family']].append(correct)
             outcomes.append(correct)
         if outcomes:
             metadata = {
@@ -91,20 +92,23 @@ class JevbenchAdapter(DecisionAdapter):
                 'strict_sum_tolerance': 0.001,
                 'headline_sum_tolerance': 0.02,
             }
-            aggregates += [
+            aggregates.append(
                 AggScore(
                     metric_name='public_accuracy',
                     aggregation='official',
                     score=sum(outcomes) / len(outcomes),
                     num=len(outcomes),
                     metadata=metadata,
-                ),
+                )
+            )
+        if families:
+            aggregates.append(
                 AggScore(
                     metric_name='family_macro',
                     aggregation='official',
                     score=sum(sum(v) / len(v) for v in families.values()) / len(families),
                     num=len(outcomes),
-                    metadata={**metadata, 'families': len(families)},
-                ),
-            ]
+                    metadata={**metadata, 'family_count': len(families)},
+                )
+            )
         return aggregates
