@@ -3,7 +3,7 @@
 
 ## Overview
 
-OpenDecisions: 2352 typed decisions. Loads the ModelScope train split or the Hugging Face test split for evaluation only.
+OpenDecisions: 2352 typed decisions. Loads the single ModelScope data file or the Hugging Face test split for evaluation only.
 
 ## Task Description
 
@@ -59,7 +59,7 @@ OpenDecisions: 2352 typed decisions. Loads the ModelScope train split or the Hug
 {
   "input": [
     {
-      "id": "6e41ac5e",
+      "id": "a68dac2e",
       "content": "{\"state\": \"Here are three expense lines from my trip. Turn them into a JSON list with fields merchant, date, amount_usd.\\n- Blue Cafe, 2024-03-02, $14.50\\n- MetroCab, 2024-03-02, $23.00\\n- Hotel Lira, 2024-03-04, $189.90\", \"question\": {\"type\" ... [TRUNCATED 79 chars] ... .\", \"criteria\": {\"chitchat\": \"Casual small talk, no task.\", \"creative_writing\": \"Compose original text.\", \"extraction_json\": \"Pull given details into a structured JSON shape.\", \"data_analysis\": \"Compute statistics or trends over the data.\"}}}",
       "internal": {
         "systemone": {

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from evalscope import TaskConfig
+from evalscope.api.benchmark.adapters.default_data_adapter import DefaultDataAdapter
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import SampleScore
@@ -87,6 +88,33 @@ def test_open_decisions_split_follows_source_and_explicit_configuration(hub: str
         dataset_args={'open_decisions': args},
     ))
     assert adapter.eval_split == expected
+
+
+def test_open_decisions_retries_the_other_split_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
+    attempts = []
+
+    def flaky_load_subset(self, subset, data_loader):
+        attempts.append(self.eval_split)
+        if len(attempts) == 1:
+            raise ValueError("Split ['train'] not found in dataset. Available splits: ['test']")
+        return 'loaded'
+
+    monkeypatch.setattr(DefaultDataAdapter, 'load_subset', flaky_load_subset)
+    assert adapter.load_subset('default', None) == 'loaded'
+    assert attempts == ['train', 'test']
+    assert adapter.eval_split == 'train'
+
+
+def test_open_decisions_split_fallback_reraises_unrelated_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    adapter = get_benchmark('open_decisions', TaskConfig(model='test', eval_type='systemone_api', datasets=['open_decisions']))
+
+    def broken_load_subset(self, subset, data_loader):
+        raise ValueError('disk full')
+
+    monkeypatch.setattr(DefaultDataAdapter, 'load_subset', broken_load_subset)
+    with pytest.raises(ValueError, match='disk full'):
+        adapter.load_subset('default', None)
 
 
 def test_decision_mcq_preserves_an_explicit_primary_metric() -> None:

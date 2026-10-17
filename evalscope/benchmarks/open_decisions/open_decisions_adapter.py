@@ -1,7 +1,8 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
+from evalscope.api.dataset import DataLoader, Dataset
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import HubType, Tags
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
         description="""
 ## Overview
 
-OpenDecisions: 2352 typed decisions. Loads the ModelScope train split or the Hugging Face test split for evaluation only.
+OpenDecisions: 2352 typed decisions. Loads the single ModelScope data file or the Hugging Face test split for evaluation only.
 
 ## Task Description
 
@@ -71,6 +72,16 @@ class OpenDecisionsAdapter(DecisionAdapter):
             and not explicit_split
         ):
             self.eval_split = 'test'
+
+    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
+        # The bare hub file is exposed as split 'train' or 'test' depending on the loader.
+        try:
+            return super().load_subset(subset, data_loader)
+        except ValueError as exc:
+            if 'split' not in str(exc).lower():
+                raise
+        with self._temporary_attribute('eval_split', 'test' if self.eval_split == 'train' else 'train'):
+            return super().load_subset(subset, data_loader)
 
     def aggregate_subset(self, subset: str, sample_scores: list) -> list:
         """Score every requested task in this subset, including missing predictions."""
