@@ -140,12 +140,12 @@ class BatchReviewer:
                 after each batch window completes.
 
         Returns:
-            Refined :class:`SampleScore` list (``None`` entries preserved at
-            their original positions for invalid samples).
+            Refined :class:`SampleScore` list for the samples that had a
+            preliminary score; samples whose review failed are left out.
         """
         valid_indices = [i for i, score in enumerate(reviewed_scores) if score is not None]
         if not valid_indices:
-            return reviewed_scores
+            return []
 
         valid_states = [task_states[i] for i in valid_indices]
         valid_scores = [reviewed_scores[i] for i in valid_indices]
