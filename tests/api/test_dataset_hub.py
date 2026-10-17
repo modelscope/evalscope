@@ -661,7 +661,6 @@ def test_local_path_override_clears_hf_mapping(tmp_path) -> None:
     [
         ('msvd', 'VLM2Vec/MSVD'),
         ('msr_vtt', 'VLM2Vec/MSR-VTT'),
-        ('open_decisions', 'jgeuter/OpenDecisions'),
         ('stsb', 'sentence-transformers/stsb'),
     ],
 )

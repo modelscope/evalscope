@@ -1,14 +1,8 @@
-from typing import TYPE_CHECKING, Type
-
 from evalscope.api.benchmark import BenchmarkMeta
 from evalscope.api.benchmark.adapters.decision_adapter import DecisionAdapter
-from evalscope.api.dataset import DataLoader, Dataset
 from evalscope.api.metric import MetricSelector
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import HubType, Tags
-
-if TYPE_CHECKING:
-    from evalscope.config import TaskConfig
+from evalscope.constants import Tags
 
 
 @register_benchmark(
@@ -17,8 +11,7 @@ if TYPE_CHECKING:
         pretty_name='OpenDecisions',
         tags=[Tags.DECISION],
         dataset_id='evalscope/OpenDecisions',
-        hf_dataset_id='jgeuter/OpenDecisions',
-        eval_split='train',
+        eval_split='test',
         train_split=None,
         evaluation_version='v1.0',
         subset_list=['default'],
@@ -27,7 +20,7 @@ if TYPE_CHECKING:
         description="""
 ## Overview
 
-OpenDecisions: 2352 typed decisions. Loads the single ModelScope data file or the Hugging Face test split for evaluation only.
+OpenDecisions: 2352 typed decisions. Loads the ModelScope test split for evaluation only.
 
 ## Task Description
 
@@ -61,27 +54,6 @@ class OpenDecisionsAdapter(DecisionAdapter):
     aggregate_empty_scores = True
     probability_sum_tolerance = 0.01
     normalization_threshold = 0.01
-
-    def __init__(self, benchmark_meta: BenchmarkMeta, task_config: 'TaskConfig | None' = None) -> None:
-        """Select the upstream split default while preserving explicit user configuration."""
-        super().__init__(benchmark_meta, task_config)
-        explicit_split = task_config and 'eval_split' in task_config.dataset_args.get(self.name, {})
-        if (
-            self.dataset_hub == HubType.HUGGINGFACE
-            and self.dataset_id == 'jgeuter/OpenDecisions'
-            and not explicit_split
-        ):
-            self.eval_split = 'test'
-
-    def load_subset(self, subset: str, data_loader: Type[DataLoader]) -> Dataset:
-        # The bare hub file is exposed as split 'train' or 'test' depending on the loader.
-        try:
-            return super().load_subset(subset, data_loader)
-        except ValueError as exc:
-            if 'split' not in str(exc).lower():
-                raise
-        with self._temporary_attribute('eval_split', 'test' if self.eval_split == 'train' else 'train'):
-            return super().load_subset(subset, data_loader)
 
     def aggregate_subset(self, subset: str, sample_scores: list) -> list:
         """Score every requested task in this subset, including missing predictions."""
