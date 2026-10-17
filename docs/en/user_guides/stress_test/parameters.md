@@ -100,6 +100,7 @@ The keys carried by `--dataset-args` are documented in the sections where they a
 | `openqa` | Automatically downloads [OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary) from ModelScope<br>Prompts are relatively short (usually <100 tokens)<br>Uses `question` field from jsonl file when `dataset_path` is specified | ✓ |
 | `longalpaca` | Automatically downloads [LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview) from ModelScope<br>Prompts are much longer (generally >6000 tokens)<br>Uses `instruction` field from jsonl file when `dataset_path` is specified | ✓ |
 | `line_by_line` | Each line is a plain prompt, an OpenAI messages JSON array, or a complete request-body JSON object; JSON is forwarded unchanged<br>**Requires `dataset_path`** | ✓ (Required) |
+| `open_decisions` | Automatically downloads [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) from ModelScope<br>Converts items into System One decision request bodies; use with `--api systemone` only | ✓ (directory) |
 | `random` | Randomly generates prompts based on `prefix-length`, `max-prompt-length`, and `min-prompt-length`<br>**Requires `tokenizer-path`**<br>[Usage example](./examples.md#random-dataset) | ✗ |
 | `custom` | Custom dataset parser<br>See [Custom Dataset Guide](custom.md#custom-dataset) | ✓ |
 

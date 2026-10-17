@@ -1,64 +1,28 @@
-"""System One transport for text single-choice decision models."""
+"""Shared transport for single-question text decision APIs."""
 
-import math
 import os
 import time
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, List, Optional
 from urllib.parse import urlsplit
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from evalscope.api.messages import ChatMessage
 from evalscope.api.model import GenerateConfig, ModelAPI, ModelOutput, ModelUsage
+from evalscope.api.model.decision import DecisionInput
 from evalscope.api.tool import ToolChoice, ToolInfo
-
-
-class _ChoiceInput(BaseModel):
-    """MCQ conversion data carried by an existing chat message's internal field."""
-
-    model_config = ConfigDict(extra='forbid')
-
-    state: Dict[str, JsonValue]
-    instructions: str = Field(min_length=1)
-    criteria: Dict[str, str] = Field(min_length=2, max_length=255)
-    answer_prefix: Literal['ANSWER: ', '答案：'] = 'ANSWER: '
-
-    @model_validator(mode='after')
-    def validate_options(self) -> '_ChoiceInput':
-        if any(not key.strip() or not value.strip() for key, value in self.criteria.items()):
-            raise ValueError('Choice option keys and descriptions must not be empty.')
-        return self
-
-
-class _ChoiceAnswer(BaseModel):
-    """Validated provider answer, retained in the raw response metadata."""
-
-    model_config = ConfigDict(extra='forbid')
-
-    type: Literal['choice'] = 'choice'
-    choice: str = Field(min_length=1)
-    probabilities: Dict[str, float] = Field(min_length=2, max_length=255)
-    confidence: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False)
-
-    @model_validator(mode='after')
-    def validate_distribution(self) -> '_ChoiceAnswer':
-        values = self.probabilities.values()
-        if any(not math.isfinite(value) or not 0 <= value <= 1 for value in values):
-            raise ValueError('Choice probabilities must be finite values between 0 and 1.')
-        # Providers may round each probability to two decimal places; retain those raw values.
-        tolerance = max(0.01, len(self.probabilities) * 0.005) if all(round(v, 2) == v for v in values) else 0.01
-        if not math.isclose(sum(values), 1, abs_tol=tolerance + 1e-12):
-            raise ValueError('Choice probabilities do not sum to 1 within their rounding tolerance.')
-        if self.choice not in self.probabilities:
-            raise ValueError('The selected choice is missing from probabilities.')
-        if self.probabilities[self.choice] < max(values) - 1e-6:
-            raise ValueError('The selected choice must have the highest probability.')
-        return self
+from evalscope.models.utils.decision import (
+    build_autotrust_request,
+    build_systemone_request,
+    parse_decision_response,
+    parse_decision_usage,
+)
 
 
 class SystemOneAPI(ModelAPI):
     """Call a System One endpoint and retain the complete decision response."""
+
+    protocol = 'systemone'
 
     def __init__(
         self,
@@ -78,7 +42,9 @@ class SystemOneAPI(ModelAPI):
             endpoint_url = urlsplit(base_url)
             api_key = (
                 os.getenv('TYPESAFE_API_KEY')
-                if endpoint_url.scheme == 'https' and endpoint_url.hostname == 'api.typesafe.ai'
+                if self.protocol == 'systemone'
+                and endpoint_url.scheme == 'https'
+                and endpoint_url.hostname == 'api.typesafe.ai'
                 else None
             )
             if api_key in ('', 'EMPTY'):
@@ -86,7 +52,7 @@ class SystemOneAPI(ModelAPI):
         self.api_key = api_key
         headers = {'Authorization': f'Bearer {api_key}'} if api_key else {}
         self.client = httpx.Client(headers=headers, follow_redirects=False)
-        self.endpoint = base_url.rstrip('/') + '/systemone'
+        self.endpoint = base_url.rstrip('/') + ('/systemone' if self.protocol == 'systemone' else '/decide')
 
     @staticmethod
     def validate_config(config: GenerateConfig) -> None:
@@ -107,18 +73,19 @@ class SystemOneAPI(ModelAPI):
     def generate(
         self, input: List[ChatMessage], tools: List[ToolInfo], tool_choice: ToolChoice, config: GenerateConfig
     ) -> ModelOutput:
-        """Convert an annotated MCQ chat request and return text for the existing answer extractor."""
+        """Send an annotated decision request and retain its structured result."""
         if tools:
-            raise ValueError('System One Choice evaluation does not support tools.')
+            raise ValueError('Decision APIs do not support tools.')
         self.validate_config(config)
         converted = self._convert_messages(input)
         system_prompt = '\n\n'.join(message.text for message in input if message.role == 'system' and message.text)
         instructions = f'{system_prompt}\n\n{converted.instructions}' if system_prompt else converted.instructions
-        payload = {
-            'model': self.model_name,
-            'state': converted.state,
-            'questions': {'answer': {'type': 'choice', 'instructions': instructions, 'criteria': converted.criteria}},
-        }
+        converted = converted.model_copy(update={'instructions': instructions})
+        payload = (
+            build_systemone_request(converted, self.model_name)
+            if self.protocol == 'systemone'
+            else build_autotrust_request(converted)
+        )
         started = time.monotonic()
         attempts = config.retries if config.retries is not None else 5
         for attempt in range(attempts):
@@ -136,44 +103,54 @@ class SystemOneAPI(ModelAPI):
             time.sleep(config.retry_interval if config.retry_interval is not None else 10)
 
         raw = response.json()
-        if not isinstance(raw, dict) or set(raw.get('answers', {})) != {'answer'}:
-            raise ValueError('System One must return exactly the requested answer question.')
-        result = _ChoiceAnswer.model_validate(raw['answers']['answer'])
-        if set(result.probabilities) != set(converted.criteria):
-            raise ValueError('Returned Choice options do not match the request criteria.')
-        model = raw.get('model')
-        if not isinstance(model, str) or not model:
-            raise ValueError('System One response must include the resolved model name.')
-        usage = raw.get('usage', {})
-        output = ModelOutput.from_content(model=model, content=f'{converted.answer_prefix}{result.choice}')
+        result = parse_decision_response(raw, converted, self.protocol)
+        model = raw['model']
+        input_tokens, output_tokens = parse_decision_usage(raw)
+        value = (
+            result.choice
+            if result.type == 'choice'
+            else ('yes' if result.noul >= 0.5 else 'no')
+            if result.type == 'noul'
+            else str(result.score)
+        )
+        output = ModelOutput.from_content(model=model, content=f'{converted.answer_prefix}{value}')
         output.id = raw.get('request_id')
         output.usage = ModelUsage(
-            input_tokens=usage.get('input_tokens', 0),
-            output_tokens=usage.get('output_tokens', 0),
-            total_tokens=usage.get('input_tokens', 0) + usage.get('output_tokens', 0),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
         )
         output.time = time.monotonic() - started
         output.metadata = {
             'choice_request': payload,
             'choice_response': raw,
+            'decision': result.model_dump(exclude_none=True),
+            'transport_attempts': attempt + 1,
+            'model_revision': raw.get('model_revision'),
         }
         return output
 
     @staticmethod
-    def _convert_messages(input: List[ChatMessage]) -> _ChoiceInput:
+    def _convert_messages(input: List[ChatMessage]) -> DecisionInput:
         """Read conversion data without attempting to parse arbitrary prompt text."""
         if any(message.role not in ('system', 'user') for message in input):
-            raise ValueError('System One requires system messages and one annotated MCQ user message.')
+            raise ValueError('Decision APIs require system messages and one annotated user message.')
         if any(
             not isinstance(message.content, str) and any(part.type != 'text' for part in message.content)
             for message in input
         ):
-            raise ValueError('System One Choice supports text messages only.')
+            raise ValueError('Decision APIs support text messages only.')
         users = [message for message in input if message.role == 'user']
         if len(users) != 1 or not isinstance(users[0].internal, dict) or 'systemone' not in users[0].internal:
-            raise ValueError('System One requires MCQ conversion data in ChatMessage.internal["systemone"].')
-        return _ChoiceInput.model_validate(users[0].internal['systemone'])
+            raise ValueError('Decision APIs require conversion data in ChatMessage.internal["systemone"].')
+        return DecisionInput.model_validate(users[0].internal['systemone'])
 
     async def aclose(self) -> None:
         """Close the HTTP connection pool."""
         self.client.close()
+
+
+class AutoTrustAPI(SystemOneAPI):
+    """Serve native AutoTrust JEV decisions through /v1/decide."""
+
+    protocol = 'autotrust'

@@ -5,7 +5,15 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_serializer, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 from typing_extensions import Self
 
 from evalscope.api.metric import JudgeSummary
@@ -154,6 +162,8 @@ class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
+    metadata: Optional[Dict[str, Any]] = None
+    """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
     """True for derived/summary subsets (e.g. BFCL OVERALL, MULTI_TURN) that
     aggregate other real subsets. Excluded from num/score totals so they

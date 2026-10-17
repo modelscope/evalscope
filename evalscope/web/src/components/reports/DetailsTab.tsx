@@ -15,13 +15,15 @@ import MarkdownRenderer from '@/components/ui/MarkdownRenderer'
 import ScoreBar from '@/components/ui/ScoreBar'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfMetricsPanel from '@/components/reports/PerfMetricsPanel'
-import type { PerfMetrics } from '@/api/types'
+import type { PerfMetrics, ReportData } from '@/api/types'
+import DecisionDiagnostics from './DecisionDiagnostics'
 
 interface Props {
   reportName: string
   datasetName: string
   rootPath: string
   perfMetrics?: PerfMetrics | null
+  report?: ReportData
   onSubsetClick?: (subset: string) => void
   overallScore?: number
   metricName?: string
@@ -40,6 +42,7 @@ export default function DetailsTab({
   datasetName,
   rootPath,
   perfMetrics,
+  report,
   onSubsetClick,
   overallScore,
   metricName,
@@ -104,7 +107,7 @@ export default function DetailsTab({
         // The metric's display name, direction and dimensions, the same label the CLI table and the
         // HTML report print. The raw name stays reachable through the tooltip.
         return (
-          <span className="text-xs text-[var(--text-muted)]" title={metricName}>
+          <span className="text-xs break-words text-[var(--text-muted)]" title={metricName}>
             {labelsByMetric[metricName] ?? formatMetricLabel(metricName, rowSemantics)}
           </span>
         )
@@ -188,6 +191,8 @@ export default function DetailsTab({
           />
         </Card>
       )}
+
+      <DecisionDiagnostics report={report} />
 
       {/* AI Analysis */}
       <Card title={t('reportDetail.analysis')}>

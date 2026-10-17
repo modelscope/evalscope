@@ -122,6 +122,7 @@ class ReportGenerator:
                             name=subset_name,
                             score=agg_score_item.score,
                             num=agg_score_item.num,
+                            metadata=agg_score_item.metadata,
                             identity_key=identity.key,
                             identity=identity,
                             categories=tuple(categories),
@@ -156,7 +157,9 @@ class ReportGenerator:
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []
                 for _, row in group_category.iterrows():
-                    subsets.append(Subset(name=row['name'], score=row['score'], num=row['num']))
+                    subsets.append(
+                        Subset(name=row['name'], score=row['score'], num=row['num'], metadata=row['metadata'])
+                    )
 
                 categories.append(Category(name=category_name, subsets=subsets))
 

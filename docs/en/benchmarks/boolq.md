@@ -20,10 +20,10 @@ Binary reading comprehension using a passage and a naturally occurring question.
 
 ## Evaluation Notes
 
-- Uses the public validation labels, zero-shot by default. System One evaluates two-option Choice, not the Noul protocol used in some Jev studies.
+- Uses the public validation labels, zero-shot by default. Decision APIs use two-option Choice by default. Set `extra_params.decision_kind="noul"` for P(yes), with `decision_threshold=0.5` by default.
 - Defaults to 0-shot; training examples can be configured where a training split is available
 - System prompts become Choice task instructions, without a native chat-role hierarchy
-- Evaluation semantics version: v1.0
+- Evaluation semantics version: v1.1
 
 
 ## Properties
@@ -56,7 +56,7 @@ Binary reading comprehension using a passage and a naturally occurring question.
 {
   "input": [
     {
-      "id": "800c0332",
+      "id": "47f2b621",
       "content": "Answer the following multiple choice question. The entire content of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B.\n\nPassage:\nAll biomass goes through at least some of these  ... [TRUNCATED 1152 chars] ... versity of California Berkeley study, after analyzing six separate studies, concluded that producing ethanol from corn uses much less petroleum than producing gasoline.\n\nQuestion: does ethanol take more energy make that produces\n\nA) Yes\nB) No"
     }
   ],
@@ -83,6 +83,13 @@ Answer the following multiple choice question. The entire content of your respon
 {choices}
 ```
 
+## Extra Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `decision_kind` | `str` | `choice` | Decision API question type: choice (default) or noul. Requires a decision API for noul. |
+| `decision_threshold` | `float` | `0.5` | Classify Noul as yes when P(yes) is at least this threshold, in [0, 1]. |
+
 ## Usage
 
 ### Using CLI
@@ -107,6 +114,11 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['boolq'],
+    dataset_args={
+        'boolq': {
+            # extra_params: {}  # uses default extra parameters
+        }
+    },
     limit=10,  # Remove this line for formal evaluation
 )
 

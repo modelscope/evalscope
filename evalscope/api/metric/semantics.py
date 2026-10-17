@@ -42,6 +42,7 @@ KNOWN_AGGREGATIONS: FrozenSet[str] = frozenset(
         'max',
         # Benchmark-owned aggregations, computed inside an adapter's `aggregate_scores`.
         'official',
+        'decision',
         'rate',
     }
 )

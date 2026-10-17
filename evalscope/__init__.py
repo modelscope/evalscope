@@ -12,7 +12,13 @@ from evalscope.evaluator import (  # registered evaluators
     PerfCollector,
 )
 from evalscope.filters import extraction, selection  # registered filters
-from evalscope.metrics import aggregators, audio, nlp, vision  # noqa: F401  # registered metrics & aggregators
+from evalscope.metrics import (  # noqa: F401  # registered metrics & aggregators
+    aggregators,
+    audio,
+    decision,
+    nlp,
+    vision,
+)
 from evalscope.models import model_apis  # need for register model apis
 from evalscope.run import run_task
 

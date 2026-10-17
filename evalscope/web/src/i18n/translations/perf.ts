@@ -29,6 +29,7 @@ export const en: Dict = {
     ready: 'Status: Ready',
   },
   archive: {
+    inputOnlyHint: 'Input-only decisions: TTFT, TPOT and ITL are not applicable. Inspect request latency, throughput and success rate.',
     overview: 'Overview',
     charts: 'Charts',
     runs: 'runs',
@@ -122,6 +123,7 @@ export const zh: Dict = {
     ready: '当前状态: 准备就绪',
   },
   archive: {
+    inputOnlyHint: '决策请求不逐字生成：TTFT、TPOT、ITL 不适用。请查看请求延迟、吞吐和成功率。',
     overview: '概览',
     charts: '图表',
     runs: '组',

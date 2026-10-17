@@ -158,7 +158,7 @@ def _df_to_records(df) -> list:
     """Convert a pandas DataFrame to a list of dicts, handling NaN."""
     if df is None or df.empty:
         return []
-    return json.loads(df.to_json(orient='records', force_ascii=False))
+    return json.loads(df.to_json(orient='records', force_ascii=False, double_precision=15))
 
 
 def _parse_path_ref(run_id: str, model_id: str) -> ReportRef:

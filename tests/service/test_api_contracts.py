@@ -35,6 +35,7 @@ from evalscope.service.api_models import (
     TaskStatusResponse,
     WebApiContracts,
 )
+from evalscope.service.api_models.reports import ReportSubset
 from evalscope.service.responses import json_response
 from evalscope.version import __version__
 
@@ -236,6 +237,35 @@ def test_json_response_validates_and_serializes_aliases() -> None:
     assert body['predictions'][0]['Index'] == '0'
     assert body['predictions'][0]['NScore'] is None
     assert body['predictions'][0]['Metadata']['nullable'] is None
+
+
+def test_prediction_transport_preserves_small_probability_diagnostics() -> None:
+    import pandas as pd
+
+    from evalscope.service.blueprints.reports import _df_to_records
+
+    rows = _df_to_records(pd.DataFrame([{'Score': {'metadata': {
+        'nll_epsilon': 1e-12, 'raw_probabilities': {'A': 1e-20, 'B': 1.0},
+    }}, 'NScore': float('nan')}]))
+    assert rows[0]['Score']['metadata']['nll_epsilon'] == 1e-12
+    assert rows[0]['Score']['metadata']['raw_probabilities']['A'] == 1e-20
+    assert rows[0]['NScore'] is None
+
+
+def test_report_subset_omits_unused_diagnostics() -> None:
+    regular = ReportSubset(name='test', score=1.0, num=1).model_dump(mode='json', exclude_unset=True)
+    assert 'metadata' not in regular
+    assert 'is_aggregate' not in regular
+
+    diagnostic = ReportSubset(
+        name='test',
+        score=1.0,
+        num=1,
+        metadata={'risk_coverage': []},
+        is_aggregate=True,
+    ).model_dump(mode='json', exclude_unset=True)
+    assert diagnostic['metadata'] == {'risk_coverage': []}
+    assert diagnostic['is_aggregate'] is True
 
 
 def test_json_response_rejects_invalid_success_shape() -> None:

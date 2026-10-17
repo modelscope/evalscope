@@ -180,6 +180,16 @@ afterEach(() => {
 })
 
 describe('PerfComparePage', () => {
+  it('omits generation timing charts when a compared run is a decision API', async () => {
+    mockDetails({
+      'run-a': makePerfDetail({ path: 'run-a', api_type: 'systemone' }),
+      'run-b': makePerfDetail({ path: 'run-b', api_type: 'autotrust' }),
+    })
+    await renderLoaded([compareUrl(['run-a', 'run-b'])])
+    expect(screen.queryByText('TTFT (ms)')).not.toBeInTheDocument()
+    expect(screen.queryByText('TPOT (ms)')).not.toBeInTheDocument()
+  })
+
   describe('baseline swap persistence', () => {
     it('persists the swapped baseline to the URL and updates the effective-baseline marker', async () => {
       const older = makePerfDetail({ path: 'run-a', model: 'model-a', generated_at: '2026-06-01T00:00:00Z' })

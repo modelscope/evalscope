@@ -68,6 +68,11 @@ class Metrics:
         api_lower = api_name.lower()
         return 'embedding' in api_lower or 'rerank' in api_lower or 'embed' in api_lower
 
+    @staticmethod
+    def is_input_only(api_name: str) -> bool:
+        """Use request and input metrics for APIs without generated token streams."""
+        return Metrics.is_embedding_or_rerank(api_name) or api_name in ('systemone', 'autotrust')
+
 
 # ---------------------------------------------------------------------------
 # Percentile-level metric names  (keys in benchmark_percentile.json)

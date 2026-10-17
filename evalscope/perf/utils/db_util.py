@@ -207,7 +207,7 @@ def get_percentile_results(
     stream_rows = [r for r in rows if r[col_indices[DatabaseColumns.IS_STREAM]]]
     streaming_rows = stream_rows if stream_rows else rows
 
-    is_embedding_rerank = Metrics.is_embedding_or_rerank(api_type)
+    is_embedding_rerank = Metrics.is_input_only(api_type)
 
     if is_embedding_rerank:
         # For embedding/rerank models, show relevant metrics only

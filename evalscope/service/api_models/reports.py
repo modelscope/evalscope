@@ -41,6 +41,7 @@ class ReportSubset(ApiResponseModel):
     score: float
     num: int
     is_aggregate: bool = False
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class ReportCategory(ApiResponseModel):

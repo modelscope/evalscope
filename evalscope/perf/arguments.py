@@ -18,6 +18,8 @@ logger = get_logger()
 
 _OPENAI_API_ENDPOINT_MAP = {
     'openai': 'chat/completions',
+    'systemone': 'systemone',
+    'autotrust': 'decide',
     'openai_responses': 'responses',
     'openai_response': 'responses',
     'responses': 'responses',
@@ -28,7 +30,16 @@ _OPENAI_API_ENDPOINT_MAP = {
 }
 
 _OPENAI_RESPONSES_APIS = ('openai_responses', 'openai_response', 'responses')
-_KNOWN_OPENAI_ENDPOINTS = ('chat/completions', 'completions', 'responses', 'embeddings', 'reranks', 'rerank')
+_KNOWN_OPENAI_ENDPOINTS = (
+    'chat/completions',
+    'completions',
+    'responses',
+    'embeddings',
+    'reranks',
+    'rerank',
+    'systemone',
+    'decide',
+)
 
 
 def _as_list_if_scalar(value: Any) -> Any:
