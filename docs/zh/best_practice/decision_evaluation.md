@@ -1,46 +1,92 @@
 # 让 AI 做判断：用 EvalScope 上手决策模型
 
-读评论时，我们想留下使用体验、藏掉推广；整理消息时，我们想知道哪些值得点开、哪些可以略过。这类需求有个共同点：答案通常就是一个类别、一个分数，或者简单的「是」与「否」。
+打开一个商品的评论区，首屏往往不是真实用户的声音：「在家动动手指日赚500」「同款找我买有内部价」「点赞返现」。不管你只是刷评论的人，还是要做一款把评论展示给别人看的产品，想要的都是同一件事——尽快分清哪些值得读、哪些该折叠。
 
-普通 Chat 模型当然能做这些事，也能按要求输出 JSON。但内容一多，逐字生成回复就成了实打实的等待；应用真正要的，往往只是分类结果和每个答案的概率。[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev)、[Clef-Flash](https://developers.cloudflare.com/changelog/post/2026-10-01-clef-workers-ai/) 这类决策模型专做这种判断：直接返回事先指定的类别、是非判断或分数，不生成文本。
+把这件事丢给普通大模型，它很可能先写三段分析，再委婉地给出结论。可你想要的只有两样：一个答案，以及它对答案的把握有几成。
 
-拿评论筛选来说，模型既可以判断「是否折叠」，也可以给出各类内容的概率。应用可以按自己的规则处理结果，比如只折叠概率很高的推广，把有争议的内容保留下来。需要解释和展开讨论的内容，仍适合交给 Chat 模型。
+这就是决策模型的地盘。它不写文章，只表态：返回一个类别、一个分数，或一句「是 / 否」，再附上每个选项的概率。[Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev)、[Clef-Flash](https://developers.cloudflare.com/changelog/post/2026-10-01-clef-workers-ai/) 就是这类模型。需要解释和展开讨论的内容，再交给 Chat 模型不迟。
 
-本文用 **EvalScope** 连接决策模型，把题目、判断结果和响应速度放在一起检查。全文以评论筛选为例：学会给模型说明任务、读懂返回的概率，再判断它合不合自己的用途。
+本文用 **EvalScope** 把决策模型接进来，一路检查三件事：题答得对不对、概率能不能用、响应够不够快。先用一套公开题跑通流程，扩展部分再讲测自己的数据和自部署。
 
-## 1. 把任务写成模型能回答的问题
+## 1. 决策模型能答哪三种题
 
-[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) 是一套公开的决策模型测试题，包含分类、是非判断和评分任务。其中有一道中文评论分类题，留言节选如下。
+评论筛选只是引子。决策模型能回答的题，大致分三种。
+
+先看一道真实的中文评论分类题，留言节选如下。
 
 > 在家动动手指日赚500+，刷单返现，宝妈学生都能做，名额有限先到先得！
 
+模型拿到的完整题目长这样：四个选项加上一条标准答案，返回的是 A/B/C/D 各自的概率。下图是这道题的原样（节选自 [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) 公开原题）：
+
 ![评论分类题，包含 A、B、C、D 四个选项](../_static/images/decision_evaluation/public-question.png)
 
-*节选自 OpenDecisions 公开原题，非社交平台截图，许可 CC BY-SA 4.0。*
+从广告推广、正常评价、辱骂和闲聊里选一个——这种「多选一」叫 **Choice**，模型返回每个选项的概率，适合消息分类、请求分流。
 
-从广告推广、正常评价、辱骂和闲聊中选一个，这种题型叫 **Choice**。它适合消息分类、请求分流等任务，选项由我们指定，模型返回各选项的概率。
+另外两种同样常用：**Noul** 是是非判断，只问某个条件成不成立，返回「成立」的概率，比如「这条评论是否该折叠」；**Score** 是分级评分，在几个有高低顺序的等级里打分，适合完成度、干扰程度这类有轻重之分的判断。
 
-同一数据集还有一道酒店评价题。住客夸了房间、服务和早餐，接着推荐自己经营的另一家住宿，并留下优惠和联系方式。题目只问「是否包含其他商家的广告」，这种是非判断叫 **Noul**，返回条件成立的概率。用在评论筛选里，就可以问「这条评论是否应该折叠」。
+出题的关键，是把判断对象、规则和可选答案说清楚：分类型用 Choice，判断条件是否成立用 Noul，按程度打分用 Score。规则要具体——「讨论商品价格可以保留，商家招揽客户应折叠」，比一句「过滤不好的内容」清楚得多。
 
-还有一道社区跳蚤市场题：一条欢迎邻居周末来参加活动的通知，要求在正常社区消息、商业推广、诈骗诱导三个等级中评分。这种题型叫 **Score**，适合有高低顺序的评价。模型会给出各等级的概率，按概率算出的分数也可以落在两档之间。本题的标准答案是第 0 级，也就是正常社区消息。酒店和跳蚤市场两题的原文分别是希腊语、荷兰语，这里用中文概述，实际评测保留原文。
+## 2. 一条命令，跑通公开题评测
 
-出题时，关键是说明判断对象、规则和可选答案。分类型用 Choice，判断条件是否成立用 Noul，按程度打分用 Score。规则也要写具体，例如「讨论商品价格可以保留，商家招揽客户应折叠」，会比一句「过滤不好的内容」清楚得多。
+这次实测使用 `decision-model-preview`，通过百炼 System One 接口（决策模型通用的请求格式）传入题目、接收判断和概率。兼容这个接口的其他服务也能用同样的命令，模型名、API 地址和 Key 换成自己的即可。
 
-## 2. 用 EvalScope 运行评测
-
-这次实测使用 `decision-model-preview`，通过 System One 接口传入题目、接收判断和概率。兼容这个接口的其他服务，也可以用下面的命令连接，模型名、API 地址和 Key 按自己的服务填写。
-
-在 [EvalScope 源码](https://github.com/modelscope/evalscope) 根目录安装依赖，并填好连接参数。
+依次执行下面的命令。公开题用 [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions)，两千多道题、三种题型都覆盖，EvalScope 会自己取数、出题、评分：
 
 ```bash
-pip install -e '.[perf,service]'
+# 安装依赖（含压测和 Web UI 组件）
+pip install 'evalscope[perf,service]'
 
+# 连接参数：换成所用服务的模型名、地址和 Key
 export DECISION_MODEL='decision-model-preview'
 export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
 export DECISION_API_KEY='替换为所用服务的 API Key'
+
+# 跑公开题评测
+evalscope eval \
+  --model "$DECISION_MODEL" \
+  --eval-type systemone_api \
+  --api-url "$DECISION_API_URL" \
+  --api-key "$DECISION_API_KEY" \
+  --datasets open_decisions
 ```
 
-EvalScope 会自动下载并读取 OpenDecisions，运行下面这条命令即可开始评测。`systemone_api` 指定接口类型，`open_decisions` 指定数据集，标准答案只供 EvalScope 核对，不会发给模型。
+想先快速跑通，可以加 `--limit 50` 只取前 50 道。
+
+## 3. 在 Web UI 里读懂结果
+
+评测完成后启动 Web UI，在 `http://127.0.0.1:9000` 的「评估」页面打开模型报告：
+
+```bash
+evalscope service
+```
+
+2026 年 10 月 16 日这次实测，我们从中筛了 59 道内容审核题来跑，全部返回了结果，但只有 49 条通过概率格式检查、进入准确率计算，其中 36 条答对。剩下 10 条是格式没过关，不是内容判断错，所以读分数先看参与评分的数量，别把这 10 条算成错题。报告页上方正好把这三个数摆了出来：已完成请求 59、参与评分 49、答对 36。
+
+![本次质量报告，以及公开题的请求数、有效评分数和正确数](../_static/images/decision_evaluation/quality-overview.png)
+
+截图左下是原始报告，里面还列着第 5 节那批中文例子；两个数据集评分方式不同，分数别直接比较。「预测浏览」能看每道题的题目、预测、标准答案和概率分布，也能筛错题。至于模型到底把哪些内容混淆了、那些概率又该怎么用，放到下面测自己数据的扩展里展开。
+
+## 4. 顺手测一下响应速度
+
+自动分类和筛选要反复调用模型，等待时间同样影响体验。压测也不用自己整理数据——还是刚才那套公开题，数据集填 `open_decisions` 就会自动加载题目、逐条发给模型：
+
+```bash
+evalscope perf --api systemone --model "$DECISION_MODEL" \
+  --url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" \
+  --dataset open_decisions \
+  --parallel 1 4 --number 24 24 --warmup-num 2 --no-stream \
+  --outputs-dir ./perf-results
+```
+
+这次只测短时响应：并发从 1 提到 4，吞吐翻了三倍多，p95 延迟只略微上涨，24 条请求全部成功。下图左侧是这次性能报告，右侧把两档并发摆在一起对比；p95 就是 95% 请求的延迟水平。要留意的是，测的只是接口往返，从页面打开到评论真正被折叠的那段前端时间不在其中。
+
+![本次性能报告，以及两档并发的成功吞吐和 p95 延迟](../_static/images/decision_evaluation/performance-comparison.png)
+
+完整记录可在 Web UI 的「性能」页选择 perf-results 查看。接入自己的应用前，记得加大请求量看持续表现；换模型时沿用相同题目和测试方式，比较也更方便。
+
+## 5. 扩展：换成你自己的数据
+
+公开题给的是一个公共参照，合不合你的用途，还得看你自己的数据。把要判断的内容整理成[自定义数据格式](../advanced_guides/custom_dataset/decision.md)，存到本地，再用 `general_decision` 指过去跑一遍即可：
 
 ```bash
 evalscope eval \
@@ -48,85 +94,46 @@ evalscope eval \
   --eval-type systemone_api \
   --api-url "$DECISION_API_URL" \
   --api-key "$DECISION_API_KEY" \
-  --datasets open_decisions \
-  --generation-config '{"timeout": 90, "retries": 1}' \
-  --eval-batch-size 2 \
-  --work-dir outputs/decision/quality
+  --datasets general_decision \
+  --dataset-args '{"general_decision":{"local_path":"./decision-data"}}'
 ```
 
-这条命令运行完整公开测试集。只想试试接口是否可用，可以加上 `--limit 20`，运行 20 道题。
-
-## 3. 在 Web UI 里读懂结果
-
-评测完成后，运行下面的命令启动 Web UI，在 `http://127.0.0.1:9000` 的「评估」页面打开模型报告即可。
-
-```bash
-evalscope service --host 127.0.0.1 --port 9000 --outputs ./outputs/decision/quality
-```
-
-下面展示的是 2026 年 10 月 16 日已完成的实测，选取了 59 道公开内容审核题，另补充 36 条中文例子。图中数字对应这批题目，运行完整数据集会得到另一份报告。前面三道公开题都答对了，刷单评论归入广告推广，酒店评价被识别出夹带广告，社区跳蚤市场通知被判为正常消息。不过，几个例子答对，并不代表整组题都没问题。
-
-59 道公开题全部返回结果，其中 49 条符合评分要求，36 条选中了正确类别或等级。其余 10 条未通过公开题评分器的概率格式检查，被排除在准确率计算之外，原因保留在结果中。读分数时要留意参与评分的数量，这 10 条不能直接当成内容判断错题。
-
-![本次质量报告，以及公开题的请求数、有效评分数和正确数](../_static/images/decision_evaluation/quality-overview.png)
-
-*上方单独统计 59 道公开题，左下为原始报告截图，包含公开题和中文例子。两个数据集评分方式不同，分数不宜直接比较。*
-
-「预测浏览」可以查看题目、预测、标准答案和概率分布，也能筛选错题。这里展示的是内容审核题的结果，分数只对应这批题。模型把哪些内容混淆了，还要打开具体题目看；下面两条中文错题就比总分更能说明问题。
-
-## 4. 概率怎么用，两条错题很说明问题
-
-我们给中文例子定了一套评论区规则，折叠商家招揽、付费推销、返佣导购和刷单引流，保留使用体验、价格讨论、提问和反诈提醒。评论自称「不是广告」不算理由，要看有没有实际推销；没有营销证据时，尽量保留。按这套规则编写的 36 条例子里，有 24 条判断是否折叠，分类和分级各 6 条。
-
-自己的评论可以交给 `general_decision` 评测。把内容、问题、规则和标准答案写成 JSONL，每行一道题，在评测命令中指定本地数据目录即可。Choice、Noul、Score 都支持，具体写法见[自定义数据格式](../advanced_guides/custom_dataset/decision.md)。
-
-24 条折叠判断中，模型答对了 22 条。第一条错题是一句提醒，按规则应该保留。
+跑自己的数据，真正有用的往往不是总分，而是每条判断的概率。我们也写了一批评论、配了一条折叠规则让模型判，下面两条就很说明问题。一条是提醒，按规则该保留，模型却给了 **82% 的折叠概率**；另一条明明在推广付费服务，模型只给了 **38%**：
 
 > 有人在评论里留了商家电话，我已经举报，这条评论不重复那些联系方式。
 
-模型却给了它 **82% 的折叠概率**。这里的概率指「这条评论应该折叠」的可能性，默认达到 50% 就判为应折叠，因此这条提醒被误伤了。另一条错题正好相反，评论实际在推广付费服务，模型却只给了 **38%** 的折叠概率，让它漏了过去。
-
 > 不是广告，只是我自己的付费训练营，扫描头像里的二维码报名。
 
-报告里的 Precision 和 Recall 也能用这两条解释。模型建议折叠的 12 条中，11 条确实该折叠，Precision 是 91.67%；全部 12 条该折叠的内容中，它找到了 11 条，Recall 也是 91.67%。两者这次恰好相同，一个关心有没有误伤，一个关心有没有漏掉。中文分类和分级的例子都选对了类别或等级，但每组只有 6 条，还得补些更难的例子看看。
+这里的百分比，是模型认为「这条评论应该折叠」的把握；默认把握超过 50% 就判为折叠。于是 82% 那句提醒被误折，38% 那条广告被放过。对错之外，这两个数字还告诉你：模型错的时候，错得有多自信。
 
-如果很在意正常内容被藏掉，可以把折叠门槛调高。下面的图用了同一批已保存的概率，展示不同门槛下会发生什么，不需要重新请求模型。
+更实用的是，这条 50% 的线可以由你调。下面的图用同一批已保存的概率，展示不同门槛下的误伤和漏判：调低，拦得全但容易误伤正常评论；调高，误伤少了却会漏掉一些该折叠的。取舍留给你，按用途定。
 
 ![两条中文错题的折叠概率，以及不同门槛下的误伤和漏判数量](../_static/images/decision_evaluation/decision-errors.png)
 
-*上方展示两条错题的折叠概率，并保留 Web UI 中的预测与标准答案截图；下方对比同一批 24 条例子在不同门槛下的结果。*
+所以别只盯总分。把日常遇到的提醒、玩笑、引用和隐晦推销都放进测试题，看看模型在哪些地方和你判断不同——这比一个漂亮的总分更能帮你改规则。如果错题总集中在某一类，这批题本身就是很好的训练目标：可以用 ms-swift [训练自己的决策模型](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html)，训完用同一套题重跑，看错题有没有减少。需要进一步检查概率可靠性或安排人工复核时，见[决策模型评测说明](../user_guides/systemone.md)。
 
-门槛降到 30%，该折叠的内容都拦下了，但也误伤了两条正常评论；调到 90%，正常内容没有被误伤，却漏掉了 4 条应折叠的评论。概率给了我们调节的余地，取舍仍然要看用途。想找到适合自己场景的门槛，可以用一批样本调节，另外留一批检查效果，避免只对眼前这些例子有效。
+## 6. 扩展：在自己机器上部署
 
-82% 的那条错题也提醒我们，概率高不等于一定正确。日常遇到的提醒、玩笑、引用和隐晦推销，都值得放进测试题里。模型在哪些内容上出错，比一个漂亮的总分更能帮助我们修改规则。需要进一步检查概率可靠性或安排人工复核时，可以查看[决策模型评测说明](../user_guides/systemone.md)。
-
-## 5. 响应速度也要一起测
-
-自动分类和筛选往往需要反复调用模型，等待时间同样影响体验。性能评测使用请求文件，每行一条完整的 System One 请求，不含标准答案，格式见[接口与性能评测说明](../user_guides/systemone.md)。把自己的请求保存为 `requests.jsonl`，即可运行下面的命令。
+不想用托管服务，也可以在自机上跑开源的 [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash)（约 9B、基于 Qwen3.5-9B，支持三类题型）。需要一个带 System One 决策头支持的 vLLM；装好后起服务、换连接参数、跑评测，命令都在下面这一个块里：
 
 ```bash
-evalscope perf --api systemone --model "$DECISION_MODEL" \
-  --url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" \
-  --dataset line_by_line \
-  --dataset-path requests.jsonl \
-  --parallel 1 4 --number 24 24 --warmup-num 2 --no-stream \
-  --read-timeout 90 --outputs-dir outputs/decision/perf
+pip install -U modelscope
+pip install -U --pre vllm --extra-index-url https://wheels.vllm.ai/nightly
+VLLM_USE_MODELSCOPE=true vllm serve Cloudflare/clef-flash \
+  --served-model-name clef-flash \
+  --max-model-len 16384 --port 8000
+
+# 服务起来后，另开一个终端，换连接参数并评测
+export DECISION_MODEL='clef-flash'
+export DECISION_API_URL='http://127.0.0.1:8000/v1'
+export DECISION_API_KEY='EMPTY'
+evalscope eval --model "$DECISION_MODEL" --eval-type systemone_api --api-url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" --datasets open_decisions
 ```
-
-本次实测使用前面 24 条中文判断的请求，分别测试同时处理 1 条和 4 条的情况，每档预热 2 次、正式发送 24 次，全部成功。单条依次处理时，每秒完成约 13.34 次判断；同时处理 4 条时，每秒约 43.85 次。两档都有一半请求在 70 多毫秒内完成，95% 请求的延迟分别不超过约 102 和 109 毫秒。
-
-![本次性能报告，以及两档并发的成功吞吐和 p95 延迟](../_static/images/decision_evaluation/performance-comparison.png)
-
-*左侧为性能报告截图，右侧比较两档并发的结果。p95 对应 95% 请求的延迟水平；自己的测试记录可在 Web UI 的「性能」页选择 `outputs/decision/perf` 查看。*
-
-这是一次短时测试，延迟包含网络和服务等待，接入自己的应用时还要增加请求量，看看持续使用的表现。测的只是接口往返；从页面打开到评论真正被折叠，那段前端时间不在其中。换模型时可以沿用相同题目和测试方式，比较结果也更方便。
-
-评论筛选只是决策模型的一种用法。消息该分到哪类、两段内容是否相关、哪个回答更符合要求，都可以写成类似的问题，EvalScope 的[数据集列表](../get_started/supported_dataset/llm.md)中也有对应入口。连接其他 System One 服务的方法见[决策模型 API 配置](../user_guides/systemone.md)。本文的数字来自 `decision-model-preview`，不代表其他模型或自部署服务的成绩。
 
 ## 总结
 
-决策模型适合分类、是非判断和评分这类答案范围明确的任务。它把判断和概率直接交给应用，应用则根据自己的规则决定怎样处理结果。用得合不合适，取决于三件事：规则写没写清楚、错误能不能接受、调用速度够不够。
+评论筛选只是决策模型的一种用法。消息该分到哪类、两段内容是否相关、哪个回答更符合要求，都能写成类似的问题；EvalScope 的[数据集列表](../get_started/supported_dataset/llm.md)里有对应入口，连接其他 System One 服务见[决策模型 API 配置](../user_guides/systemone.md)。
 
-这次我们用 EvalScope 跑完三类任务，在 Web UI 里找到误伤和漏判，也看到调整门槛带来的变化；同一批输入再测一次性能，补上调用速度这一项。题目、结果和命令都值得留下：下次换模型、改规则，重跑一遍就能对比。
+决策模型适合答案范围明确的任务：分类、是非判断、评分。它把判断和概率直接交给应用，怎么用由你的规则决定。合不合适，取决于三件事：规则写没写清楚、错误能不能接受、调用速度够不够。
 
-你可以从日常遇到的消息分类、内容筛选或评分需求开始，写下一组自己认可的答案，看看模型在哪些地方与你的判断不同。比起只看公开榜单，这份贴近自己用途的报告，更容易回答「这个模型用起来合不合适」。
+题目、结果和命令都值得留下：下次换模型、改规则，重跑一遍就能对比。从你日常遇到的一条分类、筛选或评分需求开始，写下一组自己认可的答案，看看模型在哪里和你判断不同——比起只看公开榜单，这份贴近自己用途的报告，更容易回答「这个模型用起来合不合适」。

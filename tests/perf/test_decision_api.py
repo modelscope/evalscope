@@ -15,7 +15,30 @@ from evalscope.models.utils.decision import build_autotrust_request, build_syste
 from evalscope.perf.arguments import Arguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.perf.plugin.api.decision_api import AutoTrustPerfPlugin, SystemOnePerfPlugin
+from evalscope.perf.plugin.datasets.open_decisions import OpenDecisionsDatasetPlugin
 from evalscope.perf.utils.perf_constants import Metrics
+
+HUB_RECORDS = [
+    {'state': 'A trip expense list.', 'question': {'type': 'choice', 'instructions': 'Classify the request.',
+                                                   'criteria': {'A': 'Extraction', 'B': 'Chitchat'}}, 'expected': 'A'},
+    {'state': 'A comment mentioning a hotline.', 'question': {'type': 'noul', 'instructions': 'Should it be folded?',
+                                                              'criteria': None}, 'expected': 'no'},
+    {'state': 'A draft reply.', 'question': {'type': 'score', 'instructions': 'Rate the quality.',
+                                             'criteria': ['bad', 'ok', 'good']}, 'expected': '2'},
+]
+
+
+def test_open_decisions_dataset_builds_valid_systemone_bodies(monkeypatch: pytest.MonkeyPatch) -> None:
+    plugin = OpenDecisionsDatasetPlugin(Arguments(model='v1', api='systemone', dataset='open_decisions'))
+    monkeypatch.setattr(plugin, 'load_hub_dataset', lambda **kwargs: HUB_RECORDS)
+    api = SystemOnePerfPlugin(Arguments(model='v1', api='systemone'))
+    bodies = list(plugin.build_messages())
+    assert [body['questions']['answer']['type'] for body in bodies] == ['choice', 'noul', 'score']
+    assert 'criteria' not in bodies[1]['questions']['answer']
+    for body in bodies:
+        built = api.build_request(dict(body))
+        assert built['model'] == 'v1'
+        assert not ({'stream', 'temperature', 'max_tokens'} & built.keys())
 
 
 def request(kind: str) -> DecisionInput:
@@ -132,6 +155,52 @@ def test_concurrency_sweep_and_input_metrics(tmp_path: Path) -> None:
             assert metrics.get(Metrics.AVERAGE_TIME_TO_FIRST_TOKEN, 0) == 0
             assert result['percentiles'].rows[0].latency is not None
             assert result['percentiles'].rows[0].ttft is None
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_open_decisions_dataset_end_to_end(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A hub-backed decision dataset drives a full perf run without a local file."""
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+            question = body['questions']['answer']
+            kind = question['type']
+            if kind == 'noul':
+                answer = {'type': 'noul', 'noul': 1.0}
+            elif kind == 'choice':
+                labels = list(question['criteria'])
+                answer = {'type': kind, 'choice': labels[0],
+                          'probabilities': {label: float(i == 0) for i, label in enumerate(labels)}}
+            else:
+                labels = [str(i) for i in range(len(question['criteria']))]
+                answer = {'type': kind, 'score': 0.0, 'legend': dict(zip(labels, question['criteria'])),
+                          'probabilities': {label: float(i == 0) for i, label in enumerate(labels)}}
+            raw = json.dumps({'model': body['model'], 'answers': {'answer': answer},
+                              'usage': {'input_tokens': 12, 'output_tokens': 0}}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def log_message(self, *args: object) -> None:
+            pass
+    monkeypatch.setattr(OpenDecisionsDatasetPlugin, 'load_hub_dataset', lambda self, **kwargs: HUB_RECORDS)
+    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        results = run_perf_benchmark(Arguments(
+            model='v1', api='systemone', url=f'http://127.0.0.1:{server.server_port}/v1',
+            dataset='open_decisions', stream=False, parallel=[2], number=[6],
+            warmup_num=1, sleep_interval=0, outputs_dir=str(tmp_path / 'perf'),
+        ))
+        metrics = next(iter(results.values()))['metrics'].to_dict()
+        assert metrics[Metrics.SUCCEED_REQUESTS] == 6
+        assert metrics[Metrics.FAILED_REQUESTS] == 0
     finally:
         server.shutdown()
         server.server_close()
