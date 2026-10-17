@@ -62,7 +62,7 @@ evalscope service
 
 在「预测浏览」中打开一道题，可以对照模型预测和标准答案，还能查看每个选项的概率。下面就是前面那道中文评论题的真实结果，模型选中了广告推广，界面同时标出了对应的标准答案。
 
-![Web UI 中公开评论题的预测、标准答案和四个选项的概率分布](../_static/images/decision_evaluation/prediction-probabilities.jpg)
+![真实 Web UI 截图与旁注：预测、标准答案和选项概率](../_static/images/decision_evaluation/prediction-probabilities.png)
 
 图中的 `spam_or_scam_ad` 对应广告推广，其余三项分别是正常评价、辱骂和闲聊。除了看有没有选对，这组概率也能帮助你观察模型是否在几个选项之间犹豫。需要检查错误时，可以筛出错题，对照题目和概率一起看。
 
@@ -102,7 +102,7 @@ evalscope eval \
 
 > 有人在评论里留了商家电话，我已经举报，这条评论不重复那些联系方式。
 
-![Web UI 中一条中文误判的预测、标准答案和 yes/no 概率](../_static/images/decision_evaluation/decision-error-probabilities.jpg)
+![真实 Web UI 截图与旁注：中文误判的 yes/no 概率](../_static/images/decision_evaluation/decision-error-probabilities.png)
 
 高概率也可能判断错。折叠门槛调高，通常能减少误伤，也可能漏掉更多推广，具体取舍要放回自己的数据里看。如果错误集中在某一类内容，可以补充这类样本、调整规则，或用 ms-swift [训练自己的决策模型](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html)，再用同一套题检查变化。更多概率指标见[决策模型评测说明](../user_guides/systemone.md)。
 
