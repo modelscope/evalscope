@@ -289,7 +289,12 @@ def _fingerprint_task_mapping(task_config: Dict[str, Any]) -> Dict[str, Any]:
         'sandbox',
         'agent_config',
     )
-    return {key: task_config.get(key) for key in keys}
+    result = {key: task_config.get(key) for key in keys}
+    generation_config = result.get('generation_config')
+    if isinstance(generation_config, dict):
+        # `batch_size` mirrors `eval_batch_size` (concurrency), which is deliberately not part of the identity.
+        result['generation_config'] = {k: v for k, v in generation_config.items() if k != 'batch_size'}
+    return result
 
 
 def _canonical_json(value: Any) -> str:

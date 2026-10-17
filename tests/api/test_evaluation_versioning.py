@@ -113,6 +113,20 @@ def test_identity_changes_only_for_evaluation_semantics() -> None:
     assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', agent_config).fingerprint
 
 
+def test_identity_ignores_eval_batch_size() -> None:
+    config = _task_config(eval_batch_size=1)
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # eval_batch_size is concurrency; TaskConfig mirrors it into generation_config.batch_size.
+    more_concurrent = _task_config(eval_batch_size=8)
+    assert more_concurrent.generation_config.batch_size == 8
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', more_concurrent).fingerprint
+
+    hotter = _task_config(eval_batch_size=1, generation_config={'temperature': 0.7})
+    assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', hotter).fingerprint
+
+
 def test_resolved_spec_and_fingerprint_use_effective_hub_source() -> None:
     meta = _meta(
         dataset_revision='ms-revision',
