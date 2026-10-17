@@ -15,7 +15,7 @@ from .utils import PROBABILITY_SUM_TOLERANCE
         dataset_id='evalscope/OpenDecisions',
         eval_split='test',
         train_split=None,
-        evaluation_version='v1.1',
+        evaluation_version='v1.0',
         subset_list=['default'],
         metric_list=['capability'],
         primary_metric=MetricSelector(name='capability', aggregation='official'),
