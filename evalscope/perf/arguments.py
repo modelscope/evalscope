@@ -272,6 +272,9 @@ class Arguments(BaseArgument):
     prefix_length: int = 0
     """Length of the prefix, only for random dataset."""
 
+    prefix_count: int = Field(default=1, strict=True, ge=1)
+    """Number of distinct raw token prefixes, assigned round-robin for the random dataset."""
+
     prompt: Optional[str] = None
     """The prompt text."""
 
@@ -518,6 +521,14 @@ class Arguments(BaseArgument):
 
     @model_validator(mode='after')
     def _post_init(self) -> 'Arguments':
+        if self.prefix_count > 1:
+            if self.prompt:
+                raise ValueError('--prefix-count > 1 conflicts with --prompt, which bypasses dataset generation.')
+            if self.dataset != 'random':
+                raise ValueError('--prefix-count > 1 is supported only with --dataset random.')
+            if self.prefix_length <= 0:
+                raise ValueError('--prefix-count > 1 requires --prefix-length > 0.')
+
         # Set the default headers
         self.headers = self.headers or {}
         api_key = get_secret_value(self.api_key)
@@ -871,6 +882,12 @@ def _add_prompt_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--max-prompt-length', type=int, default=131072, help='Maximum input prompt length')
     parser.add_argument('--min-prompt-length', type=int, default=0, help='Minimum input prompt length')
     parser.add_argument('--prefix-length', type=int, default=0, help='The prefix length')
+    parser.add_argument(
+        '--prefix-count',
+        type=int,
+        default=1,
+        help='Number of distinct shared raw token prefixes per random run, assigned round-robin. Default: 1',
+    )
     parser.add_argument('--prompt', type=str, required=False, default=None, help='Specified the request prompt')
     parser.add_argument('--query-template', type=str, default=None, help='Specify the query template')
     parser.add_argument(

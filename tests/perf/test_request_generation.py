@@ -25,6 +25,7 @@ def _make_random_plugin(args: Arguments) -> RandomDatasetPlugin:
     plugin.tokenizer = None
     plugin.allowed_tokens = np.arange(100)
     plugin.prefix_ids = []
+    plugin.prefix_pool = [plugin.prefix_ids]
     plugin.prefix_length = 0
     return plugin
 
