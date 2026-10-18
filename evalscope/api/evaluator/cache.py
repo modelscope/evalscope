@@ -92,8 +92,8 @@ class CacheManager:
             # No cache file exists, return empty cache and full dataset
             return [], dataset
 
-        cached_task_states = []
-        cached_sample_ids = set()
+        cached_by_sample_id = {}
+        duplicate_rows = 0
         cache_items = jsonl_to_list(cache_file, skip_invalid=True)
 
         # Process each cached item
@@ -113,10 +113,16 @@ class CacheManager:
 
             if cached_state is None:
                 continue
-            cached_task_states.append(cached_state)
-            cached_sample_ids.add(cached_state.sample_id)
+            if cached_state.sample_id in cached_by_sample_id:
+                duplicate_rows += 1
+            cached_by_sample_id[cached_state.sample_id] = cached_state
+
+        cached_task_states = list(cached_by_sample_id.values())
+        if duplicate_rows:
+            logger.warning(f'Dropped {duplicate_rows} duplicate rows from prediction cache: {cache_file}')
 
         # Remove cached samples from the dataset to avoid reprocessing
+        cached_sample_ids = set(cached_by_sample_id)
         filtered_dataset = dataset.filter(lambda sample: sample.id not in cached_sample_ids)
 
         logger.info(
