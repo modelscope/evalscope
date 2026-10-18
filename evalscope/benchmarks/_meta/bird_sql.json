@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "pretty_name": "BIRD-SQL Mini-Dev",
+    "dataset_id": "birdsql/bird_mini_dev",
+    "paper_url": "https://arxiv.org/abs/2305.03111",
+    "tags": [
+      "Coding",
+      "Reasoning"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "mini_dev_sqlite",
+    "train_split": "",
+    "subset_list": [
+      "simple",
+      "moderate",
+      "challenging"
+    ],
+    "description": "\n## Overview\n\nBIRD (BIg Bench for LaRge-scale Database Grounded Text-to-SQL) evaluates whether a model can turn a\nnatural-language question into an SQL query over real, large and \"dirty\" databases. This benchmark\nuses BIRD Mini-Dev, 500 high-quality SQLite instances selected from the BIRD dev set over 11\ndatabases.\n\n## Task Description\n\n- **Task Type**: Text-to-SQL\n- **Input**: The `CREATE TABLE` statements of the database, the question, and BIRD's external\n  knowledge (evidence) for the question\n- **Output**: An SQLite query in a ```sql code block\n- **Domain**: Databases across 11 domains (finance, sports, healthcare, education, ...)\n\n## Key Features\n\n- 500 questions in three difficulty levels: simple 148, moderate 250, challenging 102\n- Real databases with noisy values; the external knowledge explains business definitions\n- Scored by executing the predicted and reference queries, not by string match\n\n## Evaluation Notes\n\n- `accuracy` (primary) is BIRD execution accuracy (EX): the prediction is correct when the set of\n  rows it returns equals the set returned by the reference SQL, as in the official\n  `evaluation_ex.py` (row order and duplicates are ignored; column order matters)\n- Queries run read-only with one statement per query and a 30 s timeout (`timeout`); a query that\n  writes, attaches a database, or exceeds the timeout scores 0\n- The prompt follows the official baseline (schema + question + external knowledge + \"think step by\n  step\"), but asks for the final query in a ```sql block so reasoning models can think first;\n  `sample_rows` adds example rows per table as in the official `num_rows` option\n- The databases (`minidev.zip`, about 800 MB) are downloaded and cached on first use; set\n  `db_root` to an existing `dev_databases` directory to skip the download\n- Subsets are the difficulty levels; `limit` applies per subset\n- Sample metadata records `pred_error` (why the prediction failed to run) and `gold_empty` (the\n  reference returns no rows, so any query returning nothing also matches)\n- [Paper](https://arxiv.org/abs/2305.03111) | [Code](https://github.com/bird-bench/mini_dev) |\n  [Dataset](https://huggingface.co/datasets/birdsql/bird_mini_dev) | [Website](https://bird-bench.github.io/)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "db_root": {
+        "type": "str | null",
+        "description": "Directory with one <db_id>/<db_id>.sqlite per database (the `dev_databases` folder of minidev.zip); if null, minidev.zip is downloaded and cached.",
+        "value": null
+      },
+      "timeout": {
+        "type": "float",
+        "description": "Per-query execution timeout in seconds (official evaluator: 30).",
+        "value": 30.0
+      },
+      "sample_rows": {
+        "type": "int",
+        "description": "Number of example rows per table to add to the schema prompt (official default: 0).",
+        "value": 0
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# BIRD-SQL Mini-Dev\n\n\n## Overview\n\nBIRD (BIg Bench for LaRge-scale Database Grounded Text-to-SQL) evaluates whether a model can turn a\nnatural-language question into an SQL query over real, large and \"dirty\" databases. This benchmark\nuses BIRD Mini-Dev, 500 high-quality SQLite instances selected from the BIRD dev set over 11\ndatabases.\n\n## Task Description\n\n- **Task Type**: Text-to-SQL\n- **Input**: The `CREATE TABLE` statements of the database, the question, and BIRD's external\n  knowledge (evidence) for the question\n- **Output**: An SQLite query in a ```sql code block\n- **Domain**: Databases across 11 domains (finance, sports, healthcare, education, ...)\n\n## Key Features\n\n- 500 questions in three difficulty levels: simple 148, moderate 250, challenging 102\n- Real databases with noisy values; the external knowledge explains business definitions\n- Scored by executing the predicted and reference queries, not by string match\n\n## Evaluation Notes\n\n- `accuracy` (primary) is BIRD execution accuracy (EX): the prediction is correct when the set of\n  rows it returns equals the set returned by the reference SQL, as in the official\n  `evaluation_ex.py` (row order and duplicates are ignored; column order matters)\n- Queries run read-only with one statement per query and a 30 s timeout (`timeout`); a query that\n  writes, attaches a database, or exceeds the timeout scores 0\n- The prompt follows the official baseline (schema + question + external knowledge + \"think step by\n  step\"), but asks for the final query in a ```sql block so reasoning models can think first;\n  `sample_rows` adds example rows per table as in the official `num_rows` option\n- The databases (`minidev.zip`, about 800 MB) are downloaded and cached on first use; set\n  `db_root` to an existing `dev_databases` directory to skip the download\n- Subsets are the difficulty levels; `limit` applies per subset\n- Sample metadata records `pred_error` (why the prediction failed to run) and `gold_empty` (the\n  reference returns no rows, so any query returning nothing also matches)\n- [Paper](https://arxiv.org/abs/2305.03111) | [Code](https://github.com/bird-bench/mini_dev) |\n  [Dataset](https://huggingface.co/datasets/birdsql/bird_mini_dev) | [Website](https://bird-bench.github.io/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `bird_sql` |\n| **Dataset ID** | [birdsql/bird_mini_dev](https://modelscope.cn/datasets/birdsql/bird_mini_dev/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2305.03111) |\n| **Tags** | `Coding`, `Reasoning` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `mini_dev_sqlite` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `db_root` | `str | null` | `None` | Directory with one <db_id>/<db_id>.sqlite per database (the `dev_databases` folder of minidev.zip); if null, minidev.zip is downloaded and cached. |\n| `timeout` | `float` | `30.0` | Per-query execution timeout in seconds (official evaluator: 30). |\n| `sample_rows` | `int` | `0` | Number of example rows per table to add to the schema prompt (official default: 0). |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets bird_sql \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['bird_sql'],\n    dataset_args={\n        'bird_sql': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "68489f4a6661aa6739e9c788bb7cf2f5",
+    "needs_translation": true
+  },
+  "updated_at": "2026-10-18T21:53:25.437170"
+}

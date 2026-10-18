@@ -40,6 +40,7 @@
  "bigcodebench": "evalscope.benchmarks.bigcodebench.bigcodebench_adapter",
  "bigcodebench_hard": "evalscope.benchmarks.bigcodebench.bigcodebench_adapter",
  "biomix_qa": "evalscope.benchmarks.biomix_qa.biomix_qa_adapter",
+ "bird_sql": "evalscope.benchmarks.bird_sql.bird_sql_adapter",
  "blink": "evalscope.benchmarks.blink.blink_adapter",
  "boolq": "evalscope.benchmarks.boolq.boolq_adapter",
  "broad_twitter_corpus": "evalscope.benchmarks.ner.broad_twitter_corpus_adapter",
