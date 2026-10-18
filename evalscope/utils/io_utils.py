@@ -221,7 +221,10 @@ def jsonl_to_list(jsonl_file: str, skip_invalid: bool = False) -> List[Dict[str,
         logs a warning when the file contains no valid records.
     """
     res_list: List[Dict[str, Any]] = []
-    with open(jsonl_file, 'r', encoding='utf-8') as f:
+    # `utf-8-sig` reads plain UTF-8 unchanged but also drops the BOM that Windows
+    # tools (Excel, PowerShell 5.1 `Out-File -Encoding utf8`) prepend; without it
+    # the first row's JSON does not parse.
+    with open(jsonl_file, 'r', encoding='utf-8-sig') as f:
         for line_number, line in enumerate(f, start=1):
             stripped = line.strip()
             if not stripped:
@@ -381,7 +384,8 @@ def csv_to_list(csv_file: str) -> List[Dict[str, str]]:
     """
     try:
         res_list: List[Dict[str, str]] = []
-        with open(csv_file, 'r', encoding='utf-8') as f:
+        # Drop a UTF-8 BOM (Excel "CSV UTF-8") so the first header keeps its name.
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 res_list.append(dict(row))
@@ -404,7 +408,7 @@ def tsv_to_list(tsv_file: str) -> List[Dict[str, str]]:
     """
     try:
         res_list: List[Dict[str, str]] = []
-        with open(tsv_file, 'r', encoding='utf-8') as f:
+        with open(tsv_file, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f, delimiter='\t')
             for row in reader:
                 res_list.append(dict(row))
