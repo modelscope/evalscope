@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "pretty_name": "TableBench",
+    "dataset_id": "Multilingual-Multimodal-NLP/TableBench",
+    "paper_url": "https://arxiv.org/abs/2408.09174",
+    "tags": [
+      "Reasoning",
+      "QA"
+    ],
+    "metrics": [
+      "mix_metric"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "FactChecking",
+      "NumericalReasoning",
+      "DataAnalysis"
+    ],
+    "description": "\n## Overview\n\nTableBench evaluates table question answering in realistic scenarios: 886 questions over real tables in\n18 subcategories of four types (fact checking, numerical reasoning, data analysis and visualization).\nThis adapter covers the 836 text-answer questions of the first three types.\n\n## Task Description\n\n- **Task Type**: Table question answering\n- **Input**: The official instruction with the table in JSON format and the question\n- **Output**: Reasoning (depending on the instruction type), then `Final Answer: ...`\n- **Domain**: Tables from finance, sports, demographics, science and more\n\n## Key Features\n\n- Fact checking (96), numerical reasoning (397: aggregation, arithmetic, comparison, counting, ranking,\n  multi-hop, time-based, domain-specific) and data analysis (343: correlation, trend forecasting,\n  statistical, impact, anomaly, causal, descriptive analysis)\n- Uses the cleaned 2025-04-18 release of the test set and the refined official metrics\n- Three official prompting styles: `TCoT` (textual chain-of-thought, default), `SCoT` (symbolic CoT)\n  and `DP` (direct prompting)\n\n## Evaluation Notes\n\n- `mix_metric` (primary) is the official Mix_Metric: each question is scored with the metric the official\n  script assigns to its subtype, then the scores are averaged:\n  - EM for fact checking, numerical reasoning and impact analysis\n  - EM with 10% numeric tolerance for correlation analysis, trend forecasting and statistical analysis\n  - ROUGE-L for the other data-analysis subtypes\n- The answer is the text after the first `Final Answer: ` on that line, as in the official parser\n- As in the official code, prediction and reference are normalized (lowercase, punctuation and articles\n  removed) before scoring, so decimal points, signs and percent signs are not compared\n- Choose the prompting style with `extra_params={'instruction_type': 'DP'}`\n- Visualization (50 chart-generation questions) needs execution of model-written plotting code and is\n  not included yet\n- [Paper](https://arxiv.org/abs/2408.09174) | [Code](https://github.com/TableBench/TableBench) |\n  [Dataset](https://huggingface.co/datasets/Multilingual-Multimodal-NLP/TableBench) |\n  [Leaderboard](https://tablebench.github.io/)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {
+      "instruction_type": {
+        "type": "str",
+        "description": "Official prompting style: TCoT (textual chain-of-thought), SCoT (symbolic CoT) or DP (direct answer).",
+        "value": "TCoT",
+        "choices": [
+          "TCoT",
+          "SCoT",
+          "DP"
+        ]
+      }
+    },
+    "sandbox_config": {},
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# TableBench\n\n\n## Overview\n\nTableBench evaluates table question answering in realistic scenarios: 886 questions over real tables in\n18 subcategories of four types (fact checking, numerical reasoning, data analysis and visualization).\nThis adapter covers the 836 text-answer questions of the first three types.\n\n## Task Description\n\n- **Task Type**: Table question answering\n- **Input**: The official instruction with the table in JSON format and the question\n- **Output**: Reasoning (depending on the instruction type), then `Final Answer: ...`\n- **Domain**: Tables from finance, sports, demographics, science and more\n\n## Key Features\n\n- Fact checking (96), numerical reasoning (397: aggregation, arithmetic, comparison, counting, ranking,\n  multi-hop, time-based, domain-specific) and data analysis (343: correlation, trend forecasting,\n  statistical, impact, anomaly, causal, descriptive analysis)\n- Uses the cleaned 2025-04-18 release of the test set and the refined official metrics\n- Three official prompting styles: `TCoT` (textual chain-of-thought, default), `SCoT` (symbolic CoT)\n  and `DP` (direct prompting)\n\n## Evaluation Notes\n\n- `mix_metric` (primary) is the official Mix_Metric: each question is scored with the metric the official\n  script assigns to its subtype, then the scores are averaged:\n  - EM for fact checking, numerical reasoning and impact analysis\n  - EM with 10% numeric tolerance for correlation analysis, trend forecasting and statistical analysis\n  - ROUGE-L for the other data-analysis subtypes\n- The answer is the text after the first `Final Answer: ` on that line, as in the official parser\n- As in the official code, prediction and reference are normalized (lowercase, punctuation and articles\n  removed) before scoring, so decimal points, signs and percent signs are not compared\n- Choose the prompting style with `extra_params={'instruction_type': 'DP'}`\n- Visualization (50 chart-generation questions) needs execution of model-written plotting code and is\n  not included yet\n- [Paper](https://arxiv.org/abs/2408.09174) | [Code](https://github.com/TableBench/TableBench) |\n  [Dataset](https://huggingface.co/datasets/Multilingual-Multimodal-NLP/TableBench) |\n  [Leaderboard](https://tablebench.github.io/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tablebench` |\n| **Dataset ID** | [Multilingual-Multimodal-NLP/TableBench](https://modelscope.cn/datasets/Multilingual-Multimodal-NLP/TableBench/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2408.09174) |\n| **Tags** | `QA`, `Reasoning` |\n| **Metrics** | `mix_metric` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Extra Parameters\n\n| Parameter | Type | Default | Description |\n|-----------|------|---------|-------------|\n| `instruction_type` | `str` | `TCoT` | Official prompting style: TCoT (textual chain-of-thought), SCoT (symbolic CoT) or DP (direct answer). Choices: ['TCoT', 'SCoT', 'DP'] |\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tablebench \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tablebench'],\n    dataset_args={\n        'tablebench': {\n            # extra_params: {}  # uses default extra parameters\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "cff0795ad99d40e9c34a35dc367933dd",
+    "needs_translation": true
+  },
+  "updated_at": "2026-10-19T08:33:58.349662"
+}

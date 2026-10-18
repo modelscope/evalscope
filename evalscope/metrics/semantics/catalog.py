@@ -315,6 +315,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'compliance_score',
         'contains_all',
         'contains_any',
+        'mix_metric',
         'mrcr_score',
         'normalized_score',
         'overall_ch',
