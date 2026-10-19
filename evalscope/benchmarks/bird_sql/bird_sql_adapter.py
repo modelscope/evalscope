@@ -72,7 +72,7 @@ databases.
     BenchmarkMeta(
         name='bird_sql',
         pretty_name='BIRD-SQL Mini-Dev',
-        dataset_id='birdsql/bird_mini_dev',
+        dataset_id='evalscope/bird_mini_dev',
         hf_dataset_id='birdsql/bird_mini_dev',
         paper_url='https://arxiv.org/abs/2305.03111',
         tags=[Tags.CODING, Tags.REASONING],
@@ -133,7 +133,7 @@ class BirdSQLAdapter(DefaultDataAdapter):
         zip_path = cache_root / 'minidev.zip'
         try:
             logger.info(f'Downloading BIRD Mini-Dev databases from {DB_ARCHIVE_URL} (~800 MB)...')
-            with urllib.request.urlopen(DB_ARCHIVE_URL) as response, open(zip_path, 'wb') as f:
+            with urllib.request.urlopen(DB_ARCHIVE_URL, timeout=60) as response, open(zip_path, 'wb') as f:
                 shutil.copyfileobj(response, f)
             with zipfile.ZipFile(zip_path) as zf:
                 zf.extractall(cache_root)
