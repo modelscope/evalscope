@@ -315,7 +315,6 @@ _CANONICAL_NAMES_BY_BASELINE = {
         'compliance_score',
         'contains_all',
         'contains_any',
-        'mix_metric',
         'mrcr_score',
         'normalized_score',
         'overall_ch',
@@ -360,6 +359,8 @@ METRIC_DEFINITIONS.update(
         ),
         # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
         'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
+        # TableBench's primary metric is the official Mix_Metric (EM / EM±10% / ROUGE-L mix).
+        'mix_metric': MetricEntry(baseline='quality.score.ratio', metric_name='Mix Metric'),
         # SPaRC: share of answers that are not a valid line from start to end (paper Table 7).
         'invalid_path_rate': MetricEntry(baseline='quality.error_rate.ratio', metric_name='Invalid Path Rate'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
