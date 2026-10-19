@@ -124,6 +124,11 @@ def _publish_dataset_cache(dataset: 'HFDataset', cache_dir: str) -> None:
         _remove_dataset_cache(prepared)
 
 
+def repeat_samples(samples: list, repeats: int) -> list:
+    """Repeat each converted sample, so one record that yields several samples keeps each repeat group to one question."""
+    return [copy.deepcopy(sample) for sample in samples for _ in range(repeats)] if repeats > 1 else samples
+
+
 def _shuffle_in_place(data: list, seed: Optional[int]) -> None:
     """Shuffle a list in place with an optional seed.
 
@@ -326,13 +331,9 @@ class RemoteDataLoader(DataLoader):
         # convert to list
         dataset_list = list(dataset)
 
-        # repeat k times
-        if self.repeats > 1:
-            dataset_list = [copy.deepcopy(item) for item in dataset_list for _ in range(self.repeats)]
-
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(data=dataset_list, data_to_sample=data_to_sample),
+            samples=repeat_samples(data_to_samples(data=dataset_list, data_to_sample=data_to_sample), self.repeats),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
@@ -425,13 +426,9 @@ class LocalDataLoader(DataLoader):
             resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
             dataset = dataset[:resolved_limit]
 
-        # repeat k times
-        if self.repeats > 1:
-            dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
-
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(data=dataset, data_to_sample=data_to_sample),
+            samples=repeat_samples(data_to_samples(data=dataset, data_to_sample=data_to_sample), self.repeats),
             name=Path(path).stem if Path(path).exists() else path,
             location=path,
         )
@@ -469,13 +466,9 @@ class DictDataLoader(DataLoader):
             resolved_limit = resolve_dataset_limit(self.limit, len(dataset))
             dataset = dataset[:resolved_limit]
 
-        # repeat k times
-        if self.repeats > 1:
-            dataset = [copy.deepcopy(item) for item in dataset for _ in range(self.repeats)]
-
         # return the dataset
         memory_dataset = MemoryDataset(
-            samples=data_to_samples(data=dataset, data_to_sample=data_to_sample),
+            samples=repeat_samples(data_to_samples(data=dataset, data_to_sample=data_to_sample), self.repeats),
         )
 
         # Apply filtering if a filter function is provided
