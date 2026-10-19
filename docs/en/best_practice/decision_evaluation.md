@@ -1,12 +1,10 @@
 # Let AI Make the Call: Evaluating Decision Models with EvalScope
 
-Open the comments on any product and the first screen often isn't real users: "earn 500 a day from home", "DM me for the insider price", "like for cash back". Whether you are just browsing or building a product that shows comments to others, you want the same thing: quickly tell what's worth reading from what should be collapsed.
+A comment that the rules say should stay received an 82% probability of "collapse" from the model, the exact opposite of the right answer.
 
-Hand this to a general-purpose LLM and it will likely write three paragraphs of analysis before politely reaching a verdict. All you wanted was two things: an answer, and how sure it is of that answer.
+That came out of a class of models we have been testing lately. A general-purpose LLM tends to write three paragraphs of analysis before politely reaching a verdict; these models don't write essays, they take a position: a category, a score, or a plain "yes / no", with a probability for every option. They are called decision models, and [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) and [Clef-Flash](https://developers.cloudflare.com/changelog/post/2026-10-01-clef-workers-ai/) are two examples. Anything that needs explanation or discussion can still go to a chat model afterwards.
 
-This is where decision models fit. They don't write essays; they take a position: return a category, a score, or a plain "yes / no", with a probability for every option. [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) and [Clef-Flash](https://developers.cloudflare.com/changelog/post/2026-10-01-clef-workers-ai/) are such models. Anything that needs explanation or discussion can still go to a chat model afterwards.
-
-This guide uses [**EvalScope**](https://github.com/modelscope/evalscope) to pose the questions, collect the answers and grade them, checking three things along the way: whether the answers are right, whether the probabilities are usable, and whether responses are fast enough. We start with a public question set to walk through the flow; the extension sections then cover your own data and self-hosting.
+But that 82% is also a reminder that a confident probability can still be wrong, so a decision model should be checked before it goes to work. This guide uses [**EvalScope**](https://github.com/modelscope/evalscope) to pose the questions, collect the answers and grade them, checking three things along the way: whether the answers are right, whether the probabilities are usable, and whether responses are fast enough. We start with a public question set to walk through the flow; the extension sections then cover your own data and self-hosting.
 
 ## 1. Three kinds of questions a decision model answers
 
@@ -130,7 +128,7 @@ One record per line of JSON, with the material, the question and the expected an
 {"id": "fold-1", "state": "the comment text", "question": {"type": "noul", "instructions": "Should this comment be collapsed?"}, "expected": "no"}
 ```
 
-Once it finishes, open the Web UI as before and browse question by question in Predictions; among your own records, the wrong answers are the ones worth pausing on. Take this comment (originally in Chinese): the rules say it should stay, yet the model gave collapsing an 82% probability, the exact opposite of the reference answer.
+Once it finishes, open the Web UI as before and browse question by question in Predictions; among your own records, the wrong answers are the ones worth pausing on. The 82% misjudgment from the opening surfaced in exactly this kind of browsing: the rules say this comment (originally in Chinese) should stay, yet the model's pick was the exact opposite of the reference answer.
 
 > A commenter left the merchant's phone number here; I've reported it, and this comment does not repeat those contact details.
 
