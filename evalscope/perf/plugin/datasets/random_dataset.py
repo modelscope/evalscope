@@ -177,7 +177,6 @@ class RandomDatasetPlugin(DatasetPluginBase):
 
         # Preserve the legacy first-prefix draw, including its RNG consumption.
         self.prefix_pool = self._create_prefix_pool()
-        self.prefix_ids = self.prefix_pool[0]
 
         logger.info(
             f'Using {len(self.allowed_tokens)} allowed tokens out of {full_vocab_size} total tokens '
