@@ -83,9 +83,7 @@ class DocVQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        import re
+        from evalscope.utils.multi_choices import extract_answer_line
 
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip()
-        return prediction.strip()
+        answer = extract_answer_line(prediction)
+        return answer if answer is not None else prediction.strip()

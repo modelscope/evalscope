@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -9,6 +8,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 logger = get_logger()
 
@@ -83,7 +83,5 @@ class RealWorldQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip().lower()
-        return ''
+        answer = extract_answer_line(prediction)
+        return answer.lower() if answer is not None else ''

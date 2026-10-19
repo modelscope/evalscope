@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -10,6 +9,7 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.io_utils import bytes_to_base64
 from evalscope.utils.logger import get_logger
+from evalscope.utils.multi_choices import extract_answer_line
 
 # flake8: noqa
 
@@ -88,10 +88,8 @@ class ChartQAAdapter(VisionLanguageAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        if matches:
-            return matches[-1].strip()
-        return ''
+        answer = extract_answer_line(prediction)
+        return answer if answer is not None else ''
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         from .utils import relaxed_correctness
