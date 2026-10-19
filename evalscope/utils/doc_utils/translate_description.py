@@ -93,16 +93,21 @@ Translate the following English benchmark documentation to Chinese.
 
 Guidelines:
 1. Keep all markdown formatting unchanged (headers, tables, code blocks, links)
-2. Keep technical terms, benchmark names, and code identifiers in English
+2. Keep technical terms, benchmark names, and code identifiers (in `backticks`) in English, but translate every sentence around them; never leave a whole heading, bullet, or section untranslated
 3. Translate naturally and fluently, not word-by-word
 4. Keep the same structure and sections
 5. For code blocks, only translate comments if any
 6. Keep URLs unchanged
 7. Return ONLY the translated markdown content, no explanations
 8. Do not translate the first level header
+9. Keep placeholder tokens such as [CODE_BLOCK_0] exactly unchanged; each must appear verbatim in the output
 
 Example translations:
 - "Overview" -> "概述"
+- "Task Description" -> "任务描述"
+- "Key Features" -> "主要特点"
+- "Evaluation Notes" -> "评估说明"
+- "Properties" -> "属性"
 - "Data Statistics" -> "数据统计"
 - "Subsets" -> "子集"
 - "Sample Example" -> "样例示例"
