@@ -455,10 +455,10 @@ trie trace 重放依赖 `ignore_eos` 让模型严格生成到录制长度。vLLM
 |---|---|---|
 | **Latency (s)** | 对话第一 turn 开始 → 最后一 turn 完成的墙钟 | 单对话跑得慢 → 看 TTFAT 拆分（是 prefill 慢还是 decode 慢） |
 | **First-Turn TTFT (s)** | 第一 turn 的 TTFT；反映冷 prefill 性能 | 高 → 服务端 prefill 阶段慢 |
-| **TTFAT (s)** | 对话起点 → 末 turn 首 token 的墙钟，端到端「等多久能看到最终回复」 | 对话中间任何 turn 慢都会拉高 TTFAT |
+| **TTFAT (s)** | 对话起点 → 末 turn 首 token 的墙钟，端到端“等多久能看到最终回复” | 对话中间任何 turn 慢都会拉高 TTFAT |
 | **Decode TPS** | 对话内每 turn `(completion-1)/(latency-ttft)` 的算术平均 | 反映 decode 阶段稳态速度 |
 | **Cache Hit Rate (%)** | `sum(cached_tokens) / sum(prompt_tokens)`，含 turn 1（贡献 0 但计入分母） | 低 → 服务端 prefix cache 没开启或 evict 太激进 |
-| **Eligible Cache Hit Rate (%)** | 分母只算「理论上应能 cache 的 prefix」，剔除首 turn 与当前 turn 新增内容 | 与 Cache Hit Rate 接近且都低 → 服务端没开 cache；前者高、后者低 → cache 开了但容量不够 |
+| **Eligible Cache Hit Rate (%)** | 分母只算“理论上应能 cache 的 prefix”，剔除首 turn 与当前 turn 新增内容 | 与 Cache Hit Rate 接近且都低 → 服务端没开 cache；前者高、后者低 → cache 开了但容量不够 |
 
 同时输出 `trace_summary.json` 到结果目录。
 
@@ -494,7 +494,7 @@ trie trace 重放依赖 `ignore_eos` 让模型严格生成到录制长度。vLLM
 | Cached Prompt | 服务端从 prefix cache 命中跳过 prefill 的部分 |
 | Completion | 输出 token 速率 |
 
-Steady-state 是评估「这个 endpoint 稳定状态下能跑多快」的最公平数字；Last 30s 适合看尾部抖动。同时输出 `workload_throughput.json` 和 `workload_timeline.json`（raw cumulative-token 时间序列，pandas 友好）到结果目录。
+Steady-state 是评估“这个 endpoint 稳定状态下能跑多快”的最公平数字；Last 30s 适合看尾部抖动。同时输出 `workload_throughput.json` 和 `workload_timeline.json`（raw cumulative-token 时间序列，pandas 友好）到结果目录。
 
 ### 首轮与后续轮 TTFT
 

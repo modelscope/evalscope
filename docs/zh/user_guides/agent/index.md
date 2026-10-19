@@ -16,7 +16,7 @@ EvalScope 提供 **Agent 评测**，允许模型或成品 Agent CLI 在受控的
 启用 Agent 评测后，每条样本都会附带一条 Trace。通过 Web 界面可以按步骤回放完整交互过程:
 
 1. 启动 Web 服务:`evalscope service --outputs ./outputs`
-2. 在仪表盘里选目标报告，进入「单模型评测详情 → 预测」标签
+2. 在仪表盘里选目标报告，进入“单模型评测详情 → 预测”标签
 3. 检测到 Trace 后，会按 `step` 自动渲染 Agent Trace 视图
 
 视图按时间顺序呈现:
