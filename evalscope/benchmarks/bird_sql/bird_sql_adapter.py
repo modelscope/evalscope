@@ -4,8 +4,6 @@
 # Dataset: https://huggingface.co/datasets/birdsql/bird_mini_dev (CC BY-SA 4.0)
 # Databases: https://github.com/bird-bench/mini_dev (minidev.zip)
 
-import shutil
-import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -16,6 +14,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
+from evalscope.utils.download_utils import download_url
 from evalscope.utils.logger import get_logger
 
 from .utils import build_prompt, db_file, execute_sql, extract_sql, schema_prompt
@@ -24,6 +23,7 @@ logger = get_logger()
 
 SUBSET_LIST = ['simple', 'moderate', 'challenging']
 DB_ARCHIVE_URL = 'https://bird-bench.oss-cn-beijing.aliyuncs.com/minidev.zip'
+DB_ARCHIVE_SHA256 = 'cc48ba16838204e4e214512030cb572eeb5f7bcdd999bae4b9b6ff12ec13b92f'  # official minidev.zip
 DEFAULT_CACHE_SUBDIR = 'bird_sql'
 
 DESCRIPTION = """
@@ -129,14 +129,13 @@ class BirdSQLAdapter(DefaultDataAdapter):
         if found:
             logger.info(f'BIRD databases found: {found}')
             return found
-        cache_root.mkdir(parents=True, exist_ok=True)
         zip_path = cache_root / 'minidev.zip'
         try:
-            logger.info(f'Downloading BIRD Mini-Dev databases from {DB_ARCHIVE_URL} (~800 MB)...')
-            with urllib.request.urlopen(DB_ARCHIVE_URL, timeout=60) as response, open(zip_path, 'wb') as f:
-                shutil.copyfileobj(response, f)
+            # Atomic download with retries, progress bar and checksum verification.
+            download_url(DB_ARCHIVE_URL, str(zip_path), sha256=DB_ARCHIVE_SHA256)
             with zipfile.ZipFile(zip_path) as zf:
-                zf.extractall(cache_root)
+                # Only the SQLite dev_databases are needed; skip the MySQL/PostgreSQL variants (~2 GB).
+                zf.extractall(cache_root, members=[m for m in zf.namelist() if '/MINIDEV/dev_databases/' in m])
         except Exception as e:
             raise ValueError(
                 f'Failed to download or extract BIRD databases: {e}. '
