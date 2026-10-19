@@ -106,6 +106,7 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
         subset_list=['grid_mode'],
         few_shot_num=0,
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template=PROMPT_TEMPLATE,
         metric_list=[
             'puzzle_acc',
