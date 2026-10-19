@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pydantic import BaseModel, Field
 
+from evalscope.api.model.generate_config import GenerateConfig
+
 if TYPE_CHECKING:
     from evalscope.api.benchmark import BenchmarkMeta
     from evalscope.config import TaskConfig
@@ -268,6 +270,43 @@ def _identity_from_config(config: Optional[Dict[str, Any]]) -> Optional[Evaluati
         return None
 
 
+_GENERATION_TRANSPORT_KEYS = frozenset({'batch_size', 'timeout', 'stream', 'retries', 'retry_interval'})
+"""Generation-config keys that steer transport/concurrency only and never alter model outputs.
+
+``batch_size`` mirrors ``TaskConfig.eval_batch_size`` (see
+``TaskConfig._init_default_generation_config``); the rest are request-level knobs.
+"""
+
+
+def _canonicalize_generation_config(config: Any) -> Any:
+    """Reduce a fingerprinted ``generation_config`` to the values that carry semantic information.
+
+    Configs that produce identical model requests must hash identically, so this drops
+    transport/concurrency keys, values restating the declared field default, explicit
+    ``None`` and empty mappings/lists (same as unset), and the ``n=1`` residue left by the
+    deprecated ``n`` -> ``repeats`` migration (``repeats`` holds the multiplicity). Nested
+    payloads such as ``extra_body`` are provider-specific and are kept verbatim.
+    """
+    if config is None:
+        return {}
+    if not isinstance(config, dict):
+        return config
+    fields = GenerateConfig.model_fields
+    result = {}
+    for key, value in config.items():
+        if key in _GENERATION_TRANSPORT_KEYS:
+            continue
+        if value is None or value == {} or value == []:
+            continue
+        field = fields.get(key)
+        if field is not None and not field.is_required() and value == field.default:
+            continue
+        if key == 'n' and value == 1:
+            continue
+        result[key] = value
+    return result
+
+
 def _fingerprint_task_config(task_config: 'TaskConfig') -> Dict[str, Any]:
     return _fingerprint_task_mapping(task_config.to_dict())
 
@@ -290,10 +329,7 @@ def _fingerprint_task_mapping(task_config: Dict[str, Any]) -> Dict[str, Any]:
         'agent_config',
     )
     result = {key: task_config.get(key) for key in keys}
-    generation_config = result.get('generation_config')
-    if isinstance(generation_config, dict):
-        # `batch_size` mirrors `eval_batch_size` (concurrency), which is deliberately not part of the identity.
-        result['generation_config'] = {k: v for k, v in generation_config.items() if k != 'batch_size'}
+    result['generation_config'] = _canonicalize_generation_config(result.get('generation_config'))
     return result
 
 

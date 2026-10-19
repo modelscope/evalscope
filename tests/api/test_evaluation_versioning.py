@@ -127,6 +127,65 @@ def test_identity_ignores_eval_batch_size() -> None:
     assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', hotter).fingerprint
 
 
+def test_identity_ignores_transport_only_generation_settings() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # Timeout/stream/retries steer the request, not the model outputs; the deprecated
+    # top-level `timeout` is mirrored into generation_config just like eval_batch_size.
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(timeout=30)).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'timeout': 30})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'stream': True})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'retries': 3})).fingerprint
+
+
+def test_identity_ignores_information_free_generation_values() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    # Restating a declared default, an explicit None, or an empty mapping/list adds no information.
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'retries': 5})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(
+        spec, 'v1.0', _task_config(generation_config={'anthropic_cache_strategy': 'evaluation'})
+    ).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'temperature': None})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'extra_body': {}})).fingerprint
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'stop_seqs': []})).fingerprint
+
+
+def test_identity_equates_deprecated_n_with_repeats() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    via_n = _task_config(generation_config={'n': 4})
+    assert via_n.repeats == 4  # deprecated n migrates to repeats, leaving an n=1 residue behind
+    via_repeats = _task_config(repeats=4)
+    assert (
+        build_benchmark_identity(spec, 'v1.0', via_n).fingerprint
+        == build_benchmark_identity(spec, 'v1.0', via_repeats).fingerprint
+    )
+    assert first.fingerprint == build_benchmark_identity(spec, 'v1.0', _task_config(generation_config={'n': 1})).fingerprint
+
+
+def test_identity_still_tracks_output_shaping_generation_settings() -> None:
+    config = _task_config()
+    spec = ResolvedBenchmarkSpec.from_meta(_meta(), config)
+    first = build_benchmark_identity(spec, 'v1.0', config)
+
+    output_shaping = [
+        {'temperature': 0.7},
+        {'max_tokens': 16},
+        {'seed': 7},
+        {'anthropic_cache_strategy': 'recent_messages'},
+        {'extra_body': {'top_k': 5}},
+    ]
+    for override in output_shaping:
+        assert first.fingerprint != build_benchmark_identity(spec, 'v1.0', _task_config(generation_config=override)).fingerprint
+
+
 def test_resolved_spec_and_fingerprint_use_effective_hub_source() -> None:
     meta = _meta(
         dataset_revision='ms-revision',
