@@ -4,6 +4,7 @@
 # Dataset: https://huggingface.co/datasets/xlangai/DS-1000 (CC BY-SA 4.0)
 # Official evaluation: https://github.com/xlang-ai/DS-1000
 
+from pathlib import Path
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -13,6 +14,7 @@ from evalscope.api.messages.chat_message import ChatMessageUser
 from evalscope.api.metric import Score
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 
 from .utils import build_test_program, extract_code, run_locally
@@ -54,11 +56,15 @@ the answer is checked by running it against the problem's test cases.
 - Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag
   or from a fenced block, up to `</code>` / `END SOLUTION`
 - **Environment matters**: tests compare against outputs of specific library versions. The official
-  environment is Python 3.10 with pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0,
-  matplotlib 3.8.4, torch 2.2.0 and tensorflow-cpu 2.16.1 (see `environment.yml` in the dataset)
+  environment (`environment.yml` in the code repository) is Python 3.10 with numpy 1.26.4,
+  pandas 1.5.3, scipy 1.12.0, scikit-learn 1.4.0, matplotlib 3.8.4, seaborn 0.13.2,
+  statsmodels 0.14.1, xgboost 2.0.3, gensim 4.3.2, torch 2.2.0 and tensorflow-cpu 2.16.1.
+  54 of the 155 Matplotlib problems import `seaborn`, so an environment missing it silently fails them
 - By default each test program runs in a separate local Python process (timeout `review_timeout`,
-  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox with an
-  image that has the official environment to isolate execution
+  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox to
+  isolate execution. With `sandbox.enabled` a bundled image with the official environment is built
+  once and reused (see `docker/Dockerfile` in this directory); `tensorflow-cpu` has no
+  linux/aarch64 wheel, so the Tensorflow subset can only run on linux/amd64 hosts
 - Subsets are the libraries; `limit` applies per library
 - [Paper](https://arxiv.org/abs/2211.11501) | [Code](https://github.com/xlang-ai/DS-1000) |
   [Dataset](https://huggingface.co/datasets/xlangai/DS-1000)
@@ -92,6 +98,16 @@ class DS1000Adapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
         super().__init__(**kwargs)
         # One split holds every problem; split it into one subset per library.
         self.reformat_subset = True
+        self.docker_path = Path(__file__).parent / 'docker'
+
+    def get_sandbox_image_spec(self) -> DockerImageSpec:
+        """Bundled image with the official DS-1000 environment, built once and reused by content hash."""
+        return DockerImageSpec(
+            name_prefix='evalscope-ds1000',
+            context_dir=self.docker_path.as_posix(),
+            dockerfile=(self.docker_path / 'Dockerfile').as_posix(),
+            cache_key_parts=['sandbox', 'ds1000-official-env'],
+        )
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         meta = record['metadata']

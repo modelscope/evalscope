@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
@@ -163,3 +164,25 @@ def test_scoring_and_aggregation() -> None:
     assert [s.score.value['accuracy'] for s in scores] == [True, False, False, True]
     aggregates = {agg.metric_name: agg for agg in adapter.aggregate_scores(scores)}
     assert aggregates['accuracy'].score == pytest.approx(0.5)
+
+
+def test_bundled_dockerfile_covers_the_official_environment() -> None:
+    # Every third-party import in the dataset's code_context fields must be installable from the image.
+    spec = _adapter().get_sandbox_image_spec()
+    dockerfile = Path(spec.dockerfile)
+    assert dockerfile.is_file()
+    content = dockerfile.read_text(encoding='utf-8')
+    for package in (
+        'numpy',
+        'pandas',
+        'scipy',
+        'scikit-learn',
+        'matplotlib',
+        'seaborn',
+        'statsmodels',
+        'xgboost',
+        'gensim',
+        'torch',
+        'tensorflow-cpu',
+    ):
+        assert package in content
