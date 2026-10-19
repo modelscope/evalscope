@@ -13,9 +13,10 @@ interface Props {
   reportUrl: string | null
   readyLabel: string
   onStop?: () => void
+  warning?: string | null
 }
 
-export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel, onStop }: Props) {
+export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel, onStop, warning }: Props) {
   const { t } = useLocale()
 
   return (
@@ -60,6 +61,9 @@ export default function TaskMonitor({ running, progress, logText, result, report
           />
         </div>
       )}
+
+      {/* Warning */}
+      {warning && <p className="text-sm text-[var(--yellow)]">{warning}</p>}
 
       {/* Stop button */}
       {running && onStop && (
