@@ -39,8 +39,8 @@ databases.
 - **Task Type**: Text-to-SQL
 - **Input**: The `CREATE TABLE` statements of the database, the question, and BIRD's external
   knowledge (evidence) for the question
-- **Output**: An SQLite query in a ```sql code block
-- **Domain**: Databases across 11 domains (finance, sports, healthcare, education, ...)
+- **Output**: A single SQLite query wrapped in a Markdown code fence
+- **Domain**: 11 real databases spanning finance, sports, healthcare, education, and more
 
 ## Key Features
 
@@ -56,13 +56,13 @@ databases.
 - Queries run read-only with one statement per query and a 30 s timeout (`timeout`); a query that
   writes, attaches a database, or exceeds the timeout scores 0
 - The prompt follows the official baseline (schema + question + external knowledge + "think step by
-  step"), but asks for the final query in a ```sql block so reasoning models can think first;
+  step"), but asks for the final query in a fenced code block so reasoning models can think first;
   `sample_rows` adds example rows per table as in the official `num_rows` option
 - The databases (`minidev.zip`, about 800 MB) are downloaded and cached on first use; set
   `db_root` to an existing `dev_databases` directory to skip the download
 - Subsets are the difficulty levels; `limit` applies per subset
-- Sample metadata records `pred_error` (why the prediction failed to run) and `gold_empty` (the
-  reference returns no rows, so any query returning nothing also matches)
+- Sample metadata records `pred_error` / `gold_error` (why a query failed to run) and
+  `gold_empty` (the reference returns no rows, so any query returning nothing also matches)
 - [Paper](https://arxiv.org/abs/2305.03111) | [Code](https://github.com/bird-bench/mini_dev) |
   [Dataset](https://huggingface.co/datasets/birdsql/bird_mini_dev) | [Website](https://bird-bench.github.io/)
 """

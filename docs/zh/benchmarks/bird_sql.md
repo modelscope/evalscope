@@ -3,72 +3,64 @@
 
 ## 概述
 
-BIRD（面向大规模数据库的大型基准测试）评估模型能否将自然语言问题转换为针对真实、大规模且“脏”的数据库的SQL查询。此基准测试使用了从11个数据库中选出的500个高质量SQLite实例，即BIRD Mini-Dev。
+BIRD（面向大规模数据库的文本到SQL基准测试）评估模型是否能够将自然语言问题转换为针对真实、大型且“脏”数据库的SQL查询。此基准测试使用了从11个数据库中选择的500个高质量SQLite实例，即BIRD Mini-Dev。
 
 ## 任务描述
 
 - **任务类型**: 文本到SQL
 - **输入**: 数据库的`CREATE TABLE`语句、问题以及BIRD提供的外部知识（证据）
-- **输出**: 一个SQLite查询 ```sql code block
-- **Domain**: Databases across 11 domains (finance, sports, healthcare, education, ...)
+- **输出**: 用Markdown代码块包裹的单个SQLite查询
+- **领域**: 11个真实的数据库，涵盖金融、体育、医疗保健、教育等领域
 
-## Key Features
+## 主要特点
 
-- 500 questions in three difficulty levels: simple 148, moderate 250, challenging 102
-- Real databases with noisy values; the external knowledge explains business definitions
-- Scored by executing the predicted and reference queries, not by string match
+- 500个问题分为三个难度级别：简单148个，中等250个，困难102个
+- 真实数据库包含噪声值；外部知识解释业务定义
+- 通过执行预测和参考查询进行评分，而不是通过字符串匹配
 
-## Evaluation Notes
+## 评估说明
 
-- `accuracy` (primary) is BIRD execution accuracy (EX): the prediction is correct when the set of
-  rows it returns equals the set returned by the reference SQL, as in the official
-  `evaluation_ex.py` (row order and duplicates are ignored; column order matters)
-- Queries run read-only with one statement per query and a 30 s timeout (`timeout`); a query that
-  writes, attaches a database, or exceeds the timeout scores 0
-- The prompt follows the official baseline (schema + question + external knowledge + "think step by
-  step"), but asks for the final query in a ```sql block so reasoning models can think first;
-  `sample_rows` adds example rows per table as in the official `num_rows` option
-- The databases (`minidev.zip`, about 800 MB) are downloaded and cached on first use; set
-  `db_root` to an existing `dev_databases` directory to skip the download
-- Subsets are the difficulty levels; `limit` applies per subset
-- Sample metadata records `pred_error` (why the prediction failed to run) and `gold_empty` (the
-  reference returns no rows, so any query returning nothing also matches)
-- [Paper](https://arxiv.org/abs/2305.03111) | [Code](https://github.com/bird-bench/mini_dev) |
-  [Dataset](https://huggingface.co/datasets/birdsql/bird_mini_dev) | [Website](https://bird-bench.github.io/)
+- `accuracy`（主要指标）是BIRD执行准确率（EX）：当预测返回的行集与参考SQL返回的行集相同时，预测被认为是正确的，如官方`evaluation_ex.py`所示（忽略行顺序和重复项；列顺序重要）
+- 查询以只读方式运行，每个查询一个语句，并有30秒的超时时间（`timeout`）；写入数据库、附加数据库或超过超时时间的查询得分为0
+- 提示遵循官方基线（模式 + 问题 + 外部知识 + “逐步思考”），但要求最终查询在代码块中，以便推理模型可以先思考；`sample_rows`添加每个表的示例行，类似于官方的`num_rows`选项
+- 数据库（`minidev.zip`，约800 MB）在首次使用时下载并缓存；设置`db_root`为现有的`dev_databases`目录以跳过下载
+- 子集是难度级别；`limit`适用于每个子集
+- 样本元数据记录`pred_error` / `gold_error`（查询失败的原因）和`gold_empty`（参考返回无行，因此任何返回无行的查询也匹配）
+- [论文](https://arxiv.org/abs/2305.03111) | [代码](https://github.com/bird-bench/mini_dev) | [数据集](https://huggingface.co/datasets/birdsql/bird_mini_dev) | [网站](https://bird-bench.github.io/)
 
 
-## Properties
+## 属性
 
-| Property | Value |
+| 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `bird_sql` |
-| **Dataset ID** | [evalscope/bird_mini_dev](https://modelscope.cn/datasets/evalscope/bird_mini_dev/summary) |
-| **Paper** | [Paper](https://arxiv.org/abs/2305.03111) |
-| **Tags** | `Coding`, `Reasoning` |
-| **Metrics** | `accuracy` |
-| **Default Shots** | 0-shot |
-| **Evaluation Split** | `mini_dev_sqlite` |
+| **基准测试名称** | `bird_sql` |
+| **数据集ID** | [evalscope/bird_mini_dev](https://modelscope.cn/datasets/evalscope/bird_mini_dev/summary) |
+| **论文** | [论文](https://arxiv.org/abs/2305.03111) |
+| **标签** | `Coding`, `Reasoning` |
+| **指标** | `accuracy` |
+| **默认示例数** | 0-shot |
+| **评估分割** | `mini_dev_sqlite` |
 
 
-## Data Statistics
+## 数据统计
 
-| Metric | Value |
+| 指标 | 值 |
 |--------|-------|
-| Total Samples | 500 |
-| Prompt Length (Mean) | 4223.89 chars |
-| Prompt Length (Min/Max) | 1343 / 8012 chars |
+| 总样本数 | 500 |
+| 提示词长度（平均） | 4223.89 字符 |
+| 提示词长度（最小/最大） | 1343 / 8012 字符 |
 
-**Per-Subset Statistics:**
+**按子集统计:**
 
-| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `simple` | 148 | 4293.42 | 1343 | 7793 |
 | `moderate` | 250 | 4256.66 | 1380 | 7891 |
 | `challenging` | 102 | 4042.72 | 1354 | 8012 |
 
-## Sample Example
+## 样例示例
 
-**Subset**: `simple`
+**子集**: `simple`
 
 ```json
 {
@@ -92,7 +84,7 @@ BIRD（面向大规模数据库的大型基准测试）评估模型能否将自�
 }
 ```
 
-*注意：部分内容因显示原因被截断。*
+*注：部分内容为了显示而被截断。*
 
 ## 提示模板
 
@@ -107,7 +99,7 @@ BIRD（面向大规模数据库的大型基准测试）评估模型能否将自�
 |-----------|------|---------|-------------|
 | `db_root` | `str | null` | `None` | 包含每个数据库的一个<db_id>/<db_id>.sqlite的目录（minidev.zip中的`dev_databases`文件夹）；如果为null，则下载并缓存minidev.zip。 |
 | `timeout` | `float` | `30.0` | 每个查询的执行超时时间（秒）（官方评估器：30）。 |
-| `sample_rows` | `int` | `0` | 要添加到模式提示中的每个表的示例行数（官方默认值：0）。 |
+| `sample_rows` | `int` | `0` | 添加到模式提示中的每个表的示例行数（官方默认值：0）。 |
 
 ## 使用方法
 
