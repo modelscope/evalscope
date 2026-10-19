@@ -1145,6 +1145,10 @@ class TestNativeBenchmark(TestBenchmark):
             dataset_hub='huggingface'
         )
 
+    def test_tablebench_mock(self):
+        """Test TableBench table QA benchmark with mock."""
+        self._run_dataset_test('tablebench', limit=5, use_mock=True)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

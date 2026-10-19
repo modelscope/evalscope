@@ -149,6 +149,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `swe_bench_lite` | [SWE-bench_Lite](../../benchmarks/swe_bench_lite.md) | `Coding` |
 | `swe_bench_verified` | [SWE-bench_Verified](../../benchmarks/swe_bench_verified.md) | `Coding` |
 | `swe_bench_verified_mini` | [SWE-bench_Verified_mini](../../benchmarks/swe_bench_verified_mini.md) | `Coding` |
+| `tablebench` | [TableBench](../../benchmarks/tablebench.md) | `QA`, `Reasoning` |
 | `tool_bench` | [ToolBench-Static](../../benchmarks/tool_bench.md) | `FunctionCalling`, `Reasoning` |
 | `trivia_qa` | [TriviaQA](../../benchmarks/trivia_qa.md) | `QA`, `ReadingComprehension` |
 | `triviaqa_indic` | [TriviaQA-Indic-MCQ](../../benchmarks/triviaqa_indic.md) | `Knowledge`, `MCQ`, `MultiLingual` |
@@ -309,6 +310,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/swe_bench_lite.md
 ../../benchmarks/swe_bench_verified.md
 ../../benchmarks/swe_bench_verified_mini.md
+../../benchmarks/tablebench.md
 ../../benchmarks/tool_bench.md
 ../../benchmarks/trivia_qa.md
 ../../benchmarks/triviaqa_indic.md
