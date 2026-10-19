@@ -35,13 +35,114 @@
     },
     "category": "llm"
   },
-  "statistics": {},
-  "sample_example": {},
-  "readme": {
-    "en": "# DS-1000\n\n\n## Overview\n\nDS-1000 is a code generation benchmark of 1,000 data science problems collected from StackOverflow,\ncovering seven Python libraries. Each problem gives the context code and asks for the missing part;\nthe answer is checked by running it against the problem's test cases.\n\n## Task Description\n\n- **Task Type**: Code completion for data science\n- **Input**: A StackOverflow-style question with context code, ending with `BEGIN SOLUTION <code>`\n- **Output**: The code that fills the gap (in `<code>` tags or a fenced block)\n- **Libraries**: Pandas (291), NumPy (220), Matplotlib (155), Scikit-learn (115), SciPy (106),\n  PyTorch (68), TensorFlow (45)\n\n## Key Features\n\n- Problems are perturbed to reduce memorization: 452 origin, 152 surface, 234 semantic and 162\n  difficult-rewrite problems (recorded as `perturbation_type`)\n- Execution-based scoring with the official test harness carried in each problem (`code_context`),\n  including surface-form checks (`test_string`) that, e.g., forbid loops where vectorization is asked\n\n## Evaluation Notes\n\n- `accuracy` (primary): the problem passes when the official test program\n  (`code_context` + `test_execution(code)` [+ `test_string(code)`]) runs without error\n- Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag\n  or from a fenced block, up to `</code>` / `END SOLUTION`\n- **Environment matters**: tests compare against outputs of specific library versions. The official\n  environment is Python 3.10 with pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0,\n  matplotlib 3.8.4, torch 2.2.0 and tensorflow-cpu 2.16.1 (see `environment.yml` in the dataset)\n- By default each test program runs in a separate local Python process (timeout `review_timeout`,\n  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox with an\n  image that has the official environment to isolate execution\n- Subsets are the libraries; `limit` applies per library\n- [Paper](https://arxiv.org/abs/2211.11501) | [Code](https://github.com/xlang-ai/DS-1000) |\n  [Dataset](https://huggingface.co/datasets/xlangai/DS-1000)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ds1000` |\n| **Dataset ID** | [xlangai/DS-1000](https://modelscope.cn/datasets/xlangai/DS-1000/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2211.11501) |\n| **Tags** | `Coding` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nWrite a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\n```\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.10-slim\",\n  \"tools_config\": {\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ds1000 \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ds1000'],\n    sandbox={'enabled': True},\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
-    "zh": "",
-    "content_hash": "a6621b194e15f55dba76e582a22ba31c",
-    "needs_translation": true
+  "statistics": {
+    "total_samples": 1000,
+    "subset_stats": [
+      {
+        "name": "Pandas",
+        "sample_count": 291,
+        "prompt_length_mean": 1357.42,
+        "prompt_length_min": 527,
+        "prompt_length_max": 4895,
+        "prompt_length_std": 518.41,
+        "target_length_mean": 195.1
+      },
+      {
+        "name": "Numpy",
+        "sample_count": 220,
+        "prompt_length_mean": 897.66,
+        "prompt_length_min": 346,
+        "prompt_length_max": 2620,
+        "prompt_length_std": 376.3,
+        "target_length_mean": 92.14
+      },
+      {
+        "name": "Matplotlib",
+        "sample_count": 155,
+        "prompt_length_mean": 414.52,
+        "prompt_length_min": 267,
+        "prompt_length_max": 919,
+        "prompt_length_std": 79.0,
+        "target_length_mean": 82.93
+      },
+      {
+        "name": "Sklearn",
+        "sample_count": 115,
+        "prompt_length_mean": 1164.31,
+        "prompt_length_min": 526,
+        "prompt_length_max": 2831,
+        "prompt_length_std": 473.79,
+        "target_length_mean": 172.24
+      },
+      {
+        "name": "Scipy",
+        "sample_count": 106,
+        "prompt_length_mean": 1315.17,
+        "prompt_length_min": 452,
+        "prompt_length_max": 3096,
+        "prompt_length_std": 564.72,
+        "target_length_mean": 133.24
+      },
+      {
+        "name": "Pytorch",
+        "sample_count": 68,
+        "prompt_length_mean": 896.74,
+        "prompt_length_min": 507,
+        "prompt_length_max": 2714,
+        "prompt_length_std": 314.4,
+        "target_length_mean": 111.5
+      },
+      {
+        "name": "Tensorflow",
+        "sample_count": 45,
+        "prompt_length_mean": 950.2,
+        "prompt_length_min": 471,
+        "prompt_length_max": 2926,
+        "prompt_length_std": 455.66,
+        "target_length_mean": 148.4
+      }
+    ],
+    "prompt_length": {
+      "mean": 1033.79,
+      "min": 267,
+      "max": 4895,
+      "std": 539.42
+    },
+    "target_length_mean": 138.09,
+    "computed_at": "2026-10-19T14:23:23.179134+08:00"
   },
-  "updated_at": "2026-10-19T08:40:11.028271"
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "82f3783a",
+          "content": "Write a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things."
+        },
+        {
+          "id": "0627adcc",
+          "content": "Problem:\nI have the following DataFrame:\n    Col1  Col2  Col3  Type\n0      1     2     3     1\n1      4     5     6     1\n2      7     8     9     2\n3    10    11    12     2\n4    13    14    15     3\n5    16    17    18     3\n\n\nThe DataFrame ... [TRUNCATED 630 chars] ... 'Col2': [2, 5, 8, 11, 14, 17],\n                   'Col3': [3, 6, 9, 12, 15, 18],\n                   'Type': [1, 1, 2, 2, 3, 3]})\nList = np.random.permutation(len(df))\n</code>\nresult = ... # put solution in this variable\nBEGIN SOLUTION\n<code>\n"
+        }
+      ],
+      "target": "def g(df, List):\n    return df.iloc[List]\n\nresult = g(df.copy(), List)\n",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "Pandas",
+      "metadata": {
+        "problem_id": 0,
+        "library": "Pandas",
+        "perturbation_type": "Origin",
+        "code_context": "import pandas as pd\nimport numpy as np\nimport copy\n\n\ndef generate_test_case(test_case_id):\n    def generate_ans(data):\n        data = data\n        df, List = data\n        return df.iloc[List]\n\n    def define_test_input(test_case_id):\n         ... [TRUNCATED 853 chars] ... sert]\", solution)\n    for i in range(1):\n        test_input, expected_result = generate_test_case(i + 1)\n        test_env = {\"test_input\": test_input}\n        exec(code, test_env)\n        assert exec_test(test_env[\"result\"], expected_result)\n"
+      }
+    },
+    "subset": "Pandas",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# DS-1000\n\n\n## Overview\n\nDS-1000 is a code generation benchmark of 1,000 data science problems collected from StackOverflow,\ncovering seven Python libraries. Each problem gives the context code and asks for the missing part;\nthe answer is checked by running it against the problem's test cases.\n\n## Task Description\n\n- **Task Type**: Code completion for data science\n- **Input**: A StackOverflow-style question with context code, ending with `BEGIN SOLUTION <code>`\n- **Output**: The code that fills the gap (in `<code>` tags or a fenced block)\n- **Libraries**: Pandas (291), NumPy (220), Matplotlib (155), Scikit-learn (115), SciPy (106),\n  PyTorch (68), TensorFlow (45)\n\n## Key Features\n\n- Problems are perturbed to reduce memorization: 452 origin, 152 surface, 234 semantic and 162\n  difficult-rewrite problems (recorded as `perturbation_type`)\n- Execution-based scoring with the official test harness carried in each problem (`code_context`),\n  including surface-form checks (`test_string`) that, e.g., forbid loops where vectorization is asked\n\n## Evaluation Notes\n\n- `accuracy` (primary): the problem passes when the official test program\n  (`code_context` + `test_execution(code)` [+ `test_string(code)`]) runs without error\n- Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag\n  or from a fenced block, up to `</code>` / `END SOLUTION`\n- **Environment matters**: tests compare against outputs of specific library versions. The official\n  environment is Python 3.10 with pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0,\n  matplotlib 3.8.4, torch 2.2.0 and tensorflow-cpu 2.16.1 (see `environment.yml` in the dataset)\n- By default each test program runs in a separate local Python process (timeout `review_timeout`,\n  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox with an\n  image that has the official environment to isolate execution\n- Subsets are the libraries; `limit` applies per library\n- [Paper](https://arxiv.org/abs/2211.11501) | [Code](https://github.com/xlang-ai/DS-1000) |\n  [Dataset](https://huggingface.co/datasets/xlangai/DS-1000)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ds1000` |\n| **Dataset ID** | [xlangai/DS-1000](https://modelscope.cn/datasets/xlangai/DS-1000/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2211.11501) |\n| **Tags** | `Coding` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,000 |\n| Prompt Length (Mean) | 1033.79 chars |\n| Prompt Length (Min/Max) | 267 / 4895 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `Pandas` | 291 | 1357.42 | 527 | 4895 |\n| `Numpy` | 220 | 897.66 | 346 | 2620 |\n| `Matplotlib` | 155 | 414.52 | 267 | 919 |\n| `Sklearn` | 115 | 1164.31 | 526 | 2831 |\n| `Scipy` | 106 | 1315.17 | 452 | 3096 |\n| `Pytorch` | 68 | 896.74 | 507 | 2714 |\n| `Tensorflow` | 45 | 950.2 | 471 | 2926 |\n\n## Sample Example\n\n**Subset**: `Pandas`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"82f3783a\",\n      \"content\": \"Write a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\"\n    },\n    {\n      \"id\": \"0627adcc\",\n      \"content\": \"Problem:\\nI have the following DataFrame:\\n    Col1  Col2  Col3  Type\\n0      1     2     3     1\\n1      4     5     6     1\\n2      7     8     9     2\\n3    10    11    12     2\\n4    13    14    15     3\\n5    16    17    18     3\\n\\n\\nThe DataFrame ... [TRUNCATED 630 chars] ... 'Col2': [2, 5, 8, 11, 14, 17],\\n                   'Col3': [3, 6, 9, 12, 15, 18],\\n                   'Type': [1, 1, 2, 2, 3, 3]})\\nList = np.random.permutation(len(df))\\n</code>\\nresult = ... # put solution in this variable\\nBEGIN SOLUTION\\n<code>\\n\"\n    }\n  ],\n  \"target\": \"def g(df, List):\\n    return df.iloc[List]\\n\\nresult = g(df.copy(), List)\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Pandas\",\n  \"metadata\": {\n    \"problem_id\": 0,\n    \"library\": \"Pandas\",\n    \"perturbation_type\": \"Origin\",\n    \"code_context\": \"import pandas as pd\\nimport numpy as np\\nimport copy\\n\\n\\ndef generate_test_case(test_case_id):\\n    def generate_ans(data):\\n        data = data\\n        df, List = data\\n        return df.iloc[List]\\n\\n    def define_test_input(test_case_id):\\n         ... [TRUNCATED 853 chars] ... sert]\\\", solution)\\n    for i in range(1):\\n        test_input, expected_result = generate_test_case(i + 1)\\n        test_env = {\\\"test_input\\\": test_input}\\n        exec(code, test_env)\\n        assert exec_test(test_env[\\\"result\\\"], expected_result)\\n\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nWrite a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\n```\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.10-slim\",\n  \"tools_config\": {\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ds1000 \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ds1000'],\n    sandbox={'enabled': True},\n    dataset_args={\n        'ds1000': {\n            # subset_list: ['Pandas', 'Numpy', 'Matplotlib']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# DS-1000\n\n## 概述\n\nDS-1000 是一个代码生成基准测试，包含从 StackOverflow 收集的 1,000 个数据科学问题，涵盖了七个 Python 库。每个问题提供上下文代码并要求填写缺失部分；答案通过运行针对问题的测试用例进行验证。\n\n## 任务描述\n\n- **任务类型**: 数据科学代码补全\n- **输入**: 一个类似 StackOverflow 的问题，带有上下文代码，并以 `BEGIN SOLUTION <code>` 结尾\n- **输出**: 填充空白部分的代码（在 `<code>` 标签内或围栏代码块中）\n- **库**: Pandas (291), NumPy (220), Matplotlib (155), Scikit-learn (115), SciPy (106), PyTorch (68), TensorFlow (45)\n\n## 主要特点\n\n- 问题经过扰动以减少记忆：452 个原始问题，152 个表面扰动问题，234 个语义扰动问题和 162 个困难重写问题（记录为 `perturbation_type`）\n- 基于执行的评分，每个问题都携带官方测试工具 (`code_context`)，包括表面形式检查 (`test_string`)，例如，在需要向量化的地方禁止使用循环\n\n## 评估说明\n\n- `accuracy`（主要指标）: 当官方测试程序 (`code_context` + `test_execution(code)` [+ `test_string(code)`]) 无错误运行时，问题通过\n- 使用官方聊天模型脚本的系统提示；代码取自 `<code>` 标签后的部分或围栏代码块，直到 `</code>` / `END SOLUTION`\n- **环境很重要**：测试会比较特定库版本的输出。官方环境是 Python 3.10，pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0, matplotlib 3.8.4, torch 2.2.0 和 tensorflow-cpu 2.16.1（参见数据集中的 `environment.yml`）\n- 默认情况下，每个测试程序在单独的本地 Python 进程中运行（超时 `review_timeout`，120 秒，如官方工具所示），这**不是安全沙箱**；启用具有官方环境的镜像以隔离执行\n- 子集是各个库；`limit` 对每个库生效\n- [论文](https://arxiv.org/abs/2211.11501) | [代码](https://github.com/xlang-ai/DS-1000) | [数据集](https://huggingface.co/datasets/xlangai/DS-1000)\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `ds1000` |\n| **数据集ID** | [xlangai/DS-1000](https://modelscope.cn/datasets/xlangai/DS-1000/summary) |\n| **论文** | [论文](https://arxiv.org/abs/2211.11501) |\n| **标签** | `Coding` |\n| **指标** | `accuracy` |\n| **默认示例数** | 0-shot |\n| **评估分割** | `test` |\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,000 |\n| 提示词长度（平均值） | 1033.79 字符 |\n| 提示词长度（最小/最大值） | 267 / 4895 字符 |\n\n**各子集统计数据：**\n\n| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |\n|--------|---------|-------------|------------|------------|\n| `Pandas` | 291 | 1357.42 | 527 | 4895 |\n| `Numpy` | 220 | 897.66 | 346 | 2620 |\n| `Matplotlib` | 155 | 414.52 | 267 | 919 |\n| `Sklearn` | 115 | 1164.31 | 526 | 2831 |\n| `Scipy` | 106 | 1315.17 | 452 | 3096 |\n| `Pytorch` | 68 | 896.74 | 507 | 2714 |\n| `Tensorflow` | 45 | 950.2 | 471 | 2926 |\n\n## 样例示例\n\n**子集**: `Pandas`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"82f3783a\",\n      \"content\": \"Write a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\"\n    },\n    {\n      \"id\": \"0627adcc\",\n      \"content\": \"Problem:\\nI have the following DataFrame:\\n    Col1  Col2  Col3  Type\\n0      1     2     3     1\\n1      4     5     6     1\\n2      7     8     9     2\\n3    10    11    12     2\\n4    13    14    15     3\\n5    16    17    18     3\\n\\n\\nThe DataFrame ... [TRUNCATED 630 chars] ... 'Col2': [2, 5, 8, 11, 14, 17],\\n                   'Col3': [3, 6, 9, 12, 15, 18],\\n                   'Type': [1, 1, 2, 2, 3, 3]})\\nList = np.random.permutation(len(df))\\n</code>\\nresult = ... # put solution in this variable\\nBEGIN SOLUTION\\n<code>\\n\"\n    }\n  ],\n  \"target\": \"def g(df, List):\\n    return df.iloc[List]\\n\\nresult = g(df.copy(), List)\\n\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"Pandas\",\n  \"metadata\": {\n    \"problem_id\": 0,\n    \"library\": \"Pandas\",\n    \"perturbation_type\": \"Origin\",\n    \"code_context\": \"import pandas as pd\\nimport numpy as np\\nimport copy\\n\\n\\ndef generate_test_case(test_case_id):\\n    def generate_ans(data):\\n        data = data\\n        df, List = data\\n        return df.iloc[List]\\n\\n    def define_test_input(test_case_id):\\n         ... [TRUNCATED 853 chars] ... sert]\\\", solution)\\n    for i in range(1):\\n        test_input, expected_result = generate_test_case(i + 1)\\n        test_env = {\\\"test_input\\\": test_input}\\n        exec(code, test_env)\\n        assert exec_test(test_env[\\\"result\\\"], expected_result)\\n\"\n  }\n}\n```\n\n*注：部分内容为了显示而被截断。*\n\n## 提示模板\n\n**系统提示:**\n```text\nWrite a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\n```\n\n**提示模板:**\n```text\n{question}\n```\n\n## 沙箱配置\n\n此基准测试需要一个用于代码执行的沙箱环境。\n\n```json\n{\n  \"image\": \"python:3.10-slim\",\n  \"tools_config\": {\n    \"python_executor\": {}\n  }\n}\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ds1000 \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ds1000'],\n    sandbox={'enabled': True},\n    dataset_args={\n        'ds1000': {\n            # subset_list: ['Pandas', 'Numpy', 'Matplotlib']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```",
+    "content_hash": "389883fc01561ed29238b5dbd8873381",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-19T14:23:23.250602+08:00",
+  "translation_updated_at": "2026-10-19T14:23:26+08:00"
 }
