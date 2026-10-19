@@ -582,10 +582,15 @@ class DefaultDataAdapter(DataAdapter):
         return any(name in d for d in (self.metric_list or []))
 
     def get_metric_args(self, name: str) -> Dict[str, Any]:
+        """Return the configured args for a metric.
+
+        The returned dict is a copy, so callers may freely adjust per-call
+        entries (e.g. a per-sample option) without mutating ``metric_list``.
+        """
         for d in self.metric_list or []:
             if isinstance(d, dict) and name in d:
                 cfg = d.get(name, {})
-                return cfg if isinstance(cfg, dict) else {}
+                return dict(cfg) if isinstance(cfg, dict) else {}
         return {}
 
     def filter_prediction(self, prediction: str, task_state: TaskState) -> str:
