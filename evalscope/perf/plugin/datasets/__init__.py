@@ -12,6 +12,7 @@ from .line_by_line import LineByLineDatasetPlugin
 from .longalpaca import LongAlpacaDatasetPlugin
 from .mmmu_multi_image import MMMUMultiImageDatasetPlugin
 from .multi_turn import RandomMultiTurnDatasetPlugin, ShareGPTEnMultiTurnPlugin, ShareGPTZhMultiTurnPlugin
+from .open_decisions import OpenDecisionsDatasetPlugin
 from .openqa import OpenqaDatasetPlugin
 from .random_dataset import RandomDatasetPlugin
 from .random_vl_dataset import RandomVLDatasetPlugin

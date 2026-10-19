@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocale } from '@/contexts/LocaleContext'
+import type { PerfRunMode } from '@/domain/perf/charts'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
 import { useScopedState } from '@/hooks/useScopedState'
 import { listPerfRunDetails, getPerfRequests, getPerfChartUrl } from '@/api/perf'
@@ -26,7 +27,7 @@ const EMPTY_RUNS: PerfRunItem[] = []
 interface Props {
   rootPath: string
   path: string
-  isEmbedding: boolean
+  mode: PerfRunMode
 }
 
 /** Convert a columns + row-arrays table into the record list DataTable expects. */
@@ -38,8 +39,9 @@ function toRecords(columns: string[], rows: (string | number)[][]): Record<strin
  * Per-run drill-down: run selector + percentile table/charts + per-request
  * records (parsed from benchmark_data.db) as a table and Plotly charts.
  */
-export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
+export default function PerfRunsTab({ rootPath, path, mode }: Props) {
   const { t } = useLocale()
+  const hideGeneration = mode !== 'generation'
 
   // The user's pick is remembered against the run list it was made in, so a new
   // list falls back to its own first run without an effect resetting state.
@@ -121,15 +123,17 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
     )
   }
 
-  const perRequestCharts = isEmbedding
+  const perRequestCharts = hideGeneration
     ? (['req_latency', 'req_tokens', 'req_success'] as const)
     : (['req_latency', 'req_ttft_tpot', 'req_tokens', 'req_success'] as const)
+  const visibleColumns = (columns: string[]) => columns.filter((column) => !hideGeneration || !/TTFT|TPOT|ITL/i.test(column))
 
   return (
     <div className="flex flex-col gap-4">
       {(runError || requestError) && (
         <ErrorAlert className="rounded-[var(--radius-sm)] px-3 py-2">{runError || requestError}</ErrorAlert>
       )}
+      {mode === 'decision' && <p className="text-sm text-[var(--text-muted)]">{t('perf.archive.inputOnlyHint')}</p>}
       {/* Run selector */}
       {runs.length > 1 && (
         <div className="flex flex-wrap gap-2">
@@ -163,15 +167,15 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
       <Card title={t('perf.archive.percentiles')}>
         {run && run.percentile_rows.length > 0 ? (
           <div className="flex flex-col gap-4">
-            <DataTable columns={run.percentile_columns} data={toRecords(run.percentile_columns, run.percentile_rows)} />
+            <DataTable columns={visibleColumns(run.percentile_columns)} data={toRecords(run.percentile_columns, run.percentile_rows)} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PlotlyChart
                 src={reqUrl('percentile_latency')}
-                fallbackTable={{ columns: run.percentile_columns, rows: toRecords(run.percentile_columns, run.percentile_rows) }}
+                fallbackTable={{ columns: visibleColumns(run.percentile_columns), rows: toRecords(run.percentile_columns, run.percentile_rows) }}
                 title={t('perf.archive.latencyPercentiles')}
                 height={320}
               />
-              {!isEmbedding && (
+              {!hideGeneration && (
                 <PlotlyChart
                   src={reqUrl('percentile_token')}
                   fallbackTable={{ columns: run.percentile_columns, rows: toRecords(run.percentile_columns, run.percentile_rows) }}
@@ -219,7 +223,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
                 <PlotlyChart
                   key={ct}
                   src={reqUrl(ct)}
-                  fallbackTable={{ columns: requests?.columns ?? [], rows: requests?.rows ?? [] }}
+                  fallbackTable={{ columns: visibleColumns(requests?.columns ?? []), rows: requests?.rows ?? [] }}
                   height={300}
                 />
               ))}
@@ -230,7 +234,7 @@ export default function PerfRunsTab({ rootPath, path, isEmbedding }: Props) {
               <Skeleton lines={6} height={16} />
             ) : requests && requests.rows.length > 0 ? (
               <>
-                <DataTable columns={requests.columns} data={requests.rows} />
+                <DataTable columns={visibleColumns(requests.columns)} data={requests.rows} />
                 {reqTotalPages > 1 && (
                   <div className="flex items-center justify-center gap-3 pt-1 type-body-sm">
                     <button

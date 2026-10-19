@@ -51,6 +51,7 @@ class BenchmarkSummary(BaseModel):
     request_throughput: float = Field(0.0, alias=Metrics.REQUEST_THROUGHPUT)
     avg_latency: float = Field(0.0, alias=Metrics.AVERAGE_LATENCY)
     avg_input_tokens: float = Field(0.0, alias=Metrics.AVERAGE_INPUT_TOKENS_PER_REQUEST)
+    not_applicable_metrics: Optional[List[str]] = Field(None, alias='Not Applicable Metrics')
 
     # --- LLM-specific ---
     output_token_throughput: float = Field(0.0, alias=Metrics.OUTPUT_TOKEN_THROUGHPUT)

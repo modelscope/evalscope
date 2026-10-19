@@ -470,6 +470,38 @@ body {
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 
 /* ------------------------------------------------------------------ */
+/* Decision coverage uses a flat track in both browser engines. */
+.decision-coverage-slider {
+  appearance: none;
+  background: transparent;
+}
+.decision-coverage-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-md);
+}
+.decision-coverage-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-md);
+}
+.decision-coverage-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.decision-coverage-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ------------------------------------------------------------------ */
 /* Touch targets — DESIGN.md §Touch Targets (Req 7.4, 12.5, 12.7)      */
 /* On coarse pointers, expand a control's tappable region to >=44x44   */
 /* CSS px via a centered ::before overlay WITHOUT changing the visual   */

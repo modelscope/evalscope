@@ -234,6 +234,9 @@ def extract_benchmark_meta(meta: 'BenchmarkMeta', adapter_cls: Optional[Type['Da
         adapter_meta['agent_config'] = agent_config
     if requires_judge:
         adapter_meta['requires_judge'] = True
+    if doc_eval_type := getattr(adapter_cls, 'doc_eval_type', None):
+        adapter_meta['eval_type'] = doc_eval_type
+        adapter_meta['requires_local_dataset'] = getattr(adapter_cls, 'requires_local_dataset', False)
     return adapter_meta
 
 

@@ -2312,6 +2312,18 @@
           "default": false,
           "type": "boolean"
         },
+        "metadata": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "name": {
           "type": "string"
         },

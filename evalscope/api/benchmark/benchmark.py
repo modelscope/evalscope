@@ -28,6 +28,9 @@ class DataAdapter(LLMJudgeMixin, ABC):
     Data Adapter for the benchmark.
     """
 
+    aggregate_empty_scores: bool = False
+    """Run official denominator-based aggregation even when every prediction is unavailable."""
+
     def __init__(self, benchmark_meta: 'BenchmarkMeta', task_config: Optional['TaskConfig'] = None):
         self._benchmark_meta = benchmark_meta
         self._task_config = task_config
@@ -115,6 +118,10 @@ class DataAdapter(LLMJudgeMixin, ABC):
     @abstractmethod
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         pass
+
+    def aggregate_subset(self, subset: str, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Aggregate a named subset; override when grading also needs its complete task list."""
+        return self.aggregate_scores(sample_scores)
 
     @abstractmethod
     def generate_report(self, scores: Dict[str, List[AggScore]], model_name: str, output_dir: str, **kwargs) -> Report:

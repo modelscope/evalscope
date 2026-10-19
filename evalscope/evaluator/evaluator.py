@@ -491,13 +491,13 @@ class DefaultEvaluator(Evaluator):
                 new_scores = [sc for _, sc in pool_results if sc is not None]
                 all_scores = cached_scores + new_scores
 
-            if not all_scores:
+            if not all_scores and not self.benchmark.aggregate_empty_scores:
                 logger.info(f'No valid scores generated for subset: {subset}, skipping.')
                 continue
 
             logger.info(f'Aggregating scores for subset: {subset}')
             self._sample_scores_by_subset[subset] = all_scores
-            agg_score_dict[subset] = self.benchmark.aggregate_scores(sample_scores=all_scores)
+            agg_score_dict[subset] = self.benchmark.aggregate_subset(subset, sample_scores=all_scores)
 
         return agg_score_dict
 

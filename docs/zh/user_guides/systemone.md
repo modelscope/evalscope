@@ -1,6 +1,6 @@
 # System One 评测
 
-使用 `eval_type='systemone_api'` 评测只返回选择结果的文本决策模型。EvalScope 将原始题目、上下文、示例和完整选项转换为 System One 请求，再以返回标签计算准确率。
+使用 `eval_type='systemone_api'` 评测返回结构化结果和概率的文本决策模型。本页侧重已有选择题 benchmark 的转换、示例和配置；Choice、Noul、Score 三类评测、百炼 API 与 Clef-Flash 部署见[决策模型评测最佳实践](../best_practice/decision_evaluation.md)。
 
 ## 百炼示例
 
@@ -63,12 +63,14 @@ run_task(TaskConfig(
 
 - ARC-C 使用 `arc` 的 `ARC-Challenge` 子集。
 - ANLI 的子集为 `r1`、`r2`、`r3`；默认使用各轮 test，示例使用对应 train。
-- BoolQ 使用原版 validation，评测两选一 Choice。
+- BoolQ 使用原版 validation，默认评测两选一 Choice；设置 `extra_params.decision_kind='noul'` 可评测判断概率。
 - BANKING77 保留全部 77 类；不进行候选项裁剪。
 - ContractNLI 使用完整合同的 `contractnli_b`，仅评三分类，不评证据定位。
 - RewardBench 使用 v1 filtered 数据，确定性打乱回答位置。总体分数是样本加权 accuracy，不是官方类别加权榜单分数。
 
-新增的五个 benchmark 均默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
+以上为已有选择题 benchmark 的适配。`jevbench`、`open_decisions`、`stsb` 和 `general_decision` 还支持原生三类决策题，使用零样本规则评分；完整用法见[最佳实践](../best_practice/decision_evaluation.md)。
+
+公共数据默认从 ModelScope 下载，ContractNLI 使用 `evalscope/contract-nli` 的 `contractnli_b` 配置。可通过各自的 `local_path` 和 `dataset_revision` 配置本地数据或固定数据版本。图片、音频、视频、多选题、工具调用和 LLM judge 不支持。
 
 ## 结果与复现
 
@@ -76,7 +78,7 @@ System One 沿用 `Model.generate(messages)` 调用入口。MCQ adapter 在现�
 
 返回标签转换为 benchmark 原有答案格式，例如 `ANSWER: A`、`答案：A` 或 `ANSWER: 51`，再通过原有答案提取、评分、缓存和报告流程。
 
-预测 JSONL 的 `model_output.metadata.choice_response.answers.answer` 保存原始标签、概率与厂商置信度；`choice_request` 保存完整实际请求。厂商将概率保留到两位小数时，校验允许对应舍入误差，保存的概率不重新归一化。消息文本展示题目和选项，system 消息及 `internal` 保留转换所需的指令、上下文与示例。
+预测 JSONL 的 `model_output.metadata.choice_response.answers.answer` 保存原始标签、概率与厂商置信度；`choice_request` 保存完整实际请求。厂商将概率保留到两位小数时，校验允许对应舍入误差，原始概率保持不变。评分所用分布及是否进行了归一化另存于 reviews 的评分元数据，Web UI 可以切换查看。消息文本展示题目和选项，system 消息及 `internal` 保留转换所需的指令、上下文与示例。
 
 配置和原始请求保留 Choice 指令及 few-shot 设置；执行统计区分成功、失败和未完成。无效响应不计为错误答案，默认终止运行；`ignore_errors=True` 时排除失败样本并报告覆盖情况。
 

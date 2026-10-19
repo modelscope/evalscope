@@ -1,6 +1,6 @@
 # System One Evaluation
 
-Use `eval_type='systemone_api'` for text decision models that return a selected option. EvalScope converts raw questions, context, demonstrations and complete candidate lists into System One requests, then computes accuracy from the returned labels.
+Use `eval_type='systemone_api'` for text decision models returning structured results and probabilities. This page focuses on existing multiple-choice benchmarks, demonstrations and configuration. For Choice, Noul and Score evaluation, Bailian API access and Clef-Flash deployment, see the [decision evaluation best practice](../best_practice/decision_evaluation.md).
 
 ## Bailian example
 
@@ -63,12 +63,14 @@ An explicit `api_key` takes precedence. When it is omitted, `None`, empty or the
 
 - ARC-C is the `ARC-Challenge` subset of `arc`.
 - ANLI exposes `r1`, `r2`, `r3`: test evaluation with demonstrations from the corresponding training round.
-- BoolQ uses original validation labels and a binary Choice request.
+- BoolQ uses original validation labels and binary Choice by default; set `extra_params.decision_kind='noul'` to evaluate judgment probabilities.
 - BANKING77 retains all 77 intents without candidate pruning.
 - ContractNLI uses full-document `contractnli_b`, evaluating classification only, without evidence extraction.
 - RewardBench uses v1 filtered pairs with deterministic position shuffling. Overall accuracy is weighted by sample count, not the official category-weighted leaderboard score.
 
-The five new benchmarks default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
+The list above covers existing multiple-choice adapters. `jevbench`, `open_decisions`, `stsb` and `general_decision` also support native typed decisions with zero-shot rule grading; see the [best practice](../best_practice/decision_evaluation.md).
+
+Public datasets default to ModelScope. ContractNLI uses the `contractnli_b` configuration of `evalscope/contract-nli`. Their `local_path` and `dataset_revision` settings select local data or pin a dataset version. Images, audio, video, multiple-correct questions, tools and LLM judging are unsupported.
 
 ## Results and reproducibility
 
@@ -76,7 +78,7 @@ System One uses the existing `Model.generate(messages)` entry point. MCQ adapter
 
 Returned labels are rendered in the benchmark's existing answer format, such as `ANSWER: A`, `答案：A` or `ANSWER: 51`, and then use the existing answer extraction, scoring, cache and report flow.
 
-Prediction JSONL files retain raw labels, probabilities and provider confidence in `model_output.metadata.choice_response.answers.answer`; `choice_request` retains the complete actual request. Two-decimal probability distributions are validated with their rounding tolerance and stored without renormalization. Message text displays the question and options; system messages and `internal` retain the instructions, context and demonstrations needed for conversion.
+Prediction JSONL files retain raw labels, probabilities and provider confidence in `model_output.metadata.choice_response.answers.answer`; `choice_request` retains the complete actual request. Two-decimal probability distributions are validated with their rounding tolerance; original values stay unchanged. Scoring distributions and normalization flags are stored separately in review metadata, and the Web UI can switch between the two views. Message text displays the question and options; system messages and `internal` retain the instructions, context and demonstrations needed for conversion.
 
 Configurations and original requests retain Choice instructions and few-shot settings. Execution statistics distinguish successes, failures and incomplete runs. Invalid responses terminate a run by default; with `ignore_errors=True`, failed samples are excluded and their coverage is reported.
 

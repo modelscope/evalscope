@@ -402,6 +402,9 @@ export interface ReportCategory {
 }
 export interface ReportSubset {
   is_aggregate?: boolean;
+  metadata?: {
+    [k: string]: any;
+  } | null;
   name: string;
   num: number;
   score: number;

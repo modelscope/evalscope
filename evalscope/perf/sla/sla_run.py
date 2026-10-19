@@ -227,7 +227,7 @@ class SLAAutoTuner:
             raise ValueError('--sla-params is required for SLA auto-tuning')
         self.criteria_groups = sla_params
         self.metric_names = {name for group in sla_params for name in group}
-        if Metrics.is_embedding_or_rerank(self.args.api):
+        if Metrics.is_input_only(self.args.api):
             unsupported = self.metric_names - _EMBEDDING_RERANK_METRICS
             if unsupported:
                 raise ValueError(f'Metrics unavailable for {self.args.api}: {", ".join(sorted(unsupported))}')

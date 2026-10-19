@@ -1,6 +1,17 @@
 // Shared perf-report chart groupings, reused across the perf archive pages
 // (detail / compare / list) so the chart ids and titles stay in a single place.
 
+import type { PerfDetailResponse } from '@/api/types'
+
+export type PerfRunMode = 'generation' | 'embedding' | 'decision'
+
+/** Keep timing availability separate from the model/provider identity. */
+export function perfRunMode(run?: Pick<PerfDetailResponse, 'api_type' | 'is_embedding'> | null): PerfRunMode {
+  if (run?.is_embedding) return 'embedding'
+  if (['systemone', 'autotrust'].includes(run?.api_type ?? '')) return 'decision'
+  return 'generation'
+}
+
 /** Latency-group sweep chart ids for LLM runs. Embedding runs drop TTFT/TPOT. */
 export const LATENCY_CHARTS = ['latency', 'ttft', 'tpot'] as const
 

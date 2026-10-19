@@ -26,6 +26,14 @@ def systemone_api() -> type[ModelAPI]:
     return SystemOneAPI
 
 
+@register_model_api(name='autotrust_api')
+def autotrust_api() -> type[ModelAPI]:
+    """Register AutoTrust's native typed-decision endpoint."""
+    from .systemone import AutoTrustAPI
+
+    return AutoTrustAPI
+
+
 @register_model_api(name='openai_responses_api')
 def openai_responses_api() -> type[ModelAPI]:
     from .openai_responses import OpenAIResponsesAPI

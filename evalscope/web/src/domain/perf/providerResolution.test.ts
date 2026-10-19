@@ -36,6 +36,14 @@ const KNOWN_HOST_PAIRS: ReadonlyArray<readonly [string, string]> = [
   ['api.groq.com', 'Groq'],
 ]
 
+it.each([
+  ['systemone', 'System One'],
+  ['autotrust', 'AutoTrust /decide'],
+])('labels %s independently of the service provider', (apiType, protocol) => {
+  expect(resolveProvider({ api_type: apiType }).protocol).toBe(protocol)
+  expect(resolveProvider({ api_type: apiType, protocol: 'Explicit protocol' }).protocol).toBe('Explicit protocol')
+})
+
 /** `basic_info` keys the resolver reads (must match the production module). */
 const PROVIDER_KEY = 'Provider'
 const PROTOCOL_KEY = 'Protocol'

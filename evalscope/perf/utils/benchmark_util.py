@@ -530,9 +530,16 @@ class BenchmarkMetrics:
         base = self._build_common_fields(ndigits)
         specific = (
             self._build_embedding_fields(ndigits)
-            if Metrics.is_embedding_or_rerank(api_type)
+            if Metrics.is_input_only(api_type)
             else self._build_llm_fields(ndigits, enable_pd_metrics)
         )
+        if api_type in ('systemone', 'autotrust'):
+            specific[Metrics.INPUT_TOKEN_THROUGHPUT] = round(self.avg_prompt_tokens * self.qps, ndigits)
+            specific['Not Applicable Metrics'] = [
+                Metrics.AVERAGE_TIME_TO_FIRST_TOKEN,
+                Metrics.AVERAGE_TIME_PER_OUTPUT_TOKEN,
+                Metrics.AVERAGE_INTER_TOKEN_LATENCY,
+            ]
         multiturn = self._build_multiturn_fields(ndigits)
         speculative = self._build_speculative_decoding_fields(ndigits)
         return {**base, **specific, **multiturn, **speculative}

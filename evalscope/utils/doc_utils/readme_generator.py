@@ -200,6 +200,8 @@ def _format_usage_section(
     extra_params: Optional[Dict] = None,
     agent_config: Optional[Dict] = None,
     requires_judge: bool = False,
+    eval_type: Optional[str] = None,
+    requires_local_dataset: bool = False,
 ) -> str:
     """
     Format the usage section with CLI and Python examples.
@@ -211,6 +213,8 @@ def _format_usage_section(
         extra_params: Extra parameters configuration (if any)
         agent_config: Built-in AgentLoop defaults (if this is an agent-loop benchmark)
         requires_judge: Whether this benchmark requires a configured Native Judge
+        eval_type: Required inference protocol for typed benchmark adapters
+        requires_local_dataset: Whether an example must provide a local dataset directory
 
     Returns:
         Formatted usage section markdown string
@@ -224,6 +228,8 @@ def _format_usage_section(
         )
     if extra_params:
         dataset_args_comments.append('            # extra_params: {}  # uses default extra parameters')
+    if requires_local_dataset:
+        dataset_args_comments.append("            'local_path': '/path/to/data',  # contains default_test.jsonl")
 
     # Build CLI command
     cli_lines = [
@@ -233,6 +239,12 @@ def _format_usage_section(
         '    --api-key EMPTY_TOKEN \\',
         f'    --datasets {name} \\',
     ]
+    if eval_type:
+        cli_lines.insert(2, f'    --eval-type {eval_type} ' + '\\')
+        cli_lines = [line.replace('OPENAI_API_COMPAT_URL', 'http://127.0.0.1:18131/v1') for line in cli_lines]
+    if requires_local_dataset:
+        local_args = json.dumps({name: {'local_path': '/path/to/data'}})
+        cli_lines.append(f"    --dataset-args '{local_args}' " + '\\')
     if sandbox_config:
         cli_lines.append('    --sandbox \'{"enabled": true}\' \\')
     emit_agent_config = bool(agent_config and agent_config.get('strategy') and agent_config.get('max_steps'))
@@ -276,11 +288,13 @@ def _format_usage_section(
     if requires_judge:
         python_judge_config = "    judge={'strategy': 'llm', 'models': [{'model_id': 'YOUR_JUDGE_MODEL'}]},\n"
 
+    python_eval_type = f"    eval_type='{eval_type}',\n" if eval_type else ''
+    api_url = 'http://127.0.0.1:18131/v1' if eval_type else 'OPENAI_API_COMPAT_URL'
     python_code = f"""{chr(10).join(python_imports)}
 
 task_cfg = TaskConfig(
     model='YOUR_MODEL',
-    api_url='OPENAI_API_COMPAT_URL',
+{python_eval_type}    api_url='{api_url}',
     api_key='EMPTY_TOKEN',
     datasets=['{name}'],
 {python_use_sandbox}{python_agent_config}{python_judge_config}{python_dataset_args}    limit=10,  # Remove this line for formal evaluation
@@ -524,6 +538,8 @@ def generate_readme_from_dict(
             extra_params=meta.get('extra_params'),
             agent_config=meta.get('agent_config'),
             requires_judge=meta.get('requires_judge', False),
+            eval_type=meta.get('eval_type'),
+            requires_local_dataset=meta.get('requires_local_dataset', False),
         ),
     )
 
