@@ -198,6 +198,11 @@ class DefaultApiPlugin(ApiPluginBase):
 
                                 timestamp = time.perf_counter()
 
+                                # A server that fails after sending HTTP 200 (vLLM, SGLang) reports the error
+                                # in-band as `{"error": {...}}` or `{"object": "error", ...}`.
+                                if data.get('error') is not None or data.get('object') == 'error':
+                                    output.error = json.dumps(data, ensure_ascii=False)
+
                                 if choices := data.get('choices'):
                                     if data.get('object') == 'text_completion':
                                         content = choices[0].get('text') or ''
@@ -235,7 +240,7 @@ class DefaultApiPlugin(ApiPluginBase):
                                 most_recent_timestamp = timestamp
 
                         output.generated_text = generated_text
-                        output.success = True
+                        output.success = output.error is None
                         output.completed_time = most_recent_timestamp
                         output.query_latency = most_recent_timestamp - st
 
