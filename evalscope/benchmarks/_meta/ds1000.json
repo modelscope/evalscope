@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "pretty_name": "DS-1000",
+    "dataset_id": "xlangai/DS-1000",
+    "paper_url": "https://arxiv.org/abs/2211.11501",
+    "tags": [
+      "Coding"
+    ],
+    "metrics": [
+      "accuracy"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "Pandas",
+      "Numpy",
+      "Matplotlib",
+      "Sklearn",
+      "Scipy",
+      "Pytorch",
+      "Tensorflow"
+    ],
+    "description": "\n## Overview\n\nDS-1000 is a code generation benchmark of 1,000 data science problems collected from StackOverflow,\ncovering seven Python libraries. Each problem gives the context code and asks for the missing part;\nthe answer is checked by running it against the problem's test cases.\n\n## Task Description\n\n- **Task Type**: Code completion for data science\n- **Input**: A StackOverflow-style question with context code, ending with `BEGIN SOLUTION <code>`\n- **Output**: The code that fills the gap (in `<code>` tags or a fenced block)\n- **Libraries**: Pandas (291), NumPy (220), Matplotlib (155), Scikit-learn (115), SciPy (106),\n  PyTorch (68), TensorFlow (45)\n\n## Key Features\n\n- Problems are perturbed to reduce memorization: 452 origin, 152 surface, 234 semantic and 162\n  difficult-rewrite problems (recorded as `perturbation_type`)\n- Execution-based scoring with the official test harness carried in each problem (`code_context`),\n  including surface-form checks (`test_string`) that, e.g., forbid loops where vectorization is asked\n\n## Evaluation Notes\n\n- `accuracy` (primary): the problem passes when the official test program\n  (`code_context` + `test_execution(code)` [+ `test_string(code)`]) runs without error\n- Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag\n  or from a fenced block, up to `</code>` / `END SOLUTION`\n- **Environment matters**: tests compare against outputs of specific library versions. The official\n  environment is Python 3.10 with pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0,\n  matplotlib 3.8.4, torch 2.2.0 and tensorflow-cpu 2.16.1 (see `environment.yml` in the dataset)\n- By default each test program runs in a separate local Python process (timeout `review_timeout`,\n  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox with an\n  image that has the official environment to isolate execution\n- Subsets are the libraries; `limit` applies per library\n- [Paper](https://arxiv.org/abs/2211.11501) | [Code](https://github.com/xlang-ai/DS-1000) |\n  [Dataset](https://huggingface.co/datasets/xlangai/DS-1000)\n",
+    "prompt_template": "{question}",
+    "system_prompt": "Write a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {
+      "image": "python:3.10-slim",
+      "tools_config": {
+        "python_executor": {}
+      }
+    },
+    "category": "llm"
+  },
+  "statistics": {},
+  "sample_example": {},
+  "readme": {
+    "en": "# DS-1000\n\n\n## Overview\n\nDS-1000 is a code generation benchmark of 1,000 data science problems collected from StackOverflow,\ncovering seven Python libraries. Each problem gives the context code and asks for the missing part;\nthe answer is checked by running it against the problem's test cases.\n\n## Task Description\n\n- **Task Type**: Code completion for data science\n- **Input**: A StackOverflow-style question with context code, ending with `BEGIN SOLUTION <code>`\n- **Output**: The code that fills the gap (in `<code>` tags or a fenced block)\n- **Libraries**: Pandas (291), NumPy (220), Matplotlib (155), Scikit-learn (115), SciPy (106),\n  PyTorch (68), TensorFlow (45)\n\n## Key Features\n\n- Problems are perturbed to reduce memorization: 452 origin, 152 surface, 234 semantic and 162\n  difficult-rewrite problems (recorded as `perturbation_type`)\n- Execution-based scoring with the official test harness carried in each problem (`code_context`),\n  including surface-form checks (`test_string`) that, e.g., forbid loops where vectorization is asked\n\n## Evaluation Notes\n\n- `accuracy` (primary): the problem passes when the official test program\n  (`code_context` + `test_execution(code)` [+ `test_string(code)`]) runs without error\n- Uses the system prompt of the official chat-model script; code is taken after an opening `<code>` tag\n  or from a fenced block, up to `</code>` / `END SOLUTION`\n- **Environment matters**: tests compare against outputs of specific library versions. The official\n  environment is Python 3.10 with pandas 1.5.3, numpy 1.26.4, scipy 1.12.0, scikit-learn 1.4.0,\n  matplotlib 3.8.4, torch 2.2.0 and tensorflow-cpu 2.16.1 (see `environment.yml` in the dataset)\n- By default each test program runs in a separate local Python process (timeout `review_timeout`,\n  120 s as in the official harness), which is **not a security sandbox**; enable the sandbox with an\n  image that has the official environment to isolate execution\n- Subsets are the libraries; `limit` applies per library\n- [Paper](https://arxiv.org/abs/2211.11501) | [Code](https://github.com/xlang-ai/DS-1000) |\n  [Dataset](https://huggingface.co/datasets/xlangai/DS-1000)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `ds1000` |\n| **Dataset ID** | [xlangai/DS-1000](https://modelscope.cn/datasets/xlangai/DS-1000/summary) |\n| **Paper** | [Paper](https://arxiv.org/abs/2211.11501) |\n| **Tags** | `Coding` |\n| **Metrics** | `accuracy` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n*Statistics not available.*\n\n## Sample Example\n\n*Sample example not available.*\n\n## Prompt Template\n\n**System Prompt:**\n```text\nWrite a short code following the given format and indentation. Place the executable code between <code> and </code> tags, without any other non-executable things.\n```\n\n**Prompt Template:**\n```text\n{question}\n```\n\n## Sandbox Configuration\n\nThis benchmark requires a sandbox environment for code execution.\n\n```json\n{\n  \"image\": \"python:3.10-slim\",\n  \"tools_config\": {\n    \"python_executor\": {}\n  }\n}\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets ds1000 \\\n    --sandbox '{\"enabled\": true}' \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['ds1000'],\n    sandbox={'enabled': True},\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "",
+    "content_hash": "a6621b194e15f55dba76e582a22ba31c",
+    "needs_translation": true
+  },
+  "updated_at": "2026-10-19T08:40:11.028271"
+}
