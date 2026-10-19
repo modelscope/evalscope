@@ -77,6 +77,7 @@
  "drivel_selection": "evalscope.benchmarks.drivelology.drivelology_selection_adapter",
  "drivel_writing": "evalscope.benchmarks.drivelology.drivelology_writing_adapter",
  "drop": "evalscope.benchmarks.drop.drop_adapter",
+ "ds1000": "evalscope.benchmarks.ds1000.ds1000_adapter",
  "emb_spatial_bench": "evalscope.benchmarks.emb_spatial_bench.emb_spatial_bench_adapter",
  "eq_bench": "evalscope.benchmarks.eq_bench.eq_bench_adapter",
  "erqa": "evalscope.benchmarks.erqa.erqa_adapter",

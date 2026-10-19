@@ -59,6 +59,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `drivel_selection` | [DrivelologyNarrativeSelection](../../benchmarks/drivel_selection.md) | `MCQ` |
 | `drivel_writing` | [DrivelologyNarrativeWriting](../../benchmarks/drivel_writing.md) | `Knowledge`, `Reasoning` |
 | `drop` | [DROP](../../benchmarks/drop.md) | `Reasoning` |
+| `ds1000` | [DS-1000](../../benchmarks/ds1000.md) | `Coding` |
 | `eq_bench` | [EQ-Bench](../../benchmarks/eq_bench.md) | `InstructionFollowing` |
 | `fin_ner` | [FinNER](../../benchmarks/fin_ner.md) | `Knowledge`, `NER` |
 | `frames` | [FRAMES](../../benchmarks/frames.md) | `LongContext`, `Reasoning` |
@@ -220,6 +221,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/drivel_selection.md
 ../../benchmarks/drivel_writing.md
 ../../benchmarks/drop.md
+../../benchmarks/ds1000.md
 ../../benchmarks/eq_bench.md
 ../../benchmarks/fin_ner.md
 ../../benchmarks/frames.md
