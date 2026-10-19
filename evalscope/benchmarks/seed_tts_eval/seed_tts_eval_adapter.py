@@ -30,7 +30,7 @@ PROMPT_TEMPLATE = (
 @register_benchmark(
     BenchmarkMeta(
         name='seed_tts_eval',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         pretty_name='Seed-TTS-Eval',
         dataset_id='evalscope/Seed-TTS-Eval',
         tags=[Tags.AUDIO, Tags.TEXT_TO_SPEECH],
@@ -124,7 +124,8 @@ class SeedTTSEvalAdapter(DefaultDataAdapter):
         for metric in self.metric_list:
             metric_name = self._metric_name(metric)
             try:
-                metric_args = self.get_metric_args(metric_name)
+                # Copy: the per-sample language below must not be written back into the shared metric_list.
+                metric_args = dict(self.get_metric_args(metric_name))
                 if metric_name == 'audio_wer':
                     metric_args.setdefault('language', task_state.metadata.get('wer_language', 'en'))
                 metric_cls = get_metric(metric_name)

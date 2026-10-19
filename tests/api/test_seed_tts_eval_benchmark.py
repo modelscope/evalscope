@@ -273,3 +273,27 @@ def test_audio_wer_supports_responses_protocol(monkeypatch: Any) -> None:
 def test_audio_wer_rejects_unsupported_protocol() -> None:
     with pytest.raises(ValueError, match='Unsupported audio_wer api_protocol'):
         AudioWER(api_base='https://asr.test/v1', api_key='test-key', api_protocol='streaming')
+
+
+def test_match_score_uses_each_sample_language(monkeypatch: Any) -> None:
+    adapter = make_adapter(metric_list=[{'audio_wer': {'api_key': 'test-key', 'api_base': 'https://asr.test/v1'}}])
+    transcripts = {b'en-audio': 'hello world', b'zh-audio': '今天天气真好'}
+
+    def mock_post(self: Any, url: str, files: dict[str, Any], **kwargs: Any) -> requests.Response:
+        response = requests.Response()
+        response.status_code = 200
+        response._content = json.dumps({'text': transcripts[files['file'][1]]}).encode('utf-8')
+        return response
+
+    monkeypatch.setattr('requests.Session.post', mock_post)
+
+    def score(audio: bytes, reference: str, language: str) -> float:
+        sample = Sample(input=[ChatMessageUser(content='x')], target=reference, metadata={'wer_language': language})
+        state = TaskState(model='mock', sample=sample, completed=True)
+        state.metadata['generated_audio_path'] = 'data:audio/wav;base64,' + base64.b64encode(audio).decode('utf-8')
+        return adapter.match_score('', '', reference, state).value['audio_wer']
+
+    assert score(b'en-audio', 'hello world', 'en') == 0.0
+    # One of six characters differs; an English sample scored first must not switch this to word level.
+    assert score(b'zh-audio', '今天天气很好', 'cmn_hans') == pytest.approx(1 / 6)
+    assert adapter.metric_list == [{'audio_wer': {'api_key': 'test-key', 'api_base': 'https://asr.test/v1'}}]
