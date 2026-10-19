@@ -215,7 +215,8 @@ evalscope perf \
 
 | 参数 | 类型 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--prefix-length` | `int` | prompt 的随机 token 前缀长度<br>仅对 `random` 数据集有效；所有请求共享同一前缀，可用于制造 Prefix-Cache 命中 | `0` |
+| `--prefix-length` | `int` | prompt 的随机 token 前缀长度<br>用于 `random` 数据集；每轮共享前缀池中每个前缀的原始 token 长度 | `0` |
+| `--prefix-count` | `int` | 每轮不同共享原始 token 前缀的数量；按 `request_index % prefix_count` 轮转，包含 warmup。必须 >= 1；大于 1 时要求 `--dataset random`、`--prefix-length > 0` 且不使用 `--prompt`。 | `1` |
 | `--image-width` | `int` | 随机VL数据集图像宽度 | `224` |
 | `--image-height` | `int` | 随机VL数据集图像高度 | `224` |
 | `--image-format` | `str` | 随机VL数据集图像格式 | `RGB` |

@@ -66,7 +66,7 @@ evalscope perf \
 
 ### 随机数据集
 
-根据 `prefix-length`、`max-prompt-length` 和 `min-prompt-length` 随机生成 prompt，必需指定 `tokenizer-path`。生成 prompt 的 token 数量在 `prefix_length + min-prompt-length` 和 `prefix_length + max-prompt-length` 之间均匀分布，在一次测试中所有请求 prefix 部分相同。
+根据 `prefix-length`、`max-prompt-length` 和 `min-prompt-length` 随机生成 prompt，必需指定 `tokenizer-path`。生成 prompt 的 token 数量在 `prefix_length + min-prompt-length` 和 `prefix_length + max-prompt-length` 之间均匀分布，默认每轮生成一个共享原始 token 前缀（`--prefix-count 1`）。设置 `--prefix-count 7` 可生成七个不同前缀，每个长度为 `--prefix-length` 个 token；每条请求按 `request_index % 7` 使用其中一个。parallel/rate 多轮测试和 SLA 搜索的每轮均独立生成前缀池。
 
 ```{note}
 由于 chat_template 以及 tokenize 算法的影响，生成的 prompt 的 token 数量可能有些误差，不是精确的指定 token 数量。
@@ -82,6 +82,7 @@ evalscope perf \
   --min-tokens 128 \
   --max-tokens 128 \
   --prefix-length 64 \
+  --prefix-count 7 \
   --min-prompt-length 1024 \
   --max-prompt-length 2048 \
   --number 100 \
@@ -92,8 +93,14 @@ evalscope perf \
 ```{note}
 若需要服务端收到的 token 数与配置精确匹配，可加上 `--tokenize-prompt` 参数。该参数将 prompt 在客户端 tokenize 为 token ID 列表后直接通过 `/v1/completions` 的 `prompt` 字段发送，绕过服务端的重新 tokenize。
 
-服务端将收到恰好 `prefix_length + inner_seq_length` 个 token，落在 `[min-prompt-length, max-prompt-length]` 范围内。适用于 vLLM、SGLang、LMDeploy 等支持接收 token ID 的推理框架；不支持 `random_vl` 数据集。
+服务端将收到恰好 `prefix_length + inner_seq_length` 个 token，落在 `[prefix_length + min-prompt-length, prefix_length + max-prompt-length]` 范围内。min/max prompt length 参数保持现有含义，池大小不会改变这些范围。适用于 vLLM、SGLang、LMDeploy 等支持接收 token ID 的推理框架；不支持 `random_vl` 数据集。
 ```
+
+前缀池通过顶层 `--prefix-count` / Python `Arguments.prefix_count` 配置，不放入 `--dataset-args`。构造 100 条请求、七个前缀时，两组使用 15 次、五组使用 14 次；98 条请求时每组使用 14 次。warmup 和正式请求连续轮转，任意连续构造区间（包括正式请求区间）中各组数量差最多为 1。请求少于前缀数量时允许部分前缀未使用。过滤、失败或提前停止后的成功请求分布可能改变。
+
+保证针对**原始 token ID**。文本和 chat messages 路径中的 decode、重新分词时的拼接边界合并及长度修正，可能改变前 `prefix_length` 个 token，同组请求也不例外。chat template 还会添加自己的头部 token；不同原始前缀可能解码为相同文本。如需精确的输入 token 前缀，请使用 `--tokenize-prompt`、兼容的 completions 服务及与服务端一致的 tokenizer 词表。
+
+七个前缀不代表缓存命中率为 1/7。实际 prefix-cache 命中取决于服务端机制、缓存容量和淘汰、请求时序。闭环测试连续调度 warmup 和正式请求，因此 warmup 覆盖全部前缀不保证这些请求在正式请求开始前已经完成。开环测试已有等待 warmup 请求全部完成后再发送正式请求的阶段，但请求完成仍不保证所有前缀继续驻留缓存。本功能保持这两种调度行为不变。
 
 ### 随机图文数据集
 

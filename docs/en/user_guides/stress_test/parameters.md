@@ -215,7 +215,8 @@ The `prefix_file` in this section injects a **real text** prefix for real datase
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `--prefix-length` | `int` | Length of the random token prefix<br>Only effective for the `random` dataset; all requests share the same prefix, which can be used to induce prefix-cache hits | `0` |
+| `--prefix-length` | `int` | Length of the random token prefix<br>For the `random` dataset; raw token length of each shared prefix in the per-run pool | `0` |
+| `--prefix-count` | `int` | Number of distinct shared raw token prefixes per run; requests use `request_index % prefix_count`, including warmup. Must be >= 1; values > 1 require `--dataset random`, `--prefix-length > 0`, and no `--prompt`. | `1` |
 | `--image-width` | `int` | Image width for random VL dataset | `224` |
 | `--image-height` | `int` | Image height for random VL dataset | `224` |
 | `--image-format` | `str` | Image format for random VL dataset | `RGB` |
