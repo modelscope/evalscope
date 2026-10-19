@@ -1,199 +1,146 @@
-# Start with a wrong answer: evaluate decision models with EvalScope
+# Let AI Make the Call: Evaluating Decision Models with EvalScope
 
-In a real BoolQ trial run, a decision model assigned **86% probability to Yes**.
+Open the comments on any product and the first screen often isn't real users: "earn 500 a day from home", "DM me for the insider price", "like for cash back". Whether you are just browsing or building a product that shows comments to others, you want the same thing: quickly tell what's worth reading from what should be collapsed.
 
-The reference answer was No.
+Hand this to a general-purpose LLM and it will likely write three paragraphs of analysis before politely reaching a verdict. All you wanted was two things: an answer, and how sure it is of that answer.
 
-The selected answer tells us this prediction was wrong. Its probability tells us something else: it was a confident mistake. Both matter when an application uses probabilities to decide which action to take next.
+This is where decision models fit. They don't write essays; they take a position: return a category, a score, or a plain "yes / no", with a probability for every option. [Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev) and [Clef-Flash](https://developers.cloudflare.com/changelog/post/2026-10-01-clef-workers-ai/) are such models. Anything that needs explanation or discussion can still go to a chat model afterwards.
 
-Think of the small judgments inside an agent. Should it search or answer now? Has it obtained the information it needs? How many requirements has it completed? Each judgment may return just an option, a yes/no result or a rating, yet affect the actions that follow.
+This guide uses [**EvalScope**](https://github.com/modelscope/evalscope) to pose the questions, collect the answers and grade them, checking three things along the way: whether the answers are right, whether the probabilities are usable, and whether responses are fast enough. We start with a public question set to walk through the flow; the extension sections then cover your own data and self-hosting.
 
-Decision models such as Jev and Clef-Flash return probabilities alongside these judgments. Evaluation therefore needs to check answer correctness, probability quality and, as traffic grows, response time.
+## 1. Three kinds of questions a decision model answers
 
-This guide follows those three questions with EvalScope: run an evaluation, inspect a wrong answer, then test concurrent requests. ModelScope supplies public datasets and open models; the EvalScope Web UI lets you explore the results.
+Comment filtering is just one use; message classification, content scoring, and judging whether two pieces of text are related can all be handed to it. These jobs come down to three common question kinds.
 
-If you already have a decision API, start below. For an open model on your own machine, begin with [section 5](#5-serve-clef-flash-from-modelscope-with-vllm). The main workflow uses System One throughout, so changing services only requires updating connection settings.
+Here is a real comment-classification question. The comment (originally in Chinese) reads:
 
-> Image placeholder 1 | ModelScope supplies models and datasets, an inference service returns decisions, and EvalScope handles quality evaluation, reports and performance tests. Show the role of each component.
+> Earn 500+ a day from your phone at home: cash back for paid reviews, open to stay-at-home parents and students, limited slots, first come first served!
 
-## 1. Run three kinds of decisions
+The reference answer stays with EvalScope for grading and is never sent to the model. Below is the question as written (excerpted from the public [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) set):
 
-Consider an assistant that needs current information. The three question kinds fit into one workflow.
+![A comment-classification question with options A, B, C and D](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/decision_evaluation/public-question.png)
 
-| Judgment in the application | Kind | Model output |
-|---|---|---|
-| Search, calculate or answer next | Choice | Probabilities over the options |
-| Has the required information been obtained | Noul | Probability that the condition holds |
-| How many requirements have been completed | Score | Probabilities over ordered levels and their expected score |
+Pick one out of promotional spam, normal review, abuse and chit-chat. This "choose one out of many" kind is called **Choice**. The model returns a probability per option, which suits message classification and request routing.
 
-The expected Score can be fractional, falling between two levels when probability is distributed across them.
+Two more kinds are just as common: **Noul** is a yes/no judgment: it asks whether a condition holds and returns the probability that it does, such as "should this comment be collapsed"; **Score** is a graded rating over ordered levels, suited to judgments with degrees, like completeness or the severity of disruption.
 
-We will use three public datasets to exercise all three paths. This evaluates individual text judgments. Tool execution and complete agent success require separate evaluation.
+The key to writing a good question is stating the subject, the rules and the allowed answers clearly: use Choice for categories, Noul for whether a condition holds, and Score for degree-based ratings. Rules should be concrete: "comments discussing price may stay; comments where merchants solicit customers should be collapsed" is far clearer than "filter out bad content".
 
-### Install EvalScope
+## 2. One command to evaluate on public questions
 
-Run these commands from an [EvalScope source checkout](https://github.com/modelscope/evalscope) containing the decision-evaluation features described here. In each new terminal, enter the same directory and activate the environment.
+Our test run uses `decision-model-preview`, served through DashScope's System One endpoint (the common request format for decision models): questions go in, judgments and probabilities come back. Any other service compatible with this interface works with the same commands: just swap in your own model name, API URL and key.
+
+Run the following commands in order. The public questions come from [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions), which covers over two thousand questions across all three kinds; EvalScope downloads the data, poses the questions and grades the answers itself:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[perf,service]'
-```
+# Install dependencies (including the perf and Web UI components)
+pip install 'evalscope[perf,service]'
 
-### Connect a decision service
-
-Prepare a model name, service address and API key. This example uses DashScope's hosted `decision-model-preview`; consult the [service reference](https://help.aliyun.com/zh/model-studio/decision-model-api) for region, workspace and access details. Replace these three values for another System One service.
-
-```bash
+# Connection settings: replace with your service's model, URL and key
 export DECISION_MODEL='decision-model-preview'
 export DECISION_API_URL='https://trial.cn-beijing.maas.aliyuncs.com/compatible-mode/v1'
 export DECISION_API_KEY='replace-with-your-service-key'
+
+# Evaluate on the public questions
+evalscope eval \
+  --model "$DECISION_MODEL" \
+  --eval-type systemone_api \
+  --api-url "$DECISION_API_URL" \
+  --api-key "$DECISION_API_KEY" \
+  --datasets open_decisions
 ```
 
-Save this as `evaluate.py` and run `python evaluate.py`.
+When the run finishes, the terminal prints the per-kind scores and composite metrics. We ran our tests on 59 content-moderation questions picked from the full set, and the highlights from that report are below; the command above evaluates all 2352 questions by default.
 
-```python
-import os
+| Question kind | Samples | Accuracy ↑ | MAE ↓ |
+| --- | ---: | ---: | ---: |
+| Choice | 22 | 63.6% | — |
+| Noul | 19 | 89.5% | — |
+| Score (3 levels, 0–2) | 2 | 100% | 0.015 |
+| Score (4 levels, 0–3) | 16 | 56.3% | 0.6462 |
 
-from evalscope import TaskConfig, run_task
+For Choice, the option with the highest probability wins; Noul treats 0.5 as the default yes/no cutoff, and accuracy is simply the share of correct answers. Score accuracy checks whether the top-probability level is the right one, while MAE measures how far the probability-weighted score drifts from the reference level on average, so lower is better. Score questions with different scales are listed separately.
 
-run_task(TaskConfig(
-    model=os.environ['DECISION_MODEL'],
-    eval_type='systemone_api',
-    api_url=os.environ['DECISION_API_URL'],
-    api_key=os.environ['DECISION_API_KEY'],
-    datasets=['arc', 'boolq', 'stsb'],
-    dataset_args={
-        'arc': {'subset_list': ['ARC-Challenge']},
-        'boolq': {'extra_params': {'decision_kind': 'noul'}},
-    },
-    generation_config={'timeout': 300, 'retries': 1},
-    eval_batch_size=1,
-    limit=5,
-))
-```
+The composite scores for the same 59 questions are below; higher is better on all three:
 
-EvalScope loads the datasets from ModelScope, sends the questions and grades the responses. Reference answers are never sent to the model.
+| Composite metric | Score ↑ |
+| --- | ---: |
+| Intelligence (judgment ability) | 39.1% |
+| Calibration (probability reliability) | 53.9% |
+| Capability (overall performance) | 46.5% |
 
-`datasets` selects the tasks; `eval_type='systemone_api'` selects the interface. ARC-Challenge covers Choice, BoolQ explicitly switches to Noul, and STS-B uses Score on a 0–5 scale. Keep these tasks and scoring settings when comparing models.
+Don't read these three composite metrics as accuracy. **Intelligence** measures how much better the model does than a baseline: random guessing for Choice and Noul, and usually the middle level for Score. For example, random guessing on yes/no questions gives 50% accuracy, so reaching 80% converts to an ability score of `(80% - 50%) / (100% - 50%) = 60%`. Questions are weighted by difficulty, and the per-kind ability scores average into this run's **39.1%**.
 
-Keep `limit=5` to check that all three paths return valid results, then remove it for a complete evaluation. The limit applies per subset, so multiple subsets may send more than five requests. `retries=1` means one total attempt per sample. No temperature, max_tokens or streaming controls are needed.
+**Calibration** checks whether the stated probabilities match actual outcomes. For example, across the predictions where the model assigned an option an 80% probability, that option should actually hold about 80% of the time. The computation groups predictions by probability and measures this deviation; the smaller the deviation, the higher the score. Choice uses hard-difficulty questions, and Score also factors in how far the whole probability distribution sits from the reference level. The per-kind scores average out to **53.9%** this run.
 
-## 2. Read the report before comparing models
+**Capability** is simply the mean of the two, about `(39.1% + 53.9%) / 2 = 46.5%` here. It is an overall performance score, not the share of questions answered correctly.
 
-After evaluation, view the results in the EvalScope Web UI. For a source install, install Node.js and build the frontend once. From the repository root, run:
+For a quick first run, add `--limit 50` to take only the first 50 questions. Evaluation results land in `./outputs` by default, where the Web UI below reads them directly.
+
+## 3. Read the results in the Web UI
+
+When the evaluation finishes, start the Web UI and open the model report on the Evaluations page at `http://127.0.0.1:9000`:
 
 ```bash
-make web-build
-evalscope service --host 127.0.0.1 --port 9000 --outputs ./outputs
+evalscope service
 ```
 
-Open `http://127.0.0.1:9000`, choose Evaluations and open the model report. Check successful requests, valid review counts and coverage before reading scores.
+Start with the overall numbers on the report page: accuracy for Choice and Noul questions, mean absolute error (MAE) for Score questions. Once the totals look right, drill into individual questions.
 
-A real trial with the configuration above produced these results for `decision-model-preview`. Each dataset has only five samples: these illustrate how to read the report, not overall model quality. A new run may produce different values.
+Open a question in Predictions to see the model's pick next to the reference answer, along with the probability of each option. Below is the real result for the Chinese comment question from earlier: the model chose promotional spam, and the page marks the matching reference answer.
 
-| Dataset | Valid reviews | Primary metric | Interpretation |
-|---|---|---|---|
-| ARC-Challenge | 5 | Accuracy 80% | Four of five Choice answers correct |
-| BoolQ in Noul mode | 5 | Accuracy 80% | Four of five yes/no answers correct |
-| STS-B | 5 | MAE 0.564 | Average error of 0.564 points on a 0–5 scale |
+![The prediction, reference answer and per-option probabilities for the public comment question in the Web UI](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/decision_evaluation/prediction-probabilities.jpg)
 
-In Predictions, switch datasets and filter for wrong answers to inspect your own results. In this BoolQ trial, the sample shows Yes at 86%, No at 14%, and No as the reference. The distribution makes this mistake easier to understand than an aggregate score alone.
+In the figure, `spam_or_scam_ad` corresponds to promotional spam; the other three options are normal review, abuse and chit-chat. Beyond whether the pick is right, the probabilities also show whether the model hesitated between options. To inspect mistakes, filter for wrong answers and read them side by side with the questions and probabilities.
 
-Evaluation Result shows the sample score. Expand Raw scoring data or switch between original and scoring probabilities when investigating a response. The output directory also retains `predictions/`, `reviews/` and the HTML summary.
+## 4. Response speed matters too
 
-> Image placeholder 2 | The actual trial report and BoolQ error, highlighting valid review counts, Yes at 86% and the No reference. Use the corresponding saved run when adding images together.
+Automated classification and filtering call the model repeatedly, so waiting time shapes the experience too. The load test needs no hand-prepared data either; it reuses the same public question set: pass `open_decisions` as the dataset and the questions load automatically and are sent one by one:
 
-That wrong answer gives the metrics a concrete purpose.
-
-**Accuracy measures answer correctness.** Assigning Yes 51% or 86% both produces a wrong answer in this example. Accuracy cannot distinguish the two probabilities.
-
-**NLL, Brier and ECE help assess probabilities.** For this same No reference, increasing the Yes probability from 51% to 86% worsens NLL and Brier. Both penalize confident errors; lower is better. ECE checks agreement between probabilities and observed frequencies. For Choice, selected answers assigned 80% probability should be correct about 80% of the time. For Noul, conditions assigned an 80% Yes probability should hold about 80% of the time. One wrong prediction does not establish miscalibration; five samples are too few to assess it reliably.
-
-**MAE measures rating error.** STS-B references can be fractional. EvalScope compares the model's expected score with those references, preserving that detail. The table's 0.564 means an average error of 0.564 points; lower is better.
-
-An application might accept some decisions automatically and send others for review. In Details, the risk–coverage interaction lets you select the question group and probability source, then change accepted coverage to inspect retained risk. AURC summarizes the curve; lower is generally better. Score risk uses rating error normalized by the scale range.
-
-Option probabilities and a provider's separate `confidence` may have different meanings, so the report distinguishes them. Validate actual business thresholds on independent, representative data rather than this small trial.
-
-> Image placeholder 3 | An illustration of similar accuracy with different probability quality, alongside a risk–coverage illustration. Label both as illustrative data.
-
-Use these auxiliary metrics when needed.
-
-| Metric | What it shows | Better direction |
-|---|---|---|
-| macro-F1 | Fixed-class performance with equal class weighting | Higher |
-| Precision / Recall / F1 | Reliability of positive Noul predictions, positive coverage and their balance | Higher |
-| AUROC / AUPRC | Separation of positive and negative Noul samples | Higher; compare datasets cautiously |
-| Spearman / Pearson | Agreement in rating order and score variation | Closer to 1 |
-| nRPS | Probability concentrated near the correct discrete Score level | Lower |
-
-Small samples, a single gold class or constant ratings can leave metrics undefined. Inspect the reason instead of interpreting an absent value as zero. Avoid directly averaging binary/multiclass Brier or errors on different Score scales.
-
-## 3. Choose evaluation data from ModelScope
-
-Once all three request kinds work, choose the tasks that matter to your application. Scientific reasoning, intent classification and broader decision making call for different datasets.
-
-These benchmarks are already integrated. Use the name in the left column and EvalScope loads the data, builds questions and computes metrics.
-
-| Benchmark | What it measures |
-|---|---|
-| `arc` | Scientific knowledge and reasoning; this guide uses ARC-Challenge |
-| `boolq` | Yes/no judgments based on a passage; this guide uses Noul |
-| `stsb` | Sentence-pair semantic similarity, rated from 0 to 5 |
-| `jevbench` | Choice, Noul and Score decisions across 231 public tasks |
-| `open_decisions` | Three decision types across 2,352 tasks, including Intelligence, Calibration and Capability |
-| `banking77` | Banking intent recognition across 77 classes |
-| `reward_bench` | Choosing the better of two answers |
-| `general_decision` | Choices, boolean judgments and ratings from your own application |
-
-[JevBench](https://modelscope.cn/datasets/evalscope/jevbench) and [OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions) are available on ModelScope. See the detailed usage documentation linked at the end for sources, scoring definitions and service requirements.
-
-Replace the dataset settings in your working `evaluate.py` to try the comprehensive decision sets.
-
-```python
-datasets=['jevbench', 'open_decisions'],
-dataset_args={},
+```bash
+evalscope perf --api systemone --model "$DECISION_MODEL" \
+  --url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" \
+  --dataset open_decisions \
+  --parallel 1 4 --number 24 24 --warmup-num 2 --no-stream
 ```
 
-Keep the limit for the smoke run, then remove it. Public decision scores do not represent complete agent success. RewardBench's sample-weighted score is also different from its official category-weighted leaderboard result.
+The command sends 24 requests at each of the two concurrency levels, 1 and 4, with 2 warmup requests before the measured run. The figure below comes from a short load test with Chinese comment requests; running the command above replays the same flow on the public questions. In that test, raising concurrency from 1 to 4 pushed throughput to over three times, while p95 latency rose only slightly. The left side is the actual report; the right compares the two concurrency levels. p95 is the latency that 95% of requests stay within.
 
-## 4. Bring the decisions from your application
+![The performance report for this run, with successful throughput and p95 latency at both concurrency levels](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/decision_evaluation/performance-comparison.png)
 
-Public benchmarks provide a shared reference. To assess your own application, add the judgments it encounters in practice.
+When reading a load-test report, check the success rate first, because speed with a high failure rate doesn't count; then look at latency and throughput. The full records open directly on the Web UI's Performance page, with no path switch needed: perf results also land in the default `./outputs` directory. Before wiring this into your own application, rerun with a larger request volume to see sustained behavior; when switching models, keep the same questions and test setup so runs stay comparable.
 
-Use the assistant workflow from section 1: choosing a capability, checking whether information has been obtained, and counting completed requirements. Each can become a question with a clear reference answer.
+## 5. Going further: use your own data
 
-Create `decision-data/default_test.jsonl` with one question per line. These three records are illustrative inputs.
+Public questions are a shared reference; whether the model fits your use case depends on your own data. The data doesn't have to be large: a few records for each typical situation you run into are already worth evaluating. Organize the content to judge into the [custom data format](../advanced_guides/custom_dataset/decision.md), save it locally, and point `general_decision` at it:
+
+```bash
+evalscope eval \
+  --model "$DECISION_MODEL" \
+  --eval-type systemone_api \
+  --api-url "$DECISION_API_URL" \
+  --api-key "$DECISION_API_KEY" \
+  --datasets general_decision \
+  --dataset-args '{"general_decision":{"local_path":"./decision-data"}}'
+```
+
+One record per line of JSON, with the material, the question and the expected answer all in one line:
 
 ```json
-{"id":"route","state":"The user needs today's weather. No online result has been obtained.","question":{"type":"choice","instructions":"Which capability should run next?","criteria":{"search":"Look up external information","calculate":"Perform a numerical calculation","answer":"Answer from available information"}},"expected":"search"}
-{"id":"ready","state":"The user needs today's weather. No online result has been obtained.","question":{"type":"noul","instructions":"Has today's weather information already been obtained?"},"expected":"no"}
-{"id":"complete","state":"The task requires price, stock availability and a purchase link. The answer gives only the price.","question":{"type":"score","instructions":"Rate completion by the number of requirements covered.","criteria":["None covered","One covered","Two covered","All three covered"]},"expected":"1"}
+{"id": "fold-1", "state": "the comment text", "question": {"type": "noul", "instructions": "Should this comment be collapsed?"}, "expected": "no"}
 ```
 
-Each record has three core parts. `state` supplies the material, `question` defines the judgment, and `expected` is the reference retained by the evaluator rather than sent to the model.
+Once it finishes, open the Web UI as before and browse question by question in Predictions; among your own records, the wrong answers are the ones worth pausing on. Take this comment (originally in Chinese): the rules say it should stay, yet the model gave collapsing an 82% probability, the exact opposite of the reference answer.
 
-Choice uses an option ID, Noul uses `yes` / `no`, and Score uses a zero-based level number. The last example covers one requirement, so its reference is `1`. Clear criteria give you the same test when changing models, prompts or services.
+> A commenter left the merchant's phone number here; I've reported it, and this comment does not repeat those contact details.
 
-Replace the dataset settings in the same script. Local records do not need to be uploaded.
+![The prediction, reference answer and yes/no probabilities for a misjudged Chinese comment in the Web UI](https://sail-moe.oss-cn-hangzhou.aliyuncs.com/yunlin/images/evalscope/doc/decision_evaluation/decision-error-probabilities.jpg)
 
-```python
-datasets=['general_decision'],
-dataset_args={'general_decision': {'local_path': './decision-data'}},
-```
+High probability can still be wrong. Raising the collapse threshold usually reduces friendly fire, but may let more promotions slip through; the trade-off has to be measured on your own data. If mistakes cluster in one kind of content, add such samples, adjust the rules, or [train your own decision model](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html) with ms-swift, then rerun the same questions to see the change. See the [decision model evaluation guide](../user_guides/systemone.md) for more probability metrics.
 
-These three records check formatting and execution. Use independent, representative samples for conclusions about quality, including ambiguous and insufficient-evidence cases.
+## 6. Going further: deploy on your own machine
 
-For all supported fields, multiple subsets and continuous reference scores, see [Custom decision datasets](../advanced_guides/custom_dataset/decision.md).
-
-## 5. Serve Clef-Flash from ModelScope with vLLM
-
-Self-hosting is optional. To run on your own machine, use [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash) on ModelScope. Based on Qwen3.5-9B, this approximately 9B-parameter model supports all three question kinds. This guide uses text inputs.
-
-Once serving is ready, run the same `evaluate.py`. Keeping the datasets and scoring settings fixed makes hosted and self-hosted results easier to compare.
-
-The commands target Linux/NVIDIA GPUs with sufficient memory. The [latest vLLM development documentation](https://docs.vllm.ai/en/latest/models/structured_decisions_models/) lists native Clef-Flash System One support. Install a development build containing that implementation; loading the backbone alone does not establish decision-head support.
+If you'd rather not use a hosted service, you can run the open-source [Cloudflare/clef-flash](https://modelscope.cn/models/Cloudflare/clef-flash) on your own machine (about 9B parameters, based on Qwen3.5-9B, supports all three question kinds). You need a vLLM build with System One decision-head support, which is new enough that you install the nightly build; once installed, start the server, switch the connection settings and evaluate, all in this one block:
 
 ```bash
 pip install -U modelscope
@@ -201,109 +148,18 @@ pip install -U --pre vllm --extra-index-url https://wheels.vllm.ai/nightly
 VLLM_USE_MODELSCOPE=true vllm serve Cloudflare/clef-flash \
   --served-model-name clef-flash \
   --max-model-len 16384 --port 8000
-```
 
-`VLLM_USE_MODELSCOPE=true` makes vLLM download the model from ModelScope automatically. No separate download script is needed. Keep the service terminal running and change the connection settings in another activated terminal.
-
-```bash
+# Once the server is up, switch the connection settings in another terminal and evaluate
 export DECISION_MODEL='clef-flash'
 export DECISION_API_URL='http://127.0.0.1:8000/v1'
 export DECISION_API_KEY='EMPTY'
+evalscope eval --model "$DECISION_MODEL" --eval-type systemone_api --api-url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" --datasets open_decisions
 ```
 
-Check one decision before starting evaluation.
+From here on, the flow is exactly the one from sections 2 to 4: read the report, browse the predictions, load-test, just with the model now running on your own machine.
 
-```bash
-curl "$DECISION_API_URL/systemone" \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"clef-flash","state":"The sky is blue.","questions":{"answer":{"type":"choice","instructions":"What color is the sky?","criteria":{"blue":"Blue","red":"Red"}}}}'
-```
+## Wrapping up
 
-The response should contain `answers.answer.choice` and `probabilities` keyed by option ID. Values depend on the actual response.
+This guide followed one thread all the way through: put a decision model through EvalScope, check whether the answers are right on public questions, look through the probabilities question by question in the Web UI, load-test the response speed, then switch to your own data, or to a model hosted on your own machine, and run the same flow once more.
 
-Run `python evaluate.py` again. The model name, address and key changed; the same `systemone_api` evaluation configuration still applies. `EMPTY` denotes that this local example has no configured authentication.
-
-**Deployment verification scope:** these commands follow the current vLLM development documentation and have not been validated by this project on NVIDIA GPUs. Earlier real Clef-Flash quality runs used the official PyTorch implementation. Those are separate kinds of evidence. Record model revision, vLLM version and serving arguments for comparisons, and check whether long inputs are truncated.
-
-## 6. Check what happens when requests arrive together
-
-A quick response to one request does not tell you what happens when many arrive together. If a judgment sits on an agent's critical path, queueing adds directly to the user's wait.
-
-Use EvalScope to measure how long a complete decision request takes and how many the service completes each second.
-
-Stop quality-evaluation traffic on the same service. Fix the model configuration and inputs. These commands use the active terminal's `DECISION_*` settings for a compatible hosted or local inference service. Respect hosted quotas and begin with a small run.
-
-Export ARC-Challenge Choice, BoolQ Noul and STS-B Score inputs. Each file contains 20 distinct requests by default; performance tests cycle through them.
-
-```bash
-python examples/decision/prepare_perf_requests.py \
-  --api systemone --model "$DECISION_MODEL" \
-  --choice-benchmark arc --output ./perf-input/systemone
-evalscope perf --api systemone --model "$DECISION_MODEL" \
-  --url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" \
-  --dataset line_by_line --dataset-path ./perf-input/systemone/choice.jsonl \
-  --parallel 1 --number 20 --warmup-num 2 --no-stream \
-  --read-timeout 300 --outputs-dir ./perf-results/smoke
-```
-
-Once that works, test each kind across concurrency levels.
-
-```bash
-for kind in choice noul score; do
-  evalscope perf --api systemone --model "$DECISION_MODEL" \
-    --url "$DECISION_API_URL" --api-key "$DECISION_API_KEY" \
-    --dataset line_by_line --dataset-path "./perf-input/systemone/$kind.jsonl" \
-    --parallel 1 4 8 16 --number 1000 1000 1000 1000 \
-    --warmup-num 20 --no-stream --read-timeout 300 \
-    --outputs-dir "./perf-results/$kind"
-done
-```
-
-Each kind uses concurrency 1/4/8/16, with 20 warmups and 1,000 measured requests per setting. Export again after switching models so requests do not retain the previous model name. This is a reproducible test configuration; measure actual performance on your own service.
-
-In the Web UI Performance page, select `perf-results` and open a run to compare concurrency charts and browse request records. The output directory also keeps `perf_report.html`.
-
-Start with success rate and failures: fast responses with many failures do not establish a usable service. Then inspect p50/p90/p95/p99 latency and successful requests/s. For example, a p95 of 0.3 seconds means about 95% of successful requests finish within that time. One request is one question here, so successful requests/s equals successful decisions/s.
-
-If concurrency raises latency without improving throughput, requests are probably queueing. Network, request length, caching and measurement location also affect comparisons.
-
-> Image placeholder 4 | Successful throughput and p95 latency versus concurrency for one model, with input lengths and cache/serving settings. Add measured results later.
-
-An invalid decision fails even with HTTP 200. Request latency includes HTTP network, queueing and service execution, rather than model compute alone. These non-streaming decisions do not use TTFT/TPOT/ITL. See the [performance quick start](../user_guides/stress_test/quick_start.md) for additional options.
-
-## 7. Customize with ms-swift when needed
-
-If errors cluster around a particular business judgment, the evaluation can help identify a training target. Keep the same independent test set after training to check whether those errors improved.
-
-[ms-swift](https://swift.readthedocs.io/en/latest/BestPractices/Decision.html) provides decision training for JEV-27B-VL, Cloudflare/clef, OmniJev and generic CausalLMs. Trained models can run through Transformers; a compatible decision-service adapter can then connect them to EvalScope for re-evaluation.
-
-`Cloudflare/clef` and `clef-flash` are different models. Exporting a trained ms-swift checkpoint to vLLM System One requires separate adaptation and validation; this guide does not claim that complete training-to-serving path has been verified. Keep training, calibration and evaluation data separate.
-
-## Troubleshooting
-
-| Symptom | Check first |
-|---|---|
-| `401` / `403` or unavailable model | API key, region, workspace and model access |
-| `404` / `501` | `/v1/systemone` path and a vLLM build with the model's decision strategy |
-| Too many Choice options | Actual service limit; BANKING77 requires all 77 options |
-| Unsupported Score levels | Preserve the original rubric and use a compatible service |
-| Scores with incomplete review counts | Failed/invalid responses, coverage and saved predictions/reviews |
-| Want a small first run | Keep `limit=5`; use 20 requests for perf |
-
-## Other interfaces
-
-[TypeSafe Jev](https://api.typesafe.ai/redoc) also uses `systemone_api`. Set the address to `https://api.typesafe.ai/v1`, choose a model returned by your account's `/v1/models` and provide its API key. The EvalScope benchmark, scoring and performance-testing workflow stays the same; check each model's capabilities and limits.
-
-AutoTrust JEV's `/v1/decide` uses `autotrust_api`; see `examples/decision/serve_autotrust.py`. Its fixed-six-level Score cannot cover complete JevBench/OpenDecisions. Ordinary chat models use `openai_api` and can run ARC, BANKING77, default-Choice BoolQ and RewardBench for answer correctness. Self-reported confidence in chat does not substitute for option probabilities.
-
-## Continue with EvalScope
-
-You can now inspect an answer and its probabilities, add business questions and compare response times under load. The opening's wrong answer with 86% probability is something you can locate, examine and test again after a model update.
-
-For more options and full instructions, see:
-
-- [EvalScope documentation](https://evalscope.readthedocs.io/en/latest/)
-- [Decision API configuration](../user_guides/systemone.md)
-- [Supported benchmarks](../get_started/supported_dataset/llm.md)
-- [Web service and result browsing](../user_guides/service.md)
-- [Performance quick start](../user_guides/stress_test/quick_start.md)
+Whether it fits comes down to three things: whether the rules are written clearly, whether the mistakes are acceptable, and whether it is fast enough. Public questions are only a reference; the real answer sits in your own data. Write down the answers you agree with, run the evaluation, and see where the model judges differently: a report this close to your own use case answers "is this model right for me" far better than any public leaderboard. Want to try other question kinds? The [dataset list](../get_started/supported_dataset/llm.md) has more ready-made entries; to plug in another System One service, the [decision model API configuration](../user_guides/systemone.md) has you covered. Pick whichever entry fits and get started.

@@ -127,6 +127,6 @@ The default primary metric is **accuracy** across discrete-reference records. Ot
 
 The three introductory records are too few for some metrics: AUROC may be unavailable, and Score correlations cannot be calculated. The report keeps the reason; an unavailable value is not zero. Check execution coverage and valid counts before comparing models.
 
-View results through the [EvalScope Web UI](../../best_practice/decision_evaluation.md#2-read-the-report-before-comparing-models), or inspect `predictions/`, `reviews/` and `reports/`. The probability panel switches between original and scoring distributions; reviews record any normalization of rounded probabilities.
+View results through the [EvalScope Web UI](../../best_practice/decision_evaluation.md#3-read-the-results-in-the-web-ui), or inspect `predictions/`, `reviews/` and `reports/`. The probability panel switches between original and scoring distributions; reviews record any normalization of rounded probabilities.
 
 For more options, see [Decision API configuration](../../user_guides/systemone.md) and [evaluation parameters](../../get_started/parameters.md).
