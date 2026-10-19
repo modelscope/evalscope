@@ -52,6 +52,7 @@ ToolBench-Static is a benchmark for evaluating AI models' ability to use tools a
         metric_list=['Act.EM', 'Plan.EM', 'F1', 'HalluRate', 'Rouge-L'],
         primary_metric=MetricSelector(name='f1', aggregation='mean'),
         eval_split='test',
+        evaluation_version='v1.1',
     )
 )
 class ToolBenchAdapter(DefaultDataAdapter):
