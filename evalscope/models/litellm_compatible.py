@@ -121,13 +121,14 @@ class LiteLLMAPI(ModelAPI):
                 **request,
             )
 
-            total_time = time.monotonic() - t_start
             ttft: Optional[float] = None
 
             if config.stream and not isinstance(response, ChatCompletion):
                 completion, ttft = collect_stream_response(response, request_start=t_start)
             else:
                 completion = ChatCompletion(**response.model_dump())
+            # Measure after the stream is consumed, as the openai_api path does.
+            total_time = time.monotonic() - t_start
 
             choices = chat_choices_from_openai(completion, tools)
             output = model_output_from_openai(completion, choices)
@@ -193,13 +194,14 @@ class LiteLLMAPI(ModelAPI):
                 **request,
             )
 
-            total_time = time.monotonic() - t_start
             ttft: Optional[float] = None
 
             if config.stream and not isinstance(response, ChatCompletion):
                 completion, ttft = await async_collect_stream_response(response, request_start=t_start)
             else:
                 completion = ChatCompletion(**response.model_dump())
+            # Measure after the stream is consumed, as the openai_api path does.
+            total_time = time.monotonic() - t_start
 
             choices = chat_choices_from_openai(completion, tools)
             output = model_output_from_openai(completion, choices)

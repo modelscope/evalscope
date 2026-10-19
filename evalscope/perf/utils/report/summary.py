@@ -60,8 +60,7 @@ def _cell(field_key: str, value: float, include_unit: bool = False) -> str:
 
 def is_embedding(api_type: str) -> bool:
     """Return True when *api_type* indicates an embedding / rerank model."""
-    lower = (api_type or '').lower()
-    return 'embedding' in lower or 'rerank' in lower or 'embed' in lower
+    return Metrics.is_embedding_or_rerank(api_type)
 
 
 def build_basic_info(

@@ -11,9 +11,10 @@ from evalscope import TaskConfig, run_task
 from evalscope.api.dataset import DatasetDict, MemoryDataset, Sample
 from evalscope.api.messages import ChatMessage, ChatMessageAssistant, ChatMessageSystem, ChatMessageUser, ContentImage
 from evalscope.api.model import GenerateConfig, Model, ModelOutput
+from evalscope.api.model.decision import DecisionAnswer
 from evalscope.api.model.model import ModelCache, get_model_with_task_config
 from evalscope.api.registry import get_benchmark
-from evalscope.models.systemone import SystemOneAPI, _ChoiceAnswer
+from evalscope.models.systemone import SystemOneAPI
 from evalscope.utils.multi_choices import answer_character
 
 
@@ -21,6 +22,7 @@ def request(options: int = 2) -> list[ChatMessage]:
     return [ChatMessageUser(
         content='Choose the best answer.',
         internal={'systemone': {
+            'kind': 'choice',
             'state': {'question': 'Choose the best answer.'},
             'instructions': 'Choose one.',
             'criteria': {answer_character(i): f'Option {i}' for i in range(options)},
@@ -130,7 +132,6 @@ def test_wire_request_and_roundtrip(options: int) -> None:
     assert output.usage.total_tokens == 12
     assert output.choices[0].logprobs is None
     assert ModelOutput.model_validate_json(output.model_dump_json()).metadata == output.metadata
-    assert 'choice_result' not in output.model_dump()
     provider.client.close()
 
 
@@ -142,7 +143,7 @@ def test_wire_request_and_roundtrip(options: int) -> None:
 def test_invalid_choice_result(changes: dict) -> None:
     answer = {'type': 'choice', 'choice': 'A', 'probabilities': {'A': 1, 'B': 0}, 'confidence': 0.99}
     with pytest.raises(ValueError):
-        _ChoiceAnswer.model_validate({**answer, **changes})
+        DecisionAnswer.model_validate({**answer, **changes})
 
 
 @pytest.mark.parametrize('status,attempts', [(400, 1), (401, 1), (422, 1), (429, 2), (529, 2), (503, 2)])
@@ -288,10 +289,10 @@ def test_unsupported_benchmark_rejected_before_loading(supports_choice: bool) ->
 def test_rounded_large_distribution_is_retained() -> None:
     probabilities = {answer_character(i): 0.0 for i in range(77)}
     probabilities.update({'A': 0.70, 'B': 0.20, 'C': 0.06})
-    answer = _ChoiceAnswer(choice='A', probabilities=probabilities)
+    answer = DecisionAnswer(type='choice', choice='A', probabilities=probabilities)
     assert sum(answer.probabilities.values()) == pytest.approx(0.96)
     with pytest.raises(ValueError, match='rounding tolerance'):
-        _ChoiceAnswer(choice='A', probabilities={key: 0 for key in probabilities})
+        DecisionAnswer(type='choice', choice='A', probabilities={key: 0 for key in probabilities})
 
 
 def test_anli_round_split_selection(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -336,7 +337,7 @@ def test_failure_is_excluded_with_execution_coverage(tmp_path: Path, monkeypatch
     assert report['execution_summary']['errored'] == 1
     assert report['execution_summary']['incomplete'] is True
     review = json.loads(next((output / 'reviews').rglob('*.jsonl')).read_text())
-    assert list(review['sample_score']['score']['value'].values()) == [1.0]
+    assert review['sample_score']['score']['value']['acc'] == 1.0
 
 
 NEW_RECORDS = {
@@ -397,7 +398,6 @@ def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, 
     prediction = json.loads(next((tmp_path / 'predictions').rglob('*.jsonl')).read_text())
     review = json.loads(next((tmp_path / 'reviews').rglob('*.jsonl')).read_text())
     report = json.loads(next((tmp_path / 'reports').rglob(f'{name}.json')).read_text())
-    assert 'choice_result' not in prediction['model_output']
     assert 'SECRET_GOLD' not in json.dumps(seen[0])
     if eval_type == 'systemone_api':
         assert prediction['model_output']['metadata']['choice_response']['answers']['answer']['choice'] == targets[0]
@@ -410,7 +410,8 @@ def test_native_pipeline_and_reports(name: str, eval_type: str, tmp_path: Path, 
     else:
         assert all(message.get('internal') is None for message in prediction['messages'])
         assert prediction['messages'][0]['content'] == seen[0]['messages'][0]['content']
-    assert list(review['sample_score']['score']['value'].values()) == [1.0]
+    metric_name = 'acc' if eval_type == 'systemone_api' else 'accuracy'
+    assert review['sample_score']['score']['value'][metric_name] == 1.0
     assert report['execution_summary']['succeeded'] == 1
     assert report['execution_summary']['errored'] == 0
     assert (tmp_path / 'reports' / 'report.html').is_file()

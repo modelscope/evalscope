@@ -706,7 +706,7 @@ class EmbeddingSummaryRenderer(BaseSummaryRenderer):
 
 def print_summary(all_results, args: Arguments):
     """Print the test-results summary to stdout and save it to a text file."""
-    is_emb = Metrics.is_embedding_or_rerank(args.api)
+    is_emb = Metrics.is_input_only(args.api)
     analyzer = EmbeddingResultAnalyzer() if is_emb else LLMResultAnalyzer()
     renderer = EmbeddingSummaryRenderer() if is_emb else LLMSummaryRenderer()
 

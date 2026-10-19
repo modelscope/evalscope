@@ -1,5 +1,4 @@
 import ast
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
@@ -9,7 +8,7 @@ from evalscope.api.messages import ChatMessageUser, Content
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.multi_choices import MultipleChoiceTemplate, parse_answers, prompt
+from evalscope.utils.multi_choices import MultipleChoiceTemplate, extract_answer_line, parse_answers, prompt
 
 SUBSET_LIST = [
     'Accounting',
@@ -167,10 +166,8 @@ class MMMUAdapter(VisionLanguageAdapter):
             answers = parse_answers(task_state, completion=prediction)
             return ''.join(sorted(list(answers)))
         elif question_type == OPEN_TYPE:
-            matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-            if matches:
-                return matches[-1].strip()
-            return prediction.strip()
+            answer = extract_answer_line(prediction)
+            return answer if answer is not None else prediction.strip()
         else:
             raise ValueError(f'Unsupported question type: {question_type}')
 

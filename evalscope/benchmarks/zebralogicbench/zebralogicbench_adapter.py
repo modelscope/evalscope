@@ -106,6 +106,7 @@ ZebraLogicBench is a comprehensive evaluation framework for assessing LLM reason
         subset_list=['grid_mode'],
         few_shot_num=0,
         eval_split='test',
+        evaluation_version='v1.1',
         prompt_template=PROMPT_TEMPLATE,
         metric_list=[
             'puzzle_acc',
@@ -172,7 +173,8 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
             if last_json_str:
                 try:
                     # Normalize JSON to a compact string
-                    return json.dumps(json.loads(last_json_str))
+                    # Like the official scorer, drop raw newlines so multi-line string values still load.
+                    return json.dumps(json.loads(last_json_str.replace('\n', '')))
                 except json.JSONDecodeError:
                     return ''
             return ''
@@ -190,9 +192,8 @@ class ZebraLogicBenchAdapter(DefaultDataAdapter):
             prediction=original_prediction,
         )
         try:
-            results: Dict[str, float] = (
-                {} if not filtered_prediction else process_results(filtered_prediction, reference)
-            )
+            # An unparsed answer still counts toward cell/size totals and no_answer, as in the official scorer.
+            results: Dict[str, float] = process_results(filtered_prediction or '{}', reference)
             score.value.update(results)
             score.main_score_name = 'puzzle_acc'
         except Exception as e:

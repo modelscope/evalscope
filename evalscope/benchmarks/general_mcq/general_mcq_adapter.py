@@ -82,14 +82,14 @@ class GeneralMCQAdapter(MultiChoiceAdapter):
         self.multiple_correct = self.extra_params.get('multiple_correct', False)
         self.use_cot = self.extra_params.get('use_cot', False)
 
-        if self.multiple_correct and self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
-        elif self.multiple_correct:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
-        elif self.use_cot:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
-        else:
-            self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE
+        # Only swap the default template; a prompt_template supplied via dataset_args wins.
+        if self.prompt_template == MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE:
+            if self.multiple_correct and self.use_cot:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE_COT
+            elif self.multiple_correct:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_MULTIPLE_ANSWER_TEMPLATE
+            elif self.use_cot:
+                self.prompt_template = MultipleChoiceTemplate.CHINESE_SINGLE_ANSWER_TEMPLATE_COT
 
     @property
     def metric_list(self) -> list[str | dict[str, Any]]:

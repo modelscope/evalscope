@@ -100,10 +100,10 @@ class CoinFlipAdapter(DefaultDataAdapter):
         )
 
     def extract_answer(self, prediction, task_state):
-        import re
+        from evalscope.utils.multi_choices import extract_answer_line
 
-        matches = re.findall(r'ANSWER:\s*(.*)', prediction)
-        return matches[-1].strip() if matches else prediction
+        answer = extract_answer_line(prediction)
+        return answer if answer is not None else prediction
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         score = Score(

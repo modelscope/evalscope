@@ -14,7 +14,7 @@ import Card from '@/components/ui/Card'
 import Skeleton from '@/components/ui/Skeleton'
 import PerfChartGroup from '@/components/perf/PerfChartGroup'
 import ErrorAlert from '@/components/ui/ErrorAlert'
-import { LATENCY_CHARTS, THROUGHPUT_CHARTS } from '@/domain/perf/charts'
+import { LATENCY_CHARTS, THROUGHPUT_CHARTS, perfRunMode } from '@/domain/perf/charts'
 import { formatTimestamp } from '@/utils/formatUtils'
 import { AlertTriangle, ArrowLeftRight, GitCompareArrows, Info } from 'lucide-react'
 
@@ -123,11 +123,11 @@ export default function PerfComparePage() {
     [details, baselineParam],
   )
 
-  // Embedding/rerank runs omit TTFT/TPOT charts (mirrors PerfReportDetailPage).
-  const isEmbedding = details?.[0]?.is_embedding ?? false
+  // Compare only timing measurements that apply to every selected run.
+  const inputOnly = details?.some((detail) => perfRunMode(detail) !== 'generation') ?? false
   const latencyCharts = useMemo(
-    () => (isEmbedding ? (['latency'] as const) : LATENCY_CHARTS),
-    [isEmbedding],
+    () => (inputOnly ? (['latency'] as const) : LATENCY_CHARTS),
+    [inputOnly],
   )
 
   if (paths.length < 2) {

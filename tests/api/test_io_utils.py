@@ -9,7 +9,7 @@ from datasets import Audio, Dataset, DatasetInfo, Features, Image, Sequence, Vid
 from datasets.table import InMemoryTable
 from PIL import Image as PILImage
 
-from evalscope.utils.io_utils import jsonl_to_list, undecode_media
+from evalscope.utils.io_utils import csv_to_list, jsonl_to_list, tsv_to_list, undecode_media
 
 
 def _generate_jpeg_bytes(dim: int, quality: int = 80) -> bytes:
@@ -191,6 +191,12 @@ class TestJsonlToList:
         path.write_text(content, encoding='utf-8')
         return str(path)
 
+    def test_reads_file_with_utf8_bom(self, tmp_path: Path) -> None:
+        """Windows tools (Excel's 'CSV UTF-8', PowerShell's Out-File) write a BOM; it is not data."""
+        file_path = self._write(tmp_path / 'bom.jsonl', '\ufeff{"a": 1}\n{"a": 2}\n')
+
+        assert jsonl_to_list(file_path) == [{'a': 1}, {'a': 2}]
+
     def test_tolerant_read_skips_torn_tail(self, tmp_path: Path) -> None:
         file_path = self._write(tmp_path / 'torn.jsonl', '{"a": 1}\n{"a": 2}\n{"a": 3')
 
@@ -213,3 +219,21 @@ class TestJsonlToList:
 
         with pytest.raises(json.JSONDecodeError):
             jsonl_to_list(file_path)
+
+
+class TestDelimitedToList:
+    @staticmethod
+    def _write(path: Path, header: str, row: str) -> str:
+        path.write_text(f'\ufeff{header}\n{row}\n', encoding='utf-8')
+        return str(path)
+
+    def test_csv_reads_file_with_utf8_bom(self, tmp_path: Path) -> None:
+        """A BOM must not become part of the first header, or every field lookup misses."""
+        file_path = self._write(tmp_path / 'bom.csv', 'input,target', 'Question,A')
+
+        assert csv_to_list(file_path) == [{'input': 'Question', 'target': 'A'}]
+
+    def test_tsv_reads_file_with_utf8_bom(self, tmp_path: Path) -> None:
+        file_path = self._write(tmp_path / 'bom.tsv', 'input\ttarget', 'Question\tA')
+
+        assert tsv_to_list(file_path) == [{'input': 'Question', 'target': 'A'}]

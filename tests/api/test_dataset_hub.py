@@ -658,9 +658,13 @@ def test_local_path_override_clears_hf_mapping(tmp_path) -> None:
 
 @pytest.mark.parametrize(
     ('benchmark_name', 'hf_dataset_id'),
-    [('msvd', 'VLM2Vec/MSVD'), ('msr_vtt', 'VLM2Vec/MSR-VTT')],
+    [
+        ('msvd', 'VLM2Vec/MSVD'),
+        ('msr_vtt', 'VLM2Vec/MSR-VTT'),
+        ('stsb', 'sentence-transformers/stsb'),
+    ],
 )
-def test_video_caption_adapters_use_shared_hf_dataset_mapping(
+def test_adapters_use_shared_hf_dataset_mapping(
     benchmark_name: str,
     hf_dataset_id: str,
 ) -> None:
@@ -673,7 +677,8 @@ def test_video_caption_adapters_use_shared_hf_dataset_mapping(
     )
 
     assert adapter.dataset_id == hf_dataset_id
-    assert adapter.source_dataset.data_id_or_path == hf_dataset_id
+    if benchmark_name in ('msvd', 'msr_vtt'):
+        assert adapter.source_dataset.data_id_or_path == hf_dataset_id
     if benchmark_name == 'msr_vtt':
         assert adapter.source_eval_split == 'test'
         assert adapter.source_subset == 'test_1k'

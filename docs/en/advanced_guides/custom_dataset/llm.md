@@ -2,6 +2,8 @@
 
 This framework supports multiple-choice questions, question-answering questions, and function calling, with three predefined dataset formats. The usage process is as follows:
 
+To evaluate decision probabilities for Choice, Noul or Score tasks, use the separate [decision-model dataset format](decision.md).
+
 ## Multiple-Choice Question Format (MCQ)
 Suitable for scenarios where users need multiple-choice questions. The evaluation metric is accuracy.
 

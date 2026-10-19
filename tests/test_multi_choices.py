@@ -5,7 +5,7 @@ from evalscope.api.evaluator import TaskState
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
-from evalscope.utils.multi_choices import parse_answers, parse_answers_zh
+from evalscope.utils.multi_choices import extract_answer_line, parse_answers, parse_answers_zh
 
 CHOICES = ['first', 'second', 'third', 'fourth']
 
@@ -325,3 +325,15 @@ def test_parse_answers_math_wrapped_label_with_trailing_text(label: str) -> None
     # Without the label, the last capital of the trailing sentence ('I') was taken instead.
     assert parse_answers(_make_state(f'reasoning\nANSWER: {label}\n\nI hope this helps.')) == {'B'}
     assert parse_answers_zh(_make_state(f'推理\n答案：{label}\n\nHope this helps.')) == {'B'}
+
+
+@pytest.mark.parametrize(
+    'text',
+    ['ANSWER: 45', '**ANSWER: 45**', 'ANSWER: **45**', '**ANSWER:** 45', 'Answer: 45', 'reasoning\nANSWER: 12\nfix\nANSWER: 45'],
+)
+def test_extract_answer_line(text: str) -> None:
+    assert extract_answer_line(text) == '45'
+
+
+def test_extract_answer_line_without_marker() -> None:
+    assert extract_answer_line('The value is 45.') is None

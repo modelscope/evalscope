@@ -266,3 +266,16 @@ def test_dict_loader_preserves_selected_metadata_fields() -> None:
 def test_dict_loader_rejects_invalid_metadata(metadata: Any) -> None:
     with pytest.raises(ValueError):
         DictDataLoader(dict_list=[{'input': 'Question', 'metadata': metadata}]).load()
+
+
+def test_repeats_group_the_samples_of_a_multi_sample_record_by_question() -> None:
+    # A record may yield several samples (one per question); each repeat group must hold one question.
+    def record_to_samples(record: Dict[str, Any]) -> List[Sample]:
+        return [Sample(input=question, metadata={'question': question}) for question in record['questions']]
+
+    dataset = DictDataLoader(dict_list=[{'questions': ['a', 'b']}], sample_fields=record_to_samples, repeats=2).load()
+
+    groups: Dict[int, List[str]] = {}
+    for sample in dataset:
+        groups.setdefault(sample.group_id, []).append(sample.metadata['question'])
+    assert groups == {0: ['a', 'a'], 1: ['b', 'b']}

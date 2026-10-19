@@ -100,6 +100,7 @@ SLA自动调优功能使用详见[自动调优指南](./sla_auto_tune.md)。
 | `openqa` | 从ModelScope自动下载[OpenQA](https://www.modelscope.cn/datasets/AI-ModelScope/HC3-Chinese/summary)<br>prompt长度较短（一般<100 token）<br>指定`dataset_path`时使用jsonl文件的`question`字段 | ✓ |
 | `longalpaca` | 从ModelScope自动下载[LongAlpaca-12k](https://www.modelscope.cn/datasets/AI-ModelScope/LongAlpaca-12k/dataPeview)<br>prompt长度较长（一般>6000 token）<br>指定`dataset_path`时使用jsonl文件的`instruction`字段 | ✓ |
 | `line_by_line` | 每行可为纯文本 prompt、OpenAI messages JSON 数组或完整请求体 JSON 对象；JSON 按原样转发<br>**必需提供`dataset_path`** | ✓（必需） |
+| `open_decisions` | 从ModelScope自动下载[OpenDecisions](https://modelscope.cn/datasets/evalscope/OpenDecisions)<br>把题目转成 System One 决策请求体，仅配合 `--api systemone` 使用 | ✓（目录） |
 | `random` | 根据`prefix-length`、`max-prompt-length`和`min-prompt-length`随机生成prompt<br>**必需指定`tokenizer-path`**<br>[使用示例](./examples.md#随机数据集) | ✗ |
 | `custom` | 自定义数据集解析器<br>参考[自定义数据集指南](custom.md/#自定义数据集) | ✓ |
 
