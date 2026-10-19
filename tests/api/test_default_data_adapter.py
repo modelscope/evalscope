@@ -211,3 +211,25 @@ def test_empty_system_prompt_is_added_once_to_message_input() -> None:
     assert len(existing_messages) == 2
     assert existing_messages[0] is existing_system
     assert existing_messages[0].content == 'existing'
+
+
+def test_get_metric_args_returns_a_copy() -> None:
+    task_config = TaskConfig(datasets=['dummy'])
+    benchmark_meta = BenchmarkMeta(
+        name='dummy',
+        dataset_id='dummy',
+        subset_list=['subset-a'],
+        default_subset='default',
+        eval_split='test',
+        prompt_template='{question}',
+        metric_list=[{'audio_wer': {'api_key': 'k'}}, 'plain_metric'],
+    )
+    adapter = DummyReformatAdapter(benchmark_meta=benchmark_meta, task_config=task_config)
+
+    args = adapter.get_metric_args('audio_wer')
+    args['language'] = 'en'
+
+    assert adapter.metric_list == [{'audio_wer': {'api_key': 'k'}}, 'plain_metric']
+    assert adapter.get_metric_args('audio_wer') == {'api_key': 'k'}
+    assert adapter.get_metric_args('plain_metric') == {}
+    assert adapter.get_metric_args('missing') == {}
