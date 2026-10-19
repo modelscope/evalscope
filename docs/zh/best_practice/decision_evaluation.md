@@ -50,6 +50,16 @@ evalscope eval \
   --datasets open_decisions
 ```
 
+运行结束后，终端会打印评测汇总表。下面节选本文 59 道内容审核题的实测结果；上面的命令默认评测全量 2352 道题。
+
+| Model | Dataset | Metric | Subset | Num | Score |
+| --- | --- | --- | --- | ---: | ---: |
+| decision-model-preview | OpenDecisions | Intelligence ↑ | default | 59 | 39.1% |
+| decision-model-preview | OpenDecisions | Calibration ↑ | default | 59 | 53.9% |
+| decision-model-preview | OpenDecisions | Capability ↑ | default | 59 | 46.5% |
+
+Capability 是默认的综合指标，结合判断表现（Intelligence）和概率可靠性（Calibration），三项都是越高越好。
+
 想先快速跑通，可以加 `--limit 50` 只取前 50 道。
 
 ## 3. 在 Web UI 里读懂结果
