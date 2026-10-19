@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { EvalInvokeResponse, LogResponse, ProgressResponse } from '@/api/types'
 import { usePolling } from '@/hooks/usePolling'
+import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
 import TaskMonitor from '@/components/eval/TaskMonitor'
 
@@ -27,6 +28,9 @@ function createTaskId(prefix: string): string {
   return `${prefix}_${Date.now()}`
 }
 
+// Consecutive progress poll failures before the panel warns that the task may be lost.
+const PROGRESS_FAILURE_HINT_THRESHOLD = 3
+
 function TaskForm({ renderForm, ...props }: FormRenderProps & Pick<TaskRunnerShellProps, 'renderForm'>) {
   return renderForm(props)
 }
@@ -44,6 +48,7 @@ export default function TaskRunnerShell({
   getLog,
   getReportUrl,
 }: TaskRunnerShellProps) {
+  const { t } = useLocale()
   const storageKey = `evalscope-active-task-${idPrefix}`
   const [taskId, setTaskId] = useState<string | null>(() => {
     try {
@@ -57,6 +62,7 @@ export default function TaskRunnerShell({
   const [logText, setLogText] = useState('')
   const [logLine, setLogLine] = useState(0)
   const [progress, setProgress] = useState(0)
+  const [progressFailures, setProgressFailures] = useState(0)
   const activeTaskId = useRef(taskId)
 
   useEffect(() => {
@@ -81,6 +87,7 @@ export default function TaskRunnerShell({
     setLogText('')
     setLogLine(0)
     setProgress(0)
+    setProgressFailures(0)
     setResult(null)
     try {
       const response = await submitTask(config, id)
@@ -102,6 +109,7 @@ export default function TaskRunnerShell({
     if (activeTaskId.current !== taskId) return
     activeTaskId.current = null
     setRunning(false)
+    setProgressFailures(0)
     setResult({ status: 'stopped', task_id: taskId })
   }
 
@@ -121,6 +129,7 @@ export default function TaskRunnerShell({
     interval: 5000,
     onData: ({ taskId: polledTaskId, data }) => {
       if (!taskId || activeTaskId.current !== polledTaskId) return
+      setProgressFailures(0)
       setProgress(data.percent ?? 0)
       // Stop polling when benchmark finishes (via percent) or when the
       // backend progress tracker reports error / completed (status key).
@@ -130,10 +139,11 @@ export default function TaskRunnerShell({
         // endpoint must also restore the terminal state and report link, but
         // must not overwrite a more specific result from the invoke response.
         setResult((previous) => previous ?? (data.status === 'error'
-          ? { status: 'error', task_id: taskId, error: 'Task failed. See the task log for details.' }
+          ? { status: 'error', task_id: taskId, error: t('tasks.failedWithLogHint') }
           : { status: 'completed', task_id: taskId }))
       }
     },
+    onError: () => setProgressFailures((count) => count + 1),
   })
 
   usePolling<{ taskId: string; data: LogResponse }>({
@@ -165,6 +175,9 @@ export default function TaskRunnerShell({
             reportUrl={reportUrl}
             readyLabel={readyLabel}
             onStop={handleStop}
+            warning={running && progressFailures >= PROGRESS_FAILURE_HINT_THRESHOLD
+              ? t('tasks.progressUnreachable')
+              : null}
           />
         </Card>
       </div>

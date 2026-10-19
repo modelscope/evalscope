@@ -8,6 +8,7 @@ import TaskRunnerShell from './TaskRunnerShell'
 afterEach(() => {
   cleanup()
   sessionStorage.clear()
+  localStorage.clear()
 })
 
 function taskRunner(props: Partial<ComponentProps<typeof TaskRunnerShell>> = {}) {
@@ -220,6 +221,56 @@ describe('TaskRunnerShell', () => {
     expect(screen.getByText('Stopped')).toBeInTheDocument()
     expect(sessionStorage.getItem('evalscope-active-task-eval')).toBeNull()
     expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled()
+  })
+
+  it('renders the restored failure in the active locale', async () => {
+    localStorage.setItem('evalscope-locale', 'zh')
+    sessionStorage.setItem('evalscope-active-task-eval', 'eval_1782864000000')
+    const getProgress = vi.fn().mockResolvedValue({ percent: 40, status: 'error' })
+    await act(async () => {
+      render(taskRunner({ getProgress }))
+    })
+    expect(screen.getByText('任务失败，详情见任务日志。')).toBeInTheDocument()
+  })
+
+  it('warns when progress polling keeps failing, and Stop clears the warning', async () => {
+    sessionStorage.setItem('evalscope-active-task-eval', 'eval_1782864000000')
+    const getProgress = vi.fn().mockRejectedValue(new Error('404 task not found'))
+    await act(async () => {
+      render(taskRunner({ getProgress }))
+    })
+    expect(screen.queryByText(/Progress updates are failing/)).not.toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(screen.getByText(/Progress updates are failing/)).toBeInTheDocument()
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Stop' })) })
+    expect(screen.queryByText(/Progress updates are failing/)).not.toBeInTheDocument()
+    expect(screen.getByText('Stopped')).toBeInTheDocument()
+  })
+
+  it('resets the failure count when a poll succeeds', async () => {
+    sessionStorage.setItem('evalscope-active-task-eval', 'eval_1782864000000')
+    const getProgress = vi.fn()
+      .mockRejectedValueOnce(new Error('x'))
+      .mockRejectedValueOnce(new Error('x'))
+      .mockResolvedValueOnce({ percent: 10, status: 'running' })
+      .mockRejectedValue(new Error('x'))
+    await act(async () => {
+      render(taskRunner({ getProgress }))
+    })
+
+    // fail, fail, success (resets the count), fail -> still below the threshold
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(screen.queryByText(/Progress updates are failing/)).not.toBeInTheDocument()
+
+    // fail, fail -> the count reaches the threshold
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(screen.getByText(/Progress updates are failing/)).toBeInTheDocument()
   })
 
   it('submits through the injected API and renders the completed state', async () => {

@@ -5,9 +5,10 @@ interface UsePollingOptions<T> {
   interval?: number
   enabled?: boolean
   onData?: (data: T) => void
+  onError?: (message: string) => void
 }
 
-export function usePolling<T>({ fn, interval = 5000, enabled = false, onData }: UsePollingOptions<T>) {
+export function usePolling<T>({ fn, interval = 5000, enabled = false, onData, onError }: UsePollingOptions<T>) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -17,9 +18,11 @@ export function usePolling<T>({ fn, interval = 5000, enabled = false, onData }: 
   // Written in an effect (not during render) to satisfy react-hooks/refs.
   const fnRef = useRef(fn)
   const onDataRef = useRef(onData)
+  const onErrorRef = useRef(onError)
   useEffect(() => {
     fnRef.current = fn
     onDataRef.current = onData
+    onErrorRef.current = onError
   })
 
   const poll = useCallback(async () => {
@@ -31,7 +34,9 @@ export function usePolling<T>({ fn, interval = 5000, enabled = false, onData }: 
       onDataRef.current?.(result)
     } catch (e) {
       if (!mountedRef.current) return
-      setError(e instanceof Error ? e.message : String(e))
+      const message = e instanceof Error ? e.message : String(e)
+      setError(message)
+      onErrorRef.current?.(message)
     }
   }, [])
 
