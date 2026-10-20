@@ -304,7 +304,7 @@ modelscope download --dataset modelscope/MMLU-Pro --local_dir ./data/mmlu_pro
 
 例如使用modelscope命令下载[Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct)模型到本地：
 ```bash
-modelscope download --model modelscope/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
+modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
 ```
 
 ```{seealso}
