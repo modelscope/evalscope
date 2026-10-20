@@ -30,7 +30,7 @@ PROMPT_TEMPLATE = (
 @register_benchmark(
     BenchmarkMeta(
         name='seed_tts_eval',
-        evaluation_version='v1.2',
+        evaluation_version='v1.3',
         pretty_name='Seed-TTS-Eval',
         dataset_id='evalscope/Seed-TTS-Eval',
         tags=[Tags.AUDIO, Tags.TEXT_TO_SPEECH],
@@ -136,7 +136,9 @@ class SeedTTSEvalAdapter(DefaultDataAdapter):
                     score.metadata['transcription'] = transcriptions[0]
             except Exception as e:
                 logger.error(f'Error calculating metric {metric}: {e}')
-                score.value[metric_name] = 0
+                # Error rates are lower-is-better: audio that could not be transcribed counts as an empty
+                # transcript (every reference word missed), never as a perfect 0.
+                score.value[metric_name] = 1.0
                 score.metadata[metric_name] = f'error: {str(e)}'
 
         return score
