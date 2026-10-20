@@ -39,6 +39,7 @@ D. {choice_d}
 - Metric: **accuracy** (per source-dataset subset, plus per-category aggregation).
 - Default prompt follows the official `Inference_Foundation.py` formatting so existing AIR-Bench leaderboard numbers can be reproduced.
 - Set `extra_params={'subsets': [...]}` to limit to a subset of the 25 source directories — useful for partial downloads.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
 
 
 ## Properties

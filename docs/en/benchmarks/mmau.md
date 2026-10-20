@@ -26,6 +26,7 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 - Primary metric: **Accuracy** (exact match on predicted letter)
 - Reports overall accuracy and per-task-category accuracy
 - Prompt includes chain-of-thought instruction
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
 
 
 ## Properties

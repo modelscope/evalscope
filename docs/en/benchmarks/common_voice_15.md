@@ -27,6 +27,7 @@ Common Voice 15 is a massively multilingual speech corpus collected by Mozilla, 
 - Default subsets: `en` (English), `zh-CN` (Mandarin Chinese), `fr` (French)
 - Language-specific text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
 
 
 ## Properties
