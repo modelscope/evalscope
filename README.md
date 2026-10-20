@@ -38,7 +38,7 @@ evalscope eval --model your-model-name --api-url $OPENAI_API_BASE_URL --api-key 
 
 - **📚 Comprehensive Evaluation Benchmarks**: Built-in multiple industry-recognized evaluation benchmarks including MMLU, C-Eval, GSM8K, and more.
 - **🧩 Multi-modal and Multi-domain Support**: Supports evaluation of various model types including Large Language Models (LLM), Vision Language Models (VLM), Embedding, Reranker, AIGC, and more.
-- **🧭 System One Evaluation**: Evaluate text Choice decision models via `--eval-type systemone_api`, with task instructions, few-shot examples and structured probabilities/confidence. See the [usage guide](https://evalscope.readthedocs.io/en/latest/user_guides/systemone.html).
+- **🧭 Decision Model Evaluation**: Evaluate text Choice, Noul and Score tasks through System One or AutoTrust APIs, with probability metrics, risk/coverage analysis and per-sample visualizations. See the [decision evaluation guide](https://evalscope.readthedocs.io/en/latest/best_practice/decision_evaluation.html).
 - **🚀 Multi-backend Integration**: Seamlessly integrates multiple evaluation backends including OpenCompass, VLMEvalKit, RAGEval to meet different evaluation needs.
 - **🤖 Agent Evaluation Mode**: Drives benchmarks (e.g. GSM8K, AIME, SWE-bench Agentic) inside a controlled multi-turn AgentLoop with pluggable strategies, tools and Docker sandbox; full per-sample Agent Trace is recorded and visualizable.
 - **⚡ Inference Performance Testing**: Provides powerful model service stress testing tools, supporting multiple performance metrics such as TTFT, TPOT.
@@ -77,6 +77,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.10.20] v1.14.0** Added **JevBench**, **OpenDecisions**, **STS-B** and custom decision evaluation; added **SPaRC**, **BIRD-SQL**, **TableBench**, **DS-1000**, **FinQA**, **TAT-QA** and **VisualOverload** submission export. Added Hugging Face dataset-ID mapping and shared-prefix pools for performance tests; fixed benchmark scoring, cache reuse and task-monitoring recovery. See the [release notes](docs/release_notes/v1.14.0.md).
 - 🔥 **[2026.10.09]** Added **System One Choice evaluation** and **ANLI**, **BoolQ**, **BANKING77**, **ContractNLI**, **RewardBench v1** benchmarks. All five default to ModelScope and also support standard LLM evaluation. See [System One Evaluation](https://evalscope.readthedocs.io/en/latest/user_guides/systemone.html).
 - 🔥 **[2026.08.24] v1.11.0** Introduced published evaluation versions for reproducible benchmark results; improved report semantics and incomplete-run handling; strengthened multimodal media loading and task-config validation.
 - 🔥 **[2026.08.13]** Improved evaluation reports with unified metric semantics and more reliable Agent Trace step grouping and tool-call/result linking.
