@@ -62,6 +62,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `ds1000` | [DS-1000](../../benchmarks/ds1000.md) | `Coding` |
 | `eq_bench` | [EQ-Bench](../../benchmarks/eq_bench.md) | `InstructionFollowing` |
 | `fin_ner` | [FinNER](../../benchmarks/fin_ner.md) | `Knowledge`, `NER` |
+| `finqa` | [FinQA](../../benchmarks/finqa.md) | `Math`, `QA`, `Reasoning` |
 | `frames` | [FRAMES](../../benchmarks/frames.md) | `LongContext`, `Reasoning` |
 | `general_arena` | [GeneralArena](../../benchmarks/general_arena.md) | `Arena`, `Custom` |
 | `general_decision` | [General Decision](../../benchmarks/general_decision.md) | `Custom`, `Decision` |
@@ -225,6 +226,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/ds1000.md
 ../../benchmarks/eq_bench.md
 ../../benchmarks/fin_ner.md
+../../benchmarks/finqa.md
 ../../benchmarks/frames.md
 ../../benchmarks/general_arena.md
 ../../benchmarks/general_decision.md

@@ -7,7 +7,7 @@
 EvalScope's SWE-bench integration provides two evaluation modes:
 
 - **Oracle single-turn mode**: The retrieved relevant code context is provided to the model in one shot, and the model directly generates a patch.
-- **Agentic multi-turn mode**: Only the issue description is provided. The model drives a multi-turn agent loop inside a per-instance SWE-bench Docker container, exploring the codebase via `bash`, editing source files and finally submitting a patch (compatible with the [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) pipeline).
+- **Agentic multi-turn mode**: Only the issue description is provided. The model drives a multi-turn agent loop inside a per-instance SWE-bench Docker container, exploring the codebase via `bash`, editing source files and finally submitting a patch (compatible with the [mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent) pipeline).
 
 ## Comparison Between the Two Modes
 

@@ -1,11 +1,100 @@
 from copy import deepcopy
-from typing import Dict
+from dataclasses import InitVar, dataclass, field
+from typing import ClassVar, Dict, TypedDict
+from unittest import mock
 
 import pytest
 from pydantic import BaseModel
 
 from evalscope.api.tool.tool_info import parse_tool_info
-from evalscope.utils.json_schema import JSONSchema
+from evalscope.utils.json_schema import JSONSchema, json_schema
+
+
+@dataclass
+class DataclassPayload:
+    count: 'int'
+    tags: 'list[str]' = field(default_factory=list)
+    enabled: bool = True
+
+
+def test_tool_schema_resolves_dataclass_string_annotations() -> None:
+    def tool(payload: DataclassPayload) -> str:
+        """Accept a dataclass payload."""
+        return str(payload.count)
+
+    schema = parse_tool_info(tool).parameters.properties['payload']
+
+    assert schema.properties['count'].type == 'integer'
+    assert schema.properties['tags'].type == 'array'
+    assert schema.properties['tags'].items.type == 'string'
+    assert schema.properties['enabled'].type == 'boolean'
+    assert schema.required == ['count']
+
+
+def test_dataclass_schema_preserves_unresolved_annotation_behavior() -> None:
+    class LocalValue:
+        pass
+
+    @dataclass
+    class UnresolvedPayload:
+        count: int
+        value: 'LocalValue'
+
+    schema = json_schema(UnresolvedPayload)
+
+    assert schema.properties['count'].type == 'integer'
+    assert schema.properties['value'].type is None
+    assert schema.required == ['count', 'value']
+
+
+def test_dataclass_schema_excludes_pseudo_fields() -> None:
+    @dataclass
+    class WithPseudoFields:
+        count: int
+        tmp: InitVar[int]
+        version: ClassVar[int] = 3
+
+    schema = json_schema(WithPseudoFields)
+
+    assert set(schema.properties) == {'count'}
+    assert schema.properties['count'].type == 'integer'
+    assert schema.required == ['count']
+
+
+def test_typed_dict_schema_degrades_on_unresolvable_annotation() -> None:
+    class LocalValue:
+        pass
+
+    class UnresolvedDict(TypedDict):
+        count: int
+        value: 'LocalValue'
+
+    with mock.patch('evalscope.utils.json_schema.logger') as mock_logger:
+        schema = json_schema(UnresolvedDict)
+
+    mock_logger.warning.assert_called_once()
+    assert schema.properties['count'].type == 'integer'
+    assert schema.properties['value'].type is None
+    assert schema.required == ['count', 'value']
+
+
+def test_parse_tool_info_degrades_on_unresolvable_annotation() -> None:
+    def tool(count: int, payload: 'NotDefinedAnywhere') -> str:  # noqa: F821
+        """Accept a payload.
+
+        Args:
+            count: how many
+            payload: the payload
+        """
+        return str(count)
+
+    info = parse_tool_info(tool)
+
+    assert set(info.parameters.properties) == {'count', 'payload'}
+    assert info.parameters.properties['count'].type is None
+    assert info.parameters.properties['payload'].type is None
+    assert info.parameters.properties['count'].description == 'how many'
+    assert info.parameters.required == ['count', 'payload']
 
 
 @pytest.mark.parametrize('keyword', ['default', 'enum'])

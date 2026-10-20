@@ -361,6 +361,9 @@ METRIC_DEFINITIONS.update(
         'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
         # TableBench's primary metric is the official Mix_Metric (EM / EM±10% / ROUGE-L mix).
         'mix_metric': MetricEntry(baseline='quality.score.ratio', metric_name='Mix Metric'),
+        # FinQA: the predicted program's result equals the gold answer / the program equals the gold program.
+        'execution_accuracy': MetricEntry(baseline='quality.accuracy.ratio', metric_name='Execution Accuracy'),
+        'program_accuracy': MetricEntry(baseline='quality.accuracy.ratio', metric_name='Program Accuracy'),
         # SPaRC: share of answers that are not a valid line from start to end (paper Table 7).
         'invalid_path_rate': MetricEntry(baseline='quality.error_rate.ratio', metric_name='Invalid Path Rate'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

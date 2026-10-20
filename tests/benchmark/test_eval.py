@@ -1149,6 +1149,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test TableBench table QA benchmark with mock."""
         self._run_dataset_test('tablebench', limit=5, use_mock=True)
 
+    def test_finqa_mock(self):
+        """Test FinQA financial numerical reasoning benchmark with mock."""
+        self._run_dataset_test('finqa', limit=5, use_mock=True)
+
     def test_tat_qa_mock(self):
         """Test TAT-QA table + text financial QA benchmark with mock."""
         self._run_dataset_test('tat_qa', limit=5, use_mock=True)
