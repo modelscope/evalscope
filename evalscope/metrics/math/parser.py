@@ -23,12 +23,16 @@ VERIFY_TIMEOUT_S = 10
 HARD_TIMEOUT_S = 60
 
 
-def _math_verify_parse_worker(text: str, timeout_s: int):
+def _math_verify_parse_worker(text: str, timeout_s: int, config: str = 'full'):
     from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse
 
+    if config == 'latex_only':
+        extraction_config = [LatexExtractionConfig()]
+    else:
+        extraction_config = [LatexExtractionConfig(boxed_match_priority=0), ExprExtractionConfig()]
     return parse(
         text,
-        extraction_config=[LatexExtractionConfig(boxed_match_priority=0), ExprExtractionConfig()],
+        extraction_config=extraction_config,
         fallback_mode='first_match',
         extraction_mode='first_match',
         parsing_timeout=timeout_s,
@@ -70,8 +74,12 @@ def _warm_up_math_verify() -> None:
     _warmed_up = True
 
 
-def _parse_isolated(text: str) -> list[Any]:
+def _parse_isolated(text: str, config: str = 'full') -> list[Any]:
     """Run Math-Verify extraction with bounded runtime.
+
+    ``config`` selects the extraction configuration: ``'full'`` matches upstream's
+    primary parse (LaTeX boxed plus expression fallback), ``'latex_only'`` matches the
+    narrower re-parse upstream uses to canonicalize scientific notation.
 
     Math-Verify's own timeout returns an empty extraction (the sample then scores as
     unparsed, matching upstream behaviour). A worker crash or hard timeout is an
@@ -80,7 +88,12 @@ def _parse_isolated(text: str) -> list[Any]:
     _warm_up_math_verify()
     try:
         return run_isolated(
-            _math_verify_parse_worker, text, PARSE_TIMEOUT_S, hard_timeout=HARD_TIMEOUT_S, label='math-verify parse'
+            _math_verify_parse_worker,
+            text,
+            PARSE_TIMEOUT_S,
+            config,
+            hard_timeout=HARD_TIMEOUT_S,
+            label='math-verify parse',
         )
     except MathIsolationError as exc:
         raise MathEvaluationError(str(exc)) from exc
@@ -115,7 +128,7 @@ def _parse(text: str, mode: str) -> tuple[list[Any], str]:
     objects = [item for item in result if not isinstance(item, str)]
     display = next((item for item in result if isinstance(item, str)), '')
     if objects and re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)e[+-]?[0-9]+', display):
-        canonical = _parse_isolated(f'${display.replace("e", "E")}$')
+        canonical = _parse_isolated(f'${display.replace("e", "E")}$', config='latex_only')
         objects = [item for item in canonical if not isinstance(item, str)]
     if scientific_literal:
         display = original

@@ -435,6 +435,43 @@ def test_bounded_extraction_does_not_block_other_threads(monkeypatch: pytest.Mon
     assert max(later - earlier for earlier, later in zip(ticks, ticks[1:])) < 1.0
 
 
+@pytest.mark.parametrize('boxed_count', [160, 640])
+def test_hmmt_repeated_boxed_sample_is_bounded(monkeypatch: pytest.MonkeyPatch, boxed_count: int) -> None:
+    """Bounded runtime on the output shape that actually hung a HMMT run.
+
+    The observed sample opened a closed display-math block and then appended thousands
+    of repeated ``\\boxed{5940}``::
+
+        $$143 = 11 \\times 13$$
+        plain text $S$ more
+        \\boxed{5940}
+        \\boxed{5940}
+        ...
+
+    Unfixed, the display-math extraction regex backtracks catastrophically on that shape
+    and the cost grows superlinearly with the repetition count: 320 groups take ~4 s and
+    640 take ~30 s, extrapolating to the ~42 minutes observed at the 2,745 groups of the
+    original 54,944-character output. Keeping ``boxed_count`` at or below 640 bounds how
+    long a regressed run can hang while still failing the timing assertion.
+
+    The bound is deliberately generous relative to the parse cost, so moderately
+    degenerate output still extracts the right answer instead of being written off:
+    160 groups finish inside the timeout and score ``5940``, while 640 are abandoned as
+    unparsed.
+    """
+    import evalscope.metrics.math.parser as parser
+
+    monkeypatch.setattr(parser, 'PARSE_TIMEOUT_S', 2)
+    prediction = '$$143 = 11 \\times 13$$\nplain text $S$ more\n' + '\\boxed{5940}\n' * boxed_count
+
+    started = time.perf_counter()
+    extracted = extract_answer(prediction)
+    elapsed = time.perf_counter() - started
+
+    assert extracted in ('', '5940')
+    assert elapsed < 15
+
+
 def test_worker_exception_crosses_the_isolation_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
     """A Math-Verify crash inside the worker still surfaces as a scoring failure."""
     import math_verify
