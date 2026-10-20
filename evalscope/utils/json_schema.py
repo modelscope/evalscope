@@ -1,6 +1,7 @@
 import types
 import typing
 from copy import deepcopy
+from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
 from datetime import date, datetime, time
 from enum import EnumMeta
@@ -22,6 +23,10 @@ from typing import (
 )
 
 from pydantic import BaseModel, Field, model_validator
+
+from evalscope.utils.logger import get_logger
+
+logger = get_logger()
 
 JSONType = Literal['string', 'integer', 'number', 'boolean', 'array', 'object', 'null']
 """Valid types within JSON schema."""
@@ -75,6 +80,22 @@ class JSONSchema(BaseModel):
         return values
 
 
+def resolve_type_hints(obj: Any) -> Dict[str, Any]:
+    """Resolve the type hints of a class or function, degrading gracefully.
+
+    Annotations may reference names that are unavailable in the runtime
+    namespace (e.g. unimportable forward references), in which case
+    get_type_hints() fails wholesale. Return no resolved hints instead of
+    crashing schema generation, and log a warning so the degradation is
+    observable.
+    """
+    try:
+        return get_type_hints(obj)
+    except (NameError, TypeError) as e:
+        logger.warning(f'Failed to resolve type hints for {obj}: {e}. Fields keep their raw annotations.')
+        return {}
+
+
 def json_schema(t: Type[Any]) -> JSONSchema:
     """Provide a JSON Schema for the specified type.
 
@@ -83,7 +104,9 @@ def json_schema(t: Type[Any]) -> JSONSchema:
     and typed dicts.
 
     Args:
-        t: Python type
+        t: Python type. Must be an already resolved type object; resolve
+            string annotations (e.g. from `from __future__ import annotations`)
+            with `resolve_type_hints()` or `typing.get_type_hints()` first.
 
     Returns:
         JSON Schema for type.
@@ -140,11 +163,11 @@ def cls_json_schema(cls: Type[Any]) -> JSONSchema:
     required: List[str] = []
 
     if is_dataclass(cls):
-        fields = cls.__dataclass_fields__  # type: ignore
-        for name, field in fields.items():
-            properties[name] = json_schema(field.type)  # type: ignore
+        annotations = resolve_type_hints(cls)
+        for field in dataclass_fields(cls):
+            properties[field.name] = json_schema(annotations.get(field.name, field.type))  # type: ignore[arg-type]
             if field.default == field.default_factory:
-                required.append(name)
+                required.append(field.name)
     elif isinstance(cls, type) and issubclass(cls, BaseModel):
         schema = cls.model_json_schema()
         schema = resolve_schema_references(schema)
@@ -152,7 +175,9 @@ def cls_json_schema(cls: Type[Any]) -> JSONSchema:
             properties[name] = JSONSchema(**prop)
         required = schema.get('required', [])
     elif is_typeddict(cls):
-        annotations = get_type_hints(cls)
+        # Fall back to raw annotations so that unresolvable hints still keep
+        # the field names instead of dropping the whole schema.
+        annotations = resolve_type_hints(cls) or getattr(cls, '__annotations__', {})
         for name, type_hint in annotations.items():
             properties[name] = json_schema(type_hint)
             if name in cls.__required_keys__:
