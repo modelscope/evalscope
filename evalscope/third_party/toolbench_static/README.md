@@ -65,7 +65,7 @@ your_task_config = {
 ```
 - Arguments:
   - `model_name_or_path`: The path to the model local directory.
-  - `model_type`: The model type, refer to [模型类型列表](https://github.com/modelscope/swift/blob/main/docs/source/LLM/%E6%94%AF%E6%8C%81%E7%9A%84%E6%A8%A1%E5%9E%8B%E5%92%8C%E6%95%B0%E6%8D%AE%E9%9B%86.md)
+  - `model_type`: The model type, refer to [模型类型列表](https://github.com/modelscope/ms-swift/blob/main/docs/source/Instruction/Supported-models-and-datasets.md)
   - `data_path`: The path to the dataset directory contains `in_domain.json` and `out_of_domain.json` files.
   - `output_dir`: The path to the output directory. Default to `output_res`.
   - `deploy_type`: The deploy type, default to `swift`.

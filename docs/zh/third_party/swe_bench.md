@@ -7,7 +7,7 @@
 EvalScope 集成 SWE-bench 后提供两种评测模式：
 
 - **Oracle 单轮模式**：将检索到的相关代码上下文一次性提供给模型，模型直接生成 patch
-- **Agentic 多轮模式**：仅向模型提供 issue 描述，模型在每个实例独立的 SWE-bench Docker 容器中通过 `bash` 多轮探索、修改源码并提交 patch（兼容 [mini-swe-agent](https://github.com/princeton-nlp/mini-swe-agent) 流程）
+- **Agentic 多轮模式**：仅向模型提供 issue 描述，模型在每个实例独立的 SWE-bench Docker 容器中通过 `bash` 多轮探索、修改源码并提交 patch（兼容 [mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent) 流程）
 
 ## 两种模式对比
 
