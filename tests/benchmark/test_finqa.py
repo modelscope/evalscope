@@ -50,6 +50,15 @@ def test_registered_meta() -> None:
     assert adapter.metric_list == ['execution_accuracy', 'program_accuracy']
 
 
+def test_answer_normalized_to_five_decimals() -> None:
+    # Hub loaders can perturb float literals by ~1 ulp; the official protocol rounds to 5 decimals.
+    adapter = _adapter()
+    sample = adapter.record_to_sample(_record('divide(463, 4612)', 0.10039000000000001))
+
+    assert sample.metadata['answer'] == 0.10039
+    assert score_program('divide(463, 4612)', 'divide(463, 4612)', sample.metadata['answer'], TABLE) == (1.0, 1.0)
+
+
 def test_load_from_local_directory(tmp_path: Path) -> None:
     records = [_record('subtract(5829, 5735)', 94.0, 'a-1'), _record('greater(5829, 5735)', 'yes', 'a-2')]
     (tmp_path / 'test.json').write_text(json.dumps(records), encoding='utf-8')

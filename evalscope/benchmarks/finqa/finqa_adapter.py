@@ -3,26 +3,19 @@
 # Paper: https://aclanthology.org/2021.emnlp-main.300/ (EMNLP 2021)
 # Code and data: https://github.com/czyssrs/FinQA (MIT License)
 
-import json
-from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
-from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
+from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
-from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
-from evalscope.utils.download_utils import download_url
+from evalscope.constants import Tags
 
 from .utils import parse_program, score_program
 
-# test.json of the official repository at a pinned commit (1,147 questions with gold programs and answers).
-DATA_COMMIT = '0f16e2867befa6840783e58be38c9efb9229d742'
-TEST_URL = f'https://raw.githubusercontent.com/czyssrs/FinQA/{DATA_COMMIT}/dataset/test.json'
-TEST_SHA256 = '831dbfb2e785dbc227f895ce3f24046433467aec67b09db2bd6ac7692a8a30dc'
-TEST_FILE = 'test.json'
-DEFAULT_CACHE_SUBDIR = 'finqa'
+# The dataset is a byte-identical mirror of the official repository's `dataset/test.json`
+# (pinned commit 0f16e286, sha256 831dbfb2...); the upstream repo is the canonical source.
 
 PROMPT_TEMPLATE = """Below are the text and the table of a financial report, followed by a question.
 
@@ -83,7 +76,8 @@ def format_context(record: Dict[str, Any]) -> str:
     BenchmarkMeta(
         name='finqa',
         pretty_name='FinQA',
-        dataset_id='https://github.com/czyssrs/FinQA',
+        dataset_id='evalscope/finqa',
+        dataset_revision='ac65ea606c70f20a4162ed37c04b9779e43e11d0',
         paper_url='https://aclanthology.org/2021.emnlp-main.300/',
         tags=[Tags.REASONING, Tags.QA, Tags.MATH],
         description=DESCRIPTION,
@@ -99,40 +93,21 @@ def format_context(record: Dict[str, Any]) -> str:
 class FinQAAdapter(DefaultDataAdapter):
     """Data adapter for FinQA, scored with the official execution and program accuracy."""
 
-    def load(self) -> Tuple[DatasetDict, None]:
-        with open(self._test_file(), encoding='utf-8') as f:
-            records = json.load(f)
-        dataset = build_dataset_from_records(
-            records=records,
-            sample_fields=self.record_to_sample,
-            name='finqa_default',
-            location=TEST_URL,
-            limit=self.limit,
-            repeats=self.repeats,
-            shuffle=self.shuffle,
-            seed=self.seed,
-        )
-        return DatasetDict({'default': dataset}), None
-
-    def _test_file(self) -> Path:
-        # The official data is a JSON file in the GitHub repository; a local copy can be passed as
-        # `dataset_id` (a directory containing test.json).
-        if Path(self.dataset_id).is_dir():
-            return Path(self.dataset_id) / TEST_FILE
-        path = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / DEFAULT_CACHE_SUBDIR / DATA_COMMIT / TEST_FILE
-        if not path.exists() or self.force_redownload:
-            download_url(TEST_URL, str(path), sha256=TEST_SHA256, force=self.force_redownload)
-        return path
-
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         qa = record['qa']
+        answer = qa['exe_ans']
+        # Hub loaders can perturb float literals by ~1 ulp (0.10039 -> 0.10039000000000001). The
+        # official protocol compares results rounded to 5 decimals and every gold answer has at most
+        # 5 decimals, so this normalization is a no-op on byte-exact data and repairs the drift.
+        if isinstance(answer, float):
+            answer = round(answer, 5)
         return Sample(
             input=self.prompt_template.format(context=format_context(record), question=qa['question']),
             target=qa['program'],
             metadata={
                 'id': record['id'],
                 'program': qa['program'],
-                'answer': qa['exe_ans'],
+                'answer': answer,
                 'table': record['table'],
             },
         )

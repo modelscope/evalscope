@@ -38,7 +38,7 @@ arithmetic and table operations written by financial experts.
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `finqa` |
-| **Dataset ID** | [FinQA](https://github.com/czyssrs/FinQA) |
+| **Dataset ID** | [evalscope/finqa](https://modelscope.cn/datasets/evalscope/finqa/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2021.emnlp-main.300/) |
 | **Tags** | `Math`, `QA`, `Reasoning` |
 | **Metrics** | `execution_accuracy`, `program_accuracy` |
@@ -62,7 +62,7 @@ arithmetic and table operations written by financial experts.
 {
   "input": [
     {
-      "id": "5827419a",
+      "id": "528cbea9",
       "content": "Below are the text and the table of a financial report, followed by a question.\n\nText:\nentergy corporation and subsidiaries management 2019s financial discussion and analysis a result of the entergy louisiana and entergy gulf states louisiana ... [TRUNCATED 4197 chars] ... guments with \", \", e.g. \"subtract(5829, 5735), divide(#0, 5735)\" for (5829 - 5735) / 5735. A percentage is computed as a ratio, without multiplying by 100.\nThink step by step, then end your response with a line of the form:\nProgram: <program>"
     }
   ],
