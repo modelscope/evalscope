@@ -102,10 +102,11 @@ class FinQAAdapter(DefaultDataAdapter):
         if isinstance(answer, float):
             answer = round(answer, 5)
         return Sample(
-            input=self.prompt_template.format(context=format_context(record), question=qa['question']),
+            input=qa['question'],
             target=qa['program'],
             metadata={
                 'id': record['id'],
+                'context': format_context(record),
                 'program': qa['program'],
                 'answer': answer,
                 'table': record['table'],
@@ -113,8 +114,7 @@ class FinQAAdapter(DefaultDataAdapter):
         )
 
     def format_prompt_template(self, sample: Sample) -> str:
-        # The prompt is fully built in `record_to_sample`.
-        return sample.input
+        return self.prompt_template.format(context=sample.metadata['context'], question=sample.input)
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         return parse_program(prediction) or ''

@@ -62,7 +62,7 @@ arithmetic and table operations written by financial experts.
 {
   "input": [
     {
-      "id": "528cbea9",
+      "id": "4e0812d8",
       "content": "Below are the text and the table of a financial report, followed by a question.\n\nText:\nentergy corporation and subsidiaries management 2019s financial discussion and analysis a result of the entergy louisiana and entergy gulf states louisiana ... [TRUNCATED 4197 chars] ... guments with \", \", e.g. \"subtract(5829, 5735), divide(#0, 5735)\" for (5829 - 5735) / 5735. A percentage is computed as a ratio, without multiplying by 100.\nThink step by step, then end your response with a line of the form:\nProgram: <program>"
     }
   ],
@@ -71,6 +71,7 @@ arithmetic and table operations written by financial experts.
   "group_id": 0,
   "metadata": {
     "id": "ETR/2016/page_23.pdf-2",
+    "context": "Text:\nentergy corporation and subsidiaries management 2019s financial discussion and analysis a result of the entergy louisiana and entergy gulf states louisiana business combination , results of operations for 2015 also include two items tha ... [TRUNCATED 3144 chars] ... nual net rate increase at entergy mississippi of $ 16 million , effective february 2015 , as a result of the mpsc order in the june 2014 rate case .\nsee note 2 to the financial statements for a discussion of rate and regulatory proceedings. .",
     "program": "subtract(5829, 5735)",
     "answer": 94.0,
     "table": [
