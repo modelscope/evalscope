@@ -1,0 +1,158 @@
+# FinQA adapter: numerical reasoning over financial reports, answered with a program in the FinQA DSL.
+#
+# Paper: https://aclanthology.org/2021.emnlp-main.300/ (EMNLP 2021)
+# Code and data: https://github.com/czyssrs/FinQA (MIT License)
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
+from evalscope.api.dataset import DatasetDict, Sample, build_dataset_from_records
+from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import Score
+from evalscope.api.registry import register_benchmark
+from evalscope.constants import DEFAULT_EVALSCOPE_CACHE_DIR, Tags
+from evalscope.utils.download_utils import download_url
+
+from .utils import parse_program, score_program
+
+# test.json of the official repository at a pinned commit (1,147 questions with gold programs and answers).
+DATA_COMMIT = '0f16e2867befa6840783e58be38c9efb9229d742'
+TEST_URL = f'https://raw.githubusercontent.com/czyssrs/FinQA/{DATA_COMMIT}/dataset/test.json'
+TEST_SHA256 = '831dbfb2e785dbc227f895ce3f24046433467aec67b09db2bd6ac7692a8a30dc'
+TEST_FILE = 'test.json'
+DEFAULT_CACHE_SUBDIR = 'finqa'
+
+PROMPT_TEMPLATE = """Below are the text and the table of a financial report, followed by a question.
+
+{context}
+
+Question: {question}
+
+Write a program that computes the answer, using these operations:
+- add(a, b), subtract(a, b), multiply(a, b), divide(a, b), exp(a, b) (a to the power b), greater(a, b) (yes if a > b, else no)
+- table_max(row, none), table_min(row, none), table_sum(row, none), table_average(row, none): over the numbers in a table row, where row is the row name exactly as in the first column
+Arguments are numbers from the report (plain digits, no units, commas or % signs), constants such as const_100 or const_1000 (const_m1 is -1), or #n, the result of step n (counting from 0).
+Use one operation per step (no nested operations) and separate steps and arguments with ", ", e.g. "subtract(5829, 5735), divide(#0, 5735)" for (5829 - 5735) / 5735. A percentage is computed as a ratio, without multiplying by 100.
+Think step by step, then end your response with a line of the form:
+Program: <program>"""  # noqa: E501
+
+DESCRIPTION = """
+## Overview
+
+FinQA evaluates numerical reasoning over financial reports: each question is about one page of an S&P 500
+company's earnings report (text and a table), and its answer is computed with a short program of
+arithmetic and table operations written by financial experts.
+
+## Task Description
+
+- **Task Type**: Numerical reasoning over text and tables
+- **Input**: The report text before and after the table, the table and a question
+- **Output**: Reasoning, then a `Program:` line in the FinQA DSL, e.g. `subtract(5829, 5735), divide(#0, 5735)`
+- **Domain**: Financial reports (earnings reports of S&P 500 companies)
+
+## Key Features
+
+- 1,147 test questions from the official public test set (gold programs and answers included)
+- Programs use `add`, `subtract`, `multiply`, `divide`, `exp`, `greater` and the table operations
+  `table_max`, `table_min`, `table_sum`, `table_average`; most need one to three steps
+
+## Evaluation Notes
+
+- Metrics follow the official `evaluate.py`: `execution_accuracy` (primary) runs the predicted program on the
+  question's table and compares the result exactly with the gold answer, both rounded to 5 decimals;
+  `program_accuracy` checks that the program is symbolically equal to the gold program
+- The scoring is a port of the official code and gives the same per-question results
+- Execution is exact, so a percentage must be computed as a ratio (`divide(#0, 5735)`), as in the gold programs
+- Steps and arguments are separated by `, ` as in the dataset; extra whitespace around brackets and separators
+  is normalized, and `op(a,b)` is read as `op(a, b)`. Nested operations are invalid, as in the official DSL
+- The whole page (text before and after the table and the table) is given, without retrieval
+- [Paper](https://aclanthology.org/2021.emnlp-main.300/) | [Code and data](https://github.com/czyssrs/FinQA)
+"""
+
+
+def format_context(record: Dict[str, Any]) -> str:
+    table = '\n'.join(' | '.join(str(cell).strip() for cell in row) for row in record['table'])
+    pre = '\n'.join(record['pre_text'])
+    post = '\n'.join(record['post_text'])
+    return f'Text:\n{pre}\n\nTable:\n{table}\n\nText:\n{post}'
+
+
+@register_benchmark(
+    BenchmarkMeta(
+        name='finqa',
+        pretty_name='FinQA',
+        dataset_id='https://github.com/czyssrs/FinQA',
+        paper_url='https://aclanthology.org/2021.emnlp-main.300/',
+        tags=[Tags.REASONING, Tags.QA, Tags.MATH],
+        description=DESCRIPTION,
+        subset_list=['default'],
+        eval_split='test',
+        few_shot_mode='disabled',
+        metric_list=['execution_accuracy', 'program_accuracy'],
+        primary_metric='execution_accuracy',
+        prompt_template=PROMPT_TEMPLATE,
+        evaluation_version='v1.0',
+    )
+)
+class FinQAAdapter(DefaultDataAdapter):
+    """Data adapter for FinQA, scored with the official execution and program accuracy."""
+
+    def load(self) -> Tuple[DatasetDict, None]:
+        with open(self._test_file(), encoding='utf-8') as f:
+            records = json.load(f)
+        dataset = build_dataset_from_records(
+            records=records,
+            sample_fields=self.record_to_sample,
+            name='finqa_default',
+            location=TEST_URL,
+            limit=self.limit,
+            repeats=self.repeats,
+            shuffle=self.shuffle,
+            seed=self.seed,
+        )
+        return DatasetDict({'default': dataset}), None
+
+    def _test_file(self) -> Path:
+        # The official data is a JSON file in the GitHub repository; a local copy can be passed as
+        # `dataset_id` (a directory containing test.json).
+        if Path(self.dataset_id).is_dir():
+            return Path(self.dataset_id) / TEST_FILE
+        path = Path(DEFAULT_EVALSCOPE_CACHE_DIR) / DEFAULT_CACHE_SUBDIR / DATA_COMMIT / TEST_FILE
+        if not path.exists() or self.force_redownload:
+            download_url(TEST_URL, str(path), sha256=TEST_SHA256, force=self.force_redownload)
+        return path
+
+    def record_to_sample(self, record: Dict[str, Any]) -> Sample:
+        qa = record['qa']
+        return Sample(
+            input=self.prompt_template.format(context=format_context(record), question=qa['question']),
+            target=qa['program'],
+            metadata={
+                'id': record['id'],
+                'program': qa['program'],
+                'answer': qa['exe_ans'],
+                'table': record['table'],
+            },
+        )
+
+    def format_prompt_template(self, sample: Sample) -> str:
+        # The prompt is fully built in `record_to_sample`.
+        return sample.input
+
+    def extract_answer(self, prediction: str, task_state: TaskState) -> str:
+        return parse_program(prediction) or ''
+
+    def match_score(
+        self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
+    ) -> Score:
+        meta = task_state.metadata
+        exe, prog = score_program(filtered_prediction, meta['program'], meta['answer'], meta['table'])
+        return Score(
+            extracted_prediction=filtered_prediction,
+            prediction=original_prediction,
+            value={'execution_accuracy': exe, 'program_accuracy': prog},
+            main_score_name='execution_accuracy',
+            metadata={'gold_answer': meta['answer'], 'parsed': bool(filtered_prediction)},
+        )
