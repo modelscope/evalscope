@@ -133,7 +133,10 @@ class DataCollectionAdapter(DefaultDataAdapter):
             # Initialize dataset adapter
             if dataset_name not in self.dataset_adapters:
                 config = copy.deepcopy(self._task_config)
-                self.dataset_adapters[dataset_name] = get_benchmark(dataset_name, config=config)
+                adapter = get_benchmark(dataset_name, config=config)
+                if adapter.aggregation == 'bayes_at_n':
+                    raise ValueError('Bayes@N does not support dataset collections; evaluate one subset directly.')
+                self.dataset_adapters[dataset_name] = adapter
 
     def _get_adapter(self, metadata: Dict[str, Any]) -> DataAdapter:
         collection_info = metadata.get(DataCollection.INFO, {})

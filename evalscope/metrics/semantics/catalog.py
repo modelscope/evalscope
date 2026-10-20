@@ -431,6 +431,14 @@ AGGREGATION_SEMANTICS: Dict[Tuple[str, str], MetricEntry] = {
     # Only genuine meaning changes belong here. `pass_rate` / `pass_at_k` already resolve to
     # `quality.pass_at_k.ratio` through METRIC_DEFINITIONS, and `vote_at_k` does not change what
     # any of these metrics measures, so neither is restated.
+    ('accuracy', 'bayes_at_n'): MetricEntry(baseline='quality.posterior_mean.ratio'),
+    ('accuracy', 'bayes_at_n_sd'): MetricEntry(
+        baseline='diagnostic.posterior_sd.ratio', display_name='Bayes@N posterior SD'
+    ),
+    ('exact_match', 'bayes_at_n'): MetricEntry(baseline='quality.posterior_mean.ratio'),
+    ('exact_match', 'bayes_at_n_sd'): MetricEntry(
+        baseline='diagnostic.posterior_sd.ratio', display_name='Bayes@N posterior SD'
+    ),
     ('accuracy', 'pass_at_k'): MetricEntry(baseline='quality.pass_at_k.ratio'),
     ('accuracy', 'pass_hat_k'): MetricEntry(baseline='quality.pass_at_k.ratio', metric_name='Pass^k'),
 }
