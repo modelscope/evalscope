@@ -1153,6 +1153,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test FinQA financial numerical reasoning benchmark with mock."""
         self._run_dataset_test('finqa', limit=5, use_mock=True)
 
+    def test_tat_qa_mock(self):
+        """Test TAT-QA table + text financial QA benchmark with mock."""
+        self._run_dataset_test('tat_qa', limit=5, use_mock=True)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k
