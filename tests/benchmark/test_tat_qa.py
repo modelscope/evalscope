@@ -97,6 +97,9 @@ def test_parse_response() -> None:
     assert parse_response('Final Answer: 7') == (['7'], '')
     assert parse_response('Answer: 7\nScale: units') == (['7'], '')
     assert parse_response('no answer line') == ([], '')
+    # an empty Answer line must not capture the following Scale line
+    assert parse_response('Answer:  \nScale: none') == ([], '')
+    assert parse_response('Answer:\nScale: thousand') == ([], 'thousand')
 
 
 def test_scale_is_applied_before_comparing_numbers() -> None:
@@ -131,6 +134,15 @@ def test_multi_span_order_does_not_matter() -> None:
     assert score_question(gold, ['2018', '2019'], '') == (1.0, 1.0)
     # as in the official script, the spans are joined into one string before the token F1
     assert score_question(gold, ['2019'], '') == (0.0, 0.67)
+
+
+def test_refusal_scores_zero() -> None:
+    adapter = _adapter()
+    sample = adapter.record_to_sample(_record(_qa(['none of the above'], 'span')))
+    # a refusal that leaves the Answer line empty scores 0, not a spurious token F1
+    assert _state_score(adapter, sample, 'I cannot tell.\n\nAnswer:  \nScale: none').value == {
+        'exact_match': 0.0, 'f1': 0.0
+    }
 
 
 def test_scoring_end_to_end_and_aggregation() -> None:

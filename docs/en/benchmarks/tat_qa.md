@@ -30,7 +30,7 @@ computed with arithmetic, and most carry a scale (thousand, million, billion or 
   match; the official F1 equals EM for arithmetic and count questions
 - Multiple spans are separated by `|` on the `Answer:` line; an unknown or missing scale counts as no scale
 - Questions are answered zero-shot from the full table and paragraphs (no retrieval)
-- The official data is on Hugging Face (`next-tat/TAT-QA`), so run with `dataset_hub='huggingface'`
+- Data is mirrored on ModelScope (`evalscope/TAT-QA`); the original release is on Hugging Face (`next-tat/TAT-QA`)
 - [Paper](https://aclanthology.org/2021.acl-long.254/) | [Code](https://github.com/NExTplusplus/TAT-QA) |
   [Dataset](https://huggingface.co/datasets/next-tat/TAT-QA) | [Leaderboard](https://nextplusplus.github.io/TAT-QA/)
 
@@ -40,7 +40,7 @@ computed with arithmetic, and most carry a scale (thousand, million, billion or 
 | Property | Value |
 |----------|-------|
 | **Benchmark Name** | `tat_qa` |
-| **Dataset ID** | [next-tat/TAT-QA](https://modelscope.cn/datasets/next-tat/TAT-QA/summary) |
+| **Dataset ID** | [evalscope/TAT-QA](https://modelscope.cn/datasets/evalscope/TAT-QA/summary) |
 | **Paper** | [Paper](https://aclanthology.org/2021.acl-long.254/) |
 | **Tags** | `Math`, `QA`, `Reasoning` |
 | **Metrics** | `exact_match`, `f1` |
@@ -72,7 +72,7 @@ computed with arithmetic, and most carry a scale (thousand, million, billion or 
 {
   "input": [
     {
-      "id": "7ec79d32",
+      "id": "3f044b9c",
       "content": "Below is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n | June 30, | \n | 2019 | 2018\nDeferred tax assets |  | \nNon-capital loss carryforwards | $161,119 | $129,436\nCapital loss carryforwards | 155 | 417\n ... [TRUNCATED 1480 chars] ... a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>"
     }
   ],

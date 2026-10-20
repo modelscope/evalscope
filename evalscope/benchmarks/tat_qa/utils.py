@@ -12,8 +12,9 @@ import numpy as np
 
 SCALES = ['', 'thousand', 'million', 'billion', 'percent']
 
-_ANSWER_RE = re.compile(r'^\s*\**\s*(?:final\s+)?answer\s*\**\s*:\s*(.*)$', re.IGNORECASE | re.MULTILINE)
-_SCALE_RE = re.compile(r'^\s*\**\s*scale\s*\**\s*:\s*(.*)$', re.IGNORECASE | re.MULTILINE)
+# `[ \t]*` (not `\s*`) after the colon keeps an empty answer line from capturing the next line.
+_ANSWER_RE = re.compile(r'^\s*\**\s*(?:final\s+)?answer\s*\**\s*:[ \t]*(.*)$', re.IGNORECASE | re.MULTILINE)
+_SCALE_RE = re.compile(r'^\s*\**\s*scale\s*\**\s*:[ \t]*(.*)$', re.IGNORECASE | re.MULTILINE)
 SPAN_SEPARATOR = ' | '
 
 # --- tatqa_utils.py ---------------------------------------------------------------------------------------

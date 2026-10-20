@@ -1,63 +1,55 @@
 # TAT-QA
 
-
 ## 概述
 
-TAT-QA（Tabular And Textual dataset for Question Answering）评估模型在表格与文本混合的金融数据上的数值推理能力：
-每个问题都针对真实财报中的一张表格及至少两段描述该表格的文字。答案可能是文本片段、多个片段、计数，
-或需要通过算术计算得到的数值，且大多带有单位（千、百万、十亿或百分比）。
+TAT-QA（用于问答的表格和文本数据集）评估混合财务数据上的数值推理：每个问题都是关于真实财务报告中的一个表格以及至少两段描述该表格的段落。答案可以是文本片段、片段集合、计数或需要通过算术计算得出的数字，并且大多数带有单位（千、百万、十亿或百分比）。
 
 ## 任务描述
 
-- **任务类型**：结合表格与文本、需要数值推理的问答
-- **输入**：一张表格、相关段落和一个问题
-- **输出**：推理过程，然后是一行 `Answer:` 和一行 `Scale:`
+- **任务类型**：带有数值推理的表格+文本问答
+- **输入**：一个表格、其段落和一个问题
+- **输出**：推理过程，然后是一行`Answer:`和一行`Scale:`
 - **领域**：财务报告
 
 ## 主要特点
 
-- 测试集共 1,663 个问题，涉及 277 张表格，标准答案由作者公开发布
-- 按答案来源划分子集：`table`（736）、`text`（381）和 `table-text`（546）
-- 答案类型：单片段 span（714）、算术 arithmetic（699）、多片段 multi-span（210）和计数 count（40）
-- 单位：无（836）、千 thousand（319）、百分比 percent（294）和百万 million（214）
+- 1,663个测试问题涉及277个表格，作者已发布正确答案
+- 根据答案来源划分子集：`table`（736）、`text`（381）和`table-text`（546）
+- 答案类型：片段（714）、算术（699）、多片段（210）和计数（40）
+- 单位：无（836）、千（319）、百分比（294）和百万（214）
 
 ## 评估说明
 
-- 指标为官方的精确匹配（`exact_match`）和面向数值的 F1（`f1`，主指标），由 `tatqa_metric.py` 移植实现，
-  每个问题的得分与官方脚本一致
-- 数值在应用单位并四舍五入后再比较，因此单位为 `million` 的 `1.2` 与 `1,200,000` 视为相同；
-  按官方规则，算术题和计数题的 F1 等于 EM
-- 多个片段在 `Answer:` 行中用 `|` 分隔；单位缺失或无法识别时按无单位处理
-- 零样本作答，直接使用完整的表格和段落（不做检索）
-- 官方数据托管在 Hugging Face（`next-tat/TAT-QA`），运行时请设置 `dataset_hub='huggingface'`
-- [论文](https://aclanthology.org/2021.acl-long.254/) | [代码](https://github.com/NExTplusplus/TAT-QA) |
-  [数据集](https://huggingface.co/datasets/next-tat/TAT-QA) | [排行榜](https://nextplusplus.github.io/TAT-QA/)
-
+- 指标是官方精确匹配 (`exact_match`) 和以数值为重点的F1 (`f1`, 主要)，使用移植的`tatqa_metric.py`计算，与官方脚本给出的每题得分相同
+- 数字在应用单位并四舍五入后进行比较，因此带有单位“百万”的`1.2`和`1,200,000`匹配；对于算术和计数问题，官方F1等于EM
+- 多个片段在`Answer:`行中用`|`分隔；未知或缺失的单位视为无单位
+- 问题从完整的表格和段落中零样本回答（无需检索）
+- 数据在ModelScope上镜像 (`evalscope/TAT-QA`)；原始发布在Hugging Face上 (`next-tat/TAT-QA`)
+- [论文](https://aclanthology.org/2021.acl-long.254/) | [代码](https://github.com/NExTplusplus/TAT-QA) | [数据集](https://huggingface.co/datasets/next-tat/TAT-QA) | [排行榜](https://nextplusplus.github.io/TAT-QA/)
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
 | **基准测试名称** | `tat_qa` |
-| **数据集ID** | [next-tat/TAT-QA](https://modelscope.cn/datasets/next-tat/TAT-QA/summary) |
+| **数据集ID** | [evalscope/TAT-QA](https://modelscope.cn/datasets/evalscope/TAT-QA/summary) |
 | **论文** | [论文](https://aclanthology.org/2021.acl-long.254/) |
 | **标签** | `Math`, `QA`, `Reasoning` |
 | **指标** | `exact_match`, `f1` |
-| **默认示例** | 0-shot |
+| **默认样本数** | 0-shot |
 | **评估分割** | `test` |
-
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 1,663 |
-| 提示词长度（平均） | 2340.89 字符 |
-| 提示词长度（最小/最大） | 821 / 7405 字符 |
+| 提示词长度（平均值） | 2340.89 字符 |
+| 提示词长度（最小/最大值） | 821 / 7405 字符 |
 
-**各子集统计：**
+**各子集统计数据：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `table` | 736 | 2349.84 | 821 | 7073 |
 | `text` | 381 | 2527.49 | 833 | 7405 |
@@ -71,7 +63,7 @@ TAT-QA（Tabular And Textual dataset for Question Answering）评估模型在表
 {
   "input": [
     {
-      "id": "7ec79d32",
+      "id": "3f044b9c",
       "content": "Below is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n | June 30, | \n | 2019 | 2018\nDeferred tax assets |  | \nNon-capital loss carryforwards | $161,119 | $129,436\nCapital loss carryforwards | 155 | 417\n ... [TRUNCATED 1480 chars] ... a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>"
     }
   ],
@@ -91,11 +83,11 @@ TAT-QA（Tabular And Textual dataset for Question Answering）评估模型在表
 }
 ```
 
-*注：部分内容为显示而截断。*
+*注：部分内容因显示原因被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Below is a table and some paragraphs from a financial report, followed by a question.
 
@@ -117,7 +109,7 @@ Scale: <none, thousand, million, billion or percent>
 
 ## 使用方法
 
-### 使用 CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -125,10 +117,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets tat_qa \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task
@@ -144,7 +136,7 @@ task_cfg = TaskConfig(
             # subset_list: ['table', 'text', 'table-text']  # optional, evaluate specific subsets
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

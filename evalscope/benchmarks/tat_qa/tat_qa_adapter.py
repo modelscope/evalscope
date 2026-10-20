@@ -1,7 +1,7 @@
 # TAT-QA adapter: question answering over the hybrid tabular and textual content of financial reports.
 #
 # Paper: https://aclanthology.org/2021.acl-long.254/ (ACL 2021)
-# Dataset: https://huggingface.co/datasets/next-tat/TAT-QA (CC BY 4.0)
+# Dataset: https://modelscope.cn/datasets/evalscope/TAT-QA (mirror of the original release, CC BY 4.0)
 # Official evaluation: https://github.com/NExTplusplus/TAT-QA (tatqa_eval.py, MIT License)
 
 import json
@@ -19,8 +19,9 @@ from .utils import SPAN_SEPARATOR, parse_response, score_question
 
 SUBSET_LIST = ['table', 'text', 'table-text']
 TEST_FILE = 'tatqa_dataset_test_gold.json'
-# Pinned revision of the official release on Hugging Face (test set with gold answers).
-DATASET_REVISION = 'c96247f5077eac447f63527fd3dcfdc58bb56d6a'
+# Pinned revisions: the ModelScope mirror and the original Hugging Face release (test set with gold answers).
+DATASET_REVISION = '8d64c441239133dd8042c28e0afeb52e09887b5c'
+HF_DATASET_REVISION = 'c96247f5077eac447f63527fd3dcfdc58bb56d6a'
 
 PROMPT_TEMPLATE = """Below is a table and some paragraphs from a financial report, followed by a question.
 
@@ -69,7 +70,7 @@ computed with arithmetic, and most carry a scale (thousand, million, billion or 
   match; the official F1 equals EM for arithmetic and count questions
 - Multiple spans are separated by `|` on the `Answer:` line; an unknown or missing scale counts as no scale
 - Questions are answered zero-shot from the full table and paragraphs (no retrieval)
-- The official data is on Hugging Face (`next-tat/TAT-QA`), so run with `dataset_hub='huggingface'`
+- Data is mirrored on ModelScope (`evalscope/TAT-QA`); the original release is on Hugging Face (`next-tat/TAT-QA`)
 - [Paper](https://aclanthology.org/2021.acl-long.254/) | [Code](https://github.com/NExTplusplus/TAT-QA) |
   [Dataset](https://huggingface.co/datasets/next-tat/TAT-QA) | [Leaderboard](https://nextplusplus.github.io/TAT-QA/)
 """
@@ -87,9 +88,10 @@ def format_paragraphs(paragraphs: List[Dict[str, Any]]) -> str:
     BenchmarkMeta(
         name='tat_qa',
         pretty_name='TAT-QA',
-        dataset_id='next-tat/TAT-QA',
+        dataset_id='evalscope/TAT-QA',
+        dataset_revision=DATASET_REVISION,
         hf_dataset_id='next-tat/TAT-QA',
-        hf_dataset_revision=DATASET_REVISION,
+        hf_dataset_revision=HF_DATASET_REVISION,
         paper_url='https://aclanthology.org/2021.acl-long.254/',
         tags=[Tags.REASONING, Tags.QA, Tags.MATH],
         description=DESCRIPTION,

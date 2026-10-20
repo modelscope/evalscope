@@ -1151,7 +1151,7 @@ class TestNativeBenchmark(TestBenchmark):
 
     def test_tat_qa_mock(self):
         """Test TAT-QA table + text financial QA benchmark with mock."""
-        self._run_dataset_test('tat_qa', limit=5, use_mock=True, dataset_hub='huggingface')
+        self._run_dataset_test('tat_qa', limit=5, use_mock=True)
 
 
 if __name__ == '__main__':
