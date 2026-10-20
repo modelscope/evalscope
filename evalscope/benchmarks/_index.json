@@ -83,6 +83,7 @@
  "erqa": "evalscope.benchmarks.erqa.erqa_adapter",
  "evalmuse": "evalscope.benchmarks.text2image.evalmuse_adapter",
  "fin_ner": "evalscope.benchmarks.ner.fin_ner_adapter",
+ "finqa": "evalscope.benchmarks.finqa.finqa_adapter",
  "fleurs": "evalscope.benchmarks.fleurs.fleurs_adapter",
  "frames": "evalscope.benchmarks.frames.frames_adapter",
  "gaia": "evalscope.benchmarks.gaia.gaia_adapter",
