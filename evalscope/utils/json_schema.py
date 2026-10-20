@@ -141,8 +141,14 @@ def cls_json_schema(cls: Type[Any]) -> JSONSchema:
 
     if is_dataclass(cls):
         fields = cls.__dataclass_fields__  # type: ignore
+        try:
+            annotations = get_type_hints(cls)
+        except (NameError, TypeError):
+            # Keep supporting dataclasses whose annotations reference names
+            # unavailable in the current runtime namespace.
+            annotations = {}
         for name, field in fields.items():
-            properties[name] = json_schema(field.type)  # type: ignore
+            properties[name] = json_schema(annotations.get(name, field.type))  # type: ignore[arg-type]
             if field.default == field.default_factory:
                 required.append(name)
     elif isinstance(cls, type) and issubclass(cls, BaseModel):

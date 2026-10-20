@@ -1,11 +1,49 @@
 from copy import deepcopy
+from dataclasses import dataclass, field
 from typing import Dict
 
 import pytest
 from pydantic import BaseModel
 
 from evalscope.api.tool.tool_info import parse_tool_info
-from evalscope.utils.json_schema import JSONSchema
+from evalscope.utils.json_schema import JSONSchema, json_schema
+
+
+@dataclass
+class DataclassPayload:
+    count: 'int'
+    tags: 'list[str]' = field(default_factory=list)
+    enabled: bool = True
+
+
+def test_tool_schema_resolves_dataclass_string_annotations() -> None:
+    def tool(payload: DataclassPayload) -> str:
+        """Accept a dataclass payload."""
+        return str(payload.count)
+
+    schema = parse_tool_info(tool).parameters.properties['payload']
+
+    assert schema.properties['count'].type == 'integer'
+    assert schema.properties['tags'].type == 'array'
+    assert schema.properties['tags'].items.type == 'string'
+    assert schema.properties['enabled'].type == 'boolean'
+    assert schema.required == ['count']
+
+
+def test_dataclass_schema_preserves_unresolved_annotation_behavior() -> None:
+    class LocalValue:
+        pass
+
+    @dataclass
+    class UnresolvedPayload:
+        count: int
+        value: 'LocalValue'
+
+    schema = json_schema(UnresolvedPayload)
+
+    assert schema.properties['count'].type == 'integer'
+    assert schema.properties['value'].type is None
+    assert schema.required == ['count', 'value']
 
 
 @pytest.mark.parametrize('keyword', ['default', 'enum'])
