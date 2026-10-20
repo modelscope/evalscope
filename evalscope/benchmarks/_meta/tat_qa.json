@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "pretty_name": "TAT-QA",
+    "dataset_id": "next-tat/TAT-QA",
+    "paper_url": "https://aclanthology.org/2021.acl-long.254/",
+    "tags": [
+      "Reasoning",
+      "QA",
+      "Math"
+    ],
+    "metrics": [
+      "exact_match",
+      "f1"
+    ],
+    "few_shot_num": 0,
+    "eval_split": "test",
+    "train_split": "",
+    "subset_list": [
+      "table",
+      "text",
+      "table-text"
+    ],
+    "description": "\n## Overview\n\nTAT-QA (Tabular And Textual dataset for Question Answering) evaluates numerical reasoning over hybrid\nfinancial data: each question is asked about a table from a real financial report together with at least\ntwo paragraphs describing it. Answers are text spans, sets of spans, counts or numbers that must be\ncomputed with arithmetic, and most carry a scale (thousand, million, billion or percent).\n\n## Task Description\n\n- **Task Type**: Table + text question answering with numerical reasoning\n- **Input**: A table, its paragraphs and a question\n- **Output**: Reasoning, then an `Answer:` line and a `Scale:` line\n- **Domain**: Financial reports\n\n## Key Features\n\n- 1,663 test questions over 277 tables, with the gold answers released by the authors\n- Subsets by where the answer comes from: `table` (736), `text` (381) and `table-text` (546)\n- Answer types: span (714), arithmetic (699), multi-span (210) and count (40)\n- Scales: none (836), thousand (319), percent (294) and million (214)\n\n## Evaluation Notes\n\n- Metrics are the official exact match (`exact_match`) and numeracy-focused F1 (`f1`, primary), computed with a port of\n  `tatqa_metric.py` that gives the same per-question scores as the official script\n- Numbers are compared after applying the scale and rounding, so `1.2` with scale `million` and `1,200,000`\n  match; the official F1 equals EM for arithmetic and count questions\n- Multiple spans are separated by `|` on the `Answer:` line; an unknown or missing scale counts as no scale\n- Questions are answered zero-shot from the full table and paragraphs (no retrieval)\n- The official data is on Hugging Face (`next-tat/TAT-QA`), so run with `dataset_hub='huggingface'`\n- [Paper](https://aclanthology.org/2021.acl-long.254/) | [Code](https://github.com/NExTplusplus/TAT-QA) |\n  [Dataset](https://huggingface.co/datasets/next-tat/TAT-QA) | [Leaderboard](https://nextplusplus.github.io/TAT-QA/)\n",
+    "prompt_template": "Below is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n{table}\n\nParagraphs:\n{paragraphs}\n\nQuestion: {question}\n\nAnswer the question using the table and the paragraphs:\n- If the answer is text from the table or the paragraphs, copy it exactly. If there are several, separate them with \" | \".\n- If the answer is a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>",
+    "system_prompt": "",
+    "few_shot_prompt_template": "",
+    "aggregation": "mean",
+    "extra_params": {},
+    "sandbox_config": {},
+    "category": "llm",
+    "primary_metric": {
+      "name": "f1",
+      "aggregation": null,
+      "dimensions": {}
+    }
+  },
+  "statistics": {
+    "total_samples": 1663,
+    "subset_stats": [
+      {
+        "name": "table",
+        "sample_count": 736,
+        "prompt_length_mean": 2349.84,
+        "prompt_length_min": 821,
+        "prompt_length_max": 7073,
+        "prompt_length_std": 1125.73,
+        "target_length_mean": 8.21
+      },
+      {
+        "name": "text",
+        "sample_count": 381,
+        "prompt_length_mean": 2527.49,
+        "prompt_length_min": 833,
+        "prompt_length_max": 7405,
+        "prompt_length_std": 1187.89,
+        "target_length_mean": 81.95
+      },
+      {
+        "name": "table-text",
+        "sample_count": 546,
+        "prompt_length_mean": 2198.61,
+        "prompt_length_min": 827,
+        "prompt_length_max": 7387,
+        "prompt_length_std": 1176.01,
+        "target_length_mean": 14.28
+      }
+    ],
+    "prompt_length": {
+      "mean": 2340.89,
+      "min": 821,
+      "max": 7405,
+      "std": 1162.43
+    },
+    "target_length_mean": 27.1,
+    "computed_at": "2026-10-20T08:46:58.180129"
+  },
+  "sample_example": {
+    "data": {
+      "input": [
+        {
+          "id": "7ec79d32",
+          "content": "Below is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n | June 30, | \n | 2019 | 2018\nDeferred tax assets |  | \nNon-capital loss carryforwards | $161,119 | $129,436\nCapital loss carryforwards | 155 | 417\n ... [TRUNCATED 1480 chars] ... a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>"
+        }
+      ],
+      "target": "948,578",
+      "id": 0,
+      "group_id": 0,
+      "subset_key": "table",
+      "metadata": {
+        "uid": "107efaa11617ac41f5f9b3b5adf1e98c",
+        "answer": [
+          "948,578"
+        ],
+        "answer_type": "span",
+        "answer_from": "table",
+        "scale": ""
+      }
+    },
+    "subset": "table",
+    "truncated": true
+  },
+  "readme": {
+    "en": "# TAT-QA\n\n\n## Overview\n\nTAT-QA (Tabular And Textual dataset for Question Answering) evaluates numerical reasoning over hybrid\nfinancial data: each question is asked about a table from a real financial report together with at least\ntwo paragraphs describing it. Answers are text spans, sets of spans, counts or numbers that must be\ncomputed with arithmetic, and most carry a scale (thousand, million, billion or percent).\n\n## Task Description\n\n- **Task Type**: Table + text question answering with numerical reasoning\n- **Input**: A table, its paragraphs and a question\n- **Output**: Reasoning, then an `Answer:` line and a `Scale:` line\n- **Domain**: Financial reports\n\n## Key Features\n\n- 1,663 test questions over 277 tables, with the gold answers released by the authors\n- Subsets by where the answer comes from: `table` (736), `text` (381) and `table-text` (546)\n- Answer types: span (714), arithmetic (699), multi-span (210) and count (40)\n- Scales: none (836), thousand (319), percent (294) and million (214)\n\n## Evaluation Notes\n\n- Metrics are the official exact match (`exact_match`) and numeracy-focused F1 (`f1`, primary), computed with a port of\n  `tatqa_metric.py` that gives the same per-question scores as the official script\n- Numbers are compared after applying the scale and rounding, so `1.2` with scale `million` and `1,200,000`\n  match; the official F1 equals EM for arithmetic and count questions\n- Multiple spans are separated by `|` on the `Answer:` line; an unknown or missing scale counts as no scale\n- Questions are answered zero-shot from the full table and paragraphs (no retrieval)\n- The official data is on Hugging Face (`next-tat/TAT-QA`), so run with `dataset_hub='huggingface'`\n- [Paper](https://aclanthology.org/2021.acl-long.254/) | [Code](https://github.com/NExTplusplus/TAT-QA) |\n  [Dataset](https://huggingface.co/datasets/next-tat/TAT-QA) | [Leaderboard](https://nextplusplus.github.io/TAT-QA/)\n\n\n## Properties\n\n| Property | Value |\n|----------|-------|\n| **Benchmark Name** | `tat_qa` |\n| **Dataset ID** | [next-tat/TAT-QA](https://modelscope.cn/datasets/next-tat/TAT-QA/summary) |\n| **Paper** | [Paper](https://aclanthology.org/2021.acl-long.254/) |\n| **Tags** | `Math`, `QA`, `Reasoning` |\n| **Metrics** | `exact_match`, `f1` |\n| **Default Shots** | 0-shot |\n| **Evaluation Split** | `test` |\n\n\n## Data Statistics\n\n| Metric | Value |\n|--------|-------|\n| Total Samples | 1,663 |\n| Prompt Length (Mean) | 2340.89 chars |\n| Prompt Length (Min/Max) | 821 / 7405 chars |\n\n**Per-Subset Statistics:**\n\n| Subset | Samples | Prompt Mean | Prompt Min | Prompt Max |\n|--------|---------|-------------|------------|------------|\n| `table` | 736 | 2349.84 | 821 | 7073 |\n| `text` | 381 | 2527.49 | 833 | 7405 |\n| `table-text` | 546 | 2198.61 | 827 | 7387 |\n\n## Sample Example\n\n**Subset**: `table`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7ec79d32\",\n      \"content\": \"Below is a table and some paragraphs from a financial report, followed by a question.\\n\\nTable:\\n | June 30, | \\n | 2019 | 2018\\nDeferred tax assets |  | \\nNon-capital loss carryforwards | $161,119 | $129,436\\nCapital loss carryforwards | 155 | 417\\n ... [TRUNCATED 1480 chars] ... a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\\nThink step by step, then end your response with these two lines:\\nAnswer: <answer>\\nScale: <none, thousand, million, billion or percent>\"\n    }\n  ],\n  \"target\": \"948,578\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"table\",\n  \"metadata\": {\n    \"uid\": \"107efaa11617ac41f5f9b3b5adf1e98c\",\n    \"answer\": [\n      \"948,578\"\n    ],\n    \"answer_type\": \"span\",\n    \"answer_from\": \"table\",\n    \"scale\": \"\"\n  }\n}\n```\n\n*Note: Some content was truncated for display.*\n\n## Prompt Template\n\n**Prompt Template:**\n```text\nBelow is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n{table}\n\nParagraphs:\n{paragraphs}\n\nQuestion: {question}\n\nAnswer the question using the table and the paragraphs:\n- If the answer is text from the table or the paragraphs, copy it exactly. If there are several, separate them with \" | \".\n- If the answer is a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>\n```\n\n## Usage\n\n### Using CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tat_qa \\\n    --limit 10  # Remove this line for formal evaluation\n```\n\n### Using Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tat_qa'],\n    dataset_args={\n        'tat_qa': {\n            # subset_list: ['table', 'text', 'table-text']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # Remove this line for formal evaluation\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "zh": "# TAT-QA\n\n\n## 概述\n\nTAT-QA（Tabular And Textual dataset for Question Answering）评估模型在表格与文本混合的金融数据上的数值推理能力：\n每个问题都针对真实财报中的一张表格及至少两段描述该表格的文字。答案可能是文本片段、多个片段、计数，\n或需要通过算术计算得到的数值，且大多带有单位（千、百万、十亿或百分比）。\n\n## 任务描述\n\n- **任务类型**：结合表格与文本、需要数值推理的问答\n- **输入**：一张表格、相关段落和一个问题\n- **输出**：推理过程，然后是一行 `Answer:` 和一行 `Scale:`\n- **领域**：财务报告\n\n## 主要特点\n\n- 测试集共 1,663 个问题，涉及 277 张表格，标准答案由作者公开发布\n- 按答案来源划分子集：`table`（736）、`text`（381）和 `table-text`（546）\n- 答案类型：单片段 span（714）、算术 arithmetic（699）、多片段 multi-span（210）和计数 count（40）\n- 单位：无（836）、千 thousand（319）、百分比 percent（294）和百万 million（214）\n\n## 评估说明\n\n- 指标为官方的精确匹配（`exact_match`）和面向数值的 F1（`f1`，主指标），由 `tatqa_metric.py` 移植实现，\n  每个问题的得分与官方脚本一致\n- 数值在应用单位并四舍五入后再比较，因此单位为 `million` 的 `1.2` 与 `1,200,000` 视为相同；\n  按官方规则，算术题和计数题的 F1 等于 EM\n- 多个片段在 `Answer:` 行中用 `|` 分隔；单位缺失或无法识别时按无单位处理\n- 零样本作答，直接使用完整的表格和段落（不做检索）\n- 官方数据托管在 Hugging Face（`next-tat/TAT-QA`），运行时请设置 `dataset_hub='huggingface'`\n- [论文](https://aclanthology.org/2021.acl-long.254/) | [代码](https://github.com/NExTplusplus/TAT-QA) |\n  [数据集](https://huggingface.co/datasets/next-tat/TAT-QA) | [排行榜](https://nextplusplus.github.io/TAT-QA/)\n\n\n## 属性\n\n| 属性 | 值 |\n|----------|-------|\n| **基准测试名称** | `tat_qa` |\n| **数据集ID** | [next-tat/TAT-QA](https://modelscope.cn/datasets/next-tat/TAT-QA/summary) |\n| **论文** | [论文](https://aclanthology.org/2021.acl-long.254/) |\n| **标签** | `Math`, `QA`, `Reasoning` |\n| **指标** | `exact_match`, `f1` |\n| **默认示例** | 0-shot |\n| **评估分割** | `test` |\n\n\n## 数据统计\n\n| 指标 | 值 |\n|--------|-------|\n| 总样本数 | 1,663 |\n| 提示词长度（平均） | 2340.89 字符 |\n| 提示词长度（最小/最大） | 821 / 7405 字符 |\n\n**各子集统计：**\n\n| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |\n|--------|---------|-------------|------------|------------|\n| `table` | 736 | 2349.84 | 821 | 7073 |\n| `text` | 381 | 2527.49 | 833 | 7405 |\n| `table-text` | 546 | 2198.61 | 827 | 7387 |\n\n## 样例示例\n\n**子集**: `table`\n\n```json\n{\n  \"input\": [\n    {\n      \"id\": \"7ec79d32\",\n      \"content\": \"Below is a table and some paragraphs from a financial report, followed by a question.\\n\\nTable:\\n | June 30, | \\n | 2019 | 2018\\nDeferred tax assets |  | \\nNon-capital loss carryforwards | $161,119 | $129,436\\nCapital loss carryforwards | 155 | 417\\n ... [TRUNCATED 1480 chars] ... a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\\nThink step by step, then end your response with these two lines:\\nAnswer: <answer>\\nScale: <none, thousand, million, billion or percent>\"\n    }\n  ],\n  \"target\": \"948,578\",\n  \"id\": 0,\n  \"group_id\": 0,\n  \"subset_key\": \"table\",\n  \"metadata\": {\n    \"uid\": \"107efaa11617ac41f5f9b3b5adf1e98c\",\n    \"answer\": [\n      \"948,578\"\n    ],\n    \"answer_type\": \"span\",\n    \"answer_from\": \"table\",\n    \"scale\": \"\"\n  }\n}\n```\n\n*注：部分内容为显示而截断。*\n\n## 提示模板\n\n**提示模板：**\n```text\nBelow is a table and some paragraphs from a financial report, followed by a question.\n\nTable:\n{table}\n\nParagraphs:\n{paragraphs}\n\nQuestion: {question}\n\nAnswer the question using the table and the paragraphs:\n- If the answer is text from the table or the paragraphs, copy it exactly. If there are several, separate them with \" | \".\n- If the answer is a number, give the number only and put its scale (thousand, million, billion or percent) on the Scale line.\nThink step by step, then end your response with these two lines:\nAnswer: <answer>\nScale: <none, thousand, million, billion or percent>\n```\n\n## 使用方法\n\n### 使用 CLI\n\n```bash\nevalscope eval \\\n    --model YOUR_MODEL \\\n    --api-url OPENAI_API_COMPAT_URL \\\n    --api-key EMPTY_TOKEN \\\n    --datasets tat_qa \\\n    --limit 10  # 正式评估时请删除此行\n```\n\n### 使用 Python\n\n```python\nfrom evalscope import run_task\nfrom evalscope.config import TaskConfig\n\ntask_cfg = TaskConfig(\n    model='YOUR_MODEL',\n    api_url='OPENAI_API_COMPAT_URL',\n    api_key='EMPTY_TOKEN',\n    datasets=['tat_qa'],\n    dataset_args={\n        'tat_qa': {\n            # subset_list: ['table', 'text', 'table-text']  # optional, evaluate specific subsets\n        }\n    },\n    limit=10,  # 正式评估时请删除此行\n)\n\nrun_task(task_cfg=task_cfg)\n```\n\n\n",
+    "content_hash": "d4a3de4385efa7866f1fe9cb61d6a4c9",
+    "needs_translation": false
+  },
+  "updated_at": "2026-10-20T09:18:52.293570"
+}

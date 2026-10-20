@@ -238,6 +238,7 @@
  "swe_bench_verified_mini": "evalscope.benchmarks.swe_bench.swe_bench_adapter",
  "swe_bench_verified_mini_agentic": "evalscope.benchmarks.swe_bench.swe_bench_agentic_adapter",
  "tablebench": "evalscope.benchmarks.tablebench.tablebench_adapter",
+ "tat_qa": "evalscope.benchmarks.tat_qa.tat_qa_adapter",
  "tau2_bench": "evalscope.benchmarks.tau_bench.tau2_bench.tau2_bench_adapter",
  "tau3_bench": "evalscope.benchmarks.tau_bench.tau3_bench.tau3_bench_adapter",
  "tau_bench": "evalscope.benchmarks.tau_bench.tau_bench.tau_bench_adapter",
