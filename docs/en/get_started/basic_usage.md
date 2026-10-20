@@ -287,7 +287,7 @@ Model files are hosted on the ModelScope Hub and require internet connection to 
 
 For example, use the modelscope command to download the [Qwen2.5-0.5B-Instruct](https://modelscope.cn/models/Qwen/Qwen2.5-0.5B-Instruct) model locally:
 ```bash
-modelscope download --model modelscope/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
+modelscope download --model Qwen/Qwen2.5-0.5B-Instruct --local_dir ./model/qwen2.5
 ```
 
 ```{seealso}
