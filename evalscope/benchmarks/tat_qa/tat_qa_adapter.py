@@ -5,7 +5,6 @@
 # Official evaluation: https://github.com/NExTplusplus/TAT-QA (tatqa_eval.py, MIT License)
 
 import json
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -129,17 +128,14 @@ class TATQAAdapter(DefaultDataAdapter):
 
     def _read_documents(self) -> List[Dict[str, Any]]:
         # The repository holds one JSON file per split rather than a `datasets` config, so the test file is
-        # read directly.
-        if Path(self.dataset_id).is_dir():
-            path = Path(self.dataset_id) / TEST_FILE
-        else:
-            path = DatasetHub(
-                data_id_or_path=self.dataset_id,
-                data_source=self.dataset_hub,
-                revision=self.dataset_revision,
-                force_redownload=self.force_redownload,
-                cache_dir=self.dataset_dir,
-            ).download_file(TEST_FILE)
+        # read directly; `download_file` also resolves local dataset directories.
+        path = DatasetHub(
+            data_id_or_path=self.dataset_id,
+            data_source=self.dataset_hub,
+            revision=self.dataset_revision,
+            force_redownload=self.force_redownload,
+            cache_dir=self.dataset_dir,
+        ).download_file(TEST_FILE)
         with open(path, encoding='utf-8') as f:
             return json.load(f)
 
