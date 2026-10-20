@@ -1,5 +1,7 @@
 """Regression coverage for the public metrics and benchmark numeric policies."""
 
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -299,24 +301,24 @@ def test_valid_incorrect_answer_still_allows_judge_recall(monkeypatch: pytest.Mo
     assert score.main_value == 1
 
 
-def test_math_runs_in_threads_without_signal_timers_or_subprocesses(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_math_runs_in_threads_without_parent_signal_timers() -> None:
+    """Scoring stays thread-safe and installs no signal timers in the scoring process.
+
+    Math-Verify itself runs in short-lived worker processes (see ``metrics.math.isolation``)
+    where its native signal timeout works again; the scoring threads never touch signals.
+    """
     import signal
-    import subprocess
 
     from evalscope.metrics.math.parser import parse_digits
 
-    def forbidden(*args: Any, **kwargs: Any) -> None:
-        pytest.fail('Direct mathematical scoring must not create subprocesses or install signal timers')
-
-    monkeypatch.setattr(subprocess, 'Popen', forbidden)
-    monkeypatch.setattr(signal, 'signal', forbidden)
-    monkeypatch.setattr(signal, 'alarm', forbidden, raising=False)
+    alarm_handler = signal.getsignal(signal.SIGALRM)
 
     def evaluate(_: int) -> tuple[bool, str, float | None]:
         return math_equal('18%', '.18'), extract_answer(r'\boxed{\frac{3}{4}}'), parse_digits(r'\frac{3}{4}')
 
     with ThreadPoolExecutor(max_workers=4) as executor:
         assert list(executor.map(evaluate, range(12))) == [(True, r'\frac{3}{4}', 0.75)] * 12
+    assert signal.getsignal(signal.SIGALRM) is alarm_handler
 
 
 def test_upstream_verification_errors_remain_excluded_before_judge(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -341,23 +343,24 @@ def test_upstream_verification_errors_remain_excluded_before_judge(monkeypatch: 
 def test_extraction_execution_failure_excludes_only_the_failed_sample(
     strategy: str, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import math_verify
+    import evalscope.metrics.math.parser as math_parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
 
     benchmark = get_benchmark('gsm8k', TaskConfig(datasets=['gsm8k'], judge={'strategy': strategy}))
-    original_parse = math_verify.parse
+    isolated_parse = math_parser._parse_isolated
     failed = False
 
-    def parse(*args: Any, **kwargs: Any) -> Any:
+    def parse(text: str) -> Any:
         nonlocal failed
         if not failed:
             failed = True
-            raise RuntimeError('parser execution failed')
-        return original_parse(*args, **kwargs)
+            raise MathEvaluationError('RuntimeError: parser execution failed')
+        return isolated_parse(text)
 
     def unexpected(*args: Any, **kwargs: Any) -> None:
         pytest.fail('Failed mathematical extraction must not request judge recall')
 
-    monkeypatch.setattr(math_verify, 'parse', parse)
+    monkeypatch.setattr(math_parser, '_parse_isolated', parse)
     monkeypatch.setattr(benchmark, 'score_with_judge_contracts', unexpected)
     failed_score = benchmark.calculate_metrics(state(r'\boxed{1}', '1'))
     next_state = TaskState(
@@ -384,3 +387,63 @@ def test_unexpected_extraction_bug_still_propagates(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(benchmark, 'extract_answer', fail)
     with pytest.raises(ValueError, match='adapter bug'):
         benchmark.calculate_metrics(state(r'\boxed{1}', '1'))
+
+
+def test_degenerate_repeated_boxed_prediction_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A repeated-\boxed degeneration must not wedge scoring.
+
+    Unfixed, the display-math extraction regex backtracks catastrophically on such
+    output while holding the GIL, freezing the whole evaluation. With bounded
+    isolation the prediction simply extracts as unparsed.
+    """
+    import evalscope.metrics.math.parser as parser
+
+    monkeypatch.setattr(parser, 'PARSE_TIMEOUT_S', 2)
+    prediction = '$$ so we get\n\n' + '\\boxed{5940}\n\n' * 2000
+
+    started = time.perf_counter()
+    extracted = extract_answer(prediction)
+    elapsed = time.perf_counter() - started
+
+    assert extracted == ''
+    assert elapsed < 30
+
+
+def test_bounded_extraction_does_not_block_other_threads(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The pathological regex must run outside the process GIL while scoring."""
+    import evalscope.metrics.math.parser as parser
+
+    monkeypatch.setattr(parser, 'PARSE_TIMEOUT_S', 2)
+    prediction = '$$ so we get\n\n' + '\\boxed{5940}\n\n' * 2000
+    ticks: list[float] = []
+    stop = threading.Event()
+
+    def heartbeat() -> None:
+        while not stop.is_set():
+            ticks.append(time.monotonic())
+            time.sleep(0.05)
+
+    watcher = threading.Thread(target=heartbeat)
+    watcher.start()
+    try:
+        assert extract_answer(prediction) == ''
+    finally:
+        stop.set()
+        watcher.join()
+
+    assert len(ticks) > 10
+    assert max(later - earlier for earlier, later in zip(ticks, ticks[1:])) < 1.0
+
+
+def test_worker_exception_crosses_the_isolation_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Math-Verify crash inside the worker still surfaces as a scoring failure."""
+    import math_verify
+
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    def fail(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError('parser execution failed')
+
+    monkeypatch.setattr(math_verify, 'parse', fail)
+    with pytest.raises(MathEvaluationError, match='parser execution failed'):
+        extract_answer(r'\boxed{1}')
