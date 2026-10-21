@@ -59,6 +59,10 @@ function PerfRunCard({
 }) {
   const identity = resolveProvider(run)
   const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
+  // Primary identity: the user-given alias when set, else the model name.
+  const displayName = run.alias || run.model || run.dataset || '—'
+  // Secondary line: every field that tells two same-model runs apart.
+  const identityParts = [run.alias ? run.model : null, identity.provider, identity.protocol, run.api_host].filter(Boolean)
 
   return (
     <div
@@ -70,7 +74,7 @@ function PerfRunCard({
       <SelectionCheckbox
         checked={selected}
         onClick={onToggle}
-        label={`${t('perf.archive.selectRun')}: ${run.model || run.dataset || '—'}`}
+        label={`${t('perf.archive.selectRun')}: ${displayName}`}
         className="shrink-0 cursor-pointer"
       />
       <button
@@ -79,11 +83,12 @@ function PerfRunCard({
         className="grid min-h-11 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left lg:grid-cols-[minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_auto]"
       >
         <div className="flex min-w-0 flex-col gap-0.5">
-          {/* Model alias is the primary identity; fall back to dataset, never
-              the raw path/timestamp, when the alias is absent. */}
-          <span className="type-body-sm font-semibold text-[var(--text)] break-words min-w-0">{run.model || run.dataset || '—'}</span>
+          {/* Alias (else model) is the primary identity; never the raw
+              path/timestamp. The secondary line carries the fields that
+              distinguish same-model runs: provider, protocol, endpoint host. */}
+          <span className="type-body-sm font-semibold text-[var(--text)] break-words min-w-0">{displayName}</span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {identity.provider} · {identity.protocol}
+            {identityParts.join(' · ')}
           </span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
             {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
@@ -202,7 +207,7 @@ export default function PerfReportsPage() {
       selected.map((path) => {
         const run = runs.find((r) => r.path === path)
         if (!run) return path
-        return `${run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
+        return `${run.alias || run.model || run.dataset || path} · ${formatTimestamp(run.timestamp, 'seconds')}`
       }),
     [selected, runs],
   )
@@ -236,6 +241,8 @@ export default function PerfReportsPage() {
               (r.model || '').toLowerCase().includes(q) ||
               (r.dataset || '').toLowerCase().includes(q) ||
               (r.api_type || '').toLowerCase().includes(q) ||
+              (r.alias || '').toLowerCase().includes(q) ||
+              (r.api_host || '').toLowerCase().includes(q) ||
               identity.provider.toLowerCase().includes(q) ||
               identity.protocol.toLowerCase().includes(q)
             )

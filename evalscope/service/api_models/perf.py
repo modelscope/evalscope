@@ -13,6 +13,7 @@ class PerfRunSummary(ApiResponseModel):
     model: str
     api_type: str
     dataset: str
+    alias: Optional[str] = None
     num_runs: int
     total_requests: int
     success_rate: float
@@ -51,6 +52,7 @@ class PerfDetailResponse(ApiResponseModel):
     model: str
     api_type: str
     dataset: str
+    alias: Optional[str] = None
     generated_at: str
     basic_info: Dict[str, str]
     summary_columns: List[PerfSummaryColumn]

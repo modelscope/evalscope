@@ -5,9 +5,11 @@ from evalscope.api.metric.semantics import MetricDisplayKind
 from evalscope.report.report import ExecutionSummary
 
 from .common import (
+    ActiveTaskInfo,
     ApiResponseModel,
     ConfigResponse,
     DataFrameResponse,
+    ListActiveTasksResponse,
     LogResponse,
     ProgressResponse,
     TaskStatusResponse,
@@ -83,6 +85,8 @@ class WebApiContracts(BaseModel):
     perf_runs_list_response: PerfRunsListResponse
     perf_requests_response: PerfRequestsResponse
     delete_perf_run_response: DeletePerfRunResponse
+    active_task_info: ActiveTaskInfo
+    list_active_tasks_response: ListActiveTasksResponse
     metric_identity: MetricIdentity
     metric_display_kind: MetricDisplayKind
     metric_semantics: MetricSemantics
@@ -92,6 +96,7 @@ class WebApiContracts(BaseModel):
 
 
 __all__ = [
+    'ActiveTaskInfo',
     'AnalysisResponse',
     'ApiResponseModel',
     'BenchmarkEntry',
@@ -101,6 +106,7 @@ __all__ = [
     'DeletePerfRunResponse',
     'DeleteReportResponse',
     'EvalInvokeResponse',
+    'ListActiveTasksResponse',
     'ListPerfRunsResponse',
     'ListReportsGroupedResponse',
     'ListReportsResponse',

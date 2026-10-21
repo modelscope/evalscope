@@ -8,7 +8,7 @@ import {
   validatePositiveIntegerList,
   FORM_MESSAGE_KEYS,
 } from '@/domain/form/validation'
-import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
+import { AliasField, ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
@@ -23,6 +23,7 @@ const IDS = {
   api: 'perf-api',
   url: 'perf-url',
   apiKey: 'perf-apiKey',
+  alias: 'perf-alias',
   parallel: 'perf-parallel',
   number: 'perf-number',
   rate: 'perf-rate',
@@ -40,6 +41,7 @@ const DOM_ORDER: string[] = [
   IDS.api,
   IDS.url,
   IDS.apiKey,
+  IDS.alias,
   IDS.parallel,
   IDS.number,
   IDS.rate,
@@ -59,6 +61,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
   const [model, setModel] = useState('')
   const [url, setUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [alias, setAlias] = useState('')
   const [api, setApi] = useState('openai')
   const [parallel, setParallel] = useState('1')
   const [number, setNumber] = useState('10')
@@ -107,6 +110,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
     }
     if (url) config.url = url
     if (apiKey) config.api_key = apiKey
+    if (alias.trim()) config.alias = alias.trim()
     if (rate) config.rate = Number(rate)
     if (maxTokens) config.max_tokens = Number(maxTokens)
     if (minTokens) config.min_tokens = Number(minTokens)
@@ -153,6 +157,7 @@ export default function PerfConfigForm({ onSubmit, disabled }: Props) {
 
       <ApiUrlField id={IDS.url} name="url" value={url} onChange={setUrl} />
       <ApiKeyField id={IDS.apiKey} value={apiKey} onChange={setApiKey} />
+      <AliasField id={IDS.alias} value={alias} onChange={setAlias} />
 
       <Field id={IDS.parallel} name="parallel" labelKey="perf.task.parallel" error={errMsg(IDS.parallel)}>
         {(aria) => (

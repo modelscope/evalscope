@@ -266,6 +266,10 @@ class Arguments(BaseArgument):
     name: Optional[str] = None
     """Name for the run."""
 
+    alias: Optional[str] = None
+    """Human-readable run alias shown in the Web dashboard and reports to distinguish runs
+    of the same model (e.g. different servers). Purely a display label; never affects metrics."""
+
     # Output settings
     outputs_dir: str = DEFAULT_WORK_DIR
     """Output directory."""
@@ -886,6 +890,11 @@ def _add_logging_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help='SwanLab host URL for self-hosted deployments (also reads SWANLAB_HOST env var)')
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
+    parser.add_argument(
+        '--alias',
+        type=str,
+        default=None,
+        help='Human-readable run alias shown in the Web dashboard and reports (display label only)')
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
 

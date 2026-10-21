@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -29,6 +29,23 @@ class LogResponse(ApiResponseModel):
 class TaskStatusResponse(ApiResponseModel):
     status: str
     task_id: str
+
+
+class ActiveTaskInfo(ApiResponseModel):
+    """Display identity of a task whose subprocess is currently registered."""
+
+    task_id: str
+    kind: str  # 'eval' or 'perf'
+    model: str = ''
+    endpoint: Optional[str] = None  # sanitized host[:port]
+    alias: Optional[str] = None
+    started_at: str = ''
+    percent: Optional[float] = None
+
+
+class ListActiveTasksResponse(ApiResponseModel):
+    tasks: List[ActiveTaskInfo]
+    total: int
 
 
 class ProgressResponse(ApiResponseModel):

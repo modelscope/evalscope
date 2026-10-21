@@ -184,7 +184,13 @@ describe('PerfReportDetailPage', () => {
     })
 
     expect(labelledValue('Provider')).toBe('DashScope')
-    expect(screen.queryByText('dashscope.aliyuncs.com')).not.toBeInTheDocument()
+    // The sanitized host is surfaced as the labelled Endpoint field.
+    expect(labelledValue('Endpoint')).toBe('dashscope.aliyuncs.com')
+  })
+
+  it('prefers the run alias as the heading when set', async () => {
+    await renderDetail({ ...detailFixture, alias: 'server-A' })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('server-A')
   })
 
   it('uses the model alias as the primary identity, not the path/timestamp', async () => {
@@ -311,7 +317,7 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
-    expect(screen.getByText('DashScope · OpenAI-compatible')).toBeInTheDocument()
+    expect(screen.getByText('DashScope · OpenAI-compatible · dashscope.aliyuncs.com')).toBeInTheDocument()
     expect(screen.getAllByText('C 10 · Req 100 · Runs 1').length).toBeGreaterThan(0)
   })
 
@@ -324,6 +330,42 @@ describe('PerfReportsPage', () => {
 
     fireEvent.change(search, { target: { value: 'OpenAI-compatible' } })
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
+  })
+
+  it('shows alias and endpoint host so same-model runs stay distinguishable', async () => {
+    vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
+      runs: [
+        { ...RUN_SUMMARY, path: 'perf/run-a', alias: 'server-A', api_host: '10.0.0.2:8000' },
+        { ...RUN_SUMMARY, path: 'perf/run-b', alias: 'server-B', api_host: '10.0.0.3:8000', timestamp: '2024-01-02T00:00:00' },
+      ],
+      total: 2,
+    })
+    await renderReports()
+
+    expect(screen.getByText('server-A')).toBeInTheDocument()
+    expect(screen.getByText('server-B')).toBeInTheDocument()
+    // With an alias, the secondary line keeps model, provider, protocol and host.
+    expect(screen.getByText('test-model-a · Custom · OpenAI-compatible · 10.0.0.2:8000')).toBeInTheDocument()
+  })
+
+  it('searches runs by alias and endpoint host', async () => {
+    vi.mocked(perfApi.listPerfRuns).mockResolvedValue({
+      runs: [
+        { ...RUN_SUMMARY, path: 'perf/run-a', alias: 'server-A', api_host: '10.0.0.2:8000' },
+        { ...RUN_SUMMARY, path: 'perf/run-b', alias: 'server-B', api_host: '10.0.0.3:8000', timestamp: '2024-01-02T00:00:00' },
+      ],
+      total: 2,
+    })
+    await renderReports()
+    const search = screen.getByPlaceholderText('Search model / api / dataset...')
+
+    fireEvent.change(search, { target: { value: '10.0.0.3' } })
+    expect(screen.queryByText('server-A')).not.toBeInTheDocument()
+    expect(screen.getByText('server-B')).toBeInTheDocument()
+
+    fireEvent.change(search, { target: { value: 'server-a' } })
+    expect(screen.getByText('server-A')).toBeInTheDocument()
+    expect(screen.queryByText('server-B')).not.toBeInTheDocument()
   })
 
   it('shows the shared selection tray and opens the selected HTML report', async () => {

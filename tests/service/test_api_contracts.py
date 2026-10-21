@@ -22,6 +22,7 @@ from evalscope.service.api_models import (
     DeletePerfRunResponse,
     DeleteReportResponse,
     EvalInvokeResponse,
+    ListActiveTasksResponse,
     ListPerfRunsResponse,
     ListReportsGroupedResponse,
     ListReportsResponse,
@@ -66,6 +67,7 @@ CONTRACT_REGISTRY = (
     ('PerfDetailResponse', 'evalscope/web/src/api/perf.ts', 'evalscope/service/blueprints/perf.py'),
     ('PerfRunsListResponse', 'evalscope/web/src/api/perf.ts', 'evalscope/service/blueprints/perf.py'),
     ('PerfRequestsResponse', 'evalscope/web/src/api/perf.ts', 'evalscope/service/blueprints/perf.py'),
+    ('ListActiveTasksResponse', 'evalscope/web/src/api/tasks.ts', 'evalscope/service/blueprints/tasks.py'),
 )
 
 NON_JSON_ENDPOINTS = {
@@ -103,6 +105,7 @@ RESPONSE_MODELS = (
     PerfDetailResponse,
     PerfRunsListResponse,
     PerfRequestsResponse,
+    ListActiveTasksResponse,
 )
 
 
@@ -143,9 +146,10 @@ def test_config_and_idle_task_endpoints_use_response_contracts(client, tmp_path)
 
 
 def test_eval_and_perf_invoke_success_responses_are_validated(client) -> None:
-    task_config = SimpleNamespace(model='model', datasets=['demo'], work_dir='')
+    task_config = SimpleNamespace(model='model', datasets=['demo'], work_dir='', api_url='http://example.test')
     with mock.patch('evalscope.service.blueprints.eval._build_task_config', return_value=task_config), \
             mock.patch('evalscope.service.blueprints.eval.create_log_file'), \
+            mock.patch('evalscope.service.blueprints.eval.write_task_manifest'), \
             mock.patch('evalscope.service.blueprints.eval.run_in_subprocess', return_value={'demo': {'score': 1}}), \
             mock.patch('evalscope.service.blueprints.eval._build_result_table', return_value='table'):
         response = client.post(
@@ -156,7 +160,7 @@ def test_eval_and_perf_invoke_success_responses_are_validated(client) -> None:
     assert response.status_code == 200
     assert response.get_json()['status'] == 'completed'
 
-    perf_args = SimpleNamespace(model='model', url='http://example.test', api='openai')
+    perf_args = SimpleNamespace(model='model', url='http://example.test', api='openai', alias=None)
     with mock.patch('evalscope.service.blueprints.perf.PerfArguments.from_dict', return_value=perf_args), \
             mock.patch('evalscope.service.blueprints.perf.create_log_file'), \
             mock.patch('evalscope.service.blueprints.perf.run_in_subprocess', return_value={'rps': 1}), \

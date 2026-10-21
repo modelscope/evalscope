@@ -280,8 +280,11 @@ class BaseSummaryRenderer(ABC):
         basic_info.add_column('Value', style='green', width=55)
 
         basic_info.add_row('Model', args.model_id)
+        if args.alias:
+            basic_info.add_row('Alias', args.alias)
         basic_info.add_row('Test Dataset', args.dataset)
         basic_info.add_row('API Type', args.api)
+        basic_info.add_row('URL', args.url)
         for label, value in self._get_token_stat_rows(result, args):
             basic_info.add_row(label, value)
         basic_info.add_row('Total Test Time', _cell(Metrics.TIME_TAKEN_FOR_TESTS, result.total_time, include_unit=True))

@@ -8,13 +8,16 @@ from .benchmarks import (
     discover_all_benchmarks,
     parse_benchmark_description,
 )
-from .log import OUTPUT_DIR, create_log_file, get_log_content, validate_task_id
+from .log import OUTPUT_DIR, create_log_file, get_log_content, read_task_manifest, validate_task_id, write_task_manifest
 from .process import (
+    ActiveTask,
     TaskStoppedError,
     active_task_ids,
+    list_active_tasks,
     run_eval_wrapper,
     run_in_subprocess,
     run_perf_wrapper,
+    sanitize_endpoint,
     serialize_result,
     stop_process,
 )
@@ -24,7 +27,12 @@ __all__ = [
     'create_log_file',
     'get_log_content',
     'validate_task_id',
+    'read_task_manifest',
+    'write_task_manifest',
     'active_task_ids',
+    'list_active_tasks',
+    'sanitize_endpoint',
+    'ActiveTask',
     'run_eval_wrapper',
     'run_perf_wrapper',
     'serialize_result',

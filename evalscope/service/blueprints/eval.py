@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import Blueprint, current_app, jsonify, request, send_file
@@ -28,11 +29,14 @@ from ..utils import (
     create_log_file,
     discover_all_benchmarks,
     get_log_content,
+    read_task_manifest,
     run_eval_wrapper,
     run_in_subprocess,
+    sanitize_endpoint,
     serialize_result,
     stop_process,
     validate_task_id,
+    write_task_manifest,
 )
 
 logger = get_logger()
@@ -154,11 +158,36 @@ def _all_results_empty(result) -> bool:
     return False
 
 
-def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
+def _extract_alias(data: dict) -> Any:
+    """Pop the optional display alias out of the request payload.
+
+    ``alias`` is a service-layer display label; TaskConfig forbids unknown
+    fields, so it must be removed before ``TaskConfig.from_dict``.
+    """
+    alias = data.pop('alias', None)
+    if isinstance(alias, str) and alias.strip():
+        return alias.strip()
+    return None
+
+
+def _task_manifest(task_id: str, data: dict, alias) -> dict:
+    """Build the on-disk manifest that lets report listings attribute a run."""
+    model = data.get('model')
+    return {
+        'task_id': task_id,
+        'kind': 'eval',
+        'alias': alias,
+        'model': model if isinstance(model, str) else '',
+        'api_url': data.get('api_url') or '',
+        'started_at': datetime.now().isoformat(),
+    }
+
+
+def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task', task_meta: dict = None):
     """Run the evaluation subprocess and return a Flask response."""
     create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
     try:
-        result = run_in_subprocess(run_eval_wrapper, task_config, task_id=task_id)
+        result = run_in_subprocess(run_eval_wrapper, task_config, task_id=task_id, task_meta=task_meta)
         table_str = _build_result_table(task_config.work_dir)
         if _all_results_empty(result):
             error_msg = (
@@ -188,14 +217,23 @@ def run_evaluation():
     Returns the evaluation result when the task completes.
     """
     data, task_id = _parse_request()
+    alias = _extract_alias(data)
 
     task_config = _build_task_config(data)
     task_config.work_dir = os.path.join(OUTPUT_DIR, task_id)
 
+    write_task_manifest(task_id, _task_manifest(task_id, data, alias))
+    task_meta = {
+        'kind': 'eval',
+        'model': task_config.model if isinstance(task_config.model, str) else '',
+        'endpoint': sanitize_endpoint(task_config.api_url),
+        'alias': alias,
+    }
+
     logger.info(f'[{task_id}] Running evaluation task for model: {task_config.model}')
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
 
-    return _execute_task(task_id, task_config, label='Task')
+    return _execute_task(task_id, task_config, label='Task', task_meta=task_meta)
 
 
 @bp_eval.route('/stop', methods=['POST'])
@@ -223,6 +261,7 @@ def resume_evaluation():
     Returns the evaluation result when the task completes.
     """
     data, task_id = _parse_request()
+    alias = _extract_alias(data)
 
     work_dir = os.path.join(OUTPUT_DIR, task_id)
     if not os.path.isdir(work_dir):
@@ -233,10 +272,25 @@ def resume_evaluation():
     task_config.use_cache = work_dir
     task_config.rerun_review = True
 
+    # A resume continues the original run: refresh the manifest only when it is
+    # missing or the caller supplied a new alias, and reuse the stored alias
+    # otherwise so the active-task list keeps the original identity.
+    existing_manifest = read_task_manifest(work_dir)
+    if alias is None and existing_manifest:
+        alias = existing_manifest.get('alias')
+    if alias or existing_manifest is None:
+        write_task_manifest(task_id, _task_manifest(task_id, data, alias))
+    task_meta = {
+        'kind': 'eval',
+        'model': task_config.model if isinstance(task_config.model, str) else '',
+        'endpoint': sanitize_endpoint(task_config.api_url),
+        'alias': alias,
+    }
+
     logger.info(f'[{task_id}] Running resume task, work_dir: {work_dir}')
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
 
-    return _execute_task(task_id, task_config, label='Resume task')
+    return _execute_task(task_id, task_config, label='Resume task', task_meta=task_meta)
 
 
 @bp_eval.route('/progress', methods=['GET'])

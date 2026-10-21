@@ -202,6 +202,10 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     if isinstance(protocol, str) and protocol.strip():
         metadata['protocol'] = protocol.strip()
 
+    alias = args_dict.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        metadata['alias'] = alias.strip()
+
     raw_url = args_dict.get('url')
     if isinstance(raw_url, str) and raw_url.strip():
         candidate = raw_url.strip()
@@ -210,7 +214,13 @@ def _build_identity_metadata(args_dict: dict) -> dict:
         except ValueError:
             parsed = None
         if parsed and parsed.hostname:
-            metadata['api_host'] = parsed.hostname.lower()
+            try:
+                port = parsed.port
+            except ValueError:
+                port = None
+            # Keep host:port so co-located instances (:8000/:8001) stay distinct;
+            # userinfo and path never leak into the list view.
+            metadata['api_host'] = f'{parsed.hostname.lower()}:{port}' if port else parsed.hostname.lower()
 
     return metadata
 
@@ -352,6 +362,7 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'model': first_args.get('model', first_args.get('model_id', 'N/A')),
         'api_type': api_type,
         'dataset': first_args.get('dataset', 'N/A'),
+        'alias': identity.get('alias'),
         'generated_at': extract_timestamp(rel_path, run_dir),
         'basic_info': basic_info,
         'summary_columns': summary_columns,

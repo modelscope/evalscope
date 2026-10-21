@@ -111,6 +111,9 @@ export default function PerfReportDetailPage() {
   // metadata → known-host → Custom fallback priority.
   const identity = useMemo(() => resolveProvider(data ?? {}), [data])
 
+  // The sanitized endpoint host[:port] distinguishes same-model runs.
+  const endpoint = data?.basic_info?.['API Host']?.trim() || null
+
   // Front-load the per-run (DB) views for single-run reports, while still letting
   // the user switch tabs; the pick is scoped to the report it was made on.
   const tabScope = `${rootPath}\0${path}\0${data?.num_runs ?? ''}`
@@ -254,11 +257,12 @@ export default function PerfReportDetailPage() {
         <div className="flex flex-col gap-1.5 min-w-0">
           {/* Model alias is the primary identity; fall back to dataset, never
               the raw path/timestamp, when the alias is absent. */}
-          <h1 className="type-title-md text-[var(--text)] break-words">{data.model || data.dataset || '—'}</h1>
+          <h1 className="type-title-md text-[var(--text)] break-words">{data.alias || data.model || data.dataset || '—'}</h1>
           {/* Provider and Protocol as two independent, individually-labelled fields. */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <LabelledField label={t('perf.archive.provider')} value={identity.provider} />
             <LabelledField label={t('perf.archive.protocol')} value={identity.protocol} />
+            {endpoint && <LabelledField label={t('perf.archive.endpoint')} value={endpoint} />}
           </div>
           <div className="type-caption-mono text-[var(--text-muted)]">
             {data.dataset} · {data.num_runs}{' '}

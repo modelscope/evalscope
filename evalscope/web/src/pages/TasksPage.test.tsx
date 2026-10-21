@@ -17,6 +17,11 @@ vi.mock('@/components/tasks/EvalTaskPanel', () => ({
 vi.mock('@/components/tasks/PerfTaskPanel', () => ({
   default: () => <div data-testid="perf-panel">perf runner</div>,
 }))
+vi.mock('@/components/tasks/ActiveTasksPanel', () => ({
+  default: ({ onAdopt }: { onAdopt: (kind: 'eval' | 'perf', taskId: string) => void }) => (
+    <button data-testid="adopt-perf" onClick={() => onAdopt('perf', 'perf_1')} />
+  ),
+}))
 
 import TasksPage from './TasksPage'
 
@@ -48,5 +53,15 @@ describe('TasksPage', () => {
     renderAt()
     fireEvent.click(screen.getByRole('tab', { name: /perf/i }))
     expect(screen.getByTestId('perf-panel')).toBeInTheDocument()
+  })
+
+  it('adopting an active task seeds its restore slot and switches tabs', () => {
+    renderAt()
+    fireEvent.click(screen.getByTestId('adopt-perf'))
+
+    // The runner remounts onto the seeded slot (its reload-restore path).
+    expect(sessionStorage.getItem('evalscope-active-task-perf')).toBe('perf_1')
+    expect(screen.getByTestId('perf-panel')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { selected: true })).toHaveTextContent(/perf/i)
   })
 })

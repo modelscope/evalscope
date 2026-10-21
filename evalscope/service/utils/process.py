@@ -5,7 +5,10 @@ import sys
 import tempfile
 import threading
 import traceback
-from typing import Iterator, TextIO
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Iterator, List, Optional, TextIO
+from urllib.parse import urlsplit
 
 from evalscope.config import TaskConfig
 from evalscope.perf.arguments import Arguments as PerfArguments
@@ -15,12 +18,45 @@ from evalscope.utils.logger import get_logger
 
 logger = get_logger()
 
+
+def sanitize_endpoint(url: Optional[str]) -> Optional[str]:
+    """Reduce an endpoint URL to ``host[:port]`` for display purposes.
+
+    Strips scheme, path, query and credentials so nothing sensitive leaks into
+    task lists. Returns ``None`` when the URL is missing or has no host.
+    """
+    if not url or not isinstance(url, str) or not url.strip():
+        return None
+    candidate = url.strip()
+    try:
+        parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
+        port = parsed.port
+    except ValueError:
+        return None
+    if not parsed.hostname:
+        return None
+    host = parsed.hostname.lower()
+    return f'{host}:{port}' if port else host
+
+
+@dataclass
+class ActiveTask:
+    """A running task's subprocess plus the identity shown in the Web dashboard."""
+
+    proc: multiprocessing.Process
+    kind: str = ''  # 'eval' or 'perf'
+    model: str = ''
+    endpoint: Optional[str] = None  # sanitized host[:port]
+    alias: Optional[str] = None
+    started_at: str = field(default_factory=lambda: datetime.now().isoformat())
+
+
 # ---------------------------------------------------------------------------
 # Active process registry – allows external stop by task_id
 # ---------------------------------------------------------------------------
 
-_active_processes: dict[str, multiprocessing.Process] = {}
-"""Maps task_id → the subprocess currently running that task."""
+_active_processes: dict[str, ActiveTask] = {}
+"""Maps task_id → the task record whose subprocess is currently running."""
 
 _active_lock = threading.Lock()
 
@@ -45,10 +81,18 @@ class TaskStoppedError(Exception):
         super().__init__(f'Task {task_id} was stopped by the user.')
 
 
-def register_process(task_id: str, proc: multiprocessing.Process) -> None:
-    """Register a running subprocess so it can be stopped later."""
+def register_process(task_id: str, proc: multiprocessing.Process, meta: Optional[dict] = None) -> None:
+    """Register a running subprocess so it can be stopped and listed later."""
+    meta = meta or {}
+    record = ActiveTask(
+        proc=proc,
+        kind=meta.get('kind', ''),
+        model=meta.get('model', '') or '',
+        endpoint=meta.get('endpoint'),
+        alias=meta.get('alias'),
+    )
     with _active_lock:
-        _active_processes[task_id] = proc
+        _active_processes[task_id] = record
 
 
 def unregister_process(task_id: str) -> None:
@@ -63,15 +107,33 @@ def active_task_ids() -> set[str]:
         return set(_active_processes.keys())
 
 
+def list_active_tasks() -> List[dict]:
+    """Return display metadata for every registered task (without process handles)."""
+    with _active_lock:
+        records = list(_active_processes.items())
+    return [
+        {
+            'task_id': task_id,
+            'kind': record.kind,
+            'model': record.model,
+            'endpoint': record.endpoint,
+            'alias': record.alias,
+            'started_at': record.started_at,
+        }
+        for task_id, record in records
+    ]
+
+
 def stop_process(task_id: str) -> bool:
     """Terminate the subprocess associated with *task_id*.
 
     Returns True if a process was found and terminated, False otherwise.
     """
     with _active_lock:
-        proc = _active_processes.pop(task_id, None)
-    if proc is None:
+        record = _active_processes.pop(task_id, None)
+    if record is None:
         return False
+    proc = record.proc
     if not proc.is_alive():
         # Process already exited on its own; do NOT mark as user-stopped, or a
         # pending success result would be masked as TaskStoppedError. Treat the
@@ -136,13 +198,15 @@ def _process_worker(func, result_queue, *args, **kwargs):
             )
 
 
-def run_in_subprocess(func, *args, task_id=None, **kwargs):
+def run_in_subprocess(func, *args, task_id=None, task_meta=None, **kwargs):
     """Run *func* in a child process and return its result (blocks caller).
 
     Returns the function's return value on success; raises on error.
 
     If *task_id* is provided the child process is registered in the active
-    process registry so it can be terminated via :func:`stop_process`.
+    process registry so it can be terminated via :func:`stop_process` and
+    listed via :func:`list_active_tasks`. *task_meta* carries the display
+    identity (kind / model / endpoint / alias) stored alongside the handle.
 
     Design note — why polling instead of p.join() then queue.get():
     ``multiprocessing.Queue`` is backed by an OS pipe whose buffer is typically
@@ -160,7 +224,7 @@ def run_in_subprocess(func, *args, task_id=None, **kwargs):
     p.start()
 
     if task_id:
-        register_process(task_id, p)
+        register_process(task_id, p, meta=task_meta)
 
     res = None
     # Poll for the result while the child is alive so we continuously drain

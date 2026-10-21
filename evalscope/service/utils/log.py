@@ -1,9 +1,13 @@
+import json
 import os
 from collections import deque
+from typing import Optional
 
 from evalscope.constants import DEFAULT_WORK_DIR
 
 OUTPUT_DIR = os.path.abspath(os.getenv('EVALSCOPE_OUTPUT_DIR', DEFAULT_WORK_DIR))
+
+TASK_INFO_FILENAME = 'task_info.json'
 
 
 def validate_task_id(task_id: str) -> None:
@@ -88,3 +92,30 @@ def get_log_content(task_id: str, sub_path: str, start_line: int = None, page: i
     tail_line = head_line + len(lines)
     # Use ''.join to preserve original newlines in each line
     return {'text': ''.join(lines), 'head_line': head_line, 'tail_line': tail_line, 'total_lines': total_lines}
+
+
+def write_task_manifest(task_id: str, manifest: dict) -> str:
+    """Persist a task's display identity (alias / endpoint / start time) beside its outputs.
+
+    Written once at task launch so that historical report listings can attribute
+    a run to its endpoint long after the in-memory task registry is gone.
+    Returns the absolute path of the manifest file.
+    """
+    validate_task_id(task_id)
+
+    manifest_file = os.path.join(OUTPUT_DIR, task_id, TASK_INFO_FILENAME)
+    os.makedirs(os.path.dirname(manifest_file), exist_ok=True)
+    with open(manifest_file, 'w', encoding='utf-8') as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+    return manifest_file
+
+
+def read_task_manifest(run_dir: str) -> Optional[dict]:
+    """Read a task manifest from a run directory; ``None`` when absent or unreadable."""
+    manifest_file = os.path.join(run_dir, TASK_INFO_FILENAME)
+    try:
+        with open(manifest_file, 'r', encoding='utf-8') as f:
+            manifest = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return manifest if isinstance(manifest, dict) else None

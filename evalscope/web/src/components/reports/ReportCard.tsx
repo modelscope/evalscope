@@ -67,6 +67,12 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
               </span>
             )}
           </span>
+          {/* Identity row: service-run alias / endpoint, when the manifest carried them */}
+          {(report.alias || report.api_host) && (
+            <span className="mt-0.5 block truncate font-mono text-xs text-[var(--text-muted)]">
+              {[report.alias, report.api_host].filter(Boolean).join(' · ')}
+            </span>
+          )}
           {/* Secondary row: dataset + sample count */}
           <span className="flex items-center gap-3 mt-0.5">
             <span className="text-sm text-[var(--text-muted)] break-words min-w-0" title={report.dataset_name}>

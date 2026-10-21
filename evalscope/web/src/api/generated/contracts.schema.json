@@ -1,5 +1,63 @@
 {
   "$defs": {
+    "ActiveTaskInfo": {
+      "additionalProperties": false,
+      "description": "Display identity of a task whose subprocess is currently registered.",
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "started_at": {
+          "default": "",
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "kind"
+      ],
+      "type": "object"
+    },
     "AgentTrace": {
       "additionalProperties": false,
       "properties": {
@@ -916,6 +974,25 @@
       },
       "type": "object"
     },
+    "ListActiveTasksResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/ActiveTaskInfo"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tasks",
+        "total"
+      ],
+      "type": "object"
+    },
     "ListPerfRunsResponse": {
       "additionalProperties": false,
       "properties": {
@@ -1272,6 +1349,17 @@
     "PerfDetailResponse": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_type": {
           "type": "string"
         },
@@ -1549,6 +1637,17 @@
     "PerfRunSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_host": {
           "anyOf": [
             {
@@ -2344,6 +2443,28 @@
     "ReportSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "dataset_name": {
           "type": "string"
         },
@@ -2618,6 +2739,9 @@
   },
   "description": "Schema-only root that keeps every public Web API type reachable for code generation.",
   "properties": {
+    "active_task_info": {
+      "$ref": "#/$defs/ActiveTaskInfo"
+    },
     "analysis_response": {
       "$ref": "#/$defs/AnalysisResponse"
     },
@@ -2656,6 +2780,9 @@
     },
     "judge_summary": {
       "$ref": "#/$defs/JudgeSummary"
+    },
+    "list_active_tasks_response": {
+      "$ref": "#/$defs/ListActiveTasksResponse"
     },
     "list_perf_runs_response": {
       "$ref": "#/$defs/ListPerfRunsResponse"
@@ -2770,6 +2897,8 @@
     "perf_runs_list_response",
     "perf_requests_response",
     "delete_perf_run_response",
+    "active_task_info",
+    "list_active_tasks_response",
     "metric_identity",
     "metric_display_kind",
     "metric_semantics",

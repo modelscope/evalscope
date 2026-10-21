@@ -144,6 +144,10 @@ class ReportSummary(ApiResponseModel):
     num_samples: int
     timestamp: str
     primary_metrics: List[PrimaryMetricRef]
+    # Service-launched runs only: display alias and sanitized endpoint host[:port]
+    # recovered from the task manifest; absent for CLI runs.
+    alias: Optional[str] = None
+    api_host: Optional[str] = None
 
 
 class ReportFilters(ApiResponseModel):

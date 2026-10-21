@@ -41,6 +41,7 @@ export type EventType =
  * Schema-only root that keeps every public Web API type reachable for code generation.
  */
 export interface WebApiContracts {
+  active_task_info: ActiveTaskInfo;
   analysis_response: AnalysisResponse;
   benchmark_entry: BenchmarkEntry;
   benchmarks_response: BenchmarksResponse;
@@ -54,6 +55,7 @@ export interface WebApiContracts {
   execution_summary: ExecutionSummary;
   judge_attempt: JudgeAttempt;
   judge_summary: JudgeSummary;
+  list_active_tasks_response: ListActiveTasksResponse;
   list_perf_runs_response: ListPerfRunsResponse;
   list_reports_grouped_response: ListReportsGroupedResponse;
   list_reports_response: ListReportsResponse;
@@ -81,6 +83,18 @@ export interface WebApiContracts {
   tool_call: PredictionToolCall;
   value_range: ValueRange;
   [k: string]: any;
+}
+/**
+ * Display identity of a task whose subprocess is currently registered.
+ */
+export interface ActiveTaskInfo {
+  alias?: string | null;
+  endpoint?: string | null;
+  kind: string;
+  model?: string;
+  percent?: number | null;
+  started_at?: string;
+  task_id: string;
 }
 export interface AnalysisResponse {
   analysis: string;
@@ -259,6 +273,10 @@ export interface JudgeSummary {
   valid_observations?: number;
   [k: string]: any;
 }
+export interface ListActiveTasksResponse {
+  tasks: ActiveTaskInfo[];
+  total: number;
+}
 export interface ListPerfRunsResponse {
   metric_semantics?: {
     [k: string]: MetricSemantics;
@@ -284,6 +302,7 @@ export interface ValueRange {
   min: number;
 }
 export interface PerfRunSummary {
+  alias?: string | null;
   api_host?: string | null;
   api_type: string;
   avg_input_tokens?: number | null;
@@ -328,6 +347,8 @@ export interface ReportGroup {
   timestamp: string;
 }
 export interface ReportSummary {
+  alias?: string | null;
+  api_host?: string | null;
   dataset_name: string;
   dataset_pretty_name?: string;
   model_id: string;
@@ -458,6 +479,7 @@ export interface LogResponse {
   total_lines: number;
 }
 export interface PerfDetailResponse {
+  alias?: string | null;
   api_type: string;
   basic_info: {
     [k: string]: string;

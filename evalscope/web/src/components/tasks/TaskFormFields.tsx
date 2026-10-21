@@ -49,6 +49,23 @@ export function ApiUrlField({ id, name, value, onChange }: ApiUrlFieldProps) {
   )
 }
 
+export function AliasField({ id, value, onChange }: TaskTextFieldProps) {
+  return (
+    <Field id={id} name="alias" labelKey="tasks.alias" autoComplete="off">
+      {(aria) => (
+        <input
+          {...aria}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={FORM_INPUT_CLASS}
+          placeholder="server-A-8xGPU"
+        />
+      )}
+    </Field>
+  )
+}
+
 export function ApiKeyField({ id, value, onChange }: TaskTextFieldProps) {
   return (
     <Field id={id} name="api_key" labelKey="eval.apiKey" autoComplete="off">

@@ -71,8 +71,14 @@ def build_basic_info(
     """Produce the key/value pairs shown in the Overview › Basic Information card."""
     info: OrderedDict = OrderedDict()
     info['Model'] = args_dict.get('model', args_dict.get('model_id', 'N/A'))
+    alias = args_dict.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        info['Alias'] = alias.strip()
     info['API Type'] = args_dict.get('api', 'N/A')
     info['Dataset'] = args_dict.get('dataset', 'N/A')
+    url = args_dict.get('url')
+    if isinstance(url, str) and url.strip():
+        info['URL'] = url.strip()
 
     total_req = sum(r.summary.total_requests for r in runs)
     succeed = sum(r.summary.succeed_requests for r in runs)

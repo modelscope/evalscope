@@ -38,7 +38,7 @@ def test_sla_invoke_preserves_legacy_result_and_exact_count_table(tmp_path) -> N
             )
         ],
     )
-    perf_args = SimpleNamespace(model='mock', url='http://example.test', api='openai')
+    perf_args = SimpleNamespace(model='mock', url='http://example.test', api='openai', alias=None)
     with mock.patch('evalscope.service.blueprints.perf.PerfArguments.from_dict', return_value=perf_args), \
             mock.patch('evalscope.service.blueprints.perf.create_log_file'), \
             mock.patch('evalscope.service.blueprints.perf.run_in_subprocess', return_value=result):

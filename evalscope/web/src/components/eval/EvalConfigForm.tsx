@@ -9,7 +9,7 @@ import {
   validateDatasetArgs,
   FORM_MESSAGE_KEYS,
 } from '@/domain/form/validation'
-import { ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
+import { AliasField, ApiKeyField, ApiUrlField, ModelField } from '@/components/tasks/TaskFormFields'
 import TaskFormShell from '@/components/tasks/TaskFormShell'
 import { useTaskForm } from '@/components/tasks/useTaskForm'
 
@@ -35,6 +35,7 @@ const IDS = {
   datasets: 'eval-datasets',
   apiUrl: 'eval-apiUrl',
   apiKey: 'eval-apiKey',
+  alias: 'eval-alias',
   limit: 'eval-limit',
   batchSize: 'eval-batchSize',
   repeats: 'eval-repeats',
@@ -58,6 +59,7 @@ const DOM_ORDER: string[] = [
   IDS.datasets,
   IDS.apiUrl,
   IDS.apiKey,
+  IDS.alias,
   IDS.limit,
   IDS.batchSize,
   IDS.repeats,
@@ -87,6 +89,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
   const [model, setModel] = useState(initialModel ?? '')
   const [apiUrl, setApiUrl] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [alias, setAlias] = useState('')
   const [datasets, setDatasets] = useState(initialDataset ?? '')
   const [limit, setLimit] = useState('5')
   const [evalBatchSize, setEvalBatchSize] = useState('16')
@@ -147,6 +150,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
     }
     if (apiUrl) config.api_url = apiUrl
     if (apiKey) config.api_key = apiKey
+    if (alias.trim()) config.alias = alias.trim()
     if (repeats && Number(repeats) > 1) config.repeats = Number(repeats)
     if (timeout) config.timeout = Number(timeout)
     if (stream) config.stream = true
@@ -438,6 +442,7 @@ export default function EvalConfigForm({ onSubmit, disabled, initialDataset, ini
 
         <ApiUrlField id={IDS.apiUrl} name="api_url" value={apiUrl} onChange={setApiUrl} />
         <ApiKeyField id={IDS.apiKey} value={apiKey} onChange={setApiKey} />
+        <AliasField id={IDS.alias} value={alias} onChange={setAlias} />
 
         <Field id={IDS.limit} name="limit" labelKey="eval.limit" error={errMsg(IDS.limit)}>
           {(aria) => (
