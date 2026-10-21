@@ -58,6 +58,10 @@
 
 具体可[参考](https://github.com/modelscope/evalscope/pull/964) 里面的例子。除此之外，还支持`mean_and_vote_at_k`, `mean_and_pass_hat_k`聚合方法。
 
+**Q: 如何为重复采样的正确率报告后验不确定性（Bayes@N）？**
+
+**A:** 在`TaskConfig`中设置`repeats=N`，并在`dataset_args`中设置`'<dataset_name>': {'aggregation': 'bayes_at_n'}`。每道题使用独立的均匀 Beta(1,1) 先验；报告中`bayes_at_n`为平均正确率的后验均值（作为分数展示），`bayes_at_n_sd`为后验标准差（诊断量），两者均带维度`n=N`。限制：仅支持二元`accuracy`/`exact_match`分数、恰好一个 subset、不支持数据集合集（collection），且每个计划采样都必须有可用分数——缺失或重复会导致运行报错。该 SD 只刻画固定题集上的采样不确定性，不包含换一批题目的不确定性。详见 [Bayes@N 论文](https://arxiv.org/abs/2510.04265)。
+
 **Q: 如何移除模型输出中的“思考过程”（如 `<think>...</think>`）？**
 
 **A:** 对于`evalscope >= v1.0 `版本，会自动剥离**成对出现**的 `<think>...</think>`。

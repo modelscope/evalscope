@@ -8,8 +8,10 @@ from .aggregators import (
     MeanVoteAtK,
     WeightedMean,
 )
+from .bayes_at_n import BayesAtN
 
 __all__ = [
+    'BayesAtN',
     'Mean',
     'ClippedMean',
     'WeightedMean',

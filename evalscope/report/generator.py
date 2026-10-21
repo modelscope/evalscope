@@ -96,6 +96,11 @@ class ReportGenerator:
             >>> report = ReportGenerator.generate_report(score_dict, 'Model', data_adapter)
         """  # noqa: E501
 
+        if len(score_dict) != 1 and any(
+            score.aggregation in {'bayes_at_n', 'bayes_at_n_sd'} for scores in score_dict.values() for score in scores
+        ):
+            raise ValueError('Bayes@N reports support one subset; posterior SD cannot be averaged across subsets.')
+
         dataset_name = data_adapter.name
         category_map = data_adapter.category_map
         report_name = f'{model_name}@{dataset_name}'

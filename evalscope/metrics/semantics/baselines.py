@@ -117,6 +117,7 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_precision=4,
     ),
     # --- quality: bounded ratios, higher is better ---------------------------------------
+    'quality.posterior_mean.ratio': _percent('quality.posterior_mean.ratio', 'Bayes@N posterior mean'),
     'quality.accuracy.ratio': _percent('quality.accuracy.ratio', 'Accuracy'),
     'quality.f1.ratio': _percent('quality.f1.ratio', 'F1'),
     'quality.precision.ratio': _percent('quality.precision.ratio', 'Precision'),
@@ -198,6 +199,13 @@ SEMANTIC_BASELINES: Dict[str, MetricSemantics] = {
         display_unit='req/s',
     ),
     # --- diagnostic: never carries a direction nor a comparison group ----------------------
+    'diagnostic.posterior_sd.ratio': _plain_number(
+        'diagnostic.posterior_sd.ratio',
+        'Bayes@N posterior SD',
+        display_precision=4,
+        direction=MetricDirection.NONE,
+        kind=MetricKind.DIAGNOSTIC,
+    ),
     'diagnostic.count.items': _plain_number(
         'diagnostic.count.items',
         'Count',

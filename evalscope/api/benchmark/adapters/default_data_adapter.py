@@ -14,7 +14,7 @@ from evalscope.api.metric import AggScore, MetricUnavailableError, SampleScore, 
 from evalscope.api.model import Model, ModelOutput
 from evalscope.api.model.decision import DECISION_EVAL_TYPES
 from evalscope.api.registry import get_aggregation, get_metric
-from evalscope.constants import HubType, JudgeStrategy, ScoreStatus
+from evalscope.constants import DataCollection, HubType, JudgeStrategy, ScoreStatus
 from evalscope.report import Report, ReportGenerator
 from evalscope.utils import get_logger
 
@@ -63,10 +63,31 @@ class DefaultDataAdapter(DataAdapter):
             DatasetDict: A dictionary containing the loaded and processed datasets,
                         organized by subset names.
         """
+        if self.aggregation == 'bayes_at_n':
+            if isinstance(self.repeats, bool) or not isinstance(self.repeats, int) or self.repeats < 1:
+                raise ValueError('Bayes@N requires a positive integer repeats count.')
+            metric_names = [
+                metric if isinstance(metric, str) else next(iter(metric), '') for metric in self.metric_list
+            ]
+            if self.name != DataCollection.NAME and (
+                not metric_names or any(name not in {'accuracy', 'acc', 'exact_match', 'em'} for name in metric_names)
+            ):
+                raise ValueError('Bayes@N supports only binary accuracy and exact_match metrics.')
+            if self.name == DataCollection.NAME or len(self.subset_list) != 1:
+                raise ValueError('Bayes@N supports one selected subset and does not support dataset collections.')
+            if self.eval_type in DECISION_EVAL_TYPES:
+                raise ValueError(
+                    'Bayes@N requires binary generation scores rather than decision-service probabilities.'
+                )
+            self.aggregate_empty_scores = True
+
         # Load the dataset
         if self._task_config is not None and self.eval_type in DECISION_EVAL_TYPES:
             self.validate_choice_config()
         self.test_dataset, self.fewshot_dataset = self.load()
+
+        if self.aggregation == 'bayes_at_n' and len(self.test_dataset) != 1:
+            raise ValueError('Bayes@N requires exactly one loaded subset.')
 
         # Process each sample's input by applying prompt templates and few-shot formatting
         self._post_process_samples()
@@ -854,6 +875,27 @@ class DefaultDataAdapter(DataAdapter):
         return sample_scores
 
     @override
+    def aggregate_subset(self, subset: str, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Check the planned Bayes@N cohort before aggregating a subset."""
+        if self.aggregation == 'bayes_at_n' and self.test_dataset is not None:
+            dataset = self.test_dataset[subset]
+            expected = {sample.id: sample for sample in dataset}
+            if len(expected) != len(dataset):
+                raise ValueError('Bayes@N requires distinct sample IDs in the loaded question cohort.')
+            if len(sample_scores) != len(expected) or {score.sample_id for score in sample_scores} != set(expected):
+                raise ValueError('Bayes@N requires a correctness score for every planned sample ID.')
+            for score in sample_scores:
+                sample = expected[score.sample_id]
+                if score.group_id != sample.group_id or score.generation_index != sample.id % self.repeats:
+                    raise ValueError('Bayes@N score group/position does not match the loaded question cohort.')
+        result = self.aggregate_scores(sample_scores)
+        if self.aggregation == 'bayes_at_n' and (
+            not result or any(score.aggregation not in {'bayes_at_n', 'bayes_at_n_sd'} for score in result)
+        ):
+            raise ValueError('Bayes@N requires an adapter using the default configured aggregation.')
+        return result
+
+    @override
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """
         Aggregate individual sample scores into summary statistics.
@@ -870,7 +912,7 @@ class DefaultDataAdapter(DataAdapter):
         """
         # Get the configured aggregation implementation
         aggregate_cls = get_aggregation(self.aggregation)
-        aggregator = aggregate_cls()
+        aggregator = aggregate_cls(repeats=self.repeats) if self.aggregation == 'bayes_at_n' else aggregate_cls()
 
         # Compute aggregated scores
         agg_scores = aggregator(sample_scores)
