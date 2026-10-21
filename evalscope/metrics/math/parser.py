@@ -7,112 +7,56 @@ from decimal import Decimal, InvalidOperation, localcontext
 from functools import wraps
 from typing import Any, Callable, Literal, ParamSpec, TypeVar
 
-from evalscope.metrics.math.isolation import MathIsolationError, run_isolated
-
 from .contracts import InvalidMathReference, MathEvaluationError, MathResult
+from .isolation import isolation_available, run_isolated
 
 _P = ParamSpec('_P')
 _R = TypeVar('_R')
 
-# Math-Verify timeouts only apply on the main thread, so every call is dispatched to a
-# short-lived worker process (see isolation.py) where its native signal timeout works and
-# the parent can hard-kill a wedged regex. Degenerate predictions otherwise back-track
-# catastrophically while holding the GIL and freeze the whole evaluation.
-PARSE_TIMEOUT_S = 10
-VERIFY_TIMEOUT_S = 10
-HARD_TIMEOUT_S = 60
-
-
-def _math_verify_parse_worker(text: str, timeout_s: int, config: str = 'full'):
-    from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse
-
-    if config == 'latex_only':
-        extraction_config = [LatexExtractionConfig()]
-    else:
-        extraction_config = [LatexExtractionConfig(boxed_match_priority=0), ExprExtractionConfig()]
-    return parse(
-        text,
-        extraction_config=extraction_config,
-        fallback_mode='first_match',
-        extraction_mode='first_match',
-        parsing_timeout=timeout_s,
-    )
-
-
-def _math_verify_verify_worker(gold: Any, prediction: Any, timeout_s: int) -> bool:
-    from math_verify import verify
-
-    return verify(
-        [gold],
-        [prediction],
-        strict=True,
-        float_rounding=6,
-        numeric_precision=15,
-        allow_set_relation_comp=False,
-        timeout_seconds=timeout_s,
-        raise_on_error=True,
-    )
-
-
+MATH_DEADLINE_S = 30
+"""Wall-clock bound for one public call; a call exceeding it is excluded as an execution failure."""
 _warmed_up = False
 
 
-def _warm_up_math_verify() -> None:
-    """Trigger Math-Verify's lazy imports in the parent so forked workers start warm.
+def _contained(function: Callable[..., _R], args: tuple, kwargs: dict) -> _R:
+    try:
+        return function(*args, **kwargs)
+    except MathEvaluationError:
+        raise
+    except Exception as exc:
+        raise MathEvaluationError(f'{type(exc).__name__}: {exc}') from exc
 
-    A cold first call lazily imports most of SymPy; running it once here means every
-    short-lived worker inherits the loaded modules and regex caches instead of paying
-    that cost per call. ``parsing_timeout=0`` keeps the call itself signal-free.
-    """
+
+def _warm_up() -> None:
+    """Load Math-Verify and SymPy once so forked calls inherit them instead of importing cold."""
     global _warmed_up
     if _warmed_up:
         return
-    from sympy import Integer
-
-    _math_verify_parse_worker('$0$', 0)
-    _math_verify_verify_worker(Integer(0), Integer(0), 0)
-    _warmed_up = True
-
-
-def _parse_isolated(text: str, config: str = 'full') -> list[Any]:
-    """Run Math-Verify extraction with bounded runtime.
-
-    ``config`` selects the extraction configuration: ``'full'`` matches upstream's
-    primary parse (LaTeX boxed plus expression fallback), ``'latex_only'`` matches the
-    narrower re-parse upstream uses to canonicalize scientific notation.
-
-    Math-Verify's own timeout returns an empty extraction (the sample then scores as
-    unparsed, matching upstream behaviour). A worker crash or hard timeout is an
-    infrastructure failure and surfaces as :class:`MathEvaluationError` instead.
-    """
-    _warm_up_math_verify()
     try:
-        return run_isolated(
-            _math_verify_parse_worker,
-            text,
-            PARSE_TIMEOUT_S,
-            config,
-            hard_timeout=HARD_TIMEOUT_S,
-            label='math-verify parse',
-        )
-    except MathIsolationError as exc:
-        raise MathEvaluationError(str(exc)) from exc
+        from sympy import Integer
+
+        _parse('$0$', 'fragment')
+        _verify(Integer(0), Integer(0))
+    except Exception:
+        return  # The isolated call reports the same failure in its own scoring context.
+    _warmed_up = True
 
 
 def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
     @wraps(function)
     def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-        try:
-            return function(*args, **kwargs)
-        except MathEvaluationError:
-            raise
-        except Exception as exc:
-            raise MathEvaluationError(f'{type(exc).__name__}: {exc}') from exc
+        # Math-Verify has no bounded worst case, so each public call runs behind a deadline.
+        if not isolation_available():
+            return _contained(function, args, kwargs)
+        _warm_up()
+        return run_isolated(_contained, (function, args, kwargs), MATH_DEADLINE_S, function.__name__)
 
     return wrapped
 
 
 def _parse(text: str, mode: str) -> tuple[list[Any], str]:
+    from math_verify import ExprExtractionConfig, LatexExtractionConfig, parse
+
     text = text.strip()
     if not text:
         return [], ''
@@ -124,11 +68,23 @@ def _parse(text: str, mode: str) -> tuple[list[Any], str]:
         text = f'${text.replace("e", "E")}$'
     if mode == 'fragment' and not text.startswith(('$', r'\(', r'\[', r'\boxed', r'\fbox')):
         text = f'${text}$'
-    result = _parse_isolated(text)
+    result = parse(
+        text,
+        extraction_config=[LatexExtractionConfig(boxed_match_priority=0), ExprExtractionConfig()],
+        fallback_mode='first_match',
+        extraction_mode='first_match',
+        parsing_timeout=None,
+    )
     objects = [item for item in result if not isinstance(item, str)]
     display = next((item for item in result if isinstance(item, str)), '')
     if objects and re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)e[+-]?[0-9]+', display):
-        canonical = _parse_isolated(f'${display.replace("e", "E")}$', config='latex_only')
+        canonical = parse(
+            f'${display.replace("e", "E")}$',
+            extraction_config=[LatexExtractionConfig()],
+            fallback_mode='first_match',
+            extraction_mode='first_match',
+            parsing_timeout=None,
+        )
         objects = [item for item in canonical if not isinstance(item, str)]
     if scientific_literal:
         display = original
@@ -180,14 +136,17 @@ def _number(objects: list[Any]) -> float | None:
 
 
 def _verify(gold: Any, prediction: Any) -> bool:
-    _warm_up_math_verify()
-    return run_isolated(
-        _math_verify_verify_worker,
-        gold,
-        prediction,
-        VERIFY_TIMEOUT_S,
-        hard_timeout=HARD_TIMEOUT_S,
-        label='math-verify verify',
+    from math_verify import verify
+
+    return verify(
+        [gold],
+        [prediction],
+        strict=True,
+        float_rounding=6,
+        numeric_precision=15,
+        allow_set_relation_comp=False,
+        timeout_seconds=None,
+        raise_on_error=True,
     )
 
 

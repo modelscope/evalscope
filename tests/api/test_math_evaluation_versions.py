@@ -78,17 +78,21 @@ def test_math_extraction_failure_is_persisted_without_aborting_evaluation(
 ) -> None:
     import math_verify
 
+    from evalscope.metrics.math.parser import extract_answer
+
     data = tmp_path / 'data'
     data.mkdir()
     records = [{'question': f'Fixed question {i}', 'answer': 'Reasoning. #### 1'} for i in range(2)]
     (data / 'test.jsonl').write_text(''.join(json.dumps(record) + '\n' for record in records))
+    # Warm up before patching: isolated calls fork from the warmed process.
+    extract_answer('1')
     original_parse = math_verify.parse
-    failed = False
+    failed = tmp_path / 'failed'
 
     def parse(*args: Any, **kwargs: Any) -> Any:
-        nonlocal failed
-        if not failed:
-            failed = True
+        # A closure flag set inside a forked call never reaches the next call; a file does.
+        if not failed.exists():
+            failed.touch()
             raise RuntimeError('parser execution failed')
         return original_parse(*args, **kwargs)
 
