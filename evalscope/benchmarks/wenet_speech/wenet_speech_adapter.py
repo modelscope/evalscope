@@ -45,6 +45,7 @@ WenetSpeech is a large-scale Mandarin Chinese speech corpus with over 10,000 hou
 - Primary metric: **MER** (Mixed Error Rate)
 - MER tokenizes Chinese characters individually and English words as whole tokens
 - Prompt: "Please listen to the audio and transcribe what you hear"
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
         subset_list=['dev', 'test_meeting'],
         eval_split='test_meeting',

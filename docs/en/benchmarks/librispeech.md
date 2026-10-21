@@ -27,6 +27,7 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
 - Text normalization applied during evaluation
 - Prompt: "Please recognize the speech and only output the recognized content"
 - Metadata includes audio ID and duration information
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 
 
 ## Properties

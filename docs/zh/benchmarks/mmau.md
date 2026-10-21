@@ -1,32 +1,31 @@
 # MMAU
 
-
 ## 概述
 
-MMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）是一个综合性基准测试，用于评估多模态大语言模型在多种音频任务上的音频理解能力。
+MMAU（大规模多任务音频理解）是一个全面的基准测试，用于评估多模态大型语言模型在多种音频任务中的音频理解能力。
 
 ## 任务描述
 
-- **任务类型**：音频理解（多项选择题）
-- **输入**：包含多项选择题的音频录音
+- **任务类型**：音频理解（多项选择）
+- **输入**：带有多个选择题的音频录音
 - **输出**：正确答案选项（A/B/C/D）
 - **类别**：语音、声音、音乐
 
-## 主要特性
+## 主要特点
 
 - 大规模音频理解基准测试
-- 覆盖多个音频领域（语音、环境声音、音乐）
-- 四选项多项选择题格式
-- 包含 mini 和完整测试集
-- 提供按类别的准确率报告
+- 涵盖多个音频领域（语音、环境声音、音乐）
+- 四个选项的多项选择格式
+- 包括迷你和完整测试集
+- 按类别报告准确性
 
 ## 评估说明
 
-- 默认配置使用 **test_mini** 划分
-- 主要指标：**准确率**（预测字母的精确匹配）
-- 报告整体准确率和各任务类别的准确率
-- 提示词中包含思维链（chain-of-thought）指令
-
+- 默认配置使用 **test_mini** 分割
+- 主要指标：**Accuracy**（预测字母的完全匹配）
+- 报告总体准确性和每项任务类别的准确性
+- 提示包括链式思维指令
+- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器以处理音频输入。
 
 ## 属性
 
@@ -38,8 +37,7 @@ MMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）
 | **标签** | `Audio`, `MCQ` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test_mini` |
-
+| **评估分割** | `test_mini` |
 
 ## 数据统计
 
@@ -53,7 +51,7 @@ MMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）
 
 **提示模板：**
 ```text
-根据音频内容回答以下多项选择题。你的回复最后一行应采用如下格式：'ANSWER: [LETTER]'（不含引号），其中 [LETTER] 是 {letters} 中的一个。回答前请逐步思考。
+Answer the following multiple choice question based on the audio content. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
 {question}
 
@@ -62,7 +60,7 @@ MMAU（Massive Multitask Audio Understanding，大规模多任务音频理解）
 
 ## 使用方法
 
-### 使用 CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -70,10 +68,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets mmau \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task
@@ -84,7 +82,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['mmau'],
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

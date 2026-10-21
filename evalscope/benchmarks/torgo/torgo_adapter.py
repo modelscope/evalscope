@@ -48,6 +48,7 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
 - Requires `jiwer` package for CER/WER metrics
 - Requires `jellyfish` package for SemScore metric
 - Supports batch scoring for efficiency
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
         eval_split='test',
         subset_list=['mild', 'moderate', 'severe'],
