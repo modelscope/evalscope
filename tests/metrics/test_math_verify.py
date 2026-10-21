@@ -464,3 +464,140 @@ def test_worker_exceptions_cross_the_isolation_boundary(monkeypatch: pytest.Monk
     monkeypatch.setattr(math_verify, 'parse', fail)
     with pytest.raises(MathEvaluationError, match='parser execution failed'):
         extract_answer(r'\boxed{1}')
+
+
+@pytest.mark.parametrize('policy', ['always', 'ignore', 'error'])
+def test_isolation_preserves_warning_policy(policy: str) -> None:
+    import warnings
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    parser._warm_up()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(policy, DeprecationWarning)
+        # 仅检查数学 API 的 warning，不受解释器自身的多线程 fork 告警影响。
+        warnings.filterwarnings('ignore', message='.*multi-threaded.*', category=DeprecationWarning)
+        if policy == 'error':
+            with pytest.raises(MathEvaluationError, match='DeprecationWarning: use_last_number'):
+                extract_answer('1', False)
+        else:
+            assert extract_answer('1', False) == '1'
+        issued = [item for item in caught if 'use_last_number' in str(item.message)]
+        assert len(issued) == (1 if policy == 'always' else 0)
+
+
+def test_parent_transport_warning_is_normalized(monkeypatch: pytest.MonkeyPatch) -> None:
+    import warnings
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('此测试要求 fork 隔离')
+    parser._warm_up()
+
+    def warn(*args: Any, **kwargs: Any) -> str:
+        warnings.warn('transport warning', DeprecationWarning)
+        return '1'
+
+    monkeypatch.setattr(parser, 'run_isolated', warn)
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', DeprecationWarning)
+        with pytest.raises(MathEvaluationError, match='DeprecationWarning: transport warning'):
+            extract_answer('1')
+
+
+def test_isolation_respects_inherited_cpu_hard_limit() -> None:
+    import multiprocessing
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('此测试要求 Unix fork 和 resource')
+    parser._warm_up()
+    context = multiprocessing.get_context('fork')
+    receiver, sender = context.Pipe(duplex=False)
+
+    def limited() -> None:
+        import resource
+
+        try:
+            _, hard_limit = resource.getrlimit(resource.RLIMIT_CPU)
+            limit = 10 if hard_limit == resource.RLIM_INFINITY else min(10, hard_limit)
+            resource.setrlimit(resource.RLIMIT_CPU, (limit, limit))
+            sender.send((True, extract_answer('1')))
+        except BaseException as exc:
+            sender.send((False, str(exc)))
+        finally:
+            sender.close()
+
+    # 硬上限不可恢复，在独立进程设置，不能改变 pytest 主进程的资源约束。
+    process = context.Process(target=limited)
+    try:
+        process.start()
+        sender.close()
+        assert receiver.poll(10), '受限环境中的评分未完成'
+        assert receiver.recv() == (True, '1')
+    finally:
+        receiver.close()
+        sender.close()
+        if process.pid is not None:
+            if process.is_alive():
+                process.kill()
+            process.join()
+
+
+@pytest.mark.parametrize('dribble', [False, True])
+def test_complete_response_shares_one_deadline(dribble: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+    import socket
+
+    import math_verify
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('此测试要求 fork 隔离')
+    parser._warm_up()
+    socket_send = socket.socket.sendall
+
+    def send_slowly(conn: socket.socket, data: bytes) -> None:
+        socket_send(conn, data[:8])
+        offset = 8
+        if dribble:
+            # 持续接收零碎数据也不能重置同一次评分的期限。
+            for _ in range(10):
+                time.sleep(0.05)
+                socket_send(conn, data[offset:offset + 8])
+                offset += 8
+        time.sleep(1.5)
+        socket_send(conn, data[offset:])
+
+    def fake_parse(*args: Any, **kwargs: Any) -> list[str]:
+        return ['x' * 20000]
+
+    monkeypatch.setattr(socket.socket, 'sendall', send_slowly)
+    monkeypatch.setattr(math_verify, 'parse', fake_parse)
+    monkeypatch.setattr(parser, 'MATH_DEADLINE_S', 0.2)
+    started = time.monotonic()
+    with pytest.raises(MathEvaluationError, match='deadline'):
+        extract_answer('1')
+    assert time.monotonic() - started < 1.0
+
+
+def test_isolation_transfers_large_results_and_reports_crashes() -> None:
+    import os
+
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available, run_isolated
+
+    if not isolation_available():
+        pytest.skip('此测试要求 fork 隔离')
+    payload = 'x' * (1024 * 1024)
+    assert run_isolated(lambda: payload, (), 5, 'large result') == payload
+    with pytest.raises(MathEvaluationError, match='exited'):
+        run_isolated(os._exit, (7,), 5, 'crash')

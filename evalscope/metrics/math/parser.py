@@ -14,17 +14,11 @@ _P = ParamSpec('_P')
 _R = TypeVar('_R')
 
 MATH_DEADLINE_S = 30
-"""Wall-clock bound for one public call; a call exceeding it is excluded as an execution failure."""
+"""启动成功后计算及完整结果传输的期限；不含预热、fork 启动、父进程解码和清理。
+
+不支持 fork 或处于 daemon 进程时无此期限。超时按执行失败排除，不记零分。
+"""
 _warmed_up = False
-
-
-def _contained(function: Callable[..., _R], args: tuple, kwargs: dict) -> _R:
-    try:
-        return function(*args, **kwargs)
-    except MathEvaluationError:
-        raise
-    except Exception as exc:
-        raise MathEvaluationError(f'{type(exc).__name__}: {exc}') from exc
 
 
 def _warm_up() -> None:
@@ -45,11 +39,16 @@ def _warm_up() -> None:
 def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
     @wraps(function)
     def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-        # Math-Verify has no bounded worst case, so each public call runs behind a deadline.
-        if not isolation_available():
-            return _contained(function, args, kwargs)
-        _warm_up()
-        return run_isolated(_contained, (function, args, kwargs), MATH_DEADLINE_S, function.__name__)
+        # 所有执行路径在此统一异常契约，隔离层仅负责执行和传输。
+        try:
+            if not isolation_available():
+                return function(*args, **kwargs)
+            _warm_up()
+            return run_isolated(function, args, MATH_DEADLINE_S, function.__name__, kwargs=kwargs)
+        except MathEvaluationError:
+            raise
+        except Exception as exc:
+            raise MathEvaluationError(f'{type(exc).__name__}: {exc}') from exc
 
     return wrapped
 

@@ -5,13 +5,18 @@ Math-Verify's worst case is unbounded: some degenerate predictions make its extr
 backtrack for minutes while holding the GIL, freezing every scoring thread. Only a process
 boundary can preempt that, so each public call runs in a short-lived child forked from the
 warm scoring process. Arguments and results stay plain data, and SymPy objects never cross the
-boundary because pickling re-canonicalizes them. A call that misses its deadline is killed and
-reported as an execution failure.
+boundary because pickling re-canonicalizes them.
+
+期限覆盖子进程启动成功后的计算和完整结果传输。预热、fork 锁等待、进程启动、父进程
+反序列化及清理不属于严格硬期限；不支持 fork 或处于 daemon 进程时沿用无期限的进程内执行。
 """
 
 import logging
 import multiprocessing
+import pickle
+import socket
 import threading
+import time
 import warnings
 from typing import Any, Callable
 
@@ -28,39 +33,81 @@ def isolation_available() -> bool:
     return _FORK_AVAILABLE and not multiprocessing.current_process().daemon
 
 
-def _child(conn: Any, fn: Callable[..., Any], args: tuple, deadline: float) -> None:
+def _child(
+    conn: socket.socket,
+    fn: Callable[..., Any],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    deadline: float,
+) -> None:
     import resource
 
-    # Self-terminate even if the parent dies before it can kill this child.
+    # 限制 CPU 密集型孤儿进程的计算量；此限制不终止阻塞等待中的进程。
     cpu_limit = int(deadline) + 5
+    _, hard_limit = resource.getrlimit(resource.RLIMIT_CPU)
+    if hard_limit != resource.RLIM_INFINITY:
+        cpu_limit = min(cpu_limit, hard_limit)
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     resource.setrlimit(resource.RLIMIT_CPU, (cpu_limit, cpu_limit))
     # Another parent thread may hold a logging lock at fork time.
     logging.disable(logging.CRITICAL)
+    # Inherited filters keep the caller's policy, e.g. warnings raised as errors.
     with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter('always')
         try:
-            ok, payload = True, fn(*args)
+            payload = fn(*args, **kwargs)
+            ok = True
         except BaseException as exc:
-            ok, payload = False, exc
+            payload = exc
+            ok = False
     issued = [(str(item.message), item.category) for item in caught]
     try:
-        conn.send((ok, payload, issued))
-    except Exception as exc:
-        conn.send((False, MathEvaluationError(f'Unpicklable scoring outcome: {type(exc).__name__}: {exc}'), issued))
+        try:
+            data = pickle.dumps((ok, payload, issued))
+        except Exception as exc:
+            data = pickle.dumps(
+                (False, MathEvaluationError(f'Unpicklable scoring outcome: {type(exc).__name__}: {exc}'), issued)
+            )
+        conn.sendall(data)
     finally:
+        # 显式结束单次响应，避免并发 fork 继承的重复描述符延迟 EOF。
+        conn.shutdown(socket.SHUT_WR)
         conn.close()
 
 
-def run_isolated(fn: Callable[..., Any], args: tuple, deadline: float, label: str) -> Any:
-    """Return ``fn(*args)`` computed in a forked child, re-raising its exception unchanged.
+def _receive_result(receiver: socket.socket, expires_at: float) -> Any:
+    """在同一绝对期限内读取到 EOF，再解码完整响应。"""
+    chunks = []
+    while True:
+        remaining = expires_at - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError
+        receiver.settimeout(remaining)
+        chunk = receiver.recv(65536)
+        if not chunk:
+            break
+        chunks.append(chunk)
+    if not chunks:
+        raise EOFError
+    return pickle.loads(b''.join(chunks))
 
-    Warnings issued by the child are replayed in the caller. A child that cannot start, exits
-    without a result or exceeds ``deadline`` seconds raises :class:`MathEvaluationError`.
+
+def run_isolated(
+    fn: Callable[..., Any],
+    args: tuple[Any, ...],
+    deadline: float,
+    label: str,
+    *,
+    kwargs: dict[str, Any] | None = None,
+) -> Any:
+    """在 fork 子进程中执行 ``fn(*args, **kwargs)``，返回结果或重新抛出子进程异常。
+
+    子进程 warning 按调用方策略处理。计算和完整响应传输共用启动成功后的 ``deadline``，
+    启动失败、无结果退出或超过该期限会抛出 :class:`MathEvaluationError`。
+    预热、锁等待、启动、父进程反序列化及清理不受此期限保证。
     """
     context = multiprocessing.get_context('fork')
-    receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(target=_child, args=(sender, fn, args, deadline), daemon=True)
+    receiver, sender = socket.socketpair()
+    process = context.Process(target=_child, args=(sender, fn, args, kwargs or {}, deadline), daemon=True)
     try:
         try:
             with _FORK_LOCK:
@@ -69,10 +116,11 @@ def run_isolated(fn: Callable[..., Any], args: tuple, deadline: float, label: st
             raise MathEvaluationError(f'{label}: could not start the scoring process: {exc}') from exc
         finally:
             sender.close()
-        if not receiver.poll(deadline):
-            raise MathEvaluationError(f'{label}: exceeded the {deadline}s mathematical scoring deadline')
+        expires_at = time.monotonic() + deadline
         try:
-            ok, payload, issued = receiver.recv()
+            ok, payload, issued = _receive_result(receiver, expires_at)
+        except TimeoutError as exc:
+            raise MathEvaluationError(f'{label}: exceeded the {deadline}s mathematical scoring deadline') from exc
         except EOFError as exc:
             raise MathEvaluationError(f'{label}: scoring process exited with code {process.exitcode}') from exc
     finally:
