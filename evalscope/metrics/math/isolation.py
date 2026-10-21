@@ -7,8 +7,9 @@ boundary can preempt that, so each public call runs in a short-lived child forke
 warm scoring process. Arguments and results stay plain data, and SymPy objects never cross the
 boundary because pickling re-canonicalizes them.
 
-期限覆盖子进程启动成功后的计算和完整结果传输。预热、fork 锁等待、进程启动、父进程
-反序列化及清理不属于严格硬期限；不支持 fork 或处于 daemon 进程时沿用无期限的进程内执行。
+The deadline covers computation and the complete result transfer once the child has started.
+Warm-up, waiting for the fork lock, process start, decoding in the parent and cleanup are not
+strictly bounded. Without fork, or inside a daemonic process, calls run in-process with no deadline.
 """
 
 import logging
@@ -42,7 +43,8 @@ def _child(
 ) -> None:
     import resource
 
-    # 限制 CPU 密集型孤儿进程的计算量；此限制不终止阻塞等待中的进程。
+    # Cap CPU time so a CPU-bound child orphaned by a killed parent eventually stops.
+    # Never raise an inherited hard limit; this does not stop a child blocked while waiting.
     cpu_limit = int(deadline) + 5
     _, hard_limit = resource.getrlimit(resource.RLIMIT_CPU)
     if hard_limit != resource.RLIM_INFINITY:
@@ -69,13 +71,14 @@ def _child(
             )
         conn.sendall(data)
     finally:
-        # 显式结束单次响应，避免并发 fork 继承的重复描述符延迟 EOF。
+        # End the single response explicitly: copies of this socket inherited by concurrently
+        # forked children would otherwise delay EOF for the parent.
         conn.shutdown(socket.SHUT_WR)
         conn.close()
 
 
 def _receive_result(receiver: socket.socket, expires_at: float) -> Any:
-    """在同一绝对期限内读取到 EOF，再解码完整响应。"""
+    """Read until EOF before ``expires_at``, then decode the complete response."""
     chunks = []
     while True:
         remaining = expires_at - time.monotonic()
@@ -99,11 +102,12 @@ def run_isolated(
     *,
     kwargs: dict[str, Any] | None = None,
 ) -> Any:
-    """在 fork 子进程中执行 ``fn(*args, **kwargs)``，返回结果或重新抛出子进程异常。
+    """Run ``fn(*args, **kwargs)`` in a forked child and return its result or re-raise its exception.
 
-    子进程 warning 按调用方策略处理。计算和完整响应传输共用启动成功后的 ``deadline``，
-    启动失败、无结果退出或超过该期限会抛出 :class:`MathEvaluationError`。
-    预热、锁等待、启动、父进程反序列化及清理不受此期限保证。
+    Child warnings follow the caller's filters and are replayed in the caller. Computation and the
+    complete response share one ``deadline`` that starts once the child is running. A child that
+    cannot start, exits without a result or misses the deadline raises :class:`MathEvaluationError`.
+    Lock waiting, process start, decoding in the parent and cleanup are not covered by the deadline.
     """
     context = multiprocessing.get_context('fork')
     receiver, sender = socket.socketpair()

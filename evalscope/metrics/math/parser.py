@@ -14,9 +14,10 @@ _P = ParamSpec('_P')
 _R = TypeVar('_R')
 
 MATH_DEADLINE_S = 30
-"""启动成功后计算及完整结果传输的期限；不含预热、fork 启动、父进程解码和清理。
+"""Deadline for computation and the complete result transfer once the scoring child has started.
 
-不支持 fork 或处于 daemon 进程时无此期限。超时按执行失败排除，不记零分。
+It excludes warm-up, fork start, decoding in the parent and cleanup, and does not apply without fork
+or inside daemonic processes. A call that misses it is excluded as an execution failure, not scored 0.
 """
 _warmed_up = False
 
@@ -39,7 +40,7 @@ def _warm_up() -> None:
 def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
     @wraps(function)
     def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-        # 所有执行路径在此统一异常契约，隔离层仅负责执行和传输。
+        # Every execution path shares one exception contract here; isolation only runs and transfers.
         try:
             if not isolation_available():
                 return function(*args, **kwargs)

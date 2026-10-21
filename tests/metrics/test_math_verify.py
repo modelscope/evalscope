@@ -476,7 +476,7 @@ def test_isolation_preserves_warning_policy(policy: str) -> None:
     parser._warm_up()
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter(policy, DeprecationWarning)
-        # 仅检查数学 API 的 warning，不受解释器自身的多线程 fork 告警影响。
+        # Only the math API warning matters, not the interpreter's multi-threaded fork warning.
         warnings.filterwarnings('ignore', message='.*multi-threaded.*', category=DeprecationWarning)
         if policy == 'error':
             with pytest.raises(MathEvaluationError, match='DeprecationWarning: use_last_number'):
@@ -495,7 +495,7 @@ def test_parent_transport_warning_is_normalized(monkeypatch: pytest.MonkeyPatch)
     from evalscope.metrics.math.isolation import isolation_available
 
     if not isolation_available():
-        pytest.skip('此测试要求 fork 隔离')
+        pytest.skip('Requires fork isolation')
     parser._warm_up()
 
     def warn(*args: Any, **kwargs: Any) -> str:
@@ -516,7 +516,7 @@ def test_isolation_respects_inherited_cpu_hard_limit() -> None:
     from evalscope.metrics.math.isolation import isolation_available
 
     if not isolation_available():
-        pytest.skip('此测试要求 Unix fork 和 resource')
+        pytest.skip('Requires Unix fork and resource')
     parser._warm_up()
     context = multiprocessing.get_context('fork')
     receiver, sender = context.Pipe(duplex=False)
@@ -534,12 +534,12 @@ def test_isolation_respects_inherited_cpu_hard_limit() -> None:
         finally:
             sender.close()
 
-    # 硬上限不可恢复，在独立进程设置，不能改变 pytest 主进程的资源约束。
+    # A lowered hard limit cannot be restored, so set it in a separate process, not in pytest itself.
     process = context.Process(target=limited)
     try:
         process.start()
         sender.close()
-        assert receiver.poll(10), '受限环境中的评分未完成'
+        assert receiver.poll(10), 'Scoring did not finish under the inherited CPU limit'
         assert receiver.recv() == (True, '1')
     finally:
         receiver.close()
@@ -561,7 +561,7 @@ def test_complete_response_shares_one_deadline(dribble: bool, monkeypatch: pytes
     from evalscope.metrics.math.isolation import isolation_available
 
     if not isolation_available():
-        pytest.skip('此测试要求 fork 隔离')
+        pytest.skip('Requires fork isolation')
     parser._warm_up()
     socket_send = socket.socket.sendall
 
@@ -569,7 +569,7 @@ def test_complete_response_shares_one_deadline(dribble: bool, monkeypatch: pytes
         socket_send(conn, data[:8])
         offset = 8
         if dribble:
-            # 持续接收零碎数据也不能重置同一次评分的期限。
+            # A steady trickle of data must not extend the deadline of the same call.
             for _ in range(10):
                 time.sleep(0.05)
                 socket_send(conn, data[offset:offset + 8])
@@ -596,7 +596,7 @@ def test_isolation_transfers_large_results_and_reports_crashes() -> None:
     from evalscope.metrics.math.isolation import isolation_available, run_isolated
 
     if not isolation_available():
-        pytest.skip('此测试要求 fork 隔离')
+        pytest.skip('Requires fork isolation')
     payload = 'x' * (1024 * 1024)
     assert run_isolated(lambda: payload, (), 5, 'large result') == payload
     with pytest.raises(MathEvaluationError, match='exited'):
