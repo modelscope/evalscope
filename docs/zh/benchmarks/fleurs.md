@@ -1,32 +1,32 @@
 # FLEURS
 
-
 ## 概述
 
-FLEURS（Few-shot Learning Evaluation of Universal Representations of Speech）是一个覆盖102种语言的大规模多语言基准测试，用于评估自动语音识别（ASR）、口语理解以及语音翻译任务。
+FLEURS（Few-shot Learning Evaluation of Universal Representations of Speech）是一个大规模多语言基准测试，涵盖102种语言，用于评估自动语音识别（ASR）、口语理解以及语音翻译。
 
 ## 任务描述
 
 - **任务类型**：自动语音识别（ASR）
-- **输入**：包含多种语言语音的音频录音
-- **输出**：对应语言的转录文本
-- **语言**：涵盖102种语言，包括简体中文、粤语、英语等
+- **输入**：包含多种语言的语音录音
+- **输出**：相应语言的转录文本
+- **语言**：102种语言，包括普通话、粤语、英语等
 
 ## 主要特点
 
-- 覆盖102种语言的大规模多语言数据
+- 大规模多语言覆盖（102种语言）
 - 源自FLoRes-101机器翻译基准测试
-- 包含多样化的语系和文字系统
-- 高质量的人工录音与转录
-- 元数据包含性别、语系分组和说话人信息
+- 包含多样化的语言家族和文字系统
+- 高质量的人类录音和转录
+- 元数据包括性别、语言群体和说话者信息
 
 ## 评估说明
 
-- 默认配置使用 **test** 数据划分
-- 主要指标：**词错误率（Word Error Rate, WER）**
-- 默认子集：`cmn_hans_cn`（普通话）、`en_us`（英语）、`yue_hant_hk`（粤语）
-- 评估过程中应用语言特定的文本归一化
-- 提示词：**"Please recognize the speech and only output the recognized content"**
+- 默认配置使用**测试**分割
+- 主要指标：**词错误率 (WER)**
+- 默认子集：`cmn_hans_cn`（普通话），`en_us`（英语），`yue_hant_hk`（粤语）
+- 评估过程中应用了特定语言的文本规范化
+- 提示：“请识别语音并仅输出识别内容”
+- 需要支持`input_audio`内容部分的OpenAI兼容服务器。SGLang在v0.5.19版本中添加了此支持 (sgl-project/sglang#33606)；早期版本会以HTTP 400拒绝音频请求。
 
 ## 属性
 
@@ -37,17 +37,16 @@ FLEURS（Few-shot Learning Evaluation of Universal Representations of Speech）�
 | **论文** | N/A |
 | **标签** | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | **指标** | `wer` |
-| **默认样本数（Shots）** | 0-shot |
-| **评估划分** | `test` |
-
+| **默认样本数** | 0-shot |
+| **评估分割** | `test` |
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 2,411 |
-| 提示词长度（平均） | 67 字符 |
-| 提示词长度（最小/最大） | 67 / 67 字符 |
+| 提示词长度（平均值） | 67个字符 |
+| 提示词长度（最小值/最大值） | 67 / 67个字符 |
 
 **各子集统计数据：**
 
@@ -61,10 +60,9 @@ FLEURS（Few-shot Learning Evaluation of Universal Representations of Speech）�
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 2,411 |
-| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 2,411 |
+| 每个样本的音频数量 | 最小值: 1, 最大值: 1, 平均值: 1 |
 | 格式 | wav |
-
 
 ## 样例示例
 
@@ -103,14 +101,14 @@ FLEURS（Few-shot Learning Evaluation of Universal Representations of Speech）�
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Please recognize the speech and only output the recognized content:
 ```
 
 ## 使用方法
 
-### 使用命令行（CLI）
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -118,10 +116,10 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets fleurs \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task
@@ -134,10 +132,10 @@ task_cfg = TaskConfig(
     datasets=['fleurs'],
     dataset_args={
         'fleurs': {
-            # subset_list: ['cmn_hans_cn', 'en_us', 'yue_hant_hk']  # 可选，用于指定评估子集
+            # subset_list: ['cmn_hans_cn', 'en_us', 'yue_hant_hk']  # optional, evaluate specific subsets
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

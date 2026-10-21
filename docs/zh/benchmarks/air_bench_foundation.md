@@ -1,23 +1,22 @@
 # AIR-Bench-Foundation
 
-
 ## 概述
 
-AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（Audio InstRuction Benchmark，ACL 2024 主会）的判别任务部分——这是首个面向大型音频-语言模型（LALMs）的指令遵循基准测试，涵盖**人类语音、自然声音和音乐**。Foundation 轨道包含约 2.5 万道单选题，横跨三大音频类别中的 19 项逻辑任务。
+AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（音频指令基准测试，ACL 2024 主会议）的区分部分——这是第一个针对大型音频-语言模型 (LALMs) 的指令跟随基准测试，涵盖了**人类语音、自然声音和音乐**。Foundation 轨道包含大约 25,000 个单选题，涵盖三个音频类别中的 19 个逻辑任务。
 
 ## 任务描述
 
-- **任务类型**：基于音频片段的单选问答。
-- **输入**：一段音频 + 一道包含最多四个候选答案（A/B/C/D）的问题。
-- **输出**：从给定选项中选择一个字母。
+- **任务类型**：基于音频片段的单选题回答。
+- **输入**：一个音频片段 + 一个问题，最多四个候选答案（A/B/C/D）。
+- **输出**：从提供的选项中选择一个字母。
 
-## 类别（19 项任务 / 25 个源数据集子集）
+## 类别（19 个任务 / 25 个源数据集子集）
 
-- **语音**（11 个子集 / 9 项任务）：语音定位、语言识别、性别识别、情感识别（IEMOCAP+MELD）、年龄预测、语音实体识别、意图分类、说话人数量统计、合成语音检测。
-- **声音**（6 个子集 / 4 项任务）：音频定位、人声分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
-- **音乐**（8 个子集 / 6 项任务）：乐器识别、流派识别、MIDI 音高分析、MIDI 力度分析、音乐问答、音乐情感识别。
+- **语音**（11 个目录 / 9 个任务）：语音基础、语言识别、性别、情感（IEMOCAP+MELD）、年龄、语音实体识别、意图分类、说话人数统计、合成语音检测。
+- **声音**（6 个目录 / 4 个任务）：音频基础、发声声音分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
+- **音乐**（8 个目录 / 6 个任务）：乐器、流派、MIDI 音高、MIDI 速度、音乐问答、音乐情感。
 
-## 提示模板（与官方 `Inference_Foundation.py` 一致）
+## 提示模板（与官方 `Inference_Foundation.py` 匹配）
 
 ```text
 Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.
@@ -28,17 +27,18 @@ C. {choice_c}
 D. {choice_d}
 ```
 
-## 数据集获取
+## 数据集访问
 
-- 该数据集托管于 ModelScope：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。采用 *audiofolder + JSON metadata* 的布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 按需下载；完整数据集约 49 GB，建议通过 `extra_params` 参数限制下载的子集。
-- 如果数据集已存在于本地磁盘，请传入 `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Foundation/` 文件夹。
-- 部分 Foundation 样本为 FLAC 格式。为兼容 OpenAI 风格的音频输入，evalscope 会将其转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install "evalscope[air_bench]"`）或系统中存在可用的 `ffmpeg` 二进制文件。
+- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。它使用 *音频文件夹 + JSON 元数据* 布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 懒加载下载；完整版本约为 49 GB，因此建议通过 `extra_params` 限制下载哪些子集。
+- 如果数据集已经在磁盘上，请传递 `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Foundation/`。
+- 一些 Foundation 样本是 FLAC 格式。为了兼容 OpenAI 的音频输入，evalscope 会将它们转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install "evalscope[air_bench]"`）或一个可用的 `ffmpeg` 二进制文件。
 
 ## 评估说明
 
-- **指标**：**准确率**（按源数据集子集计算，并按类别聚合）。
-- 默认提示模板遵循官方 `Inference_Foundation.py` 的格式，因此可复现现有的 AIR-Bench 排行榜结果。
-- 设置 `extra_params={'subsets': [...]}` 可限制评估范围至 25 个源目录中的部分子集——适用于仅下载了部分数据的情况。
+- 度量标准：**准确率**（每个源数据集子集，以及每类别的聚合）。
+- 默认提示遵循官方 `Inference_Foundation.py` 的格式，以便可以重现现有的 AIR-Bench 排行榜数字。
+- 设置 `extra_params={'subsets': [...]}` 以限制到 25 个源目录中的一个子集——这对于部分下载非常有用。
+- 需要一个支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 版本中添加了此支持（sgl-project/sglang#33606）；早期版本会以 HTTP 400 拒绝音频请求。
 
 ## 属性
 
@@ -46,24 +46,23 @@ D. {choice_d}
 |----------|-------|
 | **基准测试名称** | `air_bench_foundation` |
 | **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
-| **论文** | [Paper](https://aclanthology.org/2024.acl-long.109/) |
+| **论文** | [论文](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `Knowledge`, `MCQ` |
-| **指标** | `accuracy` |
+| **度量标准** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
-
+| **评估拆分** | `test` |
 
 ## 数据统计
 
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 21,426 |
-| 提示词长度（平均） | 236.68 字符 |
-| 提示词长度（最小/最大） | 179 / 321 字符 |
+| 提示词长度（平均值） | 236.68 字符 |
+| 提示词长度（最小/最大值） | 179 / 321 字符 |
 
-**各子集统计信息：**
+**每子集统计：**
 
-| 子集 | 样本数 | 提示平均长度 | 提示最小长度 | 提示最大长度 |
+| 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
 | `Speaker_Age_Prediction_common_voice_13.0_en` | 1,000 | 291.98 | 278 | 305 |
 | `Speaker_Emotion_Recontion_iemocap` | 1,000 | 227.13 | 218 | 238 |
@@ -91,14 +90,13 @@ D. {choice_d}
 | `Music_Midi_Velocity_Analysis_nsynth` | 484 | 270.6 | 259 | 279 |
 | `Music_Mood_Recognition_MTJ-Jamendo` | 526 | 229.67 | 210 | 248 |
 
-**音频统计信息：**
+**音频统计：**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 21,426 |
-| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 21,426 |
+| 每样本音频数 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | mp3, wav |
-
 
 ## 样例示例
 
@@ -142,7 +140,7 @@ D. {choice_d}
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Choose the most suitable answer from options A, B, C, and D to respond the question in next line, you may only choose A or B or C or D.
 ```
@@ -151,7 +149,7 @@ Choose the most suitable answer from options A, B, C, and D to respond the quest
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `subsets` | `list` | `None` | 可选的 Foundation 源数据集目录列表，用于指定评估范围。默认为全部 25 个目录。当本地仅下载了部分子集时非常有用。 |
+| `subsets` | `list` | `None` | 可选的 Foundation 源数据集目录列表，用于评估。默认为所有 25 个目录。当仅下载了部分子集时非常有用。 |
 
 ## 使用方法
 
@@ -163,7 +161,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets air_bench_foundation \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -179,11 +177,11 @@ task_cfg = TaskConfig(
     datasets=['air_bench_foundation'],
     dataset_args={
         'air_bench_foundation': {
-            # subset_list: ['Speaker_Age_Prediction_common_voice_13.0_en', 'Speaker_Emotion_Recontion_iemocap', 'Speaker_Emotion_Recontion_meld']  # 可选，评估特定子集
-            # extra_params: {}  # 使用默认额外参数
+            # subset_list: ['Speaker_Age_Prediction_common_voice_13.0_en', 'Speaker_Emotion_Recontion_iemocap', 'Speaker_Emotion_Recontion_meld']  # optional, evaluate specific subsets
+            # extra_params: {}  # uses default extra parameters
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

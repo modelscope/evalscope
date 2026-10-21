@@ -1,32 +1,32 @@
 # WenetSpeech
 
-
 ## 概述
 
-WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时的多领域转录音频数据，专为语音识别研究而设计。
+WenetSpeech 是一个大规模的普通话语音语料库，包含超过 10,000 小时的多领域转录音频数据，专为语音识别研究设计。
 
 ## 任务描述
 
-- **任务类型**：自动语音识别（ASR）
-- **输入**：包含中文语音的音频录音
-- **输出**：中文转录文本
-- **领域**：多领域（互联网、会议）
+- **任务类型**: 自动语音识别 (ASR)
+- **输入**: 普通话音频录音
+- **输出**: 中文转录文本
+- **领域**: 多领域（互联网、会议）
 
 ## 主要特点
 
-- 大规模中文语音语料库（10,000+ 小时）
+- 大规模普通话语音语料库（10,000+ 小时）
 - 覆盖多领域：互联网内容、会议
-- 高质量转录文本
-- 适用于评估中文 ASR 系统
-- 支持中英混合文本评估
+- 高质量转录
+- 适合评估中文 ASR 系统
+- 支持中英文混合文本评估
 
 ## 评估说明
 
-- 默认配置使用 **test_meeting** 子集
-- 按领域划分的子集：**dev**（开发集）、**test_meeting**（会议领域）
-- 主要指标：**MER**（Mixed Error Rate，混合错误率）
-- MER 将中文字符逐字切分，英文单词作为整体切分
-- 提示词："Please listen to the audio and transcribe what you hear"
+- 默认配置使用 **test_meeting** 分割
+- 按领域划分的子集：**dev**（开发）、**test_meeting**（会议领域）
+- 主要指标：**MER**（混合错误率）
+- MER 将中文字符单独分词，将英文单词作为整体分词
+- 提示：“请听音频并转录你听到的内容”
+- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 版本中添加了此支持 (sgl-project/sglang#33606)；早期版本会以 HTTP 400 拒绝音频请求。
 
 ## 属性
 
@@ -37,9 +37,8 @@ WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时
 | **论文** | N/A |
 | **标签** | `Audio`, `SpeechRecognition` |
 | **指标** | `mer` |
-| **默认样本数** | 0-shot |
-| **评估子集** | `test_meeting` |
-
+| **默认提示次数** | 0-shot |
+| **评估分割** | `test_meeting` |
 
 ## 数据统计
 
@@ -49,21 +48,20 @@ WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时
 | 提示词长度（平均） | 161 字符 |
 | 提示词长度（最小/最大） | 161 / 161 字符 |
 
-**各子集统计信息：**
+**各子集统计：**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
 | `dev` | 13,825 | 161 | 161 | 161 |
 | `test_meeting` | 8,370 | 161 | 161 | 161 |
 
-**音频统计信息：**
+**音频统计：**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 22,195 |
-| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 22,195 |
+| 每个样本的音频数量 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | wav |
-
 
 ## 样例示例
 
@@ -96,7 +94,7 @@ WenetSpeech 是一个大规模中文语音语料库，包含超过 10,000 小时
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Please listen to the audio and transcribe what you hear. Please only provide the transcription without any additional commentary. Do not include any punctuation.
 ```
@@ -111,7 +109,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets wenet_speech \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -127,10 +125,10 @@ task_cfg = TaskConfig(
     datasets=['wenet_speech'],
     dataset_args={
         'wenet_speech': {
-            # subset_list: ['dev', 'test_meeting']  # 可选，用于评估特定子集
+            # subset_list: ['dev', 'test_meeting']  # optional, evaluate specific subsets
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

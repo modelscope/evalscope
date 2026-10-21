@@ -3,30 +3,31 @@
 
 ## 概述
 
-Common Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵盖 114 种语言，包含来自全球志愿者贡献的数千小时经过验证的语音数据。
+Common Voice 15 是由 Mozilla 收集的一个大规模多语言语音语料库，涵盖了 114 种语言，包含来自全球志愿者的数千小时经过验证的语音数据。
 
 ## 任务描述
 
-- **任务类型**：自动语音识别（ASR）
-- **输入**：包含多种语言语音的音频录音
-- **输出**：对应语言的转录文本
-- **语言**：114 种语言，包括英语、中文普通话、法语等
+- **任务类型**: 自动语音识别 (ASR)
+- **输入**: 各种语言的语音录音
+- **输出**: 对应语言的转录文本
+- **语言**: 包括英语、普通话、法语等 114 种语言
 
 ## 主要特点
 
-- 由社区贡献并经社区验证的语音录音
-- 多样化的说话人人口统计特征（年龄、性别、口音）
-- 多种语言，每种语言的数据量各不相同
-- 采用 CC-0 许可证，允许开放研究和商业用途
-- 高质量的转录文本，经多位听众验证
+- 通过社区验证的众包语音录音
+- 多样化的说话者人口统计特征（年龄、性别、口音）
+- 多种语言，数据量各不相同
+- CC-0 许可证，适用于开放研究和商业使用
+- 由多名听众验证的高质量转录
 
 ## 评估说明
 
-- 默认配置使用 **test** 数据划分
-- 主要评估指标：**词错误率（WER）**
-- 默认子集：`en`（英语）、`zh-CN`（中文普通话）、`fr`（法语）
-- 评估过程中应用语言特定的文本归一化
-- 提示词："Please recognize the speech and only output the recognized content"
+- 默认配置使用 **test** 分割
+- 主要指标: **词错误率 (WER)**
+- 默认子集: `en` (英语), `zh-CN` (普通话), `fr` (法语)
+- 评估过程中应用特定语言的文本规范化
+- 提示: "请识别语音并仅输出识别内容"
+- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 (sgl-project/sglang#33606) 中添加了此支持；早期版本会以 HTTP 400 拒绝音频请求。
 
 ## 属性
 
@@ -38,7 +39,7 @@ Common Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵�
 | **标签** | `Audio`, `MultiLingual`, `SpeechRecognition` |
 | **指标** | `wer` |
 | **默认样本数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -49,7 +50,7 @@ Common Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵�
 | 提示词长度（平均） | 67 字符 |
 | 提示词长度（最小/最大） | 67 / 67 字符 |
 
-**各子集统计数据：**
+**每个子集的统计:**
 
 | 子集 | 样本数 | 提示词平均长度 | 提示词最小长度 | 提示词最大长度 |
 |--------|---------|-------------|------------|------------|
@@ -57,12 +58,12 @@ Common Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵�
 | `zh-CN` | 10,625 | 67 | 67 | 67 |
 | `fr` | 16,132 | 67 | 67 | 67 |
 
-**音频统计数据：**
+**音频统计:**
 
 | 指标 | 值 |
 |--------|-------|
-| 音频文件总数 | 43,143 |
-| 每样本音频数量 | 最小: 1, 最大: 1, 平均: 1 |
+| 总音频文件数 | 43,143 |
+| 每个样本的音频数量 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | mp3 |
 
 
@@ -100,7 +101,7 @@ Common Voice 15 是由 Mozilla 收集的大规模多语言语音语料库，涵�
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Please recognize the speech and only output the recognized content:
 ```
@@ -115,7 +116,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets common_voice_15 \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -131,10 +132,10 @@ task_cfg = TaskConfig(
     datasets=['common_voice_15'],
     dataset_args={
         'common_voice_15': {
-            # subset_list: ['en', 'zh-CN', 'fr']  # 可选，用于评估特定子集
+            # subset_list: ['en', 'zh-CN', 'fr']  # optional, evaluate specific subsets
         }
     },
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
