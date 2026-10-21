@@ -44,7 +44,7 @@ THCHS-30 is a Mandarin Chinese read-speech corpus with phone-level time alignmen
 - Primary metric: corpus-level Phone Error Rate (PER), computed as total phone-token edit distance divided by total reference phone count; report counts remain utterance counts
 - The model must output only IPA phone tokens separated by spaces; timestamps are metadata for downstream analysis, not model targets
 - Audio is passed as WAV data through EvalScope's standard audio message format
-- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
         paper_url='https://arxiv.org/abs/1512.01882',
         eval_split='test',

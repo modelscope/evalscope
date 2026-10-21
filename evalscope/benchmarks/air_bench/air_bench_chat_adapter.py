@@ -109,7 +109,7 @@ AIR-Bench Chat is the generative half of [AIR-Bench](https://arxiv.org/abs/2402.
 - The judge LLM receives the question, the textual audio description (`meta_info`), the reference answer (`answer_gt`), and the model's response, and outputs two integer scores in `[1, 10]`. Use a judge that supports long contexts, since `meta_info` may exceed 4k tokens for dialogue tasks.
 - The official leaderboard uses `gpt-4-0125-preview`. If that exact snapshot is unavailable, use an available GPT-4-class judge; absolute scores can drift versus the published numbers because the judge model changed.
 - If the dataset is already on disk, pass `dataset_args={'air_bench_chat': {'local_path': '/path/to/AIR-Bench-Dataset'}}`; the local root should contain `Chat/`.
-- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         subset_list=list(CHAT_TASK_TO_CATEGORY.keys()),
         eval_split='test',

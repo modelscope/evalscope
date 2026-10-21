@@ -1,6 +1,5 @@
 # MMAU
 
-
 ## 概述
 
 MMAU（大规模多任务音频理解）是一个全面的基准测试，用于评估多模态大型语言模型在多种音频任务中的音频理解能力。
@@ -18,28 +17,27 @@ MMAU（大规模多任务音频理解）是一个全面的基准测试，用于�
 - 涵盖多个音频领域（语音、环境声音、音乐）
 - 四个选项的多项选择格式
 - 包括迷你和完整测试集
-- 按类别报告准确率
+- 按类别报告准确性
 
 ## 评估说明
 
 - 默认配置使用 **test_mini** 分割
 - 主要指标：**Accuracy**（预测字母的完全匹配）
-- 报告总体准确率和每类任务的准确率
-- 提示包括思维链指令
-- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 (sgl-project/sglang#33606) 中添加了此支持；早期版本会以 HTTP 400 拒绝音频请求。
+- 报告总体准确性和每项任务类别的准确性
+- 提示包括链式思维指令
+- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器以处理音频输入。
 
 ## 属性
 
 | 属性 | 值 |
 |----------|-------|
-| **Benchmark Name** | `mmau` |
-| **Dataset ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |
+| **基准测试名称** | `mmau` |
+| **数据集ID** | [lmms-lab/mmau](https://modelscope.cn/datasets/lmms-lab/mmau/summary) |
 | **论文** | N/A |
 | **标签** | `Audio`, `MCQ` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test_mini` |
-
 
 ## 数据统计
 
@@ -62,7 +60,7 @@ Answer the following multiple choice question based on the audio content. The la
 
 ## 使用方法
 
-### 使用 CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -73,7 +71,7 @@ evalscope eval \
     --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task

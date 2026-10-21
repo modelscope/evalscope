@@ -2,21 +2,21 @@
 
 ## 概述
 
-WenetSpeech 是一个大规模的普通话语音语料库，包含超过 10,000 小时的多领域转录音频数据，专为语音识别研究设计。
+WenetSpeech 是一个大规模的中文语音语料库，包含超过10,000小时的多领域转录音频数据，专为语音识别研究设计。
 
 ## 任务描述
 
 - **任务类型**: 自动语音识别 (ASR)
-- **输入**: 普通话音频录音
+- **输入**: 包含中文语音的音频记录
 - **输出**: 中文转录文本
 - **领域**: 多领域（互联网、会议）
 
 ## 主要特点
 
-- 大规模普通话语音语料库（10,000+ 小时）
-- 覆盖多领域：互联网内容、会议
+- 大规模中文语音语料库（10,000+小时）
+- 多领域覆盖：互联网内容、会议
 - 高质量转录
-- 适合评估中文 ASR 系统
+- 适合评估中文ASR系统
 - 支持中英文混合文本评估
 
 ## 评估说明
@@ -24,9 +24,9 @@ WenetSpeech 是一个大规模的普通话语音语料库，包含超过 10,000 
 - 默认配置使用 **test_meeting** 分割
 - 按领域划分的子集：**dev**（开发）、**test_meeting**（会议领域）
 - 主要指标：**MER**（混合错误率）
-- MER 将中文字符单独分词，将英文单词作为整体分词
+- MER将中文字符单独分词，英文单词作为整体分词
 - 提示：“请听音频并转录你听到的内容”
-- 需要支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 版本中添加了此支持 (sgl-project/sglang#33606)；早期版本会以 HTTP 400 拒绝音频请求。
+- 需要支持 `input_audio` 内容部分的OpenAI兼容服务器
 
 ## 属性
 
@@ -37,7 +37,7 @@ WenetSpeech 是一个大规模的普通话语音语料库，包含超过 10,000 
 | **论文** | N/A |
 | **标签** | `Audio`, `SpeechRecognition` |
 | **指标** | `mer` |
-| **默认提示次数** | 0-shot |
+| **默认样本数** | 0-shot |
 | **评估分割** | `test_meeting` |
 
 ## 数据统计
@@ -101,7 +101,7 @@ Please listen to the audio and transcribe what you hear. Please only provide the
 
 ## 使用方法
 
-### 使用 CLI
+### 使用CLI
 
 ```bash
 evalscope eval \
@@ -112,7 +112,7 @@ evalscope eval \
     --limit 10  # Remove this line for formal evaluation
 ```
 
-### 使用 Python
+### 使用Python
 
 ```python
 from evalscope import run_task

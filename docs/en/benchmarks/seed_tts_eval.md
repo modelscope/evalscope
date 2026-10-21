@@ -23,7 +23,7 @@ Seed-TTS-Eval is an objective benchmark for zero-shot text-to-speech and voice c
 - Configure the ASR endpoint via `metric_list`, or set `SEED_TTS_EVAL_ASR_API_BASE`, `SEED_TTS_EVAL_ASR_API_KEY`, `SEED_TTS_EVAL_ASR_MODEL`, and `SEED_TTS_EVAL_ASR_API_PROTOCOL`
 - For Volcengine Ark audio-understanding models, set `api_protocol="responses"` and use a model that supports audio input, such as `doubao-seed-2-0-lite-260428`
 - Speaker similarity is part of the official benchmark, but it requires a separate speaker verification backend and is not enabled by default
-- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input. SGLang added this support in v0.5.19 (sgl-project/sglang#33606); earlier versions reject audio requests with HTTP 400.
+- Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 
 
 ## Properties

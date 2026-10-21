@@ -2,7 +2,7 @@
 
 ## 概述
 
-AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（音频指令基准测试，ACL 2024 主会议）的区分部分——这是第一个针对大型音频-语言模型 (LALMs) 的指令跟随基准测试，涵盖了**人类语音、自然声音和音乐**。Foundation 轨道包含大约 25,000 个单选题，涵盖三个音频类别中的 19 个逻辑任务。
+AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（音频指令基准，ACL 2024 主会议）的区分部分 —— 这是第一个针对大型音频-语言模型 (LALMs) 的指令跟随基准测试，涵盖了**人类语音、自然声音和音乐**。Foundation 轨道包含大约 25,000 个单选题，涵盖三个音频类别的 19 个逻辑任务。
 
 ## 任务描述
 
@@ -12,9 +12,9 @@ AIR-Bench Foundation 是 [AIR-Bench](https://arxiv.org/abs/2402.07729)（音频�
 
 ## 类别（19 个任务 / 25 个源数据集子集）
 
-- **语音**（11 个目录 / 9 个任务）：语音基础、语言识别、性别、情感（IEMOCAP+MELD）、年龄、语音实体识别、意图分类、说话人数统计、合成语音检测。
-- **声音**（6 个目录 / 4 个任务）：音频基础、发声声音分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
-- **音乐**（8 个目录 / 6 个任务）：乐器、流派、MIDI 音高、MIDI 速度、音乐问答、音乐情感。
+- **语音**（11 个目录 / 9 个任务）：语音基础、语言识别、性别、情绪（IEMOCAP+MELD）、年龄、语音实体识别、意图分类、说话者计数、合成语音检测。
+- **声音**（6 个目录 / 4 个任务）：音频基础、发声分类、声学场景分类（CochlScene+TUT2017）、声音问答（avqa+clothoaqa）。
+- **音乐**（8 个目录 / 6 个任务）：乐器、流派、MIDI 音高、MIDI 强度、音乐问答、音乐情绪。
 
 ## 提示模板（与官方 `Inference_Foundation.py` 匹配）
 
@@ -29,16 +29,16 @@ D. {choice_d}
 
 ## 数据集访问
 
-- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。它使用 *音频文件夹 + JSON 元数据* 布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 懒加载下载；完整版本约为 49 GB，因此建议通过 `extra_params` 限制下载哪些子集。
+- 该数据集托管在 ModelScope 上：[`evalscope/AIR-Bench-Dataset`](https://modelscope.cn/datasets/evalscope/AIR-Bench-Dataset)。它使用 *audiofolder + JSON 元数据* 布局。evalscope 在首次运行时通过 `modelscope.dataset_snapshot_download` 懒加载下载；完整版本约为 49 GB，因此建议通过 `extra_params` 限制拉取哪些子集。
 - 如果数据集已经在磁盘上，请传递 `dataset_args={'air_bench_foundation': {'local_path': '/path/to/AIR-Bench-Dataset'}}`；本地根目录应包含 `Foundation/`。
-- 一些 Foundation 样本是 FLAC 格式。为了兼容 OpenAI 的音频输入，evalscope 会将它们转换为缓存的 WAV 文件，这需要安装 `soundfile`（`pip install "evalscope[air_bench]"`）或一个可用的 `ffmpeg` 二进制文件。
+- 一些 Foundation 样本是 FLAC 格式。为了兼容 OpenAI 的音频输入，evalscope 会将它们转换为缓存的 WAV 文件，这需要安装 `soundfile` (`pip install "evalscope[air_bench]"`) 或一个可用的 `ffmpeg` 二进制文件。
 
 ## 评估说明
 
-- 度量标准：**准确率**（每个源数据集子集，以及每类别的聚合）。
+- 指标：**准确率**（每个源数据集子集，以及每种类别的聚合）。
 - 默认提示遵循官方 `Inference_Foundation.py` 的格式，以便可以重现现有的 AIR-Bench 排行榜数字。
-- 设置 `extra_params={'subsets': [...]}` 以限制到 25 个源目录中的一个子集——这对于部分下载非常有用。
-- 需要一个支持 `input_audio` 内容部分的 OpenAI 兼容服务器。SGLang 在 v0.5.19 版本中添加了此支持（sgl-project/sglang#33606）；早期版本会以 HTTP 400 拒绝音频请求。
+- 设置 `extra_params={'subsets': [...]}` 以限制到 25 个源目录中的一个子集 —— 对于部分下载非常有用。
+- 需要一个支持 `input_audio` 内容部分的 OpenAI 兼容服务器用于音频输入。
 
 ## 属性
 
@@ -48,7 +48,7 @@ D. {choice_d}
 | **数据集 ID** | [evalscope/AIR-Bench](https://modelscope.cn/datasets/evalscope/AIR-Bench/summary) |
 | **论文** | [论文](https://aclanthology.org/2024.acl-long.109/) |
 | **标签** | `Audio`, `Knowledge`, `MCQ` |
-| **度量标准** | `accuracy` |
+| **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
 | **评估拆分** | `test` |
 
@@ -60,7 +60,7 @@ D. {choice_d}
 | 提示词长度（平均值） | 236.68 字符 |
 | 提示词长度（最小/最大值） | 179 / 321 字符 |
 
-**每子集统计：**
+**每个子集的统计数据：**
 
 | 子集 | 样本数 | 提示词平均值 | 提示词最小值 | 提示词最大值 |
 |--------|---------|-------------|------------|------------|
@@ -95,7 +95,7 @@ D. {choice_d}
 | 指标 | 值 |
 |--------|-------|
 | 总音频文件数 | 21,426 |
-| 每样本音频数 | 最小: 1, 最大: 1, 平均: 1 |
+| 每个样本的音频 | 最小: 1, 最大: 1, 平均: 1 |
 | 格式 | mp3, wav |
 
 ## 样例示例
@@ -149,7 +149,7 @@ Choose the most suitable answer from options A, B, C, and D to respond the quest
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `subsets` | `list` | `None` | 可选的 Foundation 源数据集目录列表，用于评估。默认为所有 25 个目录。当仅下载了部分子集时非常有用。 |
+| `subsets` | `list` | `None` | 可选的 Foundation 源数据集目录列表，用于评估。默认为所有 25 个目录。当仅下载了部分子集时非常有用。|
 
 ## 使用方法
 

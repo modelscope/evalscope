@@ -2,7 +2,7 @@
 
 ## 概述
 
-OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估MLLM在同时识别、解释和推理视觉、听觉和文本输入方面的能力。
+OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估MLLMs在同时识别、解释和推理视觉、听觉和文本输入方面的能力。
 
 ## 任务描述
 
@@ -22,10 +22,10 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估M
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 简单的准确率指标
+- 简单准确率指标
 - 额外参数：use_image (bool), use_audio (bool)
 - 支持图像/音频的文本替代
-- 需要支持 `input_audio` 内容部分的OpenAI兼容服务器。SGLang在v0.5.19 (sgl-project/sglang#33606) 中添加了此支持；早期版本会以HTTP 400拒绝音频请求。
+- 需要支持 `input_audio` 内容部分的OpenAI兼容服务器以处理音频输入。
 
 ## 属性
 
@@ -107,7 +107,7 @@ OmniBench 是一个开创性的通用多模态基准测试，旨在严格评估M
 }
 ```
 
-*注：部分内容为显示而被截断。*
+*注意：部分内容为了显示被截断。*
 
 ## 提示模板
 
@@ -124,8 +124,8 @@ Answer the following multiple choice question based on the image and audio conte
 
 | 参数 | 类型 | 默认值 | 描述 |
 |-----------|------|---------|-------------|
-| `use_image` | `bool` | `True` | 是否提供原始图像。False 使用文本替代。 |
-| `use_audio` | `bool` | `True` | 是否提供原始音频。False 使用文本替代。 |
+| `use_image` | `bool` | `True` | 是否提供原始图像。如果为False，则使用文本替代。 |
+| `use_audio` | `bool` | `True` | 是否提供原始音频。如果为False，则使用文本替代。 |
 
 ## 使用方法
 
