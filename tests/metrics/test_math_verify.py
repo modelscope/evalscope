@@ -1,5 +1,7 @@
 """Regression coverage for the public metrics and benchmark numeric policies."""
 
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -300,13 +302,14 @@ def test_valid_incorrect_answer_still_allows_judge_recall(monkeypatch: pytest.Mo
 
 
 def test_math_runs_in_threads_without_signal_timers_or_subprocesses(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Isolation forks the warm scoring process; it never installs signal timers or runs commands."""
     import signal
     import subprocess
 
     from evalscope.metrics.math.parser import parse_digits
 
     def forbidden(*args: Any, **kwargs: Any) -> None:
-        pytest.fail('Direct mathematical scoring must not create subprocesses or install signal timers')
+        pytest.fail('Mathematical scoring must not run subprocess commands or install signal timers')
 
     monkeypatch.setattr(subprocess, 'Popen', forbidden)
     monkeypatch.setattr(signal, 'signal', forbidden)
@@ -339,18 +342,20 @@ def test_upstream_verification_errors_remain_excluded_before_judge(monkeypatch: 
 
 @pytest.mark.parametrize('strategy', ['rule', 'llm_recall'])
 def test_extraction_execution_failure_excludes_only_the_failed_sample(
-    strategy: str, monkeypatch: pytest.MonkeyPatch,
+    strategy: str, tmp_path: Any, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import math_verify
 
     benchmark = get_benchmark('gsm8k', TaskConfig(datasets=['gsm8k'], judge={'strategy': strategy}))
+    # Warm up before patching: isolated calls fork from the warmed process.
+    extract_answer('1')
     original_parse = math_verify.parse
-    failed = False
+    failed = tmp_path / 'failed'
 
     def parse(*args: Any, **kwargs: Any) -> Any:
-        nonlocal failed
-        if not failed:
-            failed = True
+        # A closure flag set inside a forked call never reaches the next call; a file does.
+        if not failed.exists():
+            failed.touch()
             raise RuntimeError('parser execution failed')
         return original_parse(*args, **kwargs)
 
@@ -384,3 +389,215 @@ def test_unexpected_extraction_bug_still_propagates(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(benchmark, 'extract_answer', fail)
     with pytest.raises(ValueError, match='adapter bug'):
         benchmark.calculate_metrics(state(r'\boxed{1}', '1'))
+
+
+# Unclosed display math followed by repeated boxes; Math-Verify's extraction regex backtracks
+# superlinearly on it while holding the GIL.
+DEGENERATE_PREDICTION = '$$ so we get\n\n' + '\\boxed{5940}\n\n' * 2000
+
+
+def test_degenerate_prediction_is_excluded_at_the_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    monkeypatch.setattr(parser, 'MATH_DEADLINE_S', 2)
+    started = time.perf_counter()
+    with pytest.raises(MathEvaluationError, match='deadline'):
+        extract_answer(DEGENERATE_PREDICTION)
+    assert time.perf_counter() - started < 10
+
+
+def test_deadline_bounded_scoring_does_not_block_other_threads(monkeypatch: pytest.MonkeyPatch) -> None:
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    monkeypatch.setattr(parser, 'MATH_DEADLINE_S', 2)
+    ticks: list[float] = []
+    stop = threading.Event()
+
+    def heartbeat() -> None:
+        while not stop.is_set():
+            ticks.append(time.monotonic())
+            time.sleep(0.05)
+
+    watcher = threading.Thread(target=heartbeat)
+    watcher.start()
+    try:
+        with pytest.raises(MathEvaluationError, match='deadline'):
+            extract_answer(DEGENERATE_PREDICTION)
+    finally:
+        stop.set()
+        watcher.join()
+    assert len(ticks) > 10
+    assert max(later - earlier for earlier, later in zip(ticks, ticks[1:])) < 1.0
+
+
+def test_moderately_repeated_boxes_still_score_within_the_deadline() -> None:
+    # The observed HMMT shape at 160 repetitions; 2,745 took about 42 minutes unbounded.
+    prediction = '$$143 = 11 \\times 13$$\nplain text $S$ more\n' + '\\boxed{5940}\n' * 160
+    assert extract_answer(prediction) == '5940'
+
+
+@pytest.mark.parametrize(('prediction', 'reference', 'options'), [
+    # Unevaluated relations would become BooleanTrue if SymPy objects were pickled.
+    (r'$\frac{1}{2} + \frac{1}{2} = 1$', '1', {'prediction_mode': 'output'}),
+    # Label equivalence depends on the parsed Mul argument order.
+    (r'\boxed{Delta=1.01}', r'\Delta=1', {'absolute_tolerance': [0.01]}),
+    # Per-component tolerances depend on the input order kept in FiniteSet._unsorted_args.
+    (r'\boxed{\{100, 1.0\}}', r'\{100, 0.5\}', {'absolute_tolerance': [0, 0.6], 'multiple_answers': True}),
+])
+def test_isolation_preserves_parsed_object_semantics(prediction: str, reference: str, options: dict) -> None:
+    assert compare_answers(prediction, reference, **options).matched
+
+
+def test_worker_exceptions_cross_the_isolation_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    import math_verify
+
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    with pytest.raises(InvalidMathReference):
+        compare_answers('0', r'\frac{')
+
+    def fail(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError('parser execution failed')
+
+    monkeypatch.setattr(math_verify, 'parse', fail)
+    with pytest.raises(MathEvaluationError, match='parser execution failed'):
+        extract_answer(r'\boxed{1}')
+
+
+@pytest.mark.parametrize('policy', ['always', 'ignore', 'error'])
+def test_isolation_preserves_warning_policy(policy: str) -> None:
+    import warnings
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+
+    parser._warm_up()
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(policy, DeprecationWarning)
+        # Only the math API warning matters, not the interpreter's multi-threaded fork warning.
+        warnings.filterwarnings('ignore', message='.*multi-threaded.*', category=DeprecationWarning)
+        if policy == 'error':
+            with pytest.raises(MathEvaluationError, match='DeprecationWarning: use_last_number'):
+                extract_answer('1', False)
+        else:
+            assert extract_answer('1', False) == '1'
+        issued = [item for item in caught if 'use_last_number' in str(item.message)]
+        assert len(issued) == (1 if policy == 'always' else 0)
+
+
+def test_parent_transport_warning_is_normalized(monkeypatch: pytest.MonkeyPatch) -> None:
+    import warnings
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('Requires fork isolation')
+    parser._warm_up()
+
+    def warn(*args: Any, **kwargs: Any) -> str:
+        warnings.warn('transport warning', DeprecationWarning)
+        return '1'
+
+    monkeypatch.setattr(parser, 'run_isolated', warn)
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', DeprecationWarning)
+        with pytest.raises(MathEvaluationError, match='DeprecationWarning: transport warning'):
+            extract_answer('1')
+
+
+def test_isolation_respects_inherited_cpu_hard_limit() -> None:
+    import multiprocessing
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('Requires Unix fork and resource')
+    parser._warm_up()
+    context = multiprocessing.get_context('fork')
+    receiver, sender = context.Pipe(duplex=False)
+
+    def limited() -> None:
+        import resource
+
+        try:
+            _, hard_limit = resource.getrlimit(resource.RLIMIT_CPU)
+            limit = 10 if hard_limit == resource.RLIM_INFINITY else min(10, hard_limit)
+            resource.setrlimit(resource.RLIMIT_CPU, (limit, limit))
+            sender.send((True, extract_answer('1')))
+        except BaseException as exc:
+            sender.send((False, str(exc)))
+        finally:
+            sender.close()
+
+    # A lowered hard limit cannot be restored, so set it in a separate process, not in pytest itself.
+    process = context.Process(target=limited)
+    try:
+        process.start()
+        sender.close()
+        assert receiver.poll(10), 'Scoring did not finish under the inherited CPU limit'
+        assert receiver.recv() == (True, '1')
+    finally:
+        receiver.close()
+        sender.close()
+        if process.pid is not None:
+            if process.is_alive():
+                process.kill()
+            process.join()
+
+
+@pytest.mark.parametrize('dribble', [False, True])
+def test_complete_response_shares_one_deadline(dribble: bool, monkeypatch: pytest.MonkeyPatch) -> None:
+    import socket
+
+    import math_verify
+
+    from evalscope.metrics.math import parser
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available
+
+    if not isolation_available():
+        pytest.skip('Requires fork isolation')
+    parser._warm_up()
+    socket_send = socket.socket.sendall
+
+    def send_slowly(conn: socket.socket, data: bytes) -> None:
+        socket_send(conn, data[:8])
+        offset = 8
+        if dribble:
+            # A steady trickle of data must not extend the deadline of the same call.
+            for _ in range(10):
+                time.sleep(0.05)
+                socket_send(conn, data[offset:offset + 8])
+                offset += 8
+        time.sleep(1.5)
+        socket_send(conn, data[offset:])
+
+    def fake_parse(*args: Any, **kwargs: Any) -> list[str]:
+        return ['x' * 20000]
+
+    monkeypatch.setattr(socket.socket, 'sendall', send_slowly)
+    monkeypatch.setattr(math_verify, 'parse', fake_parse)
+    monkeypatch.setattr(parser, 'MATH_DEADLINE_S', 0.2)
+    started = time.monotonic()
+    with pytest.raises(MathEvaluationError, match='deadline'):
+        extract_answer('1')
+    assert time.monotonic() - started < 1.0
+
+
+def test_isolation_transfers_large_results_and_reports_crashes() -> None:
+    import os
+
+    from evalscope.metrics.math.contracts import MathEvaluationError
+    from evalscope.metrics.math.isolation import isolation_available, run_isolated
+
+    if not isolation_available():
+        pytest.skip('Requires fork isolation')
+    payload = 'x' * (1024 * 1024)
+    assert run_isolated(lambda: payload, (), 5, 'large result') == payload
+    with pytest.raises(MathEvaluationError, match='exited'):
+        run_isolated(os._exit, (7,), 5, 'crash')

@@ -8,16 +8,44 @@ from functools import wraps
 from typing import Any, Callable, Literal, ParamSpec, TypeVar
 
 from .contracts import InvalidMathReference, MathEvaluationError, MathResult
+from .isolation import isolation_available, run_isolated
 
 _P = ParamSpec('_P')
 _R = TypeVar('_R')
+
+MATH_DEADLINE_S = 30
+"""Deadline for computation and the complete result transfer once the scoring child has started.
+
+It excludes warm-up, fork start, decoding in the parent and cleanup, and does not apply without fork
+or inside daemonic processes. A call that misses it is excluded as an execution failure, not scored 0.
+"""
+_warmed_up = False
+
+
+def _warm_up() -> None:
+    """Load Math-Verify and SymPy once so forked calls inherit them instead of importing cold."""
+    global _warmed_up
+    if _warmed_up:
+        return
+    try:
+        from sympy import Integer
+
+        _parse('$0$', 'fragment')
+        _verify(Integer(0), Integer(0))
+    except Exception:
+        return  # The isolated call reports the same failure in its own scoring context.
+    _warmed_up = True
 
 
 def _math_call(function: Callable[_P, _R]) -> Callable[_P, _R]:
     @wraps(function)
     def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _R:
+        # Every execution path shares one exception contract here; isolation only runs and transfers.
         try:
-            return function(*args, **kwargs)
+            if not isolation_available():
+                return function(*args, **kwargs)
+            _warm_up()
+            return run_isolated(function, args, MATH_DEADLINE_S, function.__name__, kwargs=kwargs)
         except MathEvaluationError:
             raise
         except Exception as exc:
