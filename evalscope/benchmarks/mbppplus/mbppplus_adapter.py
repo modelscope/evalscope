@@ -1,5 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from pathlib import Path
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -9,6 +10,7 @@ from evalscope.api.metric import Score
 from evalscope.api.metric.semantics import MetricSelector
 from evalscope.api.mixin import CodeExecutionSandboxMixin
 from evalscope.api.registry import register_benchmark
+from evalscope.api.sandbox import DockerImageSpec
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -63,7 +65,8 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
         eval_split='test',
         prompt_template=PROMPT,
         review_timeout=20,
-        sandbox_config={'image': 'python:3.11-slim', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
+        evaluation_version='v1.1',
+        sandbox_config={'image': 'python3.11-numpy', 'tools_config': {'shell_executor': {}, 'python_executor': {}}},
     )
 )
 class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
@@ -100,6 +103,16 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
             code = code[: code.index('if __name__ ==')]
         return code
 
+    def get_sandbox_image_spec(self) -> DockerImageSpec:
+        """Use HumanEval+'s image: the MBPP+ test suites import numpy."""
+        docker_path = Path(__file__).parent.parent / 'humanevalplus' / 'docker'
+        return DockerImageSpec(
+            name_prefix='python3.11-numpy',
+            context_dir=docker_path.as_posix(),
+            dockerfile=(docker_path / 'Dockerfile').as_posix(),
+            cache_key_parts=['sandbox', 'python3.11-numpy'],
+        )
+
     @classmethod
     def postprocess_completion(cls, completion, stop_words=['\nassert', '\n"""']):
         from evalscope.utils.code_utils import extract_code_from_freeform_completion
@@ -130,10 +143,8 @@ class MBPPplusAdapter(CodeExecutionSandboxMixin, DefaultDataAdapter):
             prediction=original_prediction,
         )
         problem = task_state.metadata
-        completion = filtered_prediction
-        # Append test cases to the completion
-        for test in task_state.metadata['test_list']:
-            completion += '\n' + test + '\n'
+        # Run the base asserts, which need `test_imports` (e.g. math.isclose), then the MBPP+ suite in `test`.
+        completion = '\n'.join([*problem['test_imports'], filtered_prediction, *problem['test_list'], problem['test']])
 
         res = self.execute_code_in_sandbox(code=completion, timeout=self.review_timeout, language='python')
         passed = res.get('status') == 'success'
