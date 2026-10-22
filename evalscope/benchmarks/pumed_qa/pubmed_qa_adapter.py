@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
@@ -10,6 +10,21 @@ from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
+
+# As in evalscope.utils.yes_no: labels count as whole words written as the prompt asks ("YES") or capitalized
+# ("Yes"), so lowercase prose such as "there is no evidence" is not read as a label; a bare lowercase label is.
+_VERDICT_PATTERN = re.compile(r'\b(YES|Yes|NO|No|MAYBE|Maybe)\b')
+_LOWERCASE_EXACT_PATTERN = re.compile(r'(yes|no|maybe)[.!]?')
+
+
+def extract_verdict(prediction: str) -> Optional[str]:
+    """Return 'YES', 'NO' or 'MAYBE' when the reply gives exactly one of them, otherwise None."""
+    exact = _LOWERCASE_EXACT_PATTERN.fullmatch(prediction.strip())
+    if exact:
+        return exact.group(1).upper()
+    verdicts = {verdict.upper() for verdict in _VERDICT_PATTERN.findall(prediction)}
+    return verdicts.pop() if len(verdicts) == 1 else None
+
 
 DESCRIPTION = """
 ## Overview
@@ -43,7 +58,7 @@ PubMedQA is a biomedical question answering dataset designed to evaluate models'
 @register_benchmark(
     BenchmarkMeta(
         name='pubmedqa',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         pretty_name='PubMedQA',
         tags=[Tags.KNOWLEDGE, Tags.YES_NO],
         description=DESCRIPTION.strip(),
@@ -83,9 +98,8 @@ class PubMedQAAdapter(DefaultDataAdapter):
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check if the reference answer is in the filtered prediction
-        result = 1 if re.search(r'\b' + re.escape(reference) + r'\b', filtered_prediction.strip().upper()) else 0
-        score.value = {'acc': result}
+        # Credit only a reply giving exactly one label; one naming several is not credited for each of them
+        score.value = {'acc': 1 if extract_verdict(filtered_prediction) == reference else 0}
         return score
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
@@ -113,20 +127,8 @@ class PubMedQAAdapter(DefaultDataAdapter):
                 if gt in actual_counts:
                     actual_counts[gt] += 1
 
-                if ss.score.main_value == 1:
-                    correct_count += 1
-                    pred = gt
-                else:
-                    pred_text = ss.score.extracted_prediction.strip().upper()
-                    # Heuristic to determine the predicted class from text
-                    if 'YES' in pred_text:
-                        pred = 'YES'
-                    elif 'NO' in pred_text:
-                        pred = 'NO'
-                    elif 'MAYBE' in pred_text:
-                        pred = 'MAYBE'
-                    else:
-                        pred = None
+                correct_count += ss.score.main_value
+                pred = extract_verdict(ss.score.extracted_prediction or '')
 
                 if pred:
                     if pred == 'YES':

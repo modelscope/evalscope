@@ -36,7 +36,7 @@ def aggregate(adapter: PubMedQAAdapter, answers: List[Tuple[str, str]]) -> Dict[
     return {score.metric_name: score.score for score in adapter.aggregate_scores(scores)}
 
 
-@pytest.mark.parametrize('unrecognized', ['', 'Insufficient evidence.', 'I am unable to answer.'])
+@pytest.mark.parametrize('unrecognized', ['', 'Insufficient evidence.', 'I am unable to answer.', 'I cannot tell.'])
 def test_unrecognized_answers_remain_in_recall_denominator(adapter: PubMedQAAdapter, unrecognized: str) -> None:
     answers = [(label, answer) for label in ['YES', 'NO', 'MAYBE'] for answer in [label, unrecognized]]
     metrics = aggregate(adapter, answers)
@@ -74,3 +74,8 @@ def test_existing_boundary_cases(adapter: PubMedQAAdapter, mode: str) -> None:
     expected = 1.0 if mode == 'correct' else 0.0
     for metric in ['accuracy', 'precision', 'recall', 'f1']:
         assert metrics[metric] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('label', ['YES', 'NO', 'MAYBE'])
+def test_reply_naming_several_labels_is_not_credited(adapter: PubMedQAAdapter, label: str) -> None:
+    assert aggregate(adapter, [(label, 'YES or NO: MAYBE')])['accuracy'] == 0.0
