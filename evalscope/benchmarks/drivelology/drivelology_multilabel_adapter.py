@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -8,10 +7,7 @@ from evalscope.api.messages import ChatMessageUser, ContentText
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.utils.logger import get_logger
-from evalscope.utils.multi_choices import prompt
-
-logger = get_logger()
+from evalscope.utils.multi_choices import parse_answers, prompt
 
 DESCRIPTION = """
 ## Overview
@@ -37,6 +33,7 @@ Drivelology Multi-label Classification evaluates models' ability to categorize "
 
 - Default configuration uses **0-shot** evaluation
 - Metrics: F1 (weighted, micro, macro), Exact Match
+- The labels on the last `ANSWER:` line are read as listed: `AD`, `A, D` or `A and D`
 - Aggregation method: F1 weighted
 - Categories: inversion, wordplay, switchbait, paradox, misdirection
 """
@@ -74,6 +71,7 @@ The entire content of your response should be of the following format: 'ANSWER: 
         aggregation='f1_weighted',
         eval_split='test',
         prompt_template='{question}',
+        evaluation_version='v1.1',
     )
 )
 class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
@@ -102,13 +100,7 @@ class DrivelologyMultilabelClassificationAdapter(DefaultDataAdapter):
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
-        pattern = r'ANSWER:\s*([A-E]+)'
-        matches = re.findall(pattern, prediction)
-        if not matches:
-            logger.warning(f'Could not extract answer from: {prediction}')
-            return ''
-        letters = matches[-1].strip().upper()
-        return ''.join(sorted(set(letters)))
+        return ''.join(sorted(parse_answers(task_state, multiple_correct=True, completion=prediction)))
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState
