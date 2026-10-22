@@ -31,7 +31,7 @@ interface Props {
 }
 
 /** Convert a columns + row-arrays table into the record list DataTable expects. */
-function toRecords(columns: string[], rows: (string | number)[][]): Record<string, unknown>[] {
+function toRecords(columns: string[], rows: (string | number | null)[][]): Record<string, unknown>[] {
   return rows.map((row) => Object.fromEntries(columns.map((c, i) => [c, row[i]])))
 }
 

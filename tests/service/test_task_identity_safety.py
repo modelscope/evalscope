@@ -84,7 +84,7 @@ def test_invalid_progress_is_unknown(client, tmp_path: Path, value: object) -> N
     (folder / 'progress.json').write_text(json.dumps({'percent': value}))
     task = client.get('/api/v1/tasks/active').json['tasks'][0]
     assert task['percent'] is None
-    assert task['status'] == 'preparing'
+    assert task['status'] == 'running'
 
 
 def test_old_metadata_and_disappeared_process_are_not_fabricated(client, tmp_path: Path) -> None:

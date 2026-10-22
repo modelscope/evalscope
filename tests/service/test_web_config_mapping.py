@@ -174,3 +174,15 @@ def test_backend_defaults_used_by_optional_ui_fields() -> None:
 def test_limit_matches_count_fraction_and_unlimited_semantics(limit: int | float) -> None:
     config = _build_task_config({'model': 'same-model', 'api_url': 'http://localhost/v1', 'limit': limit})
     assert config.limit == (None if limit == 0 else limit)
+
+
+def test_perf_token_range_survives_task_identity(client, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    execute = Mock(return_value={})
+    monkeypatch.setattr('evalscope.service.blueprints.perf.run_in_subprocess', execute)
+    response = client.post('/api/v1/perf/invoke', json={
+        'model': 'same-model', 'url': 'http://localhost/v1', 'max_tokens': [16, 32],
+    }, headers={'EvalScope-Task-Id': 'perf_range'})
+    assert response.status_code == 200
+    assert execute.call_args.args[1].max_tokens == [16, 32]
+    manifest = log.read_task_manifest(str(tmp_path / 'perf_range'))
+    assert manifest['config']['max_tokens'] == [16, 32]

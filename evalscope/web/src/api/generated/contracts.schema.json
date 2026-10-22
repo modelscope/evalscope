@@ -1651,6 +1651,9 @@
                 },
                 {
                   "type": "number"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
@@ -1887,7 +1890,14 @@
         },
         "values": {
           "additionalProperties": {
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "type": "object"
         }
@@ -2696,6 +2706,12 @@
           "anyOf": [
             {
               "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
             },
             {
               "type": "null"

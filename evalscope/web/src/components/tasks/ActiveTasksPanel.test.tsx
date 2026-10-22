@@ -66,7 +66,7 @@ describe('ActiveTasksPanel', () => {
     render(<LocaleProvider><ActiveTasksPanel selectedTaskId="perf_1" onAdopt={vi.fn()} /></LocaleProvider>)
     await settle()
     expect(screen.getByRole('button', { name: 'View monitor: server-A' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByText('Preparing')).toBeInTheDocument()
+    expect(screen.getByText('Running')).toBeInTheDocument()
     expect(screen.queryByText('0%')).not.toBeInTheDocument()
   })
   it('renders nothing when no task is active', async () => {

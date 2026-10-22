@@ -12,18 +12,20 @@ interface Props {
   taskId: string
   active?: boolean
   result: EvalInvokeResponse | null
+  submissionRejected?: boolean
   stopTask: (taskId: string) => Promise<unknown>
   getLog: (taskId: string, tailLine: number) => Promise<LogResponse>
 }
 
 type StopRequestState = 'idle' | 'pending' | 'confirmed' | 'failed'
 
-export default function TaskRunMonitor({ taskId, result, stopTask, getLog, active = true }: Props) {
+export default function TaskRunMonitor({ taskId, result, stopTask, getLog, active = true, submissionRejected = false }: Props) {
   const { t } = useLocale()
   const { copy, copied } = useCopy()
   const title = useRef<HTMLHeadingElement>(null)
   const [logText, setLogText] = useState('')
   const [logLine, setLogLine] = useState(0)
+  const [logsComplete, setLogsComplete] = useState(false)
   const [stopRequest, setStopRequest] = useState<StopRequestState>('idle')
   const [snapshot, setSnapshot] = useState<ActiveTaskInfo | null>(null)
   const live = useRef(true)
@@ -37,21 +39,21 @@ export default function TaskRunMonitor({ taskId, result, stopTask, getLog, activ
     if (active) title.current?.focus()
   }, [active])
 
-  const status = stopRequest === 'confirmed' ? 'stopped' : snapshot?.status ?? 'preparing'
+  const status = stopRequest === 'confirmed' ? 'stopped' : snapshot?.status ?? (submissionRejected ? 'error' : 'preparing')
   const terminal = ['completed', 'stopped', 'error'].includes(status)
   const task = usePolling({
     fn: () => getTask(taskId),
-    enabled: !terminal || (status === 'completed' && !snapshot?.report_url && !snapshot?.html_report_url),
+    enabled: !terminal,
     interval: 5000,
     onData: setSnapshot,
   })
   usePolling({
     fn: () => getLog(taskId, logLine),
-    enabled: !terminal,
+    enabled: !submissionRejected && (!terminal || !logsComplete),
     onData: (data) => {
-      if (!data.text) return
-      setLogText((previous) => previous + data.text)
+      if (data.text) setLogText((previous) => previous + data.text)
       setLogLine(data.tail_line)
+      if (terminal && data.tail_line >= data.total_lines) setLogsComplete(true)
     },
   })
   const handleStop = async () => {
@@ -67,7 +69,7 @@ export default function TaskRunMonitor({ taskId, result, stopTask, getLog, activ
   let verdict: EvalInvokeResponse | null = null
   if (status === 'completed' || status === 'stopped' || status === 'error') {
     verdict = { status, task_id: taskId }
-    if (status === 'error') verdict.error = t('tasks.failedWithLogHint')
+    if (status === 'error') verdict.error = submissionRejected ? result?.error : t('tasks.failedWithLogHint')
   }
 
   let progress: number | null = null
@@ -112,7 +114,7 @@ export default function TaskRunMonitor({ taskId, result, stopTask, getLog, activ
       {result?.status === 'error' && !terminal && (
         <p role="alert">{result.error}</p>
       )}
-      {task.error && (
+      {task.error && !submissionRejected && (
         <div role="alert" className="text-[var(--danger)]">
           {t(taskNotFound ? 'tasks.notFound' : 'tasks.connectionError')}
           <button type="button" onClick={() => task.refresh()}>{t('common.retry')}</button>

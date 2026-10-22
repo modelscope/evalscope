@@ -153,7 +153,7 @@ def test_eval_and_perf_invoke_success_responses_are_validated(client) -> None:
     task_config = SimpleNamespace(model='model', datasets=['demo'], work_dir='', api_url='http://example.test')
     with mock.patch('evalscope.service.blueprints.eval._build_task_config', return_value=task_config), \
             mock.patch('evalscope.service.blueprints.eval.create_log_file'), \
-            mock.patch('evalscope.service.blueprints.eval.write_task_manifest'), \
+            mock.patch('evalscope.service.utils.log.write_task_manifest'), \
             mock.patch('evalscope.service.blueprints.eval.run_in_subprocess', return_value={'demo': {'score': 1}}), \
             mock.patch('evalscope.service.blueprints.eval._build_result_table', return_value='table'):
         response = client.post(
@@ -495,3 +495,32 @@ def test_non_json_endpoints_are_explicitly_excluded() -> None:
         source = (ROOT / source_path).read_text(encoding='utf-8')
         for marker in route_markers:
             assert marker in source
+
+
+@pytest.mark.parametrize('value', [float('nan'), float('inf'), -float('inf')])
+def test_perf_summary_unmeasured_values_are_valid_json(value: float) -> None:
+    from evalscope.service.api_models.perf import PerfSummaryRow
+
+    app = flask.Flask(__name__)
+    with app.app_context():
+        response = json_response(PerfSummaryRow, {
+            'values': {'p99_tpot': value, 'avg_latency': 1.5},
+            'sample_counts': {'p99_tpot': 0, 'avg_latency': 2},
+        })
+    def reject_constant(constant: str) -> None:
+        pytest.fail(f'Invalid JSON constant: {constant}')
+    body = json.loads(response.get_data(as_text=True), parse_constant=reject_constant)
+    assert body['values'] == {'p99_tpot': None, 'avg_latency': 1.5}
+
+
+def test_perf_percentiles_unmeasured_values_are_valid_json() -> None:
+    from evalscope.service.api_models.perf import PerfRunItem
+
+    app = flask.Flask(__name__)
+    with app.app_context():
+        response = json_response(PerfRunItem, {
+            'dir_name': 'parallel_1_number_1', 'name': 'one-token', 'parallel': 1, 'number': 1, 'rate': None,
+            'total_requests': 1, 'succeed_requests': 1, 'success_rate': 100, 'num_requests': 1, 'has_requests': True,
+            'percentile_columns': ['Percentile', 'TPOT'], 'percentile_rows': [['99%', float('nan')]],
+        })
+    assert json.loads(response.get_data(as_text=True))['percentile_rows'] == [['99%', None]]

@@ -35,7 +35,8 @@ function omitKeys(info: Record<string, string>, keys: string[]): Record<string, 
 type SummaryColumn = PerfDetailResponse['summary_columns'][number]
 type SummaryRow = PerfDetailResponse['summary_rows'][number]
 
-function formatSummaryCell(column: SummaryColumn, cell: number, t: (key: string) => string): string {
+function formatSummaryCell(column: SummaryColumn, cell: number | null, t: (key: string) => string): string {
+  if (cell === null) return '—'
   if (column.key === 'request_rate' && cell === -1) {
     return t('perf.archive.closedLoop')
   }

@@ -48,9 +48,7 @@ def _read_progress_percent(task_id: str, kind: str) -> float | None:
 def _with_progress(record: dict) -> dict:
     percent = _read_progress_percent(record['task_id'], record.get('kind', ''))
     record['percent'] = percent
-    if percent is None:
-        record['status'] = 'preparing'
-    elif percent >= 100:
+    if percent is not None and percent >= 100:
         record['status'] = 'finalizing'
     else:
         record['status'] = 'running'
@@ -136,7 +134,8 @@ def list_active() -> ResponseReturnValue:
     """List tasks whose subprocess is currently registered on this service.
 
     The registry is in-memory: tasks vanish from this list when they finish or
-    when the service restarts (a restart kills its child processes anyway).
+    when the service restarts. This registry does not recover or supervise
+    child processes left behind by an abrupt service shutdown.
     """
     try:
         tasks = []

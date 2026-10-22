@@ -141,3 +141,52 @@ async function click(name: string) { await act(async () => { fireEvent.click(scr
     expect(screen.getByText('任务失败，详情见任务日志。')).toBeInTheDocument()
   })
 })
+
+it('shows a rejected submission as failed with the server validation reason', async () => {
+  vi.mocked(getTask).mockRejectedValue(new DomainError('http-4xx', 'Task not found', 404))
+  render(<Runner submitTask={vi.fn().mockRejectedValue(new DomainError('http-4xx', 'Dataset is not registered', 400))} />)
+  await click('Submit')
+  expect(screen.getByText('Dataset is not registered')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument()
+  expect(sessionStorage.getItem('evalscope-active-task-eval')).toBeNull()
+  const calls = vi.mocked(getTask).mock.calls.length
+  await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+  expect(getTask).toHaveBeenCalledTimes(calls)
+})
+
+it('keeps monitoring when the submit transport outcome is uncertain', async () => {
+  render(<Runner submitTask={vi.fn().mockRejectedValue(new DomainError('network', 'Disconnected'))} />)
+  await click('Submit')
+  expect(screen.getByText(/Submission could not be confirmed/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+})
+
+it('drains every log page when restoring a finished task', async () => {
+  vi.mocked(getTask).mockResolvedValue({ ...TASK, status: 'error' })
+  const getLog = vi.fn()
+    .mockResolvedValueOnce({ text: 'First page\n', head_line: 0, tail_line: 500, total_lines: 501 })
+    .mockResolvedValue({ text: 'Final traceback\n', head_line: 500, tail_line: 501, total_lines: 501 })
+  await act(async () => { render(<Runner selectedTaskId="eval_A" getLog={getLog} />) })
+  await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+  expect(screen.getByText(/Final traceback/)).toBeInTheDocument()
+  expect(getLog).toHaveBeenLastCalledWith('eval_A', 500)
+})
+
+it('reads the log tail after a running task fails', async () => {
+  vi.mocked(getTask).mockResolvedValueOnce(TASK).mockResolvedValue({ ...TASK, status: 'error' })
+  const getLog = vi.fn()
+    .mockResolvedValueOnce({ text: 'Started\n', head_line: 0, tail_line: 1, total_lines: 1 })
+    .mockResolvedValue({ text: 'Final traceback\n', head_line: 1, tail_line: 2, total_lines: 2 })
+  render(<Runner getLog={getLog} />)
+  await click('View A')
+  await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+  expect(screen.getByText(/Final traceback/)).toBeInTheDocument()
+})
+
+it('stops status polling after completion even when no report was produced', async () => {
+  vi.mocked(getTask).mockResolvedValue({ ...TASK, status: 'completed' })
+  render(<Runner />)
+  await click('View A')
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000) })
+  expect(getTask).toHaveBeenCalledTimes(1)
+})

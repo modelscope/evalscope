@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { EvalInvokeResponse, LogResponse } from '@/api/types'
+import { isDomainError } from '@/api/errors'
 import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
 import TaskRunMonitor from '@/components/tasks/TaskRunMonitor'
@@ -52,23 +53,28 @@ export default function TaskRunnerShell({
   const { t } = useLocale()
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<EvalInvokeResponse | null>(null)
+  const [rejectedTaskId, setRejectedTaskId] = useState<string | null>(null)
   useEffect(() => {
     try {
-      if (selectedTaskId) {
+      if (selectedTaskId && selectedTaskId === rejectedTaskId) {
+        sessionStorage.removeItem(`evalscope-active-task-${idPrefix}`)
+      } else if (selectedTaskId) {
         sessionStorage.setItem(`evalscope-active-task-${idPrefix}`, selectedTaskId)
       }
     } catch {
       return
     }
-  }, [idPrefix, selectedTaskId])
+  }, [idPrefix, selectedTaskId, rejectedTaskId])
   const handleSubmit = async (config: Record<string, unknown>): Promise<void> => {
     const id = createTaskId(idPrefix)
     setSubmitting(true)
     onSelect(id)
     try {
       setResult(await submitTask(config, id))
-    } catch {
-      setResult({ status: 'error', task_id: id, error: t('tasks.submitUnconfirmed') })
+    } catch (error) {
+      const rejected = isDomainError(error) && (error.status === 400 || error.status === 422)
+      setRejectedTaskId(rejected ? id : null)
+      setResult({ status: 'error', task_id: id, error: rejected ? error.message : t('tasks.submitUnconfirmed') })
     } finally {
       setSubmitting(false)
     }
@@ -87,6 +93,7 @@ export default function TaskRunnerShell({
               taskId={selectedTaskId}
               active={active}
               result={result?.task_id === selectedTaskId ? result : null}
+              submissionRejected={rejectedTaskId === selectedTaskId}
               stopTask={stopTask}
               getLog={getLog}
             />

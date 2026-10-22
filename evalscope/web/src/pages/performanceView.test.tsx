@@ -426,3 +426,13 @@ describe('PerfReportsPage', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Performance response did not match its schema')
   })
 })
+
+it('renders an unmeasured summary metric as missing instead of zero', async () => {
+  await renderDetail({
+    ...detailFixture,
+    summary_columns: [{ key: 'p99_tpot', label: 'P99 TPOT', semantics: null }],
+    summary_rows: [{ values: { p99_tpot: null }, sample_counts: { p99_tpot: 0 } }],
+  })
+  fireEvent.click(screen.getByRole('tab', { name: 'Overview' }))
+  expect(screen.getByRole('cell', { name: '—' })).toBeInTheDocument()
+})

@@ -44,7 +44,7 @@ class TaskConfigSummary(ApiResponseModel):
     parallel: Optional[int | List[int]] = None
     number: Optional[int | List[int]] = None
     rate: Optional[float | List[float]] = None
-    max_tokens: Optional[int] = None
+    max_tokens: Optional[int | List[int]] = None
     min_tokens: Optional[int] = None
     max_prompt_length: Optional[int] = None
     min_prompt_length: Optional[int] = None

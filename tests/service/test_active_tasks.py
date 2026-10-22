@@ -135,10 +135,11 @@ class TestActiveTasksEndpoint(unittest.TestCase):
         self.assertEqual(task['percent'], 42.0)
         self.assertEqual(task['alias'], 'A')
 
-    def test_missing_progress_file_yields_zero(self):
+    def test_missing_progress_file_keeps_registered_task_running(self):
         register_process('eval_2', mock.Mock(), meta=ActiveTaskInfo(task_id='eval_2', kind='eval', model='m'))
         body = self.client.get('/api/v1/tasks/active').get_json()
         self.assertIsNone(body['tasks'][0]['percent'])
+        self.assertEqual(body['tasks'][0]['status'], 'running')
 
 
 if __name__ == '__main__':

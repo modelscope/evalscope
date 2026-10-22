@@ -1,7 +1,6 @@
 import json
 import math
 import os
-from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import Blueprint, current_app, jsonify, request, send_file
@@ -41,7 +40,6 @@ from ..utils import (
     stop_process,
     task_file_path,
     validate_task_id,
-    write_task_manifest,
 )
 
 logger = get_logger()

@@ -107,7 +107,7 @@ export interface TaskConfigSummary {
   eval_batch_size?: number | null;
   limit?: number | null;
   max_prompt_length?: number | null;
-  max_tokens?: number | null;
+  max_tokens?: number | number[] | null;
   min_prompt_length?: number | null;
   min_tokens?: number | null;
   number?: number | number[] | null;
@@ -534,7 +534,7 @@ export interface PerfSummaryRow {
     [k: string]: number;
   };
   values: {
-    [k: string]: number;
+    [k: string]: number | null;
   };
 }
 export interface PerfRequestsResponse {
@@ -555,7 +555,7 @@ export interface PerfRunItem {
   number: number;
   parallel: number;
   percentile_columns: string[];
-  percentile_rows: (string | number)[][];
+  percentile_rows: (string | number | null)[][];
   rate: number | null;
   succeed_requests: number;
   success_rate: number;
