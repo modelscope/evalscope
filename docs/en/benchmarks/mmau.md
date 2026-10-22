@@ -10,20 +10,23 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 - **Task Type**: Audio Understanding (Multiple Choice)
 - **Input**: Audio recordings with multiple-choice questions
 - **Output**: Correct answer choice (A/B/C/D)
-- **Categories**: Speech, Sound, Music
+- **Domain**: Speech, Sound, Music
 
 ## Key Features
 
 - Large-scale audio understanding benchmark
 - Covers multiple audio domains (speech, environmental sounds, music)
 - Multiple-choice format with 4 options
-- Includes both mini and full test sets
+- Scores the `test_mini` split; the full `test` split ships without answers (`'NA'`)
 - Per-category accuracy reporting
 
 ## Evaluation Notes
 
 - Default configuration uses **test_mini** split
 - Primary metric: **Accuracy** (exact match on predicted letter)
+- Uses the last `ANSWER:` line containing only a single choice letter (case-insensitive, with optional brackets or Markdown bold); a bare choice letter is also accepted.
+- Unparseable replies score zero. Natural-language answers are not mapped to choices.
+- Evaluation version **v1.1** excludes the unlabeled `test` split and removes guessed answers.
 - Reports overall accuracy and per-task-category accuracy
 - Prompt includes chain-of-thought instruction
 - Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
