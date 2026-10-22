@@ -814,9 +814,30 @@ def _parse_content_with_internal(
     )
 
 
+def _stream_finish_reasons(
+    chunks: List[ChatCompletionChunk], finish_reason_chunks: Optional[List[ChatCompletionChunk]]
+) -> Dict[int, str]:
+    """Require an explicit terminal state for every choice observed in a stream."""
+    indices = {choice.index for chunk in chunks for choice in chunk.choices}
+    finish_reasons: Dict[int, str] = {}
+    for chunk in chunks if finish_reason_chunks is None else finish_reason_chunks:
+        for choice in chunk.choices:
+            indices.add(choice.index)
+            if choice.finish_reason:
+                finish_reasons[choice.index] = choice.finish_reason
+
+    if not indices:
+        raise RuntimeError('No valid chat completion chunks received from stream')
+    unfinished = indices - finish_reasons.keys()
+    if unfinished:
+        raise RuntimeError(f'Stream ended without a finish reason for choices {sorted(unfinished)}')
+    return finish_reasons
+
+
 def collect_stream_response(
     response_stream: Iterable[ChatCompletionChunk],
     request_start: Optional[float] = None,
+    finish_reason_chunks: Optional[List[ChatCompletionChunk]] = None,
 ) -> Tuple[ChatCompletion, Optional[float]]:
     """Consume a streaming chat completion and aggregate chunks into a single ChatCompletion.
 
@@ -827,6 +848,9 @@ def collect_stream_response(
             provided, TTFT is measured from that point so that connection-establishment
             and header-receive latency are included.  When ``None``, TTFT is measured
             from the moment this function is entered (legacy behaviour).
+        finish_reason_chunks: Original terminal chunks recorded by a provider adapter
+            before normalization. When supplied, use these instead of normalized
+            finish reasons, which may be synthesized or lost by a provider wrapper.
 
     Returns:
         A tuple of:
@@ -835,6 +859,9 @@ def collect_stream_response(
           from function entry when ``request_start`` is ``None``) until the first chunk
           carrying non-empty content or tool-call data arrives.
           ``None`` if no content chunk was observed.
+
+    Raises:
+        RuntimeError: If the stream is empty or any choice lacks a finish reason.
     """
     collected_chunks: List[ChatCompletionChunk] = []
     collected_messages = defaultdict(list)
@@ -900,11 +927,9 @@ def collect_stream_response(
                     if hasattr(tool_call, 'id') and tool_call.id:
                         collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
 
-    # Get all unique choice indices from all collections
-    all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(collected_tool_calls.keys())
-
+    finish_reasons = _stream_finish_reasons(collected_chunks, finish_reason_chunks)
     choices = []
-    for index in all_indices:
+    for index, finish_reason in finish_reasons.items():
         full_reply_content = ''.join(collected_messages.get(index, []))
         reasoning = ''.join(collected_reasoning.get(index, []))
 
@@ -915,15 +940,6 @@ def collect_stream_response(
             # Filter out any tool calls with None id (incomplete tool calls)
             tool_calls_list = [tc for tc in tool_calls_list if tc['id'] is not None]
 
-        # use the finish_reason from the last chunk that generated this choice
-        finish_reason = None
-        for chunk in reversed(collected_chunks):
-            # a single chunk may pack several choices (n > 1); match by index
-            matched = next((c for c in chunk.choices if c.index == index), None)
-            if matched is not None:
-                finish_reason = matched.finish_reason
-                break
-
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
 
         if reasoning:
@@ -933,12 +949,9 @@ def collect_stream_response(
             message_kwargs['tool_calls'] = tool_calls_list
 
         choice = _ProviderChoice(
-            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
+            finish_reason=finish_reason, index=index, message=ChatCompletionMessage(**message_kwargs)
         )
         choices.append(choice)
-
-    if not collected_chunks:
-        raise RuntimeError('No valid chat completion chunks received from stream')
 
     # build the final completion object
     return ChatCompletion(
@@ -954,6 +967,7 @@ def collect_stream_response(
 async def async_collect_stream_response(
     response_stream: AsyncIterable[ChatCompletionChunk],
     request_start: Optional[float] = None,
+    finish_reason_chunks: Optional[List[ChatCompletionChunk]] = None,
 ) -> Tuple[ChatCompletion, Optional[float]]:
     """Async version of :func:`collect_stream_response`.
 
@@ -964,10 +978,15 @@ async def async_collect_stream_response(
     Args:
         response_stream: Async iterable of ``ChatCompletionChunk`` objects.
         request_start: ``time.monotonic()`` timestamp for TTFT measurement.
+        finish_reason_chunks: Original terminal chunks recorded before provider
+            normalization, as in :func:`collect_stream_response`.
 
     Returns:
         A tuple of the assembled ``ChatCompletion`` and TTFT in seconds
         (or ``None`` if no content chunk was observed).
+
+    Raises:
+        RuntimeError: If the stream is empty or any choice lacks a finish reason.
     """
     collected_chunks: List[ChatCompletionChunk] = []
     collected_messages = defaultdict(list)
@@ -1033,11 +1052,9 @@ async def async_collect_stream_response(
                     if hasattr(tool_call, 'id') and tool_call.id:
                         collected_tool_calls[choice.index][tool_id]['id'] = tool_call.id
 
-    # Get all unique choice indices from all collections
-    all_indices = set(collected_messages.keys()) | set(collected_reasoning.keys()) | set(collected_tool_calls.keys())
-
+    finish_reasons = _stream_finish_reasons(collected_chunks, finish_reason_chunks)
     choices = []
-    for index in all_indices:
+    for index, finish_reason in finish_reasons.items():
         full_reply_content = ''.join(collected_messages.get(index, []))
         reasoning = ''.join(collected_reasoning.get(index, []))
 
@@ -1048,15 +1065,6 @@ async def async_collect_stream_response(
             # Filter out any tool calls with None id (incomplete tool calls)
             tool_calls_list = [tc for tc in tool_calls_list if tc['id'] is not None]
 
-        # use the finish_reason from the last chunk that generated this choice
-        finish_reason = None
-        for chunk in reversed(collected_chunks):
-            # a single chunk may pack several choices (n > 1); match by index
-            matched = next((c for c in chunk.choices if c.index == index), None)
-            if matched is not None:
-                finish_reason = matched.finish_reason
-                break
-
         message_kwargs = {'role': 'assistant', 'content': full_reply_content}
 
         if reasoning:
@@ -1066,12 +1074,9 @@ async def async_collect_stream_response(
             message_kwargs['tool_calls'] = tool_calls_list
 
         choice = _ProviderChoice(
-            finish_reason=finish_reason or 'stop', index=index, message=ChatCompletionMessage(**message_kwargs)
+            finish_reason=finish_reason, index=index, message=ChatCompletionMessage(**message_kwargs)
         )
         choices.append(choice)
-
-    if not collected_chunks:
-        raise RuntimeError('No valid chat completion chunks received from stream')
 
     # build the final completion object
     return ChatCompletion(
