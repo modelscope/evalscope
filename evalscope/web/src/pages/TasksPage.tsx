@@ -14,7 +14,6 @@ import {
   DEFAULT_CONNECTION,
   DEFAULT_EVAL,
   DEFAULT_PERF,
-  displayEndpoint,
   editConnection,
   validateConnection,
   validateEvalDraft,
@@ -227,57 +226,42 @@ export default function TasksPage() {
           {t(`tasks.library.${message}`)}
         </p>
       )}
-      <ModelConnectionEditor
-        connection={workspace.connection}
-        entries={workspace.connections}
-        selectedId={workspace.selectedConnection}
-        errors={connectionErrors}
-        rememberKey={rememberKey}
-        onRememberKeyChange={setRememberKey}
-        onChange={changeConnection}
-        onLoad={loadConnection}
-        onSave={saveConnection}
-        onReset={resetConnection}
-        onDelete={() =>
-          commit({
-            ...workspace,
-            selectedConnection: '',
-            connection: { ...DEFAULT_CONNECTION },
-            connections: workspace.connections.filter((entry) => entry.id !== workspace.selectedConnection),
-          })
-        }
-        onForgetKey={() =>
-          commit({
-            ...workspace,
-            connection: { ...workspace.connection, apiKey: '' },
-            connections: workspace.connections.map((entry) =>
-              entry.id === workspace.selectedConnection
-                ? { ...entry, rememberKey: false, value: { ...entry.value, apiKey: '' } }
-                : entry,
-            ),
-          })
-        }
-      />
-      <div
-        className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]"
-        aria-label={t('tasks.library.summary')}
-      >
-        <span>
-          {t('eval.modelName')}: {workspace.connection.model || '—'}
-        </span>
-        <span>
-          {t('perf.archive.endpoint')}:{' '}
-          {workspace.connection.api === 'openai' ? displayEndpoint(workspace.connection.url) || '—' : '—'}
-        </span>
-        <span>
-          {tab === 'eval'
-            ? `${t('eval.datasets')}: ${workspace.eval.datasets || '—'}`
-            : `${t('perf.task.parallel')}: ${workspace.perf.parallel} · ${t('perf.task.number')}: ${workspace.perf.number}`}
-        </span>
-      </div>
       <ActiveTasksPanel onAdopt={handleAdopt} selectedTaskId={selected[tab]} />
       <Tabs
         keepMounted
+        beforePanels={
+          <ModelConnectionEditor
+            connection={workspace.connection}
+            entries={workspace.connections}
+            selectedId={workspace.selectedConnection}
+            errors={connectionErrors}
+            rememberKey={rememberKey}
+            onRememberKeyChange={setRememberKey}
+            onChange={changeConnection}
+            onLoad={loadConnection}
+            onSave={saveConnection}
+            onReset={resetConnection}
+            onDelete={() =>
+              commit({
+                ...workspace,
+                selectedConnection: '',
+                connection: { ...DEFAULT_CONNECTION },
+                connections: workspace.connections.filter((entry) => entry.id !== workspace.selectedConnection),
+              })
+            }
+            onForgetKey={() =>
+              commit({
+                ...workspace,
+                connection: { ...workspace.connection, apiKey: '' },
+                connections: workspace.connections.map((entry) =>
+                  entry.id === workspace.selectedConnection
+                    ? { ...entry, rememberKey: false, value: { ...entry.value, apiKey: '' } }
+                    : entry,
+                ),
+              })
+            }
+          />
+        }
         tabs={tabs}
         activeKey={tab}
         onChange={(k) => set('tab', k)}

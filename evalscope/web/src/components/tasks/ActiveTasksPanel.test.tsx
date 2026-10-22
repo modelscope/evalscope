@@ -16,6 +16,7 @@ import ActiveTasksPanel from './ActiveTasksPanel'
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.useRealTimers()
 })
 
 async function settle(): Promise<void> {
@@ -61,6 +62,17 @@ describe('ActiveTasksPanel', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Retry' })) })
     expect(screen.getByText('server-A')).toBeInTheDocument()
   })
+  it('does not assert an empty service after polling loses connection', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listActiveTasks).mockResolvedValueOnce({ tasks: [], total: 0 }).mockRejectedValue(new Error('network'))
+    renderPanel()
+    await settle()
+    expect(screen.getByText('No running tasks on this service.')).toBeInTheDocument()
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(screen.getByRole('alert')).toHaveTextContent('Connection lost')
+    expect(screen.queryByText('No running tasks on this service.')).not.toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
   it('highlights the selected task and keeps unknown progress unknown', async () => {
     vi.mocked(listActiveTasks).mockResolvedValue({ ...RUNNING, tasks: [{ ...RUNNING.tasks[0], percent: null }] })
     render(<LocaleProvider><ActiveTasksPanel selectedTaskId="perf_1" onAdopt={vi.fn()} /></LocaleProvider>)
@@ -69,7 +81,7 @@ describe('ActiveTasksPanel', () => {
     expect(screen.getByText('Running')).toBeInTheDocument()
     expect(screen.queryByText('0%')).not.toBeInTheDocument()
   })
-  it('renders nothing when no task is active', async () => {
+  it('renders a compact empty state when no task is active', async () => {
     vi.mocked(listActiveTasks).mockResolvedValue({ tasks: [], total: 0 })
     const { container } = render(
       <LocaleProvider>

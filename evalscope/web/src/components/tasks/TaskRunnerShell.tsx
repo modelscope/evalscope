@@ -81,12 +81,12 @@ export default function TaskRunnerShell({
   }
   return (
     <div className="page-enter min-w-0">
-      <h2 className="mb-4 text-base font-semibold">{title}</h2>
+      <h2 className="sr-only">{title}</h2>
       <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card title={`${t('tasks.newTask')} · ${configTitle}`}>
           <TaskForm renderForm={renderForm} onSubmit={handleSubmit} disabled={submitting} />
         </Card>
-        <Card title={statusTitle}>
+        <Card title={statusTitle} className="min-w-0 lg:sticky lg:top-20">
           {selectedTaskId ? (
             <TaskRunMonitor
               key={selectedTaskId}

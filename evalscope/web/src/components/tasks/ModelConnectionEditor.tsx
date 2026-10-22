@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, PlugZap } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff, PlugZap } from 'lucide-react'
 import { useLocale } from '@/contexts/LocaleContext'
 import Card from '@/components/ui/Card'
 import Field from '@/components/ui/Field'
@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { inputClass } from '@/components/ui/formStyles'
 import { AliasField, ApiUrlField, ModelField } from './TaskFormFields'
 import PresetToolbar from './PresetToolbar'
-import { DEFAULT_CONNECTION, type ModelConnection, type FieldErrors } from './taskConfig'
+import { DEFAULT_CONNECTION, displayEndpoint, type ModelConnection, type FieldErrors } from './taskConfig'
 import type { ConnectionPreset } from './configStorage'
 
 interface Props {
@@ -43,6 +43,9 @@ export default function ModelConnectionEditor({
 }: Props) {
   const { t } = useLocale()
   const selected = entries.find((entry) => entry.id === selectedId)
+  const [expanded, setExpanded] = useState(!selectedId)
+  const hasErrors = Object.keys(errors).length > 0
+  const showFields = expanded || hasErrors
   const [showKey, setShowKey] = useState(false)
   const [pendingSave, setPendingSave] = useState<{ name: string; asNew: boolean } | null>(null)
   const [forgetOpen, setForgetOpen] = useState(false)
@@ -69,117 +72,132 @@ export default function ModelConnectionEditor({
 
   return (
     <Card>
-      <div className="mb-4 flex items-start gap-3">
+      <div className={`flex items-start gap-3 ${showFields ? 'mb-4' : ''}`}>
         <PlugZap size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold">{t('tasks.library.connection')}</h2>
-          <p className="mt-1 text-xs text-[var(--text-muted)]">{t('tasks.library.sharedHint')}</p>
+          <p className="mt-1 break-words text-xs text-[var(--text-muted)]">
+            {showFields ? t('tasks.library.sharedHint') : [selected?.name, connection.model, connection.api === 'local' ? 'Local Transformers' : displayEndpoint(connection.url)].filter(Boolean).join(' · ')}
+          </p>
         </div>
+        <button
+          type="button"
+          disabled={hasErrors}
+          aria-expanded={showFields}
+          aria-controls="model-connection-fields"
+          onClick={() => setExpanded(!showFields)}
+          className="flex shrink-0 items-center gap-1 rounded px-2 py-1 text-xs text-[var(--accent)]"
+        >
+          {t(showFields ? 'tasks.library.hideConnection' : 'tasks.library.editConnection')}
+          <ChevronDown size={14} className={showFields ? 'rotate-180' : ''} />
+        </button>
       </div>
-      <PresetToolbar
-        label={t('tasks.library.connection')}
-        entries={entries}
-        selectedId={selectedId}
-        dirty={dirty}
-        onLoad={load}
-        onSave={save}
-        onDelete={onDelete}
-        onReset={reset}
-      />
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Field id="connection-api" name="api" labelKey="perf.task.apiType" hintKey="perf.task.apiHint">
-          {(aria) => (
-            <select
-              {...aria}
-              className={inputClass()}
-              value={connection.api}
-              onChange={(event) => {
-                const api = event.target.value
-                if (api === 'openai' || api === 'local') onChange({ api })
-              }}
-            >
-              <option value="openai">OpenAI-compatible</option>
-              <option value="local">Local Transformers</option>
-            </select>
-          )}
-        </Field>
-        <ModelField
-          id="connection-model"
-          value={connection.model}
-          error={errors.model ? t(errors.model) : undefined}
-          onChange={(model) => onChange({ model })}
+      <div id="model-connection-fields" hidden={!showFields} onChangeCapture={() => setExpanded(true)}>
+        <PresetToolbar
+          label={t('tasks.library.connection')}
+          entries={entries}
+          selectedId={selectedId}
+          dirty={dirty}
+          onLoad={load}
+          onSave={save}
+          onDelete={onDelete}
+          onReset={reset}
         />
-        {connection.api === 'openai' && (
-          <>
-            <ApiUrlField
-              id="connection-url"
-              name="api_url"
-              value={connection.url}
-              required
-              error={errors.url ? t(errors.url) : undefined}
-              onChange={(url) => onChange({ url })}
-            />
-            <Field id="connection-apiKey" name="api_key" labelKey="eval.apiKey" autoComplete="off">
-              {(aria) => (
-                <div className="flex items-center gap-2">
-                  <input
-                    {...aria}
-                    type={showKey ? 'text' : 'password'}
-                    className={inputClass()}
-                    value={connection.apiKey}
-                    onChange={(event) => onChange({ apiKey: event.target.value })}
-                    placeholder="sk-..."
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    aria-label={t(showKey ? 'tasks.library.hideKey' : 'tasks.library.showKey')}
-                    aria-pressed={showKey}
-                    onClick={() => setShowKey(!showKey)}
-                  >
-                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </Button>
-                </div>
-              )}
-            </Field>
-          </>
-        )}
-        <AliasField id="connection-alias" value={connection.alias} onChange={(alias) => onChange({ alias })} />
-      </div>
-      {connection.api === 'local' ? (
-        <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.localOnly')}</p>
-      ) : (
-        <div className="mt-4 border-t border-[var(--border)] pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Switch
-              id="connection-rememberKey"
-              aria-labelledby="connection-rememberKey-label"
-              checked={rememberKey}
-              onCheckedChange={onRememberKeyChange}
-            />
-            <label
-              id="connection-rememberKey-label"
-              htmlFor="connection-rememberKey"
-              className="text-xs text-[var(--text)]"
-            >
-              {t('tasks.library.rememberKey')}
-            </label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={!connection.apiKey && !selected?.value.apiKey}
-              onClick={() => setForgetOpen(true)}
-            >
-              {t('tasks.library.forgetKey')}
-            </Button>
-          </div>
-          {rememberKey && (
-            <p className="mt-1 text-xs text-[var(--text-muted)]">{t('tasks.library.plaintextWarning')}</p>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Field id="connection-api" name="api" labelKey="perf.task.apiType" hintKey="perf.task.apiHint">
+            {(aria) => (
+              <select
+                {...aria}
+                className={inputClass()}
+                value={connection.api}
+                onChange={(event) => {
+                  const api = event.target.value
+                  if (api === 'openai' || api === 'local') onChange({ api })
+                }}
+              >
+                <option value="openai">OpenAI-compatible</option>
+                <option value="local">Local Transformers</option>
+              </select>
+            )}
+          </Field>
+          <ModelField
+            id="connection-model"
+            value={connection.model}
+            error={errors.model ? t(errors.model) : undefined}
+            onChange={(model) => onChange({ model })}
+          />
+          {connection.api === 'openai' && (
+            <>
+              <ApiUrlField
+                id="connection-url"
+                name="api_url"
+                value={connection.url}
+                required
+                error={errors.url ? t(errors.url) : undefined}
+                onChange={(url) => onChange({ url })}
+              />
+              <Field id="connection-apiKey" name="api_key" labelKey="eval.apiKey" autoComplete="off">
+                {(aria) => (
+                  <div className="flex items-center gap-2">
+                    <input
+                      {...aria}
+                      type={showKey ? 'text' : 'password'}
+                      className={inputClass()}
+                      value={connection.apiKey}
+                      onChange={(event) => onChange({ apiKey: event.target.value })}
+                      placeholder="sk-..."
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      aria-label={t(showKey ? 'tasks.library.hideKey' : 'tasks.library.showKey')}
+                      aria-pressed={showKey}
+                      onClick={() => setShowKey(!showKey)}
+                    >
+                      {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </Button>
+                  </div>
+                )}
+              </Field>
+            </>
           )}
+          <AliasField id="connection-alias" value={connection.alias} onChange={(alias) => onChange({ alias })} />
         </div>
-      )}
+        {connection.api === 'local' ? (
+          <p className="mt-3 text-sm text-[var(--text-muted)]">{t('tasks.library.localOnly')}</p>
+        ) : (
+          <div className="mt-4 border-t border-[var(--border)] pt-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Switch
+                id="connection-rememberKey"
+                aria-labelledby="connection-rememberKey-label"
+                checked={rememberKey}
+                onCheckedChange={onRememberKeyChange}
+              />
+              <label
+                id="connection-rememberKey-label"
+                htmlFor="connection-rememberKey"
+                className="text-xs text-[var(--text)]"
+              >
+                {t('tasks.library.rememberKey')}
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={!connection.apiKey && !selected?.value.apiKey}
+                onClick={() => setForgetOpen(true)}
+              >
+                {t('tasks.library.forgetKey')}
+              </Button>
+            </div>
+            {rememberKey && (
+              <p className="mt-1 text-xs text-[var(--text-muted)]">{t('tasks.library.plaintextWarning')}</p>
+            )}
+          </div>
+        )}
+      </div>
       <ConfirmDialog
         open={Boolean(pendingSave)}
         title={t('tasks.library.rememberKey')}

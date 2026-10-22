@@ -41,14 +41,17 @@ afterEach(async () => {
   vi.restoreAllMocks()
 })
 
-function mount(search = '') {
-  return render(
+function mount(search = '', expandConnection = true) {
+  const view = render(
     <LocaleProvider>
       <MemoryRouter initialEntries={[`/tasks${search}`]}>
         <TasksPage />
       </MemoryRouter>
     </LocaleProvider>,
   )
+  const edit = screen.queryByRole('button', { name: 'Edit connection' })
+  if (expandConnection && edit) fireEvent.click(edit)
+  return view
 }
 function change(id: string, value: string) {
   fireEvent.change(document.getElementById(id)!, { target: { value } })
@@ -74,6 +77,24 @@ async function flushDraft() {
 }
 
 describe('Task workspace', () => {
+  it('summarizes a saved connection and opens invalid fields when submitting', () => {
+    const state = emptyWorkspace()
+    state.connection = { ...state.connection, url: 'http://localhost/v1' }
+    state.connections = [{ id: 'a', name: 'Saved server', value: { ...state.connection }, rememberKey: false }]
+    state.selectedConnection = 'a'
+    state.eval.datasets = 'gsm8k'
+    writeWorkspace(state)
+    mount('', false)
+    expect(screen.getByRole('button', { name: 'Edit connection' })).toHaveAttribute('aria-expanded', 'false')
+    expect(document.getElementById('connection-model')).not.toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Start Evaluation' }))
+    expect(screen.getByRole('button', { name: 'Collapse' })).toHaveAttribute('aria-expanded', 'true')
+    expect(document.getElementById('connection-model')).toBeVisible()
+    expect(submitEvalTask).not.toHaveBeenCalled()
+    change('connection-model', 'review-model')
+    expect(document.getElementById('connection-model')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Collapse' })).toBeEnabled()
+  })
   it('submits evaluation and performance with one shared connection', () => {
     mount()
     fillConnection()

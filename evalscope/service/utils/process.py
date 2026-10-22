@@ -151,6 +151,9 @@ def _process_worker(func, result_queue, *args, **kwargs):
             result = func(*args, **kwargs)
             result_queue.put({'status': 'success', 'result': result})
         except BaseException as e:
+            # Task log handlers live in the child; the parent's logger only reaches the service console.
+            # Exception messages may contain credentials echoed by an upstream provider.
+            logger.error(f'Task failed ({type(e).__name__}). See the service console for exception details.')
             stderr_buf.flush()
             stderr_buf.seek(0)
             result_queue.put(

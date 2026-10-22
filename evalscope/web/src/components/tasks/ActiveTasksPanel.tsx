@@ -85,10 +85,17 @@ export default function ActiveTasksPanel({ onAdopt, selectedTaskId }: ActiveTask
   })
   const tasks = data?.tasks ?? []
 
+  if (data && tasks.length === 0 && !error) {
+    return <p className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+      <Activity size={15} aria-hidden="true" />
+      {t('tasks.empty')}
+    </p>
+  }
+
   return (
     <Card
       title={t('tasks.activeTitle')}
-      badge={(
+      badge={data && !error && (
         <span className="inline-flex items-center gap-1 rounded-full bg-[var(--success-bg)] px-2 py-0.5 text-xs font-medium text-[var(--success)]">
           <Activity size={12} />
           {tasks.length}
@@ -105,9 +112,6 @@ export default function ActiveTasksPanel({ onAdopt, selectedTaskId }: ActiveTask
       )}
       {!data && !error && (
         <p role="status" className="p-4 text-sm">{t('common.loading')}</p>
-      )}
-      {data && tasks.length === 0 && (
-        <p className="p-4 text-sm text-[var(--text-muted)]">{t('tasks.empty')}</p>
       )}
       <div className="divide-y divide-[var(--border)]">
         {tasks.map((task) => (

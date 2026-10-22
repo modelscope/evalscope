@@ -59,9 +59,9 @@ export default function PresetToolbar({
     <div
       role="group"
       aria-label={label}
-      className="space-y-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] p-3"
+      className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(8rem,0.6fr)] rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] p-3"
     >
-      <div className="flex items-center justify-between gap-2 text-xs text-[var(--text-muted)]">
+      <div className="flex items-center justify-between gap-2 text-xs sm:col-span-2 text-[var(--text-muted)]">
         <label htmlFor={`${id}-select`} className="flex items-center gap-1.5">
           <Bookmark size={13} />
           {label}
@@ -72,7 +72,7 @@ export default function PresetToolbar({
         <select
           id={`${id}-select`}
           value={selectedId}
-          className={`${FORM_INPUT_CLASS} !w-auto min-w-0 flex-1`}
+          className={`${FORM_INPUT_CLASS} !w-auto min-w-[10rem] flex-1 basis-full sm:basis-auto`}
           onChange={(event) => {
             const next = event.target.value
             replace(() => {
