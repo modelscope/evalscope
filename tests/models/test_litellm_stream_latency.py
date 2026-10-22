@@ -25,7 +25,9 @@ def _completion_response() -> ChatCompletion:
     })
 
 
-def _slow_stream_collection(response: Any, request_start: float):
+def _slow_stream_collection(
+    response: Any, request_start: float, finish_reason_chunks: Any = None
+) -> tuple[ChatCompletion, float]:
     time.sleep(STREAM_SECONDS)  # the chunks arrive while the stream is read
     return _completion_response(), 0.01
 
