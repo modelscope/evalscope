@@ -113,20 +113,23 @@ class LiteLLMAPI(ModelAPI):
         try:
             t_start = time.monotonic()
 
-            response = retry_call(
-                litellm.completion,
+            # Stream iteration is part of the attempt: discard partial chunks
+            # and start a fresh request if reading the response fails.
+            def _create_and_collect() -> Tuple[Any, Optional[float], bool]:
+                response = litellm.completion(**request)
+                if config.stream and not isinstance(response, ChatCompletion):
+                    completion, ttft = collect_stream_response(response, request_start=t_start)
+                    return completion, ttft, True
+                return response, None, False
+
+            response, ttft, collected_stream = retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=NON_RETRYABLE_LITELLM_ERRORS,
-                **request,
             )
 
-            ttft: Optional[float] = None
-
-            if config.stream and not isinstance(response, ChatCompletion):
-                completion, ttft = collect_stream_response(response, request_start=t_start)
-            else:
-                completion = ChatCompletion(**response.model_dump())
+            completion = response if collected_stream else ChatCompletion(**response.model_dump())
             # Measure after the stream is consumed, as the openai_api path does.
             total_time = time.monotonic() - t_start
 
@@ -185,21 +188,21 @@ class LiteLLMAPI(ModelAPI):
         try:
             t_start = time.monotonic()
 
-            # Async generation with retry
-            response = await async_retry_call(
-                litellm.acompletion,
+            async def _create_and_collect() -> Tuple[Any, Optional[float], bool]:
+                response = await litellm.acompletion(**request)
+                if config.stream and not isinstance(response, ChatCompletion):
+                    completion, ttft = await async_collect_stream_response(response, request_start=t_start)
+                    return completion, ttft, True
+                return response, None, False
+
+            response, ttft, collected_stream = await async_retry_call(
+                _create_and_collect,
                 retries=config.retries,
                 sleep_interval=config.retry_interval,
                 no_retry_exceptions=NON_RETRYABLE_LITELLM_ERRORS,
-                **request,
             )
 
-            ttft: Optional[float] = None
-
-            if config.stream and not isinstance(response, ChatCompletion):
-                completion, ttft = await async_collect_stream_response(response, request_start=t_start)
-            else:
-                completion = ChatCompletion(**response.model_dump())
+            completion = response if collected_stream else ChatCompletion(**response.model_dump())
             # Measure after the stream is consumed, as the openai_api path does.
             total_time = time.monotonic() - t_start
 
