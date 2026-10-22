@@ -15,22 +15,26 @@
       </div>
     </div>
     <h1 class="report-title" data-i18n="header.title">Performance Benchmark Report</h1>
+    {% if alias %}<p class="report-subtitle">{{ alias | e }}</p>{% endif %}
     <div class="meta-chips">
+      {% if endpoint %}
+      <div class="meta-chip"><span class="meta-chip-label" data-i18n="meta.endpoint">Endpoint</span><span class="meta-chip-value">{{ endpoint | e }}</span></div>
+      {% endif %}
       <div class="meta-chip">
         <span class="meta-chip-label" data-i18n="meta.model">Model</span>
-        <span class="meta-chip-value" title="{{ model }}">{{ model }}</span>
+        <span class="meta-chip-value" title="{{ model | e }}">{{ model | e }}</span>
       </div>
       <div class="meta-chip">
         <span class="meta-chip-label" data-i18n="meta.api_type">API Type</span>
-        <span class="meta-chip-value">{{ api_type }}</span>
+        <span class="meta-chip-value">{{ api_type | e }}</span>
       </div>
       <div class="meta-chip">
         <span class="meta-chip-label" data-i18n="meta.dataset">Dataset</span>
-        <span class="meta-chip-value">{{ dataset }}</span>
+        <span class="meta-chip-value">{{ dataset | e }}</span>
       </div>
       <div class="meta-chip">
         <span class="meta-chip-label" data-i18n="meta.generated_at">Generated at</span>
-        <span class="meta-chip-value">{{ generated_at }}</span>
+        <span class="meta-chip-value">{{ generated_at | e }}</span>
       </div>
     </div>
   </div>

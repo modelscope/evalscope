@@ -24,12 +24,25 @@ from .summary import (
     build_basic_info,
     build_best_config,
     build_recommendations,
+    build_run_config,
     build_summary_items,
     build_summary_table,
     format_summary_rows,
 )
 
 logger = get_logger()
+PERF_HTML_MARKER = '<!-- evalscope-perf-render:v2 -->'
+
+
+def is_current_perf_report(report_file: str) -> bool:
+    try:
+        with open(report_file, encoding='utf-8', errors='replace') as source:
+            doctype = source.readline().strip()
+            render_marker = source.readline().strip()
+    except OSError:
+        return False
+    return doctype == '<!DOCTYPE html>' and render_marker == PERF_HTML_MARKER
+
 
 _TEMPLATE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
@@ -130,13 +143,22 @@ def gen_perf_html_report(
     env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)
     template = env.get_template('perf_report.html.j2')
 
+    basic_info = build_basic_info(first_args, runs, input_only)
     html_content = template.render(
+        render_marker=PERF_HTML_MARKER,
+        alias=first_args.get('alias') or '',
+        endpoint=basic_info.get('Endpoint', ''),
+        configuration=build_run_config(first_args, runs),
         model=first_args.get('model', first_args.get('model_id', 'N/A')),
         api_type=api_type,
         dataset=first_args.get('dataset', 'N/A'),
         generated_at=current_time().strftime('%Y-%m-%d %H:%M:%S'),
         evalscope_version=_evalscope_version,
-        basic_info=build_basic_info(first_args, runs, input_only),
+        basic_info={
+            key: value
+            for key, value in basic_info.items()
+            if key not in ('Model', 'Alias', 'Endpoint', 'API Type', 'Dataset')
+        },
         summary_columns=[column['label'] for column in summary_columns],
         summary_rows=summary_rows,
         best_config=build_best_config(runs),

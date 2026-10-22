@@ -41,7 +41,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
     >
       <SelectionCheckbox
         checked={selected}
-        label={`${t('reports.selectReport')}: ${report.model_name}`}
+        label={`${t('reports.selectReport')}: ${report.alias || report.model_name}`}
         onClick={(e) => {
           e.stopPropagation()
           onSelect(ref)
@@ -58,8 +58,8 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
         <span className="block flex-1 min-w-0">
           {/* Primary row: model name + timestamp for disambiguation */}
           <span className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-bold text-base text-[var(--text)] break-words min-w-0">
-              {report.model_name}
+            <span className="line-clamp-2 min-w-0 break-words text-base font-bold text-[var(--text)]" title={report.alias || report.model_name}>
+              {report.alias || report.model_name}
             </span>
             {formattedDate && (
               <span className="text-xs text-[var(--text-muted)] font-mono shrink-0">
@@ -70,7 +70,7 @@ export default function ReportCard({ report, selected, onSelect, onClick }: Repo
           {/* Identity row: service-run alias / endpoint, when the manifest carried them */}
           {(report.alias || report.api_host) && (
             <span className="mt-0.5 block truncate font-mono text-xs text-[var(--text-muted)]">
-              {[report.alias, report.api_host].filter(Boolean).join(' · ')}
+              {[report.alias ? report.model_name : null, report.api_host].filter(Boolean).join(' · ')}
             </span>
           )}
           {/* Secondary row: dataset + sample count */}

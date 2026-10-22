@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   open: boolean
   title: string
   message?: string
+  children?: ReactNode
   items?: string[]
   confirmLabel: string
   cancelLabel: string
@@ -20,6 +21,7 @@ export default function ConfirmDialog({
   open,
   title,
   message,
+  children,
   items,
   confirmLabel,
   cancelLabel,
@@ -49,7 +51,7 @@ export default function ConfirmDialog({
         return
       }
       if (e.key !== 'Tab' || !panelRef.current) return
-      const focusable = panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled])')
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])')
       if (focusable.length === 0) return
       const first = focusable[0]
       const last = focusable[focusable.length - 1]
@@ -99,6 +101,8 @@ export default function ConfirmDialog({
             )}
           </div>
         </div>
+
+        {children && <div className="px-5 pb-2">{children}</div>}
 
         {items && items.length > 0 && (
           <ul className="mx-5 max-h-40 overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-deep)] px-3 py-2">

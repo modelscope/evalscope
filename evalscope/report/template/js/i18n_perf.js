@@ -30,6 +30,8 @@ var I18N = {
     /* ── Page header ──────────────────────────── */
     'header.title':       'Performance Benchmark Report',
     'meta.model':         'Model',
+    'meta.endpoint':      'Endpoint',
+    'card.run_config':    'Run Configuration',
     'meta.api_type':      'API Type',
     'meta.dataset':       'Dataset',
     'meta.generated_at':  'Generated at',
@@ -82,6 +84,8 @@ var I18N = {
     /* ── Page header ──────────────────────────── */
     'header.title':       '性能基准测试报告',
     'meta.model':         '模型',
+    'meta.endpoint':      '端点',
+    'card.run_config':    '运行配置',
     'meta.api_type':      'API 类型',
     'meta.dataset':       '数据集',
     'meta.generated_at':  '生成时间',

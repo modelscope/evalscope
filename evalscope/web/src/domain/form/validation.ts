@@ -92,6 +92,32 @@ export function computeFirstInvalid(order: string[], invalidIds: Set<string> | s
  * @param rawText - The raw `Dataset_Args` text exactly as typed by the user.
  * @returns A discriminated result carrying the parsed object or an error key.
  */
+export function validateDatasetLimit(value: string): string | null {
+  if (!value.trim()) return null
+  const limit = Number(value)
+  if (!Number.isFinite(limit) || limit < 0) return 'eval.invalidLimit'
+  if (Number.isSafeInteger(limit) || limit > 0 && limit < 1) return null
+  return 'eval.invalidLimit'
+}
+
+export function validateRequestRate(value: string): string | null {
+  if (!value.trim()) return null
+  const rate = Number(value)
+  return Number.isFinite(rate) && (rate === -1 || rate > 0) ? null : 'perf.task.invalidRate'
+}
+
+export function validateApiUrl(value: string, required: boolean): string | null {
+  if (!value.trim()) return required ? FORM_MESSAGE_KEYS.required : null
+  try {
+    const url = new URL(value.trim())
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || /\s/.test(value.trim())) return 'tasks.invalidUrl'
+    if (url.username || url.password) return 'tasks.urlCredentials'
+    return null
+  } catch {
+    return 'tasks.invalidUrl'
+  }
+}
+
 export function validateDatasetArgs(rawText: string): DatasetArgsValidation {
   let parsed: unknown
   try {
@@ -105,6 +131,11 @@ export function validateDatasetArgs(rawText: string): DatasetArgsValidation {
     return { ok: false, messageKey: FORM_MESSAGE_KEYS.datasetArgsInvalidStructure }
   }
 
+  for (const value of Object.values(parsed)) {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      return { ok: false, messageKey: FORM_MESSAGE_KEYS.datasetArgsInvalidStructure }
+    }
+  }
   return { ok: true, value: parsed as Record<string, unknown> }
 }
 
@@ -153,7 +184,7 @@ export function collectNumericErrors(checks: NumericFieldCheck[]): Record<string
 export function validatePositiveIntegerList(value: string): string | null {
   const entries = value.split(',').map((part) => part.trim())
   const invalid = entries.length === 0
-    || entries.some((entry) => !/^\d+$/.test(entry) || Number(entry) < 1)
+    || entries.some((entry) => !/^\d+$/.test(entry) || !Number.isSafeInteger(Number(entry)) || Number(entry) < 1)
   return invalid ? FORM_MESSAGE_KEYS.numericBelowMin : null
 }
 

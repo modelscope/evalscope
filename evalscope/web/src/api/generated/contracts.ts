@@ -89,12 +89,34 @@ export interface WebApiContracts {
  */
 export interface ActiveTaskInfo {
   alias?: string | null;
+  config?: TaskConfigSummary | null;
   endpoint?: string | null;
+  html_report_url?: string | null;
   kind: string;
   model?: string;
   percent?: number | null;
+  report_url?: string | null;
   started_at?: string;
+  status?: "preparing" | "running" | "finalizing" | "completed" | "stopped" | "error" | "unknown";
   task_id: string;
+}
+export interface TaskConfigSummary {
+  api?: string | null;
+  dataset?: string | null;
+  datasets?: string[] | null;
+  eval_batch_size?: number | null;
+  limit?: number | null;
+  max_prompt_length?: number | null;
+  max_tokens?: number | null;
+  min_prompt_length?: number | null;
+  min_tokens?: number | null;
+  number?: number | number[] | null;
+  parallel?: number | number[] | null;
+  rate?: number | number[] | null;
+  repeats?: number | null;
+  temperature?: number | null;
+  top_k?: number | null;
+  top_p?: number | null;
 }
 export interface AnalysisResponse {
   analysis: string;
@@ -487,6 +509,9 @@ export interface PerfDetailResponse {
   best_config: {
     [k: string]: string;
   };
+  configuration?: {
+    [k: string]: string;
+  } | null;
   dataset: string;
   generated_at: string;
   has_html: boolean;

@@ -17,7 +17,7 @@ describe('validateDatasetArgs (Dataset_Args JSON validation & round-trip)', () =
   // property through the round-trip and would produce a spurious mismatch.
   const jsonObject = fc.dictionary(
     fc.string().filter((key) => key !== '__proto__'),
-    fc.jsonValue(),
+    fc.dictionary(fc.string().filter((key) => key !== '__proto__'), fc.jsonValue()),
   )
 
   // Valid JSON values that are NOT objects: null, primitives and arrays. These
@@ -36,7 +36,7 @@ describe('validateDatasetArgs (Dataset_Args JSON validation & round-trip)', () =
     }
   })
 
-  it('accepts any JSON object and round-trips its value', () => {
+  it('accepts dataset names mapped to configuration objects', () => {
     fc.assert(
       fc.property(jsonObject, (obj) => {
         const text = JSON.stringify(obj)
@@ -51,6 +51,12 @@ describe('validateDatasetArgs (Dataset_Args JSON validation & round-trip)', () =
     )
   })
 
+  it('rejects non-object dataset configurations', () => {
+    fc.assert(fc.property(nonObjectJson, (value) => {
+      const result = validateDatasetArgs(JSON.stringify({ dataset: value }))
+      expect(result.ok).toBe(false)
+    }))
+  })
   it('rejects valid JSON that is not an object without mutating the input', () => {
     fc.assert(
       fc.property(nonObjectJson, (value) => {

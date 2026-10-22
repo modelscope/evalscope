@@ -1,10 +1,10 @@
-from types import SimpleNamespace
 from unittest import mock
 
 import pytest
 
 pytest.importorskip('flask')
 
+from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.sla.sla_models import SLAProbe, SLASelection
 from evalscope.perf.sla.sla_run import SLAResult
 from evalscope.service.app import create_app
@@ -38,7 +38,7 @@ def test_sla_invoke_preserves_legacy_result_and_exact_count_table(tmp_path) -> N
             )
         ],
     )
-    perf_args = SimpleNamespace(model='mock', url='http://example.test', api='openai', alias=None)
+    perf_args = PerfArguments(model='mock', url='http://example.test', api='openai')
     with mock.patch('evalscope.service.blueprints.perf.PerfArguments.from_dict', return_value=perf_args), \
             mock.patch('evalscope.service.blueprints.perf.create_log_file'), \
             mock.patch('evalscope.service.blueprints.perf.run_in_subprocess', return_value=result):

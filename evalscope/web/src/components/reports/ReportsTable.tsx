@@ -54,7 +54,7 @@ export default function ReportsTable({
                 width -- naming it in the Score header instead only worked while every row shared
                 one metric, and made the header change as the list was filtered or paged. */}
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
-              {t('reports.columns.model')}
+              {t('reports.columns.run')}
             </th>
             <th scope="col" className="px-4 py-3 text-xs font-semibold text-[var(--text-muted)]">
               {t('reports.columns.dataset')}
@@ -95,7 +95,7 @@ export default function ReportsTable({
                 <td className="px-4 py-3">
                   <SelectionCheckbox
                     checked={isSelected}
-                    label={`${t('reports.selectReport')}: ${model}`}
+                    label={`${t('reports.selectReport')}: ${report.alias || model}`}
                     onClick={(e) => {
                       e.stopPropagation()
                       onToggleSelect(ref)
@@ -103,10 +103,10 @@ export default function ReportsTable({
                   />
                 </td>
                 <td className="px-4 py-3 font-semibold text-[var(--text)] break-words min-w-0">
-                  {model}
+                  <span className="line-clamp-2 min-w-0 max-w-64 break-words" title={report.alias || model}>{report.alias || model}</span>
                   {(report.alias || report.api_host) && (
                     <span className="mt-0.5 block truncate font-mono text-xs font-normal text-[var(--text-muted)]">
-                      {[report.alias, report.api_host].filter(Boolean).join(' · ')}
+                      {[report.alias ? model : null, report.api_host].filter(Boolean).join(' · ')}
                     </span>
                   )}
                 </td>

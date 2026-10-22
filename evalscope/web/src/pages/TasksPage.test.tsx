@@ -12,10 +12,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { LocaleProvider } from '@/contexts/LocaleContext'
 
 vi.mock('@/components/tasks/EvalTaskPanel', () => ({
-  default: () => <div data-testid="eval-panel">eval runner</div>,
+  default: ({ selectedTaskId }: { selectedTaskId: string | null }) => <div data-testid="eval-panel">{selectedTaskId || 'eval runner'}<input aria-label="Eval draft" defaultValue="" /></div>
 }))
 vi.mock('@/components/tasks/PerfTaskPanel', () => ({
-  default: () => <div data-testid="perf-panel">perf runner</div>,
+  default: ({ selectedTaskId }: { selectedTaskId: string | null }) => <div data-testid="perf-panel">{selectedTaskId || 'perf runner'}<input aria-label="Perf draft" defaultValue="" /></div>
 }))
 vi.mock('@/components/tasks/ActiveTasksPanel', () => ({
   default: ({ onAdopt }: { onAdopt: (kind: 'eval' | 'perf', taskId: string) => void }) => (
@@ -25,7 +25,7 @@ vi.mock('@/components/tasks/ActiveTasksPanel', () => ({
 
 import TasksPage from './TasksPage'
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); sessionStorage.clear() })
 
 function renderAt(search = '') {
   render(
@@ -38,6 +38,21 @@ function renderAt(search = '') {
 }
 
 describe('TasksPage', () => {
+  it('keeps drafts across type switches and monitoring selection', () => {
+    renderAt()
+    fireEvent.change(screen.getByLabelText('Eval draft'), { target: { value: 'draft' } })
+    fireEvent.click(screen.getByTestId('adopt-perf'))
+    fireEvent.click(screen.getByRole('tab', { name: /eval/i }))
+    expect(screen.getByLabelText('Eval draft')).toHaveValue('draft')
+  })
+  it('reads separate monitoring slots on refresh', () => {
+    sessionStorage.setItem('evalscope-active-task-eval', 'eval_saved')
+    sessionStorage.setItem('evalscope-active-task-perf', 'perf_saved')
+    renderAt('?tab=perf')
+    expect(screen.getByTestId('perf-panel')).toHaveTextContent('perf_saved')
+    fireEvent.click(screen.getByRole('tab', { name: /eval/i }))
+    expect(screen.getByTestId('eval-panel')).toHaveTextContent('eval_saved')
+  })
   it('defaults to the evaluation runner', () => {
     renderAt()
     expect(screen.getByTestId('eval-panel')).toBeInTheDocument()
@@ -55,12 +70,11 @@ describe('TasksPage', () => {
     expect(screen.getByTestId('perf-panel')).toBeInTheDocument()
   })
 
-  it('adopting an active task seeds its restore slot and switches tabs', () => {
+  it('selects an active task without remounting the forms', () => {
     renderAt()
     fireEvent.click(screen.getByTestId('adopt-perf'))
 
-    // The runner remounts onto the seeded slot (its reload-restore path).
-    expect(sessionStorage.getItem('evalscope-active-task-perf')).toBe('perf_1')
+    expect(screen.getByTestId('perf-panel')).toHaveTextContent('perf_1')
     expect(screen.getByTestId('perf-panel')).toBeInTheDocument()
     expect(screen.getByRole('tab', { selected: true })).toHaveTextContent(/perf/i)
   })

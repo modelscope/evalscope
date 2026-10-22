@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -31,6 +31,25 @@ class TaskStatusResponse(ApiResponseModel):
     task_id: str
 
 
+class TaskConfigSummary(ApiResponseModel):
+    datasets: Optional[List[str]] = None
+    limit: Optional[float] = None
+    eval_batch_size: Optional[int] = None
+    repeats: Optional[int] = None
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    api: Optional[str] = None
+    dataset: Optional[str] = None
+    parallel: Optional[int | List[int]] = None
+    number: Optional[int | List[int]] = None
+    rate: Optional[float | List[float]] = None
+    max_tokens: Optional[int] = None
+    min_tokens: Optional[int] = None
+    max_prompt_length: Optional[int] = None
+    min_prompt_length: Optional[int] = None
+
+
 class ActiveTaskInfo(ApiResponseModel):
     """Display identity of a task whose subprocess is currently registered."""
 
@@ -41,6 +60,10 @@ class ActiveTaskInfo(ApiResponseModel):
     alias: Optional[str] = None
     started_at: str = ''
     percent: Optional[float] = None
+    status: Literal['preparing', 'running', 'finalizing', 'completed', 'stopped', 'error', 'unknown'] = 'running'
+    config: Optional[TaskConfigSummary] = None
+    report_url: Optional[str] = None
+    html_report_url: Optional[str] = None
 
 
 class ListActiveTasksResponse(ApiResponseModel):

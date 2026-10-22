@@ -5,38 +5,18 @@ import sys
 import tempfile
 import threading
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterator, List, Optional, TextIO
-from urllib.parse import urlsplit
 
 from evalscope.config import TaskConfig
 from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.perf.main import run_perf_benchmark
 from evalscope.run import run_task
+from evalscope.service.api_models.common import ActiveTaskInfo
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
-
-
-def sanitize_endpoint(url: Optional[str]) -> Optional[str]:
-    """Reduce an endpoint URL to ``host[:port]`` for display purposes.
-
-    Strips scheme, path, query and credentials so nothing sensitive leaks into
-    task lists. Returns ``None`` when the URL is missing or has no host.
-    """
-    if not url or not isinstance(url, str) or not url.strip():
-        return None
-    candidate = url.strip()
-    try:
-        parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
-        port = parsed.port
-    except ValueError:
-        return None
-    if not parsed.hostname:
-        return None
-    host = parsed.hostname.lower()
-    return f'{host}:{port}' if port else host
 
 
 @dataclass
@@ -44,11 +24,7 @@ class ActiveTask:
     """A running task's subprocess plus the identity shown in the Web dashboard."""
 
     proc: multiprocessing.Process
-    kind: str = ''  # 'eval' or 'perf'
-    model: str = ''
-    endpoint: Optional[str] = None  # sanitized host[:port]
-    alias: Optional[str] = None
-    started_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    info: ActiveTaskInfo
 
 
 # ---------------------------------------------------------------------------
@@ -81,18 +57,11 @@ class TaskStoppedError(Exception):
         super().__init__(f'Task {task_id} was stopped by the user.')
 
 
-def register_process(task_id: str, proc: multiprocessing.Process, meta: Optional[dict] = None) -> None:
-    """Register a running subprocess so it can be stopped and listed later."""
-    meta = meta or {}
-    record = ActiveTask(
-        proc=proc,
-        kind=meta.get('kind', ''),
-        model=meta.get('model', '') or '',
-        endpoint=meta.get('endpoint'),
-        alias=meta.get('alias'),
-    )
+def register_process(task_id: str, proc: multiprocessing.Process, meta: Optional[ActiveTaskInfo] = None) -> None:
+    info = meta or ActiveTaskInfo(task_id=task_id, kind='', started_at=datetime.now().isoformat())
+    info = info.model_copy(update={'status': 'running'})
     with _active_lock:
-        _active_processes[task_id] = record
+        _active_processes[task_id] = ActiveTask(proc=proc, info=info)
 
 
 def unregister_process(task_id: str) -> None:
@@ -111,17 +80,7 @@ def list_active_tasks() -> List[dict]:
     """Return display metadata for every registered task (without process handles)."""
     with _active_lock:
         records = list(_active_processes.items())
-    return [
-        {
-            'task_id': task_id,
-            'kind': record.kind,
-            'model': record.model,
-            'endpoint': record.endpoint,
-            'alias': record.alias,
-            'started_at': record.started_at,
-        }
-        for task_id, record in records
-    ]
+    return [record.info.model_dump(mode='json') for _, record in records]
 
 
 def stop_process(task_id: str) -> bool:
@@ -149,6 +108,11 @@ def stop_process(task_id: str) -> bool:
     if proc.is_alive():
         proc.kill()
         proc.join(timeout=2)
+    if proc.is_alive():
+        _user_stopped_tasks.discard(task_id)
+        with _active_lock:
+            _active_processes[task_id] = record
+        return False
     logger.info(f'Task {task_id} stopped by user.')
     return True
 

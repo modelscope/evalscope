@@ -19,7 +19,7 @@ describe('TaskFormFields', () => {
     const model = screen.getByLabelText(/Model Name/)
     fireEvent.change(model, { target: { value: 'qwen-plus' } })
     expect(onModelChange).toHaveBeenCalledWith('qwen-plus')
-    expect(screen.getByLabelText(/API URL/)).toHaveAttribute('name', 'url')
+    expect(screen.getByRole('textbox', { name: /API URL/ })).toHaveAttribute('name', 'url')
     expect(screen.getByLabelText(/API Key/)).toHaveAttribute('type', 'password')
   })
 })

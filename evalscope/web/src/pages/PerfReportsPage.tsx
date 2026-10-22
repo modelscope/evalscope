@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Copy } from 'lucide-react'
+import { useCopy } from '@/hooks/useCopy'
 import { useLocale, type Translate } from '@/contexts/LocaleContext'
 import { useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
@@ -58,11 +59,12 @@ function PerfRunCard({
   perfSemantics?: Record<string, MetricSemantics | undefined>
 }) {
   const identity = resolveProvider(run)
+  const { copy, copied } = useCopy()
   const concurrency = run.concurrency?.length ? run.concurrency.join(', ') : 'N/A'
   // Primary identity: the user-given alias when set, else the model name.
   const displayName = run.alias || run.model || run.dataset || '—'
   // Secondary line: every field that tells two same-model runs apart.
-  const identityParts = [run.alias ? run.model : null, identity.provider, identity.protocol, run.api_host].filter(Boolean)
+  const identityParts = [identity.provider, identity.protocol].filter(Boolean)
 
   return (
     <div
@@ -86,10 +88,10 @@ function PerfRunCard({
           {/* Alias (else model) is the primary identity; never the raw
               path/timestamp. The secondary line carries the fields that
               distinguish same-model runs: provider, protocol, endpoint host. */}
-          <span className="type-body-sm font-semibold text-[var(--text)] break-words min-w-0">{displayName}</span>
-          <span className="type-caption-mono text-[var(--text-muted)] break-words">
-            {identityParts.join(' · ')}
-          </span>
+          <span title={displayName} className="type-body-sm line-clamp-2 min-w-0 break-words font-semibold text-[var(--text)]">{displayName}</span>
+          {run.alias && <span className="type-caption-mono truncate text-[var(--text-muted)]" title={run.model}>{t('eval.modelName')}: {run.model}</span>}
+          {run.api_host && <span className="type-caption-mono truncate text-[var(--text)]" title={run.api_host}>{run.api_host}</span>}
+          <span className="type-caption-mono truncate text-[var(--text-muted)]" title={identityParts.join(' · ')}>{identityParts.join(' · ')}</span>
           <span className="type-caption-mono text-[var(--text-muted)] break-words lg:hidden">
             {t('perf.archive.runMeta', { concurrency, requests: run.total_requests, runs: run.num_runs })}
           </span>
@@ -123,6 +125,7 @@ function PerfRunCard({
         </span>
         <ChevronRight size={16} className="text-[var(--text-dim)] shrink-0" />
       </button>
+      {run.api_host && <button type="button" aria-label={`${t('tasks.copy')}: ${run.api_host}`} title={t(copied ? 'tasks.copied' : 'tasks.copy')} onClick={() => copy(run.api_host!)} className="shrink-0 p-2 text-[var(--text-muted)]"><Copy size={14} /></button>}
     </div>
   )
 }
@@ -306,7 +309,7 @@ export default function PerfReportsPage() {
             <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
               <div className="hidden grid-cols-[2.75rem_minmax(11rem,1.5fr)_minmax(10rem,1.2fr)_9.5rem_7rem_7rem_6rem_6rem_1rem] items-center gap-3 border-b border-[var(--border)] px-3 py-3 text-xs font-semibold text-[var(--text-muted)] lg:grid">
                 <span />
-                <span>{t('reports.columns.model')}</span>
+                <span>{t('perf.archive.runColumn')}</span>
                 <span>{t('reports.columns.dataset')}</span>
                 <span>{t('reports.columns.time')}</span>
                 <span>{t('perf.archive.ioTokens')}</span>

@@ -12,6 +12,7 @@ from .common import (
     ListActiveTasksResponse,
     LogResponse,
     ProgressResponse,
+    TaskConfigSummary,
     TaskStatusResponse,
 )
 from .eval import BenchmarkEntry, BenchmarksResponse, EvalInvokeResponse
@@ -118,5 +119,6 @@ __all__ = [
     'PredictionsResponse',
     'ProgressResponse',
     'TaskStatusResponse',
+    'TaskConfigSummary',
     'WebApiContracts',
 ]

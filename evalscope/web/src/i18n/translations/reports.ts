@@ -27,7 +27,7 @@ export const en: Dict = {
     datasetCount: '${n} datasets',
   },
   columns: {
-    model: 'Model',
+    run: 'Run',
     dataset: 'Dataset',
     time: 'Time',
     samples: 'Samples',
@@ -71,7 +71,7 @@ export const zh: Dict = {
     datasetCount: '${n} 个数据集',
   },
   columns: {
-    model: '模型',
+    run: '运行',
     dataset: '数据集',
     time: '时间',
     samples: '样本数',

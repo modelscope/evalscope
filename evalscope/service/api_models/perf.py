@@ -55,6 +55,7 @@ class PerfDetailResponse(ApiResponseModel):
     alias: Optional[str] = None
     generated_at: str
     basic_info: Dict[str, str]
+    configuration: Optional[Dict[str, str]] = None
     summary_columns: List[PerfSummaryColumn]
     summary_rows: List[PerfSummaryRow]
     total_requests: int

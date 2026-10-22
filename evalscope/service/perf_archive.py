@@ -19,7 +19,6 @@ import shutil
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Dict, List, Optional
-from urllib.parse import urlsplit
 
 from evalscope.constants import PLOTLY_CDN_URL
 from evalscope.perf.utils.perf_constants import Metrics
@@ -27,10 +26,12 @@ from evalscope.perf.utils.report.summary import (
     build_basic_info,
     build_best_config,
     build_recommendations,
+    build_run_config,
     build_summary_table,
     is_embedding,
 )
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 logger = get_logger()
 
@@ -206,21 +207,9 @@ def _build_identity_metadata(args_dict: dict) -> dict:
     if isinstance(alias, str) and alias.strip():
         metadata['alias'] = alias.strip()
 
-    raw_url = args_dict.get('url')
-    if isinstance(raw_url, str) and raw_url.strip():
-        candidate = raw_url.strip()
-        try:
-            parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
-        except ValueError:
-            parsed = None
-        if parsed and parsed.hostname:
-            try:
-                port = parsed.port
-            except ValueError:
-                port = None
-            # Keep host:port so co-located instances (:8000/:8001) stay distinct;
-            # userinfo and path never leak into the list view.
-            metadata['api_host'] = f'{parsed.hostname.lower()}:{port}' if port else parsed.hostname.lower()
+    endpoint = sanitize_endpoint(args_dict.get('url'))
+    if endpoint:
+        metadata['api_host'] = endpoint
 
     return metadata
 
@@ -365,6 +354,7 @@ def build_run_detail(root: str, rel_path: str) -> dict:
         'alias': identity.get('alias'),
         'generated_at': extract_timestamp(rel_path, run_dir),
         'basic_info': basic_info,
+        'configuration': build_run_config(first_args, runs),
         'summary_columns': summary_columns,
         'summary_rows': summary_rows,
         'total_requests': sum(run.summary.total_requests for run in runs),
@@ -559,7 +549,10 @@ def render_compare_chart(root: str, rel_paths: List[str], chart_type: str, theme
         input_modes.add(Metrics.is_input_only(first_args.get('api', '')))
         model = first_args.get('model', first_args.get('model_id', rel))
         ts = extract_timestamp(rel, run_dir)
-        label = f'{model} · {ts}' if ts else model
+        identity = _build_identity_metadata(first_args)
+        label = ' · '.join(
+            str(value) for value in (identity.get('alias') or model, identity.get('api_host'), ts) if value
+        )
         series.append((label, runs))
     if not series:
         raise PerfArchiveError('No perf runs found for the given paths', 404)
@@ -585,13 +578,15 @@ def ensure_history_report(root: str, rel_path: str) -> str:
         raise PerfArchiveError('Invalid path', 400)
 
     report_file = os.path.join(run_dir, 'perf_report.html')
-    if os.path.isfile(report_file):
-        return report_file
+    from evalscope.perf.utils.report.generate_report import gen_perf_html_report, is_current_perf_report
 
-    from evalscope.perf.utils.report.generate_report import gen_perf_html_report
+    if is_current_perf_report(report_file):
+        return report_file
 
     runs = _load_runs(run_dir, with_requests=False)
     if not runs:
+        if os.path.isfile(report_file):
+            return report_file
         raise PerfArchiveError(f'No perf runs found under: {rel_path}', 404)
 
     api_type = (runs[0].args or {}).get('api', '')

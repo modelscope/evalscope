@@ -1,5 +1,5 @@
 import { apiValidated } from './client'
-import type { ListActiveTasksResponse } from './types'
+import type { ActiveTaskInfo, ListActiveTasksResponse } from './types'
 
 /**
  * List tasks currently running on the service, regardless of which browser
@@ -7,4 +7,8 @@ import type { ListActiveTasksResponse } from './types'
  */
 export async function listActiveTasks(signal?: AbortSignal): Promise<ListActiveTasksResponse> {
   return apiValidated<ListActiveTasksResponse>('/api/v1/tasks/active', { signal })
+}
+
+export async function getTask(taskId: string, signal?: AbortSignal): Promise<ActiveTaskInfo> {
+  return apiValidated<ActiveTaskInfo>(`/api/v1/tasks/${encodeURIComponent(taskId)}`, { signal })
 }

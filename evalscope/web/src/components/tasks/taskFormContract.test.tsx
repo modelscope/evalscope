@@ -21,8 +21,7 @@ vi.mock('@/api/eval', async (importOriginal) => {
   return { ...actual, listBenchmarks: vi.fn(() => new Promise(() => {})) }
 })
 
-import EvalConfigForm from '@/components/eval/EvalConfigForm'
-import PerfConfigForm from '@/components/perf/PerfConfigForm'
+import { EvalFormHarness as EvalConfigForm, PerfFormHarness as PerfConfigForm } from '@/test/TaskFormHarness'
 
 afterEach(cleanup)
 
@@ -48,11 +47,12 @@ const CASES: FormCase[] = [
     submitLabel: /Start Evaluation/i,
     fillRequired: () => {
       fireEvent.change(screen.getByLabelText(/Model Name/), { target: { value: 'qwen-plus' } })
+      fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: 'http://localhost:8000/v1' } })
       fireEvent.change(screen.getByLabelText(/^Datasets/), { target: { value: 'gsm8k' } })
     },
     // Temperature is capped at 2 and lives behind the disclosure.
     hiddenFieldLabel: 'Temperature',
-    visibleInvalid: { label: /^Limit/, value: '0' },
+    visibleInvalid: { label: /^Limit/, value: '-1' },
     firstRequiredLabel: /Model Name/,
   },
   {
@@ -61,10 +61,11 @@ const CASES: FormCase[] = [
     submitLabel: /Start Performance Test/i,
     fillRequired: () => {
       fireEvent.change(screen.getByLabelText(/Model Name/), { target: { value: 'qwen-plus' } })
+      fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: 'http://localhost:8000/v1' } })
     },
     // The tokenizer path is the only field behind the perf disclosure.
     hiddenFieldLabel: 'Tokenizer Path',
-    visibleInvalid: { label: /Rate Limit/, value: '-1' },
+    visibleInvalid: { label: /Rate Limit/, value: '0' },
     firstRequiredLabel: /Model Name/,
   },
 ]
@@ -78,6 +79,18 @@ describe.each(CASES)('$name submit contract', (formCase) => {
 
   const submit = () => fireEvent.click(screen.getByRole('button', { name: formCase.submitLabel }))
 
+  it('rejects blank and credential-bearing remote URLs without invoking', () => {
+    const onSubmit = renderForm()
+    formCase.fillRequired()
+    fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: '' } })
+    submit()
+    expect(screen.getByRole('textbox', { name: /API URL/ })).toHaveAttribute('aria-invalid', 'true')
+    expect(onSubmit).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: 'http://user:secret@host/v1' } })
+    submit()
+    expect(screen.getByText('Put authentication in API Key, not in the URL.')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
   it('submits once every required field is filled', () => {
     const onSubmit = renderForm()
     formCase.fillRequired()
@@ -112,14 +125,14 @@ describe.each(CASES)('$name submit contract', (formCase) => {
   it('blocks submission when a visible numeric field violates its constraint', () => {
     const onSubmit = renderForm()
     formCase.fillRequired()
-    fireEvent.change(screen.getByLabelText(formCase.visibleInvalid.label), {
+    fireEvent.change(screen.getByRole('spinbutton', { name: formCase.visibleInvalid.label }), {
       target: { value: formCase.visibleInvalid.value },
     })
 
     submit()
 
     expect(onSubmit).not.toHaveBeenCalled()
-    expect(screen.getByLabelText(formCase.visibleInvalid.label)).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByRole('spinbutton', { name: formCase.visibleInvalid.label })).toHaveAttribute('aria-invalid', 'true')
   })
 
   it('clears a field error as the user edits the field', () => {
@@ -156,6 +169,7 @@ describe('EvalConfigForm disclosure expansion', () => {
 
     fireEvent.change(screen.getByLabelText(/Model Name/), { target: { value: 'qwen-plus' } })
     fireEvent.change(screen.getByLabelText(/^Datasets/), { target: { value: 'gsm8k' } })
+    fireEvent.change(screen.getByRole('textbox', { name: /API URL/ }), { target: { value: 'http://localhost:8000/v1' } })
 
     // Set an out-of-range temperature, then collapse the section again so the
     // offending field is hidden when submission is attempted.

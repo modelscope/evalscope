@@ -7,16 +7,20 @@ import { ExternalLink, CheckCircle2, XCircle, Loader2, Square, OctagonX } from '
 
 interface Props {
   running: boolean
-  progress: number
+  progress: number | null
   logText: string
   result: EvalInvokeResponse | null
   reportUrl: string | null
   readyLabel: string
   onStop?: () => void
   warning?: string | null
+  stopping?: boolean
+  statusLabel?: string
 }
 
-export default function TaskMonitor({ running, progress, logText, result, reportUrl, readyLabel, onStop, warning }: Props) {
+export default function TaskMonitor({
+  running, progress, logText, result, reportUrl, readyLabel, onStop, warning, stopping, statusLabel,
+}: Props) {
   const { t } = useLocale()
 
   return (
@@ -26,13 +30,16 @@ export default function TaskMonitor({ running, progress, logText, result, report
         {running && (
           <>
             <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
-            <Badge variant="warning">Running{progress > 0 ? ` ${Math.round(progress)}%` : '...'}</Badge>
+            <Badge variant="warning">
+              {statusLabel ?? t(progress === null ? 'tasks.state.preparing' : 'tasks.state.running')}
+              {progress !== null && ` ${Math.round(progress)}%`}
+            </Badge>
           </>
         )}
         {!running && result?.status === 'stopped' && (
           <>
             <OctagonX size={16} className="text-[var(--yellow)]" />
-            <Badge variant="warning">Stopped</Badge>
+            <Badge variant="warning">{t('tasks.state.stopped')}</Badge>
           </>
         )}
         {!running && result?.status === 'error' && (
@@ -44,7 +51,7 @@ export default function TaskMonitor({ running, progress, logText, result, report
         {!running && result && result.status !== 'error' && result.status !== 'stopped' && (
           <>
             <CheckCircle2 size={16} className="text-[var(--green)]" />
-            <Badge variant="success">Completed</Badge>
+            <Badge variant="success">{t('tasks.state.completed')}</Badge>
           </>
         )}
         {!running && !result && (
@@ -56,8 +63,18 @@ export default function TaskMonitor({ running, progress, logText, result, report
       {(running || (result && result.status !== 'error' && result.status !== 'stopped')) && (
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-deep)' }}>
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(progress, 100)}%`, background: 'var(--accent)' }}
+            role="progressbar"
+            aria-label={statusLabel ?? t('tasks.state.running')}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress === null ? undefined : Math.max(0, Math.min(progress, 100))}
+            style={{
+              width: progress === null ? '30%' : `${Math.max(0, Math.min(progress, 100))}%`,
+              background: 'var(--accent)',
+            }}
+            className={progress === null
+              ? 'h-full animate-pulse rounded-full'
+              : 'h-full rounded-full transition-all duration-500'}
           />
         </div>
       )}
@@ -71,10 +88,11 @@ export default function TaskMonitor({ running, progress, logText, result, report
           variant="outline"
           size="sm"
           onClick={onStop}
+          disabled={stopping}
           className="text-[var(--danger)] border-[var(--danger)] hover:bg-[var(--danger-bg)]"
         >
           <Square size={14} />
-          {t('common.stop')}
+          {t(stopping ? 'tasks.stopping' : 'common.stop')}
         </Button>
       )}
 
@@ -90,7 +108,7 @@ export default function TaskMonitor({ running, progress, logText, result, report
           className="btn-glow"
         >
           <ExternalLink size={14} />
-          {t('common.openNewTab')}
+          {t('tasks.viewReport')}
         </Button>
       )}
     </div>

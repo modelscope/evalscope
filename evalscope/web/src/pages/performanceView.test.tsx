@@ -317,13 +317,13 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
-    expect(screen.getByText('DashScope · OpenAI-compatible · dashscope.aliyuncs.com')).toBeInTheDocument()
+    expect(screen.getByText('DashScope · OpenAI-compatible')).toBeInTheDocument()
     expect(screen.getAllByText('C 10 · Req 100 · Runs 1').length).toBeGreaterThan(0)
   })
 
   it('searches provider and protocol independently from the API type', async () => {
     await renderReports()
-    const search = screen.getByPlaceholderText('Search model / api / dataset...')
+    const search = screen.getByPlaceholderText('Search run name / model / endpoint / dataset...')
 
     fireEvent.change(search, { target: { value: 'DashScope' } })
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
@@ -345,7 +345,7 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('server-A')).toBeInTheDocument()
     expect(screen.getByText('server-B')).toBeInTheDocument()
     // With an alias, the secondary line keeps model, provider, protocol and host.
-    expect(screen.getByText('test-model-a · Custom · OpenAI-compatible · 10.0.0.2:8000')).toBeInTheDocument()
+    expect(screen.getByText('10.0.0.2:8000')).toBeInTheDocument()
   })
 
   it('searches runs by alias and endpoint host', async () => {
@@ -357,7 +357,7 @@ describe('PerfReportsPage', () => {
       total: 2,
     })
     await renderReports()
-    const search = screen.getByPlaceholderText('Search model / api / dataset...')
+    const search = screen.getByPlaceholderText('Search run name / model / endpoint / dataset...')
 
     fireEvent.change(search, { target: { value: '10.0.0.3' } })
     expect(screen.queryByText('server-A')).not.toBeInTheDocument()

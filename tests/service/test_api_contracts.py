@@ -13,8 +13,10 @@ flask = pytest.importorskip('flask')
 
 from evalscope.api.metric import JudgeSummary
 from evalscope.constants import ScoreStatus
+from evalscope.perf.arguments import Arguments as PerfArguments
 from evalscope.report import Report
 from evalscope.service.api_models import (
+    ActiveTaskInfo,
     AnalysisResponse,
     BenchmarksResponse,
     ConfigResponse,
@@ -68,6 +70,7 @@ CONTRACT_REGISTRY = (
     ('PerfRunsListResponse', 'evalscope/web/src/api/perf.ts', 'evalscope/service/blueprints/perf.py'),
     ('PerfRequestsResponse', 'evalscope/web/src/api/perf.ts', 'evalscope/service/blueprints/perf.py'),
     ('ListActiveTasksResponse', 'evalscope/web/src/api/tasks.ts', 'evalscope/service/blueprints/tasks.py'),
+    ('ActiveTaskInfo', 'evalscope/web/src/api/tasks.ts', 'evalscope/service/blueprints/tasks.py'),
 )
 
 NON_JSON_ENDPOINTS = {
@@ -106,6 +109,7 @@ RESPONSE_MODELS = (
     PerfRunsListResponse,
     PerfRequestsResponse,
     ListActiveTasksResponse,
+    ActiveTaskInfo,
 )
 
 
@@ -160,7 +164,7 @@ def test_eval_and_perf_invoke_success_responses_are_validated(client) -> None:
     assert response.status_code == 200
     assert response.get_json()['status'] == 'completed'
 
-    perf_args = SimpleNamespace(model='model', url='http://example.test', api='openai', alias=None)
+    perf_args = PerfArguments(model='model', url='http://example.test', api='openai')
     with mock.patch('evalscope.service.blueprints.perf.PerfArguments.from_dict', return_value=perf_args), \
             mock.patch('evalscope.service.blueprints.perf.create_log_file'), \
             mock.patch('evalscope.service.blueprints.perf.run_in_subprocess', return_value={'rps': 1}), \

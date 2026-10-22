@@ -77,7 +77,7 @@ const VERDICT_VARIANT: Record<DeltaVerdict, 'success' | 'danger' | 'default' | '
 /** Short display label for a run: model, dataset and a compact timestamp. */
 function runLabel(run: PerfDetailResponse | undefined): string {
   if (!run) return ''
-  const parts = [run.model, run.dataset].filter(Boolean)
+  const parts = [run.alias || run.model, run.basic_info.Endpoint || run.basic_info['API Host'], run.dataset].filter(Boolean)
   const ts = formatTimestamp(run.generated_at, 'seconds')
   return ts ? `${parts.join(' · ')} · ${ts}` : parts.join(' · ')
 }

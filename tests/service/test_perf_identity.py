@@ -34,9 +34,9 @@ class TestIdentityMetadata(unittest.TestCase):
         self.assertEqual(_build_identity_metadata({}), {})
         self.assertEqual(_build_identity_metadata({'url': ''}), {})
 
-    def test_invalid_port_falls_back_to_plain_host(self):
+    def test_invalid_port_does_not_invent_an_endpoint(self):
         meta = _build_identity_metadata({'url': 'http://host.example:notaport/v1'})
-        self.assertEqual(meta['api_host'], 'host.example')
+        self.assertNotIn('api_host', meta)
 
 
 class TestRunSummaryIdentity(unittest.TestCase):

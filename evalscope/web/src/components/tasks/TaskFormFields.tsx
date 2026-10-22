@@ -30,11 +30,13 @@ export function ModelField({ id, value, error, onChange }: ModelFieldProps) {
 
 interface ApiUrlFieldProps extends TaskTextFieldProps {
   name: 'api_url' | 'url'
+  error?: string
+  required?: boolean
 }
 
-export function ApiUrlField({ id, name, value, onChange }: ApiUrlFieldProps) {
+export function ApiUrlField({ id, name, value, onChange, error, required }: ApiUrlFieldProps) {
   return (
-    <Field id={id} name={name} labelKey="eval.apiUrl" autoComplete="url">
+    <Field id={id} name={name} labelKey="eval.apiUrl" autoComplete="url" required={required} error={error} hintKey="tasks.apiUrlHint">
       {(aria) => (
         <input
           {...aria}
@@ -51,7 +53,7 @@ export function ApiUrlField({ id, name, value, onChange }: ApiUrlFieldProps) {
 
 export function AliasField({ id, value, onChange }: TaskTextFieldProps) {
   return (
-    <Field id={id} name="alias" labelKey="tasks.alias" autoComplete="off">
+    <Field id={id} name="alias" labelKey="tasks.alias" autoComplete="off" hintKey="tasks.aliasHint">
       {(aria) => (
         <input
           {...aria}

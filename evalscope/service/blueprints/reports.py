@@ -61,9 +61,10 @@ from evalscope.service.report_meta_cache import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 from ..responses import json_response
-from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest, sanitize_endpoint
+from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest
 
 logger = get_logger()
 
@@ -270,7 +271,7 @@ def _enrich_with_task_identity(item: dict, root: str, ref: ReportRef) -> None:
     alias = manifest.get('alias')
     if isinstance(alias, str) and alias.strip():
         item['alias'] = alias.strip()
-    endpoint = sanitize_endpoint(manifest.get('api_url'))
+    endpoint = sanitize_endpoint(manifest.get('endpoint') or manifest.get('api_url'))
     if endpoint:
         item['api_host'] = endpoint
 
@@ -378,6 +379,7 @@ def _apply_report_filters(items: List[dict], search: str, models_filter: str, da
             or search in it['dataset_pretty_name'].lower()
             or search in str(it.get('alias') or '').lower()
             or search in str(it.get('api_host') or '').lower()
+            or search in it['run_id'].lower()
         ]
     if models_filter:
         model_set = {m.strip().lower() for m in models_filter.split(';') if m.strip()}

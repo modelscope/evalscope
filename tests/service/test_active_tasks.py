@@ -13,13 +13,14 @@ import pytest
 
 flask = pytest.importorskip('flask')  # noqa: F841  (service extra not installed → skip)
 
+from evalscope.service.api_models import ActiveTaskInfo
 from evalscope.service.utils.log import read_task_manifest, write_task_manifest  # noqa: E402
 from evalscope.service.utils.process import (  # noqa: E402
     list_active_tasks,
     register_process,
-    sanitize_endpoint,
     unregister_process,
 )
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 
 class TestSanitizeEndpoint(unittest.TestCase):
@@ -50,12 +51,8 @@ class TestActiveRegistry(unittest.TestCase):
         register_process(
             'eval_1',
             mock.Mock(),
-            meta={
-                'kind': 'eval',
-                'model': 'Qwen3.8-27B',
-                'endpoint': '10.0.0.2:8000',
-                'alias': 'server-A',
-            },
+            meta=ActiveTaskInfo(task_id='eval_1', kind='eval', model='Qwen3.8-27B',
+                                endpoint='10.0.0.2:8000', alias='server-A', started_at='2026-10-21'),
         )
         tasks = list_active_tasks()
         self.assertEqual(len(tasks), 1)
@@ -112,6 +109,9 @@ class TestActiveTasksEndpoint(unittest.TestCase):
         patcher = mock.patch('evalscope.service.blueprints.tasks.OUTPUT_DIR', self.tmp)
         patcher.start()
         self.addCleanup(patcher.stop)
+        log_patcher = mock.patch('evalscope.service.utils.log.OUTPUT_DIR', self.tmp)
+        log_patcher.start()
+        self.addCleanup(log_patcher.stop)
 
     def tearDown(self):
         for task in list_active_tasks():
@@ -126,7 +126,7 @@ class TestActiveTasksEndpoint(unittest.TestCase):
         os.makedirs(os.path.join(task_dir, 'perf'))
         with open(os.path.join(task_dir, 'perf', 'progress.json'), 'w', encoding='utf-8') as f:
             json.dump({'percent': 42.0}, f)
-        register_process('perf_1', mock.Mock(), meta={'kind': 'perf', 'model': 'm', 'endpoint': 'h:1', 'alias': 'A'})
+        register_process('perf_1', mock.Mock(), meta=ActiveTaskInfo(task_id='perf_1', kind='perf', model='m', endpoint='h:1', alias='A'))
 
         body = self.client.get('/api/v1/tasks/active').get_json()
         self.assertEqual(body['total'], 1)
@@ -136,9 +136,9 @@ class TestActiveTasksEndpoint(unittest.TestCase):
         self.assertEqual(task['alias'], 'A')
 
     def test_missing_progress_file_yields_zero(self):
-        register_process('eval_2', mock.Mock(), meta={'kind': 'eval', 'model': 'm'})
+        register_process('eval_2', mock.Mock(), meta=ActiveTaskInfo(task_id='eval_2', kind='eval', model='m'))
         body = self.client.get('/api/v1/tasks/active').get_json()
-        self.assertEqual(body['tasks'][0]['percent'], 0.0)
+        self.assertIsNone(body['tasks'][0]['percent'])
 
 
 if __name__ == '__main__':

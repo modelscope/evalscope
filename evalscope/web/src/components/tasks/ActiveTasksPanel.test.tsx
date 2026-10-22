@@ -36,6 +36,7 @@ const RUNNING = {
       alias: 'server-A',
       started_at: '2026-06-30T23:00:00',
       percent: 42,
+      status: 'running' as const,
     },
   ],
   total: 1,
@@ -51,6 +52,23 @@ function renderPanel(onAdopt = vi.fn()) {
 }
 
 describe('ActiveTasksPanel', () => {
+  it('distinguishes loading, failure and retry recovery', async () => {
+    vi.mocked(listActiveTasks).mockRejectedValueOnce(new Error('network')).mockResolvedValue(RUNNING)
+    renderPanel()
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    await settle()
+    expect(screen.getByText(/Cannot reach the task service/)).toBeInTheDocument()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Retry' })) })
+    expect(screen.getByText('server-A')).toBeInTheDocument()
+  })
+  it('highlights the selected task and keeps unknown progress unknown', async () => {
+    vi.mocked(listActiveTasks).mockResolvedValue({ ...RUNNING, tasks: [{ ...RUNNING.tasks[0], percent: null }] })
+    render(<LocaleProvider><ActiveTasksPanel selectedTaskId="perf_1" onAdopt={vi.fn()} /></LocaleProvider>)
+    await settle()
+    expect(screen.getByRole('button', { name: 'View monitor: server-A' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Preparing')).toBeInTheDocument()
+    expect(screen.queryByText('0%')).not.toBeInTheDocument()
+  })
   it('renders nothing when no task is active', async () => {
     vi.mocked(listActiveTasks).mockResolvedValue({ tasks: [], total: 0 })
     const { container } = render(
@@ -59,7 +77,7 @@ describe('ActiveTasksPanel', () => {
       </LocaleProvider>,
     )
     await settle()
-    expect(container).toBeEmptyDOMElement()
+    expect(container).toHaveTextContent('No running tasks on this service.')
   })
 
   it('lists running tasks with alias, endpoint and progress', async () => {
@@ -77,7 +95,7 @@ describe('ActiveTasksPanel', () => {
     const onAdopt = renderPanel()
     await settle()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Monitor' }))
+    fireEvent.click(screen.getByRole('button', { name: 'View monitor: server-A' }))
     expect(onAdopt).toHaveBeenCalledWith('perf', 'perf_1')
   })
 })
