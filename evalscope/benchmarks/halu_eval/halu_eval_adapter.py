@@ -69,7 +69,7 @@ logger = get_logger()
         few_shot_num=0,
         eval_split='data',
         prompt_template='{question}',
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
     )
 )
 class HaluEvalAdapter(DefaultDataAdapter):
@@ -125,26 +125,24 @@ class HaluEvalAdapter(DefaultDataAdapter):
         """
 
         def compute_metrics(scores: List[SampleScore]):
-            tp = fp = tn = fn = 0
+            tp = fp = fn = 0
             yes_count = 0
             total_count = len(scores)
 
             for ss in scores:
                 gt = ss.sample_metadata['answer'].strip().upper()
-                # Get prediction based on score
-                pred = gt if ss.score.main_value == 1 else ('NO' if gt == 'YES' else 'YES')
+                # A reply with no verdict, or both, is a miss, not the opposite verdict
+                pred = extract_verdict(ss.score.extracted_prediction or '')
                 if pred == 'YES':
                     yes_count += 1
                 if pred == 'YES' and gt == 'YES':
                     tp += 1
                 elif pred == 'YES' and gt == 'NO':
                     fp += 1
-                elif pred == 'NO' and gt == 'NO':
-                    tn += 1
-                elif pred == 'NO' and gt == 'YES':
+                elif gt == 'YES':
                     fn += 1
 
-            accuracy = (tp + tn) / total_count if total_count > 0 else 0.0
+            accuracy = sum(ss.score.main_value for ss in scores) / total_count if total_count > 0 else 0.0
             precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0

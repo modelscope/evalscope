@@ -70,3 +70,24 @@ def test_single_verdict_in_explanatory_reply_is_credited(prediction: str, label:
 
 def test_reply_without_a_verdict_is_incorrect() -> None:
     assert _score('I do not know.', 'No') == 0
+
+
+def _aggregate(*replies: tuple) -> dict:
+    adapter = get_benchmark('halueval', TaskConfig(model='m', datasets=['halueval']))
+    scores = [adapter.calculate_metrics(_state(prediction, label)) for prediction, label in replies]
+    return {item.metric_name: item.score for item in adapter.aggregate_scores(scores)}
+
+
+def test_reply_without_a_verdict_is_not_counted_as_yes_for_a_no_label() -> None:
+    metrics = _aggregate(('Yes', 'Yes'), ('I do not know.', 'No'))
+
+    assert metrics['accuracy'] == 0.5
+    assert metrics['precision'] == 1.0
+    assert metrics['yes_ratio'] == 0.5
+
+
+def test_reply_without_a_verdict_is_a_miss_for_a_yes_label() -> None:
+    metrics = _aggregate(('I do not know.', 'Yes'))
+
+    assert metrics['recall'] == 0.0
+    assert metrics['yes_ratio'] == 0.0
