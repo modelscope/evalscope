@@ -3,8 +3,8 @@
 Both parts are copied from the reference implementation, so EvalScope does not need the
 ``sparc-puzzle`` package at run time:
 
-* prompt:    https://github.com/lkaesberg/SPaRC/blob/9f2a3d6/sparc/prompts/single_shot.py
-* validator: https://github.com/lkaesberg/SPaRC/blob/9f2a3d6/sparc/validation.py
+* prompt:    https://github.com/lkaesberg/SPaRC/blob/v0.7.0/sparc/prompts/single_shot.py
+* validator: https://github.com/lkaesberg/SPaRC/blob/v0.7.0/sparc/validation.py
 
 The logic is unchanged; only formatting and the return shape were adapted to the repository's
 conventions: ``get_prompt`` returns just the user message (the system prompt is declared once via
@@ -106,9 +106,9 @@ def get_prompt(puzzle_data: dict) -> str:
 
     2.  **Region-Based Rules** (Apply to areas enclosed by the path):
         *   **Squares (`o-X`):** All squares within a single region **MUST** be the same color. Squares of different colors **MUST** be separated into different regions by the path.
-        *   **Stars (`*-X`):** Within a single region, each star symbol **MUST** be paired with exactly **ONE** other element (star or square) *of the same color*. Other colors within the region are irrelevant to this specific star's rule.
-        *   **Polyshapes (`P-X-Y`):** The region containing this symbol **MUST** be able to contain the specified shape (defined in Polyshape Definitions). The shape must fit entirely within the region's boundaries. If multiple positive polyshapes are in one region, the region must accommodate their combined, non-overlapping forms. Rotation of polyshapes is NOT allowed. They must fit within the provided space in their given orientation.
-        *   **Negative Polyshapes (`Y-X-Y`):** These "subtract" shape requirements, typically within the same region as corresponding positive polyshapes. A negative polyshape cancels out a positive polyshape of the exact same shape and color within that region. If all positive shapes are canceled, the region has no shape constraint. A negative shape is only considered 'used' if it cancels a positive one. Negative shapes can sometimes rationalize apparent overlaps or boundary violations of positive shapes if interpreted as cancellations.
+        *   **Stars (`*-X`):** Within a single region, each star symbol **MUST** be paired with exactly **ONE** other symbol *of the same color*. Any rule symbol can be the partner: a star, square, triangle, polyshape or negative polyshape. Other colors within the region are irrelevant to this specific star's rule.
+        *   **Polyshapes (`P-X-Y`):** The region containing this symbol **MUST** have exactly the specified shape (defined in Polyshape Definitions): the shape fills the whole region, with no cells left over. If multiple positive polyshapes are in one region, their shapes together must fill the region exactly, without overlapping. Rotation of polyshapes is NOT allowed. They must fit in their given orientation. The color of a polyshape does not matter for this rule.
+        *   **Negative Polyshapes (`Y-X-Y`):** These subtract area from the positive polyshapes in the same region. The positive shapes, minus the cells covered by the negative shapes, must fill the region exactly, so the region's size is the total size of the positive shapes minus the total size of the negative shapes. A negative shape does not have to match the shape or color of any positive shape. If the negative shapes cancel the positive shapes completely, the region has no shape constraint.
 
     3.  **Path-Based Rules (Edge Touching):**
         *   **Triangles (`A-X`, `B-X`, `C-X`, `D-X`):** The path **MUST** touch a specific number of edges of the cell containing the triangle symbol.

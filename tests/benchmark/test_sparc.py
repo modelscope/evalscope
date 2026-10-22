@@ -49,9 +49,10 @@ PUZZLE: Dict[str, Any] = {
     ],
 }
 
-# SHA-256 of the user prompt that the reference package (sparc.prompts.single_shot.get_prompt) builds
-# for PUZZLE, so any change to the copied prompt builder fails this test.
-REFERENCE_PROMPT_SHA256 = '320f7b8028116fbb5b93f79a11fedab9f76d2ddc54ad222b604903d1400fd69e'
+# SHA-256 of the user prompt that the reference package (sparc-puzzle 0.7.0,
+# sparc.prompts.single_shot.get_prompt) builds for PUZZLE, so any change to the copied prompt builder
+# fails this test.
+REFERENCE_PROMPT_SHA256 = '9d1fc7cb0b3a173a09b2c253f13dbd1e7eccf6d0e16e2e25d637626c3978c445'
 
 
 def _adapter(**config: Any) -> DefaultDataAdapter:
