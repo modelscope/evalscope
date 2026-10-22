@@ -37,6 +37,7 @@ PROMPT_TEMPLATE = """{question}"""
     BenchmarkMeta(
         name='eq_bench',
         pretty_name='EQ-Bench',
+        evaluation_version='v1.1',
         tags=[Tags.INSTRUCTION_FOLLOWING],
         description="""
 ## Overview
@@ -217,11 +218,9 @@ class EQBenchAdapter(DefaultDataAdapter):
                 score.explanation = 'Scoring failed'
                 return score
 
-            # Scale from 0-10 to 0-1 for reporting
+            # Scale from 0-10 to 0-1 for reporting. Keep negative scores: the official
+            # benchmark averages them, which is what makes random answers score 0.
             normalized_score = eq_score / 10.0
-
-            # Clamp to valid range [0, 1]
-            normalized_score = max(0.0, min(1.0, normalized_score))
 
             score.value = {'eq_bench_score': normalized_score}
             score.main_score_name = 'eq_bench_score'
