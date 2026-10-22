@@ -7,6 +7,7 @@ from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
+from evalscope.utils.yes_no import extract_verdict
 
 logger = get_logger()
 
@@ -78,6 +79,7 @@ Here are some examples of how to solve similar problems:
         eval_split='test',
         prompt_template=PROMPT_TEMPLATE,
         few_shot_prompt_template=FEWSHOT_TEMPLATE,
+        evaluation_version='v1.1',
     )
 )
 class CoinFlipAdapter(DefaultDataAdapter):
@@ -110,8 +112,9 @@ class CoinFlipAdapter(DefaultDataAdapter):
             extracted_prediction=filtered_prediction,
             prediction=original_prediction,
         )
-        # Check for an exact match against the extracted answer.
-        result = 1 if reference in filtered_prediction else 0
+        # Credit only an exact whole-word verdict match; both verdicts or neither scores 0
+        verdict = extract_verdict(filtered_prediction, allow_lowercase_exact=True)
+        result = 1 if verdict == reference.strip().upper() else 0
         score.value = {'acc': result}
         return score
 
@@ -126,7 +129,7 @@ class CoinFlipAdapter(DefaultDataAdapter):
 
         for ss in sample_scores:
             gt = ss.sample_metadata['answer'].strip().upper()
-            pred = ss.score.extracted_prediction.strip().upper()
+            pred = extract_verdict(ss.score.extracted_prediction or '', allow_lowercase_exact=True)
 
             if pred == 'YES':
                 yes_count += 1
