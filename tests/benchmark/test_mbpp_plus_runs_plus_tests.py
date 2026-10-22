@@ -52,7 +52,8 @@ def test_solution_failing_the_plus_suite_does_not_pass(monkeypatch: pytest.Monke
     assert score(monkeypatch, IS_NOT_PRIME, solution) is False
 
 
-def test_correct_solution_passes_with_test_imports(monkeypatch: pytest.MonkeyPatch) -> None:
-    solution = 'def multiply_num(numbers):\n    total = 1\n    for x in numbers:\n        total *= x\n    return total / len(numbers)\n'
+@pytest.mark.parametrize('future_import', ['', 'from __future__ import annotations\n'])
+def test_correct_solution_passes_with_test_imports(monkeypatch: pytest.MonkeyPatch, future_import: str) -> None:
+    solution = future_import + 'def multiply_num(numbers):\n    total = 1\n    for x in numbers:\n        total *= x\n    return total / len(numbers)\n'
 
     assert score(monkeypatch, MULTIPLY_NUM, solution) is True

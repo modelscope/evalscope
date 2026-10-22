@@ -3,30 +3,30 @@
 
 ## 概述
 
-MBPP Plus 是 MBPP 基准测试的强化版本，旨在提升基础 Python 编程合成任务的评估可靠性。它解决了原始数据集中的质量问题，并显著增加了每个问题的测试覆盖率。
+MBPP Plus 是 MBPP 基准测试的增强版本，旨在提高基础 Python 编程合成的评估可靠性。它解决了原始数据集中的质量问题，并显著增加了每个问题的测试覆盖率。
 
 ## 任务描述
 
-- **任务类型**：代码生成（Python）
-- **输入**：包含测试断言的编程任务描述
-- **输出**：Python 函数实现
-- **改进点**：经过清洗的数据与扩展的测试套件
+- **任务类型**: 代码生成（Python）
+- **输入**: 包含测试断言的编程任务描述
+- **输出**: Python 函数实现
+- **改进**: 清理后的数据和扩展的测试套件
 
-## 主要特性
+## 主要特点
 
-- 修正了参考代码并澄清了问题描述
-- 每个问题大幅扩充了测试用例（通过自动化生成）
-- 采用基于大语言模型（LLM）和基于变异（mutation-based）的测试生成策略
-- 能够暴露原始 MBPP 中遗漏的边界情况错误
-- 提供更严格、更准确的代码正确性评估
+- 修正了参考代码并澄清了问题陈述
+- 大幅增加了每个问题的测试用例（自动化生成）
+- 使用基于大语言模型和变异的测试生成策略
+- 暴露了原始 MBPP 未发现的边缘情况错误
+- 更严格和准确的代码正确性评估
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- **安全警告**：默认情况下，代码将在本地环境中执行。我们强烈建议使用沙箱环境执行。详情请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html)。
+- **安全警告**: 默认情况下，代码在本地环境中执行。我们强烈建议使用沙箱执行。请参阅 [沙箱文档](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/sandbox.html) 以获取详细信息。
 - 支持 `pass@k` 指标计算
-- 每个问题默认超时时间为 20 秒
-- 评估标准比原始 MBPP 基准测试更为严格
+- 每个问题的默认超时时间为 60 秒，以适应扩展的测试套件
+- 比原始 MBPP 基准测试更严格的评估
 
 ## 属性
 
@@ -38,8 +38,8 @@ MBPP Plus 是 MBPP 基准测试的强化版本，旨在提升基础 Python 编�
 | **标签** | `Coding` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
-| **聚合方式** | `mean_and_pass_at_k` |
+| **评估拆分** | `test` |
+| **聚合** | `mean_and_pass_at_k` |
 
 
 ## 数据统计
@@ -58,7 +58,7 @@ MBPP Plus 是 MBPP 基准测试的强化版本，旨在提升基础 Python 编�
 {
   "input": [
     {
-      "id": "aa126494",
+      "id": "be634cb0",
       "content": "You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\n\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     }
   ],
@@ -74,16 +74,16 @@ MBPP Plus 是 MBPP 基准测试的强化版本，旨在提升基础 Python 编�
       "assert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))",
       "assert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     ],
-    "test": "import numpy as np\nfrom math import inf\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, fl ... [TRUNCATED] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\n    assertion(similar_elements(*inp), exp, 0)\n"
+    "test": "import numpy as np\nfrom math import inf\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, fl ... [TRUNCATED 8976 chars] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\n    assertion(similar_elements(*inp), exp, 0)\n"
   }
 }
 ```
 
-*注：部分内容因展示需要已被截断。*
+*注: 部分内容为了显示而被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 You are an expert Python programmer, and here is your task: {question} Your code should pass these tests:
 
@@ -92,11 +92,11 @@ You are an expert Python programmer, and here is your task: {question} Your code
 
 ## 沙箱配置
 
-此基准测试需要在沙箱环境中执行代码。
+此基准测试需要沙箱环境来执行代码。
 
 ```json
 {
-  "image": "python:3.11-slim",
+  "image": "python3.11-numpy",
   "tools_config": {
     "shell_executor": {},
     "python_executor": {}
@@ -115,7 +115,7 @@ evalscope eval \
     --api-key EMPTY_TOKEN \
     --datasets mbpp_plus \
     --sandbox '{"enabled": true}' \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -130,7 +130,7 @@ task_cfg = TaskConfig(
     api_key='EMPTY_TOKEN',
     datasets=['mbpp_plus'],
     sandbox={'enabled': True},
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)

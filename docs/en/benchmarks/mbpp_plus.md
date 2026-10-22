@@ -25,7 +25,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 - Default configuration uses **0-shot** evaluation
 - **Security Warning**: By default, code is executed in the local environment. We strongly recommend using sandbox execution. See the [sandbox documentation](https://evalscope.readthedocs.io/en/latest/user_guides/sandbox.html) for details.
 - Supports `pass@k` metric calculation
-- Default timeout is 20 seconds per problem
+- Default timeout is 60 seconds per problem to accommodate the expanded test suites
 - Stricter evaluation than original MBPP benchmark
 
 
@@ -59,7 +59,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
 {
   "input": [
     {
-      "id": "aa126494",
+      "id": "be634cb0",
       "content": "You are an expert Python programmer, and here is your task: Write a function to find the shared elements from the given two lists. Your code should pass these tests:\n\nassert set(similar_elements((3, 4, 5, 6),(5, 7, 4, 10))) == set((4, 5))\nassert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))\nassert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     }
   ],
@@ -75,7 +75,7 @@ MBPP Plus is a fortified version of the MBPP benchmark, created to improve evalu
       "assert set(similar_elements((1, 2, 3, 4),(5, 4, 3, 7))) == set((3, 4))",
       "assert set(similar_elements((11, 12, 14, 13),(17, 15, 14, 13))) == set((13, 14))"
     ],
-    "test": "import numpy as np\nfrom math import inf\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, fl ... [TRUNCATED] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\n    assertion(similar_elements(*inp), exp, 0)\n"
+    "test": "import numpy as np\nfrom math import inf\n\ndef is_floats(x) -> bool:\n    # check if it is float; List[float]; Tuple[float]\n    if isinstance(x, float):\n        return True\n    if isinstance(x, (list, tuple)):\n        return all(isinstance(i, fl ... [TRUNCATED 8976 chars] ... wvS', 'tUqF', 'ITntCqEvPi', 'kx'), (1, 2, 3, 4, 5, 6, 7, 8, 9), (11, 12, 13, 14, 15, 16, 17, 19, 20), (19, 5), (1, 2, 3, 6, 7, 8, 9, 10, 12)]\nfor i, (inp, exp) in enumerate(zip(inputs, results)):\n    assertion(similar_elements(*inp), exp, 0)\n"
   }
 }
 ```
@@ -97,7 +97,7 @@ This benchmark requires a sandbox environment for code execution.
 
 ```json
 {
-  "image": "python:3.11-slim",
+  "image": "python3.11-numpy",
   "tools_config": {
     "shell_executor": {},
     "python_executor": {}
