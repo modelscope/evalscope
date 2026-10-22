@@ -225,13 +225,17 @@ class Metric(BaseModel):
 
     @model_validator(mode='after')
     def _compute_aggregates(self) -> Self:
+        """Derive missing totals without replacing a producer's authoritative score."""
         if not self.categories:
             return self
         # Categories whose subsets are all is_aggregate end up with num=0; skip them
         # so they don't drag down macro_mean.
         real = [c for c in self.categories if c.num > 0]
         self.num = sum(c.num for c in real)
-        self.score = normalize_score(micro_mean(real)) if real else 0.0
+        if 'score' in self.model_fields_set:
+            self.score = normalize_score(self.score)
+        else:
+            self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
 
@@ -324,17 +328,23 @@ class Report(BaseModel):
     @computed_field
     @property
     def num(self) -> int:
-        """Total sample count derived from one metric's subsets.
+        """Count explicitly partitioned metric cohorts without recounting shared metrics.
 
-        Counting a single metric avoids double-counting datasets that evaluate several metrics over
-        the same sample set (e.g. multi_if reports 12 metrics over the same 6 samples). Any one
-        metric satisfies that, so a report whose primary metric could not be resolved still reports
-        its real sample count instead of zero.
+        Metrics carrying a ``subset`` dimension declare separate question cohorts. Otherwise
+        retain the primary/first metric's count, since other metrics may report derived subsets.
         """
         metric = self._find_primary_metric() or (self.metrics[0] if self.metrics else None)
         if metric is None:
             return 0
-        return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+        if not all('subset' in item.identity.dimensions for item in self.metrics):
+            return sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+        counts: Dict[str, int] = {}
+        metrics = sorted(self.metrics, key=lambda metric: metric.identity != self.primary_metric_identity)
+        for metric in metrics:
+            count = sum(s.num for c in metric.categories for s in c.subsets if not s.is_aggregate)
+            subset_key = json.dumps(metric.identity.dimensions['subset'], ensure_ascii=False)
+            counts.setdefault(subset_key, count)
+        return sum(counts.values())
 
     @property
     def primary_metric(self) -> Optional[Metric]:

@@ -214,6 +214,7 @@
  "refcoco": "evalscope.benchmarks.refcoco.refcoco_adapter",
  "researchrubrics": "evalscope.benchmarks.researchrubrics.researchrubrics_adapter",
  "reward_bench": "evalscope.benchmarks.reward_bench.reward_bench_adapter",
+ "safety_bench": "evalscope.benchmarks.safety_bench.safety_bench_adapter",
  "sanskriti": "evalscope.benchmarks.sanskriti.sanskriti_adapter",
  "scicode": "evalscope.benchmarks.scicode.scicode_adapter",
  "science_qa": "evalscope.benchmarks.science_qa.science_qa_adapter",
