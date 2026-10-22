@@ -50,7 +50,7 @@ def _normalize_vqa_answer(answer: str) -> str:
 
 
 def _vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
-    """VQA accuracy: min(1, matches / 3) averaged over every set of len(answers) - 1 annotators.
+    """VQA accuracy averaged over leave-one-out annotator sets, with a legacy single-reference fallback.
 
     This is the official VQA evaluation (vqaEval.py), where 3 matches out of 10 answers score 0.9, not 1.0.
     """
@@ -59,6 +59,9 @@ def _vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
         return 0.0
     hits = [_normalize_vqa_answer(a) == norm_pred for a in answers]
     matches = sum(hits)
+    if len(hits) == 1:
+        # Preserve legacy soft scoring for single-reference fallback inputs.
+        return matches / 3.0
     return sum(min(1.0, (matches - hit) / 3.0) for hit in hits) / len(hits)
 
 
