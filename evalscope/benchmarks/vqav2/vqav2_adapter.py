@@ -50,11 +50,16 @@ def _normalize_vqa_answer(answer: str) -> str:
 
 
 def _vqa_soft_accuracy(prediction: str, answers: List[str]) -> float:
+    """VQA accuracy: min(1, matches / 3) averaged over every set of len(answers) - 1 annotators.
+
+    This is the official VQA evaluation (vqaEval.py), where 3 matches out of 10 answers score 0.9, not 1.0.
+    """
     norm_pred = _normalize_vqa_answer(prediction)
-    if not norm_pred:
+    if not norm_pred or not answers:
         return 0.0
-    count = sum(_normalize_vqa_answer(a) == norm_pred for a in answers)
-    return min(1.0, count / 3.0)
+    hits = [_normalize_vqa_answer(a) == norm_pred for a in answers]
+    matches = sum(hits)
+    return sum(min(1.0, (matches - hit) / 3.0) for hit in hits) / len(hits)
 
 
 def _vqa_exact_match(prediction: str, answers: List[str]) -> float:
@@ -111,6 +116,7 @@ multimodal models can answer open-ended natural-language questions grounded in i
         primary_metric='vqa_score',
         eval_split='validation',
         prompt_template=PROMPT_TEMPLATE,
+        evaluation_version='v1.1',
     )
 )
 class VQAv2Adapter(VisionLanguageAdapter):
