@@ -11,11 +11,13 @@ import pytest
 
 from evalscope import TaskConfig, run_task
 from evalscope.api.evaluator import TaskState
+from evalscope.api.metric import AggScore
 from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.benchmarks.safety_bench.safety_bench_adapter import CATEGORIES, SafetyBenchAdapter
 from evalscope.benchmarks.safety_bench.utils import extract_choice
 from evalscope.models.mockllm import MockLLM
+from evalscope.report import Report, ReportRef
 
 _official_namespace = {'__name__': 'official_safetybench_eva'}
 exec(
@@ -206,6 +208,8 @@ def test_mock_end_to_end(snapshot: Path, tmp_path: Path, unavailable: bool) -> N
     reports = list((tmp_path / 'outputs').rglob('reports/**/safety_bench.json'))
     assert len(reports) == 1
     report = json.loads(reports[0].read_text())
+    assert report['num'] == 9
+    assert Report.from_dict(report).num == 9
     assert report['primary_metric_identity'] is None
     assert {metric['identity']['dimensions']['subset'] for metric in report['metrics']} == {'zh', 'en', 'zh_subset'}
     for metric in report['metrics']:
@@ -216,6 +220,51 @@ def test_mock_end_to_end(snapshot: Path, tmp_path: Path, unavailable: bool) -> N
     if not unavailable:
         assert len(reviews) == 3
         assert all(len(path.read_text().splitlines()) == 3 for path in reviews)
+
+
+def test_dashboard_counts_all_configurations(snapshot: Path, tmp_path: Path) -> None:
+    pytest.importorskip('flask')
+    from evalscope.service.blueprints.reports import _build_report_meta
+
+    adapter = make_adapter(snapshot)
+    datasets = adapter.load_dataset()
+    aggregates = {
+        subset: adapter.aggregate_subset(subset, [score_sample(adapter, sample, sample.target) for sample in dataset])
+        for subset, dataset in datasets.items()
+    }
+    report = adapter._on_generate_report(aggregates, 'mock')
+    path = tmp_path / '20261022_120000' / 'reports' / 'mock' / 'safety_bench.json'
+    report.to_json(str(path))
+    metadata = _build_report_meta(ReportRef(run_id='20261022_120000', model_id='mock'), str(tmp_path))
+
+    assert report.num == 24
+    assert Report.model_validate_json(path.read_text()).num == 24
+    assert metadata['num_samples'] == 24
+
+
+def test_full_zh_report_preserves_official_accuracy(snapshot: Path, tmp_path: Path) -> None:
+    totals = [1805, 1904, 1149, 1566, 1778, 1934, 1299]
+    correct = [1352, 1313, 731, 168, 664, 1254, 236]
+    answers, predictions = {}, {}
+    for category, count, hits in zip(CATEGORIES, totals, correct):
+        for index in range(count):
+            sample_id = str(len(answers))
+            answers[sample_id] = {'answer': 0, 'category': category}
+            predictions[sample_id] = 0 if index < hits else -1
+    answer_path = tmp_path / 'answers.json'
+    answer_path.write_text(json.dumps(answers))
+    official = OFFICIAL_EVALUATE(predictions, answer_path)
+    aggregate = AggScore(
+        metric_name='accuracy', aggregation='mean', score=official['Avg.'] / 100, num=len(answers),
+        metadata={'categories': {
+            category: {'correct': hits, 'num': count} for category, count, hits in zip(CATEGORIES, totals, correct)
+        }},
+    )
+    report = make_adapter(snapshot)._on_generate_report({'zh': [aggregate]}, 'mock')
+
+    assert sum(correct) == 5718
+    assert report.score == round(5718 / 11435, 4) == 0.5
+    assert Report.from_dict(report.to_dict()).score == 0.5
 
 
 def test_remote_loading_uses_shared_snapshot_downloader(snapshot: Path) -> None:

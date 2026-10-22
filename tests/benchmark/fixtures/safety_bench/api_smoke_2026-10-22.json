@@ -507,5 +507,49 @@
       "mixed_wrong_missing_official_parity": true,
       "all_missing_official_parity": true
     }
+  },
+  "report_regression_validation": {
+    "date": "2026-10-22",
+    "fresh_real_api": {
+      "model": "qwen-plus",
+      "rows": 6,
+      "per_configuration": 2,
+      "data_source": "SHA-256-verified local ModelScope snapshot",
+      "normal_stops": 6,
+      "transport_errors": 0,
+      "serialized_num": 6,
+      "roundtrip_num": 6,
+      "web_num_samples": 6
+    },
+    "full_data_scenarios": {
+      "gold": {
+        "report_num": 24970,
+        "roundtrip_num": 24970,
+        "per_configuration_accuracy": {
+          "zh": 1.0,
+          "en": 1.0,
+          "zh_subset": 1.0
+        }
+      },
+      "mixed_missing": {
+        "report_num": 24970,
+        "roundtrip_num": 24970,
+        "per_configuration_accuracy": {
+          "zh": 0.5334,
+          "en": 0.5334,
+          "zh_subset": 0.5333
+        }
+      },
+      "all_missing": {
+        "report_num": 24970,
+        "roundtrip_num": 24970,
+        "per_configuration_accuracy": {
+          "zh": 0.0,
+          "en": 0.0,
+          "zh_subset": 0.0
+        }
+      }
+    },
+    "original_api_report_roundtrip_num": 42
   }
 }

@@ -13,3 +13,7 @@ are rounded to four decimal places. The example's random fallback was deliberate
 41 responses ended normally and one reached the 1,024-token output budget. Six replies were unparseable,
 including the truncated reply; each scored zero without reducing the denominator. No transport errors occurred.
 These are integration smoke results, not leaderboard scores. The automated suite never calls the API.
+
+The `report_regression_validation` entry records the subsequent report fixes: all 24,970 configuration
+rows retain their count and overall scores through serialization, and another six real API requests
+have matching run, report, reloaded-report, and Web-list sample counts.

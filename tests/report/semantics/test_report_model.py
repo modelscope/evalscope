@@ -12,7 +12,7 @@ from evalscope.metrics.semantics.catalog import LEGACY_METRIC_MIGRATIONS
 from evalscope.metrics.semantics.entry import MetricEntry
 from evalscope.metrics.semantics.migration import migrate_legacy_report_identity
 from evalscope.report.generator import ReportGenerator
-from evalscope.report.report import Report
+from evalscope.report.report import Category, Metric, Report, Subset
 
 
 class _StubAdapter:
@@ -141,6 +141,65 @@ def test_num_counts_one_metric_even_without_a_resolved_primary() -> None:
     report.primary_metric_identity = None
     assert report.primary_metric is None
     assert report.num == 10
+
+
+@pytest.mark.parametrize(('primary', 'expected'), [(None, 13), ('f1', 13), ('recall', 23)])
+def test_num_counts_disjoint_subsets_without_recounting_shared_metrics(primary: Optional[str], expected: int) -> None:
+    report = _report()
+    report.metrics[0].identity = MetricIdentity(name='f1', aggregation='mean', dimensions={'subset': 'left'})
+    report.metrics[1] = Metric(
+        identity=MetricIdentity(name='precision', aggregation='mean', dimensions={'subset': 'right'}),
+        semantics=report.metrics[1].semantics,
+        categories=[Category(name='default', subsets=[
+            Subset(name='right', score=0.5, num=3),
+            Subset(name='OVERALL', score=0.5, num=3, is_aggregate=True),
+        ])],
+    )
+    report.metrics.append(Metric(
+        identity=MetricIdentity(name='recall', aggregation='mean', dimensions={'subset': 'left'}),
+        semantics=report.metrics[0].semantics,
+        categories=[Category(name='default', subsets=[Subset(name='left', score=0.5, num=20)])],
+    ))
+    report.primary_metric_identity = next((metric.identity for metric in report.metrics if metric.identity.name == primary), None)
+
+    assert report.num == expected
+    assert Report.from_dict(report.to_dict()).num == expected
+
+
+def test_num_does_not_add_derived_subsets_from_other_metrics() -> None:
+    report = _report()
+    report.metrics[1].categories = [Category(name='derived', subsets=[Subset(name='language', score=0.5, num=10)])]
+
+    assert report.num == 10
+    assert Report.from_dict(report.to_dict()).num == 10
+
+
+def test_num_keeps_boolean_and_numeric_cohorts_distinct() -> None:
+    report = _report()
+    report.metrics[0].identity = MetricIdentity(name='f1', aggregation='mean', dimensions={'subset': False})
+    report.metrics[1].identity = MetricIdentity(name='precision', aggregation='mean', dimensions={'subset': 0})
+    report.primary_metric_identity = None
+
+    assert report.num == 20
+    assert Report.from_dict(report.to_dict()).num == 20
+
+
+def test_explicit_metric_total_survives_category_rounding_and_round_trip() -> None:
+    report = _report()
+    original = report.metrics[0]
+    metric = Metric(
+        identity=original.identity,
+        semantics=original.semantics,
+        score=0.50004372540446,
+        categories=[Category(name='default', subsets=[Subset(name='test', score=0.5001, num=11435)])],
+    )
+    report.metrics[0] = metric
+
+    assert report.score == 0.5
+    assert metric.categories[0].score == 0.5001
+    assert Report.from_dict(report.to_dict()).score == 0.5
+    derived = Metric(identity=metric.identity, semantics=metric.semantics, categories=metric.categories)
+    assert derived.score == 0.5001
 
 
 def test_missing_declared_primary_is_reported_without_substituting_a_score() -> None:

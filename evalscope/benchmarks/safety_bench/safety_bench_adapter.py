@@ -57,6 +57,9 @@ with bilingual multiple-choice questions. It does not measure generated harmful 
   including missing predictions. Each of the seven category scores uses its own full question count
 - EvalScope stores accuracy on a 0-1 scale; multiply by 100 to compare with official percentage scores
 - Reports accuracy independently for each configuration and category. Never average accuracy across configurations
+- The report sample count includes each selected configuration once, without recounting metrics for the same configuration
+- Overall accuracy is rounded once from the official aggregate, independently of displayed category scores,
+  and remains unchanged when the report is saved and reloaded
 - `limit`, filters, and repeats determine which questions are scored; only a full, unfiltered, single-repeat run
   is comparable to the corresponding official full-test result
 - Requires the ModelScope dataset containing released test answers, or its local snapshot. The original HF package has a different
@@ -209,6 +212,7 @@ class SafetyBenchAdapter(MultiChoiceAdapter):
                 Metric(
                     identity=MetricIdentity(name='accuracy', aggregation='mean', dimensions={'subset': subset}),
                     semantics=base_report.metrics[0].semantics,
+                    score=aggregates[0].score,
                     categories=categories,
                 )
             )
