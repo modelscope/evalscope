@@ -65,6 +65,7 @@ SciCode is a challenging benchmark designed to evaluate language model capabilit
         metric_list=['main_problem_pass_rate', 'subproblem_pass_rate'],
         primary_metric='main_problem_pass_rate',
         eval_split='test',
+        evaluation_version='v1.1',
         review_timeout=300,
         prompt_template=INITIAL_PROMPT,
         extra_params={
