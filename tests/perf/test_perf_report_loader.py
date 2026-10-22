@@ -10,8 +10,11 @@ generated.
 """
 import json
 import os
+import re
 import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
 
 
 def _write_json(path: str, obj: object) -> None:
@@ -74,6 +77,20 @@ class TestPerfReportLoader(unittest.TestCase):
         run = self._by_dir()['parallel_2_number_5']
         _, x_title = perf_charts._x_axis([run])
         self.assertEqual(x_title, 'Concurrency')
+
+    def test_html_percentiles_distinguish_missing_values_from_zero(self) -> None:
+        from evalscope.perf.utils.report.generate_report import gen_perf_html_report
+
+        _write_json(
+            os.path.join(self.tmp, 'parallel_2_number_5', 'benchmark_percentile.json'),
+            [{'Percentiles': '99%', 'Latency (s)': 0, 'TTFT (ms)': float('nan'), 'TPOT (ms)': float('inf')}],
+        )
+        report = gen_perf_html_report(self.tmp, {}, SimpleNamespace(api='openai'))
+        cells = re.findall(r'<td class="num-cell">([^<]*)</td>', Path(report).read_text())
+        self.assertIn('0.0', cells)
+        self.assertIn('—', cells)
+        self.assertNotIn('nan', cells)
+        self.assertNotIn('inf', cells)
 
 
 if __name__ == '__main__':

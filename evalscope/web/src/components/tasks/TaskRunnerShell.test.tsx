@@ -47,6 +47,20 @@ async function click(name: string) { await act(async () => { fireEvent.click(scr
     expect(sessionStorage.getItem('evalscope-active-task-eval')).toBe('eval_B')
     expect(sessionStorage.length).toBe(1)
   })
+  it('keeps clipboard feedback specific to the copied field and formats the start time', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } })
+    vi.mocked(getTask).mockResolvedValue({ ...TASK, started_at: '2026-10-22T16:31:00.138643' })
+    try {
+      render(<Runner />)
+      await click('View A')
+      await click('Copy: host:8000')
+      expect(writeText).toHaveBeenCalledWith('host:8000')
+      expect(screen.getByRole('button', { name: 'Copy: host:8000' })).toHaveTextContent('Copied')
+      expect(screen.getByRole('button', { name: 'Copy: eval_A' })).toHaveTextContent(/^Copy$/)
+      expect(screen.getByText('2026-10-22 16:31:00')).toBeInTheDocument()
+    } finally { vi.unstubAllGlobals() }
+  })
   it('selects and monitors a task when browser storage is blocked', async () => {
     const storage = vi.spyOn(window, 'sessionStorage', 'get').mockImplementation(() => { throw new DOMException('blocked') })
     try {

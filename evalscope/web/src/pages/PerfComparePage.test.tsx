@@ -201,9 +201,7 @@ describe('PerfComparePage', () => {
       // Default baseline is the oldest run (model-a); candidate is the newest (model-b).
       expect(screen.getByTestId('baseline-label')).toHaveTextContent('model-a')
       expect(screen.getByTestId('candidate-label')).toHaveTextContent('model-b')
-      expect(screen.getByTestId('compare-run-labels')).toHaveTextContent('model-a · openqa')
-      expect(screen.getByTestId('compare-run-labels')).not.toHaveTextContent('run-a')
-      expect(screen.getByTestId('compare-run-labels')).toHaveAttribute('title', 'run-a\nrun-b')
+      expect(screen.queryByTestId('compare-run-labels')).not.toBeInTheDocument()
       expect(currentLocation()).not.toContain('baseline=')
 
       // Swap the baseline.

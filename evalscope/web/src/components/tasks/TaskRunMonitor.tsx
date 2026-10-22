@@ -6,6 +6,7 @@ import { isDomainError } from '@/api/errors'
 import { usePolling } from '@/hooks/usePolling'
 import { useCopy } from '@/hooks/useCopy'
 import { useLocale } from '@/contexts/LocaleContext'
+import { formatTimestamp } from '@/utils/formatUtils'
 import TaskMonitor from '@/components/eval/TaskMonitor'
 
 interface Props {
@@ -21,7 +22,8 @@ type StopRequestState = 'idle' | 'pending' | 'confirmed' | 'failed'
 
 export default function TaskRunMonitor({ taskId, result, stopTask, getLog, active = true, submissionRejected = false }: Props) {
   const { t } = useLocale()
-  const { copy, copied } = useCopy()
+  const endpointCopy = useCopy()
+  const taskIdCopy = useCopy()
   const title = useRef<HTMLHeadingElement>(null)
   const [logText, setLogText] = useState('')
   const [logLine, setLogLine] = useState(0)
@@ -81,7 +83,6 @@ export default function TaskRunMonitor({ taskId, result, stopTask, getLog, activ
 
   const displayName = snapshot?.alias || snapshot?.model || taskId
   const endpoint = snapshot?.endpoint
-  const copyLabel = t(copied ? 'tasks.copied' : 'tasks.copy')
   const configEntries = Object.entries(snapshot?.config ?? {})
     .filter(([, value]) => value !== null && value !== undefined)
   const taskNotFound = isDomainError(task.failure) && task.failure.status === 404
@@ -97,15 +98,15 @@ export default function TaskRunMonitor({ taskId, result, stopTask, getLog, activ
         <p className="flex flex-wrap items-center gap-2 break-all">
           {t('perf.archive.endpoint')}: {endpoint || '—'}
           {endpoint && (
-            <button type="button" onClick={() => copy(endpoint)}>{copyLabel}</button>
+            <button type="button" className="rounded px-2 py-1 text-xs text-[var(--accent)]" aria-label={`${t('tasks.copy')}: ${endpoint}`} onClick={() => endpointCopy.copy(endpoint)}>{t(endpointCopy.copied ? 'tasks.copied' : 'tasks.copy')}</button>
           )}
         </p>
         <p className="flex flex-wrap items-center gap-2 break-all">
           ID: {taskId}
-          <button type="button" onClick={() => copy(taskId)}>{copyLabel}</button>
+          <button type="button" className="rounded px-2 py-1 text-xs text-[var(--accent)]" aria-label={`${t('tasks.copy')}: ${taskId}`} onClick={() => taskIdCopy.copy(taskId)}>{t(taskIdCopy.copied ? 'tasks.copied' : 'tasks.copy')}</button>
         </p>
         {snapshot?.started_at && (
-          <p>{t('tasks.startedAt')}: {snapshot.started_at}</p>
+          <p>{t('tasks.startedAt')}: <time dateTime={snapshot.started_at}>{formatTimestamp(snapshot.started_at, 'seconds')}</time></p>
         )}
       </div>
       {['unknown', 'finalizing'].includes(status) && (

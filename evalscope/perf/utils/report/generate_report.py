@@ -11,6 +11,7 @@ Public API
 
 from __future__ import annotations
 
+import math
 import os
 from typing import Any, Dict
 
@@ -31,7 +32,7 @@ from .summary import (
 )
 
 logger = get_logger()
-PERF_HTML_MARKER = '<!-- evalscope-perf-render:v2 -->'
+PERF_HTML_MARKER = '<!-- evalscope-perf-render:v3 -->'
 
 
 def is_current_perf_report(report_file: str) -> bool:
@@ -68,7 +69,13 @@ def _build_run_section(run, is_embedding_flag: bool) -> Dict[str, Any]:
         'summary_items': build_summary_items(run.summary, is_embedding_flag),
         # percentile table
         'percentile_columns': list(pct[0].keys()) if pct else [],
-        'percentile_rows': [list(p.values()) for p in pct],
+        'percentile_rows': [
+            [
+                '—' if value is None or isinstance(value, float) and not math.isfinite(value) else value
+                for value in percentile.values()
+            ]
+            for percentile in pct
+        ],
         # charts
         'percentile_chart': pct_charts[0],
         'percentile_token_lat_chart': pct_charts[1],

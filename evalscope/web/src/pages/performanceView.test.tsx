@@ -317,8 +317,10 @@ describe('PerfReportsPage', () => {
     expect(screen.getByText('test-model-a')).toBeInTheDocument()
     // ... and the raw archive path is never shown as the identity.
     expect(screen.queryByText(RUN_PATH)).not.toBeInTheDocument()
-    expect(screen.getByText('DashScope · OpenAI-compatible')).toBeInTheDocument()
-    expect(screen.getAllByText('C 10 · Req 100 · Runs 1').length).toBeGreaterThan(0)
+    expect(screen.getByText('dashscope.aliyuncs.com')).toBeInTheDocument()
+    expect(screen.getByText('5.43')).toBeInTheDocument()
+    expect(screen.getByText('1.842')).toBeInTheDocument()
+    expect(screen.getByText('Success')).toBeInTheDocument()
   })
 
   it('searches provider and protocol independently from the API type', async () => {
@@ -344,7 +346,7 @@ describe('PerfReportsPage', () => {
 
     expect(screen.getByText('server-A')).toBeInTheDocument()
     expect(screen.getByText('server-B')).toBeInTheDocument()
-    // With an alias, the secondary line keeps model, provider, protocol and host.
+    // With an alias, the secondary line keeps the model and endpoint.
     expect(screen.getByText('10.0.0.2:8000')).toBeInTheDocument()
   })
 
