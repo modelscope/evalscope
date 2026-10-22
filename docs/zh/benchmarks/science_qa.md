@@ -3,31 +3,33 @@
 
 ## 概述
 
-ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程的多项选择题科学问题。它涵盖自然科学、社会科学和语言科学等多个学科，每个问题均配有图像和文本上下文。
+ScienceQA 是一个多模态基准测试，包含来自小学和高中课程的多项选择科学问题。它涵盖了自然科学、社会科学和语言科学等多个学科，并提供可选的文本和图像上下文。
 
 ## 任务描述
 
-- **任务类型**：多模态科学问答
-- **输入**：带可选图像上下文的问题 + 多个选项
-- **输出**：正确答案选项字母
-- **领域**：自然科学、社会科学、语言科学
+- **任务类型**: 多模态科学问答
+- **输入**: 问题和多个选项，以及可选的文本 (`hint`) 和图像上下文
+- **输出**: 正确答案选项字母
+- **领域**: 自然科学、社会科学、语言科学
 
 ## 主要特点
 
 - 问题来源于真实的 K-12 科学课程
-- 大多数问题同时包含图像和文本上下文
-- 提供详细的讲解和解释标注
-- 支持思维链（Chain-of-Thought）推理研究
+- 文本和图像上下文是可选的，并且因问题而异
+- 带有详细的背景知识和解题解释注释
+- 支持对思维链推理的研究
 - 覆盖多个年级和难度范围
-- 包含丰富的元数据，如主题、技能和类别信息
+- 丰富的元数据，包括主题、技能和类别信息
 
 ## 评估说明
 
-- 默认使用 **test** 划分进行评估
-- 主要指标：多项选择题的 **准确率（Accuracy）**
-- 使用思维链（CoT）提示进行推理
-- 元数据包含解答说明，便于分析
-- 问题覆盖从小学到高中的各个年级
+- 默认评估使用 **test** 分割
+- 主要指标: 多项选择题的 **准确率**
+- 使用 Chain-of-Thought (CoT) 提示进行推理
+- 评估版本 **v1.1** 在问题前添加非空 `hint` 文本作为 `Context: ...`；空提示不添加上下文
+- `lecture` 和 `solution` 注释作为元数据保留，并从评估提示中排除
+- 问题涵盖从小学到高中的各个年级
+
 
 ## 属性
 
@@ -39,7 +41,7 @@ ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程
 | **标签** | `Knowledge`, `MCQ`, `MultiModal` |
 | **指标** | `accuracy` |
 | **默认示例数** | 0-shot |
-| **评估划分** | `test` |
+| **评估分割** | `test` |
 
 
 ## 数据统计
@@ -47,15 +49,15 @@ ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程
 | 指标 | 值 |
 |--------|-------|
 | 总样本数 | 4,241 |
-| 提示词长度（平均） | 370.49 字符 |
-| 提示词长度（最小/最大） | 250 / 1037 字符 |
+| 提示词长度（平均） | 472.92 字符 |
+| 提示词长度（最小/最大） | 255 / 2457 字符 |
 
-**图像统计：**
+**图像统计:**
 
 | 指标 | 值 |
 |--------|-------|
-| 图像总数 | 2,017 |
-| 每样本图像数 | 最小: 1, 最大: 1, 平均: 1 |
+| 总图像数 | 2,017 |
+| 每个样本的图像数 | 最小: 1, 最大: 1, 平均: 1 |
 | 分辨率范围 | 170x77 - 750x625 |
 | 格式 | png |
 
@@ -68,7 +70,7 @@ ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程
 {
   "input": [
     {
-      "id": "7586b8fe",
+      "id": "266efb09",
       "content": [
         {
           "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\n\nWhich figure of speech is used in this text?\nSing, O goddess, the anger of Achilles son of Peleus, that brought countless ills upon the Achaeans.\n—Homer, The Iliad\n\nA) chiasmus\nB) apostrophe"
@@ -91,17 +93,17 @@ ScienceQA 是一个**多模态基准测试**，包含来自小学和高中课程
     "topic": "figurative-language",
     "category": "Literary devices",
     "skill": "Classify the figure of speech: anaphora, antithesis, apostrophe, assonance, chiasmus, understatement",
-    "lecture": "Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\nWe are united ... [TRUNCATED] ... but reverses the order of words.\nNever let a fool kiss you or a kiss fool you.\nUnderstatement involves deliberately representing something as less serious or important than it really is.\nAs you know, it can get a little cold in the Antarctic.",
+    "lecture": "Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\nWe are united ... [TRUNCATED 446 chars] ... but reverses the order of words.\nNever let a fool kiss you or a kiss fool you.\nUnderstatement involves deliberately representing something as less serious or important than it really is.\nAs you know, it can get a little cold in the Antarctic.",
     "solution": "The text uses apostrophe, a direct address to an absent person or a nonhuman entity.\nO goddess is a direct address to a goddess, a nonhuman entity."
   }
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注意: 部分内容为了显示被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.
 
@@ -120,7 +122,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets science_qa \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -134,7 +136,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['science_qa'],
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
