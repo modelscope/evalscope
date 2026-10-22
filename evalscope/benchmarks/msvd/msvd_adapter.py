@@ -6,9 +6,14 @@ from evalscope.api.benchmark import BenchmarkMeta, VisionLanguageAdapter
 from evalscope.api.dataset import DatasetDict, DatasetHub, Sample, build_dataset_from_records
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, Content, ContentText, ContentVideo
-from evalscope.api.metric import SampleScore, Score
+from evalscope.api.metric import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
-from evalscope.benchmarks.caption.metrics import CAPTION_MAIN_SCORE, CAPTION_METRICS, compute_caption_scores
+from evalscope.benchmarks.caption.metrics import (
+    CAPTION_MAIN_SCORE,
+    CAPTION_METRICS,
+    aggregate_caption_scores,
+    compute_caption_scores,
+)
 from evalscope.constants import HubType, Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.media_utils import guess_video_format
@@ -50,6 +55,7 @@ The native adapter treats each video as one evaluation sample and uses all avail
         subset_list=['default'],
         metric_list=CAPTION_METRICS,
         primary_metric='cider',
+        evaluation_version='v1.1',
         eval_split='test',
         prompt_template=DEFAULT_PROMPT,
         extra_params={
@@ -144,6 +150,9 @@ class MSVDAdapter(VisionLanguageAdapter):
             sample_score.score.value.update(values)
             sample_score.score.main_score_name = CAPTION_MAIN_SCORE
         return sample_scores
+
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        return aggregate_caption_scores(sample_scores)
 
     def _load_records(self) -> List[Dict[str, Any]]:
         logger.info(f'Loading MSVD from {self.dataset_hub}: {self.dataset_id}, split={self.eval_split}.')

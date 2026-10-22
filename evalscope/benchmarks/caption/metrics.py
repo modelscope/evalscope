@@ -3,8 +3,9 @@ import io
 import shutil
 import string
 from collections import Counter
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
+from evalscope.api.metric import AggScore, SampleScore
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
@@ -16,6 +17,33 @@ CAPTION_MAIN_SCORE = 'CIDEr'
 
 def compute_caption_scores(predictions: List[str], references: List[List[str]]) -> List[Dict[str, float]]:
     """Compute COCO-style caption metrics for a batch of predictions."""
+    return _caption_scores(predictions, references)[1]
+
+
+def aggregate_caption_scores(sample_scores: List[SampleScore]) -> List[AggScore]:
+    """Score all captions as one corpus, as COCOEvalCap does.
+
+    Batch scoring runs in eval_batch_size windows, but CIDEr takes its IDF from the captions passed to
+    one call (a lone caption gets IDF 0, so CIDEr 0) and BLEU pools n-gram counts over the corpus, so
+    neither equals an average of per-window sample scores.
+    """
+    scored = [sample_score for sample_score in sample_scores if sample_score.score.value]
+    if not scored:
+        return []
+    corpus, _ = _caption_scores(
+        [sample_score.score.extracted_prediction or '' for sample_score in scored],
+        [sample_score.sample_metadata['references'] for sample_score in scored],
+    )
+    ids = [sample_score.sample_id for sample_score in scored]
+    return [
+        AggScore(score=corpus[metric], metric_name=metric, aggregation='mean', num=len(scored), ids=ids)
+        for metric in CAPTION_METRICS
+    ]
+
+
+def _caption_scores(
+    predictions: List[str], references: List[List[str]]
+) -> Tuple[Dict[str, float], List[Dict[str, float]]]:
     check_import(
         module_name='pycocoevalcap',
         extra='caption',
@@ -47,16 +75,19 @@ def compute_caption_scores(predictions: List[str], references: List[List[str]]) 
         gts = _simple_caption_tokenize(gts)
         res = _simple_caption_tokenize(res)
 
+    corpus = {}
     results = [{metric: 0.0 for metric in CAPTION_METRICS} for _ in predictions]
     with contextlib.redirect_stdout(io.StringIO()):
-        _, bleu_scores = Bleu(4).compute_score(gts, res)
+        bleu_corpus, bleu_scores = Bleu(4).compute_score(gts, res)
     for metric_index, metric_name in enumerate(['Bleu_1', 'Bleu_2', 'Bleu_3', 'Bleu_4']):
+        corpus[metric_name] = float(bleu_corpus[metric_index])
         for sample_index, sample_score in enumerate(bleu_scores[metric_index]):
             results[sample_index][metric_name] = float(sample_score)
 
     for metric_name, scorer in [('ROUGE_L', Rouge()), ('CIDEr', Cider())]:
         with contextlib.redirect_stdout(io.StringIO()):
-            _, sample_scores = scorer.compute_score(gts, res)
+            corpus_score, sample_scores = scorer.compute_score(gts, res)
+        corpus[metric_name] = float(corpus_score)
         for sample_index, sample_score in enumerate(sample_scores):
             results[sample_index][metric_name] = float(sample_score)
 
@@ -64,14 +95,16 @@ def compute_caption_scores(predictions: List[str], references: List[List[str]]) 
         from pycocoevalcap.meteor.meteor import Meteor
 
         with contextlib.redirect_stdout(io.StringIO()):
-            _, sample_scores = Meteor().compute_score(gts, res)
+            corpus_score, sample_scores = Meteor().compute_score(gts, res)
+        corpus['METEOR'] = float(corpus_score)
         for sample_index, sample_score in enumerate(sample_scores):
             results[sample_index]['METEOR'] = float(sample_score)
     else:
         for sample_index, (prediction, sample_references) in enumerate(zip(predictions, references)):
             results[sample_index]['METEOR'] = _simple_meteor_score(prediction, sample_references)
+        corpus['METEOR'] = sum(result['METEOR'] for result in results) / len(results)
 
-    return results
+    return corpus, results
 
 
 def _caption_tokens(text: str) -> List[str]:
