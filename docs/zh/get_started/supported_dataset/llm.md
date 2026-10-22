@@ -139,6 +139,7 @@
 | `race` | [RACE](../../benchmarks/race.md) | `MCQ`, `Reasoning` |
 | `refcoco` | [RefCOCO](../../benchmarks/refcoco.md) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
 | `reward_bench` | [RewardBench v1 (pairwise)](../../benchmarks/reward_bench.md) | `MCQ` |
+| `safety_bench` | [SafetyBench](../../benchmarks/safety_bench.md) | `Knowledge`, `MCQ`, `MultiLingual` |
 | `sanskriti` | [Sanskriti](../../benchmarks/sanskriti.md) | `Knowledge`, `MCQ` |
 | `scicode` | [SciCode](../../benchmarks/scicode.md) | `Coding` |
 | `sciq` | [SciQ](../../benchmarks/sciq.md) | `Knowledge`, `MCQ`, `ReadingComprehension` |
@@ -303,6 +304,7 @@
 ../../benchmarks/race.md
 ../../benchmarks/refcoco.md
 ../../benchmarks/reward_bench.md
+../../benchmarks/safety_bench.md
 ../../benchmarks/sanskriti.md
 ../../benchmarks/scicode.md
 ../../benchmarks/sciq.md
