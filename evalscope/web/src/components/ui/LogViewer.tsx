@@ -19,6 +19,8 @@ export default function LogViewer({ content, maxHeight = '500px' }: Props) {
   return (
     <pre
       ref={ref}
+      tabIndex={0}
+      aria-label={t('eval.status')}
       className="text-xs p-4 rounded-[var(--radius-sm)] overflow-auto border border-[var(--border)]"
       style={{
         maxHeight,

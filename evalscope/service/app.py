@@ -11,7 +11,7 @@ from evalscope.utils.logger import get_logger
 from evalscope.version import __version__
 
 from .api_models import ConfigResponse
-from .blueprints import bp_eval, bp_perf, bp_reports
+from .blueprints import bp_eval, bp_perf, bp_reports, bp_tasks
 from .responses import json_response
 from .utils import OUTPUT_DIR as _DEFAULT_ROOT
 
@@ -54,6 +54,7 @@ def create_app(outputs: str = None):
     app.register_blueprint(bp_eval)
     app.register_blueprint(bp_perf)
     app.register_blueprint(bp_reports)
+    app.register_blueprint(bp_tasks)
 
     @app.route('/health', methods=['GET'])
     def health_check():
@@ -111,6 +112,7 @@ def create_app(outputs: str = None):
                     'GET  /api/v1/perf/compare/chart': 'Overlay a sweep metric across multiple perf runs',
                     'GET  /api/v1/perf/history/report': 'Get HTML report for a historical perf run',
                     'DELETE /api/v1/perf/run': 'Delete a historical perf run directory',
+                    'GET  /api/v1/tasks/active': 'List currently running tasks',
                     'GET  /api/v1/reports': 'Filterable, paginated report listing',
                     'GET  /api/v1/reports/runs/<run_id>/models/<model_id>': 'Load a single model report',
                     'DELETE /api/v1/reports/runs/<run_id>/models/<model_id>': 'Delete an evaluation report from disk',

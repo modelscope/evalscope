@@ -315,6 +315,76 @@ class TestReportEndpoints(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual([it['model_name'] for it in res.get_json()['reports']], ['m'])
 
+    def test_report_list_carries_task_manifest_identity(self):
+        # A service-launched run writes task_info.json next to its outputs; the
+        # list surfaces its alias and sanitized endpoint so same-model runs stay
+        # distinguishable.
+        import json as _json
+
+        self._seed_report_dir()
+        manifest = {
+            'task_id': '20260101_120000',
+            'kind': 'eval',
+            'alias': 'server-A',
+            'api_url': 'http://10.0.0.2:8000/v1',
+        }
+        (Path(self.tmp) / '20260101_120000' / 'task_info.json').write_text(
+            _json.dumps(manifest), encoding='utf-8'
+        )
+        with mock.patch(
+            'evalscope.service.blueprints.reports.get_report_list',
+            return_value=[self._fake_report()],
+        ):
+            res = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp})
+
+        self.assertEqual(res.status_code, 200)
+        item = res.get_json()['reports'][0]
+        self.assertEqual(item['alias'], 'server-A')
+        self.assertEqual(item['api_host'], '10.0.0.2:8000')
+
+        # Search matches the new identity fields too.
+        with mock.patch(
+            'evalscope.service.blueprints.reports.get_report_list',
+            return_value=[self._fake_report()],
+        ):
+            by_alias = self.client.get(
+                '/api/v1/reports', query_string={'root_path': self.tmp, 'search': 'server-a'}
+            ).get_json()
+            by_host = self.client.get(
+                '/api/v1/reports', query_string={'root_path': self.tmp, 'search': '10.0.0.2'}
+            ).get_json()
+        self.assertEqual(by_alias['total'], 1)
+        self.assertEqual(by_host['total'], 1)
+
+    def test_manifest_identity_changes_invalidate_list_and_conditional_get(self):
+        import json
+
+        report_file = self._seed_report_dir()
+        manifest = report_file.parents[2] / 'task_info.json'
+        with mock.patch('evalscope.service.blueprints.reports.get_report_list', return_value=[self._fake_report()]):
+            first = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp})
+            etag = first.headers['ETag']
+            for alias in ('server-A', 'server-B'):
+                manifest.write_text(json.dumps({'alias': alias, 'endpoint': 'host:8000'}), encoding='utf-8')
+                stat = manifest.stat()
+                import os
+                os.utime(manifest, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+                changed = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}, headers={'If-None-Match': etag})
+                self.assertEqual(changed.status_code, 200)
+                self.assertEqual(changed.get_json()['reports'][0]['alias'], alias)
+                etag = changed.headers['ETag']
+                self.assertEqual(self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}, headers={'If-None-Match': etag}).status_code, 304)
+                by_alias = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp, 'search': alias.lower()})
+                self.assertEqual(by_alias.get_json()['total'], 1)
+            manifest.write_text('{broken', encoding='utf-8')
+            broken = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}, headers={'If-None-Match': etag})
+            self.assertEqual(broken.status_code, 200)
+            self.assertIsNone(broken.get_json()['reports'][0].get('alias'))
+            manifest.unlink()
+            removed = self.client.get('/api/v1/reports', query_string={'root_path': self.tmp}, headers={'If-None-Match': broken.headers['ETag']})
+            self.assertEqual(removed.status_code, 200)
+            self.assertIsNone(removed.get_json()['reports'][0].get('alias'))
+
     def test_report_meta_cache_reuses_unchanged_reports(self):
         # Layer A: a repeated request over unchanged files recomputes nothing;
         # editing a file busts that reference's entry.

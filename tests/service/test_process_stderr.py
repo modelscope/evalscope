@@ -4,6 +4,7 @@ import asyncio
 import importlib.util
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -42,6 +43,13 @@ def _fail_with_stderr() -> None:
     raise ValueError('task failed')
 
 
+def _fail_with_task_log(path: str) -> None:
+    from evalscope.utils.logger import get_logger
+
+    get_logger(log_file=path, force=True)
+    raise ValueError('upstream echoed fake-secret-key')
+
+
 class TestProcessStderr(unittest.TestCase):
     """Capture supports subprocess file descriptors and preserves diagnostics."""
 
@@ -62,6 +70,17 @@ class TestProcessStderr(unittest.TestCase):
         self.assertIn('[stderr]', message)
         self.assertIn('task stderr: 诊断信息', message)
         self.assertIn('nested process stderr', message)
+
+    def test_failure_type_is_visible_in_task_log_without_exception_secrets(self) -> None:
+        """The dashboard log exposes a diagnostic even though the parent owns the traceback."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'task.log'
+            with self.assertRaises(RuntimeError):
+                run_in_subprocess(_fail_with_task_log, str(path))
+            message = path.read_text()
+        self.assertIn('Task failed (ValueError)', message)
+        self.assertIn('service console', message)
+        self.assertNotIn('fake-secret-key', message)
 
     def test_capture_restores_stderr_on_exception(self) -> None:
         """An exception must not leave the process using redirected stderr."""

@@ -4,6 +4,7 @@ import math
 import os
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 
@@ -265,6 +266,10 @@ class Arguments(BaseArgument):
 
     name: Optional[str] = None
     """Name for the run."""
+
+    alias: Optional[str] = None
+    """Human-readable run alias shown in the Web dashboard and reports to distinguish runs
+    of the same model (e.g. different servers). Purely a display label; never affects metrics."""
 
     # Output settings
     outputs_dir: str = DEFAULT_WORK_DIR
@@ -561,7 +566,7 @@ class Arguments(BaseArgument):
 
         # Resolve apply_chat_template before tokenize_prompt redirects chat/completions to completions.
         if self.apply_chat_template is None:
-            self.apply_chat_template = self.url.strip('/').endswith('chat/completions')
+            self.apply_chat_template = urlsplit(self.url).path.rstrip('/').endswith('chat/completions')
 
         self._resolve_tokenize_prompt_url()
 
@@ -668,21 +673,22 @@ class Arguments(BaseArgument):
 
     def _resolve_openai_compatible_url(self) -> None:
         if self.api in _OPENAI_API_ENDPOINT_MAP:
-            stripped_url = self.url.rstrip('/')
+            parsed = urlsplit(self.url)
+            stripped_url = parsed.path.rstrip('/')
             expected_suffix = _OPENAI_API_ENDPOINT_MAP[self.api]
             if self._redirect_responses_url(stripped_url):
                 return
             if not any(stripped_url.endswith('/' + endpoint) for endpoint in _KNOWN_OPENAI_ENDPOINTS):
-                self.url = stripped_url + '/' + expected_suffix
+                self.url = parsed._replace(path=stripped_url + '/' + expected_suffix).geturl()
                 logger.warning(
-                    f'URL "{stripped_url}" has no endpoint path, auto-appended "/{expected_suffix}". '
+                    f'URL has no endpoint path, auto-appended "/{expected_suffix}". '
                     'If this is not intended, please specify the full URL explicitly.'
                 )
 
     def _redirect_responses_url(self, stripped_url: str) -> bool:
         if self.api in _OPENAI_RESPONSES_APIS and stripped_url.endswith('/chat/completions'):
-            self.url = stripped_url[: -len('chat/completions')] + 'responses'
-            logger.warning(f'OpenAI Responses API selected: URL auto-adjusted to responses endpoint: {self.url}')
+            self.url = urlsplit(self.url)._replace(path=stripped_url[: -len('chat/completions')] + 'responses').geturl()
+            logger.warning('OpenAI Responses API selected: URL auto-adjusted to responses endpoint')
             return True
         return False
 
@@ -693,12 +699,11 @@ class Arguments(BaseArgument):
             raise ValueError('--tokenize-prompt is not supported with the OpenAI Responses API.')
         if not self.tokenizer_path:
             raise ValueError('--tokenizer-path is required when --tokenize-prompt is set.')
-        stripped_url = self.url.rstrip('/')
+        parsed = urlsplit(self.url)
+        stripped_url = parsed.path.rstrip('/')
         if stripped_url.endswith('chat/completions'):
-            self.url = stripped_url[: -len('chat/completions')] + 'completions'
-            logger.warning(
-                f'--tokenize-prompt is set: URL auto-adjusted from chat/completions to completions endpoint: {self.url}'
-            )
+            self.url = parsed._replace(path=stripped_url[: -len('chat/completions')] + 'completions').geturl()
+            logger.warning('--tokenize-prompt is set: URL auto-adjusted to completions endpoint')
 
     def _validate_sweep_params(self) -> None:
         """Validate number/parallel/rate consistency after normalization."""
@@ -886,6 +891,11 @@ def _add_logging_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help='SwanLab host URL for self-hosted deployments (also reads SWANLAB_HOST env var)')
     parser.add_argument('--name', type=str, help='The wandb/swanlab/clearml result name and result db name')
+    parser.add_argument(
+        '--alias',
+        type=str,
+        default=None,
+        help='Human-readable run alias shown in the Web dashboard and reports (display label only)')
     parser.add_argument('--enable-progress-tracker', action='store_true', default=False, help='Enable progress tracker')
 
 

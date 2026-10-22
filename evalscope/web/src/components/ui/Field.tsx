@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { CircleHelp } from 'lucide-react'
+import Tooltip from './Tooltip'
 import { useLocale } from '@/contexts/LocaleContext'
 import { FORM_LABEL_CLASS } from './formStyles'
 
@@ -37,6 +39,7 @@ export interface FieldProps {
    * caller.
    */
   error?: string
+  hintKey?: string
   /** Stable control name. */
   name: string
   /** Autocomplete hint forwarded to the control. */
@@ -65,6 +68,7 @@ export default function Field({
   labelKey,
   required,
   error,
+  hintKey,
   name,
   autoComplete,
   className,
@@ -74,6 +78,7 @@ export default function Field({
 
   const labelId = `${id}-label`
   const errorId = `${id}-error`
+  const hintId = `${id}-hint`
 
   const ariaProps: FieldAriaProps = {
     id,
@@ -81,17 +86,25 @@ export default function Field({
     'aria-labelledby': labelId,
     'aria-invalid': Boolean(error),
     // Only associate the error element when an error is actually present.
-    ...(error ? { 'aria-describedby': errorId } : {}),
+    ...(error || hintKey ? { 'aria-describedby': [hintKey ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') } : {}),
     ...(autoComplete ? { autoComplete } : {}),
   }
 
   return (
     <div className={className}>
-      <label id={labelId} htmlFor={id} className={FORM_LABEL_CLASS}>
-        {t(labelKey)}
-        {required && <span className="text-[var(--danger)]"> *</span>}
-      </label>
+      <div className="flex items-center gap-1 mb-1">
+        <label id={labelId} htmlFor={id} className={`${FORM_LABEL_CLASS} !mb-0`}>
+          {t(labelKey)}
+          {required && <span className="text-[var(--danger)]"> *</span>}
+        </label>
+        {hintKey && (
+          <Tooltip buttonTrigger content={t(hintKey)} label={t('tasks.help', { field: t(labelKey) })} maxWidth={280}>
+            <CircleHelp size={14} aria-hidden="true" />
+          </Tooltip>
+        )}
+      </div>
       {children(ariaProps)}
+      {hintKey && <span id={hintId} className="sr-only">{t(hintKey)}</span>}
       {/*
         Error container doubles as a live region so the form layer can announce
         validation errors within 1s. It is always rendered (empty

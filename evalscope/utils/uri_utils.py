@@ -4,10 +4,44 @@ import base64
 import mimetypes
 import re
 from typing import Optional
+from urllib.parse import urlsplit
 
 
 def is_http_url(url: str) -> bool:
     return url.startswith('http://') or url.startswith('https://')
+
+
+def sanitize_endpoint(url: Optional[str]) -> Optional[str]:
+    if not isinstance(url, str) or not url.strip():
+        return None
+    candidate = url.strip()
+    try:
+        parsed = urlsplit(candidate if '://' in candidate else f'//{candidate}')
+        host, port = parsed.hostname, parsed.port
+    except ValueError:
+        return None
+    if not host or any(char.isspace() for char in host):
+        return None
+    host = host.lower()
+    if ':' in host:
+        host = f'[{host}]'
+    return f'{host}:{port}' if port is not None else host
+
+
+def validate_http_endpoint(url: str) -> None:
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError('API URL is required')
+    invalid_url_message = 'API URL must be a valid HTTP or HTTPS URL with a valid host and port'
+    try:
+        parsed = urlsplit(url.strip())
+    except ValueError:
+        raise ValueError(invalid_url_message) from None
+    if parsed.scheme not in ('http', 'https') or sanitize_endpoint(url) is None:
+        raise ValueError(invalid_url_message)
+    if any(char.isspace() for char in url.strip()):
+        raise ValueError(invalid_url_message)
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError('Put authentication in API Key, not in the URL')
 
 
 def is_data_uri(url: str) -> bool:
@@ -58,4 +92,6 @@ __all__ = [
     'file_as_data_uri',
     'is_data_uri',
     'is_http_url',
+    'sanitize_endpoint',
+    'validate_http_endpoint',
 ]

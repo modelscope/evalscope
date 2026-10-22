@@ -1,5 +1,109 @@
 {
   "$defs": {
+    "ActiveTaskInfo": {
+      "additionalProperties": false,
+      "description": "Display identity of a task whose subprocess is currently registered.",
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskConfigSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "html_report_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "kind": {
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "report_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "started_at": {
+          "default": "",
+          "type": "string"
+        },
+        "status": {
+          "default": "running",
+          "enum": [
+            "preparing",
+            "running",
+            "finalizing",
+            "completed",
+            "stopped",
+            "error",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "task_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "task_id",
+        "kind"
+      ],
+      "type": "object"
+    },
     "AgentTrace": {
       "additionalProperties": false,
       "properties": {
@@ -916,6 +1020,25 @@
       },
       "type": "object"
     },
+    "ListActiveTasksResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/ActiveTaskInfo"
+          },
+          "type": "array"
+        },
+        "total": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tasks",
+        "total"
+      ],
+      "type": "object"
+    },
     "ListPerfRunsResponse": {
       "additionalProperties": false,
       "properties": {
@@ -1272,6 +1395,17 @@
     "PerfDetailResponse": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_type": {
           "type": "string"
         },
@@ -1286,6 +1420,20 @@
             "type": "string"
           },
           "type": "object"
+        },
+        "configuration": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "dataset": {
           "type": "string"
@@ -1503,6 +1651,9 @@
                 },
                 {
                   "type": "number"
+                },
+                {
+                  "type": "null"
                 }
               ]
             },
@@ -1549,6 +1700,17 @@
     "PerfRunSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "api_host": {
           "anyOf": [
             {
@@ -1728,7 +1890,14 @@
         },
         "values": {
           "additionalProperties": {
-            "type": "number"
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "type": "object"
         }
@@ -2344,6 +2513,28 @@
     "ReportSummary": {
       "additionalProperties": false,
       "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "api_host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "dataset_name": {
           "type": "string"
         },
@@ -2438,6 +2629,215 @@
         "excluded"
       ],
       "type": "string"
+    },
+    "TaskConfigSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "api": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dataset": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "datasets": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "eval_batch_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_prompt_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_prompt_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "min_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "number": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "parallel": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "repeats": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "top_k": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "top_p": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "type": "object"
     },
     "TaskStatusResponse": {
       "additionalProperties": false,
@@ -2618,6 +3018,9 @@
   },
   "description": "Schema-only root that keeps every public Web API type reachable for code generation.",
   "properties": {
+    "active_task_info": {
+      "$ref": "#/$defs/ActiveTaskInfo"
+    },
     "analysis_response": {
       "$ref": "#/$defs/AnalysisResponse"
     },
@@ -2656,6 +3059,9 @@
     },
     "judge_summary": {
       "$ref": "#/$defs/JudgeSummary"
+    },
+    "list_active_tasks_response": {
+      "$ref": "#/$defs/ListActiveTasksResponse"
     },
     "list_perf_runs_response": {
       "$ref": "#/$defs/ListPerfRunsResponse"
@@ -2770,6 +3176,8 @@
     "perf_runs_list_response",
     "perf_requests_response",
     "delete_perf_run_response",
+    "active_task_info",
+    "list_active_tasks_response",
     "metric_identity",
     "metric_display_kind",
     "metric_semantics",

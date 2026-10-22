@@ -11,6 +11,8 @@ interface TaskFormOptions {
    * moves, so the user is never sent to a field they cannot see.
    */
   moreParamsIds?: string[]
+  /** Hide errors from an earlier draft after loading or resetting field values. */
+  values?: Record<string, string | boolean>
 }
 
 export interface TaskForm {
@@ -47,35 +49,38 @@ export interface TaskForm {
  * The field values themselves stay with the caller: only the error/focus
  * protocol is shared, so neither form has to describe its inputs to this hook.
  */
-export function useTaskForm({ domOrder, moreParamsIds = [] }: TaskFormOptions): TaskForm {
-  const { setErrors, errorFor, clearError } = useFormErrors()
+export function useTaskForm({ domOrder, moreParamsIds = [], values }: TaskFormOptions): TaskForm {
+  const { setErrors, errorFor: storedErrorFor, clearError } = useFormErrors()
+  const [validatedValues, setValidatedValues] = useState<Record<string, string | boolean>>({})
   const [showMore, setShowMore] = useState(false)
+  const errorFor = (id: string) => {
+    if (values && values[id] !== validatedValues[id]) return undefined
+    return storedErrorFor(id)
+  }
 
   const toggleMore = useCallback(() => setShowMore((open) => !open), [])
 
   const submitHandler = useCallback(
-    (validate: () => Record<string, string>, onValid: () => void) =>
-      (event: SyntheticEvent<HTMLFormElement>) => {
-        event.preventDefault()
-        const errors = validate()
+    (validate: () => Record<string, string>, onValid: () => void) => (event: SyntheticEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      const errors = validate()
+      setValidatedValues(values ? { ...values } : {})
 
-        if (Object.keys(errors).length > 0) {
-          setErrors(errors)
-          const firstInvalid = computeFirstInvalid(domOrder, Object.keys(errors))
-          if (firstInvalid) {
-            if (moreParamsIds.includes(firstInvalid)) setShowMore(true)
-            // Defer focus so a newly-expanded section is mounted first.
-            requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
-          }
-          return
+      if (Object.keys(errors).length > 0) {
+        setErrors(errors)
+        const firstInvalid = computeFirstInvalid(domOrder, Object.keys(errors))
+        if (firstInvalid) {
+          if (moreParamsIds.includes(firstInvalid)) setShowMore(true)
+          // Defer focus so a newly-expanded section is mounted first.
+          requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
         }
+        return
+      }
 
-        setErrors({})
-        onValid()
-      },
-    // `domOrder` / `moreParamsIds` are module-level constants at every call site.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [setErrors],
+      setErrors({})
+      onValid()
+    },
+    [setErrors, domOrder, moreParamsIds, values],
   )
 
   return { errorFor, clearError, showMore, toggleMore, submitHandler }

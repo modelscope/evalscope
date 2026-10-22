@@ -64,11 +64,11 @@ export default function ReportsPage() {
   const { selectedForCompare, setCompareSelection, clearCompareSelection } = useCompareSelection()
 
   // ---- Local state ----
-  const [filters, setFilters] = useState<ReportFilters>(defaultFilters)
+  const [filters, setFilters] = useState<ReportFilters>(() => ({ ...defaultFilters, search: searchParams.get('search') ?? '' }))
   const [page, setPage] = useState(1)
 
   // Debounce search
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('search') ?? '')
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   useEffect(() => {

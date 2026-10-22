@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from evalscope.metrics.semantics import format_perf_value, resolve_perf_semantics
 from evalscope.perf.utils.perf_constants import Metrics, PercentileMetrics
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 _CONFIG_COLUMNS = [
     ('concurrency', 'Conc.', None),
@@ -71,8 +72,14 @@ def build_basic_info(
     """Produce the key/value pairs shown in the Overview › Basic Information card."""
     info: OrderedDict = OrderedDict()
     info['Model'] = args_dict.get('model', args_dict.get('model_id', 'N/A'))
+    alias = args_dict.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        info['Alias'] = alias.strip()
     info['API Type'] = args_dict.get('api', 'N/A')
     info['Dataset'] = args_dict.get('dataset', 'N/A')
+    endpoint = sanitize_endpoint(args_dict.get('url'))
+    if endpoint:
+        info['Endpoint'] = endpoint
 
     total_req = sum(r.summary.total_requests for r in runs)
     succeed = sum(r.summary.succeed_requests for r in runs)
@@ -90,6 +97,26 @@ def build_basic_info(
         info['Total Output Tokens'] = f'{total_output:,.0f}'
 
     return info
+
+
+def build_run_config(args_dict: dict, runs: list | None = None) -> dict[str, str]:
+    fields = (
+        'api',
+        'dataset',
+        'parallel',
+        'number',
+        'rate',
+        'max_tokens',
+        'min_tokens',
+        'max_prompt_length',
+        'min_prompt_length',
+    )
+    configuration = {key: str(args_dict[key]) for key in fields if args_dict.get(key) is not None}
+    if runs and len(runs) > 1:
+        configuration['parallel'] = ', '.join(str(run.parallel) for run in runs)
+        configuration['number'] = ', '.join(str(run.number) for run in runs)
+        configuration['rate'] = ', '.join(str(run.summary.request_rate) for run in runs)
+    return configuration
 
 
 def _summary_specs(is_embedding_flag: bool) -> list:
@@ -228,6 +255,8 @@ def format_summary_rows(columns: list, rows: list) -> List[List[str]]:
                 formatted_row.append('INF')
             elif key == 'concurrency':
                 formatted_row.append(str(int(value)))
+            elif key == 'request_rate':
+                formatted_row.append(f'{value:g}')
             else:
                 formatted_row.append(_cell(field_keys[key], value, include_unit=key == 'success_rate'))
         formatted_rows.append(formatted_row)

@@ -9,6 +9,7 @@ Execute `evalscope perf --help` to get a full parameter description.
 | `--model` | `str` | Name or path of the test model | - |
 | `--url` | `str` | API address, supporting `/chat/completions`, `/completions`, and `/responses` endpoints | - |
 | `--name` | `str` | Name for wandb/swanlab database result and result database | `{model_name}_{current_time}` |
+| `--alias` | `str` | Human-readable run alias shown in the Web dashboard lists and reports to distinguish runs of the same model (display label only) | `None` |
 | `--api` | `str` | Service API type<br>• `openai`: OpenAI-compatible Chat Completions API (requires `--url`)<br>• `openai_responses`: OpenAI official Responses API<br>• `openai_embedding`: OpenAI-compatible Embedding API<br>• `openai_rerank`: OpenAI/Cohere-compatible Rerank API<br>• `local`: Start local transformers inference<br>• `local_vllm`: Start local vLLM inference service<br>• Custom: See [Custom API Guide](./custom.md#custom-api-requests) | - |
 | `--port` | `int` | Port for local inference service<br>Only applicable to `local` and `local_vllm` | `8877` |
 | `--attn-implementation` | `str` | Attention implementation method<br>Only effective when `api=local` | `None`<br>(Optional: `flash_attention_2`, `eager`, `sdpa`) |

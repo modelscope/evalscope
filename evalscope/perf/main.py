@@ -13,6 +13,7 @@ from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.tqdm_utils import TqdmLogging as tqdm
 from evalscope.utils.tqdm_utils import make_tracker
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 from .arguments import Arguments, parse_args
 from .benchmark import run_benchmark
@@ -43,7 +44,7 @@ def run_one_benchmark(args: Arguments, output_path: str = None):
         args.rate = args.rate[0]
 
     logger.info('Starting benchmark with args: ')
-    logger.info(args)
+    logger.info(args.model_copy(update={'url': sanitize_endpoint(args.url)}))
 
     if platform.system() == 'Windows':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

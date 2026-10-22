@@ -61,9 +61,10 @@ from evalscope.service.report_meta_cache import (
 )
 from evalscope.utils.io_utils import OutputsStructure
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 from ..responses import json_response
-from ..utils import OUTPUT_DIR, active_task_ids
+from ..utils import OUTPUT_DIR, active_task_ids, read_task_manifest
 
 logger = get_logger()
 
@@ -199,6 +200,8 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
 
     Reads only the report JSON files, never the run's YAML config: the list needs
     none of the config, and requiring it dropped config-less report directories.
+    The service-written task manifest is the single tolerated sidecar: it carries
+    the run's display identity (alias / endpoint) and is optional.
     """
     try:
         report_list = get_report_list([report_model_dir(root, ref)])
@@ -236,7 +239,7 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         for r, metric in zip(report_list, primary_metrics)
         if metric
     ]
-    return {
+    item = {
         'run_id': ref.run_id,
         'model_id': ref.model_id,
         'model_name': first.model_name,
@@ -252,6 +255,25 @@ def _build_report_meta(ref: ReportRef, root: str) -> Optional[dict]:
         # Keep individual dataset names for per-dataset filtering.
         '_datasets': dataset_names,
     }
+    _enrich_with_task_identity(item, root, ref)
+    return item
+
+
+def _enrich_with_task_identity(item: dict, root: str, ref: ReportRef) -> None:
+    """Attach the run's alias and sanitized endpoint from its task manifest, when present.
+
+    The manifest is written by the service at task launch; CLI runs and older
+    outputs have none, in which case the item keeps no identity fields.
+    """
+    manifest = read_task_manifest(os.path.join(root, ref.run_id))
+    if not manifest:
+        return
+    alias = manifest.get('alias')
+    if isinstance(alias, str) and alias.strip():
+        item['alias'] = alias.strip()
+    endpoint = sanitize_endpoint(manifest.get('endpoint') or manifest.get('api_url'))
+    if endpoint:
+        item['api_host'] = endpoint
 
 
 def _group_items_by_model(items: List[dict]) -> List[dict]:
@@ -355,6 +377,9 @@ def _apply_report_filters(items: List[dict], search: str, models_filter: str, da
             if search in it['model_name'].lower()
             or search in it['dataset_name'].lower()
             or search in it['dataset_pretty_name'].lower()
+            or search in str(it.get('alias') or '').lower()
+            or search in str(it.get('api_host') or '').lower()
+            or search in it['run_id'].lower()
         ]
     if models_filter:
         model_set = {m.strip().lower() for m in models_filter.split(';') if m.strip()}

@@ -9,7 +9,8 @@
       // Apply theme before first paint to avoid FOUC.
       // Order: explicit user preference (localStorage) > OS preference (prefers-color-scheme) > dark.
       ;(function () {
-        var saved = localStorage.getItem('evalscope-theme')
+        var saved
+        try { saved = localStorage.getItem('evalscope-theme') } catch (_) { /* Storage may be blocked. */ }
         var theme
         if (saved === 'light' || saved === 'dark') {
           theme = saved

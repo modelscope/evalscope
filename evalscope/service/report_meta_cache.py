@@ -57,6 +57,14 @@ def report_ref_fingerprint(root: str, ref: ReportRef) -> Fingerprint:
     except OSError:
         pass
 
+    manifest_path = os.path.join(run_dir, 'task_info.json')
+    try:
+        st = os.stat(manifest_path)
+        entries.append(('@task_info', st.st_mtime_ns, st.st_ctime_ns, st.st_size))
+        entries.append(('@task_info_inode', st.st_ino, 0, 0))
+    except OSError:
+        entries.append(('@task_info', 0, 0, 0))
+
     for file_path in glob.glob(os.path.join(model_dir, '**', '*.json'), recursive=True):
         if os.path.basename(file_path) == DataCollection.REPORT_NAME:
             continue

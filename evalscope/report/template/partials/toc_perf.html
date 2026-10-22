@@ -34,8 +34,8 @@
           {% for run in run_sections %}
           <li>
             <a href="#run-{{ loop.index }}" class="toc-link toc-sub-link"
-               data-section="run-{{ loop.index }}" title="{{ run.name }}">
-              <span class="toc-dot"></span>{{ run.name }}
+               data-section="run-{{ loop.index }}" title="{{ run.name | e }}">
+              <span class="toc-dot"></span>{{ run.name | e }}
             </a>
           </li>
           {% endfor %}

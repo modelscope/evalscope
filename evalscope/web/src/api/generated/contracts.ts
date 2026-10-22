@@ -41,6 +41,7 @@ export type EventType =
  * Schema-only root that keeps every public Web API type reachable for code generation.
  */
 export interface WebApiContracts {
+  active_task_info: ActiveTaskInfo;
   analysis_response: AnalysisResponse;
   benchmark_entry: BenchmarkEntry;
   benchmarks_response: BenchmarksResponse;
@@ -54,6 +55,7 @@ export interface WebApiContracts {
   execution_summary: ExecutionSummary;
   judge_attempt: JudgeAttempt;
   judge_summary: JudgeSummary;
+  list_active_tasks_response: ListActiveTasksResponse;
   list_perf_runs_response: ListPerfRunsResponse;
   list_reports_grouped_response: ListReportsGroupedResponse;
   list_reports_response: ListReportsResponse;
@@ -81,6 +83,40 @@ export interface WebApiContracts {
   tool_call: PredictionToolCall;
   value_range: ValueRange;
   [k: string]: any;
+}
+/**
+ * Display identity of a task whose subprocess is currently registered.
+ */
+export interface ActiveTaskInfo {
+  alias?: string | null;
+  config?: TaskConfigSummary | null;
+  endpoint?: string | null;
+  html_report_url?: string | null;
+  kind: string;
+  model?: string;
+  percent?: number | null;
+  report_url?: string | null;
+  started_at?: string;
+  status?: "preparing" | "running" | "finalizing" | "completed" | "stopped" | "error" | "unknown";
+  task_id: string;
+}
+export interface TaskConfigSummary {
+  api?: string | null;
+  dataset?: string | null;
+  datasets?: string[] | null;
+  eval_batch_size?: number | null;
+  limit?: number | null;
+  max_prompt_length?: number | null;
+  max_tokens?: number | number[] | null;
+  min_prompt_length?: number | null;
+  min_tokens?: number | null;
+  number?: number | number[] | null;
+  parallel?: number | number[] | null;
+  rate?: number | number[] | null;
+  repeats?: number | null;
+  temperature?: number | null;
+  top_k?: number | null;
+  top_p?: number | null;
 }
 export interface AnalysisResponse {
   analysis: string;
@@ -259,6 +295,10 @@ export interface JudgeSummary {
   valid_observations?: number;
   [k: string]: any;
 }
+export interface ListActiveTasksResponse {
+  tasks: ActiveTaskInfo[];
+  total: number;
+}
 export interface ListPerfRunsResponse {
   metric_semantics?: {
     [k: string]: MetricSemantics;
@@ -284,6 +324,7 @@ export interface ValueRange {
   min: number;
 }
 export interface PerfRunSummary {
+  alias?: string | null;
   api_host?: string | null;
   api_type: string;
   avg_input_tokens?: number | null;
@@ -328,6 +369,8 @@ export interface ReportGroup {
   timestamp: string;
 }
 export interface ReportSummary {
+  alias?: string | null;
+  api_host?: string | null;
   dataset_name: string;
   dataset_pretty_name?: string;
   model_id: string;
@@ -458,6 +501,7 @@ export interface LogResponse {
   total_lines: number;
 }
 export interface PerfDetailResponse {
+  alias?: string | null;
   api_type: string;
   basic_info: {
     [k: string]: string;
@@ -465,6 +509,9 @@ export interface PerfDetailResponse {
   best_config: {
     [k: string]: string;
   };
+  configuration?: {
+    [k: string]: string;
+  } | null;
   dataset: string;
   generated_at: string;
   has_html: boolean;
@@ -487,7 +534,7 @@ export interface PerfSummaryRow {
     [k: string]: number;
   };
   values: {
-    [k: string]: number;
+    [k: string]: number | null;
   };
 }
 export interface PerfRequestsResponse {
@@ -508,7 +555,7 @@ export interface PerfRunItem {
   number: number;
   parallel: number;
   percentile_columns: string[];
-  percentile_rows: (string | number)[][];
+  percentile_rows: (string | number | null)[][];
   rate: number | null;
   succeed_requests: number;
   success_rate: number;

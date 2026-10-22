@@ -22,12 +22,20 @@ const LocaleContext = createContext<LocaleCtx>({
 })
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(
-    () => (localStorage.getItem('evalscope-locale') as Locale) || 'en',
-  )
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    try {
+      return localStorage.getItem('evalscope-locale') === 'zh' ? 'zh' : 'en'
+    } catch {
+      return 'en'
+    }
+  })
 
   const setLocale = useCallback((l: Locale) => {
-    localStorage.setItem('evalscope-locale', l)
+    try {
+      localStorage.setItem('evalscope-locale', l)
+    } catch {
+      // Language changes still work when persistence is unavailable.
+    }
     setLocaleState(l)
   }, [])
 

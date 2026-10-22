@@ -17,6 +17,7 @@ interface TaskFormShellProps {
   onToggleMore: () => void
   submitLabel: string
   disabled?: boolean
+  toolbar?: ReactNode
 }
 
 /**
@@ -41,9 +42,11 @@ export default function TaskFormShell({
   onToggleMore,
   submitLabel,
   disabled,
+  toolbar,
 }: TaskFormShellProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      {toolbar}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{children}</div>
 
       {moreParams && (
@@ -51,7 +54,7 @@ export default function TaskFormShell({
           <button
             type="button"
             onClick={onToggleMore}
-            className="flex cursor-pointer items-center gap-1 text-xs text-[var(--accent)] hover:underline"
+            className="coarse-target flex cursor-pointer items-center gap-1 text-xs text-[var(--accent)] hover:underline"
           >
             {moreParamsLabel}
             {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

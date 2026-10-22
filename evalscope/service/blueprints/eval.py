@@ -1,4 +1,5 @@
 import json
+import math
 import os
 from typing import Any, Dict, List
 
@@ -10,6 +11,7 @@ from evalscope.constants import EvalType
 from evalscope.report import Report
 from evalscope.report.combinator import get_display_data_frame, get_report_list
 from evalscope.service.api_models import (
+    ActiveTaskInfo,
     BenchmarksResponse,
     EvalInvokeResponse,
     LogResponse,
@@ -17,6 +19,7 @@ from evalscope.service.api_models import (
     TaskStatusResponse,
 )
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import validate_http_endpoint
 
 from ..responses import json_response
 from ..utils import (
@@ -25,13 +28,17 @@ from ..utils import (
     OUTPUT_DIR,
     TaskStoppedError,
     build_benchmark_entry,
+    build_task_info,
     create_log_file,
     discover_all_benchmarks,
+    finish_task,
     get_log_content,
+    read_task_manifest,
     run_eval_wrapper,
     run_in_subprocess,
     serialize_result,
     stop_process,
+    task_file_path,
     validate_task_id,
 )
 
@@ -103,8 +110,8 @@ def _parse_request() -> tuple[dict, str]:
             the ``EvalScope-Task-Id`` header is absent or malformed.
     """
     data = request.get_json()
-    if not data:
-        raise RequestValidationError('Request body is required')
+    if not isinstance(data, dict) or not data:
+        raise RequestValidationError('Request body must be a JSON object')
 
     for field in _REQUIRED_FIELDS:
         if field not in data:
@@ -119,6 +126,11 @@ def _parse_request() -> tuple[dict, str]:
     except ValueError as e:
         raise RequestValidationError(str(e)) from e
 
+    try:
+        validate_http_endpoint(data.get('api_url'))
+    except ValueError as e:
+        raise RequestValidationError(str(e)) from e
+    data['api_url'] = data['api_url'].strip()
     return data, task_id
 
 
@@ -127,7 +139,39 @@ def _build_task_config(data: dict) -> TaskConfig:
     if not data.get('eval_type'):
         data['eval_type'] = EvalType.OPENAI_API
 
-    task_config = TaskConfig.from_dict(data)
+    try:
+        task_config = TaskConfig.from_dict(data)
+    except ImportError:
+        raise RequestValidationError(
+            'Required evaluation dependencies are missing; install the selected feature extras'
+        ) from None
+    except (ValueError, TypeError):
+        raise RequestValidationError('Invalid evaluation configuration; check field names and types') from None
+    if task_config.eval_batch_size < 1 or task_config.repeats < 1:
+        raise RequestValidationError('Batch size and repeats must be positive integers')
+    generation = task_config.generation_config
+    if generation.timeout is not None and (not math.isfinite(generation.timeout) or generation.timeout <= 0):
+        raise RequestValidationError('Timeout must be positive')
+    if generation.max_tokens is not None and generation.max_tokens < 1:
+        raise RequestValidationError('Max Tokens must be a positive integer')
+    if generation.temperature is not None and not 0 <= generation.temperature <= 2:
+        raise RequestValidationError('Temperature must be between 0 and 2')
+    if generation.top_p is not None and not 0 <= generation.top_p <= 1:
+        raise RequestValidationError('Top P must be between 0 and 1')
+    if task_config.sandbox and task_config.sandbox.enabled:
+        from evalscope.api.sandbox.engine import resolve_engine
+
+        try:
+            resolve_engine(task_config.sandbox.engine)
+            if task_config.sandbox.pool_size is not None and task_config.sandbox.pool_size < 1:
+                raise ValueError('Invalid pool size')
+            if task_config.sandbox.engine == 'docker' and task_config.sandbox.manager_config.get('base_url'):
+                validate_http_endpoint(task_config.sandbox.manager_config['base_url'])
+        except ValueError:
+            raise RequestValidationError('Invalid sandbox engine, pool size or manager URL') from None
+    if task_config.dataset_args:
+        if any(not isinstance(value, dict) for value in task_config.dataset_args.values()):
+            raise RequestValidationError('Dataset Args must map dataset names to configuration objects')
     task_config.no_timestamp = True
     task_config.enable_progress_tracker = True
     task_config.analysis_report = True
@@ -154,11 +198,23 @@ def _all_results_empty(result) -> bool:
     return False
 
 
-def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
+def _extract_alias(data: dict) -> Any:
+    """Pop the optional display alias out of the request payload.
+
+    ``alias`` is a service-layer display label; TaskConfig forbids unknown
+    fields, so it must be removed before ``TaskConfig.from_dict``.
+    """
+    alias = data.pop('alias', None)
+    if isinstance(alias, str) and alias.strip():
+        return alias.strip()
+    return None
+
+
+def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task', task_meta: ActiveTaskInfo | None = None):
     """Run the evaluation subprocess and return a Flask response."""
     create_log_file(task_id, os.path.join('logs', 'eval_log.log'))
     try:
-        result = run_in_subprocess(run_eval_wrapper, task_config, task_id=task_id)
+        result = run_in_subprocess(run_eval_wrapper, task_config, task_id=task_id, task_meta=task_meta)
         table_str = _build_result_table(task_config.work_dir)
         if _all_results_empty(result):
             error_msg = (
@@ -166,19 +222,23 @@ def _execute_task(task_id: str, task_config: TaskConfig, label: str = 'Task'):
                 'All samples may have failed. '
                 'Check the evaluation log for details.'
             )
+            finish_task(task_id, 'error')
             logger.error(f'[{task_id}] {label} produced empty results: {error_msg}')
             return jsonify({'status': 'error', 'task_id': task_id, 'error': error_msg}), 500
+        finish_task(task_id, 'completed')
         logger.info(f'[{task_id}] {label} completed successfully')
         return json_response(
             EvalInvokeResponse,
             {'status': 'completed', 'task_id': task_id, 'result': serialize_result(result), 'table': table_str},
         )
     except TaskStoppedError:
+        finish_task(task_id, 'stopped')
         logger.info(f'[{task_id}] {label} stopped by user.')
         return json_response(EvalInvokeResponse, {'status': 'stopped', 'task_id': task_id})
     except Exception as e:
+        finish_task(task_id, 'error')
         logger.error(f'[{task_id}] {label} failed: {e}')
-        return jsonify({'status': 'error', 'task_id': task_id, 'error': str(e)}), 500
+        return jsonify({'status': 'error', 'task_id': task_id, 'error': 'Task failed; check the task log'}), 500
 
 
 @bp_eval.route('/invoke', methods=['POST'])
@@ -188,14 +248,17 @@ def run_evaluation():
     Returns the evaluation result when the task completes.
     """
     data, task_id = _parse_request()
+    alias = _extract_alias(data)
 
     task_config = _build_task_config(data)
     task_config.work_dir = os.path.join(OUTPUT_DIR, task_id)
 
+    task_meta = build_task_info(task_id, 'eval', task_config, alias)
+
     logger.info(f'[{task_id}] Running evaluation task for model: {task_config.model}')
     logger.info(f'[{task_id}] Datasets: {task_config.datasets}')
 
-    return _execute_task(task_id, task_config, label='Task')
+    return _execute_task(task_id, task_config, label='Task', task_meta=task_meta)
 
 
 @bp_eval.route('/stop', methods=['POST'])
@@ -209,7 +272,11 @@ def stop_evaluation():
     if not task_id:
         return jsonify({'error': 'task_id is required'}), 400
 
-    stopped = stop_process(task_id)
+    try:
+        validate_task_id(task_id)
+        stopped = stop_process(task_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid task_id'}), 400
     if stopped:
         return json_response(TaskStatusResponse, {'status': 'stopped', 'task_id': task_id})
     else:
@@ -223,6 +290,7 @@ def resume_evaluation():
     Returns the evaluation result when the task completes.
     """
     data, task_id = _parse_request()
+    alias = _extract_alias(data)
 
     work_dir = os.path.join(OUTPUT_DIR, task_id)
     if not os.path.isdir(work_dir):
@@ -233,10 +301,15 @@ def resume_evaluation():
     task_config.use_cache = work_dir
     task_config.rerun_review = True
 
+    existing_manifest = read_task_manifest(work_dir)
+    if alias is None and existing_manifest:
+        alias = existing_manifest.get('alias')
+    task_meta = build_task_info(task_id, 'eval', task_config, alias)
+
     logger.info(f'[{task_id}] Running resume task, work_dir: {work_dir}')
     logger.info(f'[{task_id}] Model: {task_config.model}, Datasets: {task_config.datasets}')
 
-    return _execute_task(task_id, task_config, label='Resume task')
+    return _execute_task(task_id, task_config, label='Resume task', task_meta=task_meta)
 
 
 @bp_eval.route('/progress', methods=['GET'])
@@ -250,11 +323,17 @@ def get_evaluation_progress():
     if not task_id:
         return jsonify({'error': 'task_id is required'}), 400
 
-    progress_file = os.path.join(OUTPUT_DIR, task_id, 'progress.json')
     try:
+        validate_task_id(task_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid task_id'}), 400
+    try:
+        progress_file = task_file_path(task_id, 'progress.json')
         with open(progress_file, 'r', encoding='utf-8') as f:
             progress = json.load(f)
         return json_response(ProgressResponse, progress)
+    except ValueError:
+        return jsonify({'error': 'Invalid progress data or path'}), 400
     except FileNotFoundError:
         return json_response(ProgressResponse, {'percent': 0.0})
     except Exception as e:

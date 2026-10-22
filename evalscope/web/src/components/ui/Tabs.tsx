@@ -72,6 +72,9 @@ export interface TabsProps {
   className?: string
   /** Optional page-specific controls aligned with the tablist. */
   actions?: ReactNode
+  /** Shared controls between the tablist and panels, mounted once. */
+  beforePanels?: ReactNode
+  keepMounted?: boolean
 }
 
 /**
@@ -95,6 +98,8 @@ export default function Tabs({
   orientation = 'horizontal',
   className,
   actions,
+  beforePanels,
+  keepMounted = false,
 }: TabsProps) {
   const { t } = useLocale()
   // Stable id namespace so tab and panel ids can reference each other.
@@ -188,6 +193,7 @@ export default function Tabs({
         {actions && <div className="flex min-w-0 flex-1 justify-end">{actions}</div>}
       </div>
 
+      {beforePanels}
       {validTabs.map((tab) => {
           const isSelected = tab.key === selectedKey
           return (
@@ -198,7 +204,7 @@ export default function Tabs({
               aria-labelledby={tabDomId(tab.key)}
               hidden={!isSelected}
             >
-              {isSelected ? panels[tab.panelId as string] : null}
+              {isSelected || keepMounted ? panels[tab.panelId as string] : null}
             </div>
           )
         })}

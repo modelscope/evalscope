@@ -14,6 +14,7 @@ from evalscope.perf.utils.perf_models import BenchmarkSummary, PercentileResult
 from evalscope.perf.utils.trace_metrics import TraceLevelSummary
 from evalscope.perf.utils.workload_timeline import WorkloadThroughput
 from evalscope.utils.logger import get_logger
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 from .perf_constants import Metrics, PercentileMetrics
 
@@ -280,8 +281,11 @@ class BaseSummaryRenderer(ABC):
         basic_info.add_column('Value', style='green', width=55)
 
         basic_info.add_row('Model', args.model_id)
+        if args.alias:
+            basic_info.add_row('Alias', Text(args.alias))
         basic_info.add_row('Test Dataset', args.dataset)
         basic_info.add_row('API Type', args.api)
+        basic_info.add_row('Endpoint', Text(sanitize_endpoint(args.url) or '—'))
         for label, value in self._get_token_stat_rows(result, args):
             basic_info.add_row(label, value)
         basic_info.add_row('Total Test Time', _cell(Metrics.TIME_TAKEN_FOR_TESTS, result.total_time, include_unit=True))

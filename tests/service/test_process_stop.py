@@ -6,9 +6,11 @@ a user-initiated stop must surface as :class:`TaskStoppedError` (graceful),
 while a genuine child crash must still raise ``RuntimeError``.
 """
 import multiprocessing
+import signal
 import threading
 import time
 import unittest
+from multiprocessing.synchronize import Event
 
 from evalscope.service.utils.process import (
     TaskStoppedError,
@@ -32,7 +34,39 @@ def _crash() -> None:
     raise ValueError('boom')
 
 
+def _interruptible_worker(ready: Event) -> None:
+    def interrupt(signum: int, frame: object) -> None:
+        raise RuntimeError('interrupted by SIGTERM')
+
+    signal.signal(signal.SIGTERM, interrupt)
+    ready.set()
+    time.sleep(60)
+
+
 class TestProcessStop(unittest.TestCase):
+
+    def test_stop_with_sigterm_error_result(self) -> None:
+        """A child that handles SIGTERM must still finish as a user stop."""
+        task_id = 'test-stop-sigterm-result'
+        ready = multiprocessing.get_context('spawn').Event()
+        outcome = {}
+
+        def run() -> None:
+            try:
+                run_in_subprocess(_interruptible_worker, ready, task_id=task_id)
+            except Exception as error:
+                outcome['error'] = error
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        try:
+            self.assertTrue(ready.wait(timeout=30))
+            self.assertTrue(stop_process(task_id))
+        finally:
+            thread.join(timeout=30)
+        self.assertFalse(thread.is_alive())
+        self.assertIsInstance(outcome.get('error'), TaskStoppedError)
+        self.assertNotIn(task_id, _user_stopped_tasks)
 
     def test_user_stop_raises_task_stopped_error(self):
         """Stopping a running task raises TaskStoppedError, not RuntimeError."""
