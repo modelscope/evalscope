@@ -37,7 +37,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='docmath',
         pretty_name='DocMath',
         tags=[Tags.REASONING, Tags.MATH, Tags.LONG_CONTEXT],
@@ -99,7 +99,11 @@ class DocMathAdapter(DefaultDataAdapter):
         return Sample(
             input=[ChatMessageUser(content=message)],
             target=str(ground_truth),
-            metadata={'question_id': record.get('question_id', ''), 'answer_type': type(ground_truth).__name__},
+            metadata={
+                'question_id': record.get('question_id', ''),
+                'question': question,  # the judge prompt shows the question, without the long document
+                'answer_type': type(ground_truth).__name__,
+            },
         )
 
     def extract_answer(self, prediction: str, task_state: TaskState):

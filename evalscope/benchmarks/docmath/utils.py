@@ -18,6 +18,8 @@ def extract_answer(response: str) -> str:
     """Extract mathematics upstream; boolean answers follow the dataset's type rule."""
     from evalscope.metrics.math.parser import extract_answer as extract
 
+    # Preserve mathematical minus signs when extracting the final numeric answer.
+    response = response.replace('\N{MINUS SIGN}', '-')
     boolean = _boolean(response)
     return str(boolean) if boolean is not None else extract(response)
 

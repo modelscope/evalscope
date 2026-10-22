@@ -44,7 +44,7 @@ AFFECTED_BENCHMARKS = (
 
 @pytest.mark.parametrize('benchmark', AFFECTED_BENCHMARKS)
 def test_every_affected_benchmark_declares_the_next_minor_version(benchmark: str) -> None:
-    expected_version = 'v1.3' if benchmark == 'olympiad_bench' else 'v1.1'
+    expected_version = {'olympiad_bench': 'v1.3', 'docmath': 'v1.2'}.get(benchmark, 'v1.1')
     assert get_benchmark(benchmark).benchmark_meta.evaluation_version == expected_version
 
 
