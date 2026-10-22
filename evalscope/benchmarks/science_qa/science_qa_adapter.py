@@ -54,6 +54,7 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
         metric_list=['acc'],
         eval_split='test',
         prompt_template=MULT_CHOICE_PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
@@ -62,6 +63,11 @@ class ScienceQAAdapter(VisionLanguageAdapter, MultiChoiceAdapter):
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
         question: str = record.get('question', '')
+        # `hint` is the official ScienceQA context; questions such as "Which text structure does the text use?"
+        # cannot be answered without it.
+        hint = (record.get('hint') or '').strip()
+        if hint:
+            question = f'Context: {hint}\n{question}'
 
         answers_list: List[str] = record['choices']
         content_list: List[Content] = []
