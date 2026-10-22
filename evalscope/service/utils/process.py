@@ -7,6 +7,7 @@ import threading
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
+from multiprocessing.connection import wait
 from typing import Iterator, List, Optional, TextIO
 
 from evalscope.config import TaskConfig
@@ -93,7 +94,7 @@ def stop_process(task_id: str) -> bool:
     if record is None:
         return False
     proc = record.proc
-    if not proc.is_alive():
+    if wait([proc.sentinel], timeout=0):
         # Process already exited on its own; do NOT mark as user-stopped, or a
         # pending success result would be masked as TaskStoppedError. Treat the
         # stop request as a no-op.
@@ -104,11 +105,11 @@ def stop_process(task_id: str) -> bool:
     # the death first and misreport it as a crash.
     _user_stopped_tasks.add(task_id)
     proc.terminate()
-    proc.join(timeout=3)
-    if proc.is_alive():
+    # Only run_in_subprocess reaps the child. Concurrent join/is_alive calls
+    # can race in waitpid and misclassify a process that has already exited.
+    if not wait([proc.sentinel], timeout=3):
         proc.kill()
-        proc.join(timeout=2)
-    if proc.is_alive():
+    if not wait([proc.sentinel], timeout=2):
         _user_stopped_tasks.discard(task_id)
         with _active_lock:
             _active_processes[task_id] = record
