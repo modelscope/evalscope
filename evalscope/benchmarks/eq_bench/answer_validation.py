@@ -127,7 +127,7 @@ def calculate_score_fullscale(reference, user):
         user: User answer dictionary with format {emotion: score}
 
     Returns:
-        float: The score for this question (0-10 range), or None if parsing fails
+        float: The raw score for this question (can be negative, at most 10), or None if parsing fails
     """
     # First check if emotions match the reference answer
     if len(user.items()) != 4:
@@ -282,7 +282,7 @@ v2 Full-Scale Scoring System (Recommended):
 - Directly compares predicted emotion intensities (0-10) with reference answers
 - Uses S-shaped scaling function for small differences (≤5), linear scaling for large differences (>5)
 - Adjustment constant 0.7477 ensures random answers score 0
-- Final score range: 0-100 (100 = perfect match with reference answer)
+- Final scores can be negative (100 = perfect match with reference answer)
 
 v1 Normalized Scoring System (Legacy):
 - Normalizes predicted scores so they sum to 10, only compares relative intensities

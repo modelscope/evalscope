@@ -28,6 +28,12 @@ LEGACY_MIGRATION_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::LEGAC
 #: Where to declare a benchmark level collision override, used in validation messages.
 BENCHMARK_OVERRIDE_TABLE_LOCATION = 'evalscope/metrics/semantics/catalog.py::BENCHMARK_METRIC_OVERRIDES'
 
+# The v2 formula is (10 - 0.7477 * tally) / 10, with tally at most 40 for valid ratings.
+_EQ_BENCH_SCORE_ENTRY = MetricEntry(
+    baseline='quality.score.ratio',
+    value_range=ValueRange(min=-1.9908, max=1.0),
+)
+
 LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     # --- quality ratios: one line each, reused by every benchmark ------------------------
     # Bounded [0, 1] ratios rendered as percent, higher is better.
@@ -118,8 +124,7 @@ LEGACY_METRIC_MIGRATIONS: Dict[str, MetricEntry] = {
     'mean_submission_ready': MetricEntry(baseline='quality.score.ratio'),
     'mean_required_coverage': MetricEntry(baseline='quality.coverage.ratio'),
     'mean_coverage_score': MetricEntry(baseline='quality.coverage.ratio'),
-    # --- official 0-100 scales -----------------------------------------------------------
-    'mean_eq_bench_score': MetricEntry(baseline='quality.score.points_100'),
+    'mean_eq_bench_score': _EQ_BENCH_SCORE_ENTRY,
     # --- win rates -----------------------------------------------------------------------
     'mean_winrate': MetricEntry(baseline='quality.win_rate.ratio'),
     # --- judge scores (unbounded) --------------------------------------------------------
@@ -309,7 +314,7 @@ _CANONICAL_NAMES_BY_BASELINE = {
     'quality.precision.ratio': ('boundary_precision', 'official_mean_precision', 'precision'),
     'quality.recall.ratio': ('official_mean_recall', 'recall'),
     'quality.rouge.ratio': ('rouge', 'rouge_l'),
-    'quality.score.points_100': ('eq_bench_score', 'weighted_score_percent'),
+    'quality.score.points_100': ('weighted_score_percent',),
     'quality.score.ratio': (
         'clipped_score',
         'compliance_score',
@@ -347,6 +352,7 @@ METRIC_DEFINITIONS: Dict[str, MetricEntry] = {
 }
 METRIC_DEFINITIONS.update(
     {
+        'eq_bench_score': _EQ_BENCH_SCORE_ENTRY,
         # Three-way answer grading exposes these distribution shares as diagnostics. They remain
         # non-primary and directionless, but deserve report labels rather than internal identities,
         # which is why they are declared here instead of in the table above.

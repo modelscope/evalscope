@@ -23,9 +23,12 @@ EQ-Bench is a benchmark for evaluating language models on emotional intelligence
 ## Evaluation Notes
 
 - Default evaluation uses the **validation** split
-- Primary metric: **EQ-Bench Score** (0-100 scale, reported as 0-1)
+- Primary metric: **EQ-Bench Score**, stored as the official score divided by 100 and displayed on the official scale
+- Valid per-question scores can be negative (stored range: -1.9908 to 1); they are not clamped before averaging
+- Unparseable or invalid answers and samples missing v2 full-scale references are excluded from the score average; the metric count is the number of scored samples
 - Uses zero-shot evaluation (no few-shot examples)
-- Responses must include emotion ratings in specific JSON-like format
+- Responses must include four emotion ratings in `Emotion: score` format
+- This adapter does not reproduce the official runner's format-failure resampling or optional revision mode
 - Official algorithm from [Paper](https://arxiv.org/abs/2312.06281) | [Homepage](https://eqbench.com/)
 
 
@@ -58,8 +61,8 @@ EQ-Bench is a benchmark for evaluating language models on emotional intelligence
 {
   "input": [
     {
-      "id": "97129bc9",
-      "content": "Your task is to predict the likely emotional responses of a character in this dialogue:\n\nRobert: Claudia, you've always been the idealist. But let's be practical for once, shall we?\nClaudia: Practicality, according to you, means bulldozing ev ... [TRUNCATED] ... ary:\n\nRemorseful: <score>\nIndifferent: <score>\nAffectionate: <score>\nAnnoyed: <score>\n\n\n[End of answer]\n\nRemember: zero is a valid score, meaning they are likely not feeling that emotion. You must score at least one emotion > 0.\n\nYour answer:"
+      "id": "0e3345b4",
+      "content": "Your task is to predict the likely emotional responses of a character in this dialogue:\n\nRobert: Claudia, you've always been the idealist. But let's be practical for once, shall we?\nClaudia: Practicality, according to you, means bulldozing ev ... [TRUNCATED 630 chars] ... ary:\n\nRemorseful: <score>\nIndifferent: <score>\nAffectionate: <score>\nAnnoyed: <score>\n\n\n[End of answer]\n\nRemember: zero is a valid score, meaning they are likely not feeling that emotion. You must score at least one emotion > 0.\n\nYour answer:"
     }
   ],
   "target": "{'emotion1': 'Remorseful', 'emotion2': 'Indifferent', 'emotion3': 'Affectionate', 'emotion4': 'Annoyed', 'emotion1_score': 2, 'emotion2_score': 3, 'emotion3_score': 0, 'emotion4_score': 5}",
