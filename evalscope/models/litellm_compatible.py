@@ -31,6 +31,7 @@ from evalscope.utils import get_logger
 from evalscope.utils.function_utils import async_retry_call, retry_call
 
 from .utils.openai import (
+    _NonRetryableEmptyCompletionError,
     async_collect_stream_response,
     chat_choices_from_openai,
     collect_stream_response,
@@ -40,6 +41,7 @@ from .utils.openai import (
     openai_chat_tools,
     openai_completion_params,
     openai_handle_bad_request,
+    raise_if_error_payload,
 )
 
 logger = get_logger()
@@ -55,6 +57,8 @@ NON_RETRYABLE_LITELLM_ERRORS: Tuple[Type[Exception], ...] = (
     NotFoundError,
     PermissionDeniedError,
     UnprocessableEntityError,
+    # A 200 + error payload carrying a non-retryable gateway code (4xx).
+    _NonRetryableEmptyCompletionError,
 )
 
 
@@ -164,6 +168,7 @@ class LiteLLMAPI(ModelAPI):
                     if finish_chunks is None:
                         _validate_stream_finish_reason(response)
                     return completion, ttft, True
+                raise_if_error_payload(response)
                 return response, None, False
 
             response, ttft, collected_stream = retry_call(
@@ -242,6 +247,7 @@ class LiteLLMAPI(ModelAPI):
                     if finish_chunks is None:
                         _validate_stream_finish_reason(response)
                     return completion, ttft, True
+                raise_if_error_payload(response)
                 return response, None, False
 
             response, ttft, collected_stream = await async_retry_call(
