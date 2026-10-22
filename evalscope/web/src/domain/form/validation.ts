@@ -79,19 +79,6 @@ export function computeFirstInvalid(order: string[], invalidIds: Set<string> | s
   return null
 }
 
-/**
- * Validate the free-form `Dataset_Args` JSON input.
- *
- * Parsing failures and structurally invalid input both block submission while
- * preserving the raw text (this function is pure and never mutates its input):
- * - Non-JSON text -> `{ ok: false, messageKey: datasetArgsInvalidJson }`.
- * - Valid JSON that is not a JSON object (array, `null` or a primitive) ->
- *   `{ ok: false, messageKey: datasetArgsInvalidStructure }`.
- * - A JSON object -> `{ ok: true, value }` where `value` is the parsed object.
- *
- * @param rawText - The raw `Dataset_Args` text exactly as typed by the user.
- * @returns A discriminated result carrying the parsed object or an error key.
- */
 export function validateDatasetLimit(value: string): string | null {
   if (!value.trim()) return null
   const limit = Number(value)
@@ -118,6 +105,19 @@ export function validateApiUrl(value: string, required: boolean): string | null 
   }
 }
 
+/**
+ * Validate the free-form `Dataset_Args` JSON input.
+ *
+ * Parsing failures and structurally invalid input both block submission while
+ * preserving the raw text (this function is pure and never mutates its input):
+ * - Non-JSON text -> `{ ok: false, messageKey: datasetArgsInvalidJson }`.
+ * - Valid JSON that is not a JSON object (array, `null` or a primitive) ->
+ *   `{ ok: false, messageKey: datasetArgsInvalidStructure }`.
+ * - An object mapping dataset names to configuration objects -> `{ ok: true, value }`.
+ *
+ * @param rawText - The raw `Dataset_Args` text exactly as typed by the user.
+ * @returns A discriminated result carrying the parsed object or an error key.
+ */
 export function validateDatasetArgs(rawText: string): DatasetArgsValidation {
   let parsed: unknown
   try {
