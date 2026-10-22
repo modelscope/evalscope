@@ -3,20 +3,20 @@
 
 ## Overview
 
-ScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers diverse subjects including natural science, social science, and language science, with questions accompanied by both image and text contexts.
+ScienceQA is a multimodal benchmark consisting of multiple-choice science questions derived from elementary and high school curricula. It covers diverse subjects including natural science, social science, and language science, with optional text and image contexts.
 
 ## Task Description
 
 - **Task Type**: Multimodal Science Question Answering
-- **Input**: Question with optional image context + multiple choices
+- **Input**: Question and multiple choices, with optional text (`hint`) and image contexts
 - **Output**: Correct answer choice letter
-- **Domains**: Natural science, social science, language science
+- **Domain**: Natural science, social science, language science
 
 ## Key Features
 
 - Questions sourced from real K-12 science curricula
-- Most questions include both image and text contexts
-- Annotated with detailed lectures and explanations
+- Text and image contexts are optional and vary by question
+- Annotated with detailed background knowledge and solution explanations
 - Supports research into chain-of-thought reasoning
 - Covers multiple grade levels and difficulty ranges
 - Rich metadata including topic, skill, and category information
@@ -26,7 +26,8 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
 - Default evaluation uses the **test** split
 - Primary metric: **Accuracy** on multiple-choice questions
 - Uses Chain-of-Thought (CoT) prompting for reasoning
-- Metadata includes solution explanations for analysis
+- Evaluation version **v1.1** prepends non-empty `hint` text as `Context: ...` before the question; empty hints add no context
+- The `lecture` and `solution` annotations are retained as metadata and excluded from evaluation prompts
 - Questions span grades from elementary to high school
 
 
@@ -48,8 +49,8 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
 | Metric | Value |
 |--------|-------|
 | Total Samples | 4,241 |
-| Prompt Length (Mean) | 370.49 chars |
-| Prompt Length (Min/Max) | 250 / 1037 chars |
+| Prompt Length (Mean) | 472.92 chars |
+| Prompt Length (Min/Max) | 255 / 2457 chars |
 
 **Image Statistics:**
 
@@ -69,7 +70,7 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
 {
   "input": [
     {
-      "id": "7586b8fe",
+      "id": "266efb09",
       "content": [
         {
           "text": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of A,B. Think step by step before answering.\n\nWhich figure of speech is used in this text?\nSing, O goddess, the anger of Achilles son of Peleus, that brought countless ills upon the Achaeans.\n—Homer, The Iliad\n\nA) chiasmus\nB) apostrophe"
@@ -92,7 +93,7 @@ ScienceQA is a multimodal benchmark consisting of multiple-choice science questi
     "topic": "figurative-language",
     "category": "Literary devices",
     "skill": "Classify the figure of speech: anaphora, antithesis, apostrophe, assonance, chiasmus, understatement",
-    "lecture": "Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\nWe are united ... [TRUNCATED] ... but reverses the order of words.\nNever let a fool kiss you or a kiss fool you.\nUnderstatement involves deliberately representing something as less serious or important than it really is.\nAs you know, it can get a little cold in the Antarctic.",
+    "lecture": "Figures of speech are words or phrases that use language in a nonliteral or unusual way. They can make writing more expressive.\nAnaphora is the repetition of the same word or words at the beginning of several phrases or clauses.\nWe are united ... [TRUNCATED 446 chars] ... but reverses the order of words.\nNever let a fool kiss you or a kiss fool you.\nUnderstatement involves deliberately representing something as less serious or important than it really is.\nAs you know, it can get a little cold in the Antarctic.",
     "solution": "The text uses apostrophe, a direct address to an absent person or a nonhuman entity.\nO goddess is a direct address to a goddess, a nonhuman entity."
   }
 }
