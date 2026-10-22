@@ -49,7 +49,7 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 - Large-scale audio understanding benchmark
 - Covers multiple audio domains (speech, environmental sounds, music)
 - Multiple-choice format with 4 options
-- Includes both mini and full test sets
+- Scores the `test_mini` split; the full `test` split ships without answers (`'NA'`)
 - Per-category accuracy reporting
 
 ## Evaluation Notes
@@ -60,10 +60,11 @@ MMAU (Massive Multitask Audio Understanding) is a comprehensive benchmark for ev
 - Prompt includes chain-of-thought instruction
 - Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,
-        subset_list=['test_mini', 'test'],
+        subset_list=['test_mini'],
         eval_split='test_mini',
         metric_list=['acc'],
         prompt_template=MMAU_PROMPT,
+        evaluation_version='v1.1',
     )
 )
 class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
@@ -77,11 +78,10 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
         answer_text = record['answer']
 
         # Map answer text to letter
-        answer_char = 'A'
-        for i, choice in enumerate(choices):
-            if choice.strip().lower() == answer_text.strip().lower():
-                answer_char = LETTERS[i]
-                break
+        matches = [i for i, choice in enumerate(choices) if choice.strip().lower() == answer_text.strip().lower()]
+        if not matches:
+            raise ValueError(f'MMAU answer {answer_text!r} is not one of the choices {choices}.')
+        answer_char = LETTERS[matches[0]]
 
         # Format choices string
         letters_str = ', '.join(LETTERS[: len(choices)])
@@ -131,10 +131,11 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
         """Parse the predicted choice letter from model response."""
         import re
 
-        # Look for "ANSWER: X" pattern (case-insensitive)
-        match = re.search(r'ANSWER\s*:\s*([A-D])', response, re.IGNORECASE)
-        if match:
-            return match.group(1).upper()
+        # Take the last "ANSWER: X". A lower-case letter counts only when it ends the line, so the
+        # first word of "ANSWER: a dog barking" or "ANSWER: Dog barking" is not read as a choice.
+        matches = re.findall(r'(?i:ANSWER)[\s*]*:[\s*(\[]*([A-D]\b|[a-d](?=[\s*)\].]*$))', response, re.MULTILINE)
+        if matches:
+            return matches[-1].upper()
         # Fallback: look for standalone letter
         for char in [',', '.', '!', '?', ';', ':', "'"]:
             response = response.strip(char)
@@ -156,7 +157,7 @@ class MMAUAdapter(AudioLanguageAdapter, MultiChoiceAdapter):
         elif len(candidates) > 1:
             start_indexes = [response.rfind(f' {c} ') for c in candidates]
             return candidates[start_indexes.index(max(start_indexes))]
-        return 'A'  # Default fallback
+        return ''  # No recognisable letter: score as wrong rather than guessing 'A'
 
     def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
         """Aggregate scores with overall and per-task category accuracy."""
