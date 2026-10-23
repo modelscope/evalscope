@@ -12,6 +12,7 @@ from the API. A locally loaded checkpoint only returns the text, so the blocks
 have to be read back before the result reaches a benchmark; otherwise a
 tool-calling benchmark scores the model on an empty answer.
 """
+
 import json
 import re
 from typing import List, Optional, Tuple
