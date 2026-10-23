@@ -208,6 +208,11 @@ Judge 短路直接判定样本时，得分 metadata 会记录 `judge_skipped=tru
 设置 `rerun_review=True` 可复用 prediction 并重算 review，新的 review 文件只有成功后才原子替换旧文件；它也是身份
 不匹配时唯一的显式覆盖开关，生成的配置会在当前评测版本下记录 prediction 来源。
 
+如果重评失败或被中断，请使用 `rerun_review=True` 恢复。生成的
+`evaluation_identity.benchmarks.<name>.review_pending` 状态会阻止普通缓存复用，直到该 benchmark 完成重评并生成报告。
+各 benchmark 独立完成，后续 benchmark 失败不会使已成功的 benchmark 失效。此状态由程序自动维护在
+`configs/task_config.yaml` 中，不是用户配置项。
+
 旧 `judge_strategy` 和单个 mapping `judge_model_args` 仅保留一轮输入迁移并会告警。已删除的
 `judge_worker_num` 和 `score_pattern` 会明确报错。
 
