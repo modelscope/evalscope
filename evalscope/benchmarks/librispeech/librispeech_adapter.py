@@ -49,8 +49,9 @@ LibriSpeech is a large-scale corpus of approximately 1,000 hours of read English
 - Requires an OpenAI-compatible server that supports the `input_audio` content part for audio input.
 """,  # noqa: E501
         subset_list=['test_clean', 'test_other'],
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         metric_list=['wer'],
+        aggregation='weighted_mean',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -74,7 +75,8 @@ class LibriSpeechAdapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
-        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, wer
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+        from evalscope.metrics.utils.text_normalizer.wer import normalize_text, word_errors
 
         language = 'en'
 
@@ -85,6 +87,8 @@ class LibriSpeechAdapter(AudioLanguageAdapter):
             prediction=original_prediction,
         )
 
-        wer_score = wer([normalized_reference], [normalized_prediction], language)
-        score.value = {'wer': wer_score}
+        errors, ref_words = word_errors([normalized_reference], [normalized_prediction], language)
+        score.value = {'wer': errors / ref_words}
+        # weighted_mean pools errors over reference words: corpus WER, as lmms-eval and Qwen-Audio report it
+        score.metadata[METRIC_WEIGHTS_KEY] = {'wer': ref_words}
         return score

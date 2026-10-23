@@ -29,7 +29,7 @@ def test_librispeech_loads_each_test_split_as_a_subset() -> None:
 
     assert benchmark_meta.subset_list == ['test_clean', 'test_other']
     assert benchmark_meta.eval_split is None
-    assert benchmark_meta.evaluation_version == 'v1.1'
+    assert benchmark_meta.evaluation_version == 'v1.2'
     assert CapturingDataLoader.loaded_splits == [
         ('test_clean', 'default'),
         ('test_other', 'default'),
