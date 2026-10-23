@@ -150,6 +150,40 @@ def test_trivia_qa_preserves_aliases_through_prediction_rows() -> None:
     assert prediction_row['Gold'] == ['New York City', 'new york city', 'nyc']
 
 
-@pytest.mark.parametrize('benchmark_name', ['mmlu_redux', 'trivia_qa'])
-def test_inclusion_benchmark_evaluation_version(benchmark_name: str) -> None:
-    assert BENCHMARK_REGISTRY[benchmark_name].evaluation_version == 'v1.1'
+@pytest.mark.parametrize(
+    ('reply', 'expected'),
+    [
+        ('ANSWER: Sunset Boulevard.', 1.0),
+        ('ANSWER: The Sunset Boulevard', 1.0),
+        ('ANSWER: Sunset-Boulevard', 1.0),
+        ('ANSWER: Sunset Blvd.', 1.0),
+        ('ANSWER: Sunset', 0.0),
+    ],
+)
+def test_trivia_qa_scores_with_the_official_answer_normalization(reply: str, expected: float) -> None:
+    # Official exact match (triviaqa_evaluation.py) normalizes the prediction before comparing it to the
+    # normalized aliases: lower case, punctuation to spaces, articles and extra whitespace removed.
+    adapter = TriviaQaAdapter(
+        benchmark_meta=BENCHMARK_REGISTRY['trivia_qa'],
+        task_config=TaskConfig(datasets=['trivia_qa']),
+    )
+    sample = adapter.record_to_sample(
+        {
+            'question': 'Which Lloyd Webber musical is this?',
+            'question_id': 'example',
+            'answer': {
+                'aliases': ['Sunset Blvd', 'West Sunset Boulevard', 'Sunset Boulevard', 'Sunset Bulevard', 'Sunset Blvd.'],
+                'normalized_aliases': ['sunset boulevard', 'sunset bulevard', 'west sunset boulevard', 'sunset blvd'],
+            },
+            'entity_pages': {'wiki_context': 'Sunset Boulevard is a musical.'},
+        }
+    )
+    sample.id = 0
+    state = TaskState(model='mock', sample=sample, output=ModelOutput.from_content('mock', reply), completed=True)
+
+    assert adapter.calculate_metrics(state).score.value['accuracy'] == expected
+
+
+@pytest.mark.parametrize(('benchmark_name', 'version'), [('mmlu_redux', 'v1.1'), ('trivia_qa', 'v1.2')])
+def test_inclusion_benchmark_evaluation_version(benchmark_name: str, version: str) -> None:
+    assert BENCHMARK_REGISTRY[benchmark_name].evaluation_version == version
