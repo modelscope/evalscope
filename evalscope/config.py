@@ -313,6 +313,9 @@ class TaskConfig(BaseArgument):
     debug: bool = False
     """Enable debug mode for detailed logging and error reporting."""
 
+    dry_run: bool = False
+    """Parse and print the task config, then return without executing inference."""
+
     seed: Optional[int] = 42
     """Random seed for reproducible results."""
 

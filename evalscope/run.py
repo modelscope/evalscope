@@ -30,6 +30,10 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
         return [run_task(cfg) for cfg in task_cfg]
 
     task_cfg = parse_task_config(task_cfg)
+    if task_cfg.dry_run:
+        logger.info('[dry-run] Parsed TaskConfig — skipping inference.')
+        logger.info(task_cfg)
+        return {}
     return run_single_task(task_cfg)
 
 
