@@ -6,10 +6,12 @@ import os
 import platform
 import signal
 import tempfile
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 
-def unsafe_execute(problem: Dict, completion: str, timeout: float, result):
+def unsafe_execute(problem: Dict, completion: str, timeout: float, result, started: Optional[Any] = None):
+    if started is not None:
+        started.set()
     with create_tempdir():
         # These system calls are needed when cleaning up tempdir.
         import os
@@ -67,8 +69,14 @@ def check_correctness(problem: Dict, completion: str, timeout: float, completion
     manager = ctx.Manager()
     result = manager.list()
 
-    p = ctx.Process(target=unsafe_execute, args=(problem, completion, timeout, result))
+    started = ctx.Event()
+    p = ctx.Process(target=unsafe_execute, args=(problem, completion, timeout, result, started))
     p.start()
+    # A spawned child imports evalscope before it runs anything, which takes seconds when many samples are
+    # scored at once; start the time limit when the child starts (waiting up to 60 s), not when it is launched.
+    for _ in range(600):
+        if started.wait(0.1) or not p.is_alive():
+            break
     p.join(timeout=timeout + 1)
     if p.is_alive():
         p.kill()
