@@ -35,6 +35,7 @@ from evalscope.api.model import (
     TopLogprob,
 )
 from evalscope.api.tool import ToolChoice, ToolInfo
+from evalscope.models.utils.tool_call_text import parse_tool_calls_from_text
 from evalscope.utils.model_utils import get_device
 
 logger = getLogger()
@@ -214,9 +215,11 @@ class ModelScopeAPI(ModelAPI):
                 )
 
             # construct choice
-            # TODO: Handle tool calls
+            content, tool_calls = parse_tool_calls_from_text(response.output, tools)
             choice = ChatCompletionChoice(
-                message=ChatMessageAssistant(content=response.output, model=self.model_name, source='generate'),
+                message=ChatMessageAssistant(
+                    content=content, tool_calls=tool_calls, model=self.model_name, source='generate'
+                ),
                 logprobs=(Logprobs(content=final_logprobs) if final_logprobs is not None else None),
                 stop_reason=response.stop_reason,
             )
