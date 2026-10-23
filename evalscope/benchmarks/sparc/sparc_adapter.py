@@ -89,7 +89,7 @@ node that obeys every rule on the grid.
         primary_metric='accuracy',
         system_prompt=SYSTEM_PROMPT,
         prompt_template='{question}',
-        evaluation_version='v1.0',
+        evaluation_version='v1.1',
     )
 )
 class SPaRCAdapter(DefaultDataAdapter):
