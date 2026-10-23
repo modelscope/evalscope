@@ -10,8 +10,8 @@ def format_grid(grid: list) -> str:
     return json.dumps(grid)
 
 
-def build_task_prompt(record: Dict[str, Any]) -> str:
-    """Build the full prompt for an ARC-AGI-2 task from a dataset record."""
+def build_task_prompt(record: Dict[str, Any], pair_index: int = 0) -> str:
+    """Build the prompt for one test input of an ARC-AGI-2 task from a dataset record."""
     fewshots = record['fewshots']
     question = record['question']
 
@@ -29,7 +29,7 @@ def build_task_prompt(record: Dict[str, Any]) -> str:
         parts.append(f'Output: {format_grid(pair["output"])}')
         parts.append('')
 
-    test_input = question[0]['input']
+    test_input = question[pair_index]['input']
     parts.append(f'Test Input: {format_grid(test_input)}')
     parts.append('')
     parts.append('Provide the output grid as a JSON 2D array. Only output the JSON array, nothing else.')
