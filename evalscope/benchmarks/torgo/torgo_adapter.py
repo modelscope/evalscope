@@ -55,6 +55,8 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
         few_shot_num=0,
         metric_list=['cer', 'wer', 'sem_score'],
         primary_metric='wer',
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -115,6 +117,7 @@ class TorgoAdapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
         from evalscope.metrics.utils.text_normalizer.wer import normalize_text
 
         language = 'en'
@@ -129,6 +132,11 @@ class TorgoAdapter(AudioLanguageAdapter):
         cer_score = self.jiwer_cer(normalized_reference, normalized_prediction)
         wer_score = self.jiwer_wer(normalized_reference, normalized_prediction)
         score.value = {'cer': cer_score, 'wer': wer_score}
+        # weighted_mean pools edits over reference characters and words, counted as jiwer does: corpus CER/WER
+        score.metadata[METRIC_WEIGHTS_KEY] = {
+            'cer': len(normalized_reference.strip()),
+            'wer': len(normalized_reference.split()),
+        }
         return score
 
     def batch_match_score(
