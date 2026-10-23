@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List, Literal
 
 from pydantic import BaseModel
@@ -35,6 +36,7 @@ Format your response as follows: "Therefore, the answer is (insert answer here)"
 @register_benchmark(
     BenchmarkMeta(
         name='frames',
+        evaluation_version='v1.1',
         pretty_name='FRAMES',
         tags=[Tags.REASONING, Tags.LONG_CONTEXT],
         description="""
@@ -121,13 +123,12 @@ class FramesAdapter(DefaultDataAdapter):
         Extract the answer from the model prediction.
         """
         response = prediction.replace('*', '')
-
-        if 'the answer is' in response:
-            ans = response.rsplit('the answer is', 1)[-1].strip().strip('.').strip()
-        else:
-            ans = ''
-
-        return ans
+        # Read after the last "the answer is", in any case, to the end of the line the answer is on
+        matches = list(re.finditer(r'(?i)the answer is', response))
+        if not matches:
+            return ''
+        answer = re.match(r'[\s:]*([^\n]*)', response[matches[-1].end() :]).group(1)
+        return answer.strip().strip('.').strip()
 
     def match_score(
         self,
