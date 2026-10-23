@@ -352,6 +352,9 @@ def dump_jsonl_data(
 def jsonl_to_csv(jsonl_file: str, csv_file: str) -> None:
     """Convert a JSONL file to CSV format.
 
+    Columns follow the order in which keys first appear across all records.
+    Missing fields are written as empty cells.
+
     Args:
         jsonl_file (str): Source ``.jsonl`` file path.
         csv_file (str): Destination ``.csv`` file path.  Parent directories
@@ -362,12 +365,12 @@ def jsonl_to_csv(jsonl_file: str, csv_file: str) -> None:
         logger.warning(f'No data found in {jsonl_file}.')
         return
 
+    fieldnames = list(dict.fromkeys(key for item in data for key in item))
     _ensure_dir(os.path.dirname(csv_file))
     with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow(data[0].keys())
-        for item in data:
-            writer.writerow(item.values())
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
 
 
 def csv_to_list(csv_file: str) -> List[Dict[str, str]]:
