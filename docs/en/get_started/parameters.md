@@ -215,6 +215,12 @@ reviews. With `rerun_review=True`, predictions are reused and the review cache i
 success; it is the explicit override for an identity mismatch, and the generated config records the prediction
 source under the current evaluation version.
 
+If a review rerun fails or is interrupted, resume it with `rerun_review=True`. The generated
+`evaluation_identity.benchmarks.<name>.review_pending` state blocks ordinary cache reuse until that benchmark
+finishes rescoring and produces its report. Each benchmark completes independently, so a later benchmark's failure
+does not invalidate an earlier successful one. This state is managed automatically in `configs/task_config.yaml`;
+it is not a user configuration option.
+
 `judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
 removed `judge_worker_num` and `score_pattern` are rejected.
 

@@ -242,6 +242,9 @@ class CacheManager:
         """Start a transactional review rerun without touching the previous review file."""
         file_path = self.get_review_cache_path(subset)
         temporary = f'{file_path}.rerun-{uuid.uuid4().hex}'
+        # A tolerated scoring failure must publish an empty cache, not retain old scores.
+        with open(temporary, 'x', encoding='utf-8'):
+            pass
         self._review_reruns[file_path] = temporary
         logger.debug(f'Rescoring reviews into temporary cache: {temporary}')
 
@@ -251,8 +254,6 @@ class CacheManager:
             writer = self._writers.pop(temporary, None)
             if writer is not None:
                 writer.close()
-            if not os.path.exists(temporary):
-                continue
             os.replace(temporary, file_path)
             del self._review_reruns[file_path]
 
