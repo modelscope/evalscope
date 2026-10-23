@@ -8,11 +8,11 @@ import httpx
 import litellm
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
-from pydantic import ValidationError
 
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import GenerateConfig, ModelOutput
 from evalscope.models.litellm_compatible import LiteLLMAPI
+from evalscope.models.utils.openai import EmptyCompletionError
 
 
 def _chunk(content: str, *, finish_reason: Optional[str] = None) -> ChatCompletionChunk:
@@ -150,7 +150,7 @@ def test_complete_response_is_still_accepted(
 
 @pytest.mark.parametrize('async_mode', [False, True], ids=['sync', 'async'])
 @pytest.mark.parametrize('stream', [False, True])
-def test_invalid_complete_response_is_validated_without_retry(
+def test_empty_complete_response_retries_then_raises(
     monkeypatch: pytest.MonkeyPatch, async_mode: bool, stream: bool
 ) -> None:
     completion = ChatCompletion.model_construct(
@@ -158,10 +158,13 @@ def test_invalid_complete_response_is_validated_without_retry(
     )
     calls = _mock_provider(monkeypatch, lambda attempt: completion)
 
-    with pytest.raises(ValidationError, match='choices'):
+    # raise_if_error_payload rejects a 200 body with no choices, mirroring the
+    # OpenAI path: a bare no-choices response is retryable (it may be transient),
+    # non-retryable gateway codes are covered in test_litellm_error_payload.py.
+    with pytest.raises(EmptyCompletionError, match='no choices'):
         _generate(async_mode, GenerateConfig(retries=3, retry_interval=0, stream=stream))
 
-    assert len(calls) == 1
+    assert len(calls) == 3
 
 
 @pytest.mark.parametrize('async_mode', [False, True], ids=['sync', 'async'])

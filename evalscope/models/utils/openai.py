@@ -85,6 +85,31 @@ class OpenAIResponseError(OpenAIError):
         return f'{self.code}: {self.message}'
 
 
+class EmptyCompletionError(ValueError):
+    """A 200 response whose body carried no choices."""
+
+
+class _NonRetryableEmptyCompletionError(EmptyCompletionError):
+    pass
+
+
+_NON_RETRYABLE_GATEWAY_CODES = {'400', '401', '402', '403', '404', '422'}
+
+
+def raise_if_error_payload(completion: ChatCompletion) -> None:
+    """Reject an error payload that the SDK deserialized as a completion."""
+    if completion.choices is not None:
+        return
+    error = (completion.model_extra or {}).get('error')
+    detail = f': {error}' if error else ' (no error detail in body)'
+    error_type = (
+        _NonRetryableEmptyCompletionError
+        if isinstance(error, dict) and str(error.get('code')) in _NON_RETRYABLE_GATEWAY_CODES
+        else EmptyCompletionError
+    )
+    raise error_type(f'Gateway returned a response with no choices{detail}')
+
+
 def openai_chat_tool_call(tool_call: ToolCall) -> ChatCompletionMessageToolCall:
     return ChatCompletionMessageToolCall(
         type='function',
@@ -876,6 +901,13 @@ def collect_stream_response(
         if getattr(chunk, 'usage', None) is not None:
             usage = chunk.usage
         if not getattr(chunk, 'choices', None):
+            # vLLM/SGLang report a failure after HTTP 200 as an SSE event with
+            # object == 'error' (no choices). The OpenAI SDK only raises on the
+            # {"error": ...} form; the {"object": "error", ...} form reaches
+            # here and must not be silently skipped, otherwise a partial reply
+            # is counted as success. See modelscope/evalscope#1906.
+            if getattr(chunk, 'object', None) == 'error':
+                raise EmptyCompletionError(f'Stream returned an error event with no choices: {chunk.model_extra or {}}')
             continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
@@ -1001,6 +1033,13 @@ async def async_collect_stream_response(
         if getattr(chunk, 'usage', None) is not None:
             usage = chunk.usage
         if not getattr(chunk, 'choices', None):
+            # vLLM/SGLang report a failure after HTTP 200 as an SSE event with
+            # object == 'error' (no choices). The OpenAI SDK only raises on the
+            # {"error": ...} form; the {"object": "error", ...} form reaches
+            # here and must not be silently skipped, otherwise a partial reply
+            # is counted as success. See modelscope/evalscope#1906.
+            if getattr(chunk, 'object', None) == 'error':
+                raise EmptyCompletionError(f'Stream returned an error event with no choices: {chunk.model_extra or {}}')
             continue
         collected_chunks.append(chunk)
         for choice in chunk.choices:
