@@ -1,116 +1,21 @@
-"""Probability metrics and cross-sample aggregation for typed decisions."""
+"""结构化决策的跨样本概率指标聚合。"""
 
-import json
 import math
 from collections import defaultdict
 
 import numpy as np
 
-from evalscope.api.metric import Aggregator, AggScore, Metric, SampleScore
-from evalscope.api.metric.decision import NLL_EPSILON, DecisionObservation
-from evalscope.api.registry import register_aggregation, register_metric
-from evalscope.metrics.aggregators.aggregators import Mean
+from evalscope.api.metric import Aggregator, AggScore, SampleScore
+from evalscope.api.metric.decision import DecisionObservation
+from evalscope.api.registry import register_aggregation
+from evalscope.metrics.utils.functions import auroc, average_ranks, ece
 
-
-class _ProbabilityMetric(Metric):
-    operation = ''
-
-    def apply(self, predictions: list[str], references: list[str]) -> list[float]:
-        results = []
-        for prediction, reference in zip(predictions, references):
-            p = json.loads(prediction)
-            y = json.loads(reference)
-            if self.operation == 'nll':
-                value = -math.log(max(p[int(y)], NLL_EPSILON))
-            elif self.operation == 'brier':
-                value = sum((v - float(i == int(y))) ** 2 for i, v in enumerate(p))
-            elif self.operation == 'binary_brier':
-                value = (p[1] - float(y)) ** 2
-            elif self.operation == 'rps':
-                value = sum((sum(p[: i + 1]) - float(int(y) <= i)) ** 2 for i in range(len(p) - 1)) / (len(p) - 1)
-            else:
-                value = abs(sum(i * v for i, v in enumerate(p)) - float(y))
-            results.append(value)
-        return results
-
-
-@register_metric('decision_nll')
-class DecisionNLL(_ProbabilityMetric):
-    """Negative log likelihood, clipped at an explicitly recorded epsilon."""
-
-    operation = 'nll'
-
-
-@register_metric('decision_brier')
-class DecisionBrier(_ProbabilityMetric):
-    """Multiclass Brier score, summed over classes."""
-
-    operation = 'brier'
-
-
-@register_metric('decision_binary_brier')
-class DecisionBinaryBrier(_ProbabilityMetric):
-    """Binary Brier score for P(yes)."""
-
-    operation = 'binary_brier'
-
-
-@register_metric('decision_rps')
-class DecisionRPS(_ProbabilityMetric):
-    """Ranked probability score normalized by the number of level boundaries."""
-
-    operation = 'rps'
-
-
-@register_metric('decision_mae')
-class DecisionMAE(_ProbabilityMetric):
-    """Absolute error of the ordinal expected value."""
-
-    operation = 'mae'
-
-
-def ece(pairs: list[tuple[float, float]], bins: int = 10) -> float:
-    """Equal-width expected calibration error; empty bins contribute nothing."""
-    groups = defaultdict(list)
-    for probability, outcome in pairs:
-        groups[min(int(probability * bins), bins - 1)].append((probability, outcome))
-    return sum(abs(sum(p - y for p, y in values)) for values in groups.values()) / len(pairs)
-
-
-def average_ranks(values: list[float]) -> list[float]:
-    """One-based average ranks, retaining ties for ROC AUC and Spearman correlation."""
-    by_value = defaultdict(list)
-    for index, value in enumerate(values):
-        by_value[value].append(index)
-    result = [0.0] * len(values)
-    seen = 0
-    for value in sorted(by_value):
-        indices = by_value[value]
-        rank = seen + (len(indices) + 1) / 2
-        for index in indices:
-            result[index] = rank
-        seen += len(indices)
-    return result
-
-
-def auroc(scores: list[float], labels: list[int]) -> float:
-    """使用并列平均秩计算二元 ROC AUC（Mann-Whitney U），1 表示正类。"""
-    if len(scores) != len(labels) or not scores:
-        raise ValueError('AUROC requires equally sized, non-empty scores and labels.')
-    if any(label not in (0, 1) for label in labels) or not all(math.isfinite(score) for score in scores):
-        raise ValueError('AUROC requires binary labels and finite scores.')
-    positives = sum(labels)
-    if not 0 < positives < len(labels):
-        raise ValueError('AUROC requires both label classes.')
-    ranks = average_ranks(scores)
-    return (sum(rank for rank, label in zip(ranks, labels) if label) - positives * (positives + 1) / 2) / (
-        positives * (len(labels) - positives)
-    )
+from .aggregators import Mean
 
 
 @register_aggregation('decision')
 class DecisionAggregator(Aggregator):
-    """Aggregate probabilities across samples, grouped by decision kind."""
+    """按决策类型分组，聚合跨样本的概率与校准指标。"""
 
     def __call__(self, scores: list[SampleScore]) -> list[AggScore]:
         groups = defaultdict(list)
@@ -126,7 +31,7 @@ class DecisionAggregator(Aggregator):
                 if aggregate.metric_name not in ('acc', 'accuracy'):
                     aggregate.dimensions = {'kind': kind, **({'levels': scale} if scale is not None else {})}
         if len(groups) > 1:
-            # Different probability losses and Score scales must not share a denominator.
+            # 不同概率损失和评分尺度不能共用分母。
             result = [score for score in result if score.metric_name in ('acc', 'accuracy')]
         for (kind, scale), entries in groups.items():
             group_start = len(result)

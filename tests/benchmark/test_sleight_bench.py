@@ -17,7 +17,7 @@ from evalscope.benchmarks.sleight_bench.sleight_bench_adapter import (
     strip_transcript,
 )
 from evalscope.constants import Tags
-from evalscope.metrics.decision import auroc
+from evalscope.metrics.utils.functions import auroc
 
 
 @pytest.mark.parametrize('reply,expected', [

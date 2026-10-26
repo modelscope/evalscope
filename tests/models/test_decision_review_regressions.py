@@ -14,7 +14,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.registry import get_benchmark
 from evalscope.constants import ScoreStatus
-from evalscope.metrics.decision import DecisionAggregator
+from evalscope.metrics.aggregators import DecisionAggregator
 from evalscope.models.utils.decision import build_systemone_request, parse_decision_response
 
 

@@ -20,7 +20,7 @@ from evalscope.api.messages import ChatMessageSystem, ChatMessageUser
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
-from evalscope.metrics.decision import auroc
+from evalscope.metrics.utils.functions import auroc
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()

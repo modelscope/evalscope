@@ -9,9 +9,11 @@ from .aggregators import (
     WeightedMean,
 )
 from .bayes_at_n import BayesAtN
+from .decision import DecisionAggregator
 
 __all__ = [
     'BayesAtN',
+    'DecisionAggregator',
     'Mean',
     'ClippedMean',
     'WeightedMean',
