@@ -141,6 +141,7 @@
  "longpi_bench": "evalscope.benchmarks.longpi_bench.longpi_bench_adapter",
  "maritime_bench": "evalscope.benchmarks.maritime_bench.maritime_bench_adapter",
  "maritime_ocr_bench": "evalscope.benchmarks.maritime_ocr_bench.maritime_ocr_bench_adapter",
+ "mask": "evalscope.benchmarks.mask.mask_adapter",
  "math_500": "evalscope.benchmarks.math_500.math_500_adapter",
  "math_qa": "evalscope.benchmarks.math_qa.math_qa_adapter",
  "math_verse": "evalscope.benchmarks.math_verse.math_verse_adapter",
