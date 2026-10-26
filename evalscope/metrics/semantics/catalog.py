@@ -372,6 +372,9 @@ METRIC_DEFINITIONS.update(
         'program_accuracy': MetricEntry(baseline='quality.accuracy.ratio', metric_name='Program Accuracy'),
         # SPaRC: share of answers that are not a valid line from start to end (paper Table 7).
         'invalid_path_rate': MetricEntry(baseline='quality.error_rate.ratio', metric_name='Invalid Path Rate'),
+        # LongPIBench: share of replies satisfying the injected (or, in the clean condition,
+        # the baseline) attack objective; higher is worse.
+        'asr': MetricEntry(baseline='quality.error_rate.ratio', metric_name='ASR'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

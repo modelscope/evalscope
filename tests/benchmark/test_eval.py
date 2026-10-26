@@ -1181,6 +1181,10 @@ class TestNativeBenchmark(TestBenchmark):
         """Test TAT-QA table + text financial QA benchmark with mock."""
         self._run_dataset_test('tat_qa', limit=5, use_mock=True)
 
+    def test_longpi_bench_mock(self):
+        """Test LongPIBench prompt injection benchmark with mock."""
+        self._run_dataset_test('longpi_bench', limit=5, use_mock=True)
+
 
 if __name__ == '__main__':
     # Run specific test: python -m unittest test_eval.TestBenchmark.test_gsm8k

@@ -138,6 +138,7 @@
  "logic_vista": "evalscope.benchmarks.logic_vista.logic_vista_adapter",
  "longbench_v2": "evalscope.benchmarks.longbench_v2.longbench_v2_adapter",
  "longmemeval": "evalscope.benchmarks.longmemeval.longmemeval_adapter",
+ "longpi_bench": "evalscope.benchmarks.longpi_bench.longpi_bench_adapter",
  "maritime_bench": "evalscope.benchmarks.maritime_bench.maritime_bench_adapter",
  "maritime_ocr_bench": "evalscope.benchmarks.maritime_ocr_bench.maritime_ocr_bench_adapter",
  "math_500": "evalscope.benchmarks.math_500.math_500_adapter",
