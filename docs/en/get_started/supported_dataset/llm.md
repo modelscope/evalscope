@@ -140,6 +140,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `refcoco` | [RefCOCO](../../benchmarks/refcoco.md) | `Grounding`, `ImageCaptioning`, `Knowledge`, `MultiModal` |
 | `reward_bench` | [RewardBench v1 (pairwise)](../../benchmarks/reward_bench.md) | `MCQ` |
 | `safety_bench` | [SafetyBench](../../benchmarks/safety_bench.md) | `Knowledge`, `MCQ`, `MultiLingual` |
+| `salad_bench` | [SALAD-Bench](../../benchmarks/salad_bench.md) | `QA`, `Safety` |
+| `salad_bench_mcq` | [SALAD-Bench MCQ](../../benchmarks/salad_bench_mcq.md) | `MCQ`, `Safety` |
 | `sanskriti` | [Sanskriti](../../benchmarks/sanskriti.md) | `Knowledge`, `MCQ` |
 | `scicode` | [SciCode](../../benchmarks/scicode.md) | `Coding` |
 | `sciq` | [SciQ](../../benchmarks/sciq.md) | `Knowledge`, `MCQ`, `ReadingComprehension` |
@@ -306,6 +308,8 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/refcoco.md
 ../../benchmarks/reward_bench.md
 ../../benchmarks/safety_bench.md
+../../benchmarks/salad_bench.md
+../../benchmarks/salad_bench_mcq.md
 ../../benchmarks/sanskriti.md
 ../../benchmarks/scicode.md
 ../../benchmarks/sciq.md

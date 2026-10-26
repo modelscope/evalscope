@@ -215,6 +215,8 @@
  "researchrubrics": "evalscope.benchmarks.researchrubrics.researchrubrics_adapter",
  "reward_bench": "evalscope.benchmarks.reward_bench.reward_bench_adapter",
  "safety_bench": "evalscope.benchmarks.safety_bench.safety_bench_adapter",
+ "salad_bench": "evalscope.benchmarks.salad_bench.salad_bench_adapter",
+ "salad_bench_mcq": "evalscope.benchmarks.salad_bench.salad_bench_mcq_adapter",
  "sanskriti": "evalscope.benchmarks.sanskriti.sanskriti_adapter",
  "scicode": "evalscope.benchmarks.scicode.scicode_adapter",
  "science_qa": "evalscope.benchmarks.science_qa.science_qa_adapter",

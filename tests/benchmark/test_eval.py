@@ -307,6 +307,17 @@ class TestNativeBenchmark(TestBenchmark):
         """Test Arena Hard dataset."""
         self._run_dataset_test('arena_hard')
 
+    def test_salad_bench(self):
+        """Test SALAD-Bench open-ended safety sets."""
+        dataset_args = {
+            'subset_list': ['small_attack_subset']
+        }
+        self._run_dataset_test('salad_bench', dataset_args, limit=5, ignore_errors=True)
+
+    def test_salad_bench_mcq(self):
+        """Test SALAD-Bench multiple-choice set."""
+        self._run_dataset_test('salad_bench_mcq', limit=5)
+
     def test_frames(self):
         """Test Frames dataset."""
         dataset_args = {
