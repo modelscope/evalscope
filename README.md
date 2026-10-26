@@ -77,6 +77,7 @@ For details, please refer to [📖 Visualizing Evaluation Results](https://evals
 
 ## 🎉 What's New
 
+- 🔥 **[2026.10.26] v1.14.1** Removed LiteLLM from core dependencies and fixed cache consistency after failed review reruns, mathematical scoring deadlines, streamed response validation and benchmark scoring. Added SafetyBench, Bayes@N, `--dry-run` and a reusable Web task workspace. See the [release notes](docs/release_notes/v1.14.1.md).
 - 🔥 **[2026.10.09]** Added **System One Choice evaluation** and **ANLI**, **BoolQ**, **BANKING77**, **ContractNLI**, **RewardBench v1** benchmarks. All five default to ModelScope and also support standard LLM evaluation. See [System One Evaluation](https://evalscope.readthedocs.io/en/latest/user_guides/systemone.html).
 - 🔥 **[2026.08.24] v1.11.0** Introduced published evaluation versions for reproducible benchmark results; improved report semantics and incomplete-run handling; strengthened multimodal media loading and task-config validation.
 - 🔥 **[2026.08.13]** Improved evaluation reports with unified metric semantics and more reliable Agent Trace step grouping and tool-call/result linking.

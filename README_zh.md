@@ -77,6 +77,7 @@ EvalScope 提供交互式 Web Dashboard，支持多维度模型对比和深入�
 
 ## 🎉 内容更新
 
+- 🔥 **[2026.10.26] v1.14.1** 移除 LiteLLM 核心依赖，修复重新评分失败后的缓存一致性、数学评分期限、流式响应校验及多项基准评分；新增 SafetyBench、Bayes@N、`--dry-run` 和可复用的 Web 任务工作区。详见[发布说明](docs/release_notes/v1.14.1.md)。
 - 🔥 **[2026.10.09]** 新增 **System One Choice 评测**，以及 **ANLI**、**BoolQ**、**BANKING77**、**ContractNLI**、**RewardBench v1** 评测基准。五个新增基准均默认从 ModelScope 加载，也支持普通 LLM 评测。详见 [System One 评测](https://evalscope.readthedocs.io/zh-cn/latest/user_guides/systemone.html)。
 - 🔥 **[2026.08.24] v1.11.0** 引入可发布的评测版本标识，保障基准结果可复现；优化评测报告语义与不完整运行处理，并增强多模态媒体加载和任务配置校验。
 - 🔥 **[2026.08.13]** 评测报告升级：统一指标语义，并改善 Agent Trace 步骤分组与工具调用/结果关联的可靠性。
