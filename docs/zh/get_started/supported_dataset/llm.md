@@ -163,6 +163,7 @@
 | `winogrande` | [Winogrande](../../benchmarks/winogrande.md) | `MCQ`, `Reasoning` |
 | `wmt24pp` | [WMT2024++](../../benchmarks/wmt24pp.md) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](../../benchmarks/wnut2017.md) | `Knowledge`, `NER` |
+| `xstest` | [XSTest](../../benchmarks/xstest.md) | `QA`, `Safety` |
 | `zebralogicbench` | [ZebraLogicBench](../../benchmarks/zebralogicbench.md) | `Reasoning` |
 
 :::{toctree}
@@ -328,5 +329,6 @@
 ../../benchmarks/winogrande.md
 ../../benchmarks/wmt24pp.md
 ../../benchmarks/wnut2017.md
+../../benchmarks/xstest.md
 ../../benchmarks/zebralogicbench.md
 :::

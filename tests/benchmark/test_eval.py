@@ -568,6 +568,19 @@ class TestNativeBenchmark(TestBenchmark):
         }
         self._run_dataset_test('aa_lcr', dataset_args)
 
+    def test_xstest_mock(self):
+        """Test XSTest with a mock model and a mock judge."""
+        judge_response = json.dumps(
+            {'reasoning': 'Mock verdict.', 'verdict': 'FULL_COMPLIANCE'}, ensure_ascii=False
+        )
+        with patch.object(MockLLM, 'default_output', judge_response):
+            self._run_dataset_test(
+                'xstest',
+                limit=5,
+                use_mock=True,
+                judge={'models': {'model_id': 'mock-judge', 'eval_type': EvalType.MOCK_LLM}},
+            )
+
     def test_conll2003_ner(self):
         """Test CoNLL2003 NER dataset."""
         dataset_args = {

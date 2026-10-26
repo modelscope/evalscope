@@ -273,6 +273,7 @@
  "wmt24pp": "evalscope.benchmarks.wmt.wmt24_adapter",
  "wnut2017": "evalscope.benchmarks.ner.wnut2017_adapter",
  "world_vqa": "evalscope.benchmarks.world_vqa.world_vqa_adapter",
+ "xstest": "evalscope.benchmarks.xstest.xstest_adapter",
  "zebralogicbench": "evalscope.benchmarks.zebralogicbench.zebralogicbench_adapter",
  "zerobench": "evalscope.benchmarks.zerobench.zerobench_adapter"
 }
