@@ -1,17 +1,20 @@
+from typing import Dict, List
+
 from pycocoevalcap.eval import Bleu, Cider, COCOEvalCap, Meteor, Rouge, Spice
 from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
 from pycocotools.coco import COCO
 
 
-def coco_score_result(results, doc):
+def coco_score_result(results: List[str], references: List[List[str]]) -> Dict[str, float]:
+    """COCO caption metrics of ``results`` as one corpus; ``references[i]`` holds the captions of ``results[i]``."""
     score_json = {}
     dataset = {'annotations': [], 'images': []}
     stored_results = []
     idx = 0
     ann_id = 0
-    for result in results:
+    for result, answers in zip(results, references):
         stored_results.append({'image_id': idx, 'caption': result})
-        for s in doc['answer']:
+        for s in answers:
             dataset['annotations'].append({'image_id': idx, 'caption': s, 'id': ann_id})
             ann_id += 1
 
@@ -97,7 +100,7 @@ def process_results(doc, results):
     eval_mode = doc['eval_mode']
     results_list = results if isinstance(results, list) else [results]
     if eval_mode in ['bbox', 'seg']:
-        response = coco_score_result(results_list, doc)
+        response = coco_score_result(results_list, [doc['answer']] * len(results_list))
     elif eval_mode == 'bbox_rec':
         response = bbox_rec_score_result(results_list, doc)
 
