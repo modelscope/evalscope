@@ -149,7 +149,7 @@
 | `seed_tts_eval` | [Seed-TTS-Eval](../../benchmarks/seed_tts_eval.md) | `Audio`, `TextToSpeech` |
 | `simple_qa` | [SimpleQA](../../benchmarks/simple_qa.md) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](../../benchmarks/siqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
-| `sleight_bench` | [SLEIGHT-Bench](../../benchmarks/sleight_bench.md) | `Agent`, `QA` |
+| `sleight_bench` | [SLEIGHT-Bench](../../benchmarks/sleight_bench.md) | `Agent`, `Safety` |
 | `sparc` | [SPaRC](../../benchmarks/sparc.md) | `Reasoning` |
 | `stsb` | [STS-B Decision](../../benchmarks/stsb.md) | `Decision` |
 | `super_gpqa` | [SuperGPQA](../../benchmarks/super_gpqa.md) | `Knowledge`, `MCQ` |

@@ -205,6 +205,26 @@ def test_auroc_ties_and_input_contract() -> None:
             auroc(scores, labels)
 
 
+def test_generated_metadata_matches_runtime_contract() -> None:
+    from evalscope.benchmarks.sleight_bench.sleight_bench_adapter import DESCRIPTION
+
+    root = Path(__file__).resolve().parents[2]
+    data = json.loads((root / 'evalscope/benchmarks/_meta/sleight_bench.json').read_text(encoding='utf-8'))
+    adapter = get_benchmark('sleight_bench')
+    assert data['meta']['description'] == DESCRIPTION
+    assert data['meta']['tags'] == adapter.tags
+    assert data['meta']['subset_list'] == ['default']
+    assert data['meta']['metrics'] == adapter.metric_list
+    assert data['meta']['primary_metric']['name'] == 'catch_rate'
+    assert data['statistics']['total_samples'] == 86
+    assert data['sample_example']['subset'] == 'default'
+    assert 'gt_suspiciousness' not in data['sample_example']['data']['metadata']
+    for language in ['en', 'zh']:
+        page = (root / f'docs/{language}/benchmarks/sleight_bench.md').read_text(encoding='utf-8')
+        assert 'catch_rate' in page and 'Safety' in page
+        assert 'PROMPT_BASELINE' not in page and 'gt_suspiciousness' not in page
+
+
 def test_gold_replay_native_pipeline(tmp_path: Path) -> None:
     _fixture(tmp_path / 'data')
     cfg = _config(tmp_path / 'data', repeats=2, eval_batch_size=1, work_dir=str(tmp_path / 'output'))
