@@ -175,6 +175,7 @@ class ModelTask:
 
 class Tags:
     KNOWLEDGE = 'Knowledge'
+    SAFETY = 'Safety'
     MULTIPLE_CHOICE = 'MCQ'
     DECISION = 'Decision'
     MATH = 'Math'

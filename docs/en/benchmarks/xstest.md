@@ -33,7 +33,7 @@ XSTest is a safety benchmark for measuring excessive safety behaviors (over-refu
 | **Benchmark Name** | `xstest` |
 | **Dataset ID** | [evalscope/XSTest](https://modelscope.cn/datasets/evalscope/XSTest/summary) |
 | **Paper** | N/A |
-| **Tags** | `QA` |
+| **Tags** | `QA`, `Safety` |
 | **Metrics** | `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `train` |

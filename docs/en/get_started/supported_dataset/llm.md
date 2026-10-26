@@ -163,7 +163,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `winogrande` | [Winogrande](../../benchmarks/winogrande.md) | `MCQ`, `Reasoning` |
 | `wmt24pp` | [WMT2024++](../../benchmarks/wmt24pp.md) | `MachineTranslation`, `MultiLingual` |
 | `wnut2017` | [WNUT2017](../../benchmarks/wnut2017.md) | `Knowledge`, `NER` |
-| `xstest` | [XSTest](../../benchmarks/xstest.md) | `QA` |
+| `xstest` | [XSTest](../../benchmarks/xstest.md) | `QA`, `Safety` |
 | `zebralogicbench` | [ZebraLogicBench](../../benchmarks/zebralogicbench.md) | `Reasoning` |
 
 :::{toctree}

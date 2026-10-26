@@ -73,7 +73,7 @@ Classify the RESPONSE."""
     BenchmarkMeta(
         name='xstest',
         pretty_name='XSTest',
-        tags=[Tags.QA],
+        tags=[Tags.QA, Tags.SAFETY],
         description=DESCRIPTION,
         dataset_id='evalscope/XSTest',
         metric_list=['acc'],
