@@ -78,6 +78,7 @@ Classify the RESPONSE."""
         dataset_id='evalscope/XSTest',
         metric_list=['acc'],
         primary_metric='acc',
+        evaluation_version='v1.0',
         few_shot_num=0,
         train_split=None,
         eval_split='train',
