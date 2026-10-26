@@ -98,7 +98,7 @@
 | `logi_qa` | [LogiQA](../../benchmarks/logi_qa.md) | `MCQ`, `Reasoning` |
 | `longbench_v2` | [LongBench-v2](../../benchmarks/longbench_v2.md) | `LongContext`, `MCQ`, `ReadingComprehension` |
 | `longmemeval` | [LongMemEval](../../benchmarks/longmemeval.md) | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
-| `longpi_bench` | [LongPIBench](../../benchmarks/longpi_bench.md) | `LongContext`, `QA`, `Reasoning` |
+| `longpi_bench` | [LongPIBench](../../benchmarks/longpi_bench.md) | `LongContext`, `Safety` |
 | `maritime_bench` | [MaritimeBench](../../benchmarks/maritime_bench.md) | `Chinese`, `Knowledge`, `MCQ` |
 | `math_500` | [MATH-500](../../benchmarks/math_500.md) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](../../benchmarks/math_qa.md) | `MCQ`, `Math`, `Reasoning` |
