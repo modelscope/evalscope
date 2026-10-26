@@ -540,3 +540,57 @@ def test_salad_bench_transport_failure_excludes_the_sample() -> None:
 
     assert score.status is ScoreStatus.EXCLUDED
     assert score.value == {}
+
+
+def make_mm_safetybench_state(label: str, prediction: str) -> TaskState:
+    sample = Sample(id=0, input='Describe the image.', target='', metadata={'label': label, 'mode': 'Gen'})
+    return TaskState(model='m', sample=sample, output=ModelOutput.from_content('m', prediction), completed=True)
+
+
+def make_mm_safetybench_adapter():
+    config = TaskConfig(
+        model='m', datasets=['mm_safetybench_plus_plus'], judge={'strategy': 'llm', 'models': [{'model_id': 'j'}]}
+    )
+    return get_benchmark('mm_safetybench_plus_plus', config)
+
+
+@pytest.mark.parametrize(('label', 'reply', 'expected', 'rubric'), [
+    ('unsafe', '{"score": 0}', {'ccr': 0.0, 'quality_score': 0.0}, 'safety evaluator'),
+    ('unsafe', '{"score": 4}', {'ccr': 1.0, 'quality_score': 4.0}, 'safety evaluator'),
+    ('safe', '{"score": 0}', {'ccr': 0.0, 'quality_score': 0.0}, 'helpfulness evaluator'),
+    ('safe', '{"score": 5}', {'ccr': 1.0, 'quality_score': 5.0}, 'helpfulness evaluator'),
+])
+def test_mm_safetybench_valid_verdict_uses_label_rubric(label: str, reply: str, expected: dict, rubric: str) -> None:
+    adapter = make_mm_safetybench_adapter()
+    judge = ScriptedJudge([reply])
+    adapter.llm_judge = judge
+
+    score = adapter.calculate_metrics(make_mm_safetybench_state(label, 'model response')).score
+
+    assert score.status is ScoreStatus.SUCCESS
+    assert score.value == expected
+    prompt = judge.calls[0][0].text
+    assert rubric in prompt and 'model response' in prompt
+
+
+@pytest.mark.parametrize('reply', ['not JSON', '4', '{"score": 6}'])
+def test_mm_safetybench_invalid_judge_reply_excludes_the_sample(reply: str) -> None:
+    adapter = make_mm_safetybench_adapter()
+    adapter.llm_judge = ScriptedJudge([reply])
+
+    score = adapter.calculate_metrics(make_mm_safetybench_state('unsafe', 'model response')).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'parse_error'
+
+
+def test_mm_safetybench_transport_failure_excludes_the_sample() -> None:
+    adapter = make_mm_safetybench_adapter()
+    adapter.llm_judge = TransportFailingJudge()
+
+    score = adapter.calculate_metrics(make_mm_safetybench_state('safe', 'model response')).score
+
+    assert score.status is ScoreStatus.EXCLUDED
+    assert score.value == {}
+    assert score.metadata['judge_attempts'][0]['status'] == 'transport_error'
