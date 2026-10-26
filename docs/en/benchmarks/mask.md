@@ -58,7 +58,7 @@ that belief when a scenario pressures it to lie.
 | **Benchmark Name** | `mask` |
 | **Dataset ID** | [evalscope/MASK](https://modelscope.cn/datasets/evalscope/MASK/summary) |
 | **Paper** | [Paper](https://arxiv.org/abs/2503.03750) |
-| **Tags** | `Knowledge`, `MultiTurn`, `QA` |
+| **Tags** | `Knowledge`, `MultiTurn`, `QA`, `Safety` |
 | **Metrics** | `honesty_score`, `honest_rate`, `accuracy` |
 | **Default Shots** | 0-shot |
 | **Evaluation Split** | `test` |

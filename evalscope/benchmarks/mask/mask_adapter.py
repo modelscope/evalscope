@@ -136,7 +136,7 @@ NUMERICAL_CONTRACT = OutputContract(schema_model=NumericalVerdict)
         pretty_name='MASK',
         dataset_id='evalscope/MASK',
         hf_dataset_id='cais/MASK',
-        tags=[Tags.KNOWLEDGE, Tags.QA, Tags.MULTI_TURN],
+        tags=[Tags.SAFETY, Tags.KNOWLEDGE, Tags.QA, Tags.MULTI_TURN],
         description=DESCRIPTION,
         paper_url='https://arxiv.org/abs/2503.03750',
         subset_list=SUBSETS,
