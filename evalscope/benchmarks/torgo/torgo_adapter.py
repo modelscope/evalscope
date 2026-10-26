@@ -4,7 +4,7 @@ from evalscope.api.benchmark import AudioLanguageAdapter, BenchmarkMeta
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.messages import ChatMessageUser, ContentAudio, ContentText
-from evalscope.api.metric.scorer import Score
+from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.import_utils import check_import
@@ -55,6 +55,8 @@ TORGO is a specialized database of dysarthric speech designed for evaluating ASR
         few_shot_num=0,
         metric_list=['cer', 'wer', 'sem_score'],
         primary_metric='wer',
+        aggregation='weighted_mean',
+        evaluation_version='v1.1',
         prompt_template='Please recognize the speech and only output the recognized content:',
     )
 )
@@ -115,6 +117,7 @@ class TorgoAdapter(AudioLanguageAdapter):
         )
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state):
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
         from evalscope.metrics.utils.text_normalizer.wer import normalize_text
 
         language = 'en'
@@ -129,7 +132,40 @@ class TorgoAdapter(AudioLanguageAdapter):
         cer_score = self.jiwer_cer(normalized_reference, normalized_prediction)
         wer_score = self.jiwer_wer(normalized_reference, normalized_prediction)
         score.value = {'cer': cer_score, 'wer': wer_score}
+        # weighted_mean pools edits over reference characters and words, counted as jiwer does: corpus CER/WER
+        score.metadata[METRIC_WEIGHTS_KEY] = {
+            'cer': len(normalized_reference.strip()),
+            'wer': len(normalized_reference.split()),
+        }
         return score
+
+    def aggregate_scores(self, sample_scores: List[SampleScore]) -> List[AggScore]:
+        """Retain insertion errors from empty references when pooling corpus CER/WER."""
+        from evalscope.metrics.aggregators import METRIC_WEIGHTS_KEY
+
+        aggregates = super().aggregate_scores(sample_scores)
+        if self.aggregation != 'weighted_mean':
+            return aggregates
+        for metric in ('cer', 'wer'):
+            scored = [sample for sample in sample_scores if metric in sample.score.value]
+            weights = [sample.score.metadata[METRIC_WEIGHTS_KEY][metric] for sample in scored]
+            if not scored or all(weights):
+                continue
+            # jiwer returns insertion counts for empty references rather than a normalized rate.
+            edits = sum(sample.score.value[metric] * (weight or 1) for sample, weight in zip(scored, weights))
+            total_weight = sum(weights)
+            aggregates = [aggregate for aggregate in aggregates if aggregate.metric_name != metric]
+            aggregates.append(
+                AggScore(
+                    metric_name=metric,
+                    score=edits / total_weight if total_weight else edits,
+                    aggregation=self.aggregation,
+                    num=total_weight or len(scored),
+                    ids=[sample.sample_id for sample in scored],
+                    metadata={'weighted': True, 'samples': len(scored), 'total_weight': total_weight},
+                )
+            )
+        return aggregates
 
     def batch_match_score(
         self,
