@@ -93,6 +93,21 @@ def average_ranks(values: list[float]) -> list[float]:
     return result
 
 
+def auroc(scores: list[float], labels: list[int]) -> float:
+    """使用并列平均秩计算二元 ROC AUC（Mann-Whitney U），1 表示正类。"""
+    if len(scores) != len(labels) or not scores:
+        raise ValueError('AUROC requires equally sized, non-empty scores and labels.')
+    if any(label not in (0, 1) for label in labels) or not all(math.isfinite(score) for score in scores):
+        raise ValueError('AUROC requires binary labels and finite scores.')
+    positives = sum(labels)
+    if not 0 < positives < len(labels):
+        raise ValueError('AUROC requires both label classes.')
+    ranks = average_ranks(scores)
+    return (sum(rank for rank, label in zip(ranks, labels) if label) - positives * (positives + 1) / 2) / (
+        positives * (len(labels) - positives)
+    )
+
+
 @register_aggregation('decision')
 class DecisionAggregator(Aggregator):
     """Aggregate probabilities across samples, grouped by decision kind."""
@@ -205,14 +220,7 @@ class DecisionAggregator(Aggregator):
                 add('recall', recall)
                 add('f1', 2 * precision * recall / (precision + recall) if precision + recall else 0.0)
                 if len(set(y)) == 2:
-                    p = [r.probabilities[r.labels.index('yes')] for r in rows]
-                    ranks = average_ranks(p)
-                    positives = sum(y)
-                    add(
-                        'auroc',
-                        (sum(rank for rank, gold in zip(ranks, y) if gold) - positives * (positives + 1) / 2)
-                        / (positives * (len(y) - positives)),
-                    )
+                    add('auroc', auroc([r.probabilities[r.labels.index('yes')] for r in rows], y))
                 else:
                     diagnostics.setdefault('unavailable', {})['auroc'] = 'Only one gold class.'
                 if sum(y):

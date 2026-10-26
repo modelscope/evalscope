@@ -200,6 +200,7 @@ class Tags:
     MULTI_TURN = 'MultiTurn'
     YES_NO = 'Yes/No'
     HALLUCINATION = 'Hallucination'
+    SAFETY = 'Safety'
     MEDICAL = 'Medical'
     AGENT = 'Agent'
     MT = 'MachineTranslation'
