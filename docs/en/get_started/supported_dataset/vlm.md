@@ -39,6 +39,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 | `mia_bench` | [MIA-Bench](../../benchmarks/mia_bench.md) | `InstructionFollowing`, `MultiModal`, `QA` |
 | `micro_vqa` | [MicroVQA](../../benchmarks/micro_vqa.md) | `Knowledge`, `MCQ`, `Medical`, `MultiModal` |
 | `mm_bench` | [MMBench](../../benchmarks/mm_bench.md) | `Knowledge`, `MultiModal`, `QA` |
+| `mm_safetybench_plus_plus` | [MM-SafetyBench++](../../benchmarks/mm_safetybench_plus_plus.md) | `MultiModal`, `QA` |
 | `mm_star` | [MMStar](../../benchmarks/mm_star.md) | `Knowledge`, `MCQ`, `MultiModal` |
 | `mmau` | [MMAU](../../benchmarks/mmau.md) | `Audio`, `MCQ` |
 | `mmmu` | [MMMU](../../benchmarks/mmmu.md) | `Knowledge`, `MultiModal`, `QA` |
@@ -121,6 +122,7 @@ Below is the list of supported VLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/mia_bench.md
 ../../benchmarks/micro_vqa.md
 ../../benchmarks/mm_bench.md
+../../benchmarks/mm_safetybench_plus_plus.md
 ../../benchmarks/mm_star.md
 ../../benchmarks/mmau.md
 ../../benchmarks/mmmu.md

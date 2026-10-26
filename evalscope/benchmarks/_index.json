@@ -161,6 +161,7 @@
  "mit_movie_trivia": "evalscope.benchmarks.ner.mit_movie_trivia_adapter",
  "mit_restaurant": "evalscope.benchmarks.ner.mit_restaurant_adapter",
  "mm_bench": "evalscope.benchmarks.mm_bench.mm_bench_adapter",
+ "mm_safetybench_plus_plus": "evalscope.benchmarks.mm_safetybench_plus_plus.mm_safetybench_plus_plus_adapter",
  "mm_star": "evalscope.benchmarks.mm_star.mm_star_adapter",
  "mmau": "evalscope.benchmarks.mmau.mmau_adapter",
  "mmlu": "evalscope.benchmarks.mmlu.mmlu_adapter",
