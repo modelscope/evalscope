@@ -952,6 +952,14 @@ class TestNativeBenchmark(TestBenchmark):
         """Test KINA knowledge benchmark with mock."""
         self._run_dataset_test('kina', limit=5, use_mock=True)
 
+    def test_mask(self):
+        """Test MASK honesty benchmark (limit is per archetype)."""
+        self._run_dataset_test('mask', limit=2, generation_config={'max_tokens': 1000, 'temperature': 1.0})
+
+    def test_mask_mock(self):
+        """Test MASK honesty benchmark with a mock model and the configured judge."""
+        self._run_dataset_test('mask', limit=1, use_mock=True)
+
     def test_perspective_gap_mock(self):
         """Test PerspectiveGap benchmarks with mock."""
         pytest.importorskip('perspective_gap.scoring')

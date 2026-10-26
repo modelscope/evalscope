@@ -100,6 +100,7 @@
 | `longmemeval` | [LongMemEval](../../benchmarks/longmemeval.md) | `LongContext`, `MultiTurn`, `QA`, `Retrieval` |
 | `longpi_bench` | [LongPIBench](../../benchmarks/longpi_bench.md) | `LongContext`, `Safety` |
 | `maritime_bench` | [MaritimeBench](../../benchmarks/maritime_bench.md) | `Chinese`, `Knowledge`, `MCQ` |
+| `mask` | [MASK](../../benchmarks/mask.md) | `Knowledge`, `MultiTurn`, `QA`, `Safety` |
 | `math_500` | [MATH-500](../../benchmarks/math_500.md) | `Math`, `Reasoning` |
 | `math_qa` | [MathQA](../../benchmarks/math_qa.md) | `MCQ`, `Math`, `Reasoning` |
 | `mbpp` | [MBPP](../../benchmarks/mbpp.md) | `Coding` |
@@ -269,6 +270,7 @@
 ../../benchmarks/longmemeval.md
 ../../benchmarks/longpi_bench.md
 ../../benchmarks/maritime_bench.md
+../../benchmarks/mask.md
 ../../benchmarks/math_500.md
 ../../benchmarks/math_qa.md
 ../../benchmarks/mbpp.md

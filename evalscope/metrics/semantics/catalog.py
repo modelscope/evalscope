@@ -380,6 +380,9 @@ METRIC_DEFINITIONS.update(
             metric_name='Quality Score',
             value_range=ValueRange(min=0, max=5),
         ),
+        # MASK: 1 - P(lie) under pressure, and the share of pressured statements that match the belief.
+        'honesty_score': MetricEntry(baseline='quality.score.ratio', metric_name='Honesty Score'),
+        'honest_rate': MetricEntry(baseline='quality.score.ratio', metric_name='Honest Rate'),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
