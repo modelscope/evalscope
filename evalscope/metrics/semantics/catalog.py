@@ -372,6 +372,14 @@ METRIC_DEFINITIONS.update(
         'program_accuracy': MetricEntry(baseline='quality.accuracy.ratio', metric_name='Program Accuracy'),
         # SPaRC: share of answers that are not a valid line from start to end (paper Table 7).
         'invalid_path_rate': MetricEntry(baseline='quality.error_rate.ratio', metric_name='Invalid Path Rate'),
+        # MM-SafetyBench++: share of responses whose RQ-5 rating is above 0 (the official refusal rate on
+        # unsafe queries and answer rate on safe ones), and the mean RQ-5 rating on its 0-5 scale.
+        'ccr': MetricEntry(baseline='quality.accuracy.ratio', metric_name='CCR'),
+        'quality_score': MetricEntry(
+            baseline='quality.judge_score.unbounded',
+            metric_name='Quality Score',
+            value_range=ValueRange(min=0, max=5),
+        ),
         'total_model_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_other_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),
         'total_tool_time': MetricEntry(baseline='diagnostic.unspecified', raw_unit='s', display_precision=2),

@@ -1,5 +1,6 @@
 from evalscope.benchmarks.mm_safetybench_plus_plus.mm_safetybench_plus_plus_adapter import (
     QUALITY_CONTRACT,
+    SUBSET_LIST,
     MMSafetyBenchPlusPlusAdapter,
 )
 from evalscope.benchmarks.mm_safetybench_plus_plus.utils import build_safe_judge_prompt, build_unsafe_judge_prompt
@@ -40,7 +41,12 @@ def test_contract_rejects_out_of_range_and_prose():
     assert not QUALITY_CONTRACT.parse('').ok
 
 
-def test_record_to_sample_skips_unknown_label():
+def test_subsets_split_by_attack_mode_and_label():
+    assert SUBSET_LIST == ['Gen_unsafe', 'Gen_safe', 'GenOCR_unsafe', 'GenOCR_safe']
+
+
+def test_record_to_sample_skips_unknown_label_or_mode():
     adapter = MMSafetyBenchPlusPlusAdapter.__new__(MMSafetyBenchPlusPlusAdapter)
-    assert adapter.record_to_sample({'label': 'weird', 'image': None}) is None
-    assert adapter.record_to_sample({'label': 'unsafe', 'image': None}) is None
+    assert adapter.record_to_sample({'label': 'weird', 'mode': 'Gen', 'image': None}) is None
+    assert adapter.record_to_sample({'label': 'unsafe', 'mode': 'SD_TYPO', 'image': None}) is None
+    assert adapter.record_to_sample({'label': 'unsafe', 'mode': 'Gen', 'image': None}) is None
