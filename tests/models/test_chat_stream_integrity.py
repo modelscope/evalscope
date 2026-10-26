@@ -7,15 +7,20 @@ from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
-import litellm
 import pytest
 
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import GenerateConfig, ModelOutput
-from evalscope.models.litellm_compatible import LiteLLMAPI
 from evalscope.models.openai_compatible import OpenAICompatibleAPI
 
 HTTPProvider = tuple[str, list[bytes], list[dict[str, Any]]]
+
+
+@pytest.fixture(params=['openai', 'litellm'])
+def provider(request: pytest.FixtureRequest) -> str:
+    if request.param == 'litellm':
+        pytest.importorskip('litellm')
+    return request.param
 
 
 def _chunk(delta: dict[str, Any], finish_reason: str | None = None) -> dict[str, Any]:
@@ -67,6 +72,8 @@ def _generate(provider: str, asynchronous: bool, base_url: str, *, n: int | None
     if provider == 'openai':
         api = OpenAICompatibleAPI(model_name='gpt-4o-mini', base_url=base_url, api_key='EMPTY', max_retries=0)
     else:
+        from evalscope.models.litellm_compatible import LiteLLMAPI
+
         api = LiteLLMAPI(model_name='openai/gpt-4o-mini', base_url=base_url, api_key='EMPTY')
     config = GenerateConfig(stream=True, retries=2, retry_interval=0, timeout=2, n=n)
     messages = [ChatMessageUser(content='question')]
@@ -86,7 +93,6 @@ def _generate(provider: str, asynchronous: bool, base_url: str, *, n: int | None
             api.client.close()
 
 
-@pytest.mark.parametrize('provider', ['openai', 'litellm'])
 @pytest.mark.parametrize('asynchronous', [False, True], ids=['sync', 'async'])
 @pytest.mark.parametrize('case', ['truncated', 'empty', 'role_only', 'usage_only'])
 @pytest.mark.parametrize('exhausted', [False, True], ids=['recover', 'exhaust'])
@@ -105,7 +111,10 @@ def test_invalid_stream_retries_whole_request(
     }
     responses.append(invalid[case])
     if exhausted:
-        with pytest.raises((RuntimeError, litellm.APIError), match='(?i)stream'):
+        errors = (RuntimeError,)
+        if provider == 'litellm':
+            errors += (pytest.importorskip('litellm').APIError,)
+        with pytest.raises(errors, match='(?i)stream'):
             _generate(provider, asynchronous, base_url)
     else:
         responses.append(_wire([{
@@ -123,7 +132,6 @@ def test_invalid_stream_retries_whole_request(
     assert requests[0] == requests[1]
 
 
-@pytest.mark.parametrize('provider', ['openai', 'litellm'])
 @pytest.mark.parametrize('asynchronous', [False, True], ids=['sync', 'async'])
 @pytest.mark.parametrize('case,stop_reason', [
     ('text', 'stop'),
@@ -172,7 +180,6 @@ def test_explicitly_finished_stream_is_accepted(
         assert output.metadata == {'finish_reasons': {'0': 'provider_specific'}}
 
 
-@pytest.mark.parametrize('provider', ['openai', 'litellm'])
 @pytest.mark.parametrize('asynchronous', [False, True], ids=['sync', 'async'])
 @pytest.mark.parametrize('unfinished', [False, True], ids=['complete', 'unfinished'])
 def test_multiple_choices_finish_independently(

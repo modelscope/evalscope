@@ -8,9 +8,10 @@ detection added to ``collect_stream_response``. See modelscope/evalscope#1909.
 
 from typing import Any, List
 
-import litellm
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
+
+litellm = pytest.importorskip('litellm')
 
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import GenerateConfig
