@@ -14,7 +14,7 @@ from evalscope.utils.argument_utils import get_supported_params
 from evalscope.utils.function_utils import async_retry_call, retry_call
 
 from .openai_compatible import NON_RETRYABLE_OPENAI_ERRORS, OpenAICompatibleAPI
-from .utils.openai import openai_handle_bad_request
+from .utils.openai import EmptyCompletionError, openai_handle_bad_request
 from .utils.openai_responses import (
     async_collect_response_stream,
     chat_choices_from_openai_response,
@@ -67,6 +67,27 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
                 'Please upgrade to openai>=1.56.0.'
             )
 
+    @staticmethod
+    def _raise_if_failed(response: Any) -> None:
+        """Reject a Response whose terminal status is ``failed``.
+
+        Both the streaming and non-streaming ``responses.create`` paths can hand back a
+        ``Response`` with ``status == 'failed'`` (and an ``error`` describing why) after
+        HTTP 200. Downstream code otherwise reads it as an empty assistant reply, so a
+        failed request is scored as a blank answer. Mirror the #1918 OpenAI/LiteLLM fix
+        by raising ``EmptyCompletionError`` so the sample is recorded as an error and the
+        request is retried through the same path. ``cancelled`` is left untouched (it only
+        surfaces in background mode).
+        """
+        if getattr(response, 'status', None) != 'failed':
+            return
+        error = getattr(response, 'error', None)
+        if error is not None:
+            detail = f'{getattr(error, "code", None)}: {getattr(error, "message", None)}'
+        else:
+            detail = 'no error detail'
+        raise EmptyCompletionError(f'Responses API returned status=failed ({detail})')
+
     def generate(
         self,
         input: List[ChatMessage],
@@ -84,8 +105,11 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
             def _create_and_collect() -> Tuple[Response, Optional[float]]:
                 raw_response = self.client.responses.create(**request)
                 if self._is_response_object(raw_response):
-                    return raw_response, None
-                return collect_response_stream(raw_response, request_start=t_start)
+                    response, stream_ttft = raw_response, None
+                else:
+                    response, stream_ttft = collect_response_stream(raw_response, request_start=t_start)
+                self._raise_if_failed(response)
+                return response, stream_ttft
 
             response, ttft = retry_call(
                 _create_and_collect,
@@ -120,8 +144,11 @@ class OpenAIResponsesAPI(OpenAICompatibleAPI):
             async def _create_and_collect() -> Tuple[Response, Optional[float]]:
                 raw_response = await self.async_client.responses.create(**request)
                 if self._is_response_object(raw_response):
-                    return raw_response, None
-                return await async_collect_response_stream(raw_response, request_start=t_start)
+                    response, stream_ttft = raw_response, None
+                else:
+                    response, stream_ttft = await async_collect_response_stream(raw_response, request_start=t_start)
+                self._raise_if_failed(response)
+                return response, stream_ttft
 
             response, ttft = await async_retry_call(
                 _create_and_collect,
