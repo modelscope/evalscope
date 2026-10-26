@@ -2,7 +2,8 @@
 
 Covers pope, hallusion_bench and drivel_binary, whose match_score previously did
 ``reference in filtered_prediction.strip().upper()`` and so credited a "Yes"/absent reply for a "NO" label
-whenever the uppercased text contained the letters "no" ("know", "not", "no explanation", ...).
+whenever the uppercased text contained the letters "no" ("know", "not", "no explanation", ...), and coin_flip,
+whose per-sample and reported accuracy disagreed on the same reply.
 """
 
 import pytest
@@ -14,7 +15,7 @@ from evalscope.api.model import ModelOutput
 from evalscope.api.registry import get_benchmark
 from evalscope.config import TaskConfig
 
-ADAPTERS = ['pope', 'hallusion_bench', 'drivel_binary']
+ADAPTERS = ['pope', 'hallusion_bench', 'drivel_binary', 'coin_flip']
 
 
 def _sample_score(name: str, prediction: str, label: str) -> SampleScore:
@@ -60,7 +61,7 @@ def test_verdict_matches_label(name: str, prediction: str, label: str, expected:
     assert _score(name, prediction, label) == expected
 
 
-@pytest.mark.parametrize('name', ['pope', 'drivel_binary'])
+@pytest.mark.parametrize('name', ['pope', 'drivel_binary', 'coin_flip'])
 def test_ambiguous_reply_does_not_create_a_false_positive(name: str) -> None:
     adapter = get_benchmark(name, TaskConfig(model='m', datasets=[name]))
     scores = [_sample_score(name, 'Yes', 'Yes'), _sample_score(name, 'I do not know.', 'No')]
@@ -74,7 +75,7 @@ def test_ambiguous_reply_does_not_create_a_false_positive(name: str) -> None:
     assert metrics['yes_ratio'] == 0.5
 
 
-@pytest.mark.parametrize('name', ['pope', 'drivel_binary'])
+@pytest.mark.parametrize('name', ['pope', 'drivel_binary', 'coin_flip'])
 def test_ambiguous_yes_reply_counts_as_a_miss(name: str) -> None:
     adapter = get_benchmark(name, TaskConfig(model='m', datasets=[name]))
     scores = [_sample_score(name, 'I do not know.', 'Yes')]
@@ -84,3 +85,19 @@ def test_ambiguous_yes_reply_counts_as_a_miss(name: str) -> None:
     assert metrics['accuracy'] == 0.0
     assert metrics['recall'] == 0.0
     assert metrics['yes_ratio'] == 0.0
+
+
+def test_coin_flip_reported_accuracy_reads_the_answer_line_verdict() -> None:
+    adapter = get_benchmark('coin_flip', TaskConfig(model='m', datasets=['coin_flip']))
+    replies = [
+        ('Bob flips the coin.\nANSWER: NO.', 'No'),
+        ('Nobody flips the coin.\nANSWER: **YES**.', 'Yes'),
+        ('ANSWER: Yes', 'Yes'),
+        ('ANSWER: No', 'No'),
+    ]
+    scores = [_sample_score('coin_flip', prediction, label) for prediction, label in replies]
+
+    assert [score.score.main_value for score in scores] == [1, 1, 1, 1]
+    metrics = {item.metric_name: item.score for item in adapter.aggregate_scores(scores)}
+    assert metrics['accuracy'] == 1.0
+    assert metrics['yes_ratio'] == 0.5
