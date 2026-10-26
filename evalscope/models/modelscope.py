@@ -216,12 +216,16 @@ class ModelScopeAPI(ModelAPI):
 
             # construct choice
             content, tool_calls = parse_tool_calls_from_text(response.output, tools)
+            # A parsed call is what a tool-calling benchmark reads as the model's
+            # choice. The local path only reports stop/max_tokens, so mirror the
+            # hosted providers and report tool_calls when a call was parsed.
+            stop_reason = 'tool_calls' if tool_calls else response.stop_reason
             choice = ChatCompletionChoice(
                 message=ChatMessageAssistant(
                     content=content, tool_calls=tool_calls, model=self.model_name, source='generate'
                 ),
                 logprobs=(Logprobs(content=final_logprobs) if final_logprobs is not None else None),
-                stop_reason=response.stop_reason,
+                stop_reason=stop_reason,
             )
             choices.append(choice)
 
