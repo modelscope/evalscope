@@ -23,6 +23,7 @@ Drivelology Multi-label Classification evaluates models' ability to categorize "
 
 - Default configuration uses **0-shot** evaluation
 - Metrics: F1 (weighted, micro, macro), Exact Match
+- The labels on the last `ANSWER:` line are read as listed: `AD`, `A, D` or `A and D`
 - Aggregation method: F1 weighted
 - Categories: inversion, wordplay, switchbait, paradox, misdirection
 
@@ -56,10 +57,10 @@ Drivelology Multi-label Classification evaluates models' ability to categorize "
 {
   "input": [
     {
-      "id": "0e8acb03",
+      "id": "799dcfaa",
       "content": [
         {
-          "text": "#Instruction#:\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\n\n#Definitions#:\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\n\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\n\nA) A. inversion\nB) B. wordplay\nC) C. switchbait\nD) D. paradox\nE) E. misdirection"
+          "text": "#Instruction#:\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\n\n#Definitions#:\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED 1108 chars] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\n\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\n\nA) A. inversion\nB) B. wordplay\nC) C. switchbait\nD) D. paradox\nE) E. misdirection"
         }
       ]
     }

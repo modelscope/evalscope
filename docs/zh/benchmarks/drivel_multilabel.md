@@ -2,29 +2,30 @@
 
 ## 概述
 
-Drivelology 多标签分类任务评估模型将“drivelology”文本归类到以下修辞技巧类别中的能力：倒置（inversion）、文字游戏（wordplay）、诱饵转换（switchbait）、悖论（paradox）和误导（misdirection）。每段文本可能属于多个类别。
+Drivelology 多标签分类评估模型将“drivelology”文本分类为修辞技巧类别的能力：倒装、双关、标题党、悖论和误导。每段文本可能属于多个类别。
 
 ## 任务描述
 
 - **任务类型**：多标签文本分类
 - **输入**：Drivelology 文本样本
-- **输出**：一个或多个修辞技巧类别
-- **领域**：语言学分析、修辞技巧检测
+- **输出**：一个或多个技巧类别
+- **领域**：语言分析，修辞技巧检测
 
 ## 主要特点
 
-- 包含五种修辞技巧类别
-- 多标签分类（每个样本可对应多个类别）
-- 测试对语言创造性机制的理解能力
-- 要求识别幽默与反讽技巧
+- 五个修辞技巧类别
+- 多标签分类（每个样本可以有多个类别）
+- 测试对语言创造机制的理解
+- 需要识别幽默和讽刺技巧
 - 提供详细的类别定义
 
 ## 评估说明
 
 - 默认配置使用 **0-shot** 评估
-- 评估指标：F1（加权、微观、宏观）、精确匹配（Exact Match）
-- 聚合方法：加权 F1（F1 weighted）
-- 类别：inversion、wordplay、switchbait、paradox、misdirection
+- 指标：F1（加权、微观、宏观）、完全匹配
+- 最后一行 `ANSWER:` 上的标签按列出的方式读取：`AD`，`A, D` 或 `A and D`
+- 聚合方法：加权 F1
+- 类别：倒装、双关、标题党、悖论、误导
 
 ## 属性
 
@@ -37,7 +38,8 @@ Drivelology 多标签分类任务评估模型将“drivelology”文本归类到
 | **指标** | `f1_weighted`, `f1_micro`, `f1_macro`, `exact_match` |
 | **默认示例数** | 0-shot |
 | **评估分割** | `test` |
-| **聚合方式** | `f1_weighted` |
+| **聚合** | `f1_weighted` |
+
 
 ## 数据统计
 
@@ -55,10 +57,10 @@ Drivelology 多标签分类任务评估模型将“drivelology”文本归类到
 {
   "input": [
     {
-      "id": "0e8acb03",
+      "id": "799dcfaa",
       "content": [
         {
-          "text": "#Instruction#:\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\n\n#Definitions#:\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\n\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\n\nA) A. inversion\nB) B. wordplay\nC) C. switchbait\nD) D. paradox\nE) E. misdirection"
+          "text": "#Instruction#:\nClassify the given text into one or more of the following categories: inversion, wordplay, switchbait, paradox, and misdirection.\n\n#Definitions#:\n- inversion: This technique takes a well-known phrase, cliché, or social script a ... [TRUNCATED 1108 chars] ... e should be of the following format: 'ANSWER: [LETTERS]' (without quotes) where [LETTER]S is one or more of A,B,C,D,E.\n\nText to classify: 後天的努力比什麼都重要，所以今天和明天休息。\n\nA) A. inversion\nB) B. wordplay\nC) C. switchbait\nD) D. paradox\nE) E. misdirection"
         }
       ]
     }
@@ -84,11 +86,11 @@ Drivelology 多标签分类任务评估模型将“drivelology”文本归类到
 }
 ```
 
-*注：部分内容为显示目的已截断。*
+*注：部分内容为了显示被截断。*
 
 ## 提示模板
 
-**提示模板：**
+**提示模板:**
 ```text
 {question}
 ```
@@ -103,7 +105,7 @@ evalscope eval \
     --api-url OPENAI_API_COMPAT_URL \
     --api-key EMPTY_TOKEN \
     --datasets drivel_multilabel \
-    --limit 10  # 正式评估时请删除此行
+    --limit 10  # Remove this line for formal evaluation
 ```
 
 ### 使用 Python
@@ -117,7 +119,7 @@ task_cfg = TaskConfig(
     api_url='OPENAI_API_COMPAT_URL',
     api_key='EMPTY_TOKEN',
     datasets=['drivel_multilabel'],
-    limit=10,  # 正式评估时请删除此行
+    limit=10,  # Remove this line for formal evaluation
 )
 
 run_task(task_cfg=task_cfg)
