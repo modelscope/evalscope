@@ -5,9 +5,10 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from typing import Any, Optional
 
 import httpx
-import litellm
 import pytest
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
+
+litellm = pytest.importorskip('litellm')
 
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import GenerateConfig, ModelOutput

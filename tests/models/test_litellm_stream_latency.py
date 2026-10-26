@@ -3,8 +3,10 @@ anthropic models, so it is never shorter than the time to first token."""
 import time
 from typing import Any
 
-import litellm
+import pytest
 from openai.types.chat import ChatCompletion
+
+litellm = pytest.importorskip('litellm')
 
 from evalscope.api.messages import ChatMessageUser
 from evalscope.api.model import GenerateConfig

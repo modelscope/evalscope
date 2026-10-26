@@ -9,7 +9,6 @@ jieba
 jinja2
 jsonlines
 jsonschema
-litellm>=1.55,<2.0
 Markdown
 math-verify[antlr4_13_2]==0.9.0
 modelscope[datasets]>=1.34
