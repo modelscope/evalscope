@@ -14,9 +14,52 @@ from evalscope.api.model import GenerateConfig, Model
 from evalscope.api.model.decision import DecisionAnswer, DecisionInput
 from evalscope.api.model.model import ModelCache
 from evalscope.api.registry import get_benchmark
-from evalscope.metrics.decision import DecisionAggregator
+from evalscope.metrics.aggregators import DecisionAggregator
 from evalscope.models.systemone import AutoTrustAPI
 from evalscope.models.utils.decision import build_autotrust_request, build_systemone_request, parse_decision_response
+
+
+def test_decision_module_locations_and_existing_imports() -> None:
+    from evalscope.api.registry import get_aggregation, get_metric
+    from evalscope.metrics import decision, utils
+    from evalscope.metrics.decision import metrics
+    from evalscope.metrics.utils import functions
+
+    assert decision.DecisionAggregator is DecisionAggregator
+    assert get_aggregation('decision') is DecisionAggregator
+    assert DecisionAggregator.__module__ == 'evalscope.metrics.aggregators.decision'
+    for name in ['auroc', 'average_ranks', 'ece']:
+        helper = getattr(functions, name)
+        assert getattr(decision, name) is helper
+        assert getattr(utils, name) is helper
+        assert helper.__module__ == 'evalscope.metrics.utils.functions'
+    registered = {
+        'decision_nll': metrics.DecisionNLL,
+        'decision_brier': metrics.DecisionBrier,
+        'decision_binary_brier': metrics.DecisionBinaryBrier,
+        'decision_rps': metrics.DecisionRPS,
+        'decision_mae': metrics.DecisionMAE,
+    }
+    for name, metric in registered.items():
+        assert get_metric(name) is metric
+        assert getattr(decision, metric.__name__) is metric
+        assert metric.__module__ == 'evalscope.metrics.decision.metrics'
+
+
+@pytest.mark.parametrize('metric_name,probabilities,gold,expected', [
+    ('decision_nll', [0.5, 0.5], 1, 0.6931471805599453),
+    ('decision_brier', [0.25, 0.75], 1, 0.125),
+    ('decision_binary_brier', [0.25, 0.75], 1, 0.0625),
+    ('decision_rps', [0.25, 0.75], 1, 0.0625),
+    ('decision_mae', [0.25, 0.75], 1, 0.25),
+])
+def test_registered_probability_metrics_after_move(
+    metric_name: str, probabilities: list[float], gold: int, expected: float
+) -> None:
+    from evalscope.api.registry import get_metric
+
+    result = get_metric(metric_name)().apply([json.dumps(probabilities)], [json.dumps(gold)])
+    assert result == pytest.approx([expected])
 
 
 def question(kind: str, levels: int = 4) -> DecisionInput:

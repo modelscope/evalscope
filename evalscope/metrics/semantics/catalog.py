@@ -365,6 +365,8 @@ METRIC_DEFINITIONS.update(
         ),
         # $OneMillion-Bench reports this normalized rubric-weighted score as its primary metric.
         'expert_score': MetricEntry(baseline='quality.score.ratio', metric_name='Expert Score'),
+        # SLEIGHT-Bench: share of attacks scored above the 1% FPR threshold calibrated on paired benign transcripts.
+        'catch_rate': MetricEntry(baseline='quality.recall.ratio', metric_name='Catch Rate @ 1% FPR'),
         # TableBench's primary metric is the official Mix_Metric (EM / EM±10% / ROUGE-L mix).
         'mix_metric': MetricEntry(baseline='quality.score.ratio', metric_name='Mix Metric'),
         # FinQA: the predicted program's result equals the gold answer / the program equals the gold program.

@@ -150,6 +150,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 | `seed_tts_eval` | [Seed-TTS-Eval](../../benchmarks/seed_tts_eval.md) | `Audio`, `TextToSpeech` |
 | `simple_qa` | [SimpleQA](../../benchmarks/simple_qa.md) | `Knowledge`, `QA` |
 | `siqa` | [SIQA](../../benchmarks/siqa.md) | `Commonsense`, `MCQ`, `Reasoning` |
+| `sleight_bench` | [SLEIGHT-Bench](../../benchmarks/sleight_bench.md) | `Agent`, `Safety` |
 | `sparc` | [SPaRC](../../benchmarks/sparc.md) | `Reasoning` |
 | `stsb` | [STS-B Decision](../../benchmarks/stsb.md) | `Decision` |
 | `super_gpqa` | [SuperGPQA](../../benchmarks/super_gpqa.md) | `Knowledge`, `MCQ` |
@@ -320,6 +321,7 @@ Below is the list of supported LLM benchmarks. Click on a benchmark name for det
 ../../benchmarks/seed_tts_eval.md
 ../../benchmarks/simple_qa.md
 ../../benchmarks/siqa.md
+../../benchmarks/sleight_bench.md
 ../../benchmarks/sparc.md
 ../../benchmarks/stsb.md
 ../../benchmarks/super_gpqa.md
