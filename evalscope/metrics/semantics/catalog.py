@@ -422,7 +422,9 @@ METRIC_DEFINITIONS['public_accuracy'] = MetricEntry(baseline='quality.accuracy.r
 # Safety benchmarks (salad_bench): `safety` is the share of judged-safe replies and
 # `attack_success_rate` is its complement (the share of judged-unsafe replies).
 METRIC_DEFINITIONS['safety'] = MetricEntry(baseline='quality.accuracy.ratio')
-METRIC_DEFINITIONS['attack_success_rate'] = MetricEntry(baseline='quality.error_rate.ratio')
+METRIC_DEFINITIONS['attack_success_rate'] = MetricEntry(
+    baseline='quality.error_rate.ratio', metric_name='Attack Success Rate'
+)
 METRIC_DEFINITIONS['macro_f1'] = MetricEntry(baseline='quality.f1.ratio', metric_name='Macro F1')
 for _registered, _reported in {
     'decision_nll': 'nll',
