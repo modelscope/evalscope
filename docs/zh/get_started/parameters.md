@@ -208,6 +208,9 @@ Judge 短路直接判定样本时，得分 metadata 会记录 `judge_skipped=tru
 设置 `rerun_review=True` 可复用 prediction 并重算 review，新的 review 文件只有成功后才原子替换旧文件；它也是身份
 不匹配时唯一的显式覆盖开关，生成的配置会在当前评测版本下记录 prediction 来源。
 
+如果重评失败或被中断，请保持 `use_cache` 指向原评测输出目录，并设置 `rerun_review=True` 继续重评。
+系统会复用已保存的模型回答并重新评分。尚未完成重评的基准不能直接复用旧评分结果。
+
 旧 `judge_strategy` 和单个 mapping `judge_model_args` 仅保留一轮输入迁移并会告警。已删除的
 `judge_worker_num` 和 `score_pattern` 会明确报错。
 

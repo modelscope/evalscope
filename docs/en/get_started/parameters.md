@@ -215,6 +215,10 @@ reviews. With `rerun_review=True`, predictions are reused and the review cache i
 success; it is the explicit override for an identity mismatch, and the generated config records the prediction
 source under the current evaluation version.
 
+If a review rerun fails or is interrupted, keep `use_cache` pointed at the original evaluation output directory
+and set `rerun_review=True` to resume. Saved model responses are reused and scored again. Old review results
+cannot be reused directly for a benchmark until its review rerun completes.
+
 `judge_strategy` and a single mapping `judge_model_args` remain accepted only as a deprecated input migration. The
 removed `judge_worker_num` and `score_pattern` are rejected.
 

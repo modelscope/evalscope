@@ -170,11 +170,17 @@ class DefaultEvaluator(Evaluator):
         """
         try:
             logger.info(f'Start loading benchmark dataset: {self.benchmark_name}')
-            dataset_dict = {k: v for k, v in self.benchmark.load_dataset().items() if len(v) > 0}
+            loaded_datasets = self.benchmark.load_dataset()
+            dataset_dict = {k: v for k, v in loaded_datasets.items() if len(v) > 0}
 
             if not dataset_dict:
                 logger.warning(f'No samples found in any subset of {self.benchmark_name}. Skipping.')
                 return {}
+
+            # Empty subsets must not retain scores from before this benchmark's review rerun.
+            if self.use_cache and self.task_config.rerun_review:
+                for subset in loaded_datasets.keys() - dataset_dict.keys():
+                    self.cache_manager.delete_review_cache(subset)
 
             subset_list = list(dataset_dict.keys())
 

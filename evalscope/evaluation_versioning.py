@@ -105,6 +105,8 @@ class BenchmarkEvaluationIdentity(BaseModel):
     evaluation_version: str
     fingerprint: str
     cache_source: Optional[CacheSource] = None
+    review_pending: bool = False
+    """A review rerun was started but has not completed successfully."""
 
 
 class EvaluationIdentity(BaseModel):
@@ -126,9 +128,18 @@ def cache_source_for_identity(
     the sole explicit override: it keeps old predictions and recomputes review
     results under the current evaluation version.
     """
+    if previous is not None and previous.review_pending:
+        if not rerun_review:
+            raise ValueError(
+                'Cached review rerun is incomplete. Use rerun_review=True to reuse predictions and '
+                'finish rescoring before reusing reviews.'
+            )
+        return previous.cache_source or CacheSource(
+            evaluation_version='unknown', fingerprint='unknown', inferred_legacy=True
+        )
     if previous is not None and previous.fingerprint == current.fingerprint:
         if not rerun_review:
-            return None
+            return previous.cache_source
         return CacheSource(
             evaluation_version=previous.evaluation_version,
             fingerprint=previous.fingerprint,
@@ -195,10 +206,21 @@ def build_evaluation_identity(
 def build_generated_evaluation_metadata(
     specs: Dict[str, ResolvedBenchmarkSpec],
     identity: EvaluationIdentity,
+    previous_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Build output-only metadata stored alongside the user task configuration."""
+    """Build output metadata, preserving unselected benchmarks in the same model namespace."""
+    resolved = {name: spec.model_dump(mode='json') for name, spec in specs.items()}
+    previous_identity = _identity_from_config(previous_config)
+    if previous_identity is not None:
+        previous_specs = previous_config.get('resolved_benchmarks', {})
+        if isinstance(previous_specs, dict):
+            resolved = {
+                **{name: spec for name, spec in previous_specs.items() if name in previous_identity.benchmarks},
+                **resolved,
+            }
+        identity = identity.model_copy(update={'benchmarks': {**previous_identity.benchmarks, **identity.benchmarks}})
     return {
-        'resolved_benchmarks': {name: spec.model_dump(mode='json') for name, spec in specs.items()},
+        'resolved_benchmarks': resolved,
         'evaluation_identity': identity.model_dump(mode='json'),
     }
 
@@ -224,7 +246,10 @@ def validate_cached_evaluation_identity(
             previous = legacy_identity_from_config(previous_config, benchmark_name)
             inferred_legacy = previous is not None
 
-        source = cache_source_for_identity(current, previous, inferred_legacy, rerun_review)
+        try:
+            source = cache_source_for_identity(current, previous, inferred_legacy, rerun_review)
+        except ValueError as exc:
+            raise ValueError(f'Cannot reuse cache for {benchmark_name}: {exc}') from exc
         if source is not None:
             sources[benchmark_name] = source
     return sources
