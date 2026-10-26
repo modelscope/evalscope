@@ -19,11 +19,25 @@ UTTERANCES = [
 ]
 
 
-def test_cer_and_wer_pool_edits_over_the_reference() -> None:
+@pytest.mark.parametrize(
+    ('utterances', 'expected_wer'),
+    [
+        (UTTERANCES, 1 / 11),
+        ([('', 'hello'), ('yes', 'yes')], 1.0),
+        ([('uh', 'hello'), ('yes', 'yes')], 1.0),
+        ([('', 'hello')], 1.0),
+        ([('', '')], 0.0),
+        ([('', ''), ('yes', 'yes')], 0.0),
+    ],
+    ids=['ordinary', 'empty-reference', 'normalized-empty-reference', 'all-empty', 'silence', 'mixed-silence'],
+)
+def test_cer_and_wer_pool_edits_over_the_reference(utterances: list[tuple[str, str]], expected_wer: float) -> None:
     jiwer = pytest.importorskip('jiwer')
+    from evalscope.metrics.utils.text_normalizer.wer import normalize_text
+
     adapter = get_benchmark('torgo', TaskConfig(datasets=['torgo'], dataset_args={'torgo': {'metric_list': ['cer', 'wer']}}))
     scores = []
-    for index, (reference, hypothesis) in enumerate(UTTERANCES):
+    for index, (reference, hypothesis) in enumerate(utterances):
         state = TaskState(
             model='mock',
             sample=Sample(input='q', target=reference),
@@ -35,9 +49,10 @@ def test_cer_and_wer_pool_edits_over_the_reference() -> None:
         scores.append(SampleScore(score=score, sample_id=index))
 
     results = {agg.metric_name: agg.score for agg in adapter.aggregate_scores(scores)}
-    references, hypotheses = zip(*UTTERANCES)
-    assert results['wer'] == pytest.approx(1 / 11)
+    references = [normalize_text(reference, 'en') for reference, _ in utterances]
+    hypotheses = [normalize_text(hypothesis, 'en') for _, hypothesis in utterances]
+    assert results['wer'] == pytest.approx(expected_wer)
     assert results['wer'] == pytest.approx(jiwer.wer(list(references), list(hypotheses)))
     assert results['cer'] == pytest.approx(jiwer.cer(list(references), list(hypotheses)))
-    assert results['sem_score'] == pytest.approx(0.5)
+    assert results['sem_score'] == pytest.approx((len(utterances) - 1) / 2)
     assert adapter._benchmark_meta.evaluation_version == 'v1.1'
