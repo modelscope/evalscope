@@ -196,7 +196,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
             is_error=tool_message.error is not None,
         )
         _preserve_cache_control(cast(Dict[str, Any], tool_result_block), tool_message.internal)
-        return MessageParam(role='user', content=[tool_result_block])
+        return {'role': 'user', 'content': [tool_result_block]}
 
     elif message.role == 'assistant':
         assistant_message = cast(ChatMessageAssistant, message)
@@ -224,7 +224,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
                 _preserve_cache_control(cast(Dict[str, Any], tool_use_block), tool_call.internal)
                 block_params.append(tool_use_block)
 
-        return MessageParam(role='assistant', content=block_params or [TextBlockParam(type='text', text=NO_CONTENT)])
+        return {'role': 'assistant', 'content': block_params or [TextBlockParam(type='text', text=NO_CONTENT)]}
 
     else:  # user message
         user_message = cast(ChatMessageUser, message)
@@ -241,7 +241,7 @@ def anthropic_message_param(message: ChatMessage) -> MessageParam:
             if not content:
                 content = [TextBlockParam(type='text', text=NO_CONTENT)]
 
-        return MessageParam(role='user', content=content)
+        return {'role': 'user', 'content': content}
 
 
 def _sanitize_tool_call_ids(messages: List[ChatMessage]) -> List[ChatMessage]:
@@ -470,13 +470,13 @@ def _combine_messages(a: MessageParam, b: MessageParam) -> MessageParam:
     b_content = b['content']
 
     if isinstance(a_content, str) and isinstance(b_content, str):
-        return MessageParam(role=role, content=f'{a_content}\n{b_content}')
+        return {'role': role, 'content': f'{a_content}\n{b_content}'}
     elif isinstance(a_content, list) and isinstance(b_content, list):
-        return MessageParam(role=role, content=a_content + b_content)
+        return {'role': role, 'content': a_content + b_content}
     elif isinstance(a_content, str) and isinstance(b_content, list):
-        return MessageParam(role=role, content=[TextBlockParam(type='text', text=a_content)] + b_content)
+        return {'role': role, 'content': [TextBlockParam(type='text', text=a_content)] + b_content}
     elif isinstance(a_content, list) and isinstance(b_content, str):
-        return MessageParam(role=role, content=a_content + [TextBlockParam(type='text', text=b_content)])
+        return {'role': role, 'content': a_content + [TextBlockParam(type='text', text=b_content)]}
     else:
         raise ValueError(f'Unexpected content types for messages: {a}, {b}')
 
