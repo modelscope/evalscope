@@ -289,7 +289,15 @@ class DefaultApiPlugin(ApiPluginBase):
                             generated_text = str(payload)
 
                         output.generated_text = generated_text
-                        output.success = True
+                        # A server that fails after sending HTTP 200 (vLLM, SGLang) reports
+                        # the error in-band as `{"error": {...}}` or `{"object": "error", ...}`.
+                        # The streaming branch already guards this (see #1906/#1918); the non-stream
+                        # JSON branch must not unconditionally count such a body as success.
+                        if isinstance(payload, dict) and (
+                            payload.get('error') is not None or payload.get('object') == 'error'
+                        ):
+                            output.error = json.dumps(payload, ensure_ascii=False)
+                        output.success = output.error is None
 
                     else:
                         # Unknown successful content-type: read as text
