@@ -76,6 +76,8 @@ The dashboard is the homepage of the visualization tool, providing a macro overv
 
 Additionally, the list area provides a search box (search by model name or dataset name) and sorting options (sort by time, score, or model name).
 
+**Compare selected runs**: Expand an evaluation result's history on the dashboard, select the runs to compare, and click **Compare** in the bottom toolbar. You can select repeated runs of one model or runs from different models. Each selection keeps its run ID and model ID rather than substituting the latest result. Search and tab changes preserve the selection; changing the output directory or rescanning clears it. The comparison page retains its dataset and metric alignment rules. Performance runs are excluded from this evaluation comparison.
+
 ### Evaluation Report List
 
 The report list page provides more refined report management and filtering capabilities, supporting multi-select reports for comparative analysis.

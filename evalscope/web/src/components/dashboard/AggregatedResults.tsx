@@ -11,6 +11,7 @@ import {
 import { scoreColor } from '@/utils/colorScale'
 import MetricTrend from '@/components/charts/MetricTrend'
 import Button from '@/components/ui/Button'
+import SelectionCheckbox from '@/components/ui/SelectionCheckbox'
 import { cellKey } from '@/domain/report/runAggregation'
 import type { AggregatedRow, CellPoint } from '@/domain/report/runAggregation'
 
@@ -93,6 +94,8 @@ interface AggregatedResultsProps {
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
   sort?: SortState
   onSortChange?: (sort: SortState) => void
+  selectedReports?: string[]
+  onToggleReport?: (ref: string) => void
 }
 
 function lastRunAt(row: AggregatedRow): string {
@@ -143,6 +146,8 @@ export default function AggregatedResults({
   onOpenRun,
   sort: controlledSort,
   onSortChange,
+  selectedReports,
+  onToggleReport,
 }: AggregatedResultsProps) {
   const { t } = useLocale()
   // Time order by default: it is the one ordering the reader can confirm from the column itself.
@@ -326,7 +331,12 @@ export default function AggregatedResults({
                 {isOpen && (
                   <tr className="bg-[var(--bg-card2)]">
                     <td colSpan={9} className="px-4 pb-4 pt-1">
-                      <StatsPanel row={row} onOpenRun={onOpenRun} />
+                      <StatsPanel
+                        row={row}
+                        onOpenRun={onOpenRun}
+                        selectedReports={selectedReports}
+                        onToggleReport={onToggleReport}
+                      />
                     </td>
                   </tr>
                 )}
@@ -364,9 +374,13 @@ const TREND_PANEL_WIDTH = 'lg:w-[48%]'
 function StatsPanel({
   row,
   onOpenRun,
+  selectedReports,
+  onToggleReport,
 }: {
   row: AggregatedRow
   onOpenRun: (row: AggregatedRow, point: CellPoint) => void
+  selectedReports?: string[]
+  onToggleReport?: (ref: string) => void
 }) {
   const { t } = useLocale()
   const { cell, stats } = row
@@ -407,6 +421,32 @@ function StatsPanel({
           <p className="py-3 type-body-xs text-[var(--text-muted)]">
             {t('dashboard.singleRunHint')}
           </p>
+        )}
+        {cell.kind === 'eval' && onToggleReport && (
+          <div
+            role="group"
+            aria-label={t('dashboard.selectRuns')}
+            className="mt-3 max-h-56 overflow-y-auto divide-y divide-[var(--border)]"
+          >
+            {[...cell.history].reverse().map((point) => (
+              <div key={point.runId} className="flex items-center gap-2 type-body-xs">
+                <SelectionCheckbox
+                  checked={selectedReports?.includes(point.runId) ?? false}
+                  label={t('dashboard.selectRun', { ref: point.runId })}
+                  onClick={() => onToggleReport(point.runId)}
+                />
+                <button
+                  type="button"
+                  onClick={() => onOpenRun(row, point)}
+                  title={point.runId}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 py-2 text-[var(--text-muted)] hover:text-[var(--accent)]"
+                >
+                  <span className="truncate">{point.timestamp || point.runId}</span>
+                  <span className="font-mono tabular-nums">{value(point.score)}</span>
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

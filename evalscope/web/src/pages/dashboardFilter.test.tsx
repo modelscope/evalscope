@@ -11,11 +11,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 
 import { LocaleProvider } from '@/contexts/LocaleContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { ReportsProvider } from '@/contexts/ReportsContext'
+import { ReportsProvider, useScan } from '@/contexts/ReportsContext'
 import type { MetricSemantics } from '@/domain/metric'
 import type { PerfRunSummary, ReportSummary } from '@/api/types'
 
@@ -99,12 +99,34 @@ async function renderDashboard(): Promise<void> {
         <ReportsProvider>
           <MemoryRouter initialEntries={['/dashboard']}>
             <DashboardPage />
+            <NavigationProbe />
           </MemoryRouter>
         </ReportsProvider>
       </ThemeProvider>
     </LocaleProvider>,
   )
   await settle()
+}
+
+function NavigationProbe() {
+  const location = useLocation()
+  const { setRootPath, triggerScan } = useScan()
+  return <>
+    <output data-testid="location">{location.pathname}{location.search}</output>
+    <button onClick={() => setRootPath('./other-outputs')}>Change test root</button>
+    <button onClick={() => triggerScan()}>Rescan test root</button>
+  </>
+}
+
+function mockReports(reports: ReportSummary[]) {
+  vi.mocked(reportsApi.listReports).mockResolvedValue({
+    reports, total: reports.length, page: 1, page_size: 100,
+    filters: { available_models: [], available_datasets: [] },
+  })
+}
+
+function selectRun(ref: string) {
+  fireEvent.click(screen.getByRole('checkbox', { name: `Select run ${ref}` }))
 }
 
 /** Click one of the kind tabs by its visible label. */
@@ -253,5 +275,95 @@ describe('dashboard kind tabs', () => {
 
     expect(screen.getByText('Recent change')).toBeInTheDocument()
     expect(screen.getByText(/a change of -40 pp from the previous run/)).toBeInTheDocument()
+  })
+})
+
+describe('dashboard run comparison', () => {
+  const oldRun = { ...EVAL_REPORT, run_id: '20260809_112700', timestamp: '2026-08-09T11:27:00' }
+  const otherModel = { ...EVAL_REPORT, model_id: 'other-model', model_name: 'other-model' }
+
+  it('compares the exact selected runs across model groups and filters', async () => {
+    mockReports([EVAL_REPORT, oldRun, otherModel])
+    await renderDashboard()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show history' })[0])
+    selectRun('20260809_112700/qwen-plus')
+    expect(screen.getByRole('button', { name: 'Compare' })).toBeDisabled()
+
+    fireEvent.change(screen.getByPlaceholderText('Search model or benchmark'), { target: { value: 'other-model' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+    selectRun('20260810_112700/other-model')
+    fireEvent.click(screen.getByRole('button', { name: 'Compare' }))
+
+    const location = new URL(screen.getByTestId('location').textContent!, 'http://localhost')
+    expect(location.pathname).toBe('/compare')
+    expect(location.searchParams.get('root_path')).toBe('./outputs')
+    expect(location.searchParams.getAll('report')).toEqual([
+      '20260809_112700/qwen-plus', '20260810_112700/other-model',
+    ])
+  })
+
+  it('keeps repeated runs of the same model distinct', async () => {
+    mockReports([EVAL_REPORT, oldRun])
+    await renderDashboard()
+    selectTab('Eval')
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+    selectRun('20260809_112700/qwen-plus')
+    selectRun('20260810_112700/qwen-plus')
+    fireEvent.click(screen.getByRole('button', { name: 'Compare' }))
+
+    const location = new URL(screen.getByTestId('location').textContent!, 'http://localhost')
+    expect(location.searchParams.getAll('report')).toEqual([
+      '20260809_112700/qwen-plus', '20260810_112700/qwen-plus',
+    ])
+  })
+
+  it('shares one selection for a run recorded under multiple datasets', async () => {
+    mockReports([EVAL_REPORT, {
+      ...EVAL_REPORT, dataset_name: 'iquiz',
+      primary_metrics: [{ ...EVAL_REPORT.primary_metrics[0], dataset_name: 'iquiz' }],
+    }])
+    await renderDashboard()
+    selectTab('Eval')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show history' })[0])
+    selectRun('20260810_112700/qwen-plus')
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+
+    expect(screen.getByRole('checkbox', { name: 'Select run 20260810_112700/qwen-plus' }))
+      .toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByText('1 selected')).toBeInTheDocument()
+    selectRun('20260810_112700/qwen-plus')
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+  })
+
+  it.each(['Change test root', 'Rescan test root'])('clears the selection on %s', async (button) => {
+    await renderDashboard()
+    selectTab('Eval')
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+    selectRun('20260810_112700/qwen-plus')
+    fireEvent.click(screen.getByRole('button', { name: button }))
+    await settle()
+
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
+  })
+
+  it('does not offer evaluation comparison for performance runs', async () => {
+    await renderDashboard()
+    selectTab('Perf')
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('can clear selected runs without changing the displayed history', async () => {
+    await renderDashboard()
+    selectTab('Eval')
+    fireEvent.click(screen.getByRole('button', { name: 'Show history' }))
+    selectRun('20260810_112700/qwen-plus')
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+
+    expect(screen.getByRole('checkbox', { name: 'Select run 20260810_112700/qwen-plus' }))
+      .toHaveAttribute('aria-checked', 'false')
+    expect(screen.queryByText('1 selected')).not.toBeInTheDocument()
   })
 })

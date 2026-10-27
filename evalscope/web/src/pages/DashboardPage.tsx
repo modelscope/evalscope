@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Clock, Cpu, FileText, Gauge } from 'lucide-react'
 import { useScan } from '@/contexts/ReportsContext'
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { useScopedState } from '@/hooks/useScopedState'
 import { useLocale } from '@/contexts/LocaleContext'
 import { listReports } from '@/api/reports'
 import { listPerfRuns } from '@/api/perf'
@@ -15,6 +16,7 @@ import SearchInput from '@/components/ui/SearchInput'
 import EmptyState from '@/components/common/EmptyState'
 import EmptyStateSystem from '@/components/common/EmptyStateSystem'
 import ErrorAlert from '@/components/ui/ErrorAlert'
+import Button from '@/components/ui/Button'
 import AggregatedResults from '@/components/dashboard/AggregatedResults'
 import type { SortState } from '@/components/dashboard/AggregatedResults'
 import { aggregateRuns } from '@/domain/report/runAggregation'
@@ -34,6 +36,7 @@ type KindFilter = CellKind | 'all'
 const EMPTY_REPORTS: ReportSummary[] = []
 const EMPTY_PERF_RUNS: PerfRunSummary[] = []
 const EMPTY_SEMANTICS: Record<string, MetricSemantics> = {}
+const EMPTY_SELECTION: string[] = []
 
 /** Tab order, and the panel each one drives. */
 const KIND_TABS: { key: KindFilter; labelKey: string; panelId: string }[] = [
@@ -58,6 +61,18 @@ export default function DashboardPage() {
   const [kindFilter, setKindFilter] = useState<KindFilter>('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortState>({ key: 'lastRun', descending: true })
+  const [selectedReports, setSelectedReports] = useScopedState(`${rootPath}\0${scanToken}`, EMPTY_SELECTION)
+
+  const toggleReport = (ref: string) => setSelectedReports((current) => (
+    current.includes(ref) ? current.filter((selected) => selected !== ref) : [...current, ref]
+  ))
+
+  const compareSelectedReports = () => {
+    if (selectedReports.length < 2) return
+    const params = new URLSearchParams({ root_path: rootPath })
+    selectedReports.forEach((ref) => params.append('report', ref))
+    navigate(`/compare?${params.toString()}`)
+  }
 
   // Fetch eval + perf whenever the global scan token or root changes. Settled,
   // not all-or-nothing: one side failing must not hide the other's runs.
@@ -235,7 +250,14 @@ export default function DashboardPage() {
   const resultsPanel = visibleRows.length > 0 ? (
     <div className="mt-3 flex min-w-0 flex-col gap-3">
       {recentChangeStrip}
-      <AggregatedResults rows={visibleRows} onOpenRun={openRun} sort={sort} onSortChange={setSort} />
+      <AggregatedResults
+        rows={visibleRows}
+        onOpenRun={openRun}
+        sort={sort}
+        onSortChange={setSort}
+        selectedReports={selectedReports}
+        onToggleReport={toggleReport}
+      />
     </div>
   ) : (
     <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg-card)]">
@@ -312,6 +334,19 @@ export default function DashboardPage() {
             title={t('dashboard.welcomeTitle')}
             hint={t('dashboard.welcomeDesc')}
           />
+        </div>
+      )}
+      {selectedReports.length > 0 && (
+        <div className="sticky bottom-0 z-30 flex items-center gap-3 rounded-[var(--radius)] border border-[var(--accent-dim)] bg-[var(--bg-card)] px-4 py-3 shadow-[var(--shadow-lg)]">
+          <span className="type-body-sm text-[var(--text)]" role="status">
+            {selectedReports.length} {t('reports.selected')}
+          </span>
+          <Button size="sm" className="ml-auto" disabled={selectedReports.length < 2} onClick={compareSelectedReports}>
+            {t('reports.compare')}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setSelectedReports(EMPTY_SELECTION)}>
+            {t('reports.clearSelection')}
+          </Button>
         </div>
       )}
     </div>
