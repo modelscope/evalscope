@@ -91,7 +91,8 @@ def test_ner_benchmark_scores_preserve_entity_boundaries(benchmark: str) -> None
 
     score = adapter.match_score(sample.target, sample.target, state.target, state)
 
-    assert adapter.benchmark_meta.evaluation_version == 'v1.1'
+    # CrossNER moved on to v1.2 when it started scoring each subset with its own labels.
+    assert adapter.benchmark_meta.evaluation_version == ('v1.2' if benchmark == 'cross_ner' else 'v1.1')
     assert score.metadata['y_pred'] == tags
     assert score.value == {'precision': 1.0, 'recall': 1.0, 'f1': 1.0, 'accuracy': 1.0}
 

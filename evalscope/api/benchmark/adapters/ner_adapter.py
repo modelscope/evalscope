@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Set, Tuple
 
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.metric.scorer import AggScore, SampleScore, Score
 from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
@@ -112,6 +113,10 @@ class NERAdapter(DefaultDataAdapter):
         # Format few-shot examples to match the expected response format
         return f'Input:\n{sample.input}\n\nOutput:\n{sample.target}'
 
+    def get_reverse_entity_map(self, task_state: TaskState) -> Dict[str, str]:
+        """Return the mapping from prediction tag names to the entity types of this sample's dataset."""
+        return self.reverse_entity_map
+
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         """
         Evaluate named entity recognition performance using seqeval.
@@ -137,7 +142,9 @@ class NERAdapter(DefaultDataAdapter):
             cleaned_prediction = clean_prediction(filtered_prediction, self.tag_fix_patterns)
 
             # Convert XML-style prediction back to BIO tags aligned with original tokens
-            pred_bio_tags = xml_to_bio_tags(cleaned_prediction, original_tokens, self.reverse_entity_map)
+            pred_bio_tags = xml_to_bio_tags(
+                cleaned_prediction, original_tokens, self.get_reverse_entity_map(task_state)
+            )
 
             # Use seqeval to calculate metrics
             # Note: seqeval expects lists of lists (one per sequence)
