@@ -45,6 +45,7 @@
     </div>
 
     {% if summary_rows %}
+    {% set show_correct = summary_rows | rejectattr('num_correct', 'none') | list %}
     <div class="card">
       <div class="card-header">
         <span class="card-title" data-i18n="card.score_summary">Score Summary</span>
@@ -59,6 +60,7 @@
               <th data-i18n="col.metric">Metric</th>
               <th data-i18n="col.score">Score</th>
               <th data-i18n="col.num">Num</th>
+              {% if show_correct %}<th data-i18n="col.correct">Correct</th>{% endif %}
             </tr>
           </thead>
           <tbody>
@@ -69,6 +71,7 @@
               <td><span class="metric-tag" title="{{ row.metric_raw | e }}">{{ row.metric }}</span></td>
               <td class="score-cell">{{ row.score_display }}</td>
               <td class="num-cell">{{ row.num }}</td>
+              {% if show_correct %}<td class="num-cell">{{ row.num_correct if row.num_correct is not none else '-' }}</td>{% endif %}
             </tr>
             {% endfor %}
           </tbody>
@@ -160,6 +163,7 @@
           {% endif %}
 
           {% if msec.subset_rows %}
+          {% set show_correct = msec.subset_rows | rejectattr('num_correct', 'none') | list %}
           <div class="card" style="margin-bottom:1rem;">
             <div class="table-wrap">
               <table>
@@ -172,6 +176,7 @@
                     <th data-i18n="col.metric">Metric</th>
                     <th data-i18n="col.score">Score</th>
                     <th data-i18n="col.num">Num</th>
+                    {% if show_correct %}<th data-i18n="col.correct">Correct</th>{% endif %}
                   </tr>
                 </thead>
                 <tbody>
@@ -184,6 +189,7 @@
                     <td><span class="metric-tag" title="{{ row.metric_raw | e }}">{{ row.metric }}</span></td>
                     <td class="score-cell">{{ row.score_display }}</td>
                     <td class="num-cell">{{ row.num }}</td>
+                    {% if show_correct %}<td class="num-cell">{{ row.num_correct if row.num_correct is not none else '-' }}</td>{% endif %}
                   </tr>
                   {% endfor %}
                 </tbody>

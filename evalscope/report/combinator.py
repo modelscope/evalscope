@@ -150,6 +150,12 @@ def get_display_data_frame(
             dataset_labels.get((row['Model'], row['Dataset']), row['Dataset']) for _, row in display_table.iterrows()
         ]
 
+    if ReportKey.num_correct in display_table:
+        correct = display_table[ReportKey.num_correct]
+        if correct.isna().all():
+            display_table.drop(columns=ReportKey.num_correct, inplace=True)
+        else:
+            display_table[ReportKey.num_correct] = correct.astype(object).where(correct.notna(), '-')
     _format_category_columns_for_display(display_table)
     return display_table
 

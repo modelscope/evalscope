@@ -158,10 +158,18 @@ def normalize_score(score: Union[float, dict, int], keep_num: int = 4) -> Union[
     return score
 
 
+def _sum_correct(items: List[Union['Subset', 'Category']]) -> Optional[int]:
+    """Total correct count, or ``None`` unless every item carries one."""
+    counts = [item.num_correct for item in items]
+    return sum(counts) if counts and None not in counts else None
+
+
 class Subset(BaseModel):
     name: str = 'default_subset'
     score: float = 0.0
     num: int = 0
+    num_correct: Optional[int] = None
+    """Samples scored 1 when the metric is binary; ``None`` otherwise."""
     metadata: Optional[Dict[str, Any]] = None
     """Aggregation diagnostics, such as calibration exclusions and risk-coverage points."""
     is_aggregate: bool = False
@@ -178,6 +186,7 @@ class Subset(BaseModel):
 class Category(BaseModel):
     name: Tuple[str, ...] = Field(default_factory=tuple)
     num: int = 0
+    num_correct: Optional[int] = None
     score: float = 0.0
     macro_score: float = 0.0
     subsets: List[Subset] = Field(default_factory=list)
@@ -198,6 +207,7 @@ class Category(BaseModel):
     def _compute_aggregates(self) -> Self:
         real = [s for s in self.subsets if not s.is_aggregate]
         self.num = sum(s.num for s in real)
+        self.num_correct = _sum_correct(real)
         self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
@@ -209,6 +219,7 @@ class Metric(BaseModel):
     identity: MetricIdentity
     legacy_name: Optional[str] = None
     num: int = 0
+    num_correct: Optional[int] = None
     score: float = 0.0
     macro_score: float = 0.0
     categories: List[Category] = Field(default_factory=list)
@@ -235,6 +246,7 @@ class Metric(BaseModel):
         if 'score' in self.model_fields_set:
             self.score = normalize_score(self.score)
         else:
+            self.num_correct = _sum_correct(real)
             self.score = normalize_score(micro_mean(real)) if real else 0.0
         self.macro_score = normalize_score(macro_mean(real)) if real else 0.0
         return self
@@ -253,6 +265,7 @@ class ReportKey:
     category_prefix = 'Cat.'
     subset_name = 'Subset'
     num = 'Num'
+    num_correct = 'Correct'
     score = 'Score'
     raw_score = 'Raw Score'
     display_score = 'Display Score'
@@ -444,6 +457,7 @@ class Report(BaseModel):
                     table[ReportKey.category_name].append(category.name)
                     table[ReportKey.subset_name].append(subset.name)
                     table[ReportKey.num].append(subset.num)
+                    table[ReportKey.num_correct].append(subset.num_correct)
                     table[ReportKey.score].append(subset.score)
             # add overall metric when there are multiple subsets
             if metric_count > 1 and add_overall_metric and not has_overall_subset:
@@ -453,11 +467,14 @@ class Report(BaseModel):
                 table[ReportKey.category_name].append(('-',))
                 table[ReportKey.subset_name].append(ReportKey.overall_score)
                 table[ReportKey.num].append(metric.num)
+                table[ReportKey.num_correct].append(metric.num_correct)
                 table[ReportKey.score].append(metric.score)
             # NOTE: only flatten metrics if needed, use the first metric by default
             if not flatten_metrics:
                 break
         df = pd.DataFrame.from_dict(table, orient='columns')
+        if ReportKey.num_correct in df:
+            df[ReportKey.num_correct] = df[ReportKey.num_correct].astype('Int64')
         if flatten_categories:
             df = self._flatten_categories(df)
         return df

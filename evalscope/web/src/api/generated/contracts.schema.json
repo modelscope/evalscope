@@ -2237,6 +2237,17 @@
         "num": {
           "type": "integer"
         },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "score": {
           "type": "number"
         },
@@ -2458,6 +2469,17 @@
         "num": {
           "type": "integer"
         },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "score": {
           "type": "number"
         },
@@ -2498,6 +2520,17 @@
         },
         "num": {
           "type": "integer"
+        },
+        "num_correct": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "score": {
           "type": "number"

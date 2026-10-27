@@ -244,6 +244,7 @@ def gen_html_report_file(
                     score=score,
                     score_display=format_metric_value(score, semantics),
                     num=primary_metric.num if primary_metric else 0,
+                    num_correct=primary_metric.num_correct if primary_metric else None,
                 )
             )
         first: Optional[Report] = next(iter(info['model_reports'].values()), None)
@@ -323,6 +324,7 @@ def gen_html_report_file(
                             quality_score=bounded_quality_ratio(sub.score, semantics),
                             score_display=format_metric_value(sub.score, semantics),
                             num=sub.num,
+                            num_correct=sub.num_correct,
                         )
                         # Diagnostics are shown without a verdict, in their own collapsed panel.
                         (diagnostic_rows if is_diagnostic else subset_rows).append(row)
