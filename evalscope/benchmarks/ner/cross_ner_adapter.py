@@ -1,11 +1,12 @@
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, Optional
 
 from evalscope.api.benchmark import BenchmarkMeta, NERAdapter
 from evalscope.api.dataset import Sample
+from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
 from evalscope.benchmarks.ner.cross_ner_entities import ai, literature, music, politics, science
 from evalscope.constants import Tags
-from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE, create_target_text
+from evalscope.utils.ner import FEWSHOT_TEMPLATE, PROMPT_TEMPLATE
 
 DESCRIPTION = """
 ## Overview
@@ -36,9 +37,12 @@ CrossNER is a fully-labeled collection of named entity recognition (NER) data sp
 """
 
 
+SUBSET_ENTITIES = {'ai': ai, 'literature': literature, 'music': music, 'politics': politics, 'science': science}
+
+
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='cross_ner',
         pretty_name='CrossNER',
         dataset_id='extraordinarylab/cross-ner',
@@ -59,8 +63,8 @@ class CrossNERAdapter(NERAdapter):
     """
     Adapter for the CrossNER Named Entity Recognition dataset.
 
-    This adapter inherits the NER functionality from NERAdapter and
-    configures it specifically for the CrossNER dataset's entity types.
+    Each domain subset has its own entity types. Prompts are built and predictions scored after every
+    subset has been loaded, so they take the labels from the sample's own subset, not from adapter state.
     """
 
     def __init__(self, **kwargs):
@@ -73,74 +77,28 @@ class CrossNERAdapter(NERAdapter):
         # Add descriptions for each entity type
         self.entity_descriptions = {}
 
-    def setup_entity_mappings(self):
-        """
-        Setup entity mappings and descriptions for prompt formatting.
-        This should be called after entity_type_map and entity_descriptions are defined.
-        """
-        if self.current_subset_name == 'ai':
-            self.entity_type_map, self.entity_descriptions = ai.get_entity_mappings()
-        elif self.current_subset_name == 'literature':
-            self.entity_type_map, self.entity_descriptions = literature.get_entity_mappings()
-        elif self.current_subset_name == 'music':
-            self.entity_type_map, self.entity_descriptions = music.get_entity_mappings()
-        elif self.current_subset_name == 'politics':
-            self.entity_type_map, self.entity_descriptions = politics.get_entity_mappings()
-        elif self.current_subset_name == 'science':
-            self.entity_type_map, self.entity_descriptions = science.get_entity_mappings()
-
-        # Reverse mapping for converting back from prediction to evaluation
-        self.reverse_entity_map = {v.lower(): k for k, v in self.entity_type_map.items()}
-
-        # Create list of tags for prompt formatting
-        self.entity_list = [f'<{ent.lower()}>' for ent in self.entity_type_map.values()]
-
-        # Create description of entities for prompt
-        self.entities_description = ', '.join(
-            [f'{self.entity_type_map[tag]} ({self.entity_descriptions[tag]})' for tag in self.entity_type_map]
-        )
+    def setup_entity_mappings(self, subset: Optional[str] = None) -> None:
+        """Set up the entity labels of ``subset``, by default the subset being loaded."""
+        module = SUBSET_ENTITIES.get(subset or self.current_subset_name)
+        if module is not None:
+            self.entity_type_map, self.entity_descriptions = module.get_entity_mappings()
+        super().setup_entity_mappings()
 
     def record_to_sample(self, record: Dict[str, Any]) -> Sample:
-        """
-        Convert a record with tokens and NER tags into a Sample.
-        Creates both the raw text input and annotated text target.
-        """
-        # Setup entity mappings based on the defined entity types
+        """Annotate the target with the loading subset's labels and remember that subset."""
         self.setup_entity_mappings()
+        sample = super().record_to_sample(record)
+        sample.metadata['subset'] = self.current_subset_name
+        return sample
 
-        tokens: List[str] = record['tokens']
-        ner_tags: List[str] = record['ner_tags']
+    def format_prompt_template(self, sample: Sample) -> str:
+        self.setup_entity_mappings(sample.metadata['subset'])
+        return super().format_prompt_template(sample)
 
-        # Create the input text by joining tokens
-        input_text = ' '.join(tokens)
+    def format_fewshot_template(self, fewshot: str, sample: Sample) -> str:
+        self.setup_entity_mappings(sample.metadata['subset'])
+        return super().format_fewshot_template(fewshot, sample)
 
-        # Process tokens and tags to create annotated target text
-        target_text = create_target_text(tokens, ner_tags, self.entity_type_map)
-
-        # Store tokens and tags in metadata for evaluation
-        metadata = {'tokens': tokens, 'ner_tags': ner_tags}
-
-        return Sample(input=input_text, target=target_text, metadata=metadata)
-
-    def format_prompt_template(self, sample):
-        """
-        Format the prompt with entity types, available tags, and text to annotate.
-        """
-        # Setup entity mappings based on the defined entity types
-        self.setup_entity_mappings()
-        return self.prompt_template.format(
-            entities=self.entities_description, entity_list=', '.join(self.entity_list), text=sample.input
-        )
-
-    def format_fewshot_template(self, fewshot, sample):
-        """
-        Format the few-shot prompt with all required parameters.
-        """
-        # Setup entity mappings based on the defined entity types
-        self.setup_entity_mappings()
-        return self.few_shot_prompt_template.format(
-            fewshot=fewshot,
-            entities=self.entities_description,
-            entity_list=', '.join(self.entity_list),
-            text=sample.input,
-        )
+    def get_reverse_entity_map(self, task_state: TaskState) -> Dict[str, str]:
+        entity_type_map, _ = SUBSET_ENTITIES[task_state.metadata['subset']].get_entity_mappings()
+        return {v.lower(): k for k, v in entity_type_map.items()}
