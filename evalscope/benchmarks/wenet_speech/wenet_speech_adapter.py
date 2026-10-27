@@ -14,6 +14,7 @@ logger = get_logger()
 @register_benchmark(
     BenchmarkMeta(
         name='wenet_speech',
+        evaluation_version='v1.1',
         pretty_name='WenetSpeech',
         dataset_id='lmms-lab/WenetSpeech',
         hf_dataset_id='lmms-lab/WenetSpeech',
