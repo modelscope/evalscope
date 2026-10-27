@@ -80,6 +80,7 @@ BFCL (Berkeley Function Calling Leaderboard) v3 is the first comprehensive and e
         dataset_id='AI-ModelScope/bfcl_v3',
         subset_list=list(SUBJECT_MAPPING.keys()),
         metric_list=['acc'],
+        evaluation_version='v1.1',
         eval_split='train',
         extra_params={
             'underscore_to_dot': {
@@ -301,18 +302,14 @@ class BFCLV3Adapter(AgentAdapter):
         """
         Finalize the report generation process. Calculate the overall score.
 
-        Track the number of each category.
-        - step1: simple, java, javascript unweighted average as simple_ast
-        - step2.1: simple_ast, multiple, parallel, parallel_multiple unweighted average as ast_non_live
-        - step2.2: live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average as ast_live
-        - step2.3: irrelevance as hallucination_non_live
-        - step2.4: live_irrelevance, live_relevance weighted average as hallucination_live
-        - step2.5: multi_turn_base as multi_turn_base
-        - step2.6: multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average as multi_turn_augmented
-        - step3.1: ast_non_live, hallucination_non_live unweighted average as non_live
-        - step3.2: ast_live, hallucination_live weighted average as live
-        - step3.3: multi_turn_base, multi_turn_augmented unweighted average as multi_turn
-        - step4: non_live, live, multi_turn unweighted average as overall
+        The summary rows follow the official BFCL v3 leaderboard (``generate_leaderboard_csv``):
+        - simple_ast: simple, java, javascript unweighted average
+        - non_live: simple_ast, multiple, parallel, parallel_multiple, irrelevance unweighted average
+        - live: live_simple, live_multiple, live_parallel, live_parallel_multiple, live_irrelevance,
+          live_relevance weighted average
+        - multi_turn: multi_turn_base, multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context
+          unweighted average
+        - overall: non_live, live, multi_turn unweighted average
         Args:
             report (Report): The generated evaluation report.
             output_dir (str): The directory to save the report.
@@ -327,63 +324,26 @@ class BFCLV3Adapter(AgentAdapter):
                 for subset in category.subsets:
                     subset_dict[subset.name] = subset
 
-            # Step 1: Calculate simple_ast (simple, java, javascript unweighted average)
-            simple_subsets = ['simple', 'java', 'javascript']
-            simple_ast = unweighted_average_from_subsets(simple_subsets, subset_dict)
-            subset_dict['simple_ast'] = simple_ast
-
-            # Step 2.1: Calculate ast_non_live
-            # (simple_ast, multiple, parallel, parallel_multiple unweighted average)
-            ast_non_live_subsets = ['simple_ast', 'multiple', 'parallel', 'parallel_multiple']
-            ast_non_live = unweighted_average_from_subsets(ast_non_live_subsets, subset_dict)
-            subset_dict['ast_non_live'] = ast_non_live
-
-            # Step 2.2: Calculate ast_live
-            # (live_simple, live_multiple, live_parallel, live_parallel_multiple weighted average)
-            live_subsets = ['live_simple', 'live_multiple', 'live_parallel', 'live_parallel_multiple']
-            ast_live = weighted_average_from_subsets(live_subsets, subset_dict)
-            subset_dict['ast_live'] = ast_live
-
-            # Step 2.3: hallucination_non_live (irrelevance)
-            if 'irrelevance' in subset_dict:
-                subset_dict['hallucination_non_live'] = subset_dict['irrelevance']
-            else:
-                subset_dict['hallucination_non_live'] = Subset(name='hallucination_non_live', score=0, num=0)
-
-            # Step 2.4: Calculate hallucination_live (live_irrelevance, live_relevance weighted average)
-            hallucination_live_subsets = ['live_irrelevance', 'live_relevance']
-            hallucination_live = weighted_average_from_subsets(hallucination_live_subsets, subset_dict)
-            subset_dict['hallucination_live'] = hallucination_live
-
-            # Step 2.5: multi_turn_base
-            if 'multi_turn_base' not in subset_dict:
-                subset_dict['multi_turn_base'] = Subset(name='multi_turn_base', score=0, num=0)
-
-            # Step 2.6: Calculate multi_turn_augmented
-            # (multi_turn_miss_func, multi_turn_miss_param, multi_turn_long_context weighted average)
-            multi_turn_augmented_subsets = ['multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context']
-            multi_turn_augmented = weighted_average_from_subsets(multi_turn_augmented_subsets, subset_dict)
-            subset_dict['multi_turn_augmented'] = multi_turn_augmented
-
-            # Step 3.1: Calculate non_live (ast_non_live, hallucination_non_live unweighted average)
-            non_live_subsets = ['ast_non_live', 'hallucination_non_live']
-            non_live = unweighted_average_from_subsets(non_live_subsets, subset_dict)
-            subset_dict['non_live'] = non_live
-
-            # Step 3.2: Calculate live (ast_live, hallucination_live weighted average)
-            live_agg_subsets = ['ast_live', 'hallucination_live']
-            live = weighted_average_from_subsets(live_agg_subsets, subset_dict)
-            subset_dict['live'] = live
-
-            # Step 3.3: Calculate multi_turn (multi_turn_base, multi_turn_augmented unweighted average)
-            multi_turn_subsets = ['multi_turn_base', 'multi_turn_augmented']
-            multi_turn = unweighted_average_from_subsets(multi_turn_subsets, subset_dict)
-            subset_dict['multi_turn'] = multi_turn
-
-            # Step 4: Calculate overall (non_live, live, multi_turn unweighted average)
-            overall_subsets = ['non_live', 'live', 'multi_turn']
-            overall = unweighted_average_from_subsets(overall_subsets, subset_dict)
-            subset_dict['overall'] = overall
+            subset_dict['simple_ast'] = unweighted_average_from_subsets(['simple', 'java', 'javascript'], subset_dict)
+            subset_dict['non_live'] = unweighted_average_from_subsets(
+                ['simple_ast', 'multiple', 'parallel', 'parallel_multiple', 'irrelevance'], subset_dict
+            )
+            subset_dict['live'] = weighted_average_from_subsets(
+                [
+                    'live_simple',
+                    'live_multiple',
+                    'live_parallel',
+                    'live_parallel_multiple',
+                    'live_irrelevance',
+                    'live_relevance',
+                ],
+                subset_dict,
+            )
+            subset_dict['multi_turn'] = unweighted_average_from_subsets(
+                ['multi_turn_base', 'multi_turn_miss_func', 'multi_turn_miss_param', 'multi_turn_long_context'],
+                subset_dict,
+            )
+            subset_dict['overall'] = unweighted_average_from_subsets(['non_live', 'live', 'multi_turn'], subset_dict)
 
             # Add computed scores to the category
             computed_subset_names = ['non_live', 'live', 'multi_turn', 'overall']
