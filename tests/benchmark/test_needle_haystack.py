@@ -102,9 +102,9 @@ def _subset_scores(report: Report, identity: MetricIdentity) -> Dict[str, Tuple[
     return {subset.name: (subset.score, subset.num) for category in metric.categories for subset in category.subsets}
 
 
-def test_evaluation_version_marks_the_new_metric_layout(monkeypatch: pytest.MonkeyPatch) -> None:
-    """v1.1 reports one accuracy metric with the cells as dimensions, instead of one metric per cell."""
-    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.1'
+def test_evaluation_version_marks_the_judge_question_change(monkeypatch: pytest.MonkeyPatch) -> None:
+    """v1.1 keeps the cells as metric dimensions; v1.2 asks the judge only the retrieval question."""
+    assert _adapter(monkeypatch)._benchmark_meta.evaluation_version == 'v1.2'
 
 
 def test_rule_score_uses_a_stable_metric_name(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -127,6 +127,29 @@ def test_judge_score_uses_the_same_metric_name_as_the_rule_score(monkeypatch: py
     assert score.status is ScoreStatus.SUCCESS
     assert score.value == {'acc': pytest.approx(0.7)}
     assert score.main_score_name == 'acc'
+
+
+def test_judge_is_asked_the_retrieval_question_without_the_haystack(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The official evaluator passes only the retrieval question to the grader, never the haystack prompt."""
+    adapter = _adapter(monkeypatch, strategy='llm')
+    judge = ScriptedJudge(json.dumps({'reasoning': 'Aligned.', 'verdict': 10}))
+    adapter.llm_judge = judge
+    haystack = 'An essay sentence about startups. ' * 200
+    sample = Sample(
+        id=0,
+        input=QUESTION,
+        target=NEEDLE,
+        metadata={'context': haystack, 'context_length': 32000, 'depth_percent': 0},
+    )
+    # The pipeline replaces the question with the system prompt and the formatted haystack prompt.
+    sample.input = adapter.process_sample_str_input(sample, 'english')
+    state = TaskState(model='mock', sample=sample, output=ModelOutput.from_content('mock', NEEDLE), completed=True)
+
+    adapter.calculate_metrics(state)
+
+    judge_prompt = judge.calls[0][-1].text
+    assert f'Question: {QUESTION}\n' in judge_prompt
+    assert haystack not in judge_prompt
 
 
 def test_unusable_judge_reply_falls_back_to_the_rule_score(monkeypatch: pytest.MonkeyPatch) -> None:

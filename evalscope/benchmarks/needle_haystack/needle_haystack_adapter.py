@@ -80,7 +80,7 @@ Needle in a Haystack is a benchmark focused on evaluating information retrieval 
         dataset_id='AI-ModelScope/Needle-in-a-Haystack-Corpus',
         metric_list=['acc'],
         primary_metric=MetricSelector(name='accuracy', aggregation='mean', dimensions={'scope': 'overall'}),
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         subset_list=['english', 'chinese'],
         eval_split='test',
         system_prompt='You are a helpful AI bot that answers questions for a user. Keep your response short and direct',
@@ -403,7 +403,8 @@ class NeedleHaystackAdapter(DefaultDataAdapter):
 
             prompt = (
                 ORM_USER_TEMPLATE.format(
-                    question=judge_context.task_state.input_text,
+                    # Like the official evaluator, ask only the retrieval question, not the haystack prompt.
+                    question=self.retrieval_question,
                     gold=judge_context.reference,
                     pred=judge_context.filtered_prediction,
                 )
