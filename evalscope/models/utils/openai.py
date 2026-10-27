@@ -948,7 +948,7 @@ def collect_stream_response(
                     # Update tool call with new chunks
                     if hasattr(tool_call, 'function'):
                         if hasattr(tool_call.function, 'name') and tool_call.function.name:
-                            collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
+                            collected_tool_calls[choice.index][tool_id]['function']['name'] += tool_call.function.name
 
                         if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
                             collected_tool_calls[choice.index][tool_id]['function']['arguments'] += (
@@ -1080,7 +1080,7 @@ async def async_collect_stream_response(
                     # Update tool call with new chunks
                     if hasattr(tool_call, 'function'):
                         if hasattr(tool_call.function, 'name') and tool_call.function.name:
-                            collected_tool_calls[choice.index][tool_id]['function']['name'] = tool_call.function.name
+                            collected_tool_calls[choice.index][tool_id]['function']['name'] += tool_call.function.name
 
                         if hasattr(tool_call.function, 'arguments') and tool_call.function.arguments:
                             collected_tool_calls[choice.index][tool_id]['function']['arguments'] += (
