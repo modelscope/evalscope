@@ -100,3 +100,63 @@ class TestConnectionDoesNotRetryBuildErrors:
         assert time.perf_counter() - start < 5
         # The message names the plugin rather than guessing OpenAI-specific options.
         assert 'OpenaiPlugin' in errors[0]
+
+
+class _FakeClient500:
+    """AioHttpClient stand-in whose every post() returns a retryable 500."""
+
+    def __init__(self, args, api_plugin):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return False
+
+    async def post(self, body):
+        from evalscope.perf.utils.benchmark_util import BenchmarkData
+        out = BenchmarkData()
+        out.success = False
+        out.status_code = 500
+        out.error = 'Internal Server Error'
+        return out
+
+
+class TestConnectionTestTimeoutBound:
+
+    def test_retryable_5xx_gives_up_within_connection_timeout(self, monkeypatch):
+        """A retryable 5xx must give up within --connection-timeout, not --total-timeout.
+
+        Before the fix, ``test_connection`` reused ``--total-timeout`` (default 6h) as the retry
+        bound, so a misconfigured URL pointing at a 5xx service waited the full 6h. Now it uses
+        ``--connection-timeout``; ``--total-timeout`` is left to govern a single request, as its
+        help text already claims.
+
+        We pin connection_timeout to 1s and collapse the 10s backoff to 0, so the loop spins on
+        the 5xx and must give up in ~1s of wall-clock. With the old code (bound = total_timeout =
+        6h) this would run for hours.
+        """
+        args = _args(total_timeout=6 * 60 * 60, connection_timeout=1)
+        plugin = OpenaiPlugin(args)
+        monkeypatch.setattr(http_client, 'AioHttpClient', _FakeClient500)
+        # Bind the real asyncio.sleep before patching so the lambda doesn't recurse.
+        real_sleep = asyncio.sleep
+        monkeypatch.setattr(http_client.asyncio, 'sleep', lambda _: real_sleep(0))
+        errors = []
+        monkeypatch.setattr(http_client.logger, 'error', lambda msg, *a, **kw: errors.append(msg))
+        start = time.perf_counter()
+        assert asyncio.run(http_client.test_connection(args, plugin)) is False
+        elapsed = time.perf_counter() - start
+        # Gives up within the ~1s connection bound, not the 6h request timeout.
+        assert elapsed < 5
+        assert any('timed out after 1s' in e for e in errors)
+
+    def test_default_connection_timeout_is_short(self):
+        """The default --connection-timeout must be a short bound, independent of total_timeout."""
+        # _args() pins total_timeout=30; the dataclass default for connection_timeout is 60.
+        args = Arguments(model='test-model', url='http://127.0.0.1:59999/v1/chat/completions',
+                        api='openai', dataset='openqa')
+        assert args.connection_timeout == 60
+        # The fix's whole point: the connection bound must be its own knob, not 6h.
+        assert args.connection_timeout < 6 * 60 * 60

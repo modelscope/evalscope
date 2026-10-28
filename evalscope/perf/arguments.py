@@ -92,7 +92,13 @@ class Arguments(BaseArgument):
     """Read timeout in seconds."""
 
     total_timeout: Optional[int] = 6 * 60 * 60
-    """Total timeout in seconds."""
+    """Total timeout in seconds for each request."""
+
+    connection_timeout: int = 60
+    """Upper bound in seconds for the pre-benchmark connection test. The test retries retryable
+    failures (5xx, network errors) every 10s up to this bound, then gives up. Kept separate from
+    --total-timeout (which governs a single request) so a misconfigured URL fails in a minute
+    instead of waiting the full 6h request timeout."""
 
     api_key: Optional[SecretStr] = None
     """The API key for authentication."""
@@ -808,6 +814,7 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument('--connect-timeout', type=int, required=False, default=None, help='The network connection timeout')  # noqa: E501
     parser.add_argument('--read-timeout', type=int, required=False, default=None, help='The network read timeout')
     parser.add_argument('--total-timeout', type=int, default=6 * 60 * 60, help='The total timeout for each request')  # noqa: E501
+    parser.add_argument('--connection-timeout', type=int, default=60, help='Upper bound in seconds for the pre-benchmark connection test; a misconfigured URL fails within this instead of waiting --total-timeout (default 6h)')  # noqa: E501
     parser.add_argument('--no-test-connection', action='store_true', default=False, help='Do not test the connection before starting the benchmark')  # noqa: E501
 
 

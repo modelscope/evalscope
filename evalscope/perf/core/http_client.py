@@ -189,8 +189,11 @@ async def test_connection(args: Arguments, api_plugin: 'ApiPluginBase') -> bool:
         except Exception as e:
             logger.warning(f'Retrying... <{e}>')
 
-        if time.perf_counter() - start_time >= args.total_timeout:
-            logger.error('Overall connection attempt timed out.')
+        if time.perf_counter() - start_time >= args.connection_timeout:
+            logger.error(
+                f'Overall connection attempt timed out after {args.connection_timeout}s. '
+                'Use --connection-timeout to extend the window, or check --url/--api/--model.'
+            )
             return False
 
         await asyncio.sleep(10)
