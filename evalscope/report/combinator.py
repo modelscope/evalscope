@@ -104,6 +104,20 @@ def get_data_frame(
     return pd.concat(tables, ignore_index=True)
 
 
+def format_num_correct_for_display(display_table: pd.DataFrame) -> None:
+    """Drop an all-empty Correct column, or dash-fill its missing counts in a mixed one.
+
+    Shared by the CLI display table and the service dataframe endpoint so every renderer hides
+    the column under the same condition.
+    """
+    if ReportKey.num_correct in display_table:
+        correct = display_table[ReportKey.num_correct]
+        if correct.isna().all():
+            display_table.drop(columns=ReportKey.num_correct, inplace=True)
+        else:
+            display_table[ReportKey.num_correct] = correct.astype(object).where(correct.notna(), '-')
+
+
 def get_display_data_frame(
     report_list: List[Report],
     flatten_metrics: bool = True,

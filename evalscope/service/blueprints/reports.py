@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from evalscope.constants import PLOTLY_CDN_URL, PLOTLY_THEME
 from evalscope.metrics.semantics import PrimaryMetricRef
 from evalscope.report import ReportKey, ReportRef, get_data_frame, get_report_list
+from evalscope.report.combinator import format_num_correct_for_display
 from evalscope.report.data_frames import (
     get_acc_report_df,
     get_compare_report_df,
@@ -629,6 +630,7 @@ def get_dataframe(run_id: str, model_id: str) -> ResponseReturnValue:
         else:
             df = acc_df
 
+        format_num_correct_for_display(df)
         return json_response(
             DataFrameResponse,
             {
