@@ -79,3 +79,5 @@ def seed_everything(seed: int):
             torch.cuda.manual_seed_all(seed)
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
+        if hasattr(torch, 'npu') and torch.npu.is_available():
+            torch.npu.manual_seed_all(seed)

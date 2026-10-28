@@ -144,12 +144,24 @@ class BenchmarkData:
             self.cached_tokens = self.real_cached_tokens
 
     def update_gpu_usage(self) -> None:
-        """Update max GPU memory usage across all visible CUDA devices."""
+        """Update max GPU/NPU memory usage across all visible devices."""
         if check_import('torch', raise_warning=False):
             import torch
+            from evalscope.utils.model_utils import get_device
 
-            total_memory = sum(torch.cuda.max_memory_allocated(i) / 2**30 for i in range(torch.cuda.device_count()))
-            self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
+            device = get_device()
+            if device == 'cuda' and torch.cuda.is_available():
+                total_memory = sum(
+                    torch.cuda.max_memory_allocated(i) / 2**30
+                    for i in range(torch.cuda.device_count())
+                )
+                self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
+            elif device == 'npu' and hasattr(torch, 'npu') and torch.npu.is_available():
+                total_memory = sum(
+                    torch.npu.max_memory_allocated(i) / 2**30
+                    for i in range(torch.npu.device_count())
+                )
+                self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
 
 
 # ===========================================================================
