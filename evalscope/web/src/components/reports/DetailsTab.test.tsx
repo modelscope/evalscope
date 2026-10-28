@@ -166,3 +166,42 @@ describe('DetailsTab metric semantics', () => {
     expect(screen.queryByText('Performance Metrics')).not.toBeInTheDocument()
   })
 })
+
+describe('DetailsTab Correct column', () => {
+  it('renders counts and dashes when the frame carries the column', async () => {
+    vi.mocked(getDataFrame).mockResolvedValueOnce({
+      columns: ['Subset', 'Metric', 'Score', 'Num', 'Correct'],
+      data: [
+        { Subset: 'english', Metric: 'accuracy', Score: 0.6667, Num: 3, Correct: 2 },
+        { Subset: 'math', Metric: 'f1', Score: 0.75, Num: 3, Correct: '-' },
+      ],
+    })
+    render(
+      <LocaleProvider>
+        <DetailsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
+      </LocaleProvider>,
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.getByText('Correct')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('-')).toBeInTheDocument()
+  })
+
+  it('omits the column when the frame does not carry it', async () => {
+    render(
+      <LocaleProvider>
+        <DetailsTab reportName="fixture-report" datasetName="fixture-dataset" rootPath="/outputs" />
+      </LocaleProvider>,
+    )
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(screen.queryByText('Correct')).not.toBeInTheDocument()
+  })
+})
