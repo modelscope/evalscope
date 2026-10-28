@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 
 import type { LoadReportResponse, ReportData } from '@/api/types'
+import { LocaleProvider } from '@/contexts/LocaleContext'
+import ComparePage from '@/pages/ComparePage'
 
 vi.mock('@/api/client', () => ({
   apiValidated: vi.fn().mockResolvedValue({ outputs_root: '' }),
@@ -33,7 +36,7 @@ function response(): LoadReportResponse {
 
 let controls: {
   triggerScan: (path?: string) => void
-  loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
+  loadMultiReports: (names: string[], rootPath: string, scanToken: number, signal?: AbortSignal) => Promise<ReportData[]>
 }
 
 function Probe() {
@@ -73,12 +76,12 @@ describe('ReportsProvider cache scope', () => {
     act(() => controls.triggerScan('old-root'))
     await flush()
     let oldRequest!: Promise<ReportData[]>
-    act(() => { oldRequest = controls.loadMultiReports(['old-report']) })
+    act(() => { oldRequest = controls.loadMultiReports(['old-report'], 'old-root', 1) })
 
     act(() => controls.triggerScan('new-root'))
     await flush()
     let newRequest!: Promise<ReportData[]>
-    act(() => { newRequest = controls.loadMultiReports(['new-report']) })
+    act(() => { newRequest = controls.loadMultiReports(['new-report'], 'new-root', 2) })
 
     await act(async () => {
       newResponse.resolve(response())
@@ -92,5 +95,23 @@ describe('ReportsProvider cache scope', () => {
       await oldRequest
     })
     expect(screen.getByTestId('cache')).toHaveTextContent('new-report')
+  })
+
+  it('uses the URL root for the first load of a directly opened comparison', async () => {
+    vi.mocked(reportsApi.loadReport).mockResolvedValue(response())
+    const reports = 'report=run-a%2Fmodel-a&report=run-b%2Fmodel-b'
+    render(
+      <ReportsProvider>
+        <LocaleProvider>
+          <MemoryRouter initialEntries={[`/compare?root_path=url-root&${reports}`]}>
+            <ComparePage />
+          </MemoryRouter>
+        </LocaleProvider>
+      </ReportsProvider>,
+    )
+
+    for (let index = 0; index < 6; index += 1) await flush()
+
+    expect(vi.mocked(reportsApi.loadReport).mock.calls.map((call) => call[0])).toEqual(['url-root', 'url-root'])
   })
 })

@@ -46,7 +46,7 @@ const EMPTY_MERGED: MergedPrediction[] = []
 export default function ComparePage() {
   const { t } = useLocale()
   const qp = useQueryParams()
-  const { rootPath: ctxRootPath, setRootPath } = useScan()
+  const { rootPath: ctxRootPath, scanToken, setRootPath } = useScan()
   const { loadMultiReports, loading, reportCache } = useReportCache()
 
   // Score comparison consumes the complete URL selection. Prediction comparison
@@ -86,8 +86,8 @@ export default function ComparePage() {
 
   // Load score data and per-report cache (datasets/subsets) in one cache-aware pass
   const scores = useAsyncResource(
-    (signal) => loadMultiReports(reportNames, signal),
-    [reportNames, loadMultiReports],
+    (signal) => loadMultiReports(reportNames, rootPath, scanToken, signal),
+    [reportNames, loadMultiReports, rootPath, scanToken],
     { enabled: reportNames.length >= 2, fallbackMessage: t('common.loadError') },
   )
   const reports = scores.data ?? EMPTY_REPORT_LIST
