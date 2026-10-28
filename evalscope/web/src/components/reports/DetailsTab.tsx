@@ -140,6 +140,18 @@ export default function DetailsTab({
         <span className="text-[var(--text-muted)]">{Number(row.Num ?? 0).toLocaleString()}</span>
       ),
     },
+    // The backend emits this column only for binary, higher-is-better metrics; rows of other
+    // metrics in the same frame carry '-'.
+    ...(subsetData.columns.includes('Correct') ? [{
+      key: 'Correct',
+      label: t('reportDetail.correct'),
+      sortable: true,
+      render: (row: Record<string, unknown>) => (
+        <span className="text-[var(--text-muted)]">
+          {row.Correct === '-' ? '-' : Number(row.Correct ?? 0).toLocaleString()}
+        </span>
+      ),
+    }] : []),
   ]
 
   // The arc length is the value's own position in its range; the colour says how good it is. A

@@ -433,6 +433,7 @@ export interface ReportMetric {
   legacy_name?: string | null;
   macro_score?: number;
   num: number;
+  num_correct?: number | null;
   score: number;
   semantics: MetricSemantics;
 }
@@ -440,6 +441,7 @@ export interface ReportCategory {
   macro_score?: number;
   name: string[];
   num: number;
+  num_correct?: number | null;
   score: number;
   subsets: ReportSubset[];
 }
@@ -450,6 +452,7 @@ export interface ReportSubset {
   } | null;
   name: string;
   num: number;
+  num_correct?: number | null;
   score: number;
 }
 export interface PerfMetrics {

@@ -40,6 +40,7 @@ class ReportSubset(ApiResponseModel):
     name: str
     score: float
     num: int
+    num_correct: Optional[int] = None
     is_aggregate: bool = False
     metadata: Optional[Dict[str, Any]] = None
 
@@ -47,6 +48,7 @@ class ReportSubset(ApiResponseModel):
 class ReportCategory(ApiResponseModel):
     name: List[str]
     num: int
+    num_correct: Optional[int] = None
     score: float
     macro_score: float = 0.0
     subsets: List[ReportSubset]
@@ -56,6 +58,7 @@ class ReportMetric(ApiResponseModel):
     identity: MetricIdentity
     legacy_name: Optional[str] = None
     num: int
+    num_correct: Optional[int] = None
     score: float
     macro_score: float = 0.0
     categories: List[ReportCategory]

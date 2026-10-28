@@ -89,6 +89,7 @@ class Mean(Aggregator):
                         metric_name=metric_name,
                         aggregation=self.name,
                         num=len(values),
+                        num_correct=int(sum(values)) if all(v in (0, 1) for v in values) else None,
                         ids=metric_sample_ids[metric_name],
                     )
                 )

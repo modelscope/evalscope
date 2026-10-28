@@ -52,6 +52,7 @@ _COLUMN_ZH = {
     'Metric': '指标',
     'Subset': '子集',
     'Num': '数量',
+    'Correct': '正确数',
     'Score': '得分',
 }
 

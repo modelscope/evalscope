@@ -156,6 +156,9 @@ class AggScore(BaseModel):
     num: int = Field(default=0)
     """Number of samples used in the aggregation."""
 
+    num_correct: Optional[int] = Field(default=None)
+    """Number of samples scored 1, set only when every sample value is 0 or 1."""
+
     ids: Optional[List[Union[str, int]]] = Field(default=None)
     """List of sample IDs used in the aggregation, if applicable."""
 

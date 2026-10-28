@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import pandas as pd
 from pandas import DataFrame
 
-from evalscope.api.metric.semantics import MetricIdentity, MetricSelector
+from evalscope.api.metric.semantics import MetricDirection, MetricIdentity, MetricSelector
 from evalscope.constants import DataCollection
 from evalscope.metrics.semantics import get_semantics_resolver
 from evalscope.metrics.semantics.naming import canonicalize_producer_identity
@@ -127,6 +127,7 @@ class ReportGenerator:
                             name=subset_name,
                             score=agg_score_item.score,
                             num=agg_score_item.num,
+                            num_correct=agg_score_item.num_correct,
                             metadata=agg_score_item.metadata,
                             identity_key=identity.key,
                             identity=identity,
@@ -158,18 +159,30 @@ class ReportGenerator:
 
         metrics_list = []
         for identity_key, group_metric in df.groupby('identity_key', sort=False):
+            semantics = semantics_by_identity[identity_key]
+            # A count of 1s reads as "correct" only when higher values are better, and a graded metric
+            # that happens to hit only 0 and 1 in some subsets must not get counts on those rows alone.
+            counts_correct = (
+                semantics.direction == MetricDirection.HIGHER_IS_BETTER and group_metric['num_correct'].notna().all()
+            )
             categories = []
             for category_name, group_category in group_metric.groupby('categories'):
                 subsets = []
                 for _, row in group_category.iterrows():
+                    num_correct = row['num_correct'] if counts_correct and pd.notna(row['num_correct']) else None
                     subsets.append(
-                        Subset(name=row['name'], score=row['score'], num=row['num'], metadata=row['metadata'])
+                        Subset(
+                            name=row['name'],
+                            score=row['score'],
+                            num=row['num'],
+                            num_correct=num_correct,
+                            metadata=row['metadata'],
+                        )
                     )
 
                 categories.append(Category(name=category_name, subsets=subsets))
 
             identity = group_metric.iloc[0]['identity']
-            semantics = semantics_by_identity[identity_key]
             metric = Metric(
                 identity=identity,
                 categories=categories,
