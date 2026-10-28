@@ -84,7 +84,7 @@ interface ReportCacheCtx {
   reportCache: Record<string, LoadReportResponse>
   /** True while at least one load is in flight. */
   loading: boolean
-  loadMultiReports: (names: string[], signal?: AbortSignal) => Promise<ReportData[]>
+  loadMultiReports: (names: string[], rootPath: string, scanToken: number, signal?: AbortSignal) => Promise<ReportData[]>
 }
 
 const ReportCacheContext = createContext<ReportCacheCtx>(null!)
@@ -178,25 +178,25 @@ function ReportCacheProvider({ children }: { children: ReactNode }) {
   // Read the cache through a ref so `loadMultiReports` keeps a stable identity:
   // callers put it in effect dependency arrays, and a new identity per cache
   // write would re-fire those effects in a loop.
-  const cacheRef = useRef(reportCache)
-  useEffect(() => { cacheRef.current = reportCache }, [reportCache])
-  const scopeRef = useRef({ scope, rootPath })
-  useEffect(() => { scopeRef.current = { scope, rootPath } }, [scope, rootPath])
+  const cacheRef = useRef(cached)
+  useEffect(() => { cacheRef.current = cached }, [cached])
+  const scopeRef = useRef(scope)
+  useEffect(() => { scopeRef.current = scope }, [scope])
 
-  const loadMultiReports = useCallback(async (names: string[], signal?: AbortSignal) => {
+  const loadMultiReports = useCallback(async (names: string[], rootPath: string, scanToken: number, signal?: AbortSignal) => {
     setInFlight((n) => n + 1)
     try {
       // Load via a cache-aware path so repeat loads in compare view don't refetch.
       // Per-report tagging preserves source mapping when reports share model_name.
-      const { scope: readScope, rootPath: root } = scopeRef.current
+      const readScope = `${rootPath}\0${scanToken}`
       const results = await Promise.all(
         names.map(async (name) => {
-          const cached = cacheRef.current[name]
-          if (cached) return cached
-          const data = await reportsApi.loadReport(root, name, signal)
+          const cachedReport = cacheRef.current.scope === readScope ? cacheRef.current.entries[name] : undefined
+          if (cachedReport) return cachedReport
+          const data = await reportsApi.loadReport(rootPath, name, signal)
           setCached((prev) => {
             // A read that started before a rescan must not repopulate the new scope.
-            if (scopeRef.current.scope !== readScope) return prev
+            if (scopeRef.current !== readScope) return prev
             const base = prev.scope === readScope ? prev.entries : {}
             return { scope: readScope, entries: withCacheLimit({ ...base, [name]: data }, name) }
           })
