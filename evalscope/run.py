@@ -19,8 +19,14 @@ from evalscope.utils.io_utils import OutputsStructure, current_time
 from evalscope.utils.logger import configure_logging, get_logger
 from evalscope.utils.model_utils import seed_everything
 from evalscope.utils.resource_utils import compute_eval_total_count
+from evalscope.utils.uri_utils import sanitize_endpoint
 
 logger = get_logger()
+
+
+def _loggable(task_cfg: TaskConfig) -> TaskConfig:
+    """Copy for logging with api_url reduced to host:port, so URL credentials stay out of logs."""
+    return task_cfg.model_copy(update={'api_url': sanitize_endpoint(task_cfg.api_url)})
 
 
 def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]) -> Union[dict, List[dict]]:
@@ -32,7 +38,7 @@ def run_task(task_cfg: Union[str, dict, TaskConfig, List[TaskConfig], Namespace]
     task_cfg = parse_task_config(task_cfg)
     if task_cfg.dry_run:
         logger.info('[dry-run] Parsed TaskConfig — skipping inference.')
-        logger.info(task_cfg)
+        logger.info(_loggable(task_cfg))
         return {}
     return run_single_task(task_cfg)
 
@@ -114,7 +120,7 @@ def run_non_native_backend(task_cfg: TaskConfig, outputs: OutputsStructure) -> d
     backend_manager = backend_manager_class(config=eval_config)
 
     task_cfg.dump_yaml(outputs.configs_dir)
-    logger.info(task_cfg)
+    logger.info(_loggable(task_cfg))
 
     backend_manager.run()
 
@@ -206,7 +212,7 @@ def evaluate_model(task_config: TaskConfig, outputs: OutputsStructure) -> dict:
         build_generated_evaluation_metadata(resolved_benchmarks, evaluation_identity, previous_snapshot),
         strict=True,
     )
-    logger.info(task_config)
+    logger.info(_loggable(task_config))
 
     tracker_ctx = make_tracker(
         task_config.enable_progress_tracker,
