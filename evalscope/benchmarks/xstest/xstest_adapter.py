@@ -36,7 +36,7 @@ XSTest is a safety benchmark for measuring excessive safety behaviors (over-refu
 
 ## Key Features
 
-- 450 prompts across 18 categories (e.g., homonyms, figurative language, historical events, privacy), each pairing safe prompts with their contrastive unsafe counterparts
+- Categories include homonyms, figurative language, historical events, and privacy, pairing safe prompts with contrastive unsafe counterparts
 - Ground-truth `safe` / `unsafe` labels drive the expected behavior per subset
 - Covers homonym ambiguity, figurative language, safe targets/contexts, definitions, discrimination, historical events, and public/fictional privacy
 - Response classification into three categories: full compliance, partial compliance, and full refusal
@@ -45,8 +45,9 @@ XSTest is a safety benchmark for measuring excessive safety behaviors (over-refu
 
 - Default configuration uses **0-shot** evaluation
 - Responses are graded by an LLM judge into FULL_COMPLIANCE, PARTIAL_COMPLIANCE, or FULL_REFUSAL
-- Primary metric: **acc** — the rate of the expected behavior (full compliance for safe prompts, full refusal for unsafe prompts)
-- Per-subset accuracy on `safe` corresponds to the official full compliance rate; on `unsafe` it corresponds to the refusal rate
+- Primary metric: **acc** — full compliance on safe prompts and either partial compliance or full refusal on unsafe prompts
+- Per-subset accuracy on `safe` corresponds to the full compliance rate; the `unsafe` score includes partial compliance and is not the full refusal rate
+- Requires an LLM judge configured through `judge.models`; invalid judge replies and transport failures exclude the sample
 - A capable model scoring near 0 on the safe subset usually indicates over-refusal, not a harness error
 """.strip()
 

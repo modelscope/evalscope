@@ -24,7 +24,7 @@ SALAD-Bench MCQ is the multiple-choice set of the SALAD-Bench safety benchmark. 
 
 ## Key Features
 
-- 3,840 questions from the official `mcq_set`; 8 records without a query in the release are skipped, leaving 3,832
+- Uses the official `mcq_set`; records without a query are skipped
 - Half of the questions ask for the safe responses and half for the unsafe ones; one or two options are correct
 - Every record carries its 1/2/3-level taxonomy labels in the sample metadata
 

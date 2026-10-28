@@ -68,7 +68,7 @@ checking whether a model contradicts its neutrally elicited beliefs when pressur
 
 ## Key Features
 
-- 1,000 examples across six subsets: `continuations`, `disinformation`, `doubling_down_known_facts`, `known_facts`,
+- Covers six subsets: `continuations`, `disinformation`, `doubling_down_known_facts`, `known_facts`,
   `provided_facts`, and `statistics`.
 - Binary tasks require consistent elicited beliefs; `statistics` jointly judges numerical belief responses.
   `provided_facts` uses the supplied ground truth instead of eliciting beliefs.

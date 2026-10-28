@@ -41,7 +41,7 @@ summary and reply, or code review approval)
 
 ## Key Features
 
-- 100 synthetic examples for each of 4 suites (paper / resume / email / code), from the EMNLP \
+- Synthetic examples for four suites (paper / resume / email / code), from the EMNLP \
 Findings 2026 paper "LongPIBench: A Long-Context Benchmark for Prompt Injection"
 - 4 attack variants (`no`, `naive`, `combine`, `authority_spoof`) and 3 goals per suite; by \
 default every suite is attacked with `authority_spoof`, using that suite's published default goal

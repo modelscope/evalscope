@@ -101,9 +101,9 @@ SALAD-Bench is a hierarchical safety benchmark for large language models built o
 
 ## Key Features
 
-- `base_set`: 21,318 harmful questions collected from GPTFuzzer, AdvBench, HH-RLHF, Do-Not-Answer, Do Anything Now, ToxicChat, multilingual sources, and GPT self-instruction
-- `attack_enhanced_set`: 5,000 questions rewritten by jailbreak methods; `small_attack_subset`: a 300-question subset of them
-- `defense_enhanced_set`: 200 questions wrapped with defense prompts
+- `base_set` collects harmful questions from GPTFuzzer, AdvBench, HH-RLHF, Do-Not-Answer, Do Anything Now, ToxicChat, multilingual sources, and GPT self-instruction
+- `attack_enhanced_set` contains questions rewritten by jailbreak methods; `small_attack_subset` is a subset of them
+- `defense_enhanced_set` contains questions wrapped with defense prompts
 - Every record carries its 1/2/3-level taxonomy labels in the sample metadata
 
 ## Evaluation Notes

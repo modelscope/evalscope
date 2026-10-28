@@ -39,7 +39,7 @@ SLEIGHT-Bench evaluates how well trusted monitors detect covert malicious behavi
 
 ## Key Features
 
-- 40 attacks across 11 evasion categories, with 43 attack sessions and 43 paired benign transcripts
+- Attacks span evasion categories and are paired with benign transcripts
 - Uses the paper's ControlArena-adapted prompt (Appendix D.1); assistant text, thinking and tool descriptions are removed
 
 ## Evaluation Notes

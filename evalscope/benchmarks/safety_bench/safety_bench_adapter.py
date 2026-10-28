@@ -42,50 +42,19 @@ with bilingual multiple-choice questions. It does not measure generated harmful 
 
 ## Key Features
 
-- `zh`: 11,435 Chinese questions; `en`: 11,435 English questions; `zh_subset`: 2,100 Chinese questions
-- The Chinese subset overlaps with `zh`; the three configurations are reported independently
-- Uses `evalscope/SafetyBench`, prepared from official GitHub questions and released answers joined by original ID
-- Preserves the original question, option order, category, and 0-based answer mapping
-- Only **0-shot** generation on the `test` split is supported; no dev examples or CoT instructions are added
+- The Chinese `zh_subset` overlaps with `zh`; the Chinese and English configurations are reported independently
+- Uses `evalscope/SafetyBench`, prepared from the official questions and released answers joined by original ID
+- Preserves the original questions, option order, categories, and answer mapping
 
 ## Evaluation Notes
 
-- Uses the official Chinese/English zero-shot prompts from `code/evaluate_baichuan.py`
-- Uses its deterministic answer extraction: letter rules, option text, then the next non-empty line
-- Unparseable replies remain incorrect; the example script's random-guess fallback is intentionally not used
-- Accuracy follows official `eva.py`: correct predictions divided by the full selected question count,
-  including missing predictions. Each of the seven category scores uses its own full question count
-- EvalScope stores accuracy on a 0-1 scale; multiply by 100 to compare with official percentage scores
-- Reports accuracy independently for each configuration and category. Never average accuracy across configurations
-- The report sample count includes each selected configuration once, without recounting metrics for the same configuration
-- Overall accuracy is rounded once from the official aggregate, independently of displayed category scores,
-  and remains unchanged when the report is saved and reloaded
-- `limit`, filters, and repeats determine which questions are scored; only a full, unfiltered, single-repeat run
-  is comparable to the corresponding official full-test result
-- Requires the ModelScope dataset containing released test answers, or its local snapshot. The original HF package has a different
-  schema and lacks released test answers, so it is not a compatible substitute
-
-### Integration Validation (2026-10-22)
-
-- Full-data replay checked all 24,970 configuration rows against the released answers. Gold, mixed wrong/missing,
-  and all-missing predictions matched official `eva.py` overall and category scores
-- Real API validation used `qwen-plus` through DashScope's OpenAI-compatible API, with temperature 0,
-  thinking disabled, and a 1,024-token output budget. Each configuration selected the first two original
-  records from each safety category, totaling 42 requests
-- Request prompts and deterministic answer extraction matched official `code/evaluate_baichuan.py`;
-  per-sample, category, and overall scoring matched `eva.py` for these selected questions
-
-| Configuration | Questions | Correct | Accuracy | Unparseable Replies |
-| --- | ---: | ---: | ---: | ---: |
-| `zh` | 14 | 11 | 78.57% | 3 |
-| `en` | 14 | 10 | 71.43% | 2 |
-| `zh_subset` | 14 | 12 | 85.71% | 1 |
-
-- 41 responses ended normally; one `zh_subset` response reached the token budget and was unparseable.
-  All six unparseable replies scored zero and remained in the denominator; no transport errors occurred
-- These are integration smoke results, not full-test model scores. The record with selected IDs,
-  predictions, termination states, and official scores is in
-  `tests/benchmark/fixtures/safety_bench/api_smoke_2026-10-22.json`
+- Uses the official Chinese and English zero-shot prompts on the `test` split; few-shot examples are not supported
+- Reports accuracy for each configuration and each of the seven categories. Missing or unparseable predictions count
+  as incorrect; unlike the official example script, answer extraction does not fall back to a random guess
+- Accuracy is reported on a 0-1 scale. Only a full, unfiltered, single-repeat run is comparable to the corresponding
+  official full-test result; do not average the overlapping configurations
+- Requires the ModelScope dataset with released test answers or its local snapshot. The original Hugging Face
+  package has a different schema and does not contain the released test answers
 """
 
 
