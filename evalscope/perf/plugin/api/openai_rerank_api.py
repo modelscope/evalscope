@@ -207,7 +207,15 @@ class OpenaiRerankPlugin(ApiPluginBase):
                     else:
                         output.generated_text = str(payload)
 
-                    output.success = True
+                    # A server that fails after sending HTTP 200 (vLLM, SGLang) reports the
+                    # error in-band as `{"error": {...}}` or `{"object": "error", ...}`.
+                    # The chat plugin already guards this (see #1906/#1918); the rerank
+                    # path must not unconditionally count such a body as success.
+                    if isinstance(payload, dict) and (
+                        payload.get('error') is not None or payload.get('object') == 'error'
+                    ):
+                        output.error = json.dumps(payload, ensure_ascii=False)
+                    output.success = output.error is None
                 else:
                     output.status_code = response.status
                     try:
