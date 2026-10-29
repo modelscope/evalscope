@@ -27,6 +27,7 @@ OPEN_PROMPT = (
 
 @register_benchmark(
     BenchmarkMeta(
+        evaluation_version='v1.1',
         name='real_world_qa',
         pretty_name='RealWorldQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -84,4 +85,4 @@ class RealWorldQAAdapter(VisionLanguageAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answer = extract_answer_line(prediction)
-        return answer.lower() if answer is not None else ''
+        return answer.lower() if answer is not None else prediction.strip().lower()

@@ -24,7 +24,7 @@ The last line of your response should be of the form "ANSWER: [ANSWER]" (without
 
 @register_benchmark(
     BenchmarkMeta(
-        evaluation_version='v1.1',
+        evaluation_version='v1.2',
         name='chartqa',
         pretty_name='ChartQA',
         tags=[Tags.MULTI_MODAL, Tags.KNOWLEDGE, Tags.QA],
@@ -89,7 +89,7 @@ class ChartQAAdapter(VisionLanguageAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         answer = extract_answer_line(prediction)
-        return answer if answer is not None else ''
+        return answer if answer is not None else prediction.strip()
 
     def match_score(self, original_prediction, filtered_prediction, reference, task_state) -> Score:
         from .utils import relaxed_correctness
